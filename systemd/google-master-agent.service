@@ -1,0 +1,11 @@
+[Unit]
+Description=Google Master Agent
+PartOf=google-agents.target
+RefuseManualStart=true
+RefuseManualStop=true
+
+[Service]
+Type=notify
+ExecStart=/home/dbtucker/master/master
+Restart=always
+NotifyAccess=all
