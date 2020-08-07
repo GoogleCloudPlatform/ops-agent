@@ -1,0 +1,13 @@
+logs:
+  syslogs:
+logs_module:
+  enable: true
+  sources:
+  - name: test_name
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint
+      parser:
+        type: invalid_parser_type
+        time_key: time4
+        time_format: "%Y-%m-%dT%H:%M:%S.%L"

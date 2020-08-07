@@ -1,0 +1,15 @@
+logs:
+  syslogs:
+logs_module:
+  enable: true
+  sources:
+  - name: test_name
+    type: file
+    tcp_source_config:
+      port: 123
+      parser:
+        type: regex
+        time_key: time3
+        time_format: "%Y-%m-%dT%H:%M:%S.%L"
+        regex_parser_config:
+          expression: "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*)$"

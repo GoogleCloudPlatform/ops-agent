@@ -1,0 +1,7 @@
+logs:
+  syslogs:
+  - mode: tcp
+    listen: ""
+    port: 1111
+    log_source_id: test_syslog_source_id_tcp
+    parser: syslog-rfc5424

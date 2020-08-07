@@ -1,0 +1,54 @@
+logs:
+  syslogs:
+  - mode: tcp
+    listen: 1.1.1.1
+    port: 1111
+    log_source_id: test_syslog_source_id_tcp
+    parser: syslog-rfc5424
+  - mode: udp
+    listen: 2.2.2.2
+    port: 2222
+    log_source_id: test_syslog_source_id_udp
+    parser: syslog-rfc3164
+logs_module:
+  enable: true
+  sources:
+  - name: test_file1
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint1
+      path: /path/to/log/1/*
+  - name: test_file2
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint2
+      path: /path/to/log/2/*
+      exclude_path: ["/path/to/log/2/acccess.log", "/path/to/log/2/access.*.log"]
+  - name: test_file3_regex
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint3
+      path: /path/to/log/3/*
+      parser:
+        type: regex
+        time_key: time3
+        time_format: "%Y-%m-%dT%H:%M:%S.%L"
+        regex_parser_config:
+          expression: "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*)$"
+  - name: test_file4_json
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint4
+      path: /path/to/log/4/*
+      parser:
+        type: json
+        time_key: time4
+        time_format: "%Y-%m-%dT%H:%M:%S.%L"
+  - name: test_file5_other_optional_config
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint5
+      path: /path/to/log/5/*
+      refresh_interval: 120
+      rotate_wait: 10
+      path_field_name: test_path_field_name

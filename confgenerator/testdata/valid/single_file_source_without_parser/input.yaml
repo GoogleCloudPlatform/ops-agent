@@ -1,0 +1,10 @@
+logs:
+  syslogs:
+logs_module:
+  enable: true
+  sources:
+  - name: test_file1
+    type: file
+    file_source_config:
+      checkpoint_name: test_checkpoint1
+      path: /path/to/log/1/*
