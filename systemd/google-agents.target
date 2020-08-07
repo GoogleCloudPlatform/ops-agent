@@ -1,4 +1,0 @@
-[Unit]
-Description=Google Agents
-Requires=google-master-agent.service google-sub-agent.service
-After=google-master-agent.service google-sub-agent.service

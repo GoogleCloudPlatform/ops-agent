@@ -1,0 +1,4 @@
+[Unit]
+Description=Google Ops Agents
+Requires=ops_agents.service ops_agents_fluent-bit.service
+After=ops_agents.service ops_agents_fluent-bit.service

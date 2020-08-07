@@ -1,0 +1,18 @@
+[Unit]
+Description=Google Ops Agents - Logging Agent
+PartOf=ops_agents.target
+After=ops_agents.service
+Requires=network.target
+After=network.target
+RefuseManualStart=true
+RefuseManualStop=true
+
+[Service]
+RuntimeDirectory=ops_agents_fluent-bit
+Type=simple
+ExecStartPre=/usr/libexec/ops_agents/generate_config -service=fluentbit -in /etc/ops_agents/config.yml
+ExecStart=/opt/ops_agents/fluent-bit/bin/fluent-bit -c $RUNTIME_DIRECTORY/fluent_bit_main.conf -R $RUNTIME_DIRECTORY/fluent_bit_parser.conf
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
