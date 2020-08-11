@@ -1,0 +1,6 @@
+logs:
+  syslogs:
+  - mode: tcp
+    listen: 1.1.1.1
+    port: 1111
+    parser: syslog-rfc5424

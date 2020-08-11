@@ -2,7 +2,6 @@
 package confgenerator
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -18,6 +17,7 @@ type unifiedConfig struct {
 
 type logs struct {
 	Syslogs []*syslog `yaml:"syslogs"`
+	Files   []*file   `yaml:"files"`
 }
 
 type syslog struct {
@@ -27,6 +27,14 @@ type syslog struct {
 	LogSourceID string `yaml:"log_source_id"`
 	LogName     string `yaml:"log_name"`
 	Parser      string `yaml:"parser"`
+}
+
+type file struct {
+	Paths        []string `yaml:"paths"`
+	LogSourceID  string   `yaml:"log_source_id"`
+	LogName      string   `yaml:"log_name"`
+	ExcludePaths []string `yaml:"exclude_paths"`
+	ParserID     string   `yaml:"parser_id"`
 }
 
 type logsModule struct {
@@ -72,10 +80,7 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if unifiedConfig.Logs == nil {
 		return "", "", nil
 	}
-	if unifiedConfig.LogsModule == nil {
-		return "", "", errors.New("logsModule does not exist")
-	}
-	return generateFluentBitConfigs(unifiedConfig.Logs.Syslogs, unifiedConfig.LogsModule.Sources)
+	return generateFluentBitConfigs(unifiedConfig.Logs.Syslogs, unifiedConfig.Logs.Files)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -87,19 +92,23 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(syslogs []*syslog, sources []*source) (string, string, error) {
+func generateFluentBitConfigs(syslogs []*syslog, files []*file) (string, string, error) {
 	fbSyslogs, err := extractFluentBitSyslogs(syslogs)
 	if err != nil {
 		return "", "", err
 	}
-	tails, regexParsers, jsonParsers, err := mapFluentBitConfig(sources)
+	fbTails, err := extractFluentBitTails(files)
 	if err != nil {
 		return "", "", err
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(tails, fbSyslogs)
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs)
 	if err != nil {
 		return "", "", err
 	}
+	// TODO: Implement the parser part when the parser design is finalized.
+	// For now, we don't generate json/regex parsers into parserConfig.
+	jsonParsers := []*conf.ParserJSON{}
+	regexParsers := []*conf.ParserRegex{}
 	parserConfig, err := conf.GenerateFluentBitParserConfig(jsonParsers, regexParsers)
 	if err != nil {
 		return "", "", err
@@ -120,6 +129,9 @@ func extractFluentBitSyslogs(syslogs []*syslog) ([]*conf.Syslog, error) {
 }
 
 func extractFluentBitSyslog(s syslog) (*conf.Syslog, error) {
+	if s.LogSourceID == "" {
+		return nil, fmt.Errorf(`syslog cannot have empty log_source_id`)
+	}
 	fbTail := conf.Syslog{
 		Tag:    s.LogSourceID,
 		Listen: s.Listen,
@@ -146,19 +158,9 @@ func extractFluentBitSyslog(s syslog) (*conf.Syslog, error) {
 	return &fbTail, nil
 }
 
-func mapFluentBitConfig(sources []*source) ([]*conf.Tail, []*conf.ParserRegex, []*conf.ParserJSON, error) {
-	tails, err := extractFluentBitTails(sources)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	regexParsers := extractFluentBitRegexParsers(sources)
-	jsonParsers := extractFluentBitJSONParsers(sources)
-	return tails, regexParsers, jsonParsers, nil
-}
-
-func extractFluentBitTails(sources []*source) ([]*conf.Tail, error) {
+func extractFluentBitTails(files []*file) ([]*conf.Tail, error) {
 	fbTails := []*conf.Tail{}
-	for _, s := range sources {
+	for _, s := range files {
 		f, err := extractFluentBitTail(*s)
 		if err != nil {
 			return nil, err
@@ -168,108 +170,27 @@ func extractFluentBitTails(sources []*source) ([]*conf.Tail, error) {
 	return fbTails, nil
 }
 
-func parserName(sourceType string, sourceName string, parserType string) string {
-	return fmt.Sprintf("%s_%s_%s", sourceType, sourceName, parserType)
-}
-
-func extractFluentBitTail(s source) (*conf.Tail, error) {
-	if s.Type != "file" {
-		return nil, fmt.Errorf("source type %q is not allowed", s.Type)
+func extractFluentBitTail(f file) (*conf.Tail, error) {
+	if f.LogSourceID == "" {
+		return nil, fmt.Errorf(`file cannot have empty log_source_id`)
 	}
-	c := s.FileSourceConfig
-	if c == nil {
-		return nil, fmt.Errorf("file type source %q should have file_source_config", s.Name)
-	}
-	rotateWait := uint64(5)
-	if c.RotateWait != 0 {
-		rotateWait = c.RotateWait
-	}
-	refreshInterval := uint64(60)
-	if c.RefreshInterval != 0 {
-		refreshInterval = c.RefreshInterval
+	if len(f.Paths) == 0 {
+		return nil, fmt.Errorf(`file LogSourceID=%q should have the at least one paths specified`, f.LogSourceID)
 	}
 	fbTail := conf.Tail{
-		Tag:             s.Name,
-		Path:            c.Path,
-		DB:              c.CheckpointName,
-		ExcludePath:     strings.Join(c.ExcludePath, ","),
-		RotateWait:      rotateWait,
-		RefreshInterval: refreshInterval,
-		PathKey:         c.PathFieldName,
+		Tag:  f.LogSourceID,
+		DB:   f.LogSourceID,
+		Path: strings.Join(f.Paths, ","),
 	}
-	if c.Parser != nil {
-		var parser string
-		switch p := c.Parser.Type; p {
-		case "json", "regex":
-			parser = parserName(s.Type, s.Name, p)
-		case "":
-			// no parser is specified, leave the parser as empty string.
-		default:
-			return nil, fmt.Errorf("parser type %q is not allowed", p)
-		}
-		fbTail.Parser = parser
+
+	if len(f.ExcludePaths) != 0 {
+		fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
+	}
+	if f.LogName != "" {
+		fbTail.Tag = f.LogName
+	}
+	if f.ParserID != "" {
+		fbTail.Parser = f.ParserID
 	}
 	return &fbTail, nil
-}
-
-func extractFluentBitRegexParsers(sources []*source) []*conf.ParserRegex {
-	fbRegexParsers := []*conf.ParserRegex{}
-	for _, s := range sources {
-		if parser, ok := extractFluentBitRegexParser(*s); ok {
-			fbRegexParsers = append(fbRegexParsers, parser)
-		}
-	}
-	return fbRegexParsers
-}
-
-func extractFluentBitRegexParser(s source) (*conf.ParserRegex, bool) {
-	c := s.FileSourceConfig
-	if c == nil {
-		return nil, false
-	}
-	p := c.Parser
-	if p == nil {
-		return nil, false
-	}
-	if s.Type != "file" || p.Type != "regex" || p.RegexParserConfig == nil {
-		return nil, false
-	}
-	parser := conf.ParserRegex{
-		Name:       parserName(s.Type, s.Name, p.Type),
-		Regex:      p.RegexParserConfig.Expression,
-		TimeKey:    p.TimeKey,
-		TimeFormat: p.TimeFormat,
-	}
-	return &parser, true
-}
-
-func extractFluentBitJSONParsers(sources []*source) []*conf.ParserJSON {
-	fbJSONParsers := []*conf.ParserJSON{}
-	for _, s := range sources {
-		if parser, ok := extractFluentBitJSONParser(*s); ok {
-			fbJSONParsers = append(fbJSONParsers, parser)
-		}
-	}
-	return fbJSONParsers
-}
-
-func extractFluentBitJSONParser(s source) (*conf.ParserJSON, bool) {
-	c := s.FileSourceConfig
-	if c == nil {
-		return nil, false
-	}
-	p := c.Parser
-	if p == nil {
-		return nil, false
-	}
-	if s.Type != "file" || p.Type != "json" {
-		return nil, false
-	}
-
-	parser := conf.ParserJSON{
-		Name:       parserName(s.Type, s.Name, p.Type),
-		TimeKey:    p.TimeKey,
-		TimeFormat: p.TimeFormat,
-	}
-	return &parser, true
 }

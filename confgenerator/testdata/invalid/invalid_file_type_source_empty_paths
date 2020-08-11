@@ -1,0 +1,3 @@
+logs:
+  files:
+  - log_source_id: test_file_source_id

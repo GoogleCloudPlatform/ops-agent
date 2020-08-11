@@ -1,9 +1,0 @@
-logs:
-  syslogs:
-logs_module:
-  enable: true
-  sources:
-  - name: test_name
-    type: invalid_source_type
-    file_source_config:
-      checkpoint_name: test_checkpoint_name

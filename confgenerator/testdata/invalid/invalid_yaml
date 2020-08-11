@@ -1,4 +1,2 @@
 logs:
-  syslogs:
-logs_module:
-  a: "b"c
+  files: "b"c

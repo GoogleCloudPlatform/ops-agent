@@ -78,16 +78,18 @@ const (
 
 	tailConf = `[INPUT]
     Name tail
-    Path {{.Path}}
     DB {{.DB}}
+    Path {{.Path}}
     Tag {{.Tag}}
-    Refresh_Interval {{.RefreshInterval}}
-    Rotate_Wait {{.RotateWait}}
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
+    Refresh_Interval 60
+    Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
 {{- if (ne .ExcludePath "")}}
     Exclude_Path {{.ExcludePath}}
-{{- end}}
-{{- if (ne .PathKey "")}}
-    Path_Key {{.PathKey}}
 {{- end}}
 {{- if (ne .Parser "")}}
     Parser {{.Parser}}
@@ -256,14 +258,11 @@ func (p ParserRegex) renderConfig() (string, error) {
 
 // A Tail represents the configuration data for fluentBit's tail input plugin.
 type Tail struct {
-	Tag             string
-	Path            string
-	PathKey         string
-	ExcludePath     string
-	Parser          string
-	DB              string
-	RefreshInterval uint64 // in seconds
-	RotateWait      uint64 // in seconds
+	Tag         string
+	Path        string
+	ExcludePath string
+	Parser      string
+	DB          string
 }
 
 // renderConfig generates a section for configure fluentBit tail parser.
@@ -284,18 +283,6 @@ func (t Tail) renderConfig() (string, error) {
 		return "", emptyFieldErr{
 			plugin: "tail",
 			field:  "DB",
-		}
-	}
-	if t.RefreshInterval <= 0 {
-		return "", nonPositiveFieldErr{
-			plugin: "tail",
-			field:  "RefreshInterval",
-		}
-	}
-	if t.RotateWait <= 0 {
-		return "", nonPositiveFieldErr{
-			plugin: "tail",
-			field:  "RotateWait",
 		}
 	}
 	var renderedTailConfig strings.Builder

@@ -1,0 +1,4 @@
+logs:
+  files:
+  - paths:
+    - /logs/path/1

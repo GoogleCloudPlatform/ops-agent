@@ -194,107 +194,106 @@ func TestTail(t *testing.T) {
 	}{
 		{
 			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				RefreshInterval: 60,
-				RotateWait:      5,
+				Tag:  "test_tag",
+				DB:   "test_db",
+				Path: "test_path",
 			},
 			expectedTailConfig: `[INPUT]
     Name tail
-    Path test_path
     DB test_db
-    Tag test_tag
-    Refresh_Interval 60
-    Rotate_Wait 5`,
-		},
-		{
-			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				RefreshInterval: 60,
-				RotateWait:      5,
-			},
-			expectedTailConfig: `[INPUT]
-    Name tail
     Path test_path
-    DB test_db
     Tag test_tag
-    Refresh_Interval 60
-    Rotate_Wait 5`,
-		},
-		{
-			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				Parser:          "test_parser",
-				RefreshInterval: 60,
-				RotateWait:      5,
-			},
-			expectedTailConfig: `[INPUT]
-    Name tail
-    Path test_path
-    DB test_db
-    Tag test_tag
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
     Refresh_Interval 60
     Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log`,
+		},
+		{
+			tail: Tail{
+				Tag:    "test_tag",
+				DB:     "test_db",
+				Path:   "test_path",
+				Parser: "test_parser",
+			},
+			expectedTailConfig: `[INPUT]
+    Name tail
+    DB test_db
+    Path test_path
+    Tag test_tag
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
+    Refresh_Interval 60
+    Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
     Parser test_parser`,
 		},
 		{
 			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				ExcludePath:     "test_exclude_path",
-				RefreshInterval: 60,
-				RotateWait:      5,
+				Tag:         "test_tag",
+				DB:          "test_db",
+				Path:        "test_path",
+				ExcludePath: "test_exclude_path",
 			},
 			expectedTailConfig: `[INPUT]
     Name tail
-    Path test_path
     DB test_db
+    Path test_path
     Tag test_tag
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
     Refresh_Interval 60
     Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
     Exclude_Path test_exclude_path`,
 		},
 		{
 			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				ExcludePath:     "test_exclude_path/file1,test_excloud_path/file2",
-				RefreshInterval: 60,
-				RotateWait:      5,
+				Tag:         "test_tag",
+				DB:          "test_db",
+				Path:        "test_path",
+				ExcludePath: "test_exclude_path/file1,test_excloud_path/file2",
 			},
 			expectedTailConfig: `[INPUT]
     Name tail
-    Path test_path
     DB test_db
+    Path test_path
     Tag test_tag
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
     Refresh_Interval 60
     Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
     Exclude_Path test_exclude_path/file1,test_excloud_path/file2`,
 		},
 		{
 			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				ExcludePath:     "test_exclude_path",
-				Parser:          "test_parser",
-				RefreshInterval: 60,
-				RotateWait:      5,
+				Tag:         "test_tag",
+				DB:          "test_db",
+				Path:        "test_path",
+				ExcludePath: "test_exclude_path",
+				Parser:      "test_parser",
 			},
 			expectedTailConfig: `[INPUT]
     Name tail
-    Path test_path
     DB test_db
+    Path test_path
     Tag test_tag
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
     Refresh_Interval 60
     Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
     Exclude_Path test_exclude_path
     Parser test_parser`,
 		},
@@ -331,33 +330,6 @@ func TestTailErrors(t *testing.T) {
 			tail: Tail{
 				Tag: "test_tag",
 				DB:  "test_db",
-			},
-		},
-		{
-			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				RefreshInterval: 0,
-				RotateWait:      5,
-			},
-		},
-		{
-			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				RefreshInterval: 0,
-				RotateWait:      5,
-			},
-		},
-		{
-			tail: Tail{
-				Tag:             "test_tag",
-				DB:              "test_db",
-				Path:            "test_path",
-				RefreshInterval: 60,
-				RotateWait:      0,
 			},
 		},
 	}
@@ -491,17 +463,13 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		{
 			name: "multiple tail and syslog plugins",
 			tails: []*Tail{{
-				Tag:             "test_tag1",
-				DB:              "test_db1",
-				Path:            "test_path1",
-				RefreshInterval: 60,
-				RotateWait:      5,
+				Tag:  "test_tag1",
+				DB:   "test_db1",
+				Path: "test_path1",
 			}, {
-				Tag:             "test_tag2",
-				DB:              "test_db2",
-				Path:            "test_path2",
-				RefreshInterval: 120,
-				RotateWait:      10,
+				Tag:  "test_tag2",
+				DB:   "test_db2",
+				Path: "test_path2",
 			}},
 			syslogs: []*Syslog{{
 				Mode:   "tcp",
@@ -532,19 +500,29 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 
 [INPUT]
     Name tail
-    Path test_path1
     DB test_db1
+    Path test_path1
     Tag test_tag1
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
     Refresh_Interval 60
     Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
 
 [INPUT]
     Name tail
-    Path test_path2
     DB test_db2
+    Path test_path2
     Tag test_tag2
-    Refresh_Interval 120
-    Rotate_Wait 10
+    Buffer_Chunk_Size 32k
+    Buffer_Max_Size 32k
+    DB.Sync Full
+    Refresh_Interval 60
+    Rotate_Wait 5
+    Skip_Long_Lines On
+    Key log
 
 [INPUT]
     Name syslog
