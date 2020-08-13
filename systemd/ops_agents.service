@@ -1,11 +1,9 @@
 [Unit]
-Description=Google Master Agent
+Description=Google Ops Agents Noop
 PartOf=google-agents.target
 RefuseManualStart=true
 RefuseManualStop=true
 
 [Service]
-Type=notify
-ExecStart=/home/dbtucker/master/master
-Restart=always
-NotifyAccess=all
+Type=oneshot
+ExecStart=/bin/true
