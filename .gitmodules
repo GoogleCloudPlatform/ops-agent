@@ -1,3 +1,6 @@
 [submodule "vendor/fluent-bit"]
 	path = vendor/fluent-bit
 	url = https://github.com/fluent/fluent-bit.git
+[submodule "vendor/collectd"]
+	path = vendor/collectd
+	url = https://github.com/Stackdriver/collectd

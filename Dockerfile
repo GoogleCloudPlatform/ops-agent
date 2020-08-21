@@ -19,6 +19,7 @@ FROM debian:buster AS debian
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
+    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
     build-essential cmake bison flex file libsystemd-dev
 
 COPY . /work

@@ -20,12 +20,70 @@
 prefix=/opt/google-ops-agent
 sysconfdir=/etc
 systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
+# TODO: Get version number from packaging
+if [ -z "$version" ]; then
+  version=0.1
+fi
 
 set -x -e
 
 if [ -z "$DESTDIR" ]; then
   DESTDIR=$(mktemp -d)
 fi
+
+function build_collectd() {
+  cd vendor/collectd
+  autoreconf -f -i
+  ./configure --prefix=$prefix/lib/collectd \
+    --with-useragent="stackdriver_ops_agent_collectd/$version" \
+    --with-data-max-name-len=256 \
+    --disable-all-plugins \
+    --disable-static \
+    --disable-perl --without-libperl  --without-perl-bindings \
+    --enable-cpu \
+    --enable-df \
+    --enable-disk \
+    --enable-load \
+    --enable-logfile \
+    --enable-logging-metrics \
+    --enable-memory \
+    --enable-swap \
+    --enable-syslog \
+    --enable-interface \
+    --enable-tcpconns \
+    --enable-write_http \
+    --enable-aggregation \
+    --enable-csv \
+    --enable-nginx \
+    --enable-apache \
+    --enable-memcached \
+    --enable-mysql \
+    --enable-protocols \
+    --enable-plugin_mem \
+    --enable-processes \
+    --enable-python \
+    --enable-ntpd \
+    --enable-nfs \
+    --enable-stackdriver_agent \
+    --enable-exec \
+    --enable-tail \
+    --enable-statsd \
+    --enable-network \
+    --enable-match_regex --enable-target_set \
+    --enable-target_replace --enable-target_scale \
+    --enable-match_throttle_metadata_keys \
+    --enable-write_log \
+    --enable-unixsock \
+    --enable-java --with-java=/usr/lib/jvm/default-java \
+    --enable-redis --with-libhiredis \
+    --enable-curl \
+    --enable-curl_json \
+    --enable-write_gcm \
+    --enable-debug \
+    --enable-docker
+  make -j8
+  make DESTDIR="$DESTDIR" install
+}
 
 function build_fluentbit() {
   cd vendor/fluent-bit
@@ -51,6 +109,7 @@ function build_systemd() {
   done
 }
 
+(build_collectd)
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)
