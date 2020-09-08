@@ -1,4 +1,5 @@
-logs:
-  files:
-  - paths:
-    - /logs/path/1
+logging:
+  input:
+    files:
+    - paths:
+      - /logs/path/1

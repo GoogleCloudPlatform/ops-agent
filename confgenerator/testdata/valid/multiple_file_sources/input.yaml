@@ -12,31 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-logs:
-  files:
-  - log_source_id: log_source_id1
-    paths:
-    - /path/to/log/1/*
-  - log_source_id: log_source_id2
-    paths:
-    - /path/to/log/2/a
-    - /path/to/log/2/b
-  - log_source_id: log_source_id3
-    paths:
-    - /path/to/log/3/*
-    exclude_paths:
-    - /path/to/log/3/exclude
-  - log_source_id: log_source_id4
-    paths:
-    - /path/to/log/4/*
-    exclude_paths:
-    - /path/to/log/4/exclude_a
-    - /path/to/log/4/exclude_b
-  - log_source_id: log_source_id5
-    paths:
-    - /path/to/log/5/*
-    log_name: log_name5
-  - log_source_id: log_source_id6
-    paths:
-    - /path/to/log/6/*
-    parser_id: parser_id6
+logging:
+  input:
+    files:
+    - log_source_id: log_source_id1
+      paths:
+      - /path/to/log/1/*
+    - log_source_id: log_source_id2
+      paths:
+      - /path/to/log/2/a
+      - /path/to/log/2/b
+    - log_source_id: log_source_id3
+      paths:
+      - /path/to/log/3/*
+      exclude_paths:
+      - /path/to/log/3/exclude
+    - log_source_id: log_source_id4
+      paths:
+      - /path/to/log/4/*
+      exclude_paths:
+      - /path/to/log/4/exclude_a
+      - /path/to/log/4/exclude_b
+    - log_source_id: log_source_id5
+      paths:
+      - /path/to/log/5/*
+      parser_id: parser_id5

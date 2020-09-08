@@ -12,34 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-logs:
-  syslogs:
-  - mode: tcp
-    listen: 1.1.1.1
-    port: 1111
-    log_source_id: test_syslog_source_id_tcp
-    parser: syslog-rfc5424
-  - mode: udp
-    listen: 2.2.2.2
-    port: 2222
-    log_source_id: test_syslog_source_id_udp
-    parser: syslog-rfc3164
-  files:
-  - log_source_id: log_source_id1
-    paths:
-    - /path/to/log/1/a/*
-    - /path/to/log/1/b/*
-    exclude_paths:
-    - /path/to/log/1/a/exclude_a
-    - /path/to/log/1/b/exclude_b
-    parser_id: parser_1
-    log_name: log_name1
-  - log_source_id: log_source_id2
-    paths:
-    - /path/to/log/2/a/*
-    - /path/to/log/2/b/*
-    exclude_paths:
-    - /path/to/log/2/a/exclude_a
-    - /path/to/log/2/b/exclude_b
-    log_name: log_name2
-    parser_id: parser_2
+logging:
+  input:
+    files:
+    - log_source_id: log_source_id1
+      paths:
+      - /path/to/log/1/a/*
+      - /path/to/log/1/b/*
+      exclude_paths:
+      - /path/to/log/1/a/exclude_a
+      - /path/to/log/1/b/exclude_b
+      parser_id: parser_1
+    - log_source_id: log_source_id2
+      paths:
+      - /path/to/log/2/a/*
+      - /path/to/log/2/b/*
+      exclude_paths:
+      - /path/to/log/2/a/exclude_a
+      - /path/to/log/2/b/exclude_b
+      parser_id: parser_2
+    syslog:
+    - mode: tcp
+      listen: 1.1.1.1
+      port: 1111
+      log_source_id: test_syslog_source_id_tcp
+      parser: syslog-rfc5424
+    - mode: udp
+      listen: 2.2.2.2
+      port: 2222
+      log_source_id: test_syslog_source_id_udp
+      parser: syslog-rfc3164

@@ -25,13 +25,16 @@ import (
 )
 
 type unifiedConfig struct {
-	Logs       *logs       `yaml:"logs"`
-	LogsModule *logsModule `yaml:"logs_module"`
+	Logging *logging `yaml:"logging"`
 }
 
-type logs struct {
-	Syslogs []*syslog `yaml:"syslogs"`
+type logging struct {
+	Input *input `yaml:"input"`
+}
+
+type input struct {
 	Files   []*file   `yaml:"files"`
+	Syslog  []*syslog `yaml:"syslog"`
 }
 
 type syslog struct {
@@ -39,37 +42,14 @@ type syslog struct {
 	Listen      string `yaml:"listen"`
 	Port        uint16 `yaml:"port"`
 	LogSourceID string `yaml:"log_source_id"`
-	LogName     string `yaml:"log_name"`
 	Parser      string `yaml:"parser"`
 }
 
 type file struct {
-	Paths        []string `yaml:"paths"`
-	LogSourceID  string   `yaml:"log_source_id"`
-	LogName      string   `yaml:"log_name"`
-	ExcludePaths []string `yaml:"exclude_paths"`
-	ParserID     string   `yaml:"parser_id"`
-}
-
-type logsModule struct {
-	Enable  bool      `yaml:"enable"`
-	Sources []*source `yaml:"sources"`
-}
-
-type source struct {
-	Name             string            `yaml:"name"`
-	Type             string            `yaml:"type"`
-	FileSourceConfig *fileSourceConfig `yaml:"file_source_config"`
-}
-
-type fileSourceConfig struct {
-	Path            string   `yaml:"path"`
-	CheckpointName  string   `yaml:"checkpoint_name"`
-	ExcludePath     []string `yaml:"exclude_path"`
-	Parser          *parser  `yaml:"parser"`
-	RefreshInterval uint64   `yaml:"refresh_interval"` // in seconds
-	RotateWait      uint64   `yaml:"rotate_wait"`      // in seconds
-	PathFieldName   string   `yaml:"path_field_name"`
+	Paths         []string `yaml:"paths"`
+	LogSourceID   string   `yaml:"log_source_id"`
+	ExcludePaths []string  `yaml:"exclude_paths"`
+	ParserID      string   `yaml:"parser_id"`
 }
 
 type parser struct {
@@ -91,10 +71,10 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if err != nil {
 		return "", "", err
 	}
-	if unifiedConfig.Logs == nil {
+	if unifiedConfig.Logging == nil || unifiedConfig.Logging.Input == nil {
 		return "", "", nil
 	}
-	return generateFluentBitConfigs(unifiedConfig.Logs.Syslogs, unifiedConfig.Logs.Files)
+	return generateFluentBitConfigs(unifiedConfig.Logging.Input.Syslog, unifiedConfig.Logging.Input.Files)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -166,9 +146,6 @@ func extractFluentBitSyslog(s syslog) (*conf.Syslog, error) {
 	default:
 		return nil, fmt.Errorf(`Syslog LogSourceID=%q should have the parser as one of the \"syslog-rfc5424\", \"syslog-rfc3164\"`, s.LogSourceID)
 	}
-	if s.LogName != "" {
-		fbTail.Tag = s.LogName
-	}
 	return &fbTail, nil
 }
 
@@ -199,9 +176,6 @@ func extractFluentBitTail(f file) (*conf.Tail, error) {
 
 	if len(f.ExcludePaths) != 0 {
 		fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
-	}
-	if f.LogName != "" {
-		fbTail.Tag = f.LogName
 	}
 	if f.ParserID != "" {
 		fbTail.Parser = f.ParserID
