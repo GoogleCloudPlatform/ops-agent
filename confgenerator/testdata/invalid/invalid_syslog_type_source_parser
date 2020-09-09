@@ -1,7 +1,8 @@
-logs:
-  syslogs:
-  - mode: tcp
-    listen: 1.1.1.1
-    port: 1111
-    log_source_id: test_syslog_source_id_tcp
-    parser: invalid_parser
+logging:
+  input:
+    syslog:
+    - mode: tcp
+      listen: 1.1.1.1
+      port: 1111
+      log_source_id: test_syslog_source_id_tcp
+      parser: invalid_parser

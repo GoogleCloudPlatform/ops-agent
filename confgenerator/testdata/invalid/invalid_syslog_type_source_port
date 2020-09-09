@@ -1,7 +1,8 @@
-logs:
-  syslogs:
-  - mode: tcp
-    listen: 1.1.1.1
-    port: 0
-    log_source_id: test_syslog_source_id_tcp
-    parser: syslog-rfc5424
+logging:
+  input:
+    syslog:
+    - mode: tcp
+      listen: 1.1.1.1
+      port: 0
+      log_source_id: test_syslog_source_id_tcp
+      parser: syslog-rfc5424
