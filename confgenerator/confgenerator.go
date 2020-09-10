@@ -29,12 +29,32 @@ type unifiedConfig struct {
 }
 
 type logging struct {
-	Input *input `yaml:"input"`
+	Input      *input       `yaml:"input"`
+	Processors []*processor `yaml:"processors"`
 }
 
 type input struct {
-	Files   []*file   `yaml:"files"`
-	Syslog  []*syslog `yaml:"syslog"`
+	Files  []*file   `yaml:"files"`
+	Syslog []*syslog `yaml:"syslog"`
+}
+
+type processor struct {
+	ID         string      `yaml:"id"`
+	ParseJSON  *parseJSON  `yaml:"parse_json"`
+	ParseRegex *parseRegex `yaml:"parse_regex"`
+}
+
+type parseJSON struct {
+	Field      string `yaml:"field"`
+	TimeKey    string `yaml:"time_key"`
+	TimeFormat string `yaml:"time_format"`
+}
+
+type parseRegex struct {
+	Field      string `yaml:"field"`
+	Regex      string `yaml:"regex"`
+	TimeKey    string `yaml:"time_key"`
+	TimeFormat string `yaml:"time_format"`
 }
 
 type syslog struct {
@@ -46,10 +66,10 @@ type syslog struct {
 }
 
 type file struct {
-	Paths         []string `yaml:"paths"`
-	LogSourceID   string   `yaml:"log_source_id"`
-	ExcludePaths []string  `yaml:"exclude_paths"`
-	ParserID      string   `yaml:"parser_id"`
+	Paths        []string `yaml:"paths"`
+	LogSourceID  string   `yaml:"log_source_id"`
+	ExcludePaths []string `yaml:"exclude_paths"`
+	ParserID     string   `yaml:"parser_id"`
 }
 
 type parser struct {
@@ -71,10 +91,13 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if err != nil {
 		return "", "", err
 	}
-	if unifiedConfig.Logging == nil || unifiedConfig.Logging.Input == nil {
+	if unifiedConfig.Logging == nil {
 		return "", "", nil
 	}
-	return generateFluentBitConfigs(unifiedConfig.Logging.Input.Syslog, unifiedConfig.Logging.Input.Files)
+	if unifiedConfig.Logging.Input == nil {
+		return "", "", nil
+	}
+	return generateFluentBitConfigs(unifiedConfig.Logging.Input.Syslog, unifiedConfig.Logging.Input.Files, unifiedConfig.Logging.Processors)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -86,7 +109,7 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(syslogs []*syslog, files []*file) (string, string, error) {
+func generateFluentBitConfigs(syslogs []*syslog, files []*file, processors []*processor) (string, string, error) {
 	fbSyslogs, err := extractFluentBitSyslogs(syslogs)
 	if err != nil {
 		return "", "", err
@@ -99,10 +122,10 @@ func generateFluentBitConfigs(syslogs []*syslog, files []*file) (string, string,
 	if err != nil {
 		return "", "", err
 	}
-	// TODO: Implement the parser part when the parser design is finalized.
-	// For now, we don't generate json/regex parsers into parserConfig.
-	jsonParsers := []*conf.ParserJSON{}
-	regexParsers := []*conf.ParserRegex{}
+	jsonParsers, regexParsers, err := extractFluentBitParsers(processors)
+	if err != nil {
+		return "", "", err
+	}
 	parserConfig, err := conf.GenerateFluentBitParserConfig(jsonParsers, regexParsers)
 	if err != nil {
 		return "", "", err
@@ -173,7 +196,6 @@ func extractFluentBitTail(f file) (*conf.Tail, error) {
 		DB:   f.LogSourceID,
 		Path: strings.Join(f.Paths, ","),
 	}
-
 	if len(f.ExcludePaths) != 0 {
 		fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
 	}
@@ -181,4 +203,53 @@ func extractFluentBitTail(f file) (*conf.Tail, error) {
 		fbTail.Parser = f.ParserID
 	}
 	return &fbTail, nil
+}
+
+func extractFluentBitParsers(processors []*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+	fbJSONParsers := []*conf.ParserJSON{}
+	fbRegexParsers := []*conf.ParserRegex{}
+	for _, p := range processors {
+		err := validateProcessor(*p)
+		if err != nil {
+			return nil, nil, err
+		}
+		if p.ParseJSON != nil {
+			fbJSONParser := conf.ParserJSON{
+				Name:       p.ID,
+				TimeKey:    p.ParseJSON.TimeKey,
+				TimeFormat: p.ParseJSON.TimeFormat,
+			}
+			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
+		}
+		if p.ParseRegex != nil {
+			fbRegexParser := conf.ParserRegex{
+				Name:       p.ID,
+				Regex:      p.ParseRegex.Regex,
+				TimeKey:    p.ParseRegex.TimeKey,
+				TimeFormat: p.ParseRegex.TimeFormat,
+			}
+			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
+		}
+	}
+	return fbJSONParsers, fbRegexParsers, nil
+}
+
+func validateProcessor(p processor) error {
+	if p.ID == "" {
+		return fmt.Errorf(`processor cannot have empty id`)
+	}
+	typeCount := 0
+	if p.ParseJSON != nil {
+		typeCount += 1
+	}
+	if p.ParseRegex != nil {
+		typeCount += 1
+	}
+	if typeCount == 0 {
+		return fmt.Errorf(`processor ID=%q should have one of the fields \"parse_json\", \"parse_regex\"`, p.ID)
+	}
+	if typeCount > 1 {
+		return fmt.Errorf(`processor ID=%q should have only one of the fields \"parse_json\", \"parse_regex\"`, p.ID)
+	}
+	return nil
 }

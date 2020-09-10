@@ -1,0 +1,68 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  input:
+    files:
+    - log_source_id: log_source_id1
+      paths:
+      - /path/to/log/1/a/*
+      - /path/to/log/1/b/*
+      exclude_paths:
+      - /path/to/log/1/a/exclude_a
+      - /path/to/log/1/b/exclude_b
+      parser_id: parse_json_1
+    - log_source_id: log_source_id2
+      paths:
+      - /path/to/log/2/a/*
+      - /path/to/log/2/b/*
+      exclude_paths:
+      - /path/to/log/2/a/exclude_a
+      - /path/to/log/2/b/exclude_b
+      parser_id: parse_regex_1
+    syslog:
+    - mode: tcp
+      listen: 1.1.1.1
+      port: 1111
+      log_source_id: test_syslog_source_id_tcp
+      parser: syslog-rfc5424
+    - mode: udp
+      listen: 2.2.2.2
+      port: 2222
+      log_source_id: test_syslog_source_id_udp
+      parser: syslog-rfc3164
+  processors:
+    - id: parse_json_1
+      parse_json:
+        time_key: time_key_1
+        time_format: time_format_1
+    - id: parse_json_2
+      parse_json:
+        time_key: time_key_2
+    - id: parse_json_3
+      parse_json:
+        time_format: time_format_3
+    - id: parse_regex_1
+      parse_regex:
+        regex: regex_pattern_1
+        time_key: time_key_1
+        time_format: time_format_1
+    - id: parse_regex_2
+      parse_regex:
+        regex: regex_pattern_2
+        time_key: time_key_2
+    - id: parse_regex_3
+      parse_regex:
+        regex: regex_pattern_3
+        time_format: time_format_3
