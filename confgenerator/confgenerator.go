@@ -29,13 +29,15 @@ type unifiedConfig struct {
 }
 
 type logging struct {
-	Input      *input       `yaml:"input"`
+	Input      []*input     `yaml:"input"`
 	Processors []*processor `yaml:"processors"`
 }
 
 type input struct {
-	Files  []*file   `yaml:"files"`
-	Syslog []*syslog `yaml:"syslog"`
+	LogSourceID  string   `yaml:"log_source_id"`
+	File         *file    `yaml:"file"`
+	Syslog       *syslog  `yaml:"syslog"`
+	ProcessorIDs []string `yaml:"processors"`
 }
 
 type processor struct {
@@ -58,16 +60,13 @@ type parseRegex struct {
 }
 
 type syslog struct {
-	Mode        string `yaml:"mode"`
-	Listen      string `yaml:"listen"`
-	Port        uint16 `yaml:"port"`
-	LogSourceID string `yaml:"log_source_id"`
-	Parser      string `yaml:"parser"`
+	Mode   string `yaml:"mode"`
+	Listen string `yaml:"listen"`
+	Port   uint16 `yaml:"port"`
 }
 
 type file struct {
 	Paths        []string `yaml:"paths"`
-	LogSourceID  string   `yaml:"log_source_id"`
 	ExcludePaths []string `yaml:"exclude_paths"`
 	ParserID     string   `yaml:"parser_id"`
 }
@@ -97,7 +96,7 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if unifiedConfig.Logging.Input == nil {
 		return "", "", nil
 	}
-	return generateFluentBitConfigs(unifiedConfig.Logging.Input.Syslog, unifiedConfig.Logging.Input.Files, unifiedConfig.Logging.Processors)
+	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -109,16 +108,20 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(syslogs []*syslog, files []*file, processors []*processor) (string, string, error) {
-	fbSyslogs, err := extractFluentBitSyslogs(syslogs)
+func generateFluentBitConfigs(inputs []*input, processors []*processor) (string, string, error) {
+	fbSyslogs, err := extractFluentBitSyslogs(inputs)
 	if err != nil {
 		return "", "", err
 	}
-	fbTails, err := extractFluentBitTails(files)
+	fbTails, err := extractFluentBitTails(inputs)
 	if err != nil {
 		return "", "", err
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs)
+	fbFilterParsers, err := extractFluentBitFilters(inputs, processors)
+	if err != nil {
+		return "", "", err
+	}
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers)
 	if err != nil {
 		return "", "", err
 	}
@@ -133,76 +136,119 @@ func generateFluentBitConfigs(syslogs []*syslog, files []*file, processors []*pr
 	return mainConfig, parserConfig, nil
 }
 
-func extractFluentBitSyslogs(syslogs []*syslog) ([]*conf.Syslog, error) {
+func extractFluentBitSyslogs(inputs []*input) ([]*conf.Syslog, error) {
 	fbSyslogs := []*conf.Syslog{}
-	for _, s := range syslogs {
-		fbSyslog, err := extractFluentBitSyslog(*s)
+	for _, i := range inputs {
+		fbSyslog, err := extractFluentBitSyslog(*i)
 		if err != nil {
 			return nil, err
+		}
+		if fbSyslog == nil {
+			continue
 		}
 		fbSyslogs = append(fbSyslogs, fbSyslog)
 	}
 	return fbSyslogs, nil
 }
 
-func extractFluentBitSyslog(s syslog) (*conf.Syslog, error) {
-	if s.LogSourceID == "" {
+func extractFluentBitSyslog(i input) (*conf.Syslog, error) {
+	if i.Syslog == nil {
+		return nil, nil
+	}
+	if i.LogSourceID == "" {
 		return nil, fmt.Errorf(`syslog cannot have empty log_source_id`)
 	}
-	fbTail := conf.Syslog{
-		Tag:    s.LogSourceID,
-		Listen: s.Listen,
-		Port:   s.Port,
+	fbSyslog := conf.Syslog{
+		Tag:    i.LogSourceID,
+		Listen: i.Syslog.Listen,
+		Port:   i.Syslog.Port,
 	}
-	switch m := s.Mode; m {
+	switch m := i.Syslog.Mode; m {
 	case "tcp", "udp":
-		fbTail.Mode = m
+		fbSyslog.Mode = m
 	case "unix_tcp", "unix_udp":
 		// TODO: pending decision on setting up unix_tcp, unix_udp
 		fallthrough
 	default:
-		return nil, fmt.Errorf(`syslog LogSourceID=%q should have the mode as one of the \"tcp\", \"udp\"`, s.LogSourceID)
+		return nil, fmt.Errorf(`syslog LogSourceID=%q should have the mode as one of the \"tcp\", \"udp\"`, i.LogSourceID)
 	}
-	switch p := s.Parser; p {
-	case "syslog-rfc5424", "syslog-rfc3164":
-		fbTail.Parser = p
-	default:
-		return nil, fmt.Errorf(`Syslog LogSourceID=%q should have the parser as one of the \"syslog-rfc5424\", \"syslog-rfc3164\"`, s.LogSourceID)
-	}
-	return &fbTail, nil
+	return &fbSyslog, nil
 }
 
-func extractFluentBitTails(files []*file) ([]*conf.Tail, error) {
+func extractFluentBitTails(inputs []*input) ([]*conf.Tail, error) {
 	fbTails := []*conf.Tail{}
-	for _, s := range files {
-		f, err := extractFluentBitTail(*s)
+	for _, i := range inputs {
+		fbTail, err := extractFluentBitTail(*i)
 		if err != nil {
 			return nil, err
 		}
-		fbTails = append(fbTails, f)
+		if fbTail == nil {
+			continue
+		}
+		fbTails = append(fbTails, fbTail)
 	}
 	return fbTails, nil
 }
 
-func extractFluentBitTail(f file) (*conf.Tail, error) {
-	if f.LogSourceID == "" {
+func extractFluentBitTail(i input) (*conf.Tail, error) {
+	if i.File == nil {
+		return nil, nil
+	}
+	if i.LogSourceID == "" {
 		return nil, fmt.Errorf(`file cannot have empty log_source_id`)
 	}
-	if len(f.Paths) == 0 {
-		return nil, fmt.Errorf(`file LogSourceID=%q should have the at least one paths specified`, f.LogSourceID)
+	if len(i.File.Paths) == 0 {
+		return nil, fmt.Errorf(`file LogSourceID=%q should have at least one path specified`, i.LogSourceID)
 	}
 	fbTail := conf.Tail{
-		Tag:  f.LogSourceID,
-		DB:   f.LogSourceID,
-		Path: strings.Join(f.Paths, ","),
+		Tag:  i.LogSourceID,
+		DB:   i.LogSourceID,
+		Path: strings.Join(i.File.Paths, ","),
 	}
-	if len(f.ExcludePaths) != 0 {
-		fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
-	}
-	if f.ParserID != "" {
-		fbTail.Parser = f.ParserID
+	if len(i.File.ExcludePaths) != 0 {
+		fbTail.ExcludePath = strings.Join(i.File.ExcludePaths, ",")
 	}
 	return &fbTail, nil
+}
+
+func extractFluentBitFilters(inputs []*input, processors []*processor) ([]*conf.FilterParser, error) {
+	fbFilterParsers := []*conf.FilterParser{}
+	for _, i := range inputs {
+		if i.LogSourceID == "" {
+			return nil, fmt.Errorf(`input cannot have empty log_source_id`)
+		}
+		for _, inputProcessorID := range i.ProcessorIDs {
+			fbFilterParser := conf.FilterParser{
+				Match:  i.LogSourceID,
+				Parser: inputProcessorID,
+			}
+			switch inputProcessorID {
+			case "apache", "apache2", "apache_error", "mongodb", "nginx", "syslog-rfc3164", "syslog-rfc5424":
+				fbFilterParser.KeyName = "message"
+			}
+			for _, p := range processors {
+				if inputProcessorID != p.ID {
+					continue
+				}
+				if p.ParseJSON != nil {
+					if p.ParseJSON.Field == "" {
+						fbFilterParser.KeyName = "message"
+					}
+					fbFilterParser.KeyName = p.ParseJSON.Field
+					break
+				}
+				if p.ParseRegex != nil {
+					if p.ParseRegex.Field == "" {
+						fbFilterParser.KeyName = "message"
+					}
+					fbFilterParser.KeyName = p.ParseRegex.Field
+					break
+				}
+			}
+			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
+		}
+	}
+	return fbFilterParsers, nil
 }
 
 func extractFluentBitParsers(processors []*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {

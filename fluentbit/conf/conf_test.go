@@ -20,6 +20,60 @@ import (
 	"github.com/kylelemons/godebug/diff"
 )
 
+func TestFilterParser(t *testing.T) {
+	f := FilterParser{
+		Match:   "test_match",
+		KeyName: "test_key_name",
+		Parser:  "test_parser",
+	}
+	want := `[FILTER]
+    Name parser
+    Match test_match
+    Key_Name test_key_name
+    Parser test_parser`
+	got, err := f.renderConfig()
+	if err != nil {
+		t.Errorf("got error: %v, want no error", err)
+		return
+	}
+	if diff := diff.Diff(want, got); diff != "" {
+		t.Errorf("FilterParser %v: FilterParser.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+	}
+}
+
+func TestFilterParserErrors(t *testing.T) {
+	tests := []struct {
+		filterParser FilterParser
+	}{
+		{
+			filterParser: FilterParser{},
+		},
+		{
+			filterParser: FilterParser{
+				Match:   "test_match",
+				KeyName: "test_key_name",
+			},
+		},
+		{
+			filterParser: FilterParser{
+				Match:  "test_match",
+				Parser: "test_parser",
+			},
+		},
+		{
+			filterParser: FilterParser{
+				KeyName: "test_key_name",
+				Parser:  "test_parser",
+			},
+		},
+	}
+	for _, tc := range tests {
+		if _, err := tc.filterParser.renderConfig(); err == nil {
+			t.Errorf("FilterParser %v: FilterParser.renderConfig() succeeded, want error", tc.filterParser)
+		}
+	}
+}
+
 func TestParserJSON(t *testing.T) {
 	tests := []struct {
 		parserJSON         ParserJSON
@@ -223,14 +277,13 @@ func TestTail(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log`,
+    Key message`,
 		},
 		{
 			tail: Tail{
-				Tag:    "test_tag",
-				DB:     "test_db",
-				Path:   "test_path",
-				Parser: "test_parser",
+				Tag:  "test_tag",
+				DB:   "test_db",
+				Path: "test_path",
 			},
 			expectedTailConfig: `[INPUT]
     Name tail
@@ -243,8 +296,7 @@ func TestTail(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
-    Parser test_parser`,
+    Key message`,
 		},
 		{
 			tail: Tail{
@@ -264,7 +316,7 @@ func TestTail(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
+    Key message
     Exclude_Path test_exclude_path`,
 		},
 		{
@@ -285,31 +337,8 @@ func TestTail(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
+    Key message
     Exclude_Path test_exclude_path/file1,test_excloud_path/file2`,
-		},
-		{
-			tail: Tail{
-				Tag:         "test_tag",
-				DB:          "test_db",
-				Path:        "test_path",
-				ExcludePath: "test_exclude_path",
-				Parser:      "test_parser",
-			},
-			expectedTailConfig: `[INPUT]
-    Name tail
-    DB test_db
-    Path test_path
-    Tag test_tag
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key log
-    Exclude_Path test_exclude_path
-    Parser test_parser`,
 		},
 	}
 	for _, tc := range tests {
@@ -364,7 +393,6 @@ func TestSyslog(t *testing.T) {
 				Mode:   "tcp",
 				Listen: "0.0.0.0",
 				Port:   1234,
-				Parser: "syslog-rfc5424",
 				Tag:    "test_tag",
 			},
 			expectedSyslogConfig: `[INPUT]
@@ -373,7 +401,7 @@ func TestSyslog(t *testing.T) {
     Listen 0.0.0.0
     Tag test_tag
     Port 1234
-    Parser syslog-rfc5424`,
+    Parser default_message_parser`,
 		},
 	}
 	for _, tc := range tests {
@@ -399,7 +427,6 @@ func TestSyslogErrors(t *testing.T) {
 				Mode:   "invalid_mode",
 				Listen: "0.0.0.0",
 				Port:   1234,
-				Parser: "syslog-rfc5424",
 				Tag:    "test_tag",
 			},
 		},
@@ -409,7 +436,6 @@ func TestSyslogErrors(t *testing.T) {
 				Mode:   "tcp",
 				Listen: "non-IP",
 				Port:   1234,
-				Parser: "syslog-rfc5424",
 				Tag:    "test_tag",
 			},
 		},
@@ -418,17 +444,6 @@ func TestSyslogErrors(t *testing.T) {
 			syslog: Syslog{
 				Mode:   "tcp",
 				Listen: "0.0.0.0",
-				Parser: "syslog-rfc5424",
-				Tag:    "test_tag",
-			},
-		},
-		{
-			name: "invalid parser",
-			syslog: Syslog{
-				Mode:   "tcp",
-				Listen: "0.0.0.0",
-				Port:   1234,
-				Parser: "invalid_parser",
 				Tag:    "test_tag",
 			},
 		},
@@ -438,7 +453,6 @@ func TestSyslogErrors(t *testing.T) {
 				Mode:   "tcp",
 				Listen: "0.0.0.0",
 				Port:   1234,
-				Parser: "syslog-rfc5424",
 			},
 		},
 	}
@@ -489,13 +503,11 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 				Mode:   "tcp",
 				Listen: "0.0.0.0",
 				Port:   1234,
-				Parser: "syslog-rfc5424",
 				Tag:    "test_tag1",
 			}, {
 				Mode:   "udp",
 				Listen: "0.0.0.0",
 				Port:   5678,
-				Parser: "syslog-rfc3164",
 				Tag:    "test_tag2",
 			}},
 			want: `[SERVICE]
@@ -523,7 +535,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
+    Key message
 
 [INPUT]
     Name tail
@@ -536,7 +548,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
+    Key message
 
 [INPUT]
     Name syslog
@@ -544,7 +556,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Listen 0.0.0.0
     Tag test_tag1
     Port 1234
-    Parser syslog-rfc5424
+    Parser default_message_parser
 
 [INPUT]
     Name syslog
@@ -552,13 +564,13 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Listen 0.0.0.0
     Tag test_tag2
     Port 5678
-    Parser syslog-rfc3164
+    Parser default_message_parser
 
 `,
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs)
+		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -589,14 +601,13 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 				Mode:   "not_syslog",
 				Listen: "",
 				Port:   0,
-				Parser: "not-syslog-parser",
 				Tag:    "",
 			},
 			},
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs); err == nil {
+		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil); err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}
@@ -612,6 +623,11 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 		{
 			name: "empty JSON Parsers and Regex Parsers",
 			want: `[PARSER]
+    Name        default_message_parser
+    Format      regex
+    Regex       ^(?<message>.*)$
+
+[PARSER]
     Name   apache
     Format regex
     Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
@@ -681,6 +697,11 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 				Regex: "test_regex2",
 			}},
 			want: `[PARSER]
+    Name        default_message_parser
+    Format      regex
+    Regex       ^(?<message>.*)$
+
+[PARSER]
     Name   apache
     Format regex
     Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$

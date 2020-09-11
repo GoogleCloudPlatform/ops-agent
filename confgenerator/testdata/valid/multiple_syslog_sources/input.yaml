@@ -14,14 +14,17 @@
 
 logging:
   input:
+  - log_source_id: test_syslog_source_id_tcp
     syslog:
-    - mode: tcp
+      mode: tcp
       listen: 1.1.1.1
       port: 1111
-      log_source_id: test_syslog_source_id_tcp
-      parser: syslog-rfc5424
-    - mode: udp
+    processors:
+    - syslog-rfc5424
+  - log_source_id: test_syslog_source_id_udp
+    syslog:
+      mode: udp
       listen: 2.2.2.2
       port: 2222
-      log_source_id: test_syslog_source_id_udp
-      parser: syslog-rfc3164
+    processors:
+    - syslog-rfc3164

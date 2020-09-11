@@ -44,9 +44,18 @@ const (
 {{- range .SyslogConfigSections -}}
 {{.}}
 
+{{end}}
+{{- range .FilterParserSections -}}
+{{.}}
+
 {{end}}`
 
 	parserConfTemplate = `[PARSER]
+    Name        default_message_parser
+    Format      regex
+    Regex       ^(?<message>.*)$
+
+[PARSER]
     Name   apache
     Format regex
     Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
@@ -102,6 +111,12 @@ const (
 
 {{end}}`
 
+	filterParserConf = `[FILTER]
+    Name parser
+    Match {{.Match}}
+    Key_Name {{.KeyName}}
+    Parser {{.Parser}}`
+
 	parserJSONConf = `[PARSER]
     Name {{.Name}}
     Format json
@@ -134,12 +149,9 @@ const (
     Refresh_Interval 60
     Rotate_Wait 5
     Skip_Long_Lines On
-    Key log
+    Key message
 {{- if (ne .ExcludePath "")}}
     Exclude_Path {{.ExcludePath}}
-{{- end}}
-{{- if (ne .Parser "")}}
-    Parser {{.Parser}}
 {{- end}}`
 
 	syslogConf = `[INPUT]
@@ -148,12 +160,13 @@ const (
     Listen {{.Listen}}
     Tag {{.Tag}}
     Port {{.Port}}
-    Parser {{.Parser}}`
+    Parser default_message_parser`
 )
 
 type mainConfigSections struct {
 	TailConfigSections   []string
 	SyslogConfigSections []string
+	FilterParserSections []string
 }
 
 type parserConfigSections struct {
@@ -162,9 +175,10 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog) (string, error) {
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
+	filterParserSections := []string{}
 	for _, t := range tails {
 		configSection, err := t.renderConfig()
 		if err != nil {
@@ -179,9 +193,17 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog) (string, erro
 		}
 		syslogConfigSections = append(syslogConfigSections, configSection)
 	}
+	for _, f := range filterParsers {
+		configSection, err := f.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		filterParserSections = append(filterParserSections, configSection)
+	}
 	configSections := mainConfigSections{
 		TailConfigSections:   tailConfigSections,
 		SyslogConfigSections: syslogConfigSections,
+		FilterParserSections: filterParserSections,
 	}
 	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
 	if err != nil {
@@ -248,6 +270,40 @@ func (e nonPositiveFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin's field %q should not be <= 0", e.plugin, e.field)
 }
 
+type FilterParser struct {
+	Match   string
+	KeyName string
+	Parser  string
+}
+
+var filterParserTemplate = template.Must(template.New("filter_parser").Parse(filterParserConf))
+
+func (f FilterParser) renderConfig() (string, error) {
+	if f.Match == "" {
+		return "", emptyFieldErr{
+			plugin: "filter parser",
+			field:  "Match",
+		}
+	}
+	if f.KeyName == "" {
+		return "", emptyFieldErr{
+			plugin: "filter parser",
+			field:  "KeyName",
+		}
+	}
+	if f.Parser == "" {
+		return "", emptyFieldErr{
+			plugin: "filter parser",
+			field:  "Parser",
+		}
+	}
+	var renderedFilterParserConfig strings.Builder
+	if err := filterParserTemplate.Execute(&renderedFilterParserConfig, f); err != nil {
+		return "", err
+	}
+	return renderedFilterParserConfig.String(), nil
+}
+
 // A ParserJSON represents the configuration data for fluentBit's JSON parser.
 type ParserJSON struct {
 	Name       string
@@ -308,7 +364,6 @@ type Tail struct {
 	Tag         string
 	Path        string
 	ExcludePath string
-	Parser      string
 	DB          string
 }
 
@@ -356,7 +411,6 @@ type Syslog struct {
 	Mode   string
 	Listen string
 	Port   uint16
-	Parser string
 	Tag    string
 }
 
@@ -387,13 +441,6 @@ func (s Syslog) renderConfig() (string, error) {
 			plugin:                "syslog",
 			field:                 "Mode",
 			validValueExplanation: "one of \"tcp\", \"udp\"",
-		}
-	}
-	if s.Parser != "syslog-rfc5424" && s.Parser != "syslog-rfc3164" {
-		return "", invalidValueErr{
-			plugin:                "syslog",
-			field:                 "Parser",
-			validValueExplanation: "one of \"syslog-rfc5424\", \"syslog-rfc3164\"",
 		}
 	}
 	if s.Tag == "" {

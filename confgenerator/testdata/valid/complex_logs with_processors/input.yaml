@@ -14,55 +14,63 @@
 
 logging:
   input:
-    files:
-    - log_source_id: log_source_id1
+  - log_source_id: log_source_id1
+    file:
       paths:
       - /path/to/log/1/a/*
       - /path/to/log/1/b/*
       exclude_paths:
       - /path/to/log/1/a/exclude_a
       - /path/to/log/1/b/exclude_b
-      parser_id: parse_json_1
-    - log_source_id: log_source_id2
+    processors:
+    - parse_json_1
+  - log_source_id: log_source_id2
+    file:
       paths:
       - /path/to/log/2/a/*
       - /path/to/log/2/b/*
       exclude_paths:
       - /path/to/log/2/a/exclude_a
       - /path/to/log/2/b/exclude_b
-      parser_id: parse_regex_1
+    processors:
+    - parse_regex_1
+  - log_source_id: test_syslog_source_id_tcp
     syslog:
-    - mode: tcp
+      mode: tcp
       listen: 1.1.1.1
       port: 1111
-      log_source_id: test_syslog_source_id_tcp
-      parser: syslog-rfc5424
-    - mode: udp
+    processors:
+    - syslog-rfc5424
+  - log_source_id: test_syslog_source_id_udp
+    syslog:
+      mode: udp
       listen: 2.2.2.2
       port: 2222
-      log_source_id: test_syslog_source_id_udp
-      parser: syslog-rfc3164
+    processors:
+    - syslog-rfc3164
   processors:
-    - id: parse_json_1
-      parse_json:
-        time_key: time_key_1
-        time_format: time_format_1
-    - id: parse_json_2
-      parse_json:
-        time_key: time_key_2
-    - id: parse_json_3
-      parse_json:
-        time_format: time_format_3
-    - id: parse_regex_1
-      parse_regex:
-        regex: regex_pattern_1
-        time_key: time_key_1
-        time_format: time_format_1
-    - id: parse_regex_2
-      parse_regex:
-        regex: regex_pattern_2
-        time_key: time_key_2
-    - id: parse_regex_3
-      parse_regex:
-        regex: regex_pattern_3
-        time_format: time_format_3
+  - id: parse_json_1
+    parse_json:
+      field: key_1
+      time_key: time_key_1
+      time_format: time_format_1
+  - id: parse_json_2
+    parse_json:
+      time_key: time_key_2
+  - id: parse_json_3
+    parse_json:
+      time_format: time_format_3
+  - id: parse_regex_1
+    parse_regex:
+      field: key_1
+      regex: regex_pattern_1
+      time_key: time_key_1
+      time_format: time_format_1
+  - id: parse_regex_2
+    parse_regex:
+      regex: regex_pattern_2
+      time_key: time_key_2
+  - id: parse_regex_3
+    parse_regex:
+      regex: regex_pattern_3
+      time_format: time_format_3

@@ -14,26 +14,38 @@
 
 logging:
   input:
-    files:
-    - log_source_id: log_source_id1
+  - log_source_id: log_source_id1
+    file:
       paths:
       - /path/to/log/1/*
-    - log_source_id: log_source_id2
+  - log_source_id: log_source_id2
+    file:
       paths:
       - /path/to/log/2/a
       - /path/to/log/2/b
-    - log_source_id: log_source_id3
+  - log_source_id: log_source_id3
+    file:
       paths:
       - /path/to/log/3/*
       exclude_paths:
       - /path/to/log/3/exclude
-    - log_source_id: log_source_id4
+  - log_source_id: log_source_id4
+    file:
       paths:
       - /path/to/log/4/*
       exclude_paths:
       - /path/to/log/4/exclude_a
       - /path/to/log/4/exclude_b
-    - log_source_id: log_source_id5
+  - log_source_id: log_source_id5
+    file:
       paths:
       - /path/to/log/5/*
-      parser_id: parser_id5
+    processors:
+    - parser_id5
+  processors:
+  - id: parser_id5
+    parse_regex:
+      field: key_5
+      regex: regex_pattern_5
+      time_key: time_key_5
+      time_format: time_format_5
