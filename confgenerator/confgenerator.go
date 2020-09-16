@@ -19,13 +19,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Stackdriver/unified_agents/collectd"
 	"github.com/Stackdriver/unified_agents/fluentbit/conf"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 type unifiedConfig struct {
-	Logging *logging `yaml:"logging"`
+	Logging *logging         `yaml:"logging"`
+	Metrics collectd.Metrics `yaml:"metrics"`
 }
 
 type logging struct {
@@ -79,6 +81,18 @@ type output struct {
 }
 
 type google struct{}
+
+func GenerateCollectdConfig(input []byte) (config string, err error) {
+	unifiedConfig, err := unifiedConfigReader(input)
+	if err != nil {
+		return "", err
+	}
+	collectdConfig, err := collectd.GenerateCollectdConfig(unifiedConfig.Metrics)
+	if err != nil {
+		return "", err
+	}
+	return collectdConfig, nil
+}
 
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logs`

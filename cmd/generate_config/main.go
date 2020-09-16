@@ -56,6 +56,15 @@ func run() error {
 		if err := ioutil.WriteFile(path, []byte(parserConfig), 0644); err != nil {
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
+	case "collectd":
+		collectdConfig, err := confgenerator.GenerateCollectdConfig(data)
+		if err != nil {
+			return fmt.Errorf("can't parse configuration: %w", err)
+		}
+		path := filepath.Join(*outDir, "collectd.conf")
+		if err := ioutil.WriteFile(path, []byte(collectdConfig), 0644); err != nil {
+			return fmt.Errorf("can't write %q: %w", path, err)
+		}
 	default:
 		return fmt.Errorf("unknown service %q", *service)
 	}
