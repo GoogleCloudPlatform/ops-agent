@@ -80,17 +80,6 @@ type output struct {
 
 type google struct{}
 
-type parser struct {
-	Type              string             `yaml:"type"`
-	RegexParserConfig *regexParserConfig `yaml:"regex_parser_config"`
-	TimeKey           string             `yaml:"time_key"`
-	TimeFormat        string             `yaml:"time_format"`
-}
-
-type regexParserConfig struct {
-	Expression string `yaml:"expression"`
-}
-
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logs`
 // does not exist as a top-level field in the input yaml format.
