@@ -17,7 +17,7 @@
 # Package build scripts can use this by setting $DESTDIR before launching the
 # script.
 
-prefix=/opt/google-ops-agent
+prefix=/opt/google-cloud-ops-agent
 sysconfdir=/etc
 systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
 # TODO: Get version number from packaging
@@ -114,8 +114,8 @@ function build_systemd() {
 (build_opsagent)
 (build_systemd)
 # TODO: Build sample config file
-mkdir -p "$DESTDIR/$sysconfdir/google-ops-agent/"
-touch "$DESTDIR/$sysconfdir/google-ops-agent/config.yml"
+mkdir -p "$DESTDIR/$sysconfdir/google-cloud-ops-agent/"
+touch "$DESTDIR/$sysconfdir/google-cloud-ops-agent/config.yml"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
-(cd "$DESTDIR" && tar -czf /tmp/google-ops-agent.tgz *)
+(cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)
