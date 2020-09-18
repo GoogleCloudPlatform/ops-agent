@@ -27,4 +27,4 @@ WORKDIR /work
 RUN ./build.sh
 
 FROM scratch
-COPY --from=debian /tmp/google-ops-agent.tgz /out/google-ops-agent-debian-buster.tgz
+COPY --from=debian /tmp/google-cloud-ops-agent.tgz /out/google-cloud-ops-agent-debian-buster.tgz

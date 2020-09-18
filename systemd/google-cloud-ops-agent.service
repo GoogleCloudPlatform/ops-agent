@@ -13,9 +13,14 @@
 # limitations under the License.
 
 [Unit]
-Description=Google Ops Agent
-Requires=google-ops-agent.service google-ops-agent-fluent-bit.service
-After=google-ops-agent.service google-ops-agent-fluent-bit.service
+Description=Google Cloud Ops Agent Noop
+PartOf=google-cloud-ops-agent.target
+RefuseManualStart=true
+RefuseManualStop=true
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
 
 [Install]
 WantedBy=multi-user.target

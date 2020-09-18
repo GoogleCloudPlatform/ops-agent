@@ -28,7 +28,7 @@ import (
 var (
 	service = flag.String("service", "", "service to generate config for")
 	outDir  = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input   = flag.String("in", "/etc/google-ops-agent/config.yml", "path to unified agents config")
+	input   = flag.String("in", "/etc/google-cloud-ops-agent/config.yml", "path to unified agents config")
 )
 
 func main() {
