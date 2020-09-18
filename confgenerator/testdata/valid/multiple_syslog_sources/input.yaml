@@ -21,6 +21,8 @@ logging:
       port: 1111
     processors:
     - syslog-rfc5424
+    output:
+    - google
   - log_source_id: test_syslog_source_id_udp
     syslog:
       mode: udp
@@ -28,3 +30,8 @@ logging:
       port: 2222
     processors:
     - syslog-rfc3164
+    output:
+    - google
+  output:
+  - id: google
+    google:

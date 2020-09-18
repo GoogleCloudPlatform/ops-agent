@@ -463,6 +463,31 @@ func TestSyslogErrors(t *testing.T) {
 	}
 }
 
+func TestStackdriver(t *testing.T) {
+	s := Stackdriver{
+		Match: "test_match",
+	}
+	want := `[OUTPUT]
+    Name stackdriver
+    resource gce_instance
+    Match test_match`
+	got, err := s.renderConfig()
+	if err != nil {
+		t.Errorf("got error: %v, want no error", err)
+		return
+	}
+	if diff := diff.Diff(want, got); diff != "" {
+		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+	}
+}
+
+func TestStackdriverError(t *testing.T) {
+	s := Stackdriver{}
+	if _, err := s.renderConfig(); err == nil {
+		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() succeeded, want error", s)
+	}
+}
+
 func TestGenerateFluentBitMainConfig(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -498,11 +523,6 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     storage.backlog.mem_limit  50M
     # Enable storage metrics in the built-in HTTP server.
     storage.metrics            on
-
-[OUTPUT]
-    Name  stackdriver
-    resource gce_instance
-    Match *
 
 `,
 		},
@@ -555,11 +575,6 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     # Enable storage metrics in the built-in HTTP server.
     storage.metrics            on
 
-[OUTPUT]
-    Name  stackdriver
-    resource gce_instance
-    Match *
-
 [INPUT]
     Name tail
     DB test_db1
@@ -606,7 +621,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -643,7 +658,7 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil); err == nil {
+		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil); err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}

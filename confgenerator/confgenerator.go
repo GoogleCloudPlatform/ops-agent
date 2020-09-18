@@ -31,6 +31,7 @@ type unifiedConfig struct {
 type logging struct {
 	Input      []*input     `yaml:"input"`
 	Processors []*processor `yaml:"processors"`
+	Outputs    []*output    `yaml:"output"`
 }
 
 type input struct {
@@ -38,6 +39,19 @@ type input struct {
 	File         *file    `yaml:"file"`
 	Syslog       *syslog  `yaml:"syslog"`
 	ProcessorIDs []string `yaml:"processors"`
+	OutputIDs    []string `yaml:"output"`
+}
+
+type syslog struct {
+	Mode   string `yaml:"mode"`
+	Listen string `yaml:"listen"`
+	Port   uint16 `yaml:"port"`
+}
+
+type file struct {
+	Paths        []string `yaml:"paths"`
+	ExcludePaths []string `yaml:"exclude_paths"`
+	ParserID     string   `yaml:"parser_id"`
 }
 
 type processor struct {
@@ -59,17 +73,12 @@ type parseRegex struct {
 	TimeFormat string `yaml:"time_format"`
 }
 
-type syslog struct {
-	Mode   string `yaml:"mode"`
-	Listen string `yaml:"listen"`
-	Port   uint16 `yaml:"port"`
+type output struct {
+	ID     string  `yaml:"id"`
+	Google *google `yaml:"google,omitempty"`
 }
 
-type file struct {
-	Paths        []string `yaml:"paths"`
-	ExcludePaths []string `yaml:"exclude_paths"`
-	ParserID     string   `yaml:"parser_id"`
-}
+type google struct{}
 
 type parser struct {
 	Type              string             `yaml:"type"`
@@ -96,7 +105,7 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if unifiedConfig.Logging.Input == nil {
 		return "", "", nil
 	}
-	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors)
+	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors, unifiedConfig.Logging.Outputs)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -108,7 +117,7 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(inputs []*input, processors []*processor) (string, string, error) {
+func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs []*output) (string, string, error) {
 	fbSyslogs, err := extractFluentBitSyslogs(inputs)
 	if err != nil {
 		return "", "", err
@@ -121,7 +130,11 @@ func generateFluentBitConfigs(inputs []*input, processors []*processor) (string,
 	if err != nil {
 		return "", "", err
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers)
+	fbStackdrivers, err := extractFluentBitOutputs(inputs, outputs)
+	if err != nil {
+		return "", "", err
+	}
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers, fbStackdrivers)
 	if err != nil {
 		return "", "", err
 	}
@@ -249,6 +262,43 @@ func extractFluentBitFilters(inputs []*input, processors []*processor) ([]*conf.
 		}
 	}
 	return fbFilterParsers, nil
+}
+
+func extractFluentBitOutputs(inputs []*input, outputs []*output) ([]*conf.Stackdriver, error) {
+	fbStackdrivers := []*conf.Stackdriver{}
+	for _, i := range inputs {
+		if i.LogSourceID == "" {
+			return nil, fmt.Errorf(`input cannot have empty log_source_id`)
+		}
+		for _, outputID := range i.OutputIDs {
+			// Process special output ID "google"
+			if outputID == "google" {
+				fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
+					Match: i.LogSourceID,
+				})
+				continue
+			}
+			for _, o := range outputs {
+				if outputID != o.ID {
+					continue
+				}
+				if o.Google != nil {
+					// WARNING: this block won't be hit because yaml parser always
+					// parses an empty struct as nil even the key "google" is provided.
+					fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
+						Match: i.LogSourceID,
+					})
+					break
+				}
+				// TODO: remove this logic once the google struct won't be parsed as nil.
+				if o.ID != "google" {
+					return nil, fmt.Errorf(`output ID can only be "google" now.`)
+				}
+				return nil, fmt.Errorf(`output should have at least have a field "google".`)
+			}
+		}
+	}
+	return fbStackdrivers, nil
 }
 
 func extractFluentBitParsers(processors []*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {

@@ -24,6 +24,8 @@ logging:
       - /path/to/log/1/b/exclude_b
     processors:
     - parse_json_1
+    output:
+    - google
   - log_source_id: log_source_id2
     file:
       paths:
@@ -34,6 +36,8 @@ logging:
       - /path/to/log/2/b/exclude_b
     processors:
     - parse_regex_1
+    output:
+    - google
   - log_source_id: test_syslog_source_id_tcp
     syslog:
       mode: tcp
@@ -41,6 +45,8 @@ logging:
       port: 1111
     processors:
     - syslog-rfc5424
+    output:
+    - google
   - log_source_id: test_syslog_source_id_udp
     syslog:
       mode: udp
@@ -48,6 +54,8 @@ logging:
       port: 2222
     processors:
     - syslog-rfc3164
+    output:
+    - google
   processors:
   - id: parse_json_1
     parse_json:
@@ -74,3 +82,6 @@ logging:
     parse_regex:
       regex: regex_pattern_3
       time_format: time_format_3
+  output:
+  - id: google
+    google:
