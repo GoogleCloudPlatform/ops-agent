@@ -24,13 +24,31 @@ import (
 
 const (
 	mainConfTemplate = `[SERVICE]
-    Flush         5
-    Grace         120
-    Log_Level     debug
-    Log_File      /var/log/ops_agents/logging_agent.log
-    Daemon        off
-    HTTP_Server   On
-    HTTP_Listen   0.0.0.0
+    # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
+    # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
+    Flush      1
+    # Waits 120 seconds after receiving a SIGTERM before it shuts down to minimize log loss.
+    Grace      120
+    # We use systemd to manage Fluent Bit instead.
+    Daemon     off
+    Log_File   /var/log/google-cloud-ops-agent/subagents/fluent-bit.log
+    Log_Level  info
+
+    # https://docs.fluentbit.io/manual/administration/monitoring
+    # Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
+    HTTP_Server  On
+    HTTP_Listen  0.0.0.0
+    HTTP_PORT    2020
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
+    storage.path               /var/lib/google-cloud-ops-agent/buffers/fluent-bit
+    storage.sync               normal
+    # Enable the data integrity check when writing and reading data from the filesystem.
+    storage.checksum           on
+    # The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
+    storage.backlog.mem_limit  50M
+    # Enable storage metrics in the built-in HTTP server.
+    storage.metrics            on
 
 [OUTPUT]
     Name  stackdriver
