@@ -32,11 +32,6 @@ const (
     HTTP_Server   On
     HTTP_Listen   0.0.0.0
 
-[OUTPUT]
-    Name  stackdriver
-    resource gce_instance
-    Match *
-
 {{range .TailConfigSections -}}
 {{.}}
 
@@ -45,7 +40,12 @@ const (
 {{.}}
 
 {{end}}
-{{- range .FilterParserSections -}}
+{{- range .FilterParserConfigSections -}}
+{{.}}
+
+{{end}}
+
+{{- range .StackdriverConfigSections -}}
 {{.}}
 
 {{end}}`
@@ -161,12 +161,18 @@ const (
     Tag {{.Tag}}
     Port {{.Port}}
     Parser default_message_parser`
+
+	stackdriverConf = `[OUTPUT]
+    Name stackdriver
+    resource gce_instance
+    Match {{.Match}}`
 )
 
 type mainConfigSections struct {
-	TailConfigSections   []string
-	SyslogConfigSections []string
-	FilterParserSections []string
+	TailConfigSections         []string
+	SyslogConfigSections       []string
+	FilterParserConfigSections []string
+	StackdriverConfigSections  []string
 }
 
 type parserConfigSections struct {
@@ -175,10 +181,11 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser) (string, error) {
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser, stackdrivers []*Stackdriver) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
-	filterParserSections := []string{}
+	filterParserConfigSections := []string{}
+	stackdriverConfigSections := []string{}
 	for _, t := range tails {
 		configSection, err := t.renderConfig()
 		if err != nil {
@@ -198,12 +205,20 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 		if err != nil {
 			return "", err
 		}
-		filterParserSections = append(filterParserSections, configSection)
+		filterParserConfigSections = append(filterParserConfigSections, configSection)
+	}
+	for _, s := range stackdrivers {
+		configSection, err := s.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		stackdriverConfigSections = append(stackdriverConfigSections, configSection)
 	}
 	configSections := mainConfigSections{
-		TailConfigSections:   tailConfigSections,
-		SyslogConfigSections: syslogConfigSections,
-		FilterParserSections: filterParserSections,
+		TailConfigSections:         tailConfigSections,
+		SyslogConfigSections:       syslogConfigSections,
+		FilterParserConfigSections: filterParserConfigSections,
+		StackdriverConfigSections:  stackdriverConfigSections,
 	}
 	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
 	if err != nil {
@@ -455,4 +470,26 @@ func (s Syslog) renderConfig() (string, error) {
 		return "", err
 	}
 	return renderedSyslogConfig.String(), nil
+}
+
+// A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
+type Stackdriver struct {
+	Match string
+}
+
+var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
+
+// renderConfig generates a section for configure fluentBit syslog input plugin.
+func (s Stackdriver) renderConfig() (string, error) {
+	if s.Match == "" {
+		return "", emptyFieldErr{
+			plugin: "stackdriver",
+			field:  "Match",
+		}
+	}
+	var renderedStackdriverConfig strings.Builder
+	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
+		return "", err
+	}
+	return renderedStackdriverConfig.String(), nil
 }
