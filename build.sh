@@ -79,8 +79,7 @@ function build_collectd() {
     --enable-curl \
     --enable-curl_json \
     --enable-write_gcm \
-    --enable-debug \
-    --enable-docker
+    --enable-debug
   make -j8
   make DESTDIR="$DESTDIR" install
 }
