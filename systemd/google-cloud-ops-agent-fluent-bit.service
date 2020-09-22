@@ -29,6 +29,3 @@ ExecStart=@PREFIX@/lib/fluent-bit/bin/fluent-bit -c ${RUNTIME_DIRECTORY}/fluent_
 Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes
-
-[Install]
-WantedBy=multi-user.target

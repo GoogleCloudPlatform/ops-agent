@@ -15,16 +15,39 @@
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
 # Generated tarball(s) will end up in /tmp/out
 
-FROM debian:buster AS debian
+FROM debian:buster AS buster
+
+# TODO: Factor out the common code without rerunning apt-get on every build.
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
     autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
-    build-essential cmake bison flex file libsystemd-dev
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
 
 COPY . /work
 WORKDIR /work
-RUN ./build.sh
+RUN ./build-deb.sh
+
+FROM ubuntu:focal AS focal
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
+    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-deb.sh
 
 FROM scratch
-COPY --from=debian /tmp/google-cloud-ops-agent.tgz /out/google-cloud-ops-agent-debian-buster.tgz
+COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
+COPY --from=buster /google-cloud-ops-agent*.deb /
+
+COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-focal.tgz
+COPY --from=focal /google-cloud-ops-agent*.deb /

@@ -1,0 +1,12 @@
+Source: google-cloud-ops-agent
+Section: misc
+Priority: extra
+Maintainer: Google Cloud Ops Agent <google-cloud-ops-agent@google.com>
+Build-Depends: debhelper (>= 12)
+Standards-Version: 3.9.4
+
+Package: google-cloud-ops-agent
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Google Cloud Ops Agent
+ The Google Cloud Ops Agent collects metrics and logs from the system.
