@@ -24,7 +24,7 @@ RefuseManualStop=true
 [Service]
 RuntimeDirectory=google-cloud-ops-agent-fluent-bit
 Type=simple
-ExecStartPre=@PREFIX@/libexec/generate_config -service=fluentbit -in @SYSCONFDIR@/google-cloud-ops-agent/config.yml
+ExecStartPre=@PREFIX@/libexec/generate_config -service=fluentbit -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 ExecStart=@PREFIX@/lib/fluent-bit/bin/fluent-bit -c ${RUNTIME_DIRECTORY}/fluent_bit_main.conf -R ${RUNTIME_DIRECTORY}/fluent_bit_parser.conf
 Restart=always
 # For debugging:
