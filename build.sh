@@ -32,7 +32,7 @@ if [ -z "$DESTDIR" ]; then
 fi
 
 function build_collectd() {
-  cd vendor/collectd
+  cd submodules/collectd
   autoreconf -f -i
   ./configure --prefix=$prefix/lib/collectd \
     --with-useragent="stackdriver_ops_agent_collectd/$version" \
@@ -85,7 +85,7 @@ function build_collectd() {
 }
 
 function build_fluentbit() {
-  cd vendor/fluent-bit
+  cd submodules/fluent-bit
   mkdir -p build
   cd build
   cmake .. -DCMAKE_INSTALL_PREFIX=$prefix/lib/fluent-bit

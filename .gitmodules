@@ -1,6 +1,6 @@
-[submodule "vendor/fluent-bit"]
-	path = vendor/fluent-bit
+[submodule "submodules/fluent-bit"]
+	path = submodules/fluent-bit
 	url = https://github.com/fluent/fluent-bit.git
-[submodule "vendor/collectd"]
-	path = vendor/collectd
+[submodule "submodules/collectd"]
+	path = submodules/collectd
 	url = https://github.com/Stackdriver/collectd
