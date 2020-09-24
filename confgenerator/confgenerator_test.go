@@ -28,10 +28,11 @@ const (
 )
 
 var (
-	validUnifiedConfigFilepathFormat = validTestdataDir + "/%s/input.yaml"
-	validMainConfigFilepathFormat    = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
-	validParserConfigFilepathFormat  = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
-	invalidTestdataFilepathFormat    = invalidTestdataDir + "/%s"
+	validUnifiedConfigFilepathFormat  = validTestdataDir + "/%s/input.yaml"
+	validMainConfigFilepathFormat     = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
+	validParserConfigFilepathFormat   = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
+	validCollectdConfigFilepathFormat = validTestdataDir + "/%s/golden_collectd.conf"
+	invalidTestdataFilepathFormat     = invalidTestdataDir + "/%s"
 )
 
 func TestExtractFluentBitConfValidInput(t *testing.T) {
@@ -45,8 +46,16 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			unifiedConfigFilepath := fmt.Sprintf(validUnifiedConfigFilepathFormat, testName)
+			// Special-case the default config.  It lives directly in the
+			// confgenerator directory.  The golden files are still in the
+			// testdata directory.
+			if d.Name() == "default_config" {
+				unifiedConfigFilepath = "default-config.yaml"
+			}
 			goldenMainConfigFilepath := fmt.Sprintf(validMainConfigFilepathFormat, testName)
 			goldenParserConfigFilepath := fmt.Sprintf(validParserConfigFilepathFormat, testName)
+			goldenCollectdConfigFilepath := fmt.Sprintf(validCollectdConfigFilepathFormat, testName)
+
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilepath)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
@@ -64,6 +73,12 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 				return
 			}
 			expectedParserConfig := string(rawExpectedParserConfig)
+			rawExpectedCollectdConfig, err := ioutil.ReadFile(goldenCollectdConfigFilepath)
+			if err != nil {
+				t.Errorf("test %q: expect no error, get error %v", testName, err)
+				return
+			}
+			expectedCollectdConfig := string(rawExpectedCollectdConfig)
 
 			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig)
 			if err != nil {
@@ -75,6 +90,15 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 			}
 			if diff := cmp.Diff(expectedParserConfig, parserConf); diff != "" {
 				t.Errorf("test %q: fluentbit parser configuration mismatch (-want +got):\n%s", testName, diff)
+			}
+
+			collectdConf, err := GenerateCollectdConfig(unifiedConfig)
+			if err != nil {
+				t.Errorf("test %q: expect no error, get error %s", testName, err)
+				return
+			}
+			if diff := cmp.Diff(expectedCollectdConfig, collectdConf); diff != "" {
+				t.Errorf("test %q: collectd configuration mismatch (-want +got):\n%s", testName, diff)
 			}
 		})
 	}
