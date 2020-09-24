@@ -468,9 +468,20 @@ func TestStackdriver(t *testing.T) {
 		Match: "test_match",
 	}
 	want := `[OUTPUT]
+    # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name stackdriver
     resource gce_instance
-    Match test_match`
+    Match test_match
+
+    # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
+    # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
+    Retry_Limit  3
+
+    # https://docs.fluentbit.io/manual/administration/security
+    # Enable TLS support.
+    tls         On
+    # Do not force certificate validation.
+    tls.verify  Off`
 	got, err := s.renderConfig()
 	if err != nil {
 		t.Errorf("got error: %v, want no error", err)

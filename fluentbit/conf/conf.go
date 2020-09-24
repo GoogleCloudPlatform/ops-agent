@@ -181,9 +181,20 @@ const (
     Parser default_message_parser`
 
 	stackdriverConf = `[OUTPUT]
+    # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name stackdriver
     resource gce_instance
-    Match {{.Match}}`
+    Match {{.Match}}
+
+    # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
+    # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
+    Retry_Limit  3
+
+    # https://docs.fluentbit.io/manual/administration/security
+    # Enable TLS support.
+    tls         On
+    # Do not force certificate validation.
+    tls.verify  Off`
 )
 
 type mainConfigSections struct {
