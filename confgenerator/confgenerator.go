@@ -77,10 +77,7 @@ type parseRegex struct {
 
 type output struct {
 	ID     string  `yaml:"id"`
-	Google *google `yaml:"google,omitempty"`
 }
-
-type google struct{}
 
 func GenerateCollectdConfig(input []byte) (config string, err error) {
 	unifiedConfig, err := unifiedConfigReader(input)
@@ -275,30 +272,12 @@ func extractFluentBitOutputs(inputs []*input, outputs []*output) ([]*conf.Stackd
 		}
 		for _, outputID := range i.OutputIDs {
 			// Process special output ID "google"
-			if outputID == "google" {
-				fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-					Match: i.LogSourceID,
-				})
-				continue
+			if outputID != "google" {
+				return nil, fmt.Errorf(`output ID can only be "google" now.`)
 			}
-			for _, o := range outputs {
-				if outputID != o.ID {
-					continue
-				}
-				if o.Google != nil {
-					// WARNING: this block won't be hit because yaml parser always
-					// parses an empty struct as nil even the key "google" is provided.
-					fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-						Match: i.LogSourceID,
-					})
-					break
-				}
-				// TODO: remove this logic once the google struct won't be parsed as nil.
-				if o.ID != "google" {
-					return nil, fmt.Errorf(`output ID can only be "google" now.`)
-				}
-				return nil, fmt.Errorf(`output should have at least have a field "google".`)
-			}
+			fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
+				Match: i.LogSourceID,
+			})
 		}
 	}
 	return fbStackdrivers, nil

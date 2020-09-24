@@ -59,6 +59,3 @@ logging:
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
-  output:
-  - id: google
-    google:

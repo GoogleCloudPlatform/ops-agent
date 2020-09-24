@@ -82,6 +82,3 @@ logging:
     parse_regex:
       regex: regex_pattern_3
       time_format: time_format_3
-  output:
-  - id: google
-    google:

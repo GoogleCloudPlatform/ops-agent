@@ -32,6 +32,3 @@ logging:
     - syslog-rfc3164
     output_ids:
     - google
-  output:
-  - id: google
-    google:

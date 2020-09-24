@@ -21,10 +21,6 @@ logging:
       - /var/log/syslog
     output_ids:
     - google
-  output:
-  - id: google
-    google:
-
 metrics:
   interval: 60
   scrape:
