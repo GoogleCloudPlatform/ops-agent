@@ -22,9 +22,9 @@ logging:
       exclude_paths:
       - /path/to/log/1/a/exclude_a
       - /path/to/log/1/b/exclude_b
-    processors:
+    processor_ids:
     - parse_json_1
-    output:
+    output_ids:
     - google
   - log_source_id: log_source_id2
     file:
@@ -34,27 +34,27 @@ logging:
       exclude_paths:
       - /path/to/log/2/a/exclude_a
       - /path/to/log/2/b/exclude_b
-    processors:
+    processor_ids:
     - parse_regex_1
-    output:
+    output_ids:
     - google
   - log_source_id: test_syslog_source_id_tcp
     syslog:
       mode: tcp
       listen: 1.1.1.1
       port: 1111
-    processors:
+    processor_ids:
     - syslog-rfc5424
-    output:
+    output_ids:
     - google
   - log_source_id: test_syslog_source_id_udp
     syslog:
       mode: udp
       listen: 2.2.2.2
       port: 2222
-    processors:
+    processor_ids:
     - syslog-rfc3164
-    output:
+    output_ids:
     - google
   processors:
   - id: parse_json_1

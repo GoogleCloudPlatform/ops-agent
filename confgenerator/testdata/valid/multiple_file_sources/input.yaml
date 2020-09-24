@@ -18,14 +18,14 @@ logging:
     file:
       paths:
       - /path/to/log/1/*
-    output:
+    output_ids:
     - google
   - log_source_id: log_source_id2
     file:
       paths:
       - /path/to/log/2/a
       - /path/to/log/2/b
-    output:
+    output_ids:
     - google
   - log_source_id: log_source_id3
     file:
@@ -33,7 +33,7 @@ logging:
       - /path/to/log/3/*
       exclude_paths:
       - /path/to/log/3/exclude
-    output:
+    output_ids:
     - google
   - log_source_id: log_source_id4
     file:
@@ -42,15 +42,15 @@ logging:
       exclude_paths:
       - /path/to/log/4/exclude_a
       - /path/to/log/4/exclude_b
-    output:
+    output_ids:
     - google
   - log_source_id: log_source_id5
     file:
       paths:
       - /path/to/log/5/*
-    processors:
+    processor_ids:
     - parser_id5
-    output:
+    output_ids:
     - google
   processors:
   - id: parser_id5

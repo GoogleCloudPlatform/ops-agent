@@ -19,18 +19,18 @@ logging:
       mode: tcp
       listen: 1.1.1.1
       port: 1111
-    processors:
+    processor_ids:
     - syslog-rfc5424
-    output:
+    output_ids:
     - google
   - log_source_id: test_syslog_source_id_udp
     syslog:
       mode: udp
       listen: 2.2.2.2
       port: 2222
-    processors:
+    processor_ids:
     - syslog-rfc3164
-    output:
+    output_ids:
     - google
   output:
   - id: google

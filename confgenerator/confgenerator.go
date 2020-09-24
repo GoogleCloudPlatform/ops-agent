@@ -40,8 +40,8 @@ type input struct {
 	LogSourceID  string   `yaml:"log_source_id"`
 	File         *file    `yaml:"file"`
 	Syslog       *syslog  `yaml:"syslog"`
-	ProcessorIDs []string `yaml:"processors"`
-	OutputIDs    []string `yaml:"output"`
+	ProcessorIDs []string `yaml:"processor_ids"`
+	OutputIDs    []string `yaml:"output_ids"`
 }
 
 type syslog struct {
