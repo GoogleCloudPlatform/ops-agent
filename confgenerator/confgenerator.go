@@ -113,7 +113,7 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	config := unifiedConfig{}
-	err := yaml.Unmarshal(input, &config)
+	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
 		return unifiedConfig{}, err
 	}
