@@ -1,0 +1,36 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[Unit]
+Description=Google Cloud Ops Agent - Metrics Agent
+PartOf=google-cloud-ops-agent.target
+After=google-cloud-ops-agent.service
+Requires=network.target
+After=network.target
+RefuseManualStart=true
+RefuseManualStop=true
+
+[Service]
+RuntimeDirectory=google-cloud-ops-agent-collectd
+StateDirectory=google-cloud-ops-agent/collectd
+LogsDirectory=google-cloud-ops-agent/subagents
+Type=simple
+ExecStartPre=@PREFIX@/libexec/generate_config -service=collectd -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
+ExecStart=@PREFIX@/lib/collectd/sbin/collectd -C ${RUNTIME_DIRECTORY}/collectd.conf -P ${RUNTIME_DIRECTORY}/collectd.pid
+Restart=always
+# For debugging:
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=multi-user.target
