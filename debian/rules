@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+#include /usr/share/cdbs/1/rules/debhelper.mk
+%:
+	dh $@
+override_dh_auto_configure:
+	true
+override_dh_auto_build:
+	true
+override_dh_auto_install:
+	DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
+
+override_dh_installsystemd:
+	dh_installsystemd google-cloud-ops-agent.target
