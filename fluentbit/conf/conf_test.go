@@ -267,17 +267,32 @@ func TestTail(t *testing.T) {
 				Path: "test_path",
 			},
 			expectedTailConfig: `[INPUT]
-    Name tail
-    DB test_db
-    Path test_path
-    Tag test_tag
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message`,
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db
+    Path               test_path
+    Tag                test_tag
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M`,
 		},
 		{
 			tail: Tail{
@@ -286,17 +301,32 @@ func TestTail(t *testing.T) {
 				Path: "test_path",
 			},
 			expectedTailConfig: `[INPUT]
-    Name tail
-    DB test_db
-    Path test_path
-    Tag test_tag
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message`,
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db
+    Path               test_path
+    Tag                test_tag
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M`,
 		},
 		{
 			tail: Tail{
@@ -306,18 +336,34 @@ func TestTail(t *testing.T) {
 				ExcludePath: "test_exclude_path",
 			},
 			expectedTailConfig: `[INPUT]
-    Name tail
-    DB test_db
-    Path test_path
-    Tag test_tag
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message
-    Exclude_Path test_exclude_path`,
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db
+    Path               test_path
+    Tag                test_tag
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+    # Exclude files matching this criteria.
+    Exclude_Path       test_exclude_path
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M`,
 		},
 		{
 			tail: Tail{
@@ -327,18 +373,34 @@ func TestTail(t *testing.T) {
 				ExcludePath: "test_exclude_path/file1,test_excloud_path/file2",
 			},
 			expectedTailConfig: `[INPUT]
-    Name tail
-    DB test_db
-    Path test_path
-    Tag test_tag
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message
-    Exclude_Path test_exclude_path/file1,test_excloud_path/file2`,
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db
+    Path               test_path
+    Tag                test_tag
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+    # Exclude files matching this criteria.
+    Exclude_Path       test_exclude_path/file1,test_excloud_path/file2
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M`,
 		},
 	}
 	for _, tc := range tests {
@@ -396,12 +458,24 @@ func TestSyslog(t *testing.T) {
 				Tag:    "test_tag",
 			},
 			expectedSyslogConfig: `[INPUT]
-    Name syslog
-    Mode tcp
-    Listen 0.0.0.0
-    Tag test_tag
-    Port 1234
-    Parser default_message_parser`,
+    # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
+    Name           syslog
+    Mode           tcp
+    Listen         0.0.0.0
+    Tag            test_tag
+    Port           1234
+    Parser         default_message_parser
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type   filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit  10M`,
 		},
 	}
 	for _, tc := range tests {
@@ -534,6 +608,10 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     storage.backlog.mem_limit  50M
     # Enable storage metrics in the built-in HTTP server.
     storage.metrics            on
+    # This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
+    # Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
+    # we don't want them to all be loaded into the memory.
+    storage.max_chunks_up      128
 
 `,
 		},
@@ -585,48 +663,106 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     storage.backlog.mem_limit  50M
     # Enable storage metrics in the built-in HTTP server.
     storage.metrics            on
+    # This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
+    # Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
+    # we don't want them to all be loaded into the memory.
+    storage.max_chunks_up      128
 
 [INPUT]
-    Name tail
-    DB test_db1
-    Path test_path1
-    Tag test_tag1
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db1
+    Path               test_path1
+    Tag                test_tag1
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M
 
 [INPUT]
-    Name tail
-    DB test_db2
-    Path test_path2
-    Tag test_tag2
-    Buffer_Chunk_Size 32k
-    Buffer_Max_Size 32k
-    DB.Sync Full
-    Refresh_Interval 60
-    Rotate_Wait 5
-    Skip_Long_Lines On
-    Key message
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db2
+    Path               test_path2
+    Tag                test_tag2
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M
 
 [INPUT]
-    Name syslog
-    Mode tcp
-    Listen 0.0.0.0
-    Tag test_tag1
-    Port 1234
-    Parser default_message_parser
+    # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
+    Name           syslog
+    Mode           tcp
+    Listen         0.0.0.0
+    Tag            test_tag1
+    Port           1234
+    Parser         default_message_parser
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type   filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit  10M
 
 [INPUT]
-    Name syslog
-    Mode udp
-    Listen 0.0.0.0
-    Tag test_tag2
-    Port 5678
-    Parser default_message_parser
+    # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
+    Name           syslog
+    Mode           udp
+    Listen         0.0.0.0
+    Tag            test_tag2
+    Port           5678
+    Parser         default_message_parser
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type   filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit  10M
 
 `,
 		},
