@@ -19,13 +19,18 @@ package collectd
 import (
   "fmt"
   "reflect"
+  "sort"
   "strings"
   "text/template"
 )
 
 type Metrics struct {
-  Interval uint32   `yaml:"interval"`
-  Scrape   []string `yaml:"scrape"`
+  Interval uint32 `yaml:"interval"`
+  Input    Input  `yaml:"input"`
+}
+
+type Input struct {
+  Include []string `yaml:"include"`
 }
 
 const (
@@ -122,11 +127,11 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
 
   // -- FIXED CONFIG --
   sb.WriteString(fixedConfig)
-  // sb.WriteString(default_conf)
 
   // -- CUSTOM CONFIG --
   // Write the configuration for each user-specified metric to scrape.
-  for _, metric := range metrics.Scrape {
+  sort.Strings(metrics.Input.Include)
+  for _, metric := range metrics.Input.Include {
     if config, ok := translation[metric]; ok {
       sb.WriteString(config)
     } else {
@@ -135,7 +140,7 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
   }
 
   // -- PROCESSES PLUGIN CONFIG
-  err := appendProcessesPluginConfig(&sb, metrics)
+  err := appendProcessesPluginConfig(&sb, metrics.Input)
   if err != nil {
     return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
   }
@@ -143,10 +148,10 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
   return sb.String(), nil
 }
 
-func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Metrics) error {
+func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Input) error {
   var includeProcess, includePerProcess bool
 
-  for _, metric := range metrics.Scrape {
+  for _, metric := range metrics.Include {
     if metric == "process" {
       includeProcess = true
     } else if metric == "perprocess" {

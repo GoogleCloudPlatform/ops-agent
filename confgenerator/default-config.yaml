@@ -23,10 +23,12 @@ logging:
     - google
 metrics:
   interval: 60
-  scrape:
-  - cpu
-  - disk
-  - memory
-  - network
-  - process
-  - swap
+  input:
+    include:
+    - cpu
+    - disk
+    - memory
+    - network
+    - perprocess
+    - process
+    - swap

@@ -38,11 +38,6 @@ LoadPlugin df
   ValuesPercentage true
 </Plugin>
 
-LoadPlugin swap
-<Plugin "swap">
-  ValuesPercentage true
-</Plugin>
-
 LoadPlugin memory
 <Plugin "memory">
   ValuesPercentage true
@@ -55,6 +50,11 @@ LoadPlugin interface
 LoadPlugin tcpconns
 <Plugin "tcpconns">
   AllPortsSummary true
+</Plugin>
+
+LoadPlugin swap
+<Plugin "swap">
+  ValuesPercentage true
 </Plugin>
 
 LoadPlugin processes

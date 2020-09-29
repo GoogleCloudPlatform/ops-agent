@@ -32,11 +32,11 @@ var (
 
 var validConfigTests = map[string]Metrics{
 	"empty":                   {},
-	"scrape_metrics_subset":   {Scrape: []string{"disk"}},
+	"scrape_metrics_subset":   {Input: Input{Include: []string{"disk"}}},
 	"custom_interval":         {Interval: 30},
-	"all_custom_options":      {Interval: 100, Scrape: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}},
-	"only_process_metrics":    {Scrape: []string{"process"}},
-	"only_perprocess_metrics": {Scrape: []string{"perprocess"}},
+	"all_custom_options":      {Interval: 100, Input: Input{Include: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}}},
+	"only_process_metrics":    {Input: Input{Include: []string{"process"}}},
+	"only_perprocess_metrics": {Input: Input{Include: []string{"perprocess"}}},
 }
 
 func TestValidInput(t *testing.T) {
@@ -58,7 +58,7 @@ func TestValidInput(t *testing.T) {
 }
 
 func TestInvalidMetricName(t *testing.T) {
-	invalidMetricNameConfig := Metrics{Scrape: []string{"not_a_metric"}}
+	invalidMetricNameConfig := Metrics{Input: Input{Include: []string{"not_a_metric"}}}
 
 	conf, err := GenerateCollectdConfig(invalidMetricNameConfig)
 	if err == nil {
