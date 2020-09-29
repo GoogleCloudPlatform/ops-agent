@@ -1,4 +1,4 @@
-Interval 100
+Interval 60
 
 # Explicitly set hostname to "" to indicate the default resource.
 Hostname ""
@@ -19,44 +19,6 @@ LoadPlugin write_gcm
   PrettyPrintJSON false
 </Plugin>
 
-LoadPlugin cpu
-<Plugin "cpu">
-  ValuesPercentage true
-  ReportByCpu true
-  ReportByState true
-</Plugin>
-
-LoadPlugin disk
-<Plugin "disk">
-</Plugin>
-
-LoadPlugin df
-<Plugin "df">
-  FSType "devfs"
-  IgnoreSelected true
-  ReportByDevice true
-  ValuesPercentage true
-</Plugin>
-
-LoadPlugin swap
-<Plugin "swap">
-  ValuesPercentage true
-</Plugin>
-
-LoadPlugin memory
-<Plugin "memory">
-  ValuesPercentage true
-</Plugin>
-
-LoadPlugin interface
-<Plugin "interface">
-</Plugin>
-
-LoadPlugin tcpconns
-<Plugin "tcpconns">
-  AllPortsSummary true
-</Plugin>
-
 LoadPlugin processes
 LoadPlugin match_regex
 <Plugin "processes">
@@ -72,7 +34,7 @@ PostCacheChain "PostCache"
   <Rule "processes">
     <Match "regex">
       Plugin "^processes$"
-      Type "^(ps_cputime|disk_octets|ps_rss|ps_vm|fork_rate|ps_state)$"
+      Type "^(ps_cputime|disk_octets|ps_rss|ps_vm)$"
     </Match>
     <Target "write">
       Plugin "write_gcm"

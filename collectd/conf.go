@@ -20,6 +20,7 @@ import (
   "fmt"
   "reflect"
   "strings"
+  "text/template"
 )
 
 type Metrics struct {
@@ -78,71 +79,11 @@ LoadPlugin df
 </Plugin>
 `,
   // ---
-  "swap": `
-LoadPlugin swap
-<Plugin "swap">
-  ValuesPercentage true
-</Plugin>
-`,
-  // ---
   "memory": `
 LoadPlugin memory
 <Plugin "memory">
   ValuesPercentage true
 </Plugin>
-`,
-  // ---
-  "process": `
-LoadPlugin processes
-LoadPlugin match_regex
-LoadPlugin match_throttle_metadata_keys
-<Plugin "processes">
-  ProcessMatch "all" ".*"
-  Detail "ps_cputime"
-  Detail "ps_disk_octets"
-  Detail "ps_rss"
-  Detail "ps_vm"
-</Plugin>
-
-PostCacheChain "PostCache"
-<Chain "PostCache">
-  <Rule "processes">
-    <Match "regex">
-      Plugin "^processes$"
-      Type "^(ps_cputime|disk_octets|ps_rss|ps_vm)$"
-    </Match>
-    <Target "jump">
-      Chain "MaybeThrottleProcesses"
-    </Target>
-    Target "stop"
-  </Rule>
-
-  <Rule "otherwise">
-    <Match "throttle_metadata_keys">
-      OKToThrottle false
-      HighWaterMark 5700000000  # 950M * 6
-      LowWaterMark 4800000000  # 800M * 6
-    </Match>
-    <Target "write">
-       Plugin "write_gcm"
-    </Target>
-  </Rule>
-</Chain>
-
-<Chain "MaybeThrottleProcesses">
-  <Rule "default">
-    <Match "throttle_metadata_keys">
-      OKToThrottle true
-      TrackedMetadata "processes:pid"
-      TrackedMetadata "processes:command"
-      TrackedMetadata "processes:command_line"
-      TrackedMetadata "processes:owner"
-    </Match>
-    <Target "write">
-       Plugin "write_gcm"
-    </Target>
-  </Rule>
-</Chain>
 `,
   // ---
   "network": `
@@ -155,6 +96,16 @@ LoadPlugin tcpconns
   AllPortsSummary true
 </Plugin>
 `,
+  // ---
+  "swap": `
+LoadPlugin swap
+<Plugin "swap">
+  ValuesPercentage true
+</Plugin>
+`,
+  // --- Known metrics whose translations are handled outside of this map.
+  "perprocess": ``,
+  "process":    ``,
 }
 
 func GenerateCollectdConfig(metrics Metrics) (string, error) {
@@ -183,5 +134,69 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
     }
   }
 
+  // -- PROCESSES PLUGIN CONFIG
+  err := appendProcessesPluginConfig(&sb, metrics)
+  if err != nil {
+    return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
+  }
+
   return sb.String(), nil
+}
+
+func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Metrics) error {
+  var includeProcess, includePerProcess bool
+
+  for _, metric := range metrics.Scrape {
+    if metric == "process" {
+      includeProcess = true
+    } else if metric == "perprocess" {
+      includePerProcess = true
+    }
+  }
+
+  if !includeProcess && !includePerProcess {
+    return nil
+  }
+
+  processesPluginTemplate, err := template.New("processesPlugin").Parse(`
+LoadPlugin processes
+LoadPlugin match_regex
+<Plugin "processes">
+  ProcessMatch "all" ".*"
+  {{- if .IncludePerProcess }}
+  Detail "ps_cputime"
+  Detail "ps_disk_octets"
+  Detail "ps_rss"
+  Detail "ps_vm"
+  {{- end }}
+</Plugin>
+
+PostCacheChain "PostCache"
+<Chain "PostCache">
+  <Rule "processes">
+    <Match "regex">
+      Plugin "^processes$"
+      {{- if and .IncludePerProcess .IncludeProcess}}
+      Type "^(ps_cputime|disk_octets|ps_rss|ps_vm|fork_rate|ps_state)$"
+      {{- else if .IncludePerProcess}}
+      Type "^(ps_cputime|disk_octets|ps_rss|ps_vm)$"
+      {{- else }}
+      Type "^(fork_rate|ps_state)$"
+      {{- end }}
+    </Match>
+    <Target "write">
+      Plugin "write_gcm"
+    </Target>
+  </Rule>
+  Target "stop"
+</Chain>
+`)
+
+  if err != nil {
+    return err
+  }
+
+  return processesPluginTemplate.Execute(
+    configBuilder,
+    struct{ IncludeProcess, IncludePerProcess bool }{includeProcess, includePerProcess})
 }

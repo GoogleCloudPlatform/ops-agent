@@ -31,10 +31,12 @@ var (
 )
 
 var validConfigTests = map[string]Metrics{
-	"empty":                 {},
-	"scrape_metrics_subset": {Scrape: []string{"disk"}},
-	"custom_interval":       {Interval: 30},
-	"all_custom_options":    {Interval: 100, Scrape: []string{"cpu", "disk", "swap", "memory", "process", "network"}},
+	"empty":                   {},
+	"scrape_metrics_subset":   {Scrape: []string{"disk"}},
+	"custom_interval":         {Interval: 30},
+	"all_custom_options":      {Interval: 100, Scrape: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}},
+	"only_process_metrics":    {Scrape: []string{"process"}},
+	"only_perprocess_metrics": {Scrape: []string{"perprocess"}},
 }
 
 func TestValidInput(t *testing.T) {
