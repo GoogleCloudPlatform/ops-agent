@@ -27,7 +27,7 @@ StateDirectory=google-cloud-ops-agent/collectd
 LogsDirectory=google-cloud-ops-agent/subagents
 Type=simple
 ExecStartPre=@PREFIX@/libexec/generate_config -service=collectd -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-ExecStart=@PREFIX@/lib/collectd/sbin/collectd -C ${RUNTIME_DIRECTORY}/collectd.conf -P ${RUNTIME_DIRECTORY}/collectd.pid
+ExecStart=@PREFIX@/lib/collectd/sbin/collectd -C ${RUNTIME_DIRECTORY}/collectd.conf -f
 Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes
