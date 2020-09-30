@@ -22,10 +22,11 @@ import (
   "sort"
   "strings"
   "text/template"
+  "time"
 )
 
 type Metrics struct {
-  Interval uint32 `yaml:"interval"`
+  Interval string `yaml:"interval"` // time.Duration format
   Input    Input  `yaml:"input"`
 }
 
@@ -34,9 +35,9 @@ type Input struct {
 }
 
 const (
-  defaultScrapeInterval = uint32(60)
+  defaultScrapeInterval = float64(60)
 
-  scrapeIntervalConfigFormat = "Interval %d\n"
+  scrapeIntervalConfigFormat = "Interval %v\n"
 
   fixedConfig = `
 # Explicitly set hostname to "" to indicate the default resource.
@@ -118,10 +119,21 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
 
   // -- SCRAPE INTERVAL --
   // Write the configuration line for the scrape interval. If the user didn't
-  // specify a value, or if the value is 0, use the default value.
+  // specify a value, use the default value. Collectd configuration requires
+  // this value to be in seconds. Minimum allowed value is 10 seconds.
+  // NOTE: Internally, collectd parses this value with strtod(...). If this
+  // fails, it will silently fall back to 10 seconds. See:
+  // https://github.com/Stackdriver/collectd/blob/stackdriver-agent-5.8.1/src/daemon/configfile.c#L909-L911
   interval := defaultScrapeInterval
-  if metrics.Interval != 0 {
-    interval = metrics.Interval
+  if metrics.Interval != "" {
+    t, err := time.ParseDuration(metrics.Interval)
+    if err != nil {
+      return "", fmt.Errorf("invalid scrape interval: %v", err)
+    }
+    interval = t.Seconds()
+    if interval < 10 {
+      return "", fmt.Errorf("minimum allowed scrape interval is 10s, got %vs", interval)
+    }
   }
   sb.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
 
