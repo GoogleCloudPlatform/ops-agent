@@ -22,7 +22,7 @@ logging:
     output_ids:
     - google
 metrics:
-  interval: 60
+  interval: 60s
   input:
     include:
     - cpu

@@ -33,8 +33,8 @@ var (
 var validConfigTests = map[string]Metrics{
 	"empty":                   {},
 	"scrape_metrics_subset":   {Input: Input{Include: []string{"disk"}}},
-	"custom_interval":         {Interval: 30},
-	"all_custom_options":      {Interval: 100, Input: Input{Include: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}}},
+	"custom_interval":         {Interval: "30s"},
+	"all_custom_options":      {Interval: "100s", Input: Input{Include: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}}},
 	"only_process_metrics":    {Input: Input{Include: []string{"process"}}},
 	"only_perprocess_metrics": {Input: Input{Include: []string{"perprocess"}}},
 }
@@ -62,7 +62,28 @@ func TestInvalidMetricName(t *testing.T) {
 
 	conf, err := GenerateCollectdConfig(invalidMetricNameConfig)
 	if err == nil {
-		t.Errorf("GenerateCollectdConfig(%+v): Wanted error, got successful result:\n%s", invalidMetricNameConfig, conf)
+		fmt.Printf("Unexpected successful result:\n%s", conf)
+		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", invalidMetricNameConfig)
+	}
+}
+
+func TestOutOfBoundsScrapeInterval(t *testing.T) {
+	invalidScrapeIntervalConfig := Metrics{Interval: "2s"}
+
+	conf, err := GenerateCollectdConfig(invalidScrapeIntervalConfig)
+	if err == nil {
+		fmt.Printf("Unexpected successful result:\n%s", conf)
+		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", invalidScrapeIntervalConfig)
+	}
+}
+
+func TestInvalidScrapeInterval(t *testing.T) {
+	scrapeIntervalMissingSuffixConfig := Metrics{Interval: "24"}
+
+	conf, err := GenerateCollectdConfig(scrapeIntervalMissingSuffixConfig)
+	if err == nil {
+		fmt.Printf("Unexpected successful result:\n%s", conf)
+		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", scrapeIntervalMissingSuffixConfig)
 	}
 }
 
