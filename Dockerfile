@@ -21,7 +21,7 @@ FROM debian:buster AS buster
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
-    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
@@ -39,7 +39,7 @@ RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/so
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t stretch-backports install golang && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
@@ -53,7 +53,7 @@ FROM ubuntu:focal AS focal
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
-    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
