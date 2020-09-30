@@ -31,6 +31,24 @@ COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
 
+FROM debian:stretch AS stretch
+
+# TODO: Factor out the common code without rerunning apt-get on every build.
+
+RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y -t stretch-backports install golang && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev default-jdk default-libmysqlclient-dev libhiredis-dev libltdl-dev libssl-dev libyajl-dev python-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-deb.sh
+
 FROM ubuntu:focal AS focal
 
 RUN apt-get update && \
@@ -49,5 +67,8 @@ FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster /google-cloud-ops-agent*.deb /
 
-COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-focal.tgz
+COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
+COPY --from=stretch /google-cloud-ops-agent*.deb /
+
+COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
