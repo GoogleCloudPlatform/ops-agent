@@ -69,11 +69,31 @@ LoadPlugin match_regex
 
 PostCacheChain "PostCache"
 <Chain "PostCache">
+  # Send all expected process metrics to the output plugin.
   <Rule "processes">
     <Match "regex">
       Plugin "^processes$"
       Type "^(ps_cputime|disk_octets|ps_rss|ps_vm|fork_rate|ps_state)$"
     </Match>
+    <Target "jump">
+      Chain "WriteAndStop"
+    </Target>
+  </Rule>
+  # Stop processing on (do not write) all unexpected process metrics.
+  <Rule "processes_exclude">
+    <Match "regex">
+      Plugin "^processes$"
+    </Match>
+    Target "stop"
+  </Rule>
+  # Send all other metrics to the output plugin.
+  <Target "jump">
+    Chain "WriteAndStop"
+  </Target>
+</Chain>
+
+<Chain "WriteAndStop">
+  <Rule "write">
     <Target "write">
       Plugin "write_gcm"
     </Target>
