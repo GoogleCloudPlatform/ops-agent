@@ -63,6 +63,7 @@ LoadPlugin write_gcm
 
 var translation = map[string]string{
   "cpu": `
+LoadPlugin load
 LoadPlugin cpu
 <Plugin "cpu">
   ValuesPercentage true

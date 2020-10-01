@@ -19,6 +19,7 @@ LoadPlugin write_gcm
   PrettyPrintJSON false
 </Plugin>
 
+LoadPlugin load
 LoadPlugin cpu
 <Plugin "cpu">
   ValuesPercentage true
