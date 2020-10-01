@@ -84,10 +84,22 @@ function build_opsagent() {
 }
 
 function build_systemd() {
+  function install_unit() {
+    # $1 = source path; $2 = destination path relative to the unit directory
+    sed "s|@PREFIX@|$prefix|g; s|@SYSCONFDIR@|$sysconfdir|g" "$1" > "$DESTDIR$systemdsystemunitdir/$2"
+  }
   mkdir -p "$DESTDIR$systemdsystemunitdir"
-  for i in systemd/*; do
-    sed "s|@PREFIX@|$prefix|g; s|@SYSCONFDIR@|$sysconfdir|g" $i > "$DESTDIR$systemdsystemunitdir/$(basename "$i")"
+  for f in systemd/*.service systemd/*.target; do
+    install_unit "$f" "$(basename "$f")"
   done
+  if [ "$(systemctl --version | grep -Po '^systemd \K\d+$')" -lt 240 ]; then
+    for d in systemd/*.service.d; do
+      mkdir "$DESTDIR$systemdsystemunitdir/$(basename "$d")"
+      for f in "$d"/*.conf; do
+        install_unit "$f" "$(basename "$d")/$(basename "$f")"
+      done
+    done
+  fi
 }
 
 (build_collectd)

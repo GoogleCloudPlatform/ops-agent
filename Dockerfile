@@ -63,6 +63,22 @@ COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
 
+FROM centos:7 AS centos7
+
+RUN yum -y update && \
+    yum -y install git systemd \
+    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build && \
+    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum install -y cmake3 golang && \
+    ln -fs cmake3 /usr/bin/cmake
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-rpm.sh
+
 FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster /google-cloud-ops-agent*.deb /
@@ -72,3 +88,6 @@ COPY --from=stretch /google-cloud-ops-agent*.deb /
 
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
+
+COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
+COPY --from=centos7 /google-cloud-ops-agent*.rpm /
