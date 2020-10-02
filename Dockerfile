@@ -79,6 +79,22 @@ COPY . /work
 WORKDIR /work
 RUN ./build-rpm.sh
 
+FROM centos:8 AS centos8
+
+
+RUN yum -y update && \
+    dnf -y install 'dnf-command(config-manager)' && \
+    yum config-manager --set-enabled PowerTools && \
+    yum -y install golang git systemd \
+    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-rpm.sh
+
 FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster /google-cloud-ops-agent*.deb /
@@ -91,3 +107,6 @@ COPY --from=focal /google-cloud-ops-agent*.deb /
 
 COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7 /google-cloud-ops-agent*.rpm /
+
+COPY --from=centos8 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
+COPY --from=centos8 /google-cloud-ops-agent*.rpm /
