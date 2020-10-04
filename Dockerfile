@@ -39,7 +39,7 @@ RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/so
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t stretch-backports install golang && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
