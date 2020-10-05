@@ -32,5 +32,3 @@ Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes
 
-[Install]
-WantedBy=multi-user.target
