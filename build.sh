@@ -35,7 +35,7 @@ function build_collectd() {
   cd submodules/collectd
   autoreconf -f -i
   ./configure --prefix=$prefix/lib/collectd \
-    --with-useragent="stackdriver_ops_agent_collectd/$version" \
+    --with-useragent="google-cloud-ops-agent-metrics/$version" \
     --with-data-max-name-len=256 \
     --disable-all-plugins \
     --disable-static \
