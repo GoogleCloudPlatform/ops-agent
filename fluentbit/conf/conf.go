@@ -247,6 +247,8 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 	syslogConfigSections := []string{}
 	filterParserConfigSections := []string{}
 	stackdriverConfigSections := []string{}
+	// Include default Fluent Bit and Collectd logs.
+	tails = append(tails, defaultTails()...)
 	for _, t := range tails {
 		configSection, err := t.renderConfig()
 		if err != nil {
@@ -291,6 +293,24 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 		return "", err
 	}
 	return mainConfigBuilder.String(), nil
+}
+
+// Get the default Tail sections for the agent's own logs.
+func defaultTails() (tails []*Tail) {
+        return []*Tail {
+                {
+                        Tag:  "ops-agent-fluent-bit",
+                        DB:   "ops-agent-fluent-bit",
+                        // TODO(lingshi): Pass in this value via Systemd.
+                        Path: "/var/log/google-cloud-ops-agent/subagents/fluent-bit.log",
+                },
+                {
+                        Tag:  "ops-agent-collectd",
+                        DB:   "ops-agent-collectd",
+                        // TODO(lingshi): Pass in this value via Systemd.
+                        Path: "/var/log/google-cloud-ops-agent/subagents/collectd.log",
+                },
+        }
 }
 
 // GenerateFluentBitParserConfig generates a FluentBit parser configuration.
