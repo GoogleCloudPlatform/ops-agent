@@ -941,7 +941,7 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Format      regex
     Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
     Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
 
 [PARSER]
     Name        syslog-rfc3164
@@ -1015,7 +1015,7 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Format      regex
     Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
     Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
 
 [PARSER]
     Name        syslog-rfc3164
