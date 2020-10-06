@@ -39,6 +39,7 @@ const (
 
   scrapeIntervalConfigFormat = "Interval %v\n"
 
+  // TODO(lingshi): Make systemd pass in the Collectd log path.
   fixedConfig = `
 # Explicitly set hostname to "" to indicate the default resource.
 Hostname ""
@@ -51,6 +52,13 @@ FQDNLookup false
 LoadPlugin syslog
 <Plugin "syslog">
   LogLevel "info"
+</Plugin>
+
+LoadPlugin logfile
+<Plugin "logfile">
+  LogLevel "info"
+  File "/var/log/google-cloud-ops-agent/subagents/collectd.log"
+  Timestamp true
 </Plugin>
 
 LoadPlugin stackdriver_agent

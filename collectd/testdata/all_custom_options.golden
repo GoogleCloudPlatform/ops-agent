@@ -13,6 +13,13 @@ LoadPlugin syslog
   LogLevel "info"
 </Plugin>
 
+LoadPlugin logfile
+<Plugin "logfile">
+  LogLevel "info"
+  File "/var/log/google-cloud-ops-agent/subagents/collectd.log"
+  Timestamp true
+</Plugin>
+
 LoadPlugin stackdriver_agent
 LoadPlugin write_gcm
 <Plugin "write_gcm">
