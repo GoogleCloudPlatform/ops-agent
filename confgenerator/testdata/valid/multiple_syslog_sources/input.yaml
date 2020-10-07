@@ -32,3 +32,14 @@ logging:
     - syslog-rfc3164
     output_ids:
     - google
+metrics:
+  interval: 60s
+  input:
+    include:
+    - cpu
+    - disk
+    - memory
+    - network
+    - perprocess
+    - process
+    - swap

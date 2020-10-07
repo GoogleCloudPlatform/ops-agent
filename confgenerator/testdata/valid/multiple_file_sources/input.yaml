@@ -59,3 +59,14 @@ logging:
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
+metrics:
+  interval: 60s
+  input:
+    include:
+    - cpu
+    - disk
+    - memory
+    - network
+    - perprocess
+    - process
+    - swap

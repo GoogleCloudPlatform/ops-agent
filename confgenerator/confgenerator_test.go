@@ -25,6 +25,7 @@ import (
 const (
 	validTestdataDir   = "testdata/valid"
 	invalidTestdataDir = "testdata/invalid"
+	defaultGoldenPath  = "default_config"
 )
 
 var (
@@ -63,20 +64,32 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 			}
 			rawExpectedMainConfig, err := ioutil.ReadFile(goldenMainConfigFilepath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
-				return
+				t.Logf("test %q: Fluent Bit main conf not detected at %s. Using the default instead.", testName, goldenMainConfigFilepath)
+				rawExpectedMainConfig, err = ioutil.ReadFile(fmt.Sprintf(validMainConfigFilepathFormat, defaultGoldenPath))
+				if err != nil {
+					t.Errorf("test %q: expect no error, get error %s", testName, err)
+					return
+				}
 			}
 			expectedMainConfig := string(rawExpectedMainConfig)
 			rawExpectedParserConfig, err := ioutil.ReadFile(goldenParserConfigFilepath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %v", testName, err)
-				return
+				t.Logf("test %q: Fluent Bit parser conf not detected at %s. Using the default instead.", testName, goldenParserConfigFilepath)
+				rawExpectedParserConfig, err = ioutil.ReadFile(fmt.Sprintf(validParserConfigFilepathFormat, defaultGoldenPath))
+				if err != nil {
+					t.Errorf("test %q: expect no error, get error %s", testName, err)
+					return
+				}
 			}
 			expectedParserConfig := string(rawExpectedParserConfig)
 			rawExpectedCollectdConfig, err := ioutil.ReadFile(goldenCollectdConfigFilepath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %v", testName, err)
-				return
+				t.Logf("test %q: Collectd conf not detected at %s. Using the default instead.", testName, goldenCollectdConfigFilepath)
+				rawExpectedCollectdConfig, err = ioutil.ReadFile(fmt.Sprintf(validCollectdConfigFilepathFormat, defaultGoldenPath))
+				if err != nil {
+					t.Errorf("test %q: expect no error, get error %v", testName, err)
+					return
+				}
 			}
 			expectedCollectdConfig := string(rawExpectedCollectdConfig)
 

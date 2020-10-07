@@ -82,3 +82,14 @@ logging:
     parse_regex:
       regex: regex_pattern_3
       time_format: time_format_3
+metrics:
+  interval: 60s
+  input:
+    include:
+    - cpu
+    - disk
+    - memory
+    - network
+    - perprocess
+    - process
+    - swap
