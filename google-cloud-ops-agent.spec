@@ -16,6 +16,7 @@ The Google Cloud Ops Agent collects metrics and logs from the system.
 
 %define _prefix /opt/%{name}
 %define _confdir /etc/%{name}
+%define _subagentdir %{_prefix}/subagents
 
 %prep
 
@@ -25,10 +26,8 @@ DESTDIR="%{buildroot}" ./build.sh
 
 %files
 %config %{_confdir}/config.yaml
-# We aren't using %{_libdir} here because that would be lib64 on some platforms,
-# but the build.sh script hard-codes lib.
-%{_prefix}/lib/fluent-bit/*
-%{_prefix}/lib/collectd/*
+%{_subagentdir}/fluent-bit/*
+%{_subagentdir}/collectd/*
 # We aren't using %{_libexecdir} here because that would be lib on some
 # platforms, but the build.sh script hard-codes libexec.
 %{_prefix}/libexec/generate_config

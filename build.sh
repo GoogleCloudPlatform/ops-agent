@@ -20,6 +20,7 @@
 prefix=/opt/google-cloud-ops-agent
 sysconfdir=/etc
 systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
+subagentdir=$prefix/subagents
 # TODO: Get version number from packaging
 if [ -z "$version" ]; then
   version=0.1
@@ -34,7 +35,7 @@ fi
 function build_collectd() {
   cd submodules/collectd
   autoreconf -f -i
-  ./configure --prefix=$prefix/lib/collectd \
+  ./configure --prefix=$subagentdir/collectd \
     --with-useragent="google-cloud-ops-agent-metrics/$version" \
     --with-data-max-name-len=256 \
     --disable-all-plugins \
@@ -70,12 +71,12 @@ function build_fluentbit() {
   cd submodules/fluent-bit
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$prefix/lib/fluent-bit
+  cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service
   rm "$DESTDIR/lib/systemd/system/fluent-bit.service"
-  rm -r "$DESTDIR/$prefix/lib/fluent-bit/etc"
+  rm -r "$DESTDIR$subagentdir/fluent-bit/etc"
 }
 
 function build_opsagent() {
