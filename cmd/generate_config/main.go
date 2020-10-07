@@ -48,6 +48,10 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
+		// Make sure the output directory exists before generating configs.
+		if err := os.MkdirAll(*outDir, 0755); err != nil {
+			return fmt.Errorf("can't create output directory %q: %w", *outDir, err)
+		}
 		path := filepath.Join(*outDir, "fluent_bit_main.conf")
 		if err := ioutil.WriteFile(path, []byte(mainConfig), 0644); err != nil {
 			return fmt.Errorf("can't write %q: %w", path, err)
@@ -60,6 +64,10 @@ func run() error {
 		collectdConfig, err := confgenerator.GenerateCollectdConfig(data)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
+		}
+		// Make sure the output directory exists before generating configs.
+		if err := os.MkdirAll(*outDir, 0755); err != nil {
+			return fmt.Errorf("can't create output directory %q: %w", *outDir, err)
 		}
 		path := filepath.Join(*outDir, "collectd.conf")
 		if err := ioutil.WriteFile(path, []byte(collectdConfig), 0644); err != nil {
