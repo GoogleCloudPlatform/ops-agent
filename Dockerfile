@@ -81,13 +81,47 @@ RUN ./build-rpm.sh
 
 FROM centos:8 AS centos8
 
-
 RUN yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
     yum config-manager --set-enabled PowerTools && \
     yum -y install golang git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-rpm.sh
+
+# Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
+FROM opensuse/leap:42.3 as sles12
+
+RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build cmake systemd-devel \
+# Add home:Ledest:devel repo to install >3.4 bison
+&& zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
+&& zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
+&& zypper -n --gpg-auto-import-keys refresh \
+&& zypper -n install bison>3.4 go \
+# Allow fluent-bit to find systemd
+&& ln -fs /usr/lib/systemd /lib/systemd
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-rpm.sh
+
+FROM opensuse/leap:15.1 as sles15
+
+RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build cmake systemd-devel \
+# Add home:ptrommler:formal repo to install >3.4 bison
+&& zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
+&& zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_15.1/devel:languages:go.repo \
+&& zypper -n --gpg-auto-import-keys refresh \
+&& zypper -n install bison>3.4 go \
+# Allow fluent-bit to find systemd
+&& ln -fs /usr/lib/systemd /lib/systemd
 
 ARG PKG_VERSION=0.1.0
 
@@ -110,3 +144,9 @@ COPY --from=centos7 /google-cloud-ops-agent*.rpm /
 
 COPY --from=centos8 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8 /google-cloud-ops-agent*.rpm /
+
+COPY --from=sles12 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
+COPY --from=sles12 /google-cloud-ops-agent*.rpm /
+
+COPY --from=sles15 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
+COPY --from=sles15 /google-cloud-ops-agent*.rpm /

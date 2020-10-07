@@ -1,3 +1,8 @@
+%if 0%{?sle_version} > 0
+# we expect the distro suffix
+%global dist .sles%(expr substr %{sle_version} 1 2)
+%endif
+
 Name: google-cloud-ops-agent
 Version: %{package_version}
 Release: 1%{?dist}
@@ -24,7 +29,9 @@ DESTDIR="%{buildroot}" ./build.sh
 # but the build.sh script hard-codes lib.
 %{_prefix}/lib/fluent-bit/*
 %{_prefix}/lib/collectd/*
-%{_libexecdir}/generate_config
+# We aren't using %{_libexecdir} here because that would be lib on some
+# platforms, but the build.sh script hard-codes libexec.
+%{_prefix}/libexec/generate_config
 %{_unitdir}/%{name}*
 
 %changelog
