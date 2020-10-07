@@ -117,15 +117,37 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 	return config, nil
 }
 
+// defaultTails returns the default Tail sections for the agents' own logs.
+func defaultTails() (tails []*conf.Tail) {
+	return []*conf.Tail {
+		{
+			Tag:  "ops-agent-fluent-bit",
+			// TODO(ycchou): Pass in this value via Systemd.
+			DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-fluent-bit",
+			// TODO(lingshi): Pass in this value via Systemd.
+			Path: "/var/log/google-cloud-ops-agent/subagents/fluent-bit.log",
+		},
+		{
+			Tag:  "ops-agent-collectd",
+			// TODO(ycchou): Pass in this value via Systemd.
+			DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-collectd",
+			// TODO(lingshi): Pass in this value via Systemd.
+			Path: "/var/log/google-cloud-ops-agent/subagents/collectd.log",
+		},
+	}
+}
+
 func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs []*output) (string, string, error) {
 	fbSyslogs, err := extractFluentBitSyslogs(inputs)
 	if err != nil {
 		return "", "", err
 	}
-	fbTails, err := extractFluentBitTails(inputs)
+	extractedTails, err := extractFluentBitTails(inputs)
 	if err != nil {
 		return "", "", err
 	}
+	fbTails := defaultTails()
+	fbTails = append(fbTails, extractedTails...)
 	fbFilterParsers, err := extractFluentBitFilters(inputs, processors)
 	if err != nil {
 		return "", "", err
