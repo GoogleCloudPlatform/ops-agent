@@ -582,7 +582,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 ops-agent-fluent-bit
+    DB                 /var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-fluent-bit
     Path               /var/log/google-cloud-ops-agent/subagents/fluent-bit.log
     Tag                ops-agent-fluent-bit
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
@@ -610,7 +610,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 ops-agent-collectd
+    DB                 /var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-collectd
     Path               /var/log/google-cloud-ops-agent/subagents/collectd.log
     Tag                ops-agent-collectd
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
@@ -749,7 +749,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 ops-agent-fluent-bit
+    DB                 /var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-fluent-bit
     Path               /var/log/google-cloud-ops-agent/subagents/fluent-bit.log
     Tag                ops-agent-fluent-bit
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
@@ -777,7 +777,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 ops-agent-collectd
+    DB                 /var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-collectd
     Path               /var/log/google-cloud-ops-agent/subagents/collectd.log
     Tag                ops-agent-collectd
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.

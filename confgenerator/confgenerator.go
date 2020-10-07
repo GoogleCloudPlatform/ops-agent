@@ -215,7 +215,8 @@ func extractFluentBitTail(i input) (*conf.Tail, error) {
 	}
 	fbTail := conf.Tail{
 		Tag:  i.LogSourceID,
-		DB:   i.LogSourceID,
+		// TODO(ycchou): Pass in directory prefix set by Systemd.
+		DB:   fmt.Sprintf("/var/lib/google-cloud-ops-agent/buffers/fluent-bit/%s", i.LogSourceID),
 		Path: strings.Join(i.File.Paths, ","),
 	}
 	if len(i.File.ExcludePaths) != 0 {

@@ -300,13 +300,15 @@ func defaultTails() (tails []*Tail) {
         return []*Tail {
                 {
                         Tag:  "ops-agent-fluent-bit",
-                        DB:   "ops-agent-fluent-bit",
+			// TODO(ycchou): Pass in this value via Systemd.
+                        DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-fluent-bit",
                         // TODO(lingshi): Pass in this value via Systemd.
                         Path: "/var/log/google-cloud-ops-agent/subagents/fluent-bit.log",
                 },
                 {
                         Tag:  "ops-agent-collectd",
-                        DB:   "ops-agent-collectd",
+			// TODO(ycchou): Pass in this value via Systemd.
+                        DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-collectd",
                         // TODO(lingshi): Pass in this value via Systemd.
                         Path: "/var/log/google-cloud-ops-agent/subagents/collectd.log",
                 },
