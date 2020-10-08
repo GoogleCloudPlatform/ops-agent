@@ -39,7 +39,6 @@ const (
 
   scrapeIntervalConfigFormat = "Interval %v\n"
 
-  // TODO(lingshi): Make systemd pass in the Collectd log path.
   fixedConfig = `
 # Explicitly set hostname to "" to indicate the default resource.
 Hostname ""
@@ -57,7 +56,7 @@ LoadPlugin syslog
 LoadPlugin logfile
 <Plugin "logfile">
   LogLevel "info"
-  File "/var/log/google-cloud-ops-agent/subagents/collectd.log"
+  File "{{.LogsDir}}/collectd.log"
   Timestamp true
 </Plugin>
 
@@ -123,7 +122,7 @@ LoadPlugin swap
   "process":    ``,
 }
 
-func GenerateCollectdConfig(metrics Metrics) (string, error) {
+func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
   var sb strings.Builder
 
   // -- SCRAPE INTERVAL --
@@ -147,7 +146,15 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
   sb.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
 
   // -- FIXED CONFIG --
-  sb.WriteString(fixedConfig)
+  var fixedConfigBuilder strings.Builder
+  fixedConfigTemplate, err := template.New("collectdFixedConf").Parse(fixedConfig)
+  if err != nil {
+    return "", err
+  }
+  if err = fixedConfigTemplate.Execute(&fixedConfigBuilder, struct{ LogsDir string }{ logsDir }); err != nil {
+    return "", err
+  }
+  sb.WriteString(fixedConfigBuilder.String())
 
   // -- CUSTOM CONFIG --
   // Write the configuration for each user-specified metric to scrape.
@@ -161,7 +168,7 @@ func GenerateCollectdConfig(metrics Metrics) (string, error) {
   }
 
   // -- PROCESSES PLUGIN CONFIG
-  err := appendProcessesPluginConfig(&sb, metrics.Input)
+  err = appendProcessesPluginConfig(&sb, metrics.Input)
   if err != nil {
     return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
   }

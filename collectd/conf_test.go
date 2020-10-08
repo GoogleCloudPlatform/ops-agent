@@ -26,6 +26,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+const (
+	defaultLogsDir = "/var/log/google-cloud-ops-agent/subagents"
+)
+
 var (
 	updateGolden = flag.Bool("update_golden", false, "Whether to update the golden files if they differ or don't exist.")
 )
@@ -44,7 +48,7 @@ func TestValidInput(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			goldenFilepath := filepath.Join("testdata", testName+".golden")
 
-			conf, err := GenerateCollectdConfig(metricsConfig)
+			conf, err := GenerateCollectdConfig(metricsConfig, defaultLogsDir)
 			if err != nil {
 				t.Errorf("error running GenerateCollectdConfig(%+v): %s", metricsConfig, err)
 				return
@@ -60,7 +64,7 @@ func TestValidInput(t *testing.T) {
 func TestInvalidMetricName(t *testing.T) {
 	invalidMetricNameConfig := Metrics{Input: Input{Include: []string{"not_a_metric"}}}
 
-	conf, err := GenerateCollectdConfig(invalidMetricNameConfig)
+	conf, err := GenerateCollectdConfig(invalidMetricNameConfig, defaultLogsDir)
 	if err == nil {
 		fmt.Printf("Unexpected successful result:\n%s", conf)
 		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", invalidMetricNameConfig)
@@ -70,7 +74,7 @@ func TestInvalidMetricName(t *testing.T) {
 func TestOutOfBoundsScrapeInterval(t *testing.T) {
 	invalidScrapeIntervalConfig := Metrics{Interval: "2s"}
 
-	conf, err := GenerateCollectdConfig(invalidScrapeIntervalConfig)
+	conf, err := GenerateCollectdConfig(invalidScrapeIntervalConfig, defaultLogsDir)
 	if err == nil {
 		fmt.Printf("Unexpected successful result:\n%s", conf)
 		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", invalidScrapeIntervalConfig)
@@ -80,7 +84,7 @@ func TestOutOfBoundsScrapeInterval(t *testing.T) {
 func TestInvalidScrapeInterval(t *testing.T) {
 	scrapeIntervalMissingSuffixConfig := Metrics{Interval: "24"}
 
-	conf, err := GenerateCollectdConfig(scrapeIntervalMissingSuffixConfig)
+	conf, err := GenerateCollectdConfig(scrapeIntervalMissingSuffixConfig, defaultLogsDir)
 	if err == nil {
 		fmt.Printf("Unexpected successful result:\n%s", conf)
 		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", scrapeIntervalMissingSuffixConfig)

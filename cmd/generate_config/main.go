@@ -26,9 +26,11 @@ import (
 )
 
 var (
-	service = flag.String("service", "", "service to generate config for")
-	outDir  = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input   = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to unified agents config")
+	service  = flag.String("service", "", "service to generate config for")
+	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
+	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to unified agents config")
+	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
+	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
 
 func main() {
@@ -44,7 +46,7 @@ func run() error {
 	}
 	switch *service {
 	case "fluentbit":
-		mainConfig, parserConfig, err := confgenerator.GenerateFluentBitConfigs(data)
+		mainConfig, parserConfig, err := confgenerator.GenerateFluentBitConfigs(data, *logsDir, *stateDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -61,7 +63,7 @@ func run() error {
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "collectd":
-		collectdConfig, err := confgenerator.GenerateCollectdConfig(data)
+		collectdConfig, err := confgenerator.GenerateCollectdConfig(data, *logsDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}

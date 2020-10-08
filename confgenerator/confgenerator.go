@@ -79,12 +79,12 @@ type output struct {
 	ID     string  `yaml:"id"`
 }
 
-func GenerateCollectdConfig(input []byte) (config string, err error) {
+func GenerateCollectdConfig(input []byte, logsDir string) (config string, err error) {
 	unifiedConfig, err := unifiedConfigReader(input)
 	if err != nil {
 		return "", err
 	}
-	collectdConfig, err := collectd.GenerateCollectdConfig(unifiedConfig.Metrics)
+	collectdConfig, err := collectd.GenerateCollectdConfig(unifiedConfig.Metrics, logsDir)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +94,7 @@ func GenerateCollectdConfig(input []byte) (config string, err error) {
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logs`
 // does not exist as a top-level field in the input yaml format.
-func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig string, err error) {
+func GenerateFluentBitConfigs(input []byte, logsDir string, stateDir string) (mainConfig string, parserConfig string, err error) {
 	unifiedConfig, err := unifiedConfigReader(input)
 	if err != nil {
 		return "", "", err
@@ -105,7 +105,7 @@ func GenerateFluentBitConfigs(input []byte) (mainConfig string, parserConfig str
 	if unifiedConfig.Logging.Input == nil {
 		return "", "", nil
 	}
-	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors, unifiedConfig.Logging.Outputs)
+	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors, unifiedConfig.Logging.Outputs, logsDir, stateDir)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -118,26 +118,22 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
-func defaultTails() (tails []*conf.Tail) {
+func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 	return []*conf.Tail {
 		{
 			Tag:  "ops-agent-fluent-bit",
-			// TODO(ycchou): Pass in this value via Systemd.
-			DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-fluent-bit",
-			// TODO(lingshi): Pass in this value via Systemd.
-			Path: "/var/log/google-cloud-ops-agent/subagents/fluent-bit.log",
+			DB:   fmt.Sprintf("%s/buffers/fluent-bit/ops-agent-fluent-bit", stateDir),
+			Path: fmt.Sprintf("%s/fluent-bit.log", logsDir),
 		},
 		{
 			Tag:  "ops-agent-collectd",
-			// TODO(ycchou): Pass in this value via Systemd.
-			DB:   "/var/lib/google-cloud-ops-agent/buffers/fluent-bit/ops-agent-collectd",
-			// TODO(lingshi): Pass in this value via Systemd.
-			Path: "/var/log/google-cloud-ops-agent/subagents/collectd.log",
+			DB:   fmt.Sprintf("%s/buffers/fluent-bit/ops-agent-collectd", stateDir),
+			Path: fmt.Sprintf("%s/collectd.log", logsDir),
 		},
 	}
 }
 
-func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs []*output) (string, string, error) {
+func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs []*output, logsDir string, stateDir string) (string, string, error) {
 	fbSyslogs, err := extractFluentBitSyslogs(inputs)
 	if err != nil {
 		return "", "", err
@@ -146,7 +142,7 @@ func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs 
 	if err != nil {
 		return "", "", err
 	}
-	fbTails := defaultTails()
+	fbTails := defaultTails(logsDir, stateDir)
 	fbTails = append(fbTails, extractedTails...)
 	fbFilterParsers, err := extractFluentBitFilters(inputs, processors)
 	if err != nil {

@@ -26,6 +26,8 @@ const (
 	validTestdataDir   = "testdata/valid"
 	invalidTestdataDir = "testdata/invalid"
 	defaultGoldenPath  = "default_config"
+	defaultLogsDir     = "/var/log/google-cloud-ops-agent/subagents"
+	defaultStateDir    = "/var/lib/google-cloud-ops-agent"
 )
 
 var (
@@ -93,7 +95,7 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 			}
 			expectedCollectdConfig := string(rawExpectedCollectdConfig)
 
-			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig)
+			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
 				return
@@ -105,7 +107,7 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 				t.Errorf("test %q: fluentbit parser configuration mismatch (-want +got):\n%s", testName, diff)
 			}
 
-			collectdConf, err := GenerateCollectdConfig(unifiedConfig)
+			collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
 				return
@@ -132,7 +134,7 @@ func TestExtractFluentBitConfInvalidInput(t *testing.T) {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
 				return
 			}
-			if _, _, err := GenerateFluentBitConfigs(unifiedConfig); err == nil {
+			if _, _, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir); err == nil {
 				t.Errorf("test %q: extractFluentBitConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
 			}
 		})
