@@ -63,20 +63,6 @@ COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
 
-FROM ubuntu:eoan AS eoan
-
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
-
-ARG PKG_VERSION=0.1.0
-
-COPY . /work
-WORKDIR /work
-RUN ./build-deb.sh
-
 FROM ubuntu:bionic AS bionic
 
 RUN apt-get update && \
@@ -192,9 +178,6 @@ COPY --from=stretch /google-cloud-ops-agent*.deb /
 
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
-
-COPY --from=eoan /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-eoan.tgz
-COPY --from=eoan /google-cloud-ops-agent*.deb /
 
 COPY --from=bionic /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
 COPY --from=bionic /google-cloud-ops-agent*.deb /
