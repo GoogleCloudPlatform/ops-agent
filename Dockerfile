@@ -63,6 +63,60 @@ COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
 
+FROM ubuntu:eoan AS eoan
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-deb.sh
+
+FROM ubuntu:bionic AS bionic
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
+    add-apt-repository ppa:longsleep/golang-backports && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install golang-go git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+RUN ./build-deb.sh
+
+FROM ubuntu:xenial AS xenial
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
+    add-apt-repository ppa:gophers/archive && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install golang-1.11-go git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs
+
+ARG PKG_VERSION=0.1.0
+
+COPY . /work
+WORKDIR /work
+
+# golang-1.11-go installs Go in a separate directory, so it needs to
+# be added to the PATH for build.sh to find it. But debuild cleans PATH,
+# so we need to tell it to re-add it after cleaning PATH.
+RUN echo DEBUILD_PREPEND_PATH=/usr/lib/go-1.11/bin >> /etc/devscripts.conf && \
+    ./build-deb.sh
+
 FROM centos:7 AS centos7
 
 RUN yum -y update && \
@@ -138,6 +192,15 @@ COPY --from=stretch /google-cloud-ops-agent*.deb /
 
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
+
+COPY --from=eoan /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-eoan.tgz
+COPY --from=eoan /google-cloud-ops-agent*.deb /
+
+COPY --from=bionic /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
+COPY --from=bionic /google-cloud-ops-agent*.deb /
+
+COPY --from=xenial /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
+COPY --from=xenial /google-cloud-ops-agent*.deb /
 
 COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7 /google-cloud-ops-agent*.rpm /
