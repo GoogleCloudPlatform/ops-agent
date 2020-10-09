@@ -63,10 +63,4 @@ metrics:
   interval: 60s
   input:
     include:
-    - cpu
-    - disk
-    - memory
-    - network
-    - perprocess
-    - process
-    - swap
+    - hostmetrics

@@ -18,8 +18,6 @@ package collectd
 
 import (
   "fmt"
-  "reflect"
-  "sort"
   "strings"
   "text/template"
   "time"
@@ -157,20 +155,21 @@ func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
   sb.WriteString(fixedConfigBuilder.String())
 
   // -- CUSTOM CONFIG --
-  // Write the configuration for each user-specified metric to scrape.
-  sort.Strings(metrics.Input.Include)
   for _, metric := range metrics.Input.Include {
-    if config, ok := translation[metric]; ok {
-      sb.WriteString(config)
+    if metric == "hostmetrics" {
+      // TODO(lingshi): Add logic to inspect user input to determine what is included instead of hard coding
+      // when we settle down the design.
+      for _, metric_group := range []string{"cpu", "disk", "memory", "network", "swap"} {
+        sb.WriteString(translation[metric_group])
+      }
+      // -- PROCESSES PLUGIN CONFIG
+      err = appendProcessesPluginConfig(&sb, metrics.Input)
+      if err != nil {
+        return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
+      }
     } else {
-      return "", fmt.Errorf("metric input '%s' not in known values: %v", metric, reflect.ValueOf(translation).MapKeys())
+      return "", fmt.Errorf("metric input '%s' not in known values: ['hostmetrics']", metric)
     }
-  }
-
-  // -- PROCESSES PLUGIN CONFIG
-  err = appendProcessesPluginConfig(&sb, metrics.Input)
-  if err != nil {
-    return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
   }
 
   return sb.String(), nil
@@ -179,13 +178,10 @@ func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
 func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Input) error {
   var includeProcess, includePerProcess bool
 
-  for _, metric := range metrics.Include {
-    if metric == "process" {
-      includeProcess = true
-    } else if metric == "perprocess" {
-      includePerProcess = true
-    }
-  }
+  // TODO(lingshi): Add logic to inspect the metrics Input to determine whether to
+  // turn on process and per-process metrics once we settle with the design.
+  includeProcess = true
+  includePerProcess = true
 
   if !includeProcess && !includePerProcess {
     return nil
