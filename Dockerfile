@@ -108,7 +108,8 @@ FROM centos:7 AS centos7
 RUN yum -y update && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build && \
+    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
+    expect rpm-sign && \
     yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum install -y cmake3 golang && \
     ln -fs cmake3 /usr/bin/cmake
@@ -126,7 +127,9 @@ RUN yum -y update && \
     yum config-manager --set-enabled PowerTools && \
     yum -y install golang git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
+    expect rpm-sign
+
 
 ARG PKG_VERSION=0.1.0
 
@@ -137,7 +140,7 @@ RUN ./build-rpm.sh
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/leap:42.3 as sles12
 
-RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build cmake systemd-devel \
+RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel \
 # Add home:Ledest:devel repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
@@ -154,7 +157,7 @@ RUN ./build-rpm.sh
 
 FROM opensuse/leap:15.1 as sles15
 
-RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build cmake systemd-devel \
+RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel \
 # Add home:ptrommler:formal repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_15.1/devel:languages:go.repo \
