@@ -35,12 +35,9 @@ var (
 )
 
 var validConfigTests = map[string]Metrics{
-	"empty":                   {},
-	"scrape_metrics_subset":   {Input: Input{Include: []string{"disk"}}},
-	"custom_interval":         {Interval: "30s"},
-	"all_custom_options":      {Interval: "100s", Input: Input{Include: []string{"cpu", "disk", "swap", "memory", "perprocess", "process", "network"}}},
-	"only_process_metrics":    {Input: Input{Include: []string{"process"}}},
-	"only_perprocess_metrics": {Input: Input{Include: []string{"perprocess"}}},
+	"empty":           {},
+	"custom_interval": {Interval: "30s"},
+	"all_hostmetrics": {Interval: "100s", Input: Input{Include: []string{"hostmetrics"}}},
 }
 
 func TestValidInput(t *testing.T) {
@@ -58,16 +55,6 @@ func TestValidInput(t *testing.T) {
 				t.Errorf("GenerateCollectdConfig(%+v) failed unexpectedly: %s", metricsConfig, result)
 			}
 		})
-	}
-}
-
-func TestInvalidMetricName(t *testing.T) {
-	invalidMetricNameConfig := Metrics{Input: Input{Include: []string{"not_a_metric"}}}
-
-	conf, err := GenerateCollectdConfig(invalidMetricNameConfig, defaultLogsDir)
-	if err == nil {
-		fmt.Printf("Unexpected successful result:\n%s", conf)
-		t.Errorf("GenerateCollectdConfig(%+v): got err == nil, want err != nil.", invalidMetricNameConfig)
 	}
 }
 
