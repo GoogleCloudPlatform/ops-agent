@@ -9,6 +9,7 @@ Release: 1%{?dist}
 Summary: Google Cloud Ops Agent
 Packager: Google Cloud Ops Agent <google-cloud-ops-agent@google.com>
 License: ASL 2.0
+Conflicts: stackdriver-agent, google-fluentd
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %description
