@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -137,8 +138,17 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
 				return
 			}
-			if _, _, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir); err == nil {
-				t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
+			// TODO(lingshi): Figure out some more robust way to distinguish logging and metrics.
+			if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "logging-") {
+				if _, _, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir); err == nil {
+					t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
+				}
+			} else if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "metrics-") {
+				if _, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir); err == nil {
+					t.Errorf("test %q: GenerateCollectdConfig succeeded, want error. file:\n%s", testName, unifiedConfig)
+				}
+			} else {
+				t.Errorf("test %q: Unsupported test type. Must start with 'logging-' or 'metrics-'.", testName)
 			}
 		})
 	}

@@ -1,0 +1,13 @@
+metrics:
+  receivers:
+    hostmetrics_receiver:
+      type: hostmetrics
+      collection_interval: 2s
+  exporters:
+    google_exporter:
+      type: google_cloud_monitoring
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics_receiver]
+        exporters: [google_exporter]
