@@ -1,4 +1,4 @@
-Interval 100
+Interval 60
 
 # Explicitly set hostname to "" to indicate the default resource.
 Hostname ""

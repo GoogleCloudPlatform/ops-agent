@@ -35,9 +35,56 @@ var (
 )
 
 var validConfigTests = map[string]Metrics{
-	"empty":           {},
-	"custom_interval": {Interval: "30s"},
-	"all_hostmetrics": {Interval: "100s", Input: Input{Include: []string{"hostmetrics"}}},
+	"empty": {},
+	"custom_interval": {
+		Receivers: map[string]Receiver{
+			"custom_interval_receiver": {
+				Type:               "hostmetrics",
+				CollectionInterval: "30s",
+			},
+		},
+		Exporters: map[string]Exporter{
+			"google_exporter": {
+				Type: "google_cloud_monitoring",
+			},
+		},
+		Service: Service{
+			Pipelines: map[string]Pipeline{
+				"pipeline_id": Pipeline{
+					ReceiverIDs: []string{
+						"custom_interval_receiver",
+					},
+					ExporterIDs: []string{
+						"google_exporter",
+					},
+				},
+			},
+		},
+	},
+	"all_hostmetrics": {
+		Receivers: map[string]Receiver{
+			"all_hostmetrics_exporter": {
+				Type: "hostmetrics",
+			},
+		},
+		Exporters: map[string]Exporter{
+			"google_exporter": {
+				Type: "google_cloud_monitoring",
+			},
+		},
+		Service: Service{
+			Pipelines: map[string]Pipeline{
+				"pipeline_id": Pipeline{
+					ReceiverIDs: []string{
+						"all_hostmetrics_exporter",
+					},
+					ExporterIDs: []string{
+						"google_exporter",
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestValidInput(t *testing.T) {
@@ -59,7 +106,31 @@ func TestValidInput(t *testing.T) {
 }
 
 func TestOutOfBoundsScrapeInterval(t *testing.T) {
-	invalidScrapeIntervalConfig := Metrics{Interval: "2s"}
+	invalidScrapeIntervalConfig := Metrics{
+		Receivers: map[string]Receiver{
+			"custom_interval_receiver": {
+				Type:               "hostmetrics",
+				CollectionInterval: "2s",
+			},
+		},
+		Exporters: map[string]Exporter{
+			"google_exporter": {
+				Type: "google_cloud_monitoring",
+			},
+		},
+		Service: Service{
+			Pipelines: map[string]Pipeline{
+				"pipeline_id": Pipeline{
+					ReceiverIDs: []string{
+						"custom_interval_receiver",
+					},
+					ExporterIDs: []string{
+						"google_exporter",
+					},
+				},
+			},
+		},
+	}
 
 	conf, err := GenerateCollectdConfig(invalidScrapeIntervalConfig, defaultLogsDir)
 	if err == nil {
@@ -69,7 +140,31 @@ func TestOutOfBoundsScrapeInterval(t *testing.T) {
 }
 
 func TestInvalidScrapeInterval(t *testing.T) {
-	scrapeIntervalMissingSuffixConfig := Metrics{Interval: "24"}
+	scrapeIntervalMissingSuffixConfig := Metrics{
+		Receivers: map[string]Receiver{
+			"custom_interval_receiver": {
+				Type:               "hostmetrics",
+				CollectionInterval: "24",
+			},
+		},
+		Exporters: map[string]Exporter{
+			"google_exporter": {
+				Type: "google_cloud_monitoring",
+			},
+		},
+		Service: Service{
+			Pipelines: map[string]Pipeline{
+				"pipeline_id": Pipeline{
+					ReceiverIDs: []string{
+						"custom_interval_receiver",
+					},
+					ExporterIDs: []string{
+						"google_exporter",
+					},
+				},
+			},
+		},
+	}
 
 	conf, err := GenerateCollectdConfig(scrapeIntervalMissingSuffixConfig, defaultLogsDir)
 	if err == nil {

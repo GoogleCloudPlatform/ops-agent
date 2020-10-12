@@ -17,19 +17,43 @@
 package collectd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"text/template"
 	"time"
 )
 
+// Ops Agent config.
+// TODO(lingshi) Move these structs and the validation logic to the confgenerator folder. Make them pointers.
 type Metrics struct {
-	Interval string `yaml:"interval"` // time.Duration format
-	Input    Input  `yaml:"input"`
+	Receivers map[string]Receiver `yaml:"receivers"`
+	Exporters map[string]Exporter `yaml:"exporters"`
+	Service   Service             `yaml:"service"`
 }
 
-type Input struct {
-	Include []string `yaml:"include"`
+type Receiver struct {
+	Type               string `yaml:"type"`
+	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+}
+
+type Exporter struct {
+	Type string `yaml:"type"`
+}
+
+type Service struct {
+	Pipelines map[string]Pipeline `yaml:"pipelines"`
+}
+
+type Pipeline struct {
+	ReceiverIDs []string `yaml:"receivers"`
+	ExporterIDs []string `yaml:"exporters"`
+}
+
+// Collectd internal config related.
+type collectdConf struct {
+	scrapeInternal    float64
+	enableHostMetrics bool
 }
 
 const (
@@ -123,70 +147,152 @@ LoadPlugin swap
 func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
-	// -- SCRAPE INTERVAL --
-	// Write the configuration line for the scrape interval. If the user didn't
-	// specify a value, use the default value. Collectd configuration requires
-	// this value to be in seconds. Minimum allowed value is 10 seconds.
-	// NOTE: Internally, collectd parses this value with strtod(...). If this
-	// fails, it will silently fall back to 10 seconds. See:
-	// https://github.com/Stackdriver/collectd/blob/stackdriver-agent-5.8.1/src/daemon/configfile.c#L909-L911
-	interval := defaultScrapeInterval
-	if metrics.Interval != "" {
-		t, err := time.ParseDuration(metrics.Interval)
-		if err != nil {
-			return "", fmt.Errorf("invalid scrape interval: %v", err)
-		}
-		interval = t.Seconds()
-		if interval < 10 {
-			return "", fmt.Errorf("minimum allowed scrape interval is 10s, got %vs", interval)
-		}
-	}
-	sb.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
-
-	// -- FIXED CONFIG --
-	var fixedConfigBuilder strings.Builder
-	fixedConfigTemplate, err := template.New("collectdFixedConf").Parse(fixedConfig)
+	collectdConf, err := validatedCollectdConfig(metrics)
 	if err != nil {
 		return "", err
 	}
-	if err = fixedConfigTemplate.Execute(&fixedConfigBuilder, struct{ LogsDir string }{logsDir}); err != nil {
+
+	appendScrapeIntervalConfig(&sb, collectdConf.scrapeInternal)
+	err = appendFixedConfig(&sb, logsDir)
+	if err != nil {
 		return "", err
 	}
-	sb.WriteString(fixedConfigBuilder.String())
 
-	// -- CUSTOM CONFIG --
-	for _, metric := range metrics.Input.Include {
-		if metric == "hostmetrics" {
-			// TODO(lingshi): Add logic to inspect user input to determine what is included instead of hard coding
-			// when we settle down the design.
-			for _, metric_group := range []string{"cpu", "disk", "memory", "network", "swap"} {
-				sb.WriteString(translation[metric_group])
-			}
-			// -- PROCESSES PLUGIN CONFIG
-			err = appendProcessesPluginConfig(&sb, metrics.Input)
-			if err != nil {
-				return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
-			}
-		} else {
-			return "", fmt.Errorf("metric input '%s' not in known values: ['hostmetrics']", metric)
+	if collectdConf.enableHostMetrics {
+		err = appendHostMetricsConfig(&sb)
+		if err != nil {
+			return "", err
 		}
 	}
 
 	return sb.String(), nil
 }
 
-func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Input) error {
-	var includeProcess, includePerProcess bool
+func validatedCollectdConfig(metrics Metrics) (*collectdConf, error) {
+	collectdConf := collectdConf{
+		scrapeInternal:    defaultScrapeInterval,
+		enableHostMetrics: false,
+	}
+	definedReceiverIDs := map[string]bool{}
+	definedExporterIDs := map[string]bool{}
 
-	// TODO(lingshi): Add logic to inspect the metrics Input to determine whether to
-	// turn on process and per-process metrics once we settle with the design.
-	includeProcess = true
-	includePerProcess = true
-
-	if !includeProcess && !includePerProcess {
-		return nil
+	// Skip validation if metrics config is not set.
+	// In other words receivers, exporters and pipelines are all empty.
+	if len(metrics.Receivers) == 0 && len(metrics.Exporters) == 0 && len(metrics.Service.Pipelines) == 0 {
+		return &collectdConf, nil
 	}
 
+	// Validate Metrics.Receivers.
+	if len(metrics.Receivers) != 1 {
+		return nil, errors.New("exactly one metrics receiver with type 'hostmetrics' is required.")
+	}
+	for receiverID, receiver := range metrics.Receivers {
+		if receiver.Type != "hostmetrics" {
+			return nil, fmt.Errorf("type %s is not supported for metrics receiver %s. Only 'hostmetrics' is supported.", receiver.Type, receiverID)
+		}
+		collectdConf.enableHostMetrics = true
+
+		if receiver.CollectionInterval != "" {
+			t, err := time.ParseDuration(receiver.CollectionInterval)
+			if err != nil {
+				return nil, fmt.Errorf("receiver %s has invalid collection interval %q: %s", receiverID, receiver.CollectionInterval, err)
+			}
+			interval := t.Seconds()
+			if interval < 10 {
+				return nil, fmt.Errorf("collection interval %vs for metrics receiver %s is below the minimum threshold of 10s.", interval, receiverID)
+			}
+			collectdConf.scrapeInternal = interval
+		}
+		definedReceiverIDs[receiverID] = true
+	}
+
+	// Validate Metrics.Exporters.
+	if len(metrics.Exporters) != 1 {
+		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
+	}
+	for exporterID, exporter := range metrics.Exporters {
+		if exporter.Type != "google_cloud_monitoring" {
+			return nil, fmt.Errorf("metrics exporter type %q is not supported. Only 'google_cloud_monitoring' is supported.", exporter.Type)
+		}
+		definedExporterIDs[exporterID] = true
+	}
+
+	// Validate Metrics.Service.
+	if len(metrics.Service.Pipelines) != 1 {
+		return nil, errors.New("exactly one metrics service pipeline is required.")
+	}
+	for _, pipeline := range metrics.Service.Pipelines {
+		if len(pipeline.ReceiverIDs) != 1 {
+			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
+		}
+		invalidReceiverIDs := findInvalid(definedReceiverIDs, pipeline.ReceiverIDs)
+		if len(invalidReceiverIDs) > 0 {
+			return nil, fmt.Errorf("metrics receivers not defined: %v", invalidReceiverIDs)
+		}
+
+		if len(pipeline.ExporterIDs) != 1 {
+			return nil, errors.New("exactly one exporter id is required in the metrics service pipeline exporter id list.")
+		}
+		invalidExporterIDs := findInvalid(definedExporterIDs, pipeline.ExporterIDs)
+		if len(invalidExporterIDs) > 0 {
+			return nil, fmt.Errorf("metrics exporters not defined: %v", invalidExporterIDs)
+		}
+	}
+	return &collectdConf, nil
+}
+
+// Checks if any string in a []string type slice is not in an allowed slice.
+func findInvalid(allowed map[string]bool, actual []string) []string {
+	var invalid []string
+	for _, v := range actual {
+		if !allowed[v] {
+			invalid = append(invalid, v)
+		}
+	}
+	return invalid
+}
+
+// Write the configuration line for the scrape interval. If the user didn't
+// specify a value, use the default value. Collectd configuration requires
+// this value to be in seconds. Minimum allowed value is 10 seconds.
+// NOTE: Internally, collectd parses this value with strtod(...). If this
+// fails, it will silently fall back to 10 seconds. See:
+// https://github.com/Stackdriver/collectd/blob/stackdriver-agent-5.8.1/src/daemon/configfile.c#L909-L911
+func appendScrapeIntervalConfig(configBuilder *strings.Builder, interval float64) {
+	configBuilder.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
+}
+
+func appendFixedConfig(configBuilder *strings.Builder, logsDir string) error {
+	var fixedConfigBuilder strings.Builder
+
+	fixedConfigTemplate, err := template.New("collectdFixedConf").Parse(fixedConfig)
+	if err != nil {
+		return err
+	}
+	if err = fixedConfigTemplate.Execute(&fixedConfigBuilder, struct{ LogsDir string }{logsDir}); err != nil {
+		return err
+	}
+	configBuilder.WriteString(fixedConfigBuilder.String())
+	return nil
+}
+
+func appendHostMetricsConfig(configBuilder *strings.Builder) error {
+	// TODO(lingshi): Add logic to inspect user input to determine what subgroups areis included instead of hard coding
+	// when we settle down the design.
+	for _, metricGroup := range []string{"cpu", "disk", "memory", "network", "swap"} {
+		configBuilder.WriteString(translation[metricGroup])
+	}
+
+	// -- PROCESSES PLUGIN CONFIG --
+	err := appendProcessesPluginConfig(configBuilder)
+	if err != nil {
+		return fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
+	}
+
+	return nil
+}
+
+func appendProcessesPluginConfig(configBuilder *strings.Builder) error {
 	processesPluginTemplate, err := template.New("processesPlugin").Parse(`
 LoadPlugin processes
 LoadPlugin match_regex
@@ -247,5 +353,5 @@ PostCacheChain "PostCache"
 
 	return processesPluginTemplate.Execute(
 		configBuilder,
-		struct{ IncludeProcess, IncludePerProcess bool }{includeProcess, includePerProcess})
+		struct{ IncludeProcess, IncludePerProcess bool }{true, true})
 }
