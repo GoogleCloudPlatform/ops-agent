@@ -17,27 +17,27 @@
 package collectd
 
 import (
-  "fmt"
-  "strings"
-  "text/template"
-  "time"
+	"fmt"
+	"strings"
+	"text/template"
+	"time"
 )
 
 type Metrics struct {
-  Interval string `yaml:"interval"` // time.Duration format
-  Input    Input  `yaml:"input"`
+	Interval string `yaml:"interval"` // time.Duration format
+	Input    Input  `yaml:"input"`
 }
 
 type Input struct {
-  Include []string `yaml:"include"`
+	Include []string `yaml:"include"`
 }
 
 const (
-  defaultScrapeInterval = float64(60)
+	defaultScrapeInterval = float64(60)
 
-  scrapeIntervalConfigFormat = "Interval %v\n"
+	scrapeIntervalConfigFormat = "Interval %v\n"
 
-  fixedConfig = `
+	fixedConfig = `
 # Explicitly set hostname to "" to indicate the default resource.
 Hostname ""
 
@@ -67,7 +67,7 @@ LoadPlugin write_gcm
 )
 
 var translation = map[string]string{
-  "cpu": `
+	"cpu": `
 LoadPlugin load
 LoadPlugin cpu
 <Plugin "cpu">
@@ -76,8 +76,8 @@ LoadPlugin cpu
   ReportByState true
 </Plugin>
 `,
-  // ---
-  "disk": `
+	// ---
+	"disk": `
 LoadPlugin disk
 <Plugin "disk">
 </Plugin>
@@ -90,15 +90,15 @@ LoadPlugin df
   ValuesPercentage true
 </Plugin>
 `,
-  // ---
-  "memory": `
+	// ---
+	"memory": `
 LoadPlugin memory
 <Plugin "memory">
   ValuesPercentage true
 </Plugin>
 `,
-  // ---
-  "network": `
+	// ---
+	"network": `
 LoadPlugin interface
 <Plugin "interface">
 </Plugin>
@@ -108,86 +108,86 @@ LoadPlugin tcpconns
   AllPortsSummary true
 </Plugin>
 `,
-  // ---
-  "swap": `
+	// ---
+	"swap": `
 LoadPlugin swap
 <Plugin "swap">
   ValuesPercentage true
 </Plugin>
 `,
-  // --- Known metrics whose translations are handled outside of this map.
-  "perprocess": ``,
-  "process":    ``,
+	// --- Known metrics whose translations are handled outside of this map.
+	"perprocess": ``,
+	"process":    ``,
 }
 
 func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
-  var sb strings.Builder
+	var sb strings.Builder
 
-  // -- SCRAPE INTERVAL --
-  // Write the configuration line for the scrape interval. If the user didn't
-  // specify a value, use the default value. Collectd configuration requires
-  // this value to be in seconds. Minimum allowed value is 10 seconds.
-  // NOTE: Internally, collectd parses this value with strtod(...). If this
-  // fails, it will silently fall back to 10 seconds. See:
-  // https://github.com/Stackdriver/collectd/blob/stackdriver-agent-5.8.1/src/daemon/configfile.c#L909-L911
-  interval := defaultScrapeInterval
-  if metrics.Interval != "" {
-    t, err := time.ParseDuration(metrics.Interval)
-    if err != nil {
-      return "", fmt.Errorf("invalid scrape interval: %v", err)
-    }
-    interval = t.Seconds()
-    if interval < 10 {
-      return "", fmt.Errorf("minimum allowed scrape interval is 10s, got %vs", interval)
-    }
-  }
-  sb.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
+	// -- SCRAPE INTERVAL --
+	// Write the configuration line for the scrape interval. If the user didn't
+	// specify a value, use the default value. Collectd configuration requires
+	// this value to be in seconds. Minimum allowed value is 10 seconds.
+	// NOTE: Internally, collectd parses this value with strtod(...). If this
+	// fails, it will silently fall back to 10 seconds. See:
+	// https://github.com/Stackdriver/collectd/blob/stackdriver-agent-5.8.1/src/daemon/configfile.c#L909-L911
+	interval := defaultScrapeInterval
+	if metrics.Interval != "" {
+		t, err := time.ParseDuration(metrics.Interval)
+		if err != nil {
+			return "", fmt.Errorf("invalid scrape interval: %v", err)
+		}
+		interval = t.Seconds()
+		if interval < 10 {
+			return "", fmt.Errorf("minimum allowed scrape interval is 10s, got %vs", interval)
+		}
+	}
+	sb.WriteString(fmt.Sprintf(scrapeIntervalConfigFormat, interval))
 
-  // -- FIXED CONFIG --
-  var fixedConfigBuilder strings.Builder
-  fixedConfigTemplate, err := template.New("collectdFixedConf").Parse(fixedConfig)
-  if err != nil {
-    return "", err
-  }
-  if err = fixedConfigTemplate.Execute(&fixedConfigBuilder, struct{ LogsDir string }{ logsDir }); err != nil {
-    return "", err
-  }
-  sb.WriteString(fixedConfigBuilder.String())
+	// -- FIXED CONFIG --
+	var fixedConfigBuilder strings.Builder
+	fixedConfigTemplate, err := template.New("collectdFixedConf").Parse(fixedConfig)
+	if err != nil {
+		return "", err
+	}
+	if err = fixedConfigTemplate.Execute(&fixedConfigBuilder, struct{ LogsDir string }{logsDir}); err != nil {
+		return "", err
+	}
+	sb.WriteString(fixedConfigBuilder.String())
 
-  // -- CUSTOM CONFIG --
-  for _, metric := range metrics.Input.Include {
-    if metric == "hostmetrics" {
-      // TODO(lingshi): Add logic to inspect user input to determine what is included instead of hard coding
-      // when we settle down the design.
-      for _, metric_group := range []string{"cpu", "disk", "memory", "network", "swap"} {
-        sb.WriteString(translation[metric_group])
-      }
-      // -- PROCESSES PLUGIN CONFIG
-      err = appendProcessesPluginConfig(&sb, metrics.Input)
-      if err != nil {
-        return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
-      }
-    } else {
-      return "", fmt.Errorf("metric input '%s' not in known values: ['hostmetrics']", metric)
-    }
-  }
+	// -- CUSTOM CONFIG --
+	for _, metric := range metrics.Input.Include {
+		if metric == "hostmetrics" {
+			// TODO(lingshi): Add logic to inspect user input to determine what is included instead of hard coding
+			// when we settle down the design.
+			for _, metric_group := range []string{"cpu", "disk", "memory", "network", "swap"} {
+				sb.WriteString(translation[metric_group])
+			}
+			// -- PROCESSES PLUGIN CONFIG
+			err = appendProcessesPluginConfig(&sb, metrics.Input)
+			if err != nil {
+				return "", fmt.Errorf("failed to generate 'processes' plugin config: %w", err)
+			}
+		} else {
+			return "", fmt.Errorf("metric input '%s' not in known values: ['hostmetrics']", metric)
+		}
+	}
 
-  return sb.String(), nil
+	return sb.String(), nil
 }
 
 func appendProcessesPluginConfig(configBuilder *strings.Builder, metrics Input) error {
-  var includeProcess, includePerProcess bool
+	var includeProcess, includePerProcess bool
 
-  // TODO(lingshi): Add logic to inspect the metrics Input to determine whether to
-  // turn on process and per-process metrics once we settle with the design.
-  includeProcess = true
-  includePerProcess = true
+	// TODO(lingshi): Add logic to inspect the metrics Input to determine whether to
+	// turn on process and per-process metrics once we settle with the design.
+	includeProcess = true
+	includePerProcess = true
 
-  if !includeProcess && !includePerProcess {
-    return nil
-  }
+	if !includeProcess && !includePerProcess {
+		return nil
+	}
 
-  processesPluginTemplate, err := template.New("processesPlugin").Parse(`
+	processesPluginTemplate, err := template.New("processesPlugin").Parse(`
 LoadPlugin processes
 LoadPlugin match_regex
 <Plugin "processes">
@@ -241,11 +241,11 @@ PostCacheChain "PostCache"
 </Chain>
 `)
 
-  if err != nil {
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  return processesPluginTemplate.Execute(
-    configBuilder,
-    struct{ IncludeProcess, IncludePerProcess bool }{includeProcess, includePerProcess})
+	return processesPluginTemplate.Execute(
+		configBuilder,
+		struct{ IncludeProcess, IncludePerProcess bool }{includeProcess, includePerProcess})
 }

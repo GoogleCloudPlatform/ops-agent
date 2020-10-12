@@ -76,7 +76,7 @@ type parseRegex struct {
 }
 
 type output struct {
-	ID     string  `yaml:"id"`
+	ID string `yaml:"id"`
 }
 
 func GenerateCollectdConfig(input []byte, logsDir string) (config string, err error) {
@@ -119,7 +119,7 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 
 // defaultTails returns the default Tail sections for the agents' own logs.
 func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
-	return []*conf.Tail {
+	return []*conf.Tail{
 		{
 			Tag:  "ops-agent-fluent-bit",
 			DB:   fmt.Sprintf("%s/buffers/fluent-bit/ops-agent-fluent-bit", stateDir),
@@ -232,7 +232,7 @@ func extractFluentBitTail(i input) (*conf.Tail, error) {
 		return nil, fmt.Errorf(`file LogSourceID=%q should have at least one path specified`, i.LogSourceID)
 	}
 	fbTail := conf.Tail{
-		Tag:  i.LogSourceID,
+		Tag: i.LogSourceID,
 		// TODO(ycchou): Pass in directory prefix set by Systemd.
 		DB:   fmt.Sprintf("/var/lib/google-cloud-ops-agent/buffers/fluent-bit/%s", i.LogSourceID),
 		Path: strings.Join(i.File.Paths, ","),
