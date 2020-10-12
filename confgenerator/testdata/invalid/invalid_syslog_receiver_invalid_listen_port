@@ -1,8 +1,10 @@
 logging:
   receivers:
-    test_file_source_id:
-      type: file
-      include_paths:
+    test_syslog_receiver_invalid_listen_port:
+      type: syslog
+      listen_host: 1.1.1.1
+      listen_port: 0
+      transport_protocol: tcp
   exporters:
     test_google_cloud_logging:
       type: google
@@ -10,6 +12,6 @@ logging:
     pipelines:
       test_pipeline:
         receivers:
-        - test_file_source_id
+        - test_syslog_receiver_invalid_listen_port
         exporters:
         - test_google_cloud_logging

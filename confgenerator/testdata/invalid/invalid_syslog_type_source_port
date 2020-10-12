@@ -1,7 +1,0 @@
-logging:
-  input:
-  - log_source_id: test_syslog_source_id_tcp
-    syslog:
-    - mode: test_mode
-      listen: "1.1.1.1"
-      port: 0

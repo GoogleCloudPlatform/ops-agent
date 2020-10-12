@@ -27,10 +27,10 @@ func TestFilterParser(t *testing.T) {
 		Parser:  "test_parser",
 	}
 	want := `[FILTER]
-    Name parser
-    Match test_match
+    Name     parser
+    Match    test_match
     Key_Name test_key_name
-    Parser test_parser`
+    Parser   test_parser`
 	got, err := f.renderConfig()
 	if err != nil {
 		t.Errorf("got error: %v, want no error", err)
@@ -74,6 +74,33 @@ func TestFilterParserErrors(t *testing.T) {
 	}
 }
 
+func TestFilterRewriteTag(t *testing.T) {
+	f := FilterRewriteTag{
+		Match: "test_match",
+	}
+	want := `[FILTER]
+    Name                  rewrite_tag
+    Match                 test_match
+    Rule                  $logName .* $logName false
+    Emitter_Storage.type  filesystem
+    Emitter_Mem_Buf_Limit 10M`
+	got, err := f.renderConfig()
+	if err != nil {
+		t.Errorf("got error: %v, want no error", err)
+		return
+	}
+	if diff := diff.Diff(want, got); diff != "" {
+		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+	}
+}
+
+func TestFilterRewriteTagError(t *testing.T) {
+	f := FilterRewriteTag{}
+	if _, err := f.renderConfig(); err == nil {
+		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() succeeded, want error", f)
+	}
+}
+
 func TestParserJSON(t *testing.T) {
 	tests := []struct {
 		parserJSON         ParserJSON
@@ -86,9 +113,9 @@ func TestParserJSON(t *testing.T) {
 				TimeFormat: "test_time_format",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format json
-    Time_Key test_time_key
+    Name        test_name
+    Format      json
+    Time_Key    test_time_key
     Time_Format test_time_format`,
 		},
 		{
@@ -97,8 +124,8 @@ func TestParserJSON(t *testing.T) {
 				TimeFormat: "test_time_format",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format json
+    Name        test_name
+    Format      json
     Time_Format test_time_format`,
 		},
 		{
@@ -107,9 +134,9 @@ func TestParserJSON(t *testing.T) {
 				TimeKey: "test_time_key",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format json
-    Time_Key test_time_key`,
+    Name        test_name
+    Format      json
+    Time_Key    test_time_key`,
 		},
 	}
 	for _, tc := range tests {
@@ -166,9 +193,9 @@ func TestParserRegex(t *testing.T) {
 				Regex: "test_regex",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format regex
-    Regex test_regex`,
+    Name        test_name
+    Format      regex
+    Regex       test_regex`,
 		},
 		{
 			parserRegex: ParserRegex{
@@ -178,10 +205,10 @@ func TestParserRegex(t *testing.T) {
 				TimeFormat: "test_time_format",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format regex
-    Regex test_regex
-    Time_Key test_time_key
+    Name        test_name
+    Format      regex
+    Regex       test_regex
+    Time_Key    test_time_key
     Time_Format test_time_format`,
 		},
 		{
@@ -191,9 +218,9 @@ func TestParserRegex(t *testing.T) {
 				TimeFormat: "test_time_format",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format regex
-    Regex test_regex
+    Name        test_name
+    Format      regex
+    Regex       test_regex
     Time_Format test_time_format`,
 		},
 		{
@@ -203,10 +230,10 @@ func TestParserRegex(t *testing.T) {
 				TimeKey: "test_time_key",
 			},
 			expectedTailConfig: `[PARSER]
-    Name test_name
-    Format regex
-    Regex test_regex
-    Time_Key test_time_key`,
+    Name        test_name
+    Format      regex
+    Regex       test_regex
+    Time_Key    test_time_key`,
 		},
 	}
 	for _, tc := range tests {
@@ -509,9 +536,9 @@ func TestStackdriver(t *testing.T) {
 	}
 	want := `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name stackdriver
+    Name     stackdriver
     resource gce_instance
-    Match test_match
+    Match    test_match
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -566,7 +593,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     HTTP_PORT    2020
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
-    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/buffers/fluent-bit).
+    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
     storage.sync               normal
     # Enable the data integrity check when writing and reading data from the filesystem.
     storage.checksum           on
@@ -621,7 +648,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     HTTP_PORT    2020
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
-    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/buffers/fluent-bit).
+    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
     storage.sync               normal
     # Enable the data integrity check when writing and reading data from the filesystem.
     storage.checksum           on
@@ -734,7 +761,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -771,7 +798,7 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil); err == nil {
+		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil); err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}
@@ -792,17 +819,17 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Regex       ^(?<message>.*)$
 
 [PARSER]
-    Name   apache
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key time
+    Name        apache
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
-    Name   apache2
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key time
+    Name        apache2
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -811,17 +838,17 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
 
 [PARSER]
-    Name    mongodb
-    Format  regex
-    Regex   ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key time
+    Name        mongodb
+    Format      regex
+    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
+    Time_Key    time
     Time_Format %Y-%m-%dT%H:%M:%S.%L
 
 [PARSER]
-    Name   nginx
-    Format regex
-    Regex ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key time
+    Name        nginx
+    Format      regex
+    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -866,17 +893,17 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Regex       ^(?<message>.*)$
 
 [PARSER]
-    Name   apache
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key time
+    Name        apache
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
-    Name   apache2
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key time
+    Name        apache2
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -885,17 +912,17 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
 
 [PARSER]
-    Name    mongodb
-    Format  regex
-    Regex   ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key time
+    Name        mongodb
+    Format      regex
+    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
+    Time_Key    time
     Time_Format %Y-%m-%dT%H:%M:%S.%L
 
 [PARSER]
-    Name   nginx
-    Format regex
-    Regex ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key time
+    Name        nginx
+    Format      regex
+    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -913,26 +940,26 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Time_Format %b %d %H:%M:%S
 
 [PARSER]
-    Name test_name1
-    Format json
-    Time_Key test_time_key1
+    Name        test_name1
+    Format      json
+    Time_Key    test_time_key1
     Time_Format test_time_format1
 
 [PARSER]
-    Name test_name2
-    Format json
-    Time_Key test_time_key2
+    Name        test_name2
+    Format      json
+    Time_Key    test_time_key2
     Time_Format test_time_format2
 
 [PARSER]
-    Name test_name1
-    Format regex
-    Regex test_regex1
+    Name        test_name1
+    Format      regex
+    Regex       test_regex1
 
 [PARSER]
-    Name test_name2
-    Format regex
-    Regex test_regex2
+    Name        test_name2
+    Format      regex
+    Regex       test_regex2
 
 `,
 		},

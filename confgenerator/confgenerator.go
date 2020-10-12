@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Stackdriver/unified_agents/collectd"
@@ -31,52 +32,52 @@ type unifiedConfig struct {
 }
 
 type logging struct {
-	Input      []*input     `yaml:"input"`
-	Processors []*processor `yaml:"processors"`
-	Outputs    []*output    `yaml:"output"`
+	Receivers  map[string]*receiver  `yaml:"receivers"`
+	Processors map[string]*processor `yaml:"processors"`
+	Exporters  map[string]*exporter  `yaml:"exporters"`
+	Service    *loggingService       `yaml:"service"`
 }
 
-type input struct {
-	LogSourceID  string   `yaml:"log_source_id"`
-	File         *file    `yaml:"file"`
-	Syslog       *syslog  `yaml:"syslog"`
-	ProcessorIDs []string `yaml:"processor_ids"`
-	OutputIDs    []string `yaml:"output_ids"`
-}
+type receiver struct {
+	// Required. It is either file or syslog.
+	Type string `yaml:"type"`
 
-type syslog struct {
-	Mode   string `yaml:"mode"`
-	Listen string `yaml:"listen"`
-	Port   uint16 `yaml:"port"`
-}
-
-type file struct {
-	Paths        []string `yaml:"paths"`
+	// Valid for type "files".
+	IncludePaths []string `yaml:"include_paths"`
 	ExcludePaths []string `yaml:"exclude_paths"`
-	ParserID     string   `yaml:"parser_id"`
+
+	// Valid for type "syslog".
+	TransportProtocol string `yaml:"transport_protocol"`
+	ListenHost        string `yaml:"listen_host"`
+	ListenPort        uint16 `yaml:"listen_port"`
 }
 
 type processor struct {
-	ID         string      `yaml:"id"`
-	ParseJSON  *parseJSON  `yaml:"parse_json"`
-	ParseRegex *parseRegex `yaml:"parse_regex"`
+	// Required. It is either parse_json or parse_regex.
+	Type string `yaml:"type"`
+
+	// Valid for parse_regex only.
+	Regex string `yaml:"regex"`
+
+	// Valid for type parse_json and parse_regex.
+	Field      string `yaml:"field"`       // optional, default to "message"
+	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
+	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
 }
 
-type parseJSON struct {
-	Field      string `yaml:"field"`
-	TimeKey    string `yaml:"time_key"`
-	TimeFormat string `yaml:"time_format"`
+type exporter struct {
+	// Required. It can only be `google_cloud_logging` now. More type may be supported later.
+	Type string `yaml:"type"`
 }
 
-type parseRegex struct {
-	Field      string `yaml:"field"`
-	Regex      string `yaml:"regex"`
-	TimeKey    string `yaml:"time_key"`
-	TimeFormat string `yaml:"time_format"`
+type loggingService struct {
+	Pipelines map[string]*loggingPipeline
 }
 
-type output struct {
-	ID string `yaml:"id"`
+type loggingPipeline struct {
+	Receivers  []string `yaml:"receivers"`
+	Processors []string `yaml:"processors"`
+	Exporters  []string `yaml:"exporters"`
 }
 
 func GenerateCollectdConfig(input []byte, logsDir string) (config string, err error) {
@@ -102,10 +103,7 @@ func GenerateFluentBitConfigs(input []byte, logsDir string, stateDir string) (ma
 	if unifiedConfig.Logging == nil {
 		return "", "", nil
 	}
-	if unifiedConfig.Logging.Input == nil {
-		return "", "", nil
-	}
-	return generateFluentBitConfigs(unifiedConfig.Logging.Input, unifiedConfig.Logging.Processors, unifiedConfig.Logging.Outputs, logsDir, stateDir)
+	return generateFluentBitConfigs(unifiedConfig.Logging, logsDir, stateDir)
 }
 
 func unifiedConfigReader(input []byte) (unifiedConfig, error) {
@@ -122,41 +120,65 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 	return []*conf.Tail{
 		{
 			Tag:  "ops-agent-fluent-bit",
-			DB:   fmt.Sprintf("%s/buffers/fluent-bit/ops-agent-fluent-bit", stateDir),
+			DB:   fmt.Sprintf("%s/buffers/ops-agent-fluent-bit", stateDir),
 			Path: fmt.Sprintf("%s/fluent-bit.log", logsDir),
 		},
 		{
 			Tag:  "ops-agent-collectd",
-			DB:   fmt.Sprintf("%s/buffers/fluent-bit/ops-agent-collectd", stateDir),
+			DB:   fmt.Sprintf("%s/buffers/ops-agent-collectd", stateDir),
 			Path: fmt.Sprintf("%s/collectd.log", logsDir),
 		},
 	}
 }
 
-func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs []*output, logsDir string, stateDir string) (string, string, error) {
-	fbSyslogs, err := extractFluentBitSyslogs(inputs)
-	if err != nil {
-		return "", "", err
+// defaultStackdriverOutputs returns the default Stackdriver sections for the agents' own logs.
+func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
+	return []*conf.Stackdriver{
+		{
+			Match: "ops-agent-fluent-bit",
+		},
+		{
+			Match: "ops-agent-collectd",
+		},
 	}
-	extractedTails, err := extractFluentBitTails(inputs)
-	if err != nil {
-		return "", "", err
-	}
+}
+
+func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir)
-	fbTails = append(fbTails, extractedTails...)
-	fbFilterParsers, err := extractFluentBitFilters(inputs, processors)
+	fbStackdrivers := defaultStackdriverOutputs()
+	fbSyslogs := []*conf.Syslog{}
+	fbFilterParsers := []*conf.FilterParser{}
+	fbFilterAddLogNames := []*conf.FilterModifyAddLogName{}
+	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
+	fbFilterRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
+
+	if logging.Service != nil {
+		fileReceiverFactories, syslogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
+		if err != nil {
+			return "", "", err
+		}
+		extractedTails := []*conf.Tail{}
+		extractedTails, fbSyslogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, logging.Service.Pipelines, stateDir)
+		if err != nil {
+			return "", "", err
+		}
+		fbTails = append(fbTails, extractedTails...)
+		fbFilterParsers, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
+		if err != nil {
+			return "", "", err
+		}
+		extractedStackdrivers := []*conf.Stackdriver{}
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines)
+		if err != nil {
+			return "", "", err
+		}
+		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
+	}
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
 	if err != nil {
 		return "", "", err
 	}
-	fbStackdrivers, err := extractFluentBitOutputs(inputs, outputs)
-	if err != nil {
-		return "", "", err
-	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers, fbStackdrivers)
-	if err != nil {
-		return "", "", err
-	}
-	jsonParsers, regexParsers, err := extractFluentBitParsers(processors)
+	jsonParsers, regexParsers, err := extractFluentBitParsers(logging.Processors)
 	if err != nil {
 		return "", "", err
 	}
@@ -167,115 +189,118 @@ func generateFluentBitConfigs(inputs []*input, processors []*processor, outputs 
 	return mainConfig, parserConfig, nil
 }
 
-func extractFluentBitSyslogs(inputs []*input) ([]*conf.Syslog, error) {
-	fbSyslogs := []*conf.Syslog{}
-	for _, i := range inputs {
-		fbSyslog, err := extractFluentBitSyslog(*i)
-		if err != nil {
-			return nil, err
-		}
-		if fbSyslog == nil {
-			continue
-		}
-		fbSyslogs = append(fbSyslogs, fbSyslog)
-	}
-	return fbSyslogs, nil
+type syslogReceiverFactory struct {
+	TransportProtocol string
+	ListenHost        string
+	ListenPort        uint16
 }
 
-func extractFluentBitSyslog(i input) (*conf.Syslog, error) {
-	if i.Syslog == nil {
-		return nil, nil
-	}
-	if i.LogSourceID == "" {
-		return nil, fmt.Errorf(`syslog cannot have empty log_source_id`)
-	}
-	fbSyslog := conf.Syslog{
-		Tag:    i.LogSourceID,
-		Listen: i.Syslog.Listen,
-		Port:   i.Syslog.Port,
-	}
-	switch m := i.Syslog.Mode; m {
-	case "tcp", "udp":
-		fbSyslog.Mode = m
-	case "unix_tcp", "unix_udp":
-		// TODO: pending decision on setting up unix_tcp, unix_udp
-		fallthrough
-	default:
-		return nil, fmt.Errorf(`syslog LogSourceID=%q should have the mode as one of the \"tcp\", \"udp\"`, i.LogSourceID)
-	}
-	return &fbSyslog, nil
+type fileReceiverFactory struct {
+	IncludePaths []string
+	ExcludePaths []string
 }
 
-func extractFluentBitTails(inputs []*input) ([]*conf.Tail, error) {
+func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, error) {
+	fileReceiverFactories := map[string]*fileReceiverFactory{}
+	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
+	for n, r := range receivers {
+		switch r.Type {
+		case "file":
+			if r.TransportProtocol != "" {
+				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "transport_protocol"`, n)
+			}
+			if r.ListenHost != "" {
+				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "listen_host"`, n)
+			}
+			if r.ListenPort != 0 {
+				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "listen_port"`, n)
+			}
+			fileReceiverFactories[n] = &fileReceiverFactory{
+				IncludePaths: r.IncludePaths,
+				ExcludePaths: r.ExcludePaths,
+			}
+		case "syslog":
+			if r.IncludePaths != nil {
+				return nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "include_paths"`, n)
+			}
+			if r.ExcludePaths != nil {
+				return nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "exclude_paths"`, n)
+			}
+			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
+				return nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, n)
+			}
+			syslogReceiverFactories[n] = &syslogReceiverFactory{
+				TransportProtocol: r.TransportProtocol,
+				ListenHost:        r.ListenHost,
+				ListenPort:        r.ListenPort,
+			}
+		default:
+			return nil, nil, fmt.Errorf(`receiver %q should have type as one of the "file", "syslog"`, n)
+		}
+	}
+	return fileReceiverFactories, syslogReceiverFactories, nil
+}
+
+func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, error) {
 	fbTails := []*conf.Tail{}
-	for _, i := range inputs {
-		fbTail, err := extractFluentBitTail(*i)
-		if err != nil {
-			return nil, err
-		}
-		if fbTail == nil {
-			continue
-		}
-		fbTails = append(fbTails, fbTail)
+	fbSyslogs := []*conf.Syslog{}
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
 	}
-	return fbTails, nil
+	sort.Strings(pipelineIDs)
+	for _, pID := range pipelineIDs {
+		p := pipelines[pID]
+		for _, rID := range p.Receivers {
+			if f, ok := fileReceiverFactories[rID]; ok {
+				fbTail := conf.Tail{
+					Tag:  fmt.Sprintf("%s.%s", pID, rID),
+					DB:   fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					Path: strings.Join(f.IncludePaths, ","),
+				}
+				if len(f.ExcludePaths) != 0 {
+					fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
+				}
+				fbTails = append(fbTails, &fbTail)
+				continue
+			}
+			if f, ok := syslogReceiverFactories[rID]; ok {
+				fbSyslog := conf.Syslog{
+					Tag:    fmt.Sprintf("%s.%s", pID, rID),
+					Listen: f.ListenHost,
+					Mode:   f.TransportProtocol,
+					Port:   f.ListenPort,
+				}
+				fbSyslogs = append(fbSyslogs, &fbSyslog)
+				continue
+			}
+			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+		}
+	}
+	return fbTails, fbSyslogs, nil
 }
 
-func extractFluentBitTail(i input) (*conf.Tail, error) {
-	if i.File == nil {
-		return nil, nil
-	}
-	if i.LogSourceID == "" {
-		return nil, fmt.Errorf(`file cannot have empty log_source_id`)
-	}
-	if len(i.File.Paths) == 0 {
-		return nil, fmt.Errorf(`file LogSourceID=%q should have at least one path specified`, i.LogSourceID)
-	}
-	fbTail := conf.Tail{
-		Tag: i.LogSourceID,
-		// TODO(ycchou): Pass in directory prefix set by Systemd.
-		DB:   fmt.Sprintf("/var/lib/google-cloud-ops-agent/buffers/fluent-bit/%s", i.LogSourceID),
-		Path: strings.Join(i.File.Paths, ","),
-	}
-	if len(i.File.ExcludePaths) != 0 {
-		fbTail.ExcludePath = strings.Join(i.File.ExcludePaths, ",")
-	}
-	return &fbTail, nil
-}
-
-func extractFluentBitFilters(inputs []*input, processors []*processor) ([]*conf.FilterParser, error) {
+func generateFluentBitFilters(processors map[string]*processor, pipelines map[string]*loggingPipeline) ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
-	for _, i := range inputs {
-		if i.LogSourceID == "" {
-			return nil, fmt.Errorf(`input cannot have empty log_source_id`)
-		}
-		for _, inputProcessorID := range i.ProcessorIDs {
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
+	}
+	sort.Strings(pipelineIDs)
+	for _, pipelineID := range pipelineIDs {
+		pipeline := pipelines[pipelineID]
+		for _, processorID := range pipeline.Processors {
+			p, ok := processors[processorID]
+			if !isDefaultProcessor(processorID) && !ok {
+				return nil, fmt.Errorf(`input cannot use a undefined processor`)
+			}
 			fbFilterParser := conf.FilterParser{
-				Match:  i.LogSourceID,
-				Parser: inputProcessorID,
+				Match:   fmt.Sprintf("%s.*", pipelineID),
+				Parser:  processorID,
+				KeyName: "message",
 			}
-			switch inputProcessorID {
-			case "apache", "apache2", "apache_error", "mongodb", "nginx", "syslog-rfc3164", "syslog-rfc5424":
-				fbFilterParser.KeyName = "message"
-			}
-			for _, p := range processors {
-				if inputProcessorID != p.ID {
-					continue
-				}
-				if p.ParseJSON != nil {
-					if p.ParseJSON.Field == "" {
-						fbFilterParser.KeyName = "message"
-					}
-					fbFilterParser.KeyName = p.ParseJSON.Field
-					break
-				}
-				if p.ParseRegex != nil {
-					if p.ParseRegex.Field == "" {
-						fbFilterParser.KeyName = "message"
-					}
-					fbFilterParser.KeyName = p.ParseRegex.Field
-					break
-				}
+			if ok && p.Field != "" {
+				fbFilterParser.KeyName = p.Field
 			}
 			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 		}
@@ -283,70 +308,87 @@ func extractFluentBitFilters(inputs []*input, processors []*processor) ([]*conf.
 	return fbFilterParsers, nil
 }
 
-func extractFluentBitOutputs(inputs []*input, outputs []*output) ([]*conf.Stackdriver, error) {
-	fbStackdrivers := []*conf.Stackdriver{}
-	for _, i := range inputs {
-		if i.LogSourceID == "" {
-			return nil, fmt.Errorf(`input cannot have empty log_source_id`)
-		}
-		for _, outputID := range i.OutputIDs {
-			// Process special output ID "google"
-			if outputID != "google" {
-				return nil, fmt.Errorf(`output ID can only be "google" now.`)
-			}
-			fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-				Match: i.LogSourceID,
-			})
-		}
+func isDefaultProcessor(name string) bool {
+	switch name {
+	case "apache", "apache2", "apache_error", "mongodb", "nginx",
+		"syslog-rfc3164", "syslog-rfc5424":
+		return true
+	default:
+		return false
 	}
-	return fbStackdrivers, nil
 }
 
-func extractFluentBitParsers(processors []*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline) (
+	[]*conf.FilterModifyAddLogName, []*conf.FilterRewriteTag, []*conf.FilterModifyRemoveLogName, []*conf.Stackdriver, error) {
+	fbFilterModifyAddLogNames := []*conf.FilterModifyAddLogName{}
+	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
+	fbFilterModifyRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
+	fbStackdrivers := []*conf.Stackdriver{}
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
+	}
+	sort.Strings(pipelineIDs)
+	for _, pipelineID := range pipelineIDs {
+		pipeline := pipelines[pipelineID]
+		for _, exporterID := range pipeline.Exporters {
+			// if exporterID is google or we can find this ID is a google_cloud_logging type from the Stackdriver Exporter map
+			if e, ok := exporters[exporterID]; exporterID != "google" && !(ok && e.Type == "google_cloud_logging") {
+				return nil, nil, nil, nil,
+					fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
+			}
+			// for each receiver, generate a output plugin with the specified receiver id
+			for _, rID := range pipeline.Receivers {
+				fbFilterModifyAddLogNames = append(fbFilterModifyAddLogNames, &conf.FilterModifyAddLogName{
+					Match:   fmt.Sprintf("%s.%s", pipelineID, rID),
+					LogName: rID,
+				})
+				// generate single rewriteTag for this pipeline
+				fbFilterRewriteTags = append(fbFilterRewriteTags, &conf.FilterRewriteTag{
+					Match: fmt.Sprintf("%s.%s", pipelineID, rID),
+				})
+				fbFilterModifyRemoveLogNames = append(fbFilterModifyRemoveLogNames, &conf.FilterModifyRemoveLogName{
+					Match: rID,
+				})
+				fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
+					Match: rID,
+				})
+			}
+		}
+	}
+	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
+}
+
+func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+	var names []string
+	for n := range processors {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
-	for _, p := range processors {
-		err := validateProcessor(*p)
-		if err != nil {
-			return nil, nil, err
-		}
-		if p.ParseJSON != nil {
+	for _, name := range names {
+		p := processors[name]
+		switch t := p.Type; t {
+		case "parse_json":
 			fbJSONParser := conf.ParserJSON{
-				Name:       p.ID,
-				TimeKey:    p.ParseJSON.TimeKey,
-				TimeFormat: p.ParseJSON.TimeFormat,
+				Name:       name,
+				TimeKey:    p.TimeKey,
+				TimeFormat: p.TimeFormat,
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
-		}
-		if p.ParseRegex != nil {
+		case "parse_regex":
 			fbRegexParser := conf.ParserRegex{
-				Name:       p.ID,
-				Regex:      p.ParseRegex.Regex,
-				TimeKey:    p.ParseRegex.TimeKey,
-				TimeFormat: p.ParseRegex.TimeFormat,
+				Name:       name,
+				Regex:      p.Regex,
+				TimeKey:    p.TimeKey,
+				TimeFormat: p.TimeFormat,
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
+		default:
+			return nil, nil, fmt.Errorf(`processor %q should be one of the type \"parse_json\", \"parse_regex\"`, name)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil
-}
-
-func validateProcessor(p processor) error {
-	if p.ID == "" {
-		return fmt.Errorf(`processor cannot have empty id`)
-	}
-	typeCount := 0
-	if p.ParseJSON != nil {
-		typeCount += 1
-	}
-	if p.ParseRegex != nil {
-		typeCount += 1
-	}
-	if typeCount == 0 {
-		return fmt.Errorf(`processor ID=%q should have one of the fields \"parse_json\", \"parse_regex\"`, p.ID)
-	}
-	if typeCount > 1 {
-		return fmt.Errorf(`processor ID=%q should have only one of the fields \"parse_json\", \"parse_regex\"`, p.ID)
-	}
-	return nil
 }
