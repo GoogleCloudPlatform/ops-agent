@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -31,14 +32,19 @@ const (
 )
 
 var (
-	validUnifiedConfigFilepathFormat  = validTestdataDir + "/%s/input.yaml"
-	validMainConfigFilepathFormat     = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
-	validParserConfigFilepathFormat   = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
-	validCollectdConfigFilepathFormat = validTestdataDir + "/%s/golden_collectd.conf"
-	invalidTestdataFilepathFormat     = invalidTestdataDir + "/%s"
+	// Usage:
+	//   unified_agents$ go test -mod=mod github.com/Stackdriver/unified_agents/confgenerator -update_golden
+	// Add "-v" to show details for which files are updated with what:
+	//   unified_agents$ go test -mod=mod github.com/Stackdriver/unified_agents/confgenerator -update_golden -v
+	updateGolden                     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+	validUnifiedConfigFilePathFormat = validTestdataDir + "/%s/input.yaml"
+	goldenMainPath                   = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
+	goldenParserPath                 = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
+	goldenCollectdPath               = validTestdataDir + "/%s/golden_collectd.conf"
+	invalidTestdataFilePathFormat    = invalidTestdataDir + "/%s"
 )
 
-func TestExtractFluentBitConfValidInput(t *testing.T) {
+func TestGenerateConfsWithValidInput(t *testing.T) {
 	dirPath := validTestdataDir
 	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
@@ -48,78 +54,75 @@ func TestExtractFluentBitConfValidInput(t *testing.T) {
 	for _, d := range dirs {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilepath := fmt.Sprintf(validUnifiedConfigFilepathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(validUnifiedConfigFilePathFormat, testName)
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
 			if d.Name() == "default_config" {
-				unifiedConfigFilepath = "default-config.yaml"
+				unifiedConfigFilePath = "default-config.yaml"
 			}
-			goldenMainConfigFilepath := fmt.Sprintf(validMainConfigFilepathFormat, testName)
-			goldenParserConfigFilepath := fmt.Sprintf(validParserConfigFilepathFormat, testName)
-			goldenCollectdConfigFilepath := fmt.Sprintf(validCollectdConfigFilepathFormat, testName)
 
-			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilepath)
+			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
 				return
 			}
-			rawExpectedMainConfig, err := ioutil.ReadFile(goldenMainConfigFilepath)
-			if err != nil {
-				t.Logf("test %q: Fluent Bit main conf not detected at %s. Using the default instead.", testName, goldenMainConfigFilepath)
-				rawExpectedMainConfig, err = ioutil.ReadFile(fmt.Sprintf(validMainConfigFilepathFormat, defaultGoldenPath))
-				if err != nil {
-					t.Errorf("test %q: expect no error, get error %s", testName, err)
-					return
-				}
-			}
-			expectedMainConfig := string(rawExpectedMainConfig)
-			rawExpectedParserConfig, err := ioutil.ReadFile(goldenParserConfigFilepath)
-			if err != nil {
-				t.Logf("test %q: Fluent Bit parser conf not detected at %s. Using the default instead.", testName, goldenParserConfigFilepath)
-				rawExpectedParserConfig, err = ioutil.ReadFile(fmt.Sprintf(validParserConfigFilepathFormat, defaultGoldenPath))
-				if err != nil {
-					t.Errorf("test %q: expect no error, get error %s", testName, err)
-					return
-				}
-			}
-			expectedParserConfig := string(rawExpectedParserConfig)
-			rawExpectedCollectdConfig, err := ioutil.ReadFile(goldenCollectdConfigFilepath)
-			if err != nil {
-				t.Logf("test %q: Collectd conf not detected at %s. Using the default instead.", testName, goldenCollectdConfigFilepath)
-				rawExpectedCollectdConfig, err = ioutil.ReadFile(fmt.Sprintf(validCollectdConfigFilepathFormat, defaultGoldenPath))
-				if err != nil {
-					t.Errorf("test %q: expect no error, get error %v", testName, err)
-					return
-				}
-			}
-			expectedCollectdConfig := string(rawExpectedCollectdConfig)
 
+			// Retrieve the expected golden conf files.
+			expectedMainConfig := expectedConfig(testName, goldenMainPath, t)
+			expectedParserConfig := expectedConfig(testName, goldenParserPath, t)
+			expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t)
+
+			// Generate the actual conf files.
 			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
+				t.Errorf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
 				return
 			}
-			if diff := cmp.Diff(expectedMainConfig, mainConf); diff != "" {
-				t.Errorf("test %q: fluentbit main configuration mismatch (-want +got):\n%s", testName, diff)
-			}
-			if diff := cmp.Diff(expectedParserConfig, parserConf); diff != "" {
-				t.Errorf("test %q: fluentbit parser configuration mismatch (-want +got):\n%s", testName, diff)
-			}
-
 			collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
+				t.Errorf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
 				return
 			}
-			if diff := cmp.Diff(expectedCollectdConfig, collectdConf); diff != "" {
-				t.Errorf("test %q: collectd configuration mismatch (-want +got):\n%s", testName, diff)
-			}
+
+			// Compare the expected and actual and error out in case of diff.
+			updateOrCompareGolden(testName, expectedMainConfig, mainConf, goldenMainPath, t)
+			updateOrCompareGolden(testName, expectedParserConfig, parserConf, goldenParserPath, t)
+			updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
 		})
 	}
 }
 
-func TestExtractFluentBitConfInvalidInput(t *testing.T) {
+func expectedConfig(testName string, validFilePathFormat string, t *testing.T) string {
+	goldenPath := fmt.Sprintf(validFilePathFormat, testName)
+	defaultGoldenPath := fmt.Sprintf(validFilePathFormat, defaultGoldenPath)
+
+	rawExpectedConfig, err := ioutil.ReadFile(goldenPath)
+	if err != nil {
+		t.Logf("test %q: Golden conf not detected at %s. Using the default at %s instead.", testName, goldenPath, defaultGoldenPath)
+		if rawExpectedConfig, err = ioutil.ReadFile(defaultGoldenPath); err != nil {
+			t.Fatalf("test %q: error reading the default golden conf from %s : %s", testName, defaultGoldenPath, err)
+		}
+	}
+	return string(rawExpectedConfig)
+}
+
+func updateOrCompareGolden(testName string, expected string, actual string, path string, t *testing.T) {
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		if *updateGolden {
+			// Update the expected to match the actual.
+			goldenPath := fmt.Sprintf(path, testName)
+			t.Logf("test %q: Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", testName, goldenPath, diff)
+			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
+				t.Fatalf("test %q: error updating golden file at %q : %s", testName, goldenPath, err)
+			}
+		} else {
+			t.Fatalf("test %q: conf mismatch (-want +got):\n%s", testName, diff)
+		}
+	}
+}
+
+func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	filePath := invalidTestdataDir
 	files, err := ioutil.ReadDir(filePath)
 	if err != nil {
@@ -128,7 +131,7 @@ func TestExtractFluentBitConfInvalidInput(t *testing.T) {
 	for _, f := range files {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilepathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilePathFormat, testName)
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
