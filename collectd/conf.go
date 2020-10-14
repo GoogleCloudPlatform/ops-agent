@@ -187,6 +187,9 @@ func validatedCollectdConfig(metrics Metrics) (*collectdConf, error) {
 		return nil, errors.New("exactly one metrics receiver with type 'hostmetrics' is required.")
 	}
 	for receiverID, receiver := range metrics.Receivers {
+		if strings.HasPrefix(receiverID, "lib:") {
+			return nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, receiverID)
+		}
 		if receiver.Type != "hostmetrics" {
 			return nil, fmt.Errorf("type %s is not supported for metrics receiver %s. Only 'hostmetrics' is supported.", receiver.Type, receiverID)
 		}
@@ -211,6 +214,9 @@ func validatedCollectdConfig(metrics Metrics) (*collectdConf, error) {
 		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
 	}
 	for exporterID, exporter := range metrics.Exporters {
+		if strings.HasPrefix(exporterID, "lib:") {
+			return nil, fmt.Errorf(`export id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+		}
 		if exporter.Type != "google_cloud_monitoring" {
 			return nil, fmt.Errorf("metrics exporter type %q is not supported. Only 'google_cloud_monitoring' is supported.", exporter.Type)
 		}
@@ -221,7 +227,10 @@ func validatedCollectdConfig(metrics Metrics) (*collectdConf, error) {
 	if len(metrics.Service.Pipelines) != 1 {
 		return nil, errors.New("exactly one metrics service pipeline is required.")
 	}
-	for _, pipeline := range metrics.Service.Pipelines {
+	for pipelineID, pipeline := range metrics.Service.Pipelines {
+		if strings.HasPrefix(pipelineID, "lib:") {
+			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pipelineID)
+		}
 		if len(pipeline.ReceiverIDs) != 1 {
 			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
 		}
