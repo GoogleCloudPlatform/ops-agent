@@ -31,7 +31,7 @@ const (
     Grace      120
     # We use systemd to manage Fluent Bit instead.
     Daemon     off
-    # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/fluent-bit.log).
+    # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
     Log_Level  info
 
     # https://docs.fluentbit.io/manual/administration/monitoring

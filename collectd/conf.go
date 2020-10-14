@@ -78,7 +78,7 @@ LoadPlugin syslog
 LoadPlugin logfile
 <Plugin "logfile">
   LogLevel "info"
-  File "{{.LogsDir}}/collectd.log"
+  File "{{.LogsDir}}/metrics-module.log"
   Timestamp true
 </Plugin>
 

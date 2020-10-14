@@ -121,12 +121,12 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 		{
 			Tag:  "ops-agent-fluent-bit",
 			DB:   fmt.Sprintf("%s/buffers/ops-agent-fluent-bit", stateDir),
-			Path: fmt.Sprintf("%s/fluent-bit.log", logsDir),
+			Path: fmt.Sprintf("%s/logging-module.log", logsDir),
 		},
 		{
 			Tag:  "ops-agent-collectd",
 			DB:   fmt.Sprintf("%s/buffers/ops-agent-collectd", stateDir),
-			Path: fmt.Sprintf("%s/collectd.log", logsDir),
+			Path: fmt.Sprintf("%s/metrics-module.log", logsDir),
 		},
 	}
 }
