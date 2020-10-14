@@ -204,6 +204,9 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	for n, r := range receivers {
+		if strings.HasPrefix(n, "lib:") {
+			return nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
+		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
@@ -326,12 +329,18 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	fbStackdrivers := []*conf.Stackdriver{}
 	var pipelineIDs []string
 	for p := range pipelines {
+		if strings.HasPrefix(p, "lib:") {
+			return nil, nil, nil, nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, p)
+		}
 		pipelineIDs = append(pipelineIDs, p)
 	}
 	sort.Strings(pipelineIDs)
 	for _, pipelineID := range pipelineIDs {
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
+			if strings.HasPrefix(exporterID, "lib:") {
+				return nil, nil, nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+			}
 			// if exporterID is google or we can find this ID is a google_cloud_logging type from the Stackdriver Exporter map
 			if e, ok := exporters[exporterID]; !(ok && e.Type == "google_cloud_logging") {
 				return nil, nil, nil, nil,
@@ -362,6 +371,9 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	var names []string
 	for n := range processors {
+		if strings.HasPrefix(n, "lib:") {
+			return nil, nil, fmt.Errorf(`process id prefix 'lib:' is reserved for pre-defined processors. Processor ID %q is not allowed.`, n)
+		}
 		names = append(names, n)
 	}
 	sort.Strings(names)
