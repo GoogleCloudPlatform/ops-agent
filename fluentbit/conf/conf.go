@@ -41,7 +41,7 @@ const (
     HTTP_PORT    2020
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
-    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/buffers/fluent-bit).
+    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
     storage.sync               normal
     # Enable the data integrity check when writing and reading data from the filesystem.
     storage.checksum           on
@@ -66,7 +66,18 @@ const (
 {{.}}
 
 {{end}}
+{{- range .FilterModifyAddLogNameConfigSections -}}
+{{.}}
 
+{{end}}
+{{- range .FilterRewriteTagSections -}}
+{{.}}
+
+{{end}}
+{{- range .FilterModifyRemoveLogNameConfigSections -}}
+{{.}}
+
+{{end}}
 {{- range .StackdriverConfigSections -}}
 {{.}}
 
@@ -78,17 +89,17 @@ const (
     Regex       ^(?<message>.*)$
 
 [PARSER]
-    Name   apache
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key time
+    Name        apache
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
-    Name   apache2
-    Format regex
-    Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key time
+    Name        apache2
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -97,17 +108,17 @@ const (
     Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
 
 [PARSER]
-    Name    mongodb
-    Format  regex
-    Regex   ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key time
+    Name        mongodb
+    Format      regex
+    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
+    Time_Key    time
     Time_Format %Y-%m-%dT%H:%M:%S.%L
 
 [PARSER]
-    Name   nginx
-    Format regex
-    Regex ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key time
+    Name        nginx
+    Format      regex
+    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
+    Time_Key    time
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
@@ -133,28 +144,45 @@ const (
 
 {{end}}`
 
-	filterParserConf = `[FILTER]
-    Name parser
+	filterModifyAddLogNameConf = `[FILTER]
+    Name  modify
     Match {{.Match}}
+    Add   logName {{.LogName}}`
+
+	filterModifyRemoveLogNameConf = `[FILTER]
+    Name   modify
+    Match  {{.Match}}
+    Remove logName`
+
+	filterParserConf = `[FILTER]
+    Name     parser
+    Match    {{.Match}}
     Key_Name {{.KeyName}}
-    Parser {{.Parser}}`
+    Parser   {{.Parser}}`
+
+	filterRewriteTagConf = `[FILTER]
+    Name                  rewrite_tag
+    Match                 {{.Match}}
+    Rule                  $logName .* $logName false
+    Emitter_Storage.type  filesystem
+    Emitter_Mem_Buf_Limit 10M`
 
 	parserJSONConf = `[PARSER]
-    Name {{.Name}}
-    Format json
+    Name        {{.Name}}
+    Format      json
 {{- if (ne .TimeKey "")}}
-    Time_Key {{.TimeKey}}
+    Time_Key    {{.TimeKey}}
 {{- end}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
 {{- end}}`
 
 	parserRegexConf = `[PARSER]
-    Name {{.Name}}
-    Format regex
-    Regex {{.Regex}}
+    Name        {{.Name}}
+    Format      regex
+    Regex       {{.Regex}}
 {{- if (ne .TimeKey "")}}
-    Time_Key {{.TimeKey}}
+    Time_Key    {{.TimeKey}}
 {{- end}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
@@ -214,9 +242,9 @@ const (
 
 	stackdriverConf = `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name stackdriver
+    Name     stackdriver
     resource gce_instance
-    Match {{.Match}}
+    Match    {{.Match}}
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -230,10 +258,13 @@ const (
 )
 
 type mainConfigSections struct {
-	TailConfigSections         []string
-	SyslogConfigSections       []string
-	FilterParserConfigSections []string
-	StackdriverConfigSections  []string
+	TailConfigSections                      []string
+	SyslogConfigSections                    []string
+	FilterParserConfigSections              []string
+	FilterModifyAddLogNameConfigSections    []string
+	FilterRewriteTagSections                []string
+	FilterModifyRemoveLogNameConfigSections []string
+	StackdriverConfigSections               []string
 }
 
 type parserConfigSections struct {
@@ -242,10 +273,17 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser, stackdrivers []*Stackdriver) (string, error) {
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser,
+	filterModifyAddLogNames []*FilterModifyAddLogName,
+	filterRewriteTags []*FilterRewriteTag,
+	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
+	stackdrivers []*Stackdriver) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
 	filterParserConfigSections := []string{}
+	filterModifyAddLogNameConfigSections := []string{}
+	filterRewriteTagSections := []string{}
+	filterModifyRemoveLogNameConfigSections := []string{}
 	stackdriverConfigSections := []string{}
 	for _, t := range tails {
 		configSection, err := t.renderConfig()
@@ -268,6 +306,27 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 		}
 		filterParserConfigSections = append(filterParserConfigSections, configSection)
 	}
+	for _, f := range filterModifyAddLogNames {
+		configSection, err := f.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		filterModifyAddLogNameConfigSections = append(filterModifyAddLogNameConfigSections, configSection)
+	}
+	for _, f := range filterRewriteTags {
+		configSection, err := f.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		filterRewriteTagSections = append(filterRewriteTagSections, configSection)
+	}
+	for _, f := range filterModifyRemoveLogNames {
+		configSection, err := f.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		filterModifyRemoveLogNameConfigSections = append(filterModifyRemoveLogNameConfigSections, configSection)
+	}
 	for _, s := range stackdrivers {
 		configSection, err := s.renderConfig()
 		if err != nil {
@@ -276,10 +335,13 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 		stackdriverConfigSections = append(stackdriverConfigSections, configSection)
 	}
 	configSections := mainConfigSections{
-		TailConfigSections:         tailConfigSections,
-		SyslogConfigSections:       syslogConfigSections,
-		FilterParserConfigSections: filterParserConfigSections,
-		StackdriverConfigSections:  stackdriverConfigSections,
+		TailConfigSections:                      tailConfigSections,
+		SyslogConfigSections:                    syslogConfigSections,
+		FilterParserConfigSections:              filterParserConfigSections,
+		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
+		FilterRewriteTagSections:                filterRewriteTagSections,
+		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
+		StackdriverConfigSections:               stackdriverConfigSections,
 	}
 	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
 	if err != nil {
@@ -346,6 +408,7 @@ func (e nonPositiveFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin's field %q should not be <= 0", e.plugin, e.field)
 }
 
+// A FilterParser represents the configuration data for fluentBit's filter parser plugin.
 type FilterParser struct {
 	Match   string
 	KeyName string
@@ -378,6 +441,78 @@ func (f FilterParser) renderConfig() (string, error) {
 		return "", err
 	}
 	return renderedFilterParserConfig.String(), nil
+}
+
+// A FilterModifyAddLogName represents the configuration data for using fluentBit's Modify
+// filter to add logName.
+type FilterModifyAddLogName struct {
+	Match   string
+	LogName string
+}
+
+var filterModifyAddLogNameTemplate = template.Must(template.New("filter_modify_add_log_name").Parse(filterModifyAddLogNameConf))
+
+func (f FilterModifyAddLogName) renderConfig() (string, error) {
+	if f.Match == "" {
+		return "", emptyFieldErr{
+			plugin: "filter modify - add logName",
+			field:  "Match",
+		}
+	}
+	if f.LogName == "" {
+		return "", emptyFieldErr{
+			plugin: "filter modify - add logName",
+			field:  "LogName",
+		}
+	}
+	var renderedFilterModifyAddLogNameConfig strings.Builder
+	if err := filterModifyAddLogNameTemplate.Execute(&renderedFilterModifyAddLogNameConfig, f); err != nil {
+		return "", err
+	}
+	return renderedFilterModifyAddLogNameConfig.String(), nil
+}
+
+// A FilterModifyRemoveLogName represents the configuration data for using fluentBit's Modify
+// filter to remove logName.
+type FilterModifyRemoveLogName struct {
+	Match string
+}
+
+var filterModifyRemoveLogNameTemplate = template.Must(template.New("filter_modify_remove_log_name").Parse(filterModifyRemoveLogNameConf))
+
+func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
+	if f.Match == "" {
+		return "", emptyFieldErr{
+			plugin: "filter modify - remove logName",
+			field:  "Match",
+		}
+	}
+	var renderedFilterModifyRemoveLogNameConfig strings.Builder
+	if err := filterModifyRemoveLogNameTemplate.Execute(&renderedFilterModifyRemoveLogNameConfig, f); err != nil {
+		return "", err
+	}
+	return renderedFilterModifyRemoveLogNameConfig.String(), nil
+}
+
+// A FilterRewriteTag represents the configuration data for fluentBit's RewriteTag filter.
+type FilterRewriteTag struct {
+	Match string
+}
+
+var filterRewriteTagTemplate = template.Must(template.New("filter_rewrite_tag").Parse(filterRewriteTagConf))
+
+func (f FilterRewriteTag) renderConfig() (string, error) {
+	if f.Match == "" {
+		return "", emptyFieldErr{
+			plugin: "filter parser",
+			field:  "Match",
+		}
+	}
+	var renderedFilterRewriteTagConfig strings.Builder
+	if err := filterRewriteTagTemplate.Execute(&renderedFilterRewriteTagConfig, f); err != nil {
+		return "", err
+	}
+	return renderedFilterRewriteTagConfig.String(), nil
 }
 
 // A ParserJSON represents the configuration data for fluentBit's JSON parser.

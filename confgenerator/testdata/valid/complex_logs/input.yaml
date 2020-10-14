@@ -13,45 +13,59 @@
 # limitations under the License.
 
 logging:
-  input:
-  - log_source_id: log_source_id1
-    file:
-      paths:
+  receivers:
+    log_source_id1:
+      type: file
+      include_paths:
       - /path/to/log/1/a/*
       - /path/to/log/1/b/*
       exclude_paths:
       - /path/to/log/1/a/exclude_a
       - /path/to/log/1/b/exclude_b
-    output_ids:
-    - google
-  - log_source_id: log_source_id2
-    file:
-      paths:
+    log_source_id2:
+      type: file
+      include_paths:
       - /path/to/log/2/a/*
       - /path/to/log/2/b/*
       exclude_paths:
       - /path/to/log/2/a/exclude_a
       - /path/to/log/2/b/exclude_b
-    output_ids:
-    - google
-  - log_source_id: test_syslog_source_id_tcp
-    syslog:
-      mode: tcp
-      listen: 1.1.1.1
-      port: 1111
-    processor_ids:
-    - syslog-rfc5424
-    output_ids:
-    - google
-  - log_source_id: test_syslog_source_id_udp
-    syslog:
-      mode: udp
-      listen: 2.2.2.2
-      port: 2222
-    processor_ids:
-    - syslog-rfc3164
-    output_ids:
-    - google
+    test_syslog_source_id_tcp:
+      type: syslog
+      listen_host: 1.1.1.1
+      listen_port: 1111
+      transport_protocol: tcp
+    test_syslog_source_id_udp:
+      type: syslog
+      listen_host: 2.2.2.2
+      listen_port: 2222
+      transport_protocol: udp
+  service:
+    pipelines:
+      pipeline1:
+        receivers:
+        - log_source_id1
+        exporters:
+        - google
+      pipeline2:
+        receivers:
+        - log_source_id2
+        exporters:
+        - google
+      pipeline3:
+        receivers:
+        - test_syslog_source_id_tcp
+        processors:
+        - syslog-rfc5424
+        exporters:
+        - google
+      pipeline4:
+        receivers:
+        - test_syslog_source_id_udp
+        processors:
+        - syslog-rfc3164
+        exporters:
+        - google
 metrics:
   receivers:
     hostmetrics_receiver:

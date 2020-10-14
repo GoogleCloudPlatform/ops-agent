@@ -13,17 +13,7 @@
 # limitations under the License.
 
 logging:
-  receivers:
-    syslog:
-      type: file
-      include_paths:
-      - /var/log/messages
-      - /var/log/syslog
   service:
-    pipelines:
-      default_pipeline:
-        receivers: [syslog]
-        exporters: [google]
 metrics:
   receivers:
     hostmetrics_receiver:

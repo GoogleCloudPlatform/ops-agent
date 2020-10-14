@@ -13,25 +13,39 @@
 # limitations under the License.
 
 logging:
-  input:
-  - log_source_id: test_syslog_source_id_tcp
-    syslog:
-      mode: tcp
-      listen: 1.1.1.1
-      port: 1111
-    processor_ids:
-    - syslog-rfc5424
-    output_ids:
-    - google
-  - log_source_id: test_syslog_source_id_udp
-    syslog:
-      mode: udp
-      listen: 2.2.2.2
-      port: 2222
-    processor_ids:
-    - syslog-rfc3164
-    output_ids:
-    - google
+  receivers:
+    test_syslog_source_id_tcp:
+      type: syslog
+      listen_host: 1.1.1.1
+      listen_port: 1111
+      transport_protocol: tcp
+    test_syslog_source_id_udp:
+      type: syslog
+      listen_host: 2.2.2.2
+      listen_port: 2222
+      transport_protocol: udp
+  processors:
+    rfc5424:
+      type: parse_regex
+      regex: ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
+      time_key: time
+      time_format: "%Y-%m-%dT%H:%M:%S.%L%Z"
+  service:
+    pipelines:
+      pipeline1:
+        receivers:
+        - test_syslog_source_id_tcp
+        processors:
+        - rfc5424
+        exporters:
+        - google
+      pipeline2:
+        receivers:
+        - test_syslog_source_id_udp
+        processors:
+        - syslog-rfc3164
+        exporters:
+        - google
 metrics:
   receivers:
     hostmetrics_receiver:

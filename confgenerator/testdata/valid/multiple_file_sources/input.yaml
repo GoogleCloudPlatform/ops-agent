@@ -13,52 +13,69 @@
 # limitations under the License.
 
 logging:
-  input:
-  - log_source_id: log_source_id1
-    file:
-      paths:
+  receivers:
+    log_source_id1:
+      type: file
+      include_paths:
       - /path/to/log/1/*
-    output_ids:
-    - google
-  - log_source_id: log_source_id2
-    file:
-      paths:
+    log_source_id2:
+      type: file
+      include_paths:
       - /path/to/log/2/a
       - /path/to/log/2/b
-    output_ids:
-    - google
-  - log_source_id: log_source_id3
-    file:
-      paths:
+    log_source_id3:
+      type: file
+      include_paths:
       - /path/to/log/3/*
       exclude_paths:
       - /path/to/log/3/exclude
-    output_ids:
-    - google
-  - log_source_id: log_source_id4
-    file:
-      paths:
+    log_source_id4:
+      type: file
+      include_paths:
       - /path/to/log/4/*
       exclude_paths:
       - /path/to/log/4/exclude_a
       - /path/to/log/4/exclude_b
-    output_ids:
-    - google
-  - log_source_id: log_source_id5
-    file:
-      paths:
+    log_source_id5:
+      type: file
+      include_paths:
       - /path/to/log/5/*
-    processor_ids:
-    - parser_id5
-    output_ids:
-    - google
   processors:
-  - id: parser_id5
-    parse_regex:
+    parser_id5:
+      type: parse_regex
       field: key_5
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
+  service:
+    pipelines:
+      pipeline1:
+        receivers:
+        - log_source_id1
+        exporters:
+        - google
+      pipeline2:
+        receivers:
+        - log_source_id2
+        exporters:
+        - google
+      pipeline3:
+        receivers:
+        - log_source_id3
+        exporters:
+        - google
+      pipeline4:
+        receivers:
+        - log_source_id4
+        exporters:
+        - google
+      pipeline5:
+        receivers:
+        - log_source_id5
+        processors:
+        - parser_id5
+        exporters:
+        - google
 metrics:
   receivers:
     hostmetrics_receiver:

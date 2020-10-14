@@ -1,5 +1,0 @@
-logging:
-  input:
-  - file:
-      paths:
-      - /logs/path/1
