@@ -205,15 +205,15 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	for n, r := range receivers {
 		switch r.Type {
-		case "file":
+		case "files":
 			if r.TransportProtocol != "" {
-				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "transport_protocol"`, n)
 			}
 			if r.ListenHost != "" {
-				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_host"`, n)
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, fmt.Errorf(`file type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_port"`, n)
 			}
 			fileReceiverFactories[n] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
@@ -235,7 +235,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				ListenPort:        r.ListenPort,
 			}
 		default:
-			return nil, nil, fmt.Errorf(`receiver %q should have type as one of the "file", "syslog"`, n)
+			return nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, nil
@@ -333,7 +333,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
 			// if exporterID is google or we can find this ID is a google_cloud_logging type from the Stackdriver Exporter map
-			if e, ok := exporters[exporterID]; exporterID != "google" && !(ok && e.Type == "google_cloud_logging") {
+			if e, ok := exporters[exporterID]; !(ok && e.Type == "google_cloud_logging") {
 				return nil, nil, nil, nil,
 					fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
 			}

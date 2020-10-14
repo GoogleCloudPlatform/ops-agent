@@ -30,6 +30,9 @@ logging:
       regex: ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
       time_key: time
       time_format: "%Y-%m-%dT%H:%M:%S.%L%Z"
+  exporters:
+    google:
+      type: google_cloud_logging
   service:
     pipelines:
       pipeline1:

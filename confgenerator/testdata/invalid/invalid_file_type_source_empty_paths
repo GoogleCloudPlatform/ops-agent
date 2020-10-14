@@ -1,7 +1,7 @@
 logging:
   receivers:
     test_file_source_id:
-      type: file
+      type: files
       include_paths:
   exporters:
     test_google_cloud_logging:

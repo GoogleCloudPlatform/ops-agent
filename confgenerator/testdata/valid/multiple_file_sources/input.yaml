@@ -15,29 +15,29 @@
 logging:
   receivers:
     log_source_id1:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/1/*
     log_source_id2:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/2/a
       - /path/to/log/2/b
     log_source_id3:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/3/*
       exclude_paths:
       - /path/to/log/3/exclude
     log_source_id4:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/4/*
       exclude_paths:
       - /path/to/log/4/exclude_a
       - /path/to/log/4/exclude_b
     log_source_id5:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/5/*
   processors:
@@ -47,6 +47,9 @@ logging:
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
+  exporters:
+    google:
+      type: google_cloud_logging
   service:
     pipelines:
       pipeline1:

@@ -15,7 +15,7 @@
 logging:
   receivers:
     log_source_id1:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/1/a/*
       - /path/to/log/1/b/*
@@ -23,7 +23,7 @@ logging:
       - /path/to/log/1/a/exclude_a
       - /path/to/log/1/b/exclude_b
     log_source_id2:
-      type: file
+      type: files
       include_paths:
       - /path/to/log/2/a/*
       - /path/to/log/2/b/*
@@ -66,6 +66,9 @@ logging:
       type: parse_regex
       regex: regex_pattern_3
       time_format: time_format_3
+  exporters:
+    google:
+      type: google_cloud_logging
   service:
     pipelines:
       pipeline1:
