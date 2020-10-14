@@ -227,7 +227,7 @@ const (
     Listen         {{.Listen}}
     Tag            {{.Tag}}
     Port           {{.Port}}
-    Parser         default_message_parser
+    Parser         lib:default_message_parser
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
     # Buffer in disk to improve reliability.

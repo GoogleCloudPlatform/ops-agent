@@ -457,7 +457,7 @@ func TestSyslog(t *testing.T) {
     Listen         0.0.0.0
     Tag            test_tag
     Port           1234
-    Parser         default_message_parser
+    Parser         lib:default_message_parser
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
     # Buffer in disk to improve reliability.
@@ -724,7 +724,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Listen         0.0.0.0
     Tag            test_tag1
     Port           1234
-    Parser         default_message_parser
+    Parser         lib:default_message_parser
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
     # Buffer in disk to improve reliability.
@@ -744,7 +744,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     Listen         0.0.0.0
     Tag            test_tag2
     Port           5678
-    Parser         default_message_parser
+    Parser         lib:default_message_parser
 
     # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
     # Buffer in disk to improve reliability.
