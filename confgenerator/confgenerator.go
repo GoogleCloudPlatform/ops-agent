@@ -292,7 +292,7 @@ func generateFluentBitFilters(processors map[string]*processor, pipelines map[st
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
 			if !isDefaultProcessor(processorID) && !ok {
-				return nil, fmt.Errorf(`input cannot use a undefined processor`)
+				return nil, fmt.Errorf(`logging processor not defined: %q`, processorID)
 			}
 			fbFilterParser := conf.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pipelineID),
@@ -310,8 +310,8 @@ func generateFluentBitFilters(processors map[string]*processor, pipelines map[st
 
 func isDefaultProcessor(name string) bool {
 	switch name {
-	case "apache", "apache2", "apache_error", "mongodb", "nginx",
-		"syslog-rfc3164", "syslog-rfc5424":
+	case "lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb", "lib:nginx",
+		"lib:syslog-rfc3164", "lib:syslog-rfc5424":
 		return true
 	default:
 		return false

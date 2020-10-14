@@ -89,14 +89,14 @@ logging:
         receivers:
         - test_syslog_source_id_tcp
         processors:
-        - syslog-rfc5424
+        - lib:syslog-rfc5424
         exporters:
         - google
       pipeline4:
         receivers:
         - test_syslog_source_id_udp
         processors:
-        - syslog-rfc3164
+        - lib:syslog-rfc3164
         exporters:
         - google
 metrics:

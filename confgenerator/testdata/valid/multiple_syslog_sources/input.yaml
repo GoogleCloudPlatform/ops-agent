@@ -46,7 +46,7 @@ logging:
         receivers:
         - test_syslog_source_id_udp
         processors:
-        - syslog-rfc3164
+        - lib:syslog-rfc3164
         exporters:
         - google
 metrics:
