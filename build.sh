@@ -20,6 +20,7 @@
 prefix=/opt/google-cloud-ops-agent
 sysconfdir=/etc
 systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
+systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 # TODO: Get version number from packaging
 if [ -z "$version" ]; then
@@ -101,6 +102,10 @@ function build_systemd() {
       done
     done
   fi
+  mkdir -p "$DESTDIR$systemdsystempresetdir"
+  for f in systemd/*.preset; do
+    cp "$f" "$DESTDIR$systemdsystempresetdir/$(basename "$f")"
+  done
 }
 
 (build_collectd)
