@@ -25,8 +25,6 @@ RUN apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
-ARG PKG_VERSION=1.0.1
-
 COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
@@ -43,8 +41,6 @@ RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/so
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
-ARG PKG_VERSION=1.0.1
-
 COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
@@ -56,8 +52,6 @@ RUN apt-get update && \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
-
-ARG PKG_VERSION=1.0.1
 
 COPY . /work
 WORKDIR /work
@@ -74,8 +68,6 @@ RUN apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
 
-ARG PKG_VERSION=1.0.1
-
 COPY . /work
 WORKDIR /work
 RUN ./build-deb.sh
@@ -91,8 +83,6 @@ RUN apt-get update && \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs
-
-ARG PKG_VERSION=1.0.1
 
 COPY . /work
 WORKDIR /work
@@ -114,8 +104,6 @@ RUN yum -y update && \
     yum install -y cmake3 golang && \
     ln -fs cmake3 /usr/bin/cmake
 
-ARG PKG_VERSION=1.0.1
-
 COPY . /work
 WORKDIR /work
 RUN ./build-rpm.sh
@@ -130,8 +118,6 @@ RUN yum -y update && \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
     expect rpm-sign
 
-
-ARG PKG_VERSION=1.0.1
 
 COPY . /work
 WORKDIR /work
@@ -149,8 +135,6 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
 
-ARG PKG_VERSION=1.0.1
-
 COPY . /work
 WORKDIR /work
 RUN ./build-rpm.sh
@@ -165,8 +149,6 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 && zypper -n install bison>3.4 go \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
-
-ARG PKG_VERSION=1.0.1
 
 COPY . /work
 WORKDIR /work

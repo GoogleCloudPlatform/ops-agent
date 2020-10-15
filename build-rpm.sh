@@ -2,6 +2,8 @@
 
 set -ex
 
+. VERSION
+
 # Build .rpms
 rpmbuild --define "_source_filedigest_algorithm md5" \
   --define "package_version $PKG_VERSION" \

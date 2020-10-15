@@ -2,6 +2,8 @@
 
 set -ex
 
+. VERSION
+
 # Add changelog entry
 dch --create -b --package google-cloud-ops-agent -M \
   --distribution $(lsb_release -cs) \
