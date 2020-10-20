@@ -7,10 +7,7 @@ Monitoring).
 The agents gather logs and metrics from your Google Compute Engine instances and
 send them to Cloud Logging and Cloud Monitoring.
 
-## NOTE
-
-This project is still at an early stage and under active development. It is not
-yet an officially supported part of the product.
+See documentation at https://cloud.google.com/stackdriver/docs/solutions/ops-agent.
 
 ## License and Copyright
 
