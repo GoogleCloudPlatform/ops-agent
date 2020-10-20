@@ -82,7 +82,7 @@ function build_fluentbit() {
 
 function build_opsagent() {
   mkdir -p "$DESTDIR$prefix/libexec"
-  go build -o "$DESTDIR$prefix/libexec/generate_config" github.com/Stackdriver/unified_agents/cmd/generate_config
+  go build -o "$DESTDIR$prefix/libexec/generate_config" github.com/GoogleCloudPlatform/ops-agent/cmd/generate_config
 }
 
 function build_systemd() {

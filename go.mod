@@ -1,4 +1,4 @@
-module github.com/Stackdriver/unified_agents
+module github.com/GoogleCloudPlatform/ops-agent
 
 go 1.15
 

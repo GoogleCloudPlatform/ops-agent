@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Stackdriver/unified_agents/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 var (
