@@ -20,8 +20,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Stackdriver/unified_agents/collectd"
-	"github.com/Stackdriver/unified_agents/fluentbit/conf"
+	"github.com/GoogleCloudPlatform/ops-agent/collectd"
+	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 
 	yaml "gopkg.in/yaml.v2"
 )

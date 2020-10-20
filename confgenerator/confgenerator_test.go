@@ -34,9 +34,9 @@ const (
 
 var (
 	// Usage:
-	//   unified_agents$ go test -mod=mod github.com/Stackdriver/unified_agents/confgenerator -update_golden
+	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
 	// Add "-v" to show details for which files are updated with what:
-	//   unified_agents$ go test -mod=mod github.com/Stackdriver/unified_agents/confgenerator -update_golden -v
+	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
 	updateGolden                     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
 	validUnifiedConfigFilePathFormat = validTestdataDir + "/%s/input.yaml"
 	goldenMainPath                   = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
