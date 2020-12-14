@@ -50,6 +50,9 @@ type receiver struct {
 	TransportProtocol string `yaml:"transport_protocol"`
 	ListenHost        string `yaml:"listen_host"`
 	ListenPort        uint16 `yaml:"listen_port"`
+
+	//Valid for type "windows_event_log".
+	Channels []string `yaml:"channels"`
 }
 
 type processor struct {
@@ -147,18 +150,19 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 	fbTails := defaultTails(logsDir, stateDir)
 	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*conf.Syslog{}
+	fbWinlogs := []*conf.WindowsEventlog{}
 	fbFilterParsers := []*conf.FilterParser{}
 	fbFilterAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 
 	if logging.Service != nil {
-		fileReceiverFactories, syslogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
+		fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
 		if err != nil {
 			return "", "", err
 		}
 		extractedTails := []*conf.Tail{}
-		extractedTails, fbSyslogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, logging.Service.Pipelines, stateDir)
+		extractedTails, fbSyslogs, fbWinlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, logging.Service.Pipelines, stateDir)
 		if err != nil {
 			return "", "", err
 		}
@@ -174,7 +178,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 		}
 		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
 	if err != nil {
 		return "", "", err
 	}
@@ -200,23 +204,32 @@ type fileReceiverFactory struct {
 	ExcludePaths []string
 }
 
-func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, error) {
+type winlogReceiverFactory struct {
+	Channels []string
+}
+
+func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*winlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
+	winlogReceiverFactories := map[string]*winlogReceiverFactory{}
+	fmt.Print(receivers)
 	for n, r := range receivers {
 		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
+			return nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
 		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
-				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "transport_protocol"`, n)
 			}
 			if r.ListenHost != "" {
-				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_host"`, n)
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_port"`, n)
+			}
+			if r.Channels != nil {
+				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "channels"`, n)
 			}
 			fileReceiverFactories[n] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
@@ -224,29 +237,52 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			}
 		case "syslog":
 			if r.IncludePaths != nil {
-				return nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "include_paths"`, n)
+				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "include_paths"`, n)
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "exclude_paths"`, n)
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, n)
+				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, n)
+			}
+			if r.Channels != nil {
+				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "channels"`, n)
 			}
 			syslogReceiverFactories[n] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
 				ListenHost:        r.ListenHost,
 				ListenPort:        r.ListenPort,
 			}
+		case "windows_event_log":
+			if r.TransportProtocol != "" {
+				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "transport_protocol"`, n)
+			}
+			if r.ListenHost != "" {
+				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_host"`, n)
+			}
+			if r.ListenPort != 0 {
+				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_port"`, n)
+			}
+			if r.IncludePaths != nil {
+				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "include_paths"`, n)
+			}
+			if r.ExcludePaths != nil {
+				return nil, nil, nil,fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
+			}
+			winlogReceiverFactories[n] = &winlogReceiverFactory{
+				Channels:          r.Channels,
+			}
 		default:
-			return nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
+			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
 		}
 	}
-	return fileReceiverFactories, syslogReceiverFactories, nil
+	return fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, nil
 }
 
-func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, error) {
+func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, winlogReceiverFactories map[string]*winlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
+	fbWinlogs := []*conf.WindowsEventlog{}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -277,10 +313,19 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 				fbSyslogs = append(fbSyslogs, &fbSyslog)
 				continue
 			}
-			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			if f, ok := winlogReceiverFactories[rID]; ok {
+				fbWinlog := conf.WindowsEventlog{
+					Channels:      strings.Join(f.Channels, ","),
+					Interval_Sec:  "1",
+					DB:            fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+				}
+				fbWinlogs = append(fbWinlogs, &fbWinlog)
+				continue
+			}
+			return nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return fbTails, fbSyslogs, nil
+	return fbTails, fbSyslogs, fbWinlogs, nil
 }
 
 func generateFluentBitFilters(processors map[string]*processor, pipelines map[string]*loggingPipeline) ([]*conf.FilterParser, error) {

@@ -62,6 +62,10 @@ const (
 {{.}}
 
 {{end}}
+{{- range .WinlogConfigSections -}}
+{{.}}
+
+{{end}}
 {{- range .FilterParserConfigSections -}}
 {{.}}
 
@@ -240,6 +244,13 @@ const (
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
     Mem_Buf_Limit  10M`
 
+	winlogConf = `[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Name           winlog
+    Channels       {{.Channels}}
+    Interval_Sec   1
+    DB             {{.DB}}`
+
 	stackdriverConf = `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name     stackdriver
@@ -260,6 +271,7 @@ const (
 type mainConfigSections struct {
 	TailConfigSections                      []string
 	SyslogConfigSections                    []string
+	WinlogConfigSections                    []string
 	FilterParserConfigSections              []string
 	FilterModifyAddLogNameConfigSections    []string
 	FilterRewriteTagSections                []string
@@ -273,13 +285,14 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers []*FilterParser,
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, winlogs []*WindowsEventlog, filterParsers []*FilterParser,
 	filterModifyAddLogNames []*FilterModifyAddLogName,
 	filterRewriteTags []*FilterRewriteTag,
 	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
 	stackdrivers []*Stackdriver) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
+	winlogConfigSections := []string{}
 	filterParserConfigSections := []string{}
 	filterModifyAddLogNameConfigSections := []string{}
 	filterRewriteTagSections := []string{}
@@ -298,6 +311,13 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 			return "", err
 		}
 		syslogConfigSections = append(syslogConfigSections, configSection)
+	}
+	for _, w := range winlogs {
+		configSection, err := w.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		winlogConfigSections = append(winlogConfigSections, configSection)
 	}
 	for _, f := range filterParsers {
 		configSection, err := f.renderConfig()
@@ -337,12 +357,14 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, filterParsers
 	configSections := mainConfigSections{
 		TailConfigSections:                      tailConfigSections,
 		SyslogConfigSections:                    syslogConfigSections,
+		WinlogConfigSections:                    winlogConfigSections,
 		FilterParserConfigSections:              filterParserConfigSections,
 		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
 		FilterRewriteTagSections:                filterRewriteTagSections,
 		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
 		StackdriverConfigSections:               stackdriverConfigSections,
 	}
+	fmt.Print(mainConfTemplate)
 	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
 	if err != nil {
 		return "", err
@@ -666,6 +688,31 @@ func (s Syslog) renderConfig() (string, error) {
 		return "", err
 	}
 	return renderedSyslogConfig.String(), nil
+}
+
+// A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
+type WindowsEventlog struct {
+        Channels string
+        Interval_Sec string
+        DB string
+}
+
+var winlogTemplate = template.Must(template.New("winlog").Parse(winlogConf))
+
+// renderConfig generates a section for configure fluentBit winlog input plugin.
+func (w WindowsEventlog) renderConfig() (string, error) {
+	if w.Channels == "" {
+		return "", emptyFieldErr{
+			plugin: "winlog",
+			field: "Channels",
+		}
+	}
+
+	var renderedWinlogConfig strings.Builder
+	if err := winlogTemplate.Execute(&renderedWinlogConfig, w); err != nil {
+		return "", err
+	}
+	return renderedWinlogConfig.String(), nil
 }
 
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
