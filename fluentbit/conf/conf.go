@@ -364,7 +364,6 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, winlogs []*Wi
 		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
 		StackdriverConfigSections:               stackdriverConfigSections,
 	}
-	fmt.Print(mainConfTemplate)
 	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
 	if err != nil {
 		return "", err

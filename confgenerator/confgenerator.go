@@ -212,7 +212,6 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	winlogReceiverFactories := map[string]*winlogReceiverFactory{}
-	fmt.Print(receivers)
 	for n, r := range receivers {
 		if strings.HasPrefix(n, "lib:") {
 			return nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)

@@ -530,6 +530,58 @@ func TestSyslogErrors(t *testing.T) {
 	}
 }
 
+func TestWinlog(t *testing.T) {
+	tests := []struct {
+		winlog               WindowsEventlog
+		expectedWinlogConfig string
+	}{
+		{
+			winlog: WindowsEventlog{
+				Channels:   "System,Application,Security",
+				Interval_Sec: "1",
+				DB:   "test_DB",
+			},
+			expectedWinlogConfig: `[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Name           winlog
+    Channels       System,Application,Security
+    Interval_Sec   1
+    DB             test_DB`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.winlog.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedWinlogConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran winlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.winlog, diff)
+		}
+	}
+}
+
+func TestWinlogErrors(t *testing.T) {
+	tests := []struct {
+		name   string
+		winlog WindowsEventlog
+	}{
+		{
+			name: "empty channels",
+			winlog: WindowsEventlog{
+				Channels:   "",
+				Interval_Sec: "1",
+				DB:   "test_DB",
+			},
+		},
+	}
+	for _, tc := range tests {
+		if _, err := tc.winlog.renderConfig(); err == nil {
+			t.Errorf("test %q: winlog.renderConfig() succeeded, want error.", tc.name)
+		}
+	}
+}
+
 func TestStackdriver(t *testing.T) {
 	s := Stackdriver{
 		Match: "test_match",
@@ -761,7 +813,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -798,8 +850,151 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil); err == nil {
+		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil); err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
+		}
+	}
+}
+
+func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
+	tests := []struct {
+		name    string
+		tails   []*Tail
+		winlogs []*WindowsEventlog
+		want    string
+	}{
+		{
+			name: "multiple tail and winlog plugins",
+			tails: []*Tail{{
+				Tag:  "test_tag1",
+				DB:   "test_db1",
+				Path: "test_path1",
+			}, {
+				Tag:  "test_tag2",
+				DB:   "test_db2",
+				Path: "test_path2",
+			}},
+			winlogs: []*WindowsEventlog{{
+				Channels: "chl1",
+				Interval_Sec:   "1",
+				DB:    "test_DB1",
+			}, {
+				Channels: "chl2",
+				Interval_Sec:   "1",
+				DB:    "test_DB2",
+			}},
+			want: `[SERVICE]
+    # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
+    # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
+    Flush      1
+    # Waits 120 seconds after receiving a SIGTERM before it shuts down to minimize log loss.
+    Grace      120
+    # We use systemd to manage Fluent Bit instead.
+    Daemon     off
+    # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
+    Log_Level  info
+
+    # https://docs.fluentbit.io/manual/administration/monitoring
+    # Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
+    HTTP_Server  On
+    HTTP_Listen  0.0.0.0
+    HTTP_PORT    2020
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
+    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
+    storage.sync               normal
+    # Enable the data integrity check when writing and reading data from the filesystem.
+    storage.checksum           on
+    # The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
+    storage.backlog.mem_limit  50M
+    # Enable storage metrics in the built-in HTTP server.
+    storage.metrics            on
+    # This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
+    # Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
+    # we don't want them to all be loaded into the memory.
+    storage.max_chunks_up      128
+
+[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db1
+    Path               test_path1
+    Tag                test_tag1
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M
+
+[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+    Name               tail
+    DB                 test_db2
+    Path               test_path2
+    Tag                test_tag2
+    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+    Buffer_Chunk_Size  512k
+    # Set the max size a bit larger to accommodate for long log lines.
+    Buffer_Max_Size    5M
+    # When a message is unstructured (no parser applied), append it under a key named "message".
+    Key                message
+    # Increase this to 30 seconds so log rotations are handled more gracefully.
+    Rotate_Wait        30
+    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+    Skip_Long_Lines    On
+
+    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+    # Buffer in disk to improve reliability.
+    storage.type       filesystem
+
+    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+    Mem_Buf_Limit      10M
+
+[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Name           winlog
+    Channels       chl1
+    Interval_Sec   1
+    DB             test_DB1
+
+[INPUT]
+    # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Name           winlog
+    Channels       chl2
+    Interval_Sec   1
+    DB             test_DB2
+
+`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.winlogs, nil, nil, nil, nil, nil)
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.want, got); diff != "" {
+			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
 }

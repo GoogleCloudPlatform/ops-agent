@@ -14,14 +14,14 @@
 
 logging:
   receivers:
-    syslog:
+    windows_event_log:
       type: windows_event_log
-      channels: [System,Applications,Security]
+      channels: [System,Application,Security]
   exporters:
     google:
       type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
-        receivers: [syslog]
+        receivers: [windows_event_log]
         exporters: [google]
