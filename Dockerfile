@@ -112,7 +112,7 @@ FROM centos:8 AS centos8
 
 RUN yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
-    yum config-manager --set-enabled PowerTools && \
+    yum config-manager --set-enabled powertools && \
     yum -y install golang git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
