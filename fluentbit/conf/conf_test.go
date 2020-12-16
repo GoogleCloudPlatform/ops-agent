@@ -532,17 +532,19 @@ func TestSyslogErrors(t *testing.T) {
 
 func TestWinlog(t *testing.T) {
 	tests := []struct {
-		winlog               WindowsEventlog
+		wineventlog          WindowsEventlog
 		expectedWinlogConfig string
 	}{
 		{
-			winlog: WindowsEventlog{
-				Channels:   "System,Application,Security",
+			wineventlog: WindowsEventlog{
+				Tag:          "windows_event_log",
+				Channels:     "System,Application,Security",
 				Interval_Sec: "1",
-				DB:   "test_DB",
+				DB:           "test_DB",
 			},
 			expectedWinlogConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Tag            windows_event_log
     Name           winlog
     Channels       System,Application,Security
     Interval_Sec   1
@@ -550,13 +552,13 @@ func TestWinlog(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.winlog.renderConfig()
+		got, err := tc.wineventlog.renderConfig()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
 		if diff := diff.Diff(tc.expectedWinlogConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran winlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.winlog, diff)
+			t.Errorf("Tail %v: ran wineventlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
 		}
 	}
 }
@@ -564,20 +566,30 @@ func TestWinlog(t *testing.T) {
 func TestWinlogErrors(t *testing.T) {
 	tests := []struct {
 		name   string
-		winlog WindowsEventlog
+		wineventlog WindowsEventlog
 	}{
 		{
 			name: "empty channels",
-			winlog: WindowsEventlog{
-				Channels:   "",
+			wineventlog: WindowsEventlog{
+				Tag:          "test_tag",
+				Channels:     "",
 				Interval_Sec: "1",
-				DB:   "test_DB",
+				DB:           "test_DB",
+			},
+		},
+		{
+			name: "empty tag",
+			wineventlog: WindowsEventlog{
+				Tag:          "",
+				Channels:     "test_chl",
+				Interval_Sec: "1",
+				DB:           "test_DB",
 			},
 		},
 	}
 	for _, tc := range tests {
-		if _, err := tc.winlog.renderConfig(); err == nil {
-			t.Errorf("test %q: winlog.renderConfig() succeeded, want error.", tc.name)
+		if _, err := tc.wineventlog.renderConfig(); err == nil {
+			t.Errorf("test %q: wineventlog.renderConfig() succeeded, want error.", tc.name)
 		}
 	}
 }
@@ -860,7 +872,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 	tests := []struct {
 		name    string
 		tails   []*Tail
-		winlogs []*WindowsEventlog
+		wineventlogs []*WindowsEventlog
 		want    string
 	}{
 		{
@@ -874,14 +886,16 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 				DB:   "test_db2",
 				Path: "test_path2",
 			}},
-			winlogs: []*WindowsEventlog{{
-				Channels: "chl1",
-				Interval_Sec:   "1",
-				DB:    "test_DB1",
+			wineventlogs: []*WindowsEventlog{{
+				Tag:          "win_tag1",
+				Channels:     "chl1",
+				Interval_Sec: "1",
+				DB:           "test_DB1",
 			}, {
-				Channels: "chl2",
-				Interval_Sec:   "1",
-				DB:    "test_DB2",
+				Tag:          "win_tag2",
+				Channels:     "chl2",
+				Interval_Sec: "1",
+				DB:           "test_DB2",
 			}},
 			want: `[SERVICE]
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
@@ -972,6 +986,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Tag            win_tag1
     Name           winlog
     Channels       chl1
     Interval_Sec   1
@@ -979,6 +994,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Tag            win_tag2
     Name           winlog
     Channels       chl2
     Interval_Sec   1
@@ -988,7 +1004,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.winlogs, nil, nil, nil, nil, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.wineventlogs, nil, nil, nil, nil, nil)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return

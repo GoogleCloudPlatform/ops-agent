@@ -157,12 +157,12 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 	fbFilterRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 
 	if logging.Service != nil {
-		fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
+		fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
 		if err != nil {
 			return "", "", err
 		}
 		extractedTails := []*conf.Tail{}
-		extractedTails, fbSyslogs, fbWinlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, logging.Service.Pipelines, stateDir)
+		extractedTails, fbSyslogs, fbWinlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir)
 		if err != nil {
 			return "", "", err
 		}
@@ -204,14 +204,14 @@ type fileReceiverFactory struct {
 	ExcludePaths []string
 }
 
-type winlogReceiverFactory struct {
+type wineventlogReceiverFactory struct {
 	Channels []string
 }
 
-func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*winlogReceiverFactory, error) {
+func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
-	winlogReceiverFactories := map[string]*winlogReceiverFactory{}
+	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for n, r := range receivers {
 		if strings.HasPrefix(n, "lib:") {
 			return nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
@@ -268,17 +268,17 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			if r.ExcludePaths != nil {
 				return nil, nil, nil,fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
 			}
-			winlogReceiverFactories[n] = &winlogReceiverFactory{
+			wineventlogReceiverFactories[n] = &wineventlogReceiverFactory{
 				Channels:          r.Channels,
 			}
 		default:
 			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
 		}
 	}
-	return fileReceiverFactories, syslogReceiverFactories, winlogReceiverFactories, nil
+	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, winlogReceiverFactories map[string]*winlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
+func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
 	fbWinlogs := []*conf.WindowsEventlog{}
@@ -312,8 +312,9 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 				fbSyslogs = append(fbSyslogs, &fbSyslog)
 				continue
 			}
-			if f, ok := winlogReceiverFactories[rID]; ok {
+			if f, ok := wineventlogReceiverFactories[rID]; ok {
 				fbWinlog := conf.WindowsEventlog{
+					Tag:           fmt.Sprintf("%s.%s", pID, rID),
 					Channels:      strings.Join(f.Channels, ","),
 					Interval_Sec:  "1",
 					DB:            fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),

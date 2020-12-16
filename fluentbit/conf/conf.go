@@ -62,7 +62,7 @@ const (
 {{.}}
 
 {{end}}
-{{- range .WinlogConfigSections -}}
+{{- range .WineventlogConfigSections -}}
 {{.}}
 
 {{end}}
@@ -244,8 +244,9 @@ const (
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
     Mem_Buf_Limit  10M`
 
-	winlogConf = `[INPUT]
+	wineventlogConf = `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+    Tag            {{.Tag}}
     Name           winlog
     Channels       {{.Channels}}
     Interval_Sec   1
@@ -271,7 +272,7 @@ const (
 type mainConfigSections struct {
 	TailConfigSections                      []string
 	SyslogConfigSections                    []string
-	WinlogConfigSections                    []string
+	WineventlogConfigSections                    []string
 	FilterParserConfigSections              []string
 	FilterModifyAddLogNameConfigSections    []string
 	FilterRewriteTagSections                []string
@@ -285,14 +286,14 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, winlogs []*WindowsEventlog, filterParsers []*FilterParser,
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs []*WindowsEventlog, filterParsers []*FilterParser,
 	filterModifyAddLogNames []*FilterModifyAddLogName,
 	filterRewriteTags []*FilterRewriteTag,
 	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
 	stackdrivers []*Stackdriver) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
-	winlogConfigSections := []string{}
+	wineventlogConfigSections := []string{}
 	filterParserConfigSections := []string{}
 	filterModifyAddLogNameConfigSections := []string{}
 	filterRewriteTagSections := []string{}
@@ -312,12 +313,12 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, winlogs []*Wi
 		}
 		syslogConfigSections = append(syslogConfigSections, configSection)
 	}
-	for _, w := range winlogs {
+	for _, w := range wineventlogs {
 		configSection, err := w.renderConfig()
 		if err != nil {
 			return "", err
 		}
-		winlogConfigSections = append(winlogConfigSections, configSection)
+		wineventlogConfigSections = append(wineventlogConfigSections, configSection)
 	}
 	for _, f := range filterParsers {
 		configSection, err := f.renderConfig()
@@ -357,7 +358,7 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, winlogs []*Wi
 	configSections := mainConfigSections{
 		TailConfigSections:                      tailConfigSections,
 		SyslogConfigSections:                    syslogConfigSections,
-		WinlogConfigSections:                    winlogConfigSections,
+		WineventlogConfigSections:                    wineventlogConfigSections,
 		FilterParserConfigSections:              filterParserConfigSections,
 		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
 		FilterRewriteTagSections:                filterRewriteTagSections,
@@ -691,27 +692,35 @@ func (s Syslog) renderConfig() (string, error) {
 
 // A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
 type WindowsEventlog struct {
-        Channels string
+        Tag string
+	Channels string
         Interval_Sec string
         DB string
 }
 
-var winlogTemplate = template.Must(template.New("winlog").Parse(winlogConf))
+var wineventlogTemplate = template.Must(template.New("wineventlog").Parse(wineventlogConf))
 
-// renderConfig generates a section for configure fluentBit winlog input plugin.
+// renderConfig generates a section for configure fluentBit wineventlog input plugin.
 func (w WindowsEventlog) renderConfig() (string, error) {
 	if w.Channels == "" {
 		return "", emptyFieldErr{
-			plugin: "winlog",
+			plugin: "windows_event_log",
 			field: "Channels",
 		}
 	}
 
-	var renderedWinlogConfig strings.Builder
-	if err := winlogTemplate.Execute(&renderedWinlogConfig, w); err != nil {
+	if w.Tag == "" {
+		return "", emptyFieldErr{
+			plugin: "windows_event_log",
+			field:  "Tag",
+		}
+	}
+
+	var renderedWineventlogConfig strings.Builder
+	if err := wineventlogTemplate.Execute(&renderedWineventlogConfig, w); err != nil {
 		return "", err
 	}
-	return renderedWinlogConfig.String(), nil
+	return renderedWineventlogConfig.String(), nil
 }
 
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
