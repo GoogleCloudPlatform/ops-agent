@@ -150,7 +150,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 	fbTails := defaultTails(logsDir, stateDir)
 	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*conf.Syslog{}
-	fbWinlogs := []*conf.WindowsEventlog{}
+	fbWinEventlogs := []*conf.WindowsEventlog{}
 	fbFilterParsers := []*conf.FilterParser{}
 	fbFilterAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
@@ -162,7 +162,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 			return "", "", err
 		}
 		extractedTails := []*conf.Tail{}
-		extractedTails, fbSyslogs, fbWinlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir)
+		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir)
 		if err != nil {
 			return "", "", err
 		}
@@ -178,7 +178,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 		}
 		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
 	if err != nil {
 		return "", "", err
 	}
@@ -266,10 +266,10 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "include_paths"`, n)
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil,fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
 			}
 			wineventlogReceiverFactories[n] = &wineventlogReceiverFactory{
-				Channels:          r.Channels,
+				Channels: r.Channels,
 			}
 		default:
 			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
@@ -281,7 +281,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
-	fbWinlogs := []*conf.WindowsEventlog{}
+	fbWinEventlogs := []*conf.WindowsEventlog{}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -314,18 +314,18 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 			}
 			if f, ok := wineventlogReceiverFactories[rID]; ok {
 				fbWinlog := conf.WindowsEventlog{
-					Tag:           fmt.Sprintf("%s.%s", pID, rID),
-					Channels:      strings.Join(f.Channels, ","),
-					Interval_Sec:  "1",
-					DB:            fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					Tag:          fmt.Sprintf("%s.%s", pID, rID),
+					Channels:     strings.Join(f.Channels, ","),
+					Interval_Sec: "1",
+					DB:           fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
 				}
-				fbWinlogs = append(fbWinlogs, &fbWinlog)
+				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
 			}
 			return nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return fbTails, fbSyslogs, fbWinlogs, nil
+	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
 func generateFluentBitFilters(processors map[string]*processor, pipelines map[string]*loggingPipeline) ([]*conf.FilterParser, error) {

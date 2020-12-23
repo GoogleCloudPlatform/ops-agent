@@ -272,7 +272,7 @@ const (
 type mainConfigSections struct {
 	TailConfigSections                      []string
 	SyslogConfigSections                    []string
-	WineventlogConfigSections                    []string
+	WineventlogConfigSections               []string
 	FilterParserConfigSections              []string
 	FilterModifyAddLogNameConfigSections    []string
 	FilterRewriteTagSections                []string
@@ -358,7 +358,7 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 	configSections := mainConfigSections{
 		TailConfigSections:                      tailConfigSections,
 		SyslogConfigSections:                    syslogConfigSections,
-		WineventlogConfigSections:                    wineventlogConfigSections,
+		WineventlogConfigSections:               wineventlogConfigSections,
 		FilterParserConfigSections:              filterParserConfigSections,
 		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
 		FilterRewriteTagSections:                filterRewriteTagSections,
@@ -608,6 +608,7 @@ func (t Tail) renderConfig() (string, error) {
 			field:  "Tag",
 		}
 	}
+	//TODO: Add check that Path is a comma separated list.
 	if t.Path == "" {
 		return "", emptyFieldErr{
 			plugin: "tail",
@@ -692,20 +693,21 @@ func (s Syslog) renderConfig() (string, error) {
 
 // A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
 type WindowsEventlog struct {
-        Tag string
-	Channels string
-        Interval_Sec string
-        DB string
+	Tag          string
+	Channels     string
+	Interval_Sec string
+	DB           string
 }
 
 var wineventlogTemplate = template.Must(template.New("wineventlog").Parse(wineventlogConf))
 
 // renderConfig generates a section for configure fluentBit wineventlog input plugin.
 func (w WindowsEventlog) renderConfig() (string, error) {
+	//TODO: Add check that Channels is a comma separated list.
 	if w.Channels == "" {
 		return "", emptyFieldErr{
 			plugin: "windows_event_log",
-			field: "Channels",
+			field:  "Channels",
 		}
 	}
 

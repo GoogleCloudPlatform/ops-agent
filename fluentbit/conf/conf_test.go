@@ -565,7 +565,7 @@ func TestWinlog(t *testing.T) {
 
 func TestWinlogErrors(t *testing.T) {
 	tests := []struct {
-		name   string
+		name        string
 		wineventlog WindowsEventlog
 	}{
 		{
@@ -870,10 +870,10 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 
 func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 	tests := []struct {
-		name    string
-		tails   []*Tail
+		name         string
+		tails        []*Tail
 		wineventlogs []*WindowsEventlog
-		want    string
+		want         string
 	}{
 		{
 			name: "multiple tail and winlog plugins",
