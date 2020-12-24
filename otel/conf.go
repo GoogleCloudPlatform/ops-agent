@@ -44,7 +44,7 @@ service:
   {{.}}
   {{end}}`
 
-	hostmetricsConf = `  hostmetrics/{{.HostMetricsID}}:
+	hostmetricsConf = `hostmetrics/{{.HostMetricsID}}:
     collection_interval: {{.CollectionInterval}}
     scrapers:
       cpu:
@@ -56,10 +56,10 @@ service:
       swap:
       process:`
 
-	stackdriverConf = `  stackdriver/{{.StackdriverID}}:
-	  user_agent: {{.UserAgent}}
-	  metric:
-        prefix: {{.Prefix}}`
+	stackdriverConf = `stackdriver/{{.StackdriverID}}:
+    user_agent: {{.UserAgent}}
+    metric:
+      prefix: {{.Prefix}}`
 )
 
 type configSections struct {
@@ -102,6 +102,7 @@ func (h HostMetrics) renderConfig() (string, error) {
 }
 
 type Stackdriver struct {
+	StackdriverID string
 	UserAgent string
 	Prefix string
 }
@@ -126,7 +127,6 @@ func GenerateOtelConfig(hostMetricsList []*HostMetrics, stackdriverList []*Stack
 		}
 		receiversConfigSection = append(receiversConfigSection, configSection)
 	}
-
 	for _, s := range stackdriverList {
 		configSection, err := s.renderConfig()
 		if err != nil {

@@ -409,19 +409,20 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
-		for _, rID := range p.Receivers {
+		for _, rID := range p.Exporters {
 			if _, ok := exporters[rID]; ok {
 				stackdriver := otel.Stackdriver{
+					StackdriverID: rID,
 					UserAgent: "$USERAGENT",
 					Prefix: "agent.googleapis.com/",
 				}
 				stackdriverList = append(stackdriverList, &stackdriver)
 				continue
 			}
-			return nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			return nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return stackdriverList, nil	
+	return stackdriverList, nil
 }
 
 func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
