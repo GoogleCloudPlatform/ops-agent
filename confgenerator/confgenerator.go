@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
+	"github.com/GoogleCloudPlatform/ops-agent/otel"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -29,6 +30,11 @@ import (
 type unifiedConfig struct {
 	Logging *logging         `yaml:"logging"`
 	Metrics collectd.Metrics `yaml:"metrics"`
+}
+
+type unifiedConfigWindows struct {
+	Logging *logging         `yaml:"logging"`
+	Metrics *otelMetrics     `yaml:"metrics"`
 }
 
 type logging struct {
@@ -83,6 +89,39 @@ type loggingPipeline struct {
 	Exporters  []string `yaml:"exporters"`
 }
 
+type otelReceiver struct {
+        Type string `yaml:"type"`
+	// Valid for type "hostmetrics".
+        CollectionInterval string `yaml:"collection_interval"`
+}
+
+type otelMetrics struct {
+        Receivers map[string]*otelReceiver `yaml:"receivers"`
+	Service *otelService `yaml:"service"`
+}
+
+type otelService struct {
+	Pipelines map[string]*otelPipeline
+}
+
+type otelPipeline struct {
+	Receivers  []string `yaml:"receivers"`
+	Processors []string `yaml:"processors"`
+	Exporters  []string `yaml:"exporters"`
+}
+
+func GenerateOtelConfig(input []byte, logsDir string) (config string, err error){
+	unifiedConfig, err := unifiedConfigWindowsReader(input)
+	if err != nil {
+		return "", err
+	}
+	otelConfig, err := generateOtelConfig(unifiedConfig.Metrics, logsDir)
+	if err != nil {
+		return "", err
+	}
+	return otelConfig, nil
+}
+
 func GenerateCollectdConfig(input []byte, logsDir string) (config string, err error) {
 	unifiedConfig, err := unifiedConfigReader(input)
 	if err != nil {
@@ -116,6 +155,38 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 		return unifiedConfig{}, err
 	}
 	return config, nil
+}
+
+func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
+	config := unifiedConfigWindows{}
+	err := yaml.UnmarshalStrict(input, &config)
+	if err != nil {
+		return unifiedConfigWindows{}, err
+	}
+	return config, nil
+}
+
+func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error){
+	hostMetricsList := []*otel.HostMetrics{}
+
+	if metrics.Service != nil {
+		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
+		if err != nil {
+			return "", err
+		}
+		fmt.Print(hostmetricsReceiverFactories)
+		hostMetricsList, err = generateOtelReceivers(hostmetricsReceiverFactories, metrics.Service.Pipelines)
+		if err != nil {
+			return "", err
+		}
+		//exporters
+	}
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList)
+	if err != nil {
+		return "", err
+	}
+	fmt.Print(otelConfig)
+	return otelConfig, nil
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
@@ -208,6 +279,25 @@ type wineventlogReceiverFactory struct {
 	Channels []string
 }
 
+type hostmetricsReceiverFactory struct{
+	CollectionInterval string
+}
+
+func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[string]*hostmetricsReceiverFactory, error){
+	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
+	for n, r := range receivers {
+		switch r.Type {
+		case "hostmetrics":
+			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
+		default:
+			return nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics"`, n)
+		}
+	}
+	return hostmetricsReceiverFactories, nil
+}
+
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
@@ -276,6 +366,30 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
+}
+
+func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, error) {
+	hostMetricsList := []*otel.HostMetrics{}
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
+	}
+	sort.Strings(pipelineIDs)
+	for _, pID := range pipelineIDs {
+		p := pipelines[pID]
+		for _, rID := range p.Receivers {
+			if _, ok := hostmetricsReceiverFactories[rID]; ok {
+				hostMetrics := otel.HostMetrics{
+					HostMetricsID: rID,
+					CollectionInterval: "1",
+				}
+				hostMetricsList = append(hostMetricsList, &hostMetrics)
+				continue
+			}
+			return nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+		}
+	}
+	return hostMetricsList, nil
 }
 
 func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
