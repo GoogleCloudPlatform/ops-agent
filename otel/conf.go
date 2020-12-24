@@ -55,6 +55,11 @@ service:
       network:
       swap:
       process:`
+
+	stackdriverConf = `  stackdriver/{{.StackdriverID}}:
+	  user_agent: {{.UserAgent}}
+	  metric:
+        prefix: {{.Prefix}}`
 )
 
 type configSections struct {
@@ -96,8 +101,24 @@ func (h HostMetrics) renderConfig() (string, error) {
 	return renderedHostMetricsConfig.String(), nil
 }
 
-func GenerateOtelConfig(hostMetricsList []*HostMetrics) (string, error) {
+type Stackdriver struct {
+	UserAgent string
+	Prefix string
+}
+
+var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
+
+func (s Stackdriver) renderConfig() (string, error) {
+	var renderedStackdriverConfig strings.Builder
+	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
+		return "", err
+	}
+	return renderedStackdriverConfig.String(), nil
+}
+
+func GenerateOtelConfig(hostMetricsList []*HostMetrics, stackdriverList []*Stackdriver) (string, error) {
 	receiversConfigSection := []string{}
+	exportersConfigSection := []string{}
 	for _, h := range hostMetricsList {
 		configSection, err := h.renderConfig()
 		if err != nil {
@@ -105,9 +126,19 @@ func GenerateOtelConfig(hostMetricsList []*HostMetrics) (string, error) {
 		}
 		receiversConfigSection = append(receiversConfigSection, configSection)
 	}
+
+	for _, s := range stackdriverList {
+		configSection, err := s.renderConfig()
+		if err != nil {
+			return "", err
+		}
+		exportersConfigSection = append(exportersConfigSection, configSection)
+	}
+
 	configSections := configSections{
 		ReceiversConfigSection: receiversConfigSection,
-		ServiceConfigSection: serviceConfigSection,
+		ExportersConfigSection: exportersConfigSection,
+		//ServiceConfigSection: serviceConfigSection,
 	}
 	conf, err := template.New("otelConf").Parse(confTemplate)
 	if err != nil {

@@ -95,8 +95,13 @@ type otelReceiver struct {
         CollectionInterval string `yaml:"collection_interval"`
 }
 
+type otelExporter struct {
+        Type string `yaml:"type"`
+}
+
 type otelMetrics struct {
-        Receivers map[string]*otelReceiver `yaml:"receivers"`
+    Receivers map[string]*otelReceiver `yaml:"receivers"`
+    Exporters map[string]*otelExporter `yaml:"exporters"`
 	Service *otelService `yaml:"service"`
 }
 
@@ -168,20 +173,23 @@ func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 
 func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error){
 	hostMetricsList := []*otel.HostMetrics{}
+	stackdriverList := []*otel.Stackdriver{}
 
 	if metrics.Service != nil {
 		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
 		if err != nil {
 			return "", err
 		}
-		fmt.Print(hostmetricsReceiverFactories)
 		hostMetricsList, err = generateOtelReceivers(hostmetricsReceiverFactories, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
-		//exporters
+		stackdriverList, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
+		if err != nil {
+			return "", err
+		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList)
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList)
 	if err != nil {
 		return "", err
 	}
@@ -390,6 +398,30 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		}
 	}
 	return hostMetricsList, nil
+}
+
+func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[string]*otelPipeline) ([]*otel.Stackdriver, error) {
+	stackdriverList := []*otel.Stackdriver{}
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
+	}
+	sort.Strings(pipelineIDs)
+	for _, pID := range pipelineIDs {
+		p := pipelines[pID]
+		for _, rID := range p.Receivers {
+			if _, ok := exporters[rID]; ok {
+				stackdriver := otel.Stackdriver{
+					UserAgent: "$USERAGENT",
+					Prefix: "agent.googleapis.com/",
+				}
+				stackdriverList = append(stackdriverList, &stackdriver)
+				continue
+			}
+			return nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+		}
+	}
+	return stackdriverList, nil	
 }
 
 func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
