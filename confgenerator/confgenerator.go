@@ -174,27 +174,74 @@ func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error){
 	hostMetricsList := []*otel.HostMetrics{}
 	stackdriverList := []*otel.Stackdriver{}
-
+	serviceList := []*otel.Service{}
+	receiverNameMap := make(map[string]string)
+	exporterNameMap := make(map[string]string)
 	if metrics.Service != nil {
 		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
 		if err != nil {
 			return "", err
 		}
-		hostMetricsList, err = generateOtelReceivers(hostmetricsReceiverFactories, metrics.Service.Pipelines)
+		hostMetricsList, receiverNameMap, err = generateOtelReceivers(hostmetricsReceiverFactories, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
-		stackdriverList, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
+		stackdriverList, exporterNameMap, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
+		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, metrics.Service.Pipelines)
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList)
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList, serviceList)
 	if err != nil {
 		return "", err
 	}
 	fmt.Print(otelConfig)
 	return otelConfig, nil
+}
+
+func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*otelPipeline) ([]*otel.Service, error) {
+	serviceList := []*otel.Service{}
+	var pipelineIDs []string
+	for p := range pipelines {
+		pipelineIDs = append(pipelineIDs, p)
+	}
+	sort.Strings(pipelineIDs)
+	for _, pID := range pipelineIDs {
+		p := pipelines[pID]
+		var pRecevieIDs []string
+		var isHostMetrics bool
+		for _, rID := range p.Receivers {
+			pRecevieIDs = append(pRecevieIDs, receiverNameMap[rID])
+			if rID == "hostmetrics" {
+				isHostMetrics = true
+			}
+		}
+                var pExportIDs []string
+                for _, eID := range p.Exporters {
+                        pExportIDs = append(pExportIDs, exporterNameMap[eID])
+                }
+		service := otel.Service{}
+		if isHostMetrics {
+			defaultProcessors := []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
+			service = otel.Service{
+				ID: "system",
+				Receivers: fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
+				Exporters: fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+			}
+		} else {
+			service = otel.Service{
+				ID: pID,
+				Receivers: fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				Exporters: fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+				Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
+			}
+		}
+
+		serviceList = append(serviceList, &service)
+	}
+	return serviceList, nil
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
@@ -376,8 +423,9 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, error) {
+func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
+	receiveNameMap := make(map[string]string)
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -392,16 +440,18 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 					CollectionInterval: "1",
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
+				receiveNameMap[rID] = "hostmetrics/"+rID
 				continue
 			}
-			return nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return hostMetricsList, nil
+	return hostMetricsList, receiveNameMap, nil
 }
 
-func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[string]*otelPipeline) ([]*otel.Stackdriver, error) {
+func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[string]*otelPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
+	exportNameMap := make(map[string]string)
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -409,20 +459,21 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
-		for _, rID := range p.Exporters {
-			if _, ok := exporters[rID]; ok {
+		for _, eID := range p.Exporters {
+			if _, ok := exporters[eID]; ok {
 				stackdriver := otel.Stackdriver{
-					StackdriverID: rID,
+					StackdriverID: eID,
 					UserAgent: "$USERAGENT",
 					Prefix: "agent.googleapis.com/",
 				}
 				stackdriverList = append(stackdriverList, &stackdriver)
+				exportNameMap[eID] = "stackdriver/" + eID
 				continue
 			}
-			return nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, rID, pID)
+			return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
 		}
 	}
-	return stackdriverList, nil
+	return stackdriverList, exportNameMap, nil
 }
 
 func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
