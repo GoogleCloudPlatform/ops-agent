@@ -434,10 +434,10 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
-			if _, ok := hostmetricsReceiverFactories[rID]; ok {
+			if h, ok := hostmetricsReceiverFactories[rID]; ok {
 				hostMetrics := otel.HostMetrics{
 					HostMetricsID:      rID,
-					CollectionInterval: "1",
+					CollectionInterval: h.CollectionInterval,
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
 				receiveNameMap[rID] = "hostmetrics/" + rID
