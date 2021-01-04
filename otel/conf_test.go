@@ -1,52 +1,23 @@
-// Copyright 2020 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//Package otel provides data structures to represent and generate otel configuration.
 package otel
 
 import (
-	"fmt"
-	//	"net"
-	"strings"
-	"text/template"
+	"testing"
+
+	"github.com/kylelemons/godebug/diff"
 )
 
-const (
-	confTemplate = `receivers:
-  {{range .ReceiversConfigSection -}}
-  {{.}}
-  {{end}}
-processors:
-  {{range .ProcessorsConfigSection -}}
-  {{.}}
-  {{end}}
-exporters:
-  {{range .ExportersConfigSection -}}
-  {{.}}
-  {{end}}
-extensions:
-  {{range .ExtensionsConfigSection -}}
-  {{.}}
-  {{end}}
-service:
-  pipelines:
-    {{range .ServiceConfigSection -}}
-    {{.}}
-    {{end}}`
-
-	hostmetricsReceiverConf = `hostmetrics/{{.HostMetricsID}}:
-    collection_interval: {{.CollectionInterval}}
+func TestHostMetrics(t *testing.T) {
+	tests := []struct {
+		hostmetrics               HostMetrics
+		expectedHostMetricsConfig string
+	}{
+		{
+			hostmetrics: HostMetrics{
+				HostMetricsID:      "hostmetrics",
+				CollectionInterval: "60s",
+			},
+			expectedHostMetricsConfig: `hostmetrics/hostmetrics:
+    collection_interval: 60s
     scrapers:
       cpu:
       load:
@@ -55,43 +26,148 @@ service:
       filesystem:
       network:
       swap:
-      process:`
+      process:`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.hostmetrics.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedHostMetricsConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran hostmetrics.renderConfig() returned unexpected diff (-want +got):\n%s", tc.hostmetrics, diff)
+		}
+	}
+}
 
-	stackdriverExporterConf = `stackdriver/{{.StackdriverID}}:
-    user_agent: {{.UserAgent}}
+func TestHostMetricsErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		hostmetrics HostMetrics
+	}{
+		{
+			name: "empty collection interval",
+			hostmetrics: HostMetrics{
+				HostMetricsID: "hostmetrics",
+				//CollectionInterval: "60s",
+			},
+		},
+	}
+	for _, tc := range tests {
+		if _, err := tc.hostmetrics.renderConfig(); err == nil {
+			t.Errorf("test %q: hostmetrics.renderConfig() succeeded, want error.", tc.name)
+		}
+	}
+
+}
+
+func TestStackdriver(t *testing.T) {
+	tests := []struct {
+		stackdriver               Stackdriver
+		expectedStackdriverConfig string
+	}{
+		{
+			stackdriver: Stackdriver{
+				StackdriverID: "agent",
+				UserAgent:     "$USERAGENT",
+				Prefix:        "agent.googleapis.com/",
+			},
+			expectedStackdriverConfig: `stackdriver/agent:
+    user_agent: $USERAGENT
     metric:
-      prefix: {{.Prefix}}`
+      prefix: agent.googleapis.com/`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.stackdriver.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedStackdriverConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", tc.stackdriver, diff)
+		}
+	}
+}
 
-	agentReceiverConf = `prometheus/agent:
+func TestService(t *testing.T) {
+	tests := []struct {
+		service               Service
+		expectedServiceConfig string
+	}{
+		{
+			service: Service{
+				ID:         "system",
+				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+				Receivers:  "[hostmetrics/hostmetrics]",
+				Exporters:  "[stackdriver/google]",
+			},
+			expectedServiceConfig: `metrics/system:
+      receivers:  [hostmetrics/hostmetrics]
+      processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
+      exporters: [stackdriver/google]`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.service.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedServiceConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran service.renderConfig() returned unexpected diff (-want +got):\n%s", tc.service, diff)
+		}
+	}
+}
+
+func TestGenerateOtelConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		hostMetricsList        []*HostMetrics
+		stackdriverList []*Stackdriver
+		serviceList []*Service
+		want         string
+	}{
+		{
+			name: "default system metrics config",
+			hostMetricsList: []*HostMetrics{{
+				HostMetricsID:      "hostmetrics",
+				CollectionInterval: "60s",
+			}},
+			stackdriverList: []*Stackdriver{{
+				StackdriverID: "google",
+				UserAgent:     "$USERAGENT",
+				Prefix:        "agent.googleapis.com/",
+			}},
+			serviceList: []*Service{{
+				ID:         "system",
+				Receivers:  "[hostmetrics/hostmetrics]",
+				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+				Exporters:  "[stackdriver/google]",
+			}},
+			want: `receivers:
+  prometheus/agent:
     config:
       scrape_configs:
       - job_name: 'otel-collector'
         scrape_interval: 1m
         static_configs:
-        - targets: ['0.0.0.0:8888']`
-
-	agentExporterConf = `stackdriver/agent:
-    user_agent: $USERAGENT
-    metric:
-      prefix: agent.googleapis.com/`
-
-	agentServiceConf = `# reports agent self-observability metrics to cloud monitoring
-    metrics/agent:
-      receivers:
-        - prometheus/agent
-      processors:
-        - filter/agent
-        - metricstransform/agent
-        - resourcedetection
-      exporters:
-        - stackdriver/agent`
-
-	serviceConf = `metrics/{{.ID}}:
-      receivers:  {{.Receivers}}
-      processors: {{.Processors}}
-      exporters: {{.Exporters}}`
-
-	defaultProcessorConf = `resourcedetection:
+        - targets: ['0.0.0.0:8888']
+  hostmetrics/hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+      load:
+      memory:
+      disk:
+      filesystem:
+      network:
+      swap:
+      process:
+  
+processors:
+  resourcedetection:
     detectors: [gce, ec2]
 
   # perform custom transformations that aren't supported by the metricstransform processor
@@ -460,125 +536,47 @@ service:
         new_name: agent/monitoring/point_count
         operations:
           # change data type from double -> int64
-          - action: toggle_scalar_data_type`
-)
-
-type configSections struct {
-	ReceiversConfigSection  []string
-	ProcessorsConfigSection []string
-	ExportersConfigSection  []string
-	ExtensionsConfigSection []string
-	ServiceConfigSection    []string
-}
-
-type emptyFieldErr struct {
-	plugin string
-	field  string
-}
-
-func (e emptyFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
-}
-
-type HostMetrics struct {
-	HostMetricsID      string
-	CollectionInterval string
-}
-
-var hostMetricsTemplate = template.Must(template.New("hostmetrics").Parse(hostmetricsReceiverConf))
-
-func (h HostMetrics) renderConfig() (string, error) {
-	if h.CollectionInterval == "" {
-		return "", emptyFieldErr{
-			plugin: "hostmetrics",
-			field:  "collection_interval",
-		}
+          - action: toggle_scalar_data_type
+  
+exporters:
+  stackdriver/agent:
+    user_agent: $USERAGENT
+    metric:
+      prefix: agent.googleapis.com/
+  stackdriver/google:
+    user_agent: $USERAGENT
+    metric:
+      prefix: agent.googleapis.com/
+  
+extensions:
+  
+service:
+  pipelines:
+    # reports agent self-observability metrics to cloud monitoring
+    metrics/agent:
+      receivers:
+        - prometheus/agent
+      processors:
+        - filter/agent
+        - metricstransform/agent
+        - resourcedetection
+      exporters:
+        - stackdriver/agent
+    metrics/system:
+      receivers:  [hostmetrics/hostmetrics]
+      processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
+      exporters: [stackdriver/google]
+    `,
+		},
 	}
-
-	var renderedHostMetricsConfig strings.Builder
-	if err := hostMetricsTemplate.Execute(&renderedHostMetricsConfig, h); err != nil {
-		return "", err
-	}
-	return renderedHostMetricsConfig.String(), nil
-}
-
-type Service struct {
-	ID         string
-	Processors string
-	Receivers  string
-	Exporters  string
-}
-
-var serviceTemplate = template.Must(template.New("service").Parse(serviceConf))
-
-func (s Service) renderConfig() (string, error) {
-	var renderedServiceConfig strings.Builder
-	if err := serviceTemplate.Execute(&renderedServiceConfig, s); err != nil {
-		return "", err
-	}
-	return renderedServiceConfig.String(), nil
-}
-
-type Stackdriver struct {
-	StackdriverID string
-	UserAgent     string
-	Prefix        string
-}
-
-var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverExporterConf))
-
-func (s Stackdriver) renderConfig() (string, error) {
-	var renderedStackdriverConfig strings.Builder
-	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
-		return "", err
-	}
-	return renderedStackdriverConfig.String(), nil
-}
-
-func GenerateOtelConfig(hostMetricsList []*HostMetrics, stackdriverList []*Stackdriver, serviceList []*Service) (string, error) {
-	receiversConfigSection := []string{}
-	exportersConfigSection := []string{}
-	processorsConfigSection := []string{}
-	serviceConfigSection := []string{}
-	receiversConfigSection = append(receiversConfigSection, agentReceiverConf)
-	exportersConfigSection = append(exportersConfigSection, agentExporterConf)
-	serviceConfigSection = append(serviceConfigSection, agentServiceConf)
-	for _, h := range hostMetricsList {
-		configSection, err := h.renderConfig()
+	for _, tc := range tests {
+		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.stackdriverList, tc.serviceList)
 		if err != nil {
-			return "", err
+			t.Errorf("got error: %v, want no error", err)
+			return
 		}
-		receiversConfigSection = append(receiversConfigSection, configSection)
-	}
-	for _, s := range stackdriverList {
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
+		if diff := diff.Diff(tc.want, got); diff != "" {
+			t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
-		exportersConfigSection = append(exportersConfigSection, configSection)
 	}
-	for _, s := range serviceList {
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		serviceConfigSection = append(serviceConfigSection, configSection)
-	}
-	processorsConfigSection = append(processorsConfigSection, defaultProcessorConf)
-	configSections := configSections{
-		ReceiversConfigSection:  receiversConfigSection,
-		ProcessorsConfigSection: processorsConfigSection,
-		ExportersConfigSection:  exportersConfigSection,
-		ServiceConfigSection:    serviceConfigSection,
-	}
-	conf, err := template.New("otelConf").Parse(confTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	var configBuilder strings.Builder
-	if err := conf.Execute(&configBuilder, configSections); err != nil {
-		return "", err
-	}
-	return configBuilder.String(), nil
 }

@@ -33,8 +33,8 @@ type unifiedConfig struct {
 }
 
 type unifiedConfigWindows struct {
-	Logging *logging         `yaml:"logging"`
-	Metrics *otelMetrics     `yaml:"metrics"`
+	Logging *logging     `yaml:"logging"`
+	Metrics *otelMetrics `yaml:"metrics"`
 }
 
 type logging struct {
@@ -90,19 +90,19 @@ type loggingPipeline struct {
 }
 
 type otelReceiver struct {
-        Type string `yaml:"type"`
+	Type string `yaml:"type"`
 	// Valid for type "hostmetrics".
-        CollectionInterval string `yaml:"collection_interval"`
+	CollectionInterval string `yaml:"collection_interval"`
 }
 
 type otelExporter struct {
-        Type string `yaml:"type"`
+	Type string `yaml:"type"`
 }
 
 type otelMetrics struct {
-    Receivers map[string]*otelReceiver `yaml:"receivers"`
-    Exporters map[string]*otelExporter `yaml:"exporters"`
-	Service *otelService `yaml:"service"`
+	Receivers map[string]*otelReceiver `yaml:"receivers"`
+	Exporters map[string]*otelExporter `yaml:"exporters"`
+	Service   *otelService             `yaml:"service"`
 }
 
 type otelService struct {
@@ -115,7 +115,7 @@ type otelPipeline struct {
 	Exporters  []string `yaml:"exporters"`
 }
 
-func GenerateOtelConfig(input []byte, logsDir string) (config string, err error){
+func GenerateOtelConfig(input []byte, logsDir string) (config string, err error) {
 	unifiedConfig, err := unifiedConfigWindowsReader(input)
 	if err != nil {
 		return "", err
@@ -171,7 +171,7 @@ func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 	return config, nil
 }
 
-func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error){
+func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
@@ -217,24 +217,24 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				isHostMetrics = true
 			}
 		}
-                var pExportIDs []string
-                for _, eID := range p.Exporters {
-                        pExportIDs = append(pExportIDs, exporterNameMap[eID])
-                }
+		var pExportIDs []string
+		for _, eID := range p.Exporters {
+			pExportIDs = append(pExportIDs, exporterNameMap[eID])
+		}
 		service := otel.Service{}
 		if isHostMetrics {
 			defaultProcessors := []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 			service = otel.Service{
-				ID: "system",
-				Receivers: fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				ID:         "system",
+				Receivers:  fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
 				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
-				Exporters: fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 			}
 		} else {
 			service = otel.Service{
-				ID: pID,
-				Receivers: fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
-				Exporters: fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+				ID:         pID,
+				Receivers:  fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 				Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
 			}
 		}
@@ -334,11 +334,11 @@ type wineventlogReceiverFactory struct {
 	Channels []string
 }
 
-type hostmetricsReceiverFactory struct{
+type hostmetricsReceiverFactory struct {
 	CollectionInterval string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[string]*hostmetricsReceiverFactory, error){
+func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[string]*hostmetricsReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	for n, r := range receivers {
 		switch r.Type {
@@ -436,11 +436,11 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		for _, rID := range p.Receivers {
 			if _, ok := hostmetricsReceiverFactories[rID]; ok {
 				hostMetrics := otel.HostMetrics{
-					HostMetricsID: rID,
+					HostMetricsID:      rID,
 					CollectionInterval: "1",
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
-				receiveNameMap[rID] = "hostmetrics/"+rID
+				receiveNameMap[rID] = "hostmetrics/" + rID
 				continue
 			}
 			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
@@ -463,8 +463,8 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 			if _, ok := exporters[eID]; ok {
 				stackdriver := otel.Stackdriver{
 					StackdriverID: eID,
-					UserAgent: "$USERAGENT",
-					Prefix: "agent.googleapis.com/",
+					UserAgent:     "$USERAGENT",
+					Prefix:        "agent.googleapis.com/",
 				}
 				stackdriverList = append(stackdriverList, &stackdriver)
 				exportNameMap[eID] = "stackdriver/" + eID
