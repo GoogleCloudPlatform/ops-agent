@@ -164,8 +164,7 @@ func unifiedConfigReader(input []byte) (unifiedConfig, error) {
 
 func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 	config := unifiedConfigWindows{}
-	err := yaml.UnmarshalStrict(input, &config)
-	if err != nil {
+	if err := yaml.UnmarshalStrict(input, &config); err != nil {
 		return unifiedConfigWindows{}, err
 	}
 	return config, nil
@@ -209,10 +208,10 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
-		var pRecevieIDs []string
+		var pReceiverIDs []string
 		var isHostMetrics bool
 		for _, rID := range p.Receivers {
-			pRecevieIDs = append(pRecevieIDs, receiverNameMap[rID])
+			pReceiverIDs = append(pReceiverIDs, receiverNameMap[rID])
 			if rID == "hostmetrics" {
 				isHostMetrics = true
 			}
@@ -226,14 +225,14 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 			defaultProcessors := []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 			service = otel.Service{
 				ID:         "system",
-				Receivers:  fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
 				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
 				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 			}
 		} else {
 			service = otel.Service{
 				ID:         pID,
-				Receivers:  fmt.Sprintf("[%s]", strings.Join(pRecevieIDs, ",")),
+				Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
 				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 				Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
 			}
@@ -425,7 +424,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 
 func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
-	receiveNameMap := make(map[string]string)
+	receiverNameMap := make(map[string]string)
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -440,13 +439,13 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 					CollectionInterval: h.CollectionInterval,
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
-				receiveNameMap[rID] = "hostmetrics/" + rID
+				receiverNameMap[rID] = "hostmetrics/" + rID
 				continue
 			}
 			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return hostMetricsList, receiveNameMap, nil
+	return hostMetricsList, receiverNameMap, nil
 }
 
 func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[string]*otelPipeline) ([]*otel.Stackdriver, map[string]string, error) {
