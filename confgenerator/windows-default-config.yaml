@@ -25,3 +25,17 @@ logging:
       default_pipeline:
         receivers: [windows_event_log]
         exporters: [google]
+
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      collection_interval: 60s
+  exporters:
+    google:
+      type: google_cloud_monitoring
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics]
+        exporters: [google]
