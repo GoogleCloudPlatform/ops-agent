@@ -92,7 +92,7 @@ service:
       exporters: {{.Exporters}}`
 
 	defaultProcessorConf = `resourcedetection:
-    detectors: [gce, ec2]
+    detectors: [gce]
 
   # perform custom transformations that aren't supported by the metricstransform processor
   agentmetrics/system:
