@@ -433,16 +433,16 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
-			if h, ok := hostmetricsReceiverFactories[rID]; ok {
+			if h, ok := hostmetricsReceiverFactories[rID]; !ok {
+				return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			} else {
 				hostMetrics := otel.HostMetrics{
 					HostMetricsID:      rID,
 					CollectionInterval: h.CollectionInterval,
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
 				receiverNameMap[rID] = "hostmetrics/" + rID
-				continue
 			}
-			return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
 	return hostMetricsList, receiverNameMap, nil
@@ -459,17 +459,16 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, eID := range p.Exporters {
-			if _, ok := exporters[eID]; ok {
-				stackdriver := otel.Stackdriver{
-					StackdriverID: eID,
-					UserAgent:     "$USERAGENT",
-					Prefix:        "agent.googleapis.com/",
-				}
-				stackdriverList = append(stackdriverList, &stackdriver)
-				exportNameMap[eID] = "stackdriver/" + eID
-				continue
+			if _, ok := exporters[eID]; !ok {
+				return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
 			}
-			return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
+			stackdriver := otel.Stackdriver{
+				StackdriverID: eID,
+				UserAgent:     "$USERAGENT",
+				Prefix:        "agent.googleapis.com/",
+			}
+			stackdriverList = append(stackdriverList, &stackdriver)
+			exportNameMap[eID] = "stackdriver/" + eID
 		}
 	}
 	return stackdriverList, exportNameMap, nil
