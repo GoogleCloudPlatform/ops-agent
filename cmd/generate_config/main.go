@@ -76,7 +76,7 @@ func run() error {
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "otel":
-		otelConfig, err := confgenerator.GenerateOtelConfig(data, *logsDir)
+		otelConfig, err := confgenerator.GenerateOtelConfig(data)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
