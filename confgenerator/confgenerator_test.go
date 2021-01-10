@@ -67,6 +67,10 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				unifiedConfigFilePath = "windows-default-config.yaml"
 			}
 
+                        if d.Name() == "windows_default_config" {
+                                unifiedConfigFilePath = "windows-default-config.yaml"
+                        }
+
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Fatalf("test %q: expect no error, get error %s", testName, err)
