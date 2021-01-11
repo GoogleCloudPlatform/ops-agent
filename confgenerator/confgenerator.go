@@ -176,7 +176,7 @@ func generateOtelConfig(metrics *otelMetrics) (string, error) {
 	serviceList := []*otel.Service{}
 	receiverNameMap := make(map[string]string)
 	exporterNameMap := make(map[string]string)
-	if metrics !=nil && metrics.Service != nil {
+	if metrics != nil && metrics.Service != nil {
 		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
 		if err != nil {
 			return "", err

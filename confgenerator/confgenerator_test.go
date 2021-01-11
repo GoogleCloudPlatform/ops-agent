@@ -25,12 +25,12 @@ import (
 )
 
 const (
-	validTestdataDir   = "testdata/valid"
-	invalidTestdataDir = "testdata/invalid"
-	defaultGoldenPath  = "default_config"
-	defaultWindowsGoldenPath  = "windows_default_config"
-	defaultLogsDir     = "/var/log/google-cloud-ops-agent/subagents"
-	defaultStateDir    = "/var/lib/google-cloud-ops-agent/fluent-bit"
+	validTestdataDir         = "testdata/valid"
+	invalidTestdataDir       = "testdata/invalid"
+	defaultGoldenPath        = "default_config"
+	defaultWindowsGoldenPath = "windows_default_config"
+	defaultLogsDir           = "/var/log/google-cloud-ops-agent/subagents"
+	defaultStateDir          = "/var/lib/google-cloud-ops-agent/fluent-bit"
 )
 
 var (
@@ -65,9 +65,9 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				unifiedConfigFilePath = "default-config.yaml"
 			}
 
-                        if d.Name() == "windows_default_config" {
-                                unifiedConfigFilePath = "windows-default-config.yaml"
-                        }
+			if d.Name() == "windows_default_config" {
+				unifiedConfigFilePath = "windows-default-config.yaml"
+			}
 
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {

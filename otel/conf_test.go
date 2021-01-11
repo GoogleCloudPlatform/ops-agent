@@ -123,11 +123,11 @@ func TestService(t *testing.T) {
 
 func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
-		name         string
-		hostMetricsList        []*HostMetrics
+		name            string
+		hostMetricsList []*HostMetrics
 		stackdriverList []*Stackdriver
-		serviceList []*Service
-		want         string
+		serviceList     []*Service
+		want            string
 	}{
 		{
 			name: "default system metrics config",
