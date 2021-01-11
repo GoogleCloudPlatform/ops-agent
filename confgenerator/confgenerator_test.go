@@ -63,9 +63,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			// testdata directory.
 			if d.Name() == "default_config" {
 				unifiedConfigFilePath = "default-config.yaml"
-			}
-
-			if d.Name() == "windows_default_config" {
+			} else if d.Name() == "windows_default_config" {
 				unifiedConfigFilePath = "windows-default-config.yaml"
 			}
 
