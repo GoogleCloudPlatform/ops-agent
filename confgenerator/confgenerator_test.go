@@ -71,8 +71,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
-				return
+				t.Fatalf("test %q: expect no error, get error %s", testName, err)
 			}
 
 			isWindows := strings.Contains(d.Name(), "windows")
@@ -83,8 +82,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			// Generate the actual conf files.
 			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir)
 			if err != nil {
-				t.Errorf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
-				return
+				t.Fatalf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(testName, expectedMainConfig, mainConf, goldenMainPath, t)
@@ -94,8 +92,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
 				otelConf, err := GenerateOtelConfig(unifiedConfig)
 				if err != nil {
-					t.Errorf("test %q: expect no error, get error running GenerateOtelConfig : %s", testName, err)
-					return
+					t.Fatalf("test %q: expect no error, get error running GenerateOtelConfig : %s", testName, err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(testName, expectedOtelConfig, otelConf, goldenOtelPath, t)
@@ -103,8 +100,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
 				collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
 				if err != nil {
-					t.Errorf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
-					return
+					t.Fatalf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
