@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	validTestdataDir   = "testdata/valid"
-	invalidTestdataDir = "testdata/invalid"
-	defaultGoldenPath  = "default_config"
-	defaultLogsDir     = "/var/log/google-cloud-ops-agent/subagents"
-	defaultStateDir    = "/var/lib/google-cloud-ops-agent/fluent-bit"
+	validTestdataDir         = "testdata/valid"
+	invalidTestdataDir       = "testdata/invalid"
+	defaultGoldenPath        = "default_config"
+	defaultWindowsGoldenPath = "windows_default_config"
+	defaultLogsDir           = "/var/log/google-cloud-ops-agent/subagents"
+	defaultStateDir          = "/var/lib/google-cloud-ops-agent/fluent-bit"
 )
 
 var (
@@ -42,6 +43,7 @@ var (
 	goldenMainPath                   = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
 	goldenParserPath                 = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
 	goldenCollectdPath               = validTestdataDir + "/%s/golden_collectd.conf"
+	goldenOtelPath                   = validTestdataDir + "/%s/golden_otel.conf"
 	invalidTestdataFilePathFormat    = invalidTestdataDir + "/%s"
 )
 
@@ -61,48 +63,63 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			// testdata directory.
 			if d.Name() == "default_config" {
 				unifiedConfigFilePath = "default-config.yaml"
+			} else if d.Name() == "windows_default_config" {
+				unifiedConfigFilePath = "windows-default-config.yaml"
 			}
 
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
-				return
+				t.Fatalf("test %q: expect no error, get error %s", testName, err)
 			}
 
-			// Retrieve the expected golden conf files.
-			expectedMainConfig := expectedConfig(testName, goldenMainPath, t)
-			expectedParserConfig := expectedConfig(testName, goldenParserPath, t)
-			expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t)
+			isWindows := strings.Contains(d.Name(), "windows")
 
+			// Retrieve the expected golden conf files.
+			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
+			expectedParserConfig := expectedConfig(testName, goldenParserPath, t, isWindows)
 			// Generate the actual conf files.
 			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir)
 			if err != nil {
-				t.Errorf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
-				return
+				t.Fatalf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
 			}
-			collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
-			if err != nil {
-				t.Errorf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
-				return
-			}
-
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(testName, expectedMainConfig, mainConf, goldenMainPath, t)
 			updateOrCompareGolden(testName, expectedParserConfig, parserConf, goldenParserPath, t)
-			updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
+
+			if isWindows {
+				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
+				otelConf, err := GenerateOtelConfig(unifiedConfig)
+				if err != nil {
+					t.Fatalf("test %q: expect no error, get error running GenerateOtelConfig : %s", testName, err)
+				}
+				// Compare the expected and actual and error out in case of diff.
+				updateOrCompareGolden(testName, expectedOtelConfig, otelConf, goldenOtelPath, t)
+			} else {
+				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
+				collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
+				if err != nil {
+					t.Fatalf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
+				}
+				// Compare the expected and actual and error out in case of diff.
+				updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
+			}
 		})
 	}
 }
 
-func expectedConfig(testName string, validFilePathFormat string, t *testing.T) string {
+func expectedConfig(testName string, validFilePathFormat string, t *testing.T, isWindows bool) string {
 	goldenPath := fmt.Sprintf(validFilePathFormat, testName)
-	defaultGoldenPath := fmt.Sprintf(validFilePathFormat, defaultGoldenPath)
-
+	var defaultPath string
+	if isWindows {
+		defaultPath = fmt.Sprintf(validFilePathFormat, defaultWindowsGoldenPath)
+	} else {
+		defaultPath = fmt.Sprintf(validFilePathFormat, defaultGoldenPath)
+	}
 	rawExpectedConfig, err := ioutil.ReadFile(goldenPath)
 	if err != nil {
-		t.Logf("test %q: Golden conf not detected at %s. Using the default at %s instead.", testName, goldenPath, defaultGoldenPath)
-		if rawExpectedConfig, err = ioutil.ReadFile(defaultGoldenPath); err != nil {
-			t.Fatalf("test %q: error reading the default golden conf from %s : %s", testName, defaultGoldenPath, err)
+		t.Logf("test %q: Golden conf not detected at %s. Using the default at %s instead.", testName, goldenPath, defaultPath)
+		if rawExpectedConfig, err = ioutil.ReadFile(defaultPath); err != nil {
+			t.Fatalf("test %q: error reading the default golden conf from %s : %s", testName, defaultPath, err)
 		}
 	}
 	return string(rawExpectedConfig)

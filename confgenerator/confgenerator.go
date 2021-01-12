@@ -115,12 +115,12 @@ type otelPipeline struct {
 	Exporters  []string `yaml:"exporters"`
 }
 
-func GenerateOtelConfig(input []byte, logsDir string) (config string, err error) {
+func GenerateOtelConfig(input []byte) (config string, err error) {
 	unifiedConfig, err := unifiedConfigWindowsReader(input)
 	if err != nil {
 		return "", err
 	}
-	otelConfig, err := generateOtelConfig(unifiedConfig.Metrics, logsDir)
+	otelConfig, err := generateOtelConfig(unifiedConfig.Metrics)
 	if err != nil {
 		return "", err
 	}
@@ -170,13 +170,13 @@ func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 	return config, nil
 }
 
-func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error) {
+func generateOtelConfig(metrics *otelMetrics) (string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
 	receiverNameMap := make(map[string]string)
 	exporterNameMap := make(map[string]string)
-	if metrics.Service != nil {
+	if metrics != nil && metrics.Service != nil {
 		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
 		if err != nil {
 			return "", err
@@ -195,7 +195,6 @@ func generateOtelConfig(metrics *otelMetrics, logsDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Print(otelConfig)
 	return otelConfig, nil
 }
 
