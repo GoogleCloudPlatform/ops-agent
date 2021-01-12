@@ -160,6 +160,10 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 				if _, _, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir); err == nil {
 					t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
 				}
+			} else if strings.Contains(testName, "windows") {
+				if _, err := GenerateOtelConfig(unifiedConfig); err == nil {
+					t.Errorf("test %q: GenerateOtelConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
+				}
 			} else if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "metrics-") {
 				if _, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir); err == nil {
 					t.Errorf("test %q: GenerateCollectdConfig succeeded, want error. file:\n%s", testName, unifiedConfig)
