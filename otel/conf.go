@@ -17,7 +17,7 @@ package otel
 
 import (
 	"fmt"
-	//	"net"
+	"time"
 	"strings"
 	"text/template"
 )
@@ -480,6 +480,18 @@ func (e emptyFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
 }
 
+func validateCollectionInterval(collectionInterval string, pluginName string) (bool, error) {
+	t, err := time.ParseDuration(collectionInterval)
+	if err != nil {
+		return false, fmt.Errorf("receiver %s has invalid collection interval %q: %s", pluginName, collectionInterval, err)
+	}
+	interval := t.Seconds()
+	if interval < 10 {
+		return false, fmt.Errorf("collection interval %vs for metrics receiver %s is below the minimum threshold of 10s.", interval, pluginName)
+	}
+	return true, nil
+}
+
 type HostMetrics struct {
 	HostMetricsID      string
 	CollectionInterval string
@@ -494,7 +506,9 @@ func (h HostMetrics) renderConfig() (string, error) {
 			field:  "collection_interval",
 		}
 	}
-
+	if v, err := validateCollectionInterval(h.CollectionInterval, h.HostMetricsID); !v {
+		return "", err
+	}
 	var renderedHostMetricsConfig strings.Builder
 	if err := hostMetricsTemplate.Execute(&renderedHostMetricsConfig, h); err != nil {
 		return "", err

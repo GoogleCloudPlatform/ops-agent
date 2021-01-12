@@ -190,6 +190,9 @@ func generateOtelConfig(metrics *otelMetrics) (string, error) {
 			return "", err
 		}
 		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, metrics.Service.Pipelines)
+		if err != nil {
+			return "", err
+		}
 	}
 	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList, serviceList)
 	if err != nil {
@@ -206,6 +209,9 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	}
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
+		if strings.HasPrefix(pID, "lib:") {
+			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pID)
+		}
 		p := pipelines[pID]
 		var pReceiverIDs []string
 		var isHostMetrics bool
@@ -432,6 +438,9 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
+			if strings.HasPrefix(rID, "lib:") {
+				return nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
+			}
 			if h, ok := hostmetricsReceiverFactories[rID]; !ok {
 				return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 			} else {
@@ -458,6 +467,9 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, eID := range p.Exporters {
+			if strings.HasPrefix(eID, "lib:") {
+				return nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, eID)
+			}
 			if _, ok := exporters[eID]; !ok {
 				return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
 			}

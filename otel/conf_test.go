@@ -53,6 +53,21 @@ func TestHostMetricsErrors(t *testing.T) {
 				//CollectionInterval: "60s",
 			},
 		},
+		{
+			name: "invalid collection interval",
+			hostmetrics: HostMetrics{
+				HostMetricsID: "hostmetrics",
+				CollectionInterval: "60",
+			},
+		},
+		{
+			name: "collection interval too short",
+			hostmetrics: HostMetrics{
+				HostMetricsID: "hostmetrics",
+				CollectionInterval: "1s",
+			},
+		},
+
 	}
 	for _, tc := range tests {
 		if _, err := tc.hostmetrics.renderConfig(); err == nil {
