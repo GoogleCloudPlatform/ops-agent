@@ -190,6 +190,9 @@ func generateOtelConfig(metrics *otelMetrics) (string, error) {
 			return "", err
 		}
 		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, metrics.Service.Pipelines)
+		if err != nil {
+			return "", err
+		}
 	}
 	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList, serviceList)
 	if err != nil {
