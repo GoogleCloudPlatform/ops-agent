@@ -1,0 +1,69 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    windows_event_log:
+      type: windows_event_log
+      channels: [System,Application,Security]
+    log_source_id1:
+      type: files
+      include_paths:
+      - /path/to/log/1/a
+    log_source_id2:
+      type: files
+      include_paths:
+      - /path/to/log/2/a
+      - /path/to/log/2/b
+  processors:
+    parser_id5:
+      type: parse_regex
+      field: key_5
+      regex: regex_pattern_5
+      time_key: time_key_5
+      time_format: time_format_5
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [windows_event_log]
+        exporters: [google]
+      pipeline1:
+        receivers:
+        - log_source_id1
+        exporters:
+        - google
+      pipeline2:
+        receivers:
+        - log_source_id2
+        processors:
+        - parser_id5
+        exporters:
+        - google
+
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      collection_interval: 60s
+  exporters:
+    google:
+      type: google_cloud_monitoring
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics]
+        exporters: [google]
