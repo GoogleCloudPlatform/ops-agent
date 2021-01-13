@@ -147,9 +147,6 @@ func GenerateFluentBitConfigs(input []byte, logsDir string, stateDir string) (ma
 	if err != nil {
 		return "", "", err
 	}
-	if unifiedConfig.Logging == nil {
-		return "", "", nil
-	}
 	return generateFluentBitConfigs(unifiedConfig.Logging, logsDir, stateDir)
 }
 
@@ -285,8 +282,10 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 	fbFilterAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
+	jsonParsers := []*conf.ParserJSON{}
+	regexParsers := []*conf.ParserRegex{}
 
-	if logging.Service != nil {
+	if logging != nil && logging.Service != nil {
 		fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
 		if err != nil {
 			return "", "", err
@@ -307,12 +306,12 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 			return "", "", err
 		}
 		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
+		jsonParsers, regexParsers, err = extractFluentBitParsers(logging.Processors)
+		if err != nil {
+			return "", "", err
+		}
 	}
 	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
-	if err != nil {
-		return "", "", err
-	}
-	jsonParsers, regexParsers, err := extractFluentBitParsers(logging.Processors)
 	if err != nil {
 		return "", "", err
 	}
