@@ -12,13 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+logging:
+  receivers:
+    windows_event_log:
+      type: windows_event_log
+      channels: [System,Application,Security]
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [windows_event_log]
+        exporters: [google]
+
 metrics:
   receivers:
     hostmetrics:
       type: hostmetrics
-      collection_interval: 60s
-    mssql:
-      type: mssql
       collection_interval: 60s
     iis:
       type: iis
@@ -29,5 +40,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics,mssql,iis]
+        receivers: [hostmetrics,iis]
         exporters: [google]
