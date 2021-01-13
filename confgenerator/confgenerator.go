@@ -169,16 +169,18 @@ func unifiedConfigWindowsReader(input []byte) (unifiedConfigWindows, error) {
 
 func generateOtelConfig(metrics *otelMetrics) (string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
+	mssqlList := []*otel.MSSQL{}
+	iisList := []*otel.IIS{}
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
 	receiverNameMap := make(map[string]string)
 	exporterNameMap := make(map[string]string)
 	if metrics != nil && metrics.Service != nil {
-		hostmetricsReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
+		hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
 		if err != nil {
 			return "", err
 		}
-		hostMetricsList, receiverNameMap, err = generateOtelReceivers(hostmetricsReceiverFactories, metrics.Service.Pipelines)
+		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -191,7 +193,7 @@ func generateOtelConfig(metrics *otelMetrics) (string, error) {
 			return "", err
 		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, stackdriverList, serviceList)
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList)
 	if err != nil {
 		return "", err
 	}
@@ -209,35 +211,49 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 		if strings.HasPrefix(pID, "lib:") {
 			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pID)
 		}
+
 		p := pipelines[pID]
+		// if the pipeline is default_pipeline, then split the pipeline into different streams.
+		if pID == "default_pipeline" {
+			for _, rID := range p.Receivers {
+				var pipelineID string
+				var defaultProcessors []string
+				if rID == "hostmetrics" {
+					defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
+					pipelineID = "system"
+				} else if rID == "mssql" {
+					defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
+					pipelineID = "mssql"
+				} else if rID == "iis" {
+					defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
+					pipelineID = "iis"
+				} else {
+					return nil, fmt.Errorf(`receiver inside default pipeline %q should have type as one of the "hostmetrics, mssql, iis"`, rID)
+				}
+				service := otel.Service{
+					ID:         pipelineID,
+					Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
+					Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
+					Exporters:  fmt.Sprintf("[%s]", "stackdriver/google"),
+				}
+				serviceList = append(serviceList, &service)
+			}
+			continue
+		}
+
 		var pReceiverIDs []string
-		var isHostMetrics bool
 		for _, rID := range p.Receivers {
 			pReceiverIDs = append(pReceiverIDs, receiverNameMap[rID])
-			if rID == "hostmetrics" {
-				isHostMetrics = true
-			}
 		}
 		var pExportIDs []string
 		for _, eID := range p.Exporters {
 			pExportIDs = append(pExportIDs, exporterNameMap[eID])
 		}
-		service := otel.Service{}
-		if isHostMetrics {
-			defaultProcessors := []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
-			service = otel.Service{
-				ID:         "system",
-				Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
-				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
-				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
-			}
-		} else {
-			service = otel.Service{
-				ID:         pID,
-				Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
-				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
-				Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
-			}
+		service := otel.Service{
+			ID:         pID,
+			Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
+			Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+			Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
 		}
 
 		serviceList = append(serviceList, &service)
@@ -341,19 +357,37 @@ type hostmetricsReceiverFactory struct {
 	CollectionInterval string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[string]*hostmetricsReceiverFactory, error) {
+type mssqlReceiverFactory struct {
+	CollectionInterval string
+}
+
+type iisReceiverFactory struct {
+	CollectionInterval string
+}
+
+func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
+	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
+	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
 		switch r.Type {
 		case "hostmetrics":
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
+		case "mssql":
+			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
+		case "iis":
+			iisReceiverFactories[n] = &iisReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
 		default:
-			return nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics"`, n)
+			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics"`, n)
 		}
 	}
-	return hostmetricsReceiverFactories, nil
+	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
@@ -426,8 +460,10 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, map[string]string, error) {
+func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, mssqlReceiverFactories map[string]*mssqlReceiverFactory, iisReceiverFactories map[string]*iisReceiverFactory, pipelines map[string]*otelPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
+	mssqlList := []*otel.MSSQL{}
+	iisList := []*otel.IIS{}
 	receiverNameMap := make(map[string]string)
 	var pipelineIDs []string
 	for p := range pipelines {
@@ -438,21 +474,37 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
 			if strings.HasPrefix(rID, "lib:") {
-				return nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
+				return nil, nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
 			}
-			if h, ok := hostmetricsReceiverFactories[rID]; !ok {
-				return nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
-			} else {
+			if h, ok := hostmetricsReceiverFactories[rID]; ok {
 				hostMetrics := otel.HostMetrics{
 					HostMetricsID:      rID,
 					CollectionInterval: h.CollectionInterval,
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
 				receiverNameMap[rID] = "hostmetrics/" + rID
+				continue
 			}
+			if m, ok := mssqlReceiverFactories[rID]; ok {
+				mssql := otel.MSSQL{
+					CollectionInterval: m.CollectionInterval,
+				}
+				mssqlList = append(mssqlList, &mssql)
+				receiverNameMap[rID] = "windowsperfcounters/" + rID
+				continue
+			}
+			if i, ok := iisReceiverFactories[rID]; ok {
+				iis := otel.IIS{
+					CollectionInterval: i.CollectionInterval,
+				}
+				iisList = append(iisList, &iis)
+				receiverNameMap[rID] = "windowsperfcounters/" + rID
+				continue
+			}
+			return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
 	}
-	return hostMetricsList, receiverNameMap, nil
+	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
 func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[string]*otelPipeline) ([]*otel.Stackdriver, map[string]string, error) {
