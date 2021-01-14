@@ -18,8 +18,13 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
     New-Item -Type Directory -Path /fluent-bit/bin;
+    New-Item -Type Directory -Path /opentelemetry-collector/bin;
 
 WORKDIR /local
+
+###############################################################################
+# Build fluent-bit
+###############################################################################
 
 #
 # Install Visual Studio 2019
@@ -65,4 +70,22 @@ RUN cmake --build . --config Release;
 
 # TODO: Do something with /work/submodules/fluent-bit/build/bin/Release/fluent-bit.{exe,dll}
 
+###############################################################################
+# Build OT collector
+###############################################################################
+
+#
+# Install Golang 1.15.6
+#
+ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd64.msi
+
+RUN Start-Process msiexec.exe `
+    -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
+    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Golang' -NoNewWindow -Wait;
+
+###############################################################################
+# Packaging
+###############################################################################
+
 # TODO: Build zip/MSI containing files
+
