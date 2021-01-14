@@ -218,13 +218,13 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 			for _, rID := range p.Receivers {
 				var pipelineID string
 				var defaultProcessors []string
-				if rID == "hostmetrics" {
+				if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
 					defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 					pipelineID = "system"
-				} else if rID == "mssql" {
+				} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
 					defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
 					pipelineID = "mssql"
-				} else if rID == "iis" {
+				} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
 					defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 					pipelineID = "iis"
 				} else {
@@ -487,18 +487,20 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 			}
 			if m, ok := mssqlReceiverFactories[rID]; ok {
 				mssql := otel.MSSQL{
+					MSSQLID: rID,
 					CollectionInterval: m.CollectionInterval,
 				}
 				mssqlList = append(mssqlList, &mssql)
-				receiverNameMap[rID] = "windowsperfcounters/" + rID
+				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
 				continue
 			}
 			if i, ok := iisReceiverFactories[rID]; ok {
 				iis := otel.IIS{
+					IISID: rID,
 					CollectionInterval: i.CollectionInterval,
 				}
 				iisList = append(iisList, &iis)
-				receiverNameMap[rID] = "windowsperfcounters/" + rID
+				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
 				continue
 			}
 			return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)

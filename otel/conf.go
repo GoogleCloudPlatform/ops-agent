@@ -57,7 +57,7 @@ service:
       swap:
       process:`
 
-	iisReceiverConf = `windowsperfcounters/iis:
+	iisReceiverConf = `windowsperfcounters/iis_{{.IISID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
@@ -75,7 +75,7 @@ service:
           - Total Put Requests
           - Total Trace Requests`
 
-	mssqlReceiverConf = `windowsperfcounters/mssql:
+	mssqlReceiverConf = `windowsperfcounters/mssql_{{.MSSQLID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
@@ -524,6 +524,7 @@ func validateCollectionInterval(collectionInterval string, pluginName string) (b
 }
 
 type MSSQL struct {
+	MSSQLID string
 	CollectionInterval string
 }
 
@@ -536,7 +537,7 @@ func (m MSSQL) renderConfig() (string, error) {
 			field:  "collection_interval",
 		}
 	}
-	if v, err := validateCollectionInterval(m.CollectionInterval, "mssql"); !v {
+	if v, err := validateCollectionInterval(m.CollectionInterval, m.MSSQLID); !v {
 		return "", err
 	}
 	var renderedMSSQLConfig strings.Builder
@@ -547,6 +548,7 @@ func (m MSSQL) renderConfig() (string, error) {
 }
 
 type IIS struct {
+	IISID string
 	CollectionInterval string
 }
 
@@ -559,7 +561,7 @@ func (i IIS) renderConfig() (string, error) {
 			field:  "collection_interval",
 		}
 	}
-	if v, err := validateCollectionInterval(i.CollectionInterval, "iis"); !v {
+	if v, err := validateCollectionInterval(i.CollectionInterval, i.IISID); !v {
 		return "", err
 	}
 	var renderedIISConfig strings.Builder
