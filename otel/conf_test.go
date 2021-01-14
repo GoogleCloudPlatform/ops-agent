@@ -77,6 +77,81 @@ func TestHostMetricsErrors(t *testing.T) {
 
 }
 
+func TestIIS(t *testing.T) {
+	tests := []struct {
+		iis               IIS
+		expectedIISConfig string
+	}{
+		{
+			iis: IIS{
+				CollectionInterval: "60s",
+			},
+			expectedIISConfig: `windowsperfcounters/iis:
+    collection_interval: 60s
+    perfcounters:
+      - object: Web Service
+        instances: _Total
+        counters:
+          - Current Connections
+          - Total Bytes Received
+          - Total Bytes Sent
+          - Total Connection Attempts (all instances)
+          - Total Delete Requests
+          - Total Get Requests
+          - Total Head Requests
+          - Total Options Requests
+          - Total Post Requests
+          - Total Put Requests
+          - Total Trace Requests`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.iis.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedIISConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran iis.renderConfig() returned unexpected diff (-want +got):\n%s", tc.iis, diff)
+		}
+	}
+}
+
+func TestMSSQL(t *testing.T) {
+	tests := []struct {
+		mssql               MSSQl
+		expectedMSSQLConfig string
+	}{
+		{
+			mssql: MSSQL{
+				CollectionInterval: "60s",
+			},
+			expectedMSSQLConfig: `windowsperfcounters/mssql:
+    collection_interval: 60s
+    perfcounters:
+      - object: SQLServer:General Statistics
+        instances: _Total
+        counters:
+          - User Connections
+      - object: SQLServer:Databases
+        instances: _Total
+        counters:
+          - Transactions/sec
+          - Write Transactions/sec`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.mssql.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedMSSQLConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran mssql.renderConfig() returned unexpected diff (-want +got):\n%s", tc.mssql, diff)
+		}
+	}
+}
+
 func TestStackdriver(t *testing.T) {
 	tests := []struct {
 		stackdriver               Stackdriver

@@ -57,7 +57,7 @@ service:
       swap:
       process:`
 
-	mssqlReceiverConf = `windowsperfcounters/iis:
+	iisReceiverConf = `windowsperfcounters/iis:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
@@ -75,7 +75,7 @@ service:
           - Total Put Requests
           - Total Trace Requests`
 
-	iisReceiverConf = `windowsperfcounters/mssql:
+	mssqlReceiverConf = `windowsperfcounters/mssql:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
