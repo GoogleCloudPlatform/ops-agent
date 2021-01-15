@@ -12,19 +12,22 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as builder
 #
 RUN setx /M PATH "%PATH%;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 RUN setx /M PATH "%PATH%;C:\WinFlexBison"
+RUN setx /M PATH "%PATH%;C:\Go\bin"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /fluent-bit/bin;
-    New-Item -Type Directory -Path /opentelemetry-collector/bin;
+    New-Item -Type Directory -Path /fluent-bit/bin; `
+    New-Item -Type Directory -Path /opentelemetry-operations-collector/bin;
 
-WORKDIR /local
+COPY . /work
 
 ###############################################################################
 # Build fluent-bit
 ###############################################################################
+
+WORKDIR /local
 
 #
 # Install Visual Studio 2019
@@ -60,8 +63,6 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
     Copy-Item -Path /WinFlexBison/win_bison.exe /WinFlexBison/bison.exe; `
     Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
 
-COPY . /work
-
 WORKDIR /work/submodules/fluent-bit/build
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release ../;
@@ -74,6 +75,8 @@ RUN cmake --build . --config Release;
 # Build OT collector
 ###############################################################################
 
+WORKDIR /local
+
 #
 # Install Golang 1.15.6
 #
@@ -82,6 +85,17 @@ ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd
 RUN Start-Process msiexec.exe `
     -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Golang' -NoNewWindow -Wait;
+
+WORKDIR /work/submodules/opentelemetry-operations-collector
+
+RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint
+RUN go get github.com/google/addlicense
+RUN go get github.com/pavius/impi/cmd/impi
+
+RUN go build -o ./bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol
+RUN Copy-Item -Path .\bin\google-cloud-metrics-agent_windows_amd64.exe -Destination \opentelemetry-operations-collector\bin\;
+
+# TODO: Do something with /opentelemetry-operations-collector/bin/google-cloud-metrics-agent_windows_amd64.exe
 
 ###############################################################################
 # Packaging
