@@ -213,50 +213,33 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 		}
 
 		p := pipelines[pID]
-		// if the pipeline is default_pipeline, then split the pipeline into different streams.
-		if pID == "default_pipeline" {
-			for _, rID := range p.Receivers {
-				var pipelineID string
-				var defaultProcessors []string
-				if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
-					defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
-					pipelineID = "system"
-				} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
-					defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
-					pipelineID = "mssql"
-				} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
-					defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
-					pipelineID = "iis"
-				} else {
-					return nil, fmt.Errorf(`receiver inside default pipeline %q should have type as one of the "hostmetrics, mssql, iis"`, rID)
-				}
-				service := otel.Service{
-					ID:         pipelineID,
-					Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
-					Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
-					Exporters:  fmt.Sprintf("[%s]", "stackdriver/google"),
-				}
-				serviceList = append(serviceList, &service)
-			}
-			continue
-		}
-
-		var pReceiverIDs []string
 		for _, rID := range p.Receivers {
-			pReceiverIDs = append(pReceiverIDs, receiverNameMap[rID])
+			var pipelineID string
+			var defaultProcessors []string
+			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
+				defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
+				pipelineID = "system"
+			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
+				defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
+				pipelineID = "mssql"
+			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
+				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
+				pipelineID = "iis"
+			} else {
+				return nil, fmt.Errorf(`receiver inside default pipeline %q should have type as one of the "hostmetrics, mssql, iis"`, rID)
+			}
+			var pExportIDs []string
+			for _, eID := range p.Exporters {
+				pExportIDs = append(pExportIDs, exporterNameMap[eID])
+			}
+			service := otel.Service{
+				ID:         pipelineID,
+				Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
+				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
+				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+			}
+			serviceList = append(serviceList, &service)
 		}
-		var pExportIDs []string
-		for _, eID := range p.Exporters {
-			pExportIDs = append(pExportIDs, exporterNameMap[eID])
-		}
-		service := otel.Service{
-			ID:         pID,
-			Receivers:  fmt.Sprintf("[%s]", strings.Join(pReceiverIDs, ",")),
-			Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
-			Processors: fmt.Sprintf("[%s]", strings.Join(p.Processors, ",")),
-		}
-
-		serviceList = append(serviceList, &service)
 	}
 	return serviceList, nil
 }
@@ -384,7 +367,7 @@ func extractOtelReceiverFactories(receivers map[string]*otelReceiver) (map[strin
 				CollectionInterval: r.CollectionInterval,
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics"`, n)
+			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics, mssql, iis"`, n)
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
@@ -476,6 +459,9 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 			if strings.HasPrefix(rID, "lib:") {
 				return nil, nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
 			}
+			if _, ok := receiverNameMap[rID]; ok {
+				continue
+			}
 			if h, ok := hostmetricsReceiverFactories[rID]; ok {
 				hostMetrics := otel.HostMetrics{
 					HostMetricsID:      rID,
@@ -483,28 +469,27 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 				}
 				hostMetricsList = append(hostMetricsList, &hostMetrics)
 				receiverNameMap[rID] = "hostmetrics/" + rID
-				continue
-			}
-			if m, ok := mssqlReceiverFactories[rID]; ok {
+			} else if m, ok := mssqlReceiverFactories[rID]; ok {
 				mssql := otel.MSSQL{
 					MSSQLID: rID,
 					CollectionInterval: m.CollectionInterval,
 				}
 				mssqlList = append(mssqlList, &mssql)
 				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
-				continue
-			}
-			if i, ok := iisReceiverFactories[rID]; ok {
+			} else if i, ok := iisReceiverFactories[rID]; ok {
 				iis := otel.IIS{
 					IISID: rID,
 					CollectionInterval: i.CollectionInterval,
 				}
 				iisList = append(iisList, &iis)
 				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
-				continue
+			} else {
+				return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 			}
-			return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
 		}
+	}
+	if len(hostMetricsList) > 1 || len(mssqlList) > 1 || len(iisList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`You have more than one receiver of the same type in "hostmetrics, mssql, iis". This is to avoid duplicate metrics streams.`)
 	}
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
@@ -526,14 +511,25 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 			if _, ok := exporters[eID]; !ok {
 				return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
 			}
-			stackdriver := otel.Stackdriver{
-				StackdriverID: eID,
-				UserAgent:     "$USERAGENT",
-				Prefix:        "agent.googleapis.com/",
+			exporter := exporters[eID]
+			switch exporter.Type {
+				case "google_cloud_monitoring":
+					if _,ok := exportNameMap[eID]; !ok {
+						stackdriver := otel.Stackdriver{
+							StackdriverID: eID,
+							UserAgent:     "$USERAGENT",
+							Prefix:        "agent.googleapis.com/",
+						}
+						stackdriverList = append(stackdriverList, &stackdriver)
+						exportNameMap[eID] = "stackdriver/" + eID
+					}
+				default:
+					return nil, nil, fmt.Errorf(`exporter %q should have type as "google_cloud_monitoring"`, eID)
 			}
-			stackdriverList = append(stackdriverList, &stackdriver)
-			exportNameMap[eID] = "stackdriver/" + eID
 		}
+	}
+	if len(stackdriverList) > 1 {
+		 return nil, nil, fmt.Errorf(`You have more than one exporter of the same type in "google_cloud_mornitoring"`)
 	}
 	return stackdriverList, exportNameMap, nil
 }

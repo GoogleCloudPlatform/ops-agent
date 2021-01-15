@@ -150,6 +150,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
 			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilePathFormat, testName)
+			fmt.Println(unifiedConfigFilePath)
 			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Errorf("test %q: expect no error, get error %s", testName, err)
