@@ -38,7 +38,9 @@ metrics:
       type: iis
       collection_interval: 60s
   exporters:
-    google:
+    google_1:
+      type: google_cloud_monitoring
+    google_2:
       type: google_cloud_monitoring
   service:
     pipelines:

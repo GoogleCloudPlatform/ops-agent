@@ -77,6 +77,83 @@ func TestHostMetricsErrors(t *testing.T) {
 
 }
 
+func TestIIS(t *testing.T) {
+	tests := []struct {
+		iis               IIS
+		expectedIISConfig string
+	}{
+		{
+			iis: IIS{
+				IISID: "iis",
+				CollectionInterval: "60s",
+			},
+			expectedIISConfig: `windowsperfcounters/iis_iis:
+    collection_interval: 60s
+    perfcounters:
+      - object: Web Service
+        instances: _Total
+        counters:
+          - Current Connections
+          - Total Bytes Received
+          - Total Bytes Sent
+          - Total Connection Attempts (all instances)
+          - Total Delete Requests
+          - Total Get Requests
+          - Total Head Requests
+          - Total Options Requests
+          - Total Post Requests
+          - Total Put Requests
+          - Total Trace Requests`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.iis.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedIISConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran iis.renderConfig() returned unexpected diff (-want +got):\n%s", tc.iis, diff)
+		}
+	}
+}
+
+func TestMSSQL(t *testing.T) {
+	tests := []struct {
+		mssql               MSSQL
+		expectedMSSQLConfig string
+	}{
+		{
+			mssql: MSSQL{
+				MSSQLID: "mssql",
+				CollectionInterval: "60s",
+			},
+			expectedMSSQLConfig: `windowsperfcounters/mssql_mssql:
+    collection_interval: 60s
+    perfcounters:
+      - object: SQLServer:General Statistics
+        instances: _Total
+        counters:
+          - User Connections
+      - object: SQLServer:Databases
+        instances: _Total
+        counters:
+          - Transactions/sec
+          - Write Transactions/sec`,
+		},
+	}
+	for _, tc := range tests {
+		got, err := tc.mssql.renderConfig()
+		if err != nil {
+			t.Errorf("got error: %v, want no error", err)
+			return
+		}
+		if diff := diff.Diff(tc.expectedMSSQLConfig, got); diff != "" {
+			t.Errorf("Tail %v: ran mssql.renderConfig() returned unexpected diff (-want +got):\n%s", tc.mssql, diff)
+		}
+	}
+}
+
 func TestStackdriver(t *testing.T) {
 	tests := []struct {
 		stackdriver               Stackdriver
@@ -140,6 +217,8 @@ func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
 		name            string
 		hostMetricsList []*HostMetrics
+		mssqlList []*MSSQL
+		iisList []*IIS
 		stackdriverList []*Stackdriver
 		serviceList     []*Service
 		want            string
@@ -148,6 +227,14 @@ func TestGenerateOtelConfig(t *testing.T) {
 			name: "default system metrics config",
 			hostMetricsList: []*HostMetrics{{
 				HostMetricsID:      "hostmetrics",
+				CollectionInterval: "60s",
+			}},
+			mssqlList: []*MSSQL{{
+				MSSQLID: "mssql",
+				CollectionInterval: "60s",
+			}},
+			iisList: []*IIS{{
+				IISID: "iis",
 				CollectionInterval: "60s",
 			}},
 			stackdriverList: []*Stackdriver{{
@@ -160,7 +247,19 @@ func TestGenerateOtelConfig(t *testing.T) {
 				Receivers:  "[hostmetrics/hostmetrics]",
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
 				Exporters:  "[stackdriver/google]",
-			}},
+			},
+			{
+				ID:         "mssql",
+				Receivers:  "[windowsperfcounters/mssql_mssql]",
+				Processors: "[metricstransform/mssql,resourcedetection]",
+				Exporters:  "[stackdriver/google]",
+			},
+			{	ID:         "iis",
+				Receivers:  "[windowsperfcounters/iis_iis]",
+				Processors: "[metricstransform/iis,resourcedetection]",
+				Exporters:  "[stackdriver/google]",
+			},
+			},
 			want: `receivers:
   prometheus/agent:
     config:
@@ -180,6 +279,35 @@ func TestGenerateOtelConfig(t *testing.T) {
       network:
       swap:
       process:
+  windowsperfcounters/mssql_mssql:
+    collection_interval: 60s
+    perfcounters:
+      - object: SQLServer:General Statistics
+        instances: _Total
+        counters:
+          - User Connections
+      - object: SQLServer:Databases
+        instances: _Total
+        counters:
+          - Transactions/sec
+          - Write Transactions/sec
+  windowsperfcounters/iis_iis:
+    collection_interval: 60s
+    perfcounters:
+      - object: Web Service
+        instances: _Total
+        counters:
+          - Current Connections
+          - Total Bytes Received
+          - Total Bytes Sent
+          - Total Connection Attempts (all instances)
+          - Total Delete Requests
+          - Total Get Requests
+          - Total Head Requests
+          - Total Options Requests
+          - Total Post Requests
+          - Total Put Requests
+          - Total Trace Requests
   
 processors:
   resourcedetection:
@@ -581,11 +709,19 @@ service:
       receivers:  [hostmetrics/hostmetrics]
       processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
       exporters: [stackdriver/google]
+    metrics/mssql:
+      receivers:  [windowsperfcounters/mssql_mssql]
+      processors: [metricstransform/mssql,resourcedetection]
+      exporters: [stackdriver/google]
+    metrics/iis:
+      receivers:  [windowsperfcounters/iis_iis]
+      processors: [metricstransform/iis,resourcedetection]
+      exporters: [stackdriver/google]
     `,
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.stackdriverList, tc.serviceList)
+		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList)
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
