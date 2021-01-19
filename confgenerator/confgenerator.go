@@ -489,7 +489,7 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		}
 	}
 	if len(hostMetricsList) > 1 || len(mssqlList) > 1 || len(iisList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`You have more than one receiver of the same type in "hostmetrics, mssql, iis". This is to avoid duplicate metrics streams.`)
+		return nil, nil, nil, nil, fmt.Errorf(`Only one receiver of the same type in [hostmetrics, mssql, iis] is allowed.`)
 	}
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
@@ -529,7 +529,7 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 		}
 	}
 	if len(stackdriverList) > 1 {
-		 return nil, nil, fmt.Errorf(`You have more than one exporter of the same type in "google_cloud_mornitoring"`)
+		 return nil, nil, fmt.Errorf(`Only one exporter of the same type in [google_cloud_monitoring] is allowed.`)
 	}
 	return stackdriverList, exportNameMap, nil
 }
