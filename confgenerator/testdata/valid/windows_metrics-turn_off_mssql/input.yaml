@@ -31,9 +31,6 @@ metrics:
     hostmetrics:
       type: hostmetrics
       collection_interval: 60s
-    mssql:
-      type: mssql
-      collection_interval: 60s
     iis:
       type: iis
       collection_interval: 60s
@@ -43,5 +40,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics,mssql,iis]
+        receivers: [hostmetrics,iis]
         exporters: [google]

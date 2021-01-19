@@ -31,7 +31,10 @@ metrics:
     hostmetrics:
       type: hostmetrics
       collection_interval: 60s
-    mssql:
+    mssql_1:
+      type: mssql
+      collection_interval: 60s
+    mssql_2:
       type: mssql
       collection_interval: 60s
     iis:

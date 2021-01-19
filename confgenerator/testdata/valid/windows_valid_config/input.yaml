@@ -43,5 +43,12 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics,mssql,iis]
+        receivers: [hostmetrics]
         exporters: [google]
+      another_pipeline:
+        receivers: [mssql]
+        exporters: [google]
+      another_another_pipeline:
+        receivers: [iis]
+        exporters: [google]
+
