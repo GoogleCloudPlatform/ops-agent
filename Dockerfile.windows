@@ -66,6 +66,3 @@ RUN cmake --build . --config Release;
 # TODO: Do something with /work/submodules/fluent-bit/build/bin/Release/fluent-bit.{exe,dll}
 
 # TODO: Build zip/MSI containing files
-
-FROM scratch
-# COPY --from=builder /fluentbit.zip /
