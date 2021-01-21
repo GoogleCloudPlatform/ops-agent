@@ -18,8 +18,7 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /fluent-bit/bin; `
-    New-Item -Type Directory -Path /opentelemetry-operations-collector/bin;
+    New-Item -Type Directory -Path /out/bin;
 
 COPY . /work
 
@@ -50,9 +49,9 @@ ADD https://aka.ms/vs/15/release/vc_redist.x64.exe /local/vc_redist.x64.exe
 
 RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /fluent-bit/bin/;
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /out/bin/; `
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /out/bin/; `
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /out/bin/;
 
 #
 # Install winflexbison
@@ -67,9 +66,11 @@ WORKDIR /work/submodules/fluent-bit/build
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release ../;
 
-RUN cmake --build . --config Release;
+RUN cmake --build . --config Release; `
+    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /out/bin/;
 
-# TODO: Do something with /work/submodules/fluent-bit/build/bin/Release/fluent-bit.{exe,dll}
+# TODO: Do something with /out/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
 # Build OT collector
@@ -84,18 +85,18 @@ ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd
 
 RUN Start-Process msiexec.exe `
     -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
-    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Golang' -NoNewWindow -Wait;
+    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
-RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint
-RUN go get github.com/google/addlicense
-RUN go get github.com/pavius/impi/cmd/impi
+RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
+    go get github.com/google/addlicense; `
+    go get github.com/pavius/impi/cmd/impi;
 
-RUN go build -o ./bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol
-RUN Copy-Item -Path .\bin\google-cloud-metrics-agent_windows_amd64.exe -Destination \opentelemetry-operations-collector\bin\;
+RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /out/bin/;
 
-# TODO: Do something with /opentelemetry-operations-collector/bin/google-cloud-metrics-agent_windows_amd64.exe
+# TODO: Do something with /out/bin/google-cloud-metrics-agent_windows_amd64.exe
 
 ###############################################################################
 # Packaging
