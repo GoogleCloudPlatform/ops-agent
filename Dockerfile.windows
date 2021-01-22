@@ -12,12 +12,19 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as builder
 #
 RUN setx /M PATH "%PATH%;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 RUN setx /M PATH "%PATH%;C:\WinFlexBison"
+RUN setx /M PATH "%PATH%;C:\Go\bin"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /fluent-bit/bin;
+    New-Item -Type Directory -Path /out/bin;
+
+COPY . /work
+
+###############################################################################
+# Install build prerequisites
+###############################################################################
 
 WORKDIR /local
 
@@ -42,9 +49,9 @@ ADD https://aka.ms/vs/15/release/vc_redist.x64.exe /local/vc_redist.x64.exe
 
 RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /fluent-bit/bin/;
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /out/bin/; `
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /out/bin/; `
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /out/bin/;
 
 #
 # Install winflexbison
@@ -55,14 +62,47 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
     Copy-Item -Path /WinFlexBison/win_bison.exe /WinFlexBison/bison.exe; `
     Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
 
-COPY . /work
+#
+# Install Golang 1.15.6
+#
+ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd64.msi
+
+RUN Start-Process msiexec.exe `
+    -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
+    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
+
+###############################################################################
+# Build fluent-bit
+###############################################################################
 
 WORKDIR /work/submodules/fluent-bit/build
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release ../;
 
-RUN cmake --build . --config Release;
+RUN cmake --build . --config Release; `
+    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /out/bin/;
 
-# TODO: Do something with /work/submodules/fluent-bit/build/bin/Release/fluent-bit.{exe,dll}
+# TODO: Do something with /out/bin/fluent-bit.{exe,dll}
+
+###############################################################################
+# Build OT collector
+###############################################################################
+
+WORKDIR /work/submodules/opentelemetry-operations-collector
+
+RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
+    go get github.com/google/addlicense; `
+    go get github.com/pavius/impi/cmd/impi;
+
+RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /out/bin/;
+
+# TODO: Do something with /out/bin/google-cloud-metrics-agent_windows_amd64.exe
+
+###############################################################################
+# Packaging
+###############################################################################
 
 # TODO: Build zip/MSI containing files
+
