@@ -23,7 +23,7 @@ RUN Write-Host ('Creating folders'); `
 COPY . /work
 
 ###############################################################################
-# Build fluent-bit
+# Install build prerequisites
 ###############################################################################
 
 WORKDIR /local
@@ -62,6 +62,19 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
     Copy-Item -Path /WinFlexBison/win_bison.exe /WinFlexBison/bison.exe; `
     Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
 
+#
+# Install Golang 1.15.6
+#
+ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd64.msi
+
+RUN Start-Process msiexec.exe `
+    -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
+    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
+
+###############################################################################
+# Build fluent-bit
+###############################################################################
+
 WORKDIR /work/submodules/fluent-bit/build
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release ../;
@@ -75,17 +88,6 @@ RUN cmake --build . --config Release; `
 ###############################################################################
 # Build OT collector
 ###############################################################################
-
-WORKDIR /local
-
-#
-# Install Golang 1.15.6
-#
-ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd64.msi
-
-RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
-    '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
