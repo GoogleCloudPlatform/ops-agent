@@ -471,14 +471,14 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 				receiverNameMap[rID] = "hostmetrics/" + rID
 			} else if m, ok := mssqlReceiverFactories[rID]; ok {
 				mssql := otel.MSSQL{
-					MSSQLID: rID,
+					MSSQLID:            rID,
 					CollectionInterval: m.CollectionInterval,
 				}
 				mssqlList = append(mssqlList, &mssql)
 				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
 			} else if i, ok := iisReceiverFactories[rID]; ok {
 				iis := otel.IIS{
-					IISID: rID,
+					IISID:              rID,
 					CollectionInterval: i.CollectionInterval,
 				}
 				iisList = append(iisList, &iis)
@@ -513,23 +513,23 @@ func generateOtelExporters(exporters map[string]*otelExporter, pipelines map[str
 			}
 			exporter := exporters[eID]
 			switch exporter.Type {
-				case "google_cloud_monitoring":
-					if _,ok := exportNameMap[eID]; !ok {
-						stackdriver := otel.Stackdriver{
-							StackdriverID: eID,
-							UserAgent:     "$USERAGENT",
-							Prefix:        "agent.googleapis.com/",
-						}
-						stackdriverList = append(stackdriverList, &stackdriver)
-						exportNameMap[eID] = "stackdriver/" + eID
+			case "google_cloud_monitoring":
+				if _, ok := exportNameMap[eID]; !ok {
+					stackdriver := otel.Stackdriver{
+						StackdriverID: eID,
+						UserAgent:     "$USERAGENT",
+						Prefix:        "agent.googleapis.com/",
 					}
-				default:
-					return nil, nil, fmt.Errorf(`exporter %q should have type as "google_cloud_monitoring"`, eID)
+					stackdriverList = append(stackdriverList, &stackdriver)
+					exportNameMap[eID] = "stackdriver/" + eID
+				}
+			default:
+				return nil, nil, fmt.Errorf(`exporter %q should have type as "google_cloud_monitoring"`, eID)
 			}
 		}
 	}
 	if len(stackdriverList) > 1 {
-		 return nil, nil, fmt.Errorf(`Only one exporter of the same type in [google_cloud_monitoring] is allowed.`)
+		return nil, nil, fmt.Errorf(`Only one exporter of the same type in [google_cloud_monitoring] is allowed.`)
 	}
 	return stackdriverList, exportNameMap, nil
 }

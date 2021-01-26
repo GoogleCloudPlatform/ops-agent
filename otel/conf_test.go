@@ -56,18 +56,17 @@ func TestHostMetricsErrors(t *testing.T) {
 		{
 			name: "invalid collection interval",
 			hostmetrics: HostMetrics{
-				HostMetricsID: "hostmetrics",
+				HostMetricsID:      "hostmetrics",
 				CollectionInterval: "60",
 			},
 		},
 		{
 			name: "collection interval too short",
 			hostmetrics: HostMetrics{
-				HostMetricsID: "hostmetrics",
+				HostMetricsID:      "hostmetrics",
 				CollectionInterval: "1s",
 			},
 		},
-
 	}
 	for _, tc := range tests {
 		if _, err := tc.hostmetrics.renderConfig(); err == nil {
@@ -84,7 +83,7 @@ func TestIIS(t *testing.T) {
 	}{
 		{
 			iis: IIS{
-				IISID: "iis",
+				IISID:              "iis",
 				CollectionInterval: "60s",
 			},
 			expectedIISConfig: `windowsperfcounters/iis_iis:
@@ -125,7 +124,7 @@ func TestMSSQL(t *testing.T) {
 	}{
 		{
 			mssql: MSSQL{
-				MSSQLID: "mssql",
+				MSSQLID:            "mssql",
 				CollectionInterval: "60s",
 			},
 			expectedMSSQLConfig: `windowsperfcounters/mssql_mssql:
@@ -217,8 +216,8 @@ func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
 		name            string
 		hostMetricsList []*HostMetrics
-		mssqlList []*MSSQL
-		iisList []*IIS
+		mssqlList       []*MSSQL
+		iisList         []*IIS
 		stackdriverList []*Stackdriver
 		serviceList     []*Service
 		want            string
@@ -230,11 +229,11 @@ func TestGenerateOtelConfig(t *testing.T) {
 				CollectionInterval: "60s",
 			}},
 			mssqlList: []*MSSQL{{
-				MSSQLID: "mssql",
+				MSSQLID:            "mssql",
 				CollectionInterval: "60s",
 			}},
 			iisList: []*IIS{{
-				IISID: "iis",
+				IISID:              "iis",
 				CollectionInterval: "60s",
 			}},
 			stackdriverList: []*Stackdriver{{
@@ -248,17 +247,17 @@ func TestGenerateOtelConfig(t *testing.T) {
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
 				Exporters:  "[stackdriver/google]",
 			},
-			{
-				ID:         "mssql",
-				Receivers:  "[windowsperfcounters/mssql_mssql]",
-				Processors: "[metricstransform/mssql,resourcedetection]",
-				Exporters:  "[stackdriver/google]",
-			},
-			{	ID:         "iis",
-				Receivers:  "[windowsperfcounters/iis_iis]",
-				Processors: "[metricstransform/iis,resourcedetection]",
-				Exporters:  "[stackdriver/google]",
-			},
+				{
+					ID:         "mssql",
+					Receivers:  "[windowsperfcounters/mssql_mssql]",
+					Processors: "[metricstransform/mssql,resourcedetection]",
+					Exporters:  "[stackdriver/google]",
+				},
+				{ID: "iis",
+					Receivers:  "[windowsperfcounters/iis_iis]",
+					Processors: "[metricstransform/iis,resourcedetection]",
+					Exporters:  "[stackdriver/google]",
+				},
 			},
 			want: `receivers:
   prometheus/agent:
