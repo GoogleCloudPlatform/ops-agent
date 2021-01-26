@@ -17,9 +17,9 @@ package otel
 
 import (
 	"fmt"
-	"time"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -524,7 +524,7 @@ func validateCollectionInterval(collectionInterval string, pluginName string) (b
 }
 
 type MSSQL struct {
-	MSSQLID string
+	MSSQLID            string
 	CollectionInterval string
 }
 
@@ -548,7 +548,7 @@ func (m MSSQL) renderConfig() (string, error) {
 }
 
 type IIS struct {
-	IISID string
+	IISID              string
 	CollectionInterval string
 }
 
