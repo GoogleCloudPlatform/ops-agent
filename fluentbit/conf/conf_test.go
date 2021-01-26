@@ -643,8 +643,6 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
     Flush      1
-    # Waits 120 seconds after receiving a SIGTERM before it shuts down to minimize log loss.
-    Grace      120
     # We use systemd to manage Fluent Bit instead.
     Daemon     off
     # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
@@ -698,8 +696,6 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
     Flush      1
-    # Waits 120 seconds after receiving a SIGTERM before it shuts down to minimize log loss.
-    Grace      120
     # We use systemd to manage Fluent Bit instead.
     Daemon     off
     # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
@@ -901,8 +897,6 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
     Flush      1
-    # Waits 120 seconds after receiving a SIGTERM before it shuts down to minimize log loss.
-    Grace      120
     # We use systemd to manage Fluent Bit instead.
     Daemon     off
     # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
