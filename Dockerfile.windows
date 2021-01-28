@@ -119,5 +119,14 @@ RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
 # Packaging
 ###############################################################################
 
+WORKDIR /work
+
+RUN go get github.com/google/googet/goopack; `
+    go install github.com/google/googet/goopack;
+
+WORKDIR /out
+
+RUN & $env:GOPATH\bin\goopack /work/pkg/goo/google-cloud-ops-agent.goospec;
+
 # TODO: Build zip/MSI containing files
 
