@@ -27,7 +27,7 @@ RUN apt-get update && \
 
 COPY . /work
 WORKDIR /work
-RUN ./build-deb.sh
+RUN ./pkg/deb/build.sh
 
 FROM debian:stretch AS stretch
 
@@ -43,7 +43,7 @@ RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/so
 
 COPY . /work
 WORKDIR /work
-RUN ./build-deb.sh
+RUN ./pkg/deb/build.sh
 
 FROM ubuntu:focal AS focal
 
@@ -55,7 +55,7 @@ RUN apt-get update && \
 
 COPY . /work
 WORKDIR /work
-RUN ./build-deb.sh
+RUN ./pkg/deb/build.sh
 
 FROM ubuntu:bionic AS bionic
 
@@ -70,7 +70,7 @@ RUN apt-get update && \
 
 COPY . /work
 WORKDIR /work
-RUN ./build-deb.sh
+RUN ./pkg/deb/build.sh
 
 FROM ubuntu:xenial AS xenial
 
@@ -91,7 +91,7 @@ WORKDIR /work
 # be added to the PATH for build.sh to find it. But debuild cleans PATH,
 # so we need to tell it to re-add it after cleaning PATH.
 RUN echo DEBUILD_PREPEND_PATH=/usr/lib/go-1.11/bin >> /etc/devscripts.conf && \
-    ./build-deb.sh
+    ./pkg/deb/build.sh
 
 FROM centos:7 AS centos7
 
@@ -106,7 +106,7 @@ RUN yum -y update && \
 
 COPY . /work
 WORKDIR /work
-RUN ./build-rpm.sh
+RUN ./pkg/rpm/build.sh
 
 FROM centos:8 AS centos8
 
@@ -121,7 +121,7 @@ RUN yum -y update && \
 
 COPY . /work
 WORKDIR /work
-RUN ./build-rpm.sh
+RUN ./pkg/rpm/build.sh
 
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/leap:42.3 as sles12
@@ -137,7 +137,7 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 
 COPY . /work
 WORKDIR /work
-RUN ./build-rpm.sh
+RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 as sles15
 
@@ -152,7 +152,7 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 
 COPY . /work
 WORKDIR /work
-RUN ./build-rpm.sh
+RUN ./pkg/rpm/build.sh
 
 FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
