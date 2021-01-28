@@ -20,8 +20,6 @@ RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
     New-Item -Type Directory -Path /out/bin;
 
-COPY . /work
-
 ###############################################################################
 # Install build prerequisites
 ###############################################################################
@@ -70,6 +68,12 @@ ADD https://golang.org/dl/go1.15.6.windows-amd64.msi /local/go1.15.6.windows-amd
 RUN Start-Process msiexec.exe `
     -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
+
+###############################################################################
+# Copy agent code to container
+###############################################################################
+
+COPY . /work
 
 ###############################################################################
 # Build fluent-bit
