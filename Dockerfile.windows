@@ -19,7 +19,8 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
     New-Item -Type Directory -Path /out/bin; `
-    New-Item -Type Directory -Path /out/config;
+    New-Item -Type Directory -Path /out/config; `
+    New-Item -Type Directory -Path /work/bin;
 
 ###############################################################################
 # Install build prerequisites
@@ -50,7 +51,10 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
     Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /out/bin/; `
     Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /out/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /out/bin/;
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /out/bin/; `
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /work/bin/; `
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /work/bin/; `
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/bin/;
 
 #
 # Install winflexbison
@@ -86,7 +90,9 @@ RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release -DFLB_OUT_KINE
 
 RUN cmake --build . --config Release; `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /out/bin/;
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/bin/;
 
 # TODO: Do something with /out/bin/fluent-bit.{exe,dll}
 
@@ -101,7 +107,8 @@ RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
     go get github.com/pavius/impi/cmd/impi;
 
 RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /out/bin/;
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /out/bin/; `
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/bin/;
 
 # TODO: Do something with /out/bin/google-cloud-metrics-agent_windows_amd64.exe
 
@@ -124,5 +131,5 @@ WORKDIR /work
 RUN go get github.com/google/googet/goopack; `
     go install github.com/google/googet/goopack;
 
-RUN & .\pkg\goo\build.ps1 -DestDir \out;
+RUN & .\pkg\goo\build.ps1 -DestDir /out;
 

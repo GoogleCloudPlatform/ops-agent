@@ -26,7 +26,6 @@ switch ($Arch) {
 
 # Substitute variables.
 (Get-Content pkg/goo/google-cloud-ops-agent.goospec) `
-  -replace '\${DESTDIR}',$DestDir `
   -replace '\${PKG_VERSION}',$PkgVersion `
   -replace '\${ARCH}',$Arch `
   -replace '\${GOOS}',$GoOs `
