@@ -24,14 +24,11 @@ switch ($Arch) {
     default  { Throw 'Arch must be set to one of: x86, x86_64' }
 }
 
-# Substitute variables.
-(Get-Content pkg/goo/google-cloud-ops-agent.goospec) `
-  -replace '\${PKG_VERSION}',$PkgVersion `
-  -replace '\${ARCH}',$Arch `
-  -replace '\${GOOS}',$GoOs `
-  -replace '\${GOARCH}',$GoArch `
-  | Set-Content pkg/goo/tmp-google-cloud-ops-agent.goospec
-
 # Build the .goo package.
 # TODO: invoke the subagent builds via goopack.
-& $env:GOPATH\bin\goopack -output_dir $DestDir pkg/goo/tmp-google-cloud-ops-agent.goospec
+& $env:GOPATH\bin\goopack -output_dir $DestDir `
+  -var:PKG_VERSION=$PkgVersion `
+  -var:ARCH=$Arch `
+  -var:GOOS=$Goos `
+  -var:GOARCH=$GoArch `
+  pkg/goo/google-cloud-ops-agent.goospec

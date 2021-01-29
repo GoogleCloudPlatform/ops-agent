@@ -128,8 +128,7 @@ RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
 
 WORKDIR /work
 
-RUN go get github.com/google/googet/goopack; `
-    go install github.com/google/googet/goopack;
+RUN go get github.com/google/googet/v2/goopack;
 
 RUN & .\pkg\goo\build.ps1 -DestDir /out;
 
