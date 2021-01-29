@@ -6,12 +6,12 @@
   "license": "http://www.apache.org/licenses/LICENSE-2.0",
   "description": "The Google Cloud Ops Agent collects metrics and logs from the system.",
   "files": {
-    "bin/msvcp140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/msvcp140.dll",
-    "bin/vccorlib140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/vccorlib140.dll",
-    "bin/vcruntime140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/vcruntime140.dll",
-    "bin/fluent-bit.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/fluent-bit.exe",
-    "bin/fluent-bit.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/fluent-bit.dll",
-    "bin/google-cloud-metrics-agent_${GOOS}_${GOARCH}.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/google-cloud-metrics-agent.exe"
+    "bin\\msvcp140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/msvcp140.dll",
+    "bin\\vccorlib140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/vccorlib140.dll",
+    "bin\\vcruntime140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/vcruntime140.dll",
+    "bin\\fluent-bit.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/fluent-bit.exe",
+    "bin\\fluent-bit.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/fluent-bit.dll",
+    "bin\\google-cloud-metrics-agent_${GOOS}_${GOARCH}.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/google-cloud-metrics-agent.exe"
   },
   "install": {
     "path": "pkg/goo/install.ps1"
