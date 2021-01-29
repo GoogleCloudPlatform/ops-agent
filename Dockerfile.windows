@@ -124,9 +124,5 @@ WORKDIR /work
 RUN go get github.com/google/googet/goopack; `
     go install github.com/google/googet/goopack;
 
-WORKDIR /out
-
-RUN & $env:GOPATH\bin\goopack /work/pkg/goo/google-cloud-ops-agent.goospec;
-
-# TODO: Build zip/MSI containing files
+RUN & .\pkg\goo\build.ps1 -DestDir \out;
 
