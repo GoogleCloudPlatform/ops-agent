@@ -81,7 +81,7 @@ COPY . /work
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release ../;
+RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
 RUN cmake --build . --config Release; `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /out/bin/; `
