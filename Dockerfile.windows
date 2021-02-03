@@ -105,6 +105,11 @@ RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopsco
 # TODO: Do something with /out/bin/google-cloud-metrics-agent_windows_amd64.exe
 
 ###############################################################################
+# Config generator/service installer
+###############################################################################
+RUN go build -o /out/bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows
+
+###############################################################################
 # Packaging
 ###############################################################################
 
