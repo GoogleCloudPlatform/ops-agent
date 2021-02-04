@@ -48,7 +48,10 @@ func install() error {
 		{
 			"Google Cloud Ops Agent - Metrics Agent",
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
-			nil,
+			[]string{
+				"--add-instance-id=false",
+				"--config=" + filepath.Join(configOutDir, `\otel\otel.conf`),
+			},
 		},
 		{
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
