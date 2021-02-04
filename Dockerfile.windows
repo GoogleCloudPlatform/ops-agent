@@ -18,7 +18,8 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /out/bin;
+    New-Item -Type Directory -Path /out/bin; `
+    New-Item -Type Directory -Path /out/config;
 
 ###############################################################################
 # Install build prerequisites
@@ -111,7 +112,8 @@ RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopsco
 WORKDIR /work
 
 RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
-    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /out/bin/;
+    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /out/bin/; `
+    Copy-Item -Path confgenerator/windows-default-config.yaml -Destination /out/config/config.yaml;
 
 ###############################################################################
 # Packaging
