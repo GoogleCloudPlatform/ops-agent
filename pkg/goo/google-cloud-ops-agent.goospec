@@ -2,6 +2,8 @@
 {{$ARCH := .ARCH -}}
 {{$GOOS := .GOOS -}}
 {{$GOARCH := .GOARCH -}}
+{{$INSTALL_DIR := or (.INSTALL_DIR) "<ProgramFiles>/Google/Cloud Operations/Ops Agent" -}}
+{{$DATA_DIR := or (.DATA_DIR) "<ProgramData>/Google/Cloud Operations/Ops Agent" -}}
 {
   "name": "google-cloud-ops-agent",
   "version": "{{$PKG_VERSION}}",
@@ -10,12 +12,12 @@
   "license": "http://www.apache.org/licenses/LICENSE-2.0",
   "description": "The Google Cloud Ops Agent collects metrics and logs from the system.",
   "files": {
-    "bin\\msvcp140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/msvcp140.dll",
-    "bin\\vccorlib140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/vccorlib140.dll",
-    "bin\\vcruntime140.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/vcruntime140.dll",
-    "bin\\fluent-bit.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/fluent-bit.exe",
-    "bin\\fluent-bit.dll": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/fluent-bit.dll",
-    "bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "<ProgramFiles>/Google/Cloud Operations/Ops Agent/bin/google-cloud-metrics-agent.exe"
+    "bin\\msvcp140.dll": "{{$INSTALL_DIR}}/bin/msvcp140.dll",
+    "bin\\vccorlib140.dll": "{{$INSTALL_DIR}}/bin/vccorlib140.dll",
+    "bin\\vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
+    "bin\\fluent-bit.exe": "{{$INSTALL_DIR}}/bin/fluent-bit.exe",
+    "bin\\fluent-bit.dll": "{{$INSTALL_DIR}}/bin/fluent-bit.dll",
+    "bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent.exe"
   },
   "install": {
     "path": "pkg/goo/install.ps1"
