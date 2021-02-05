@@ -14,8 +14,8 @@ import (
 )
 
 type service struct {
-	log                  debug.Log
-	inFile, outDirectory string
+	log                                 debug.Log
+	inFile, outDirectory, dataDirectory string
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -76,8 +76,8 @@ func (s *service) generateConfigs() error {
 		if err := confgenerator.GenerateFiles(
 			s.inFile,
 			subagent,
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
+			filepath.Join(s.dataDirectory, "log"),
+			filepath.Join(s.dataDirectory, "run"),
 			filepath.Join(s.outDirectory, subagent)); err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ func (s *service) startSubagents() error {
 	return nil
 }
 
-func run(name string) error {
+func run(name, dataDirectory string) error {
 	elog, err := eventlog.Open(name)
 	if err != nil {
 		// probably futile
@@ -115,7 +115,7 @@ func run(name string) error {
 	defer elog.Close()
 
 	elog.Info(1, fmt.Sprintf("starting %s service", name))
-	err = svc.Run(name, &service{log: elog})
+	err = svc.Run(name, &service{log: elog, dataDirectory: dataDirectory})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
 		return err

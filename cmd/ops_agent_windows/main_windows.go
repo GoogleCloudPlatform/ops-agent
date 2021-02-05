@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -10,21 +11,31 @@ import (
 	"golang.org/x/sys/windows/svc"
 )
 
-const dataDirectory = `Google/Cloud Operations/Ops Agent`
 const serviceName = "Google Cloud Ops Agent"
 
+var (
+	installServices = flag.Bool("install", false, "whether to install the services")
+	dataDirectory   = flag.String("data-directory", filepath.Join(os.Getenv("PROGRAMDATA"), `Google/Cloud Operations/Ops Agent`), "where to store runtime files")
+)
+
 func main() {
+	flag.Parse()
+	if err := initServices(*dataDirectory); err != nil {
+		log.Fatal(err)
+	}
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
-		if err := run(serviceName); err != nil {
+		if err := run(serviceName, *dataDirectory); err != nil {
 			log.Fatal(err)
 		}
 	} else if err != nil {
 		log.Fatalf("failed to talk to service control manager: %v", err)
-	} else {
+	} else if *installServices {
 		if err := install(); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("installed services")
+	} else {
+		fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
 	}
 }
 
@@ -34,13 +45,7 @@ var services []struct {
 	args    []string
 }
 
-func init() {
-	if err := initServices(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func initServices() error {
+func initServices(dataDirectory string) error {
 	// Identify relevant paths
 	self, err := osext.Executable()
 	if err != nil {
@@ -50,11 +55,11 @@ func initServices() error {
 	if err != nil {
 		return fmt.Errorf("could not determine binary path: %w", err)
 	}
-	configOutDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "generated_configs")
+	configOutDir := filepath.Join(dataDirectory, "generated_configs")
 	if err := os.MkdirAll(configOutDir, 0644); err != nil {
 		return err
 	}
-	fluentbitStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, `run\buffers`)
+	fluentbitStoragePath := filepath.Join(dataDirectory, `run\buffers`)
 	if err := os.MkdirAll(fluentbitStoragePath, 0644); err != nil {
 		return err
 	}
