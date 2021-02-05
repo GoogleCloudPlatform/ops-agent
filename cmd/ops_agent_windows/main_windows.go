@@ -58,6 +58,10 @@ func initServices() error {
 	if err := os.MkdirAll(fluentbitStoragePath, 0644); err != nil {
 		return err
 	}
+	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	if err := os.MkdirAll(logDirectory, 0644); err != nil {
+		return err
+	}
 	// TODO: Write meaningful descriptions for these services
 	services = []struct {
 		name    string
@@ -85,6 +89,7 @@ func initServices() error {
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
 				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
 				"--storage_path", fluentbitStoragePath,
+				"--log_file", filepath.Join(logDirectory, "logging-module.log"),
 			},
 		},
 	}
