@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
+	"golang.org/x/sys/windows/svc/mgr"
 )
 
 type service struct {
@@ -85,8 +86,23 @@ func (s *service) generateConfigs() error {
 }
 
 func (s *service) startSubagents() error {
-	// TODO: Start subagents
-	// TODO: Ignore failures for partial startup?
+	manager, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer manager.Disconnect()
+	for _, svc := range services[1:] {
+		handle, err := manager.OpenService(svc.name)
+		if err != nil {
+			// service not found?
+			return err
+		}
+		defer handle.Close()
+		if err := handle.Start(); err != nil {
+			// TODO: Should we be ignoring failures for partial startup?
+			s.log.Error(1, fmt.Sprintf("failed to start %q: %v", svc.name, err))
+		}
+	}
 	return nil
 }
 

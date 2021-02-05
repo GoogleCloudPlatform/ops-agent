@@ -1,12 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"syscall"
 
-	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -21,53 +17,12 @@ func escapeExe(exepath string, args []string) string {
 }
 
 func install() error {
-	// Identify relevant paths
-	self, err := osext.Executable()
-	if err != nil {
-		return fmt.Errorf("could not determine own path: %w", err)
-	}
-	base, err := osext.ExecutableFolder()
-	if err != nil {
-		return fmt.Errorf("could not determine binary path: %w", err)
-	}
-	configOutDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "generated_configs")
-	if err := os.MkdirAll(configOutDir, 0644); err != nil {
-		return err
-	}
-	// TODO: Write meaningful descriptions for these services
-	services := []struct {
-		name    string
-		exepath string
-		args    []string
-	}{
-		{
-			serviceName,
-			self,
-			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
-		},
-		{
-			"Google Cloud Ops Agent - Metrics Agent",
-			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
-			[]string{
-				"--add-instance-id=false",
-				"--config=" + filepath.Join(configOutDir, `otel\otel.conf`),
-			},
-		},
-		{
-			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
-			"Google Cloud Ops Agent - Logging Agent",
-			filepath.Join(base, "fluent-bit.exe"),
-			[]string{
-				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
-				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
-			},
-		},
-	}
 	m, err := mgr.Connect()
 	if err != nil {
 		return err
 	}
 	defer m.Disconnect()
+	handles := make([]*mgr.Service, len(services))
 	for i, s := range services {
 		var deps []string
 		if i > 0 {
@@ -88,6 +43,7 @@ func install() error {
 			if err := serviceHandle.UpdateConfig(config); err != nil {
 				return err
 			}
+			handles[i] = serviceHandle
 			continue
 		}
 		serviceHandle, err = m.CreateService(
@@ -100,10 +56,12 @@ func install() error {
 			return err
 		}
 		defer serviceHandle.Close()
+		handles[i] = serviceHandle
 	}
 	// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
 	if err := eventlog.InstallAsEventCreate(serviceName, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
 		// Ignore error since it likely means the event log already existss.
 	}
-	return nil
+	// Automatically start the Ops Agent service
+	return handles[0].Start()
 }
