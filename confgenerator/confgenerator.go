@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -249,13 +250,13 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 	return []*conf.Tail{
 		{
 			Tag:  "ops-agent-fluent-bit",
-			DB:   fmt.Sprintf("%s/buffers/ops-agent-fluent-bit", stateDir),
-			Path: fmt.Sprintf("%s/logging-module.log", logsDir),
+			DB:   filepath.Join(stateDir, "buffers", "ops-agent-fluent-bit"),
+			Path: filepath.Join(logsDir, "logging-module.log"),
 		},
 		{
 			Tag:  "ops-agent-collectd",
-			DB:   fmt.Sprintf("%s/buffers/ops-agent-collectd", stateDir),
-			Path: fmt.Sprintf("%s/metrics-module.log", logsDir),
+			DB:   filepath.Join(stateDir, "buffers", "ops-agent-collectd"),
+			Path: filepath.Join(logsDir, "metrics-module.log"),
 		},
 	}
 }
