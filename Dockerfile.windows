@@ -82,9 +82,11 @@ COPY . /work
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release -DFLB_OUT_KINESIS_STREAMS=OFF ../;
+#RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
-RUN cmake --build . --config Release; `
+#RUN cmake --build . --config Release; `
+COPY saved/bin/fluent-bit.* bin/Release/
+RUN `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
     Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/;
 
@@ -96,11 +98,13 @@ RUN cmake --build . --config Release; `
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
-RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
-    go get github.com/google/addlicense; `
-    go get github.com/pavius/impi/cmd/impi;
+#RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
+#    go get github.com/google/addlicense; `
+#    go get github.com/pavius/impi/cmd/impi;
 
-RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
+#RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
+COPY saved/bin/google-cloud-metrics-agent_windows_amd64.exe bin/
+RUN `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
 # TODO: Do something with /work/out/bin/google-cloud-metrics-agent_windows_amd64.exe
