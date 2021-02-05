@@ -14,8 +14,9 @@ import (
 const serviceName = "Google Cloud Ops Agent"
 
 var (
-	installServices = flag.Bool("install", false, "whether to install the services")
-	dataDirectory   = flag.String("data-directory", filepath.Join(os.Getenv("PROGRAMDATA"), `Google/Cloud Operations/Ops Agent`), "where to store runtime files")
+	installServices   = flag.Bool("install", false, "whether to install the services")
+	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
+	dataDirectory     = flag.String("data-directory", filepath.Join(os.Getenv("PROGRAMDATA"), `Google/Cloud Operations/Ops Agent`), "where to store runtime files")
 )
 
 func main() {
@@ -29,13 +30,24 @@ func main() {
 		}
 	} else if err != nil {
 		log.Fatalf("failed to talk to service control manager: %v", err)
-	} else if *installServices {
-		if err := install(); err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("installed services")
 	} else {
-		fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
+		if *installServices && *uninstallServices {
+			log.Fatal("Can't use both --install and --uninstall")
+		}
+		if *installServices {
+			if err := install(); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("installed services")
+		} else if *uninstallServices {
+			if err := uninstall(); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("uninstalled services")
+		} else {
+			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
+			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
+		}
 	}
 }
 

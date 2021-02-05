@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strings"
 	"syscall"
 
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -62,6 +64,35 @@ func install() error {
 	if err := eventlog.InstallAsEventCreate(serviceName, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
 		// Ignore error since it likely means the event log already exists.
 	}
-	// Automatically start the Ops Agent service
+	// Automatically start the Ops Agent service.
 	return handles[0].Start()
+}
+
+func uninstall() error {
+	m, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer m.Disconnect()
+	errs := []string{}
+	last := len(services) - 1
+	for i := range services {
+		// Have to remove the services in reverse order.
+		s := services[last-i]
+		serviceHandle, err := m.OpenService(s.name)
+		if err != nil {
+			// Service does not exist, so nothing to delete.
+			continue
+		}
+		defer serviceHandle.Close()
+		err = serviceHandle.Delete()
+		if err != nil {
+			// Don't return until all services have been processed.
+			errs = append(errs, err.Error())
+		}
+	}
+	if len(errs) != 0 {
+		return fmt.Errorf(strings.Join(errs, "\n"))
+	}
+	return nil
 }

@@ -26,7 +26,8 @@
     "args": ["--install"]
   },
   "uninstall": {
-    "path": "pkg/goo/uninstall.ps1"
+    "path": "bin/google-cloud-ops-agent.exe",
+    "args": ["--uninstall"]
   },
   "sources": [{
       "include": [
