@@ -12,5 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Stop-Service -Name "google-cloud-metrics-agent" -Verbose
-& sc.exe delete google-cloud-metrics-agent -Verbose
+Param(
+    [Parameter(Mandatory=$true)][string]$InstallDir
+)
+
+$ErrorActionPreference = 'Stop'
+
+$envFromMatch = {
+  Param($match)
+  (Get-ChildItem -Path Env: | `
+     Where-Object -Property Name -eq $match.Groups[1].Value).Value
+}
+$InstallDir = [regex]::Replace($InstallDir,'^<([^>]+)>',$envFromMatch)
+
+& "$InstallDir\bin\google-cloud-ops-agent.exe" --uninstall
