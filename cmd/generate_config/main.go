@@ -16,11 +16,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
@@ -40,56 +37,5 @@ func main() {
 	}
 }
 func run() error {
-	data, err := ioutil.ReadFile(*input)
-	if err != nil {
-		return err
-	}
-	switch *service {
-	case "fluentbit":
-		mainConfig, parserConfig, err := confgenerator.GenerateFluentBitConfigs(data, *logsDir, *stateDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(*outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", *outDir, err)
-		}
-		path := filepath.Join(*outDir, "fluent_bit_main.conf")
-		if err := ioutil.WriteFile(path, []byte(mainConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-		path = filepath.Join(*outDir, "fluent_bit_parser.conf")
-		if err := ioutil.WriteFile(path, []byte(parserConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-	case "collectd":
-		collectdConfig, err := confgenerator.GenerateCollectdConfig(data, *logsDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(*outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", *outDir, err)
-		}
-		path := filepath.Join(*outDir, "collectd.conf")
-		if err := ioutil.WriteFile(path, []byte(collectdConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-	case "otel":
-		otelConfig, err := confgenerator.GenerateOtelConfig(data)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(*outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", *outDir, err)
-		}
-		path := filepath.Join(*outDir, "otel.conf")
-		if err := ioutil.WriteFile(path, []byte(otelConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-	default:
-		return fmt.Errorf("unknown service %q", *service)
-	}
-	return nil
+	return confgenerator.GenerateFiles(*input, *service, *logsDir, *stateDir, *outDir)
 }
