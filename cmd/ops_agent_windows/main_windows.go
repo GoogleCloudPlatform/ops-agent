@@ -54,7 +54,7 @@ func initServices() error {
 	if err := os.MkdirAll(configOutDir, 0644); err != nil {
 		return err
 	}
-	fluentbitStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, `fluentbit\buffers`)
+	fluentbitStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, `run\buffers`)
 	if err := os.MkdirAll(fluentbitStoragePath, 0644); err != nil {
 		return err
 	}
