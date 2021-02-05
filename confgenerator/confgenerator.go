@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
+        "path/filepath"
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
@@ -249,8 +249,8 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 	return []*conf.Tail{
 		{
 			Tag:  "ops-agent-fluent-bit",
-			DB:   fmt.Sprintf("%s/buffers/ops-agent-fluent-bit", stateDir),
-			Path: fmt.Sprintf("%s/logging-module.log", logsDir),
+			DB:   filepath.Join(stateDir, "/buffers/ops-agent-fluent-bit"),
+			Path: filepath.Join(logsDir, "/logging-module.log"),
 		},
 		{
 			Tag:  "ops-agent-collectd",
