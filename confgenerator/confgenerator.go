@@ -17,9 +17,10 @@ package confgenerator
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
-        "path/filepath"
+
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
