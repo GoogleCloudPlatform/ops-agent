@@ -22,7 +22,8 @@
     "confgenerator\\windows-default-config.yaml": "{{$INSTALL_DIR}}/config/config.yaml"
   },
   "install": {
-    "path": "pkg/goo/install.ps1"
+    "path": "bin/google-cloud-ops-agent.exe",
+    "args": ["--install"]
   },
   "uninstall": {
     "path": "pkg/goo/uninstall.ps1"
