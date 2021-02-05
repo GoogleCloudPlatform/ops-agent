@@ -50,7 +50,7 @@ func install() error {
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--add-instance-id=false",
-				"--config=" + filepath.Join(configOutDir, `\otel\otel.conf`),
+				"--config=" + filepath.Join(configOutDir, `otel\otel.conf`),
 			},
 		},
 		{
@@ -58,8 +58,8 @@ func install() error {
 			"Google Cloud Ops Agent - Logging Agent",
 			filepath.Join(base, "fluent-bit.exe"),
 			[]string{
-				"-c", filepath.Join(configOutDir, `\fluentbit\fluent_bit_main.conf`),
-				"-R", filepath.Join(configOutDir, `\fluentbit\fluent_bit_parser.conf`),
+				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
+				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
 			},
 		},
 	}
