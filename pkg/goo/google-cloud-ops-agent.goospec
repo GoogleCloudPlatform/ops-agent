@@ -17,7 +17,7 @@
     "bin\\vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
     "bin\\fluent-bit.exe": "{{$INSTALL_DIR}}/bin/fluent-bit.exe",
     "bin\\fluent-bit.dll": "{{$INSTALL_DIR}}/bin/fluent-bit.dll",
-    "bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent.exe",
+    "bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
     "bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe",
     "confgenerator\\windows-default-config.yaml": "{{$INSTALL_DIR}}/config/config.yaml"
   },
