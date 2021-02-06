@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -87,11 +87,10 @@ func uninstall() error {
 			continue
 		}
 		defer serviceHandle.Close()
-		if _, err := serviceHandle.Control(windows.SERVICE_CONTROL_STOP); err != nil {
+		if err := stopService(serviceHandle, 30 * time.Second); err != nil {
 			// Don't return until all services have been processed.
 			errs = append(errs, err.Error())
 		}
-		time.Sleep(2 * time.Second) // give it time to stop
 		if err := serviceHandle.Delete(); err != nil {
 			// Don't return until all services have been processed.
 			errs = append(errs, err.Error())
@@ -99,6 +98,26 @@ func uninstall() error {
 	}
 	if len(errs) != 0 {
 		return fmt.Errorf(strings.Join(errs, "\n"))
+	}
+	return nil
+}
+
+func stopService(serviceHandle *mgr.Service, timeout time.Duration) error {
+	// TODO: is it possible to use channel-based timeout handling here?
+	var status svc.Status
+	var err error
+	if status, err = serviceHandle.Control(svc.Stop); err != nil {
+		return err
+	}
+	startTime := time.Now()
+	for status.State != svc.Stopped {
+		if time.Since(startTime) > timeout {
+			return fmt.Errorf("Timed out (>%v) waiting for service to stop", timeout)
+		}
+		time.Sleep(1 * time.Second)
+		if status, err = serviceHandle.Query(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
