@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -90,6 +91,7 @@ func uninstall() error {
 			// Don't return until all services have been processed.
 			errs = append(errs, err.Error())
 		}
+		time.Sleep(2 * time.Second) // give it time to stop
 		if err := serviceHandle.Delete(); err != nil {
 			// Don't return until all services have been processed.
 			errs = append(errs, err.Error())
