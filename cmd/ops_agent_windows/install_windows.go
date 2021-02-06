@@ -5,6 +5,7 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -85,8 +86,11 @@ func uninstall() error {
 			continue
 		}
 		defer serviceHandle.Close()
-		err = serviceHandle.Delete()
-		if err != nil {
+		if _, err := serviceHandle.Control(windows.SERVICE_CONTROL_STOP); err != nil {
+			// Don't return until all services have been processed.
+			errs = append(errs, err.Error())
+		}
+		if err := serviceHandle.Delete(); err != nil {
 			// Don't return until all services have been processed.
 			errs = append(errs, err.Error())
 		}
