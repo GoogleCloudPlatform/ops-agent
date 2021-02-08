@@ -72,7 +72,7 @@ function build_fluentbit() {
   cd submodules/fluent-bit
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit -DFLB_HTTP_SERVER=On
+  cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RELWITHDEBINFO
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service
