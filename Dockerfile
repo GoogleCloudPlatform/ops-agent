@@ -71,7 +71,7 @@ RUN apt-get update && \
 COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
-COPY ./pkg/google-cloud-ops-agent*.deb /
+COPY --from=bionic /pkg/google-cloud-ops-agent*.deb /
 
 FROM ubuntu:xenial AS xenial
 
