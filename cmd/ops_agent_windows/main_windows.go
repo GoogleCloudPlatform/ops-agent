@@ -15,7 +15,7 @@ const dataDirectory = `Google/Cloud Operations/Ops Agent`
 const serviceName = "google-cloud-ops-agent"
 
 var (
-	installServices   = flag.Bool("install", false, "whether to install the services")
+	installServices   = flag.Bool("install", true, "whether to install the services")
 	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
 )
 
