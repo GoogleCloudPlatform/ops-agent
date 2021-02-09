@@ -12,7 +12,7 @@ import (
 )
 
 const dataDirectory = `Google/Cloud Operations/Ops Agent`
-const serviceName = "Google Cloud Ops Agent"
+const serviceName = "google-cloud-ops-agent"
 
 var (
 	installServices   = flag.Bool("install", false, "whether to install the services")
@@ -94,7 +94,7 @@ func initServices() error {
 			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
 		},
 		{
-			fmt.Sprintf("%s - Metrics Agent", serviceName),
+			fmt.Sprintf("%s-otel", serviceName),
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--add-instance-id=false",
@@ -103,7 +103,7 @@ func initServices() error {
 		},
 		{
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
-			fmt.Sprintf("%s - Logging Agent", serviceName),
+			fmt.Sprintf("%s-fluent-bit", serviceName),
 			filepath.Join(base, "fluent-bit.exe"),
 			[]string{
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
