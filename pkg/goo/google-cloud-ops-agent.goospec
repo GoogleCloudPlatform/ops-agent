@@ -22,12 +22,12 @@
     "confgenerator\\windows-default-config.yaml": "{{$INSTALL_DIR}}/config/config.yaml"
   },
   "install": {
-    "path": "pkg/goo/install.ps1",
-    "args": ["-InstallDir:\"{{$INSTALL_DIR}}\""]
+    "path": "pkg/goo/maint.ps1",
+    "args": ["-InstallDir:\"{{$INSTALL_DIR}}\"", "-Action:install"]
   },
   "uninstall": {
-    "path": "pkg/goo/uninstall.ps1",
-    "args": ["-InstallDir:\"{{$INSTALL_DIR}}\""]
+    "path": "pkg/goo/maint.ps1",
+    "args": ["-InstallDir:\"{{$INSTALL_DIR}}\"", "-Action:uninstall"]
   },
   "sources": [{
       "include": [
@@ -39,8 +39,7 @@
         "bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
         "bin/google-cloud-ops-agent.exe",
         "confgenerator/windows-default-config.yaml",
-        "pkg/goo/install.ps1",
-        "pkg/goo/uninstall.ps1"
+        "pkg/goo/maint.ps1"
       ]
   }]
 }

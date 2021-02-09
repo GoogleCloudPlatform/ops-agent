@@ -44,6 +44,7 @@ func main() {
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
 			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
+			fmt.Println("Use either --install or --uninstall to take action.")
 		}
 	}
 }

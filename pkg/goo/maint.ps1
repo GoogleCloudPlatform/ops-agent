@@ -14,6 +14,7 @@
 
 Param(
     [Parameter(Mandatory=$true)][string]$InstallDir
+    [Parameter(Mandatory=$true)][ValidateSet('install','uninstall')][string]$Action
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,4 +26,4 @@ $envFromMatch = {
 }
 $InstallDir = [regex]::Replace($InstallDir,'^<([^>]+)>',$envFromMatch)
 
-& "$InstallDir\bin\google-cloud-ops-agent.exe" --install
+& "$InstallDir\bin\google-cloud-ops-agent.exe" "--$Action"

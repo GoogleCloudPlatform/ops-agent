@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"syscall"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -76,11 +76,10 @@ func uninstall() error {
 		return err
 	}
 	defer m.Disconnect()
-	errs := []string{}
-	last := len(services) - 1
-	for i := range services {
-		// Have to remove the services in reverse order.
-		s := services[last-i]
+	var errs error
+	// Have to remove the services in reverse order.
+	for i := len(services) - 1; i >= 0; i-- {
+		s := services[i]
 		serviceHandle, err := m.OpenService(s.name)
 		if err != nil {
 			// Service does not exist, so nothing to delete.
@@ -89,21 +88,17 @@ func uninstall() error {
 		defer serviceHandle.Close()
 		if err := stopService(serviceHandle, 30 * time.Second); err != nil {
 			// Don't return until all services have been processed.
-			errs = append(errs, err.Error())
+			errs = multierror.Append(errs, err)
 		}
 		if err := serviceHandle.Delete(); err != nil {
 			// Don't return until all services have been processed.
-			errs = append(errs, err.Error())
+			errs = multierror.Append(errs, err)
 		}
 	}
-	if len(errs) != 0 {
-		return fmt.Errorf(strings.Join(errs, "\n"))
-	}
-	return nil
+	return errs
 }
 
 func stopService(serviceHandle *mgr.Service, timeout time.Duration) error {
-	// TODO: is it possible to use channel-based timeout handling here?
 	var status svc.Status
 	var err error
 	if status, err = serviceHandle.Control(svc.Stop); err != nil {
