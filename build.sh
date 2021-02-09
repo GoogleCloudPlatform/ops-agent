@@ -94,7 +94,7 @@ function build_systemd() {
   for f in systemd/*.service systemd/*.target; do
     install_unit "$f" "$(basename "$f")"
   done
-  if [ "$(systemctl --version | grep -Po '^systemd \K\d+$')" -lt 240 ]; then
+  if [ "$(systemctl --version | grep -Po '^systemd \K\d+')" -lt 240 ]; then
     for d in systemd/*.service.d; do
       mkdir "$DESTDIR$systemdsystemunitdir/$(basename "$d")"
       for f in "$d"/*.conf; do
