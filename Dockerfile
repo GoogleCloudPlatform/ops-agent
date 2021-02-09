@@ -71,7 +71,6 @@ RUN apt-get update && \
 COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
-COPY --from=bionic /pkg/google-cloud-ops-agent*.deb /
 
 FROM ubuntu:xenial AS xenial
 
@@ -157,19 +156,19 @@ RUN ./pkg/rpm/build.sh
 
 FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
-COPY --from=buster /pkg/google-cloud-ops-agent*.deb /
+COPY --from=buster /google-cloud-ops-agent*.deb /
 
 COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
-COPY --from=stretch /pkg/google-cloud-ops-agent*.deb /
+COPY --from=stretch /google-cloud-ops-agent*.deb /
 
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
-COPY --from=focal /pkg/google-cloud-ops-agent*.deb /
+COPY --from=focal /google-cloud-ops-agent*.deb /
 
 COPY --from=bionic /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
-COPY --from=bionic /pkg/google-cloud-ops-agent*.deb /
+COPY --from=bionic /google-cloud-ops-agent*.deb /
 
 COPY --from=xenial /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
-COPY --from=xenial /pkg/google-cloud-ops-agent*.deb /
+COPY --from=xenial /google-cloud-ops-agent*.deb /
 
 COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7 /google-cloud-ops-agent*.rpm /
