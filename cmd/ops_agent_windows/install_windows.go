@@ -41,7 +41,7 @@ func install() error {
 			if err != nil {
 				return err
 			}
-			config.DisplayName = s.name
+			config.DisplayName = s.displayName
 			config.BinaryPathName = escapeExe(s.exepath, s.args)
 			config.Dependencies = deps
 			if err := serviceHandle.UpdateConfig(config); err != nil {
@@ -53,7 +53,7 @@ func install() error {
 		serviceHandle, err = m.CreateService(
 			s.name,
 			s.exepath,
-			mgr.Config{DisplayName: s.name, StartType: mgr.StartAutomatic, Dependencies: deps},
+			mgr.Config{DisplayName: s.displayName, StartType: mgr.StartAutomatic, Dependencies: deps},
 			s.args...,
 		)
 		if err != nil {
@@ -63,7 +63,7 @@ func install() error {
 		handles[i] = serviceHandle
 	}
 	// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
-	if err := eventlog.InstallAsEventCreate(serviceName, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
+	if err := eventlog.InstallAsEventCreate(services[0].name, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
 		// Ignore error since it likely means the event log already exists.
 	}
 	// Automatically start the Ops Agent service.
@@ -86,7 +86,7 @@ func uninstall() error {
 			continue
 		}
 		defer serviceHandle.Close()
-		if err := stopService(serviceHandle, 30 * time.Second); err != nil {
+		if err := stopService(serviceHandle, 30*time.Second); err != nil {
 			// Don't return until all services have been processed.
 			errs = multierror.Append(errs, err)
 		}

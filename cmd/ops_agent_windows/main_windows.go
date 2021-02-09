@@ -12,7 +12,8 @@ import (
 )
 
 const dataDirectory = `Google/Cloud Operations/Ops Agent`
-const serviceName = "Google Cloud Ops Agent"
+const serviceName = "google-cloud-ops-agent"
+const serviceDisplayName = "Google Cloud Ops Agent"
 
 var (
 	installServices   = flag.Bool("install", false, "whether to install the services")
@@ -50,9 +51,10 @@ func main() {
 }
 
 var services []struct {
-	name    string
-	exepath string
-	args    []string
+	name        string
+	displayName string
+	exepath     string
+	args        []string
 }
 
 func init() {
@@ -85,17 +87,20 @@ func initServices() error {
 	}
 	// TODO: Write meaningful descriptions for these services
 	services = []struct {
-		name    string
-		exepath string
-		args    []string
+		name        string
+		displayName string
+		exepath     string
+		args        []string
 	}{
 		{
 			serviceName,
+			serviceDisplayName,
 			self,
 			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
 		},
 		{
-			fmt.Sprintf("%s - Metrics Agent", serviceName),
+			fmt.Sprintf("%s-otel", serviceName),
+			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--add-instance-id=false",
@@ -104,7 +109,8 @@ func initServices() error {
 		},
 		{
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
-			fmt.Sprintf("%s - Logging Agent", serviceName),
+			fmt.Sprintf("%s-fluent-bit", serviceName),
+			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
 			filepath.Join(base, "fluent-bit.exe"),
 			[]string{
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
