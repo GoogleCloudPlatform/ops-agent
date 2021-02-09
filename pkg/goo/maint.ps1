@@ -13,7 +13,7 @@
 # limitations under the License.
 
 Param(
-    [Parameter(Mandatory=$true)][string]$InstallDir
+    [Parameter(Mandatory=$true)][string]$InstallDir,
     [Parameter(Mandatory=$true)][ValidateSet('install','uninstall')][string]$Action
 )
 
