@@ -99,7 +99,7 @@ func initServices() error {
 			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
 		},
 		{
-			fmt.Sprintf("%s-otel", serviceName),
+			fmt.Sprintf("%s-opentelemetry-collector", serviceName),
 			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
