@@ -14,4 +14,5 @@ dch --create -b --package google-cloud-ops-agent -M \
 
 # Build .debs
 debuild -us -uc -sa
+cd ..
 cp pkg/google-cloud-ops-agent*.deb /
