@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -11,7 +12,13 @@ import (
 )
 
 const dataDirectory = `Google/Cloud Operations/Ops Agent`
-const serviceName = "Google Cloud Ops Agent"
+const serviceName = "google-cloud-ops-agent"
+const serviceDisplayName = "Google Cloud Ops Agent"
+
+var (
+	installServices   = flag.Bool("install", false, "whether to install the services")
+	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
+)
 
 func main() {
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
@@ -21,17 +28,33 @@ func main() {
 	} else if err != nil {
 		log.Fatalf("failed to talk to service control manager: %v", err)
 	} else {
-		if err := install(); err != nil {
-			log.Fatal(err)
+		flag.Parse()
+		if *installServices && *uninstallServices {
+			log.Fatal("Can't use both --install and --uninstall")
 		}
-		log.Printf("installed services")
+		if *installServices {
+			if err := install(); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("installed services")
+		} else if *uninstallServices {
+			if err := uninstall(); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("uninstalled services")
+		} else {
+			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
+			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
+			fmt.Println("Use either --install or --uninstall to take action.")
+		}
 	}
 }
 
 var services []struct {
-	name    string
-	exepath string
-	args    []string
+	name        string
+	displayName string
+	exepath     string
+	args        []string
 }
 
 func init() {
@@ -64,17 +87,20 @@ func initServices() error {
 	}
 	// TODO: Write meaningful descriptions for these services
 	services = []struct {
-		name    string
-		exepath string
-		args    []string
+		name        string
+		displayName string
+		exepath     string
+		args        []string
 	}{
 		{
 			serviceName,
+			serviceDisplayName,
 			self,
 			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
 		},
 		{
-			fmt.Sprintf("%s - Metrics Agent", serviceName),
+			fmt.Sprintf("%s-opentelemetry-collector", serviceName),
+			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--add-instance-id=false",
@@ -83,7 +109,8 @@ func initServices() error {
 		},
 		{
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
-			fmt.Sprintf("%s - Logging Agent", serviceName),
+			fmt.Sprintf("%s-fluent-bit", serviceName),
+			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
 			filepath.Join(base, "fluent-bit.exe"),
 			[]string{
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
