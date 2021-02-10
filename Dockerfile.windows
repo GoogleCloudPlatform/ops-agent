@@ -18,8 +18,8 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /out/bin; `
-    New-Item -Type Directory -Path /out/config;
+    New-Item -Type Directory -Path /work/out/bin; `
+    New-Item -Type Directory -Path /work/out/config;
 
 ###############################################################################
 # Install build prerequisites
@@ -48,9 +48,9 @@ ADD https://aka.ms/vs/15/release/vc_redist.x64.exe /local/vc_redist.x64.exe
 
 RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /out/bin/; `
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /out/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /out/bin/;
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /work/out/bin/; `
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /work/out/bin/; `
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/out/bin/;
 
 #
 # Install winflexbison
@@ -85,10 +85,10 @@ WORKDIR /work/submodules/fluent-bit/build
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=Release -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
 RUN cmake --build . --config Release; `
-    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /out/bin/;
+    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/;
 
-# TODO: Do something with /out/bin/fluent-bit.{exe,dll}
+# TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
 # Build OT collector
@@ -101,9 +101,9 @@ RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
     go get github.com/pavius/impi/cmd/impi;
 
 RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /out/bin/;
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
-# TODO: Do something with /out/bin/google-cloud-metrics-agent_windows_amd64.exe
+# TODO: Do something with /work/out/bin/google-cloud-metrics-agent_windows_amd64.exe
 
 ###############################################################################
 # Config generator/service installer
@@ -112,12 +112,16 @@ RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopsco
 WORKDIR /work
 
 RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
-    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /out/bin/; `
-    Copy-Item -Path confgenerator/windows-default-config.yaml -Destination /out/config/config.yaml;
+    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
+    Copy-Item -Path confgenerator/windows-default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
 # Packaging
 ###############################################################################
 
-# TODO: Build zip/MSI containing files
+WORKDIR /work
+
+RUN go get github.com/google/googet/v2/goopack;
+
+RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
 
