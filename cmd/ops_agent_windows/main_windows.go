@@ -9,7 +9,6 @@ import (
 
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/mgr"
 )
 
 const dataDirectory = `Google/Cloud Operations/Ops Agent`
@@ -21,36 +20,7 @@ var (
 	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
 )
 
-// Standalone agents to check for before starting.
-var conflictingAgents = map[string]bool{
-	"StackdriverLogging":    true,
-	"StackdriverMonitoring": true,
-}
-
 func main() {
-	// Fail if any standalone agents are running.
-	mgr, err := mgr.Connect()
-	if err != nil {
-		log.Fatalf("Failed to connect to service manager: %s", err)
-	}
-	services, err := mgr.ListServices()
-	if err != nil {
-		log.Fatalf("Failed to list services: %s", err)
-	}
-	var runningAgents []string
-	for _, s := range services {
-		if conflictingAgents[s] {
-			runningAgents = append(runningAgents, s)
-		}
-	}
-	if len(runningAgents) > 0 {
-		log.Fatalf("Detected the following Google agents already running: %v.  "+
-			"The Ops Agent is not compatible with those agents.  Please "+
-			"consult the documentation to save the configuration of the "+
-			"existing agents and disable them, then retry enabling the "+
-			"Ops Agent", runningAgents)
-	}
-
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)

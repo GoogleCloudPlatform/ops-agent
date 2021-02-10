@@ -214,7 +214,7 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
-func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string) (string, string, error) {
+func GenerateFluentBitConfigsFromUnifiedConfig(logging *Logging, logsDir string, stateDir string) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir)
 	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*conf.Syslog{}

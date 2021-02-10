@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -12,6 +13,15 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 )
+
+func containsString(all []string, s string) bool {
+	for _, t := range all {
+		if t == s {
+			return true
+		}
+	}
+	return false
+}
 
 type service struct {
 	log                  debug.Log
@@ -67,14 +77,55 @@ func (s *service) parseFlags(args []string) error {
 	return fs.Parse(allArgs)
 }
 
+func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfigWindows) error {
+	mgr, err := mgr.Connect()
+	if err != nil {
+		return fmt.Errorf("failed to connect to service manager: %s", err)
+	}
+	defer mgr.Disconnect()
+	services, err := mgr.ListServices()
+	if err != nil {
+		return fmt.Errorf("failed to list services: %s", err)
+	}
+
+	var errors string
+	if unified.HasLogging() && containsString(services, "StackdriverLogging") {
+		errors += "We detected an existing Windows service for the StackdriverLogging agent, " +
+			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty logging section. " +
+			"Please either remove the logging section from the Ops Agent configuration, " +
+			"or disable the StackdriverLogging agent, and then retry enabling the Ops Agent. "
+	}
+	if unified.HasMetrics() && containsString(services, "StackdriverMonitoring") {
+		errors += "We detected an existing Windows service for the StackdriverMonitoring agent, " +
+			"which is not compatible with the Ops Agent when the Ops Agent configuration has a non-empty metrics section. " +
+			"Please either remove the metrics section from the Ops Agent configuration, " +
+			"or disable the StackdriverMonitoring agent, and then retry enabling the Ops Agent. "
+	}
+	if errors != "" {
+		return fmt.Errorf("conflicts with existing agents: %s", errors)
+	}
+	return nil
+}
+
 func (s *service) generateConfigs() error {
+	data, err := ioutil.ReadFile(s.inFile)
+	if err != nil {
+		return err
+	}
+	unified, err := confgenerator.UnifiedConfigWindowsReader(data)
+	if err != nil {
+		return err
+	}
+	if err := s.checkForStandaloneAgents(&unified); err != nil {
+		return err
+	}
 	// TODO: Add flag for passing in log/run path?
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
 	} {
-		if err := confgenerator.GenerateFiles(
-			s.inFile,
+		if err := confgenerator.GenerateFilesFromUnifiedConfigWindows(
+			&unified,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
