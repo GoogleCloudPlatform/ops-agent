@@ -28,6 +28,10 @@ func install() error {
 	defer m.Disconnect()
 	handles := make([]*mgr.Service, len(services))
 	for i, s := range services {
+		// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
+		if err := eventlog.InstallAsEventCreate(s.name, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
+			// Ignore error since it likely means the event log already exists.
+		}
 		var deps []string
 		if i > 0 {
 			// All services depend on the config generation service.
@@ -61,10 +65,6 @@ func install() error {
 		}
 		defer serviceHandle.Close()
 		handles[i] = serviceHandle
-	}
-	// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
-	if err := eventlog.InstallAsEventCreate(services[0].name, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
-		// Ignore error since it likely means the event log already exists.
 	}
 	// Automatically start the Ops Agent service.
 	return handles[0].Start()
