@@ -24,7 +24,7 @@ systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 # TODO: Get version number from packaging
 if [ -z "$version" ]; then
-  version=1.0.1
+  version=1.0.2
 fi
 
 set -x -e
