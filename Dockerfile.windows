@@ -5,7 +5,7 @@ ARG WINDOWS_VERSION=ltsc2019
 #
 # Builder Image - Windows Server Core
 #
-FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as builder
+FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 
 #
 # Basic setup
@@ -70,15 +70,26 @@ RUN Start-Process msiexec.exe `
     -ArgumentList '/i C:\local\go1.15.6.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
-###############################################################################
-# Copy agent code to container
-###############################################################################
+#
+# Install Go build tools
+#
 
-COPY . /work
+# Run these in a directory with a go.mod file so that "go get" doesn't need
+# a working Git installation.
+WORKDIR /goget
+RUN go mod init unused; `
+    go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
+    go get github.com/google/addlicense; `
+    go get github.com/pavius/impi/cmd/impi; `
+    go get github.com/google/googet/v2/goopack;
 
 ###############################################################################
 # Build fluent-bit
 ###############################################################################
+
+FROM base as fluentbit
+
+COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
@@ -94,11 +105,11 @@ RUN cmake --build . --config Release; `
 # Build OT collector
 ###############################################################################
 
-WORKDIR /work/submodules/opentelemetry-operations-collector
+FROM base as gobuilder
 
-RUN go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
-    go get github.com/google/addlicense; `
-    go get github.com/pavius/impi/cmd/impi;
+COPY . /work
+
+WORKDIR /work/submodules/opentelemetry-operations-collector
 
 RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
@@ -119,9 +130,14 @@ RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
 # Packaging
 ###############################################################################
 
+FROM base as packaging
+
 WORKDIR /work
 
-RUN go get github.com/google/googet/v2/goopack;
+COPY . /work
+
+COPY --from=fluentbit /work/out /work/out
+COPY --from=gobuilder /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
 
