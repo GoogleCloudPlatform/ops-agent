@@ -66,7 +66,12 @@ func install() error {
 		defer serviceHandle.Close()
 		handles[i] = serviceHandle
 	}
-	// Automatically start the Ops Agent service.
+	// Automatically (re)start the Ops Agent service.
+	for i := len(services) - 1; i >= 0; i-- {
+		if err := stopService(handles[i], 30*time.Second); err != nil {
+			return err
+		}
+	}
 	return handles[0].Start()
 }
 
@@ -101,6 +106,12 @@ func uninstall() error {
 func stopService(serviceHandle *mgr.Service, timeout time.Duration) error {
 	var status svc.Status
 	var err error
+	if status, err = serviceHandle.Query(); err != nil {
+		return err
+	}
+	if status.State == svc.Stopped {
+		return nil
+	}
 	if status, err = serviceHandle.Control(svc.Stop); err != nil {
 		return err
 	}
