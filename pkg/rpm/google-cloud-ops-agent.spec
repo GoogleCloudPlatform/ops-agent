@@ -56,6 +56,6 @@ fi
 %systemd_preun google-cloud-ops-agent.target
 
 %postun
-%systemd_postun google-cloud-ops-agent.target
+%systemd_postun_with_restart google-cloud-ops-agent.target
 
 %changelog
