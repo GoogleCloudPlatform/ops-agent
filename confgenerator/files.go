@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// TODO(b/181127176): Refacator the functions in this file to remove the duplicated logic.
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	data, err := ioutil.ReadFile(input)
 	if err != nil {
@@ -66,7 +67,6 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	return nil
 }
 
-// TODO(davidbtucker): Refacator the functions in this file.  We should have a single unified config (not per-platform).
 func GenerateFilesFromUnifiedConfigWindows(unified *UnifiedConfigWindows, service, logsDir, stateDir, outDir string) error {
 	switch service {
 	case "fluentbit":
