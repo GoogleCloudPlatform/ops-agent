@@ -67,9 +67,13 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				unifiedConfigFilePath = "windows-default-config.yaml"
 			}
 
-			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
+			data, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
-				t.Fatalf("test %q: expect no error, get error %s", testName, err)
+				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
+			}
+			uc, err := ParseUnifiedConfig(data)
+			if err != nil {
+				t.Fatalf("ParseUnifiedConfig got %v", err)
 			}
 
 			isWindows := strings.Contains(d.Name(), "windows")
@@ -78,9 +82,9 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
 			expectedParserConfig := expectedConfig(testName, goldenParserPath, t, isWindows)
 			// Generate the actual conf files.
-			mainConf, parserConf, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir)
 			if err != nil {
-				t.Fatalf("test %q: expect no error, got error running GenerateFluentBitConfigs : %s", testName, err)
+				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(testName, expectedMainConfig, mainConf, goldenMainPath, t)
@@ -88,17 +92,17 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 
 			if isWindows {
 				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
-				otelConf, err := GenerateOtelConfig(unifiedConfig)
+				otelConf, err := uc.GenerateOtelConfig()
 				if err != nil {
-					t.Fatalf("test %q: expect no error, get error running GenerateOtelConfig : %s", testName, err)
+					t.Fatalf("GenerateOtelConfig got %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(testName, expectedOtelConfig, otelConf, goldenOtelPath, t)
 			} else {
 				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
-				collectdConf, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir)
+				collectdConf, err := uc.GenerateCollectdConfig(defaultLogsDir)
 				if err != nil {
-					t.Fatalf("test %q: expect no error, get error running GenerateCollectdConfig : %s", testName, err)
+					t.Fatalf("GenerateCollectdConfig ggot %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
@@ -150,23 +154,27 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
 			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilePathFormat, testName)
-			unifiedConfig, err := ioutil.ReadFile(unifiedConfigFilePath)
+			data, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
-				t.Errorf("test %q: expect no error, get error %s", testName, err)
+				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
+			}
+			uc, err := ParseUnifiedConfig(data)
+			if err != nil {
+				// Unparsable config is a success for this test
 				return
 			}
 			// TODO(lingshi): Figure out some more robust way to distinguish logging and metrics.
 			if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "logging-") {
-				if _, _, err := GenerateFluentBitConfigs(unifiedConfig, defaultLogsDir, defaultStateDir); err == nil {
-					t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
+				if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir); err == nil {
+					t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, data)
 				}
 			} else if strings.Contains(testName, "windows") {
-				if _, err := GenerateOtelConfig(unifiedConfig); err == nil {
-					t.Errorf("test %q: GenerateOtelConfigs succeeded, want error. file:\n%s", testName, unifiedConfig)
+				if _, err := uc.GenerateOtelConfig(); err == nil {
+					t.Errorf("test %q: GenerateOtelConfigs succeeded, want error. file:\n%s", testName, data)
 				}
 			} else if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "metrics-") {
-				if _, err := GenerateCollectdConfig(unifiedConfig, defaultLogsDir); err == nil {
-					t.Errorf("test %q: GenerateCollectdConfig succeeded, want error. file:\n%s", testName, unifiedConfig)
+				if _, err := uc.GenerateCollectdConfig(defaultLogsDir); err == nil {
+					t.Errorf("test %q: GenerateCollectdConfig succeeded, want error. file:\n%s", testName, data)
 				}
 			} else {
 				t.Errorf("test %q: Unsupported test type. Must start with 'logging-' or 'metrics-'.", testName)
