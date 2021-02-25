@@ -102,10 +102,14 @@ RUN cmake --build . --config Release; `
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
-# Build OT collector
+# Build Go code in one container to exploit Go build caching
 ###############################################################################
 
 FROM base as gobuilder
+
+###############################################################################
+# Build OT collector
+###############################################################################
 
 COPY . /work
 
