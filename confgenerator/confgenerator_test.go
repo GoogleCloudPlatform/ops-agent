@@ -87,8 +87,8 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
-			updateOrCompareGolden(testName, expectedMainConfig, mainConf, goldenMainPath, t)
-			updateOrCompareGolden(testName, expectedParserConfig, parserConf, goldenParserPath, t)
+			updateOrCompareGolden(t, testName, expectedMainConfig, mainConf, goldenMainPath)
+			updateOrCompareGolden(t, testName, expectedParserConfig, parserConf, goldenParserPath)
 
 			if isWindows {
 				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
@@ -97,7 +97,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 					t.Fatalf("GenerateOtelConfig got %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(testName, expectedOtelConfig, otelConf, goldenOtelPath, t)
+				updateOrCompareGolden(t, testName, expectedOtelConfig, otelConf, goldenOtelPath)
 			} else {
 				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
 				collectdConf, err := uc.GenerateCollectdConfig(defaultLogsDir)
@@ -105,7 +105,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 					t.Fatalf("GenerateCollectdConfig ggot %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(testName, expectedCollectdConfig, collectdConf, goldenCollectdPath, t)
+				updateOrCompareGolden(t, testName, expectedCollectdConfig, collectdConf, goldenCollectdPath)
 			}
 		})
 	}
@@ -129,17 +129,20 @@ func expectedConfig(testName string, validFilePathFormat string, t *testing.T, i
 	return string(rawExpectedConfig)
 }
 
-func updateOrCompareGolden(testName string, expected string, actual string, path string, t *testing.T) {
-	if diff := cmp.Diff(expected, actual); diff != "" {
+func updateOrCompareGolden(t *testing.T, testName string, expected string, actual string, path string) {
+	t.Helper()
+	expected = strings.ReplaceAll(expected, "\r\n", "\n")
+	actual = strings.ReplaceAll(actual, "\r\n", "\n")
+	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
 			goldenPath := fmt.Sprintf(path, testName)
-			t.Logf("test %q: Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", testName, goldenPath, diff)
+			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
-				t.Fatalf("test %q: error updating golden file at %q : %s", testName, goldenPath, err)
+				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 			}
 		} else {
-			t.Fatalf("test %q: conf mismatch (-want +got):\n%s", testName, diff)
+			t.Fatalf("conf mismatch (-got +want):\n%s", diff)
 		}
 	}
 }
