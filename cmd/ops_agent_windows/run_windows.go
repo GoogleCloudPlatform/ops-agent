@@ -116,7 +116,7 @@ func (s *service) generateConfigs() error {
 	if err != nil {
 		return err
 	}
-	if err := s.checkForStandaloneAgents(uc); err != nil {
+	if err := s.checkForStandaloneAgents(&uc); err != nil {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
@@ -124,8 +124,7 @@ func (s *service) generateConfigs() error {
 		"otel",
 		"fluentbit",
 	} {
-		if err := confgenerator.GenerateFilesFromUnifiedConfig(
-			uc,
+		if err := uc.GenerateFiles(
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),

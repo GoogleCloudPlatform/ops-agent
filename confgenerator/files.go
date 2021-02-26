@@ -16,10 +16,10 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	return GenerateFilesFromUnifiedConfig(uc, service, logsDir, stateDir, outDir)
+	return uc.GenerateFiles(service, logsDir, stateDir, outDir)
 }
 
-func GenerateFilesFromUnifiedConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {
+func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string) error {
 	switch service {
 	case "fluentbit":
 		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)

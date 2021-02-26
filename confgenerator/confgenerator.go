@@ -108,13 +108,13 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	return generateFluentBitConfigs(uc.Logging, logsDir, stateDir)
 }
 
-func ParseUnifiedConfig(input []byte) (*UnifiedConfig, error) {
+func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
-		return nil, err
+		return UnifiedConfig{}, err
 	}
-	return &config, nil
+	return config, nil
 }
 
 func generateOtelConfig(metrics *collectd.Metrics) (string, error) {
