@@ -29,8 +29,8 @@ import (
 )
 
 type UnifiedConfig struct {
-	Logging *logging         `yaml:"logging"`
-	Metrics collectd.Metrics `yaml:"metrics"`
+	Logging *logging          `yaml:"logging"`
+	Metrics *collectd.Metrics `yaml:"metrics"`
 }
 
 type logging struct {
@@ -85,8 +85,16 @@ type loggingPipeline struct {
 	Exporters  []string `yaml:"exporters"`
 }
 
+func (uc *UnifiedConfig) HasLogging() bool {
+	return uc.Logging != nil
+}
+
+func (uc *UnifiedConfig) HasMetrics() bool {
+	return uc.Metrics != nil
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig() (config string, err error) {
-	return generateOtelConfig(&uc.Metrics)
+	return generateOtelConfig(uc.Metrics)
 }
 
 func (uc *UnifiedConfig) GenerateCollectdConfig(logsDir string) (config string, err error) {
@@ -100,13 +108,13 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	return generateFluentBitConfigs(uc.Logging, logsDir, stateDir)
 }
 
-func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
+func ParseUnifiedConfig(input []byte) (*UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
-		return UnifiedConfig{}, err
+		return nil, err
 	}
-	return config, nil
+	return &config, nil
 }
 
 func generateOtelConfig(metrics *collectd.Metrics) (string, error) {
@@ -214,7 +222,7 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
-func GenerateFluentBitConfigsFromUnifiedConfig(logging *Logging, logsDir string, stateDir string) (string, string, error) {
+func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir)
 	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*conf.Syslog{}

@@ -77,7 +77,7 @@ func (s *service) parseFlags(args []string) error {
 	return fs.Parse(allArgs)
 }
 
-func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfigWindows) error {
+func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
 	mgr, err := mgr.Connect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to service manager: %s", err)
@@ -112,11 +112,11 @@ func (s *service) generateConfigs() error {
 	if err != nil {
 		return err
 	}
-	unified, err := confgenerator.UnifiedConfigWindowsReader(data)
+	uc, err := confgenerator.ParseUnifiedConfig(data)
 	if err != nil {
 		return err
 	}
-	if err := s.checkForStandaloneAgents(&unified); err != nil {
+	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
@@ -124,8 +124,8 @@ func (s *service) generateConfigs() error {
 		"otel",
 		"fluentbit",
 	} {
-		if err := confgenerator.GenerateFilesFromUnifiedConfigWindows(
-			&unified,
+		if err := confgenerator.GenerateFilesFromUnifiedConfig(
+			uc,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
