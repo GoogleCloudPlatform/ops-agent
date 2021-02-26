@@ -111,20 +111,20 @@ FROM base as gobuilder
 # Build OT collector
 ###############################################################################
 
-COPY . /work
+COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
 RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
-# TODO: Do something with /work/out/bin/google-cloud-metrics-agent_windows_amd64.exe
-
 ###############################################################################
 # Config generator/service installer
 ###############################################################################
 
 WORKDIR /work
+
+COPY . /work
 
 RUN go build -o bin/google-cloud-ops-agent.exe ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
