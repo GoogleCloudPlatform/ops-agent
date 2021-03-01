@@ -29,8 +29,8 @@ import (
 )
 
 type UnifiedConfig struct {
-	Logging *logging         `yaml:"logging"`
-	Metrics collectd.Metrics `yaml:"metrics"`
+	Logging *logging          `yaml:"logging"`
+	Metrics *collectd.Metrics `yaml:"metrics"`
 }
 
 type logging struct {
@@ -85,8 +85,16 @@ type loggingPipeline struct {
 	Exporters  []string `yaml:"exporters"`
 }
 
+func (uc *UnifiedConfig) HasLogging() bool {
+	return uc.Logging != nil
+}
+
+func (uc *UnifiedConfig) HasMetrics() bool {
+	return uc.Metrics != nil
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig() (config string, err error) {
-	return generateOtelConfig(&uc.Metrics)
+	return generateOtelConfig(uc.Metrics)
 }
 
 func (uc *UnifiedConfig) GenerateCollectdConfig(logsDir string) (config string, err error) {
