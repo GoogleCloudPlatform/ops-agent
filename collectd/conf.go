@@ -144,7 +144,7 @@ LoadPlugin swap
 	"process":    ``,
 }
 
-func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
+func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
 	collectdConf, err := validatedCollectdConfig(metrics)
@@ -168,7 +168,7 @@ func GenerateCollectdConfig(metrics Metrics, logsDir string) (string, error) {
 	return sb.String(), nil
 }
 
-func validatedCollectdConfig(metrics Metrics) (*collectdConf, error) {
+func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	collectdConf := collectdConf{
 		scrapeInternal:    defaultScrapeInterval,
 		enableHostMetrics: false,
