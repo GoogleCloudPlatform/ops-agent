@@ -178,7 +178,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 
 	// Skip validation if metrics config is not set.
 	// In other words receivers, exporters and pipelines are all empty.
-	if len(metrics.Receivers) == 0 && len(metrics.Exporters) == 0 && len(metrics.Service.Pipelines) == 0 {
+	if metrics == nil || (len(metrics.Receivers) == 0 && len(metrics.Exporters) == 0 && len(metrics.Service.Pipelines) == 0) {
 		return &collectdConf, nil
 	}
 
