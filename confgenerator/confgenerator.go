@@ -214,10 +214,7 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	return []*conf.Stackdriver{
 		{
-			Match: "ops-agent-fluent-bit",
-		},
-		{
-			Match: "ops-agent-collectd",
+			Match: "ops-agent-fluent-bit, ops-agent-collectd",
 		},
 	}
 }
@@ -586,6 +583,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 		pipelineIDs = append(pipelineIDs, p)
 	}
 	sort.Strings(pipelineIDs)
+	stackdriverExporters := make(map[string][]string)
 	for _, pipelineID := range pipelineIDs {
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
@@ -610,11 +608,14 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 				fbFilterModifyRemoveLogNames = append(fbFilterModifyRemoveLogNames, &conf.FilterModifyRemoveLogName{
 					Match: rID,
 				})
-				fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-					Match: rID,
-				})
+				stackdriverExporters[exporterID] = append(stackdriverExporters[exporterID], rID)
 			}
 		}
+	}
+	for _, tags := range stackdriverExporters {
+		fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
+			Match: strings.Join(tags, ","),
+		})
 	}
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
 }
