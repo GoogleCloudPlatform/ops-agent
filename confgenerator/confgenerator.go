@@ -214,7 +214,7 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	return []*conf.Stackdriver{
 		{
-			Match: "ops-agent-fluent-bit, ops-agent-collectd",
+			Match: "ops-agent-fluent-bit,ops-agent-collectd",
 		},
 	}
 }
