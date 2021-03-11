@@ -252,8 +252,8 @@ const (
 
 	stackdriverConf = `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name     stackdriver
-    resource gce_instance
+    Name           stackdriver
+    resource       gce_instance
     Match_Regex    ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
