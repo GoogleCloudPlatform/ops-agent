@@ -602,7 +602,7 @@ func TestStackdriver(t *testing.T) {
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name     stackdriver
     resource gce_instance
-    Match    test_match
+    Match_Regex    ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
