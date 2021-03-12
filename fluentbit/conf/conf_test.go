@@ -600,8 +600,8 @@ func TestStackdriver(t *testing.T) {
 	}
 	want := `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name     stackdriver
-    resource gce_instance
+    Name           stackdriver
+    resource       gce_instance
     Match_Regex    ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
