@@ -33,7 +33,7 @@ function build_collectd() {
   cd submodules/collectd
   autoreconf -f -i
   ./configure --prefix=$subagentdir/collectd \
-    --with-useragent="google-cloud-ops-agent-metrics/$version" \
+    --with-useragent="google-cloud-ops-agent-metrics/${PKG_VERSION}" \
     --with-data-max-name-len=256 \
     --disable-all-plugins \
     --disable-static \
