@@ -23,6 +23,8 @@ systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
 systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 
+. VERSION
+
 set -x -e
 
 if [ -z "$DESTDIR" ]; then
