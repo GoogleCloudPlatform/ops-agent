@@ -22,10 +22,8 @@ sysconfdir=/etc
 systemdsystemunitdir=$(pkg-config systemd --variable=systemdsystemunitdir)
 systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
-# TODO: Get version number from packaging
-if [ -z "$version" ]; then
-  version=1.0.4
-fi
+
+. VERSION
 
 set -x -e
 
@@ -37,7 +35,7 @@ function build_collectd() {
   cd submodules/collectd
   autoreconf -f -i
   ./configure --prefix=$subagentdir/collectd \
-    --with-useragent="google-cloud-ops-agent-metrics/$version" \
+    --with-useragent="google-cloud-ops-agent-metrics/${PKG_VERSION}" \
     --with-data-max-name-len=256 \
     --disable-all-plugins \
     --disable-static \
