@@ -47,15 +47,21 @@ var (
 	goldenOtelPath                   = validTestdataDir + "/%s/%s/golden_otel.conf"
 )
 
+var isWindows bool
+
+func init() {
+	hostInfo, _ := host.Info()
+        if hostInfo.OS ==  "windows"{
+		isWindows = true
+	}
+}
+
 func TestGenerateConfsWithValidInput(t *testing.T) {
-	isWindows := false
 	dirPath := validTestdataDir +  "/linux"
 	logsDir := defaultLogsDir
 	stateDir := defaultStateDir
-	hostInfo, _ := host.Info()
-	if hostInfo.OS ==  "windows"{
+	if isWindows {
 		dirPath = validTestdataDir + "/windows"
-		isWindows = true
 		logsDir = windowsDefaultLogsDir
 		stateDir = windowsDefaultStateDir
 	}
@@ -87,8 +93,8 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			}
 
 			// Retrieve the expected golden conf files.
-			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
-			expectedParserConfig := expectedConfig(testName, goldenParserPath, t, isWindows)
+			expectedMainConfig := expectedConfig(testName, goldenMainPath, t)
+			expectedParserConfig := expectedConfig(testName, goldenParserPath, t)
 			// Generate the actual conf files.
 			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
 			if err != nil {
@@ -99,7 +105,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			updateOrCompareGolden(t, testName, expectedParserConfig, parserConf, goldenParserPath)
 
 			if isWindows {
-				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
+				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t)
 				otelConf, err := uc.GenerateOtelConfig()
 				if err != nil {
 					t.Fatalf("GenerateOtelConfig got %v", err)
@@ -107,10 +113,10 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, expectedOtelConfig, otelConf, goldenOtelPath)
 			} else {
-				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
+				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t)
 				collectdConf, err := uc.GenerateCollectdConfig(defaultLogsDir)
 				if err != nil {
-					t.Fatalf("GenerateCollectdConfig ggot %v", err)
+					t.Fatalf("GenerateCollectdConfig got %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, expectedCollectdConfig, collectdConf, goldenCollectdPath)
@@ -119,7 +125,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	}
 }
 
-func expectedConfig(testName string, validFilePathFormat string, t *testing.T, isWindows bool) string {
+func expectedConfig(testName string, validFilePathFormat string, t *testing.T) string {
 	goldenPath := fmt.Sprintf(validFilePathFormat, "linux", testName)
 	var defaultPath string
 	if isWindows {
