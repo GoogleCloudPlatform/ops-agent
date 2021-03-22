@@ -32,7 +32,7 @@ const (
 	defaultLogsDir           = "/var/log/google-cloud-ops-agent/subagents"
 	defaultStateDir          = "/var/lib/google-cloud-ops-agent/fluent-bit"
 	windowsDefaultLogsDir    = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\log"
-	windowsDefaultStateDir   = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run\\buffers"
+	windowsDefaultStateDir   = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run"
 )
 
 var (
