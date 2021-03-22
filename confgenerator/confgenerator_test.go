@@ -31,6 +31,8 @@ const (
 	defaultWindowsGoldenPath = "windows_default_config"
 	defaultLogsDir           = "/var/log/google-cloud-ops-agent/subagents"
 	defaultStateDir          = "/var/lib/google-cloud-ops-agent/fluent-bit"
+	windowsDefaultLogsDir    = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\log"
+	windowsDefaultStateDir   = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run\\buffers"
 )
 
 var (
@@ -48,10 +50,14 @@ var (
 func TestGenerateConfsWithValidInput(t *testing.T) {
 	isWindows := false
 	dirPath := validTestdataDir +  "/linux"
+	logsDir := defaultLogsDir
+	stateDir := defaultStateDir
 	hostInfo, _ := host.Info()
 	if hostInfo.OS ==  "windows"{
 		dirPath = validTestdataDir + "/windows"
 		isWindows = true
+		logsDir = windowsDefaultLogsDir
+		stateDir = windowsDefaultStateDir
 	}
 	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
@@ -84,7 +90,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
 			expectedParserConfig := expectedConfig(testName, goldenParserPath, t, isWindows)
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
