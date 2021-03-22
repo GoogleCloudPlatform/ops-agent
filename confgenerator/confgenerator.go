@@ -502,7 +502,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 			if f, ok := fileReceiverFactories[rID]; ok {
 				fbTail := conf.Tail{
 					Tag:  fmt.Sprintf("%s.%s", pID, rID),
-					DB:   fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					DB:   filepath.Join(stateDir, "buffers", pID+"_"+rID),
 					Path: strings.Join(f.IncludePaths, ","),
 				}
 				if len(f.ExcludePaths) != 0 {
@@ -526,7 +526,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 					Tag:          fmt.Sprintf("%s.%s", pID, rID),
 					Channels:     strings.Join(f.Channels, ","),
 					Interval_Sec: "1",
-					DB:           fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					DB:           filepath.Join(stateDir, "buffers", pID+"_"+rID),
 				}
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
