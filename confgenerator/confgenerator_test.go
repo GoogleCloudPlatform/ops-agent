@@ -151,7 +151,10 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
-			goldenPath := fmt.Sprintf(path, testName)
+			goldenPath := fmt.Sprintf(path, "linux", testName)
+			if isWindows {
+				goldenPath = fmt.Sprintf(path, "windows", testName)
+			}
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
