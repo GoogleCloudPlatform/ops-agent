@@ -209,7 +209,6 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 		}
 	tails = append(tails, &tailFluentbit)
 	hostInfo, _ := host.Info()
-	print(hostInfo.OS)
         if hostInfo.OS != "windows" {
 		tails = append(tails, &tailCollectd)
 	}
