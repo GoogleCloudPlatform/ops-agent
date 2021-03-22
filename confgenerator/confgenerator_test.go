@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
-
+	"github.com/shirou/gopsutil/host"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -39,16 +39,20 @@ var (
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
 	updateGolden                     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	validUnifiedConfigFilePathFormat = validTestdataDir + "/%s/input.yaml"
-	goldenMainPath                   = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
-	goldenParserPath                 = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
-	goldenCollectdPath               = validTestdataDir + "/%s/golden_collectd.conf"
-	goldenOtelPath                   = validTestdataDir + "/%s/golden_otel.conf"
-	invalidTestdataFilePathFormat    = invalidTestdataDir + "/%s"
+	goldenMainPath                   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
+	goldenParserPath                 = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
+	goldenCollectdPath               = validTestdataDir + "/%s/%s/golden_collectd.conf"
+	goldenOtelPath                   = validTestdataDir + "/%s/%s/golden_otel.conf"
 )
 
 func TestGenerateConfsWithValidInput(t *testing.T) {
-	dirPath := validTestdataDir
+	isWindows := false
+	dirPath := validTestdataDir +  "/linux"
+	hostInfo, _ := host.Info()
+	if hostInfo.OS ==  "windows"{
+		dirPath = validTestdataDir + "/windows"
+		isWindows = true
+	}
 	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +61,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	for _, d := range dirs {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(validUnifiedConfigFilePathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(dirPath + "/%s/input.yaml", testName)
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
@@ -75,8 +79,6 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ParseUnifiedConfig got %v", err)
 			}
-
-			isWindows := strings.Contains(d.Name(), "windows")
 
 			// Retrieve the expected golden conf files.
 			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
@@ -112,12 +114,13 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 }
 
 func expectedConfig(testName string, validFilePathFormat string, t *testing.T, isWindows bool) string {
-	goldenPath := fmt.Sprintf(validFilePathFormat, testName)
+	goldenPath := fmt.Sprintf(validFilePathFormat, "linux", testName)
 	var defaultPath string
 	if isWindows {
-		defaultPath = fmt.Sprintf(validFilePathFormat, defaultWindowsGoldenPath)
+		defaultPath = fmt.Sprintf(validFilePathFormat, "windows", defaultWindowsGoldenPath)
+		goldenPath = fmt.Sprintf(validFilePathFormat, "windows", testName)
 	} else {
-		defaultPath = fmt.Sprintf(validFilePathFormat, defaultGoldenPath)
+		defaultPath = fmt.Sprintf(validFilePathFormat, "linux", defaultGoldenPath)
 	}
 	rawExpectedConfig, err := ioutil.ReadFile(goldenPath)
 	if err != nil {
@@ -148,7 +151,11 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
-	filePath := invalidTestdataDir
+	filePath := invalidTestdataDir +  "/linux"
+	hostInfo, _ := host.Info()
+	if hostInfo.OS ==  "windows"{
+		filePath = invalidTestdataDir + "/windows"
+	}
 	files, err := ioutil.ReadDir(filePath)
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +163,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	for _, f := range files {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilePathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(filePath + "/%s", testName)
 			data, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
