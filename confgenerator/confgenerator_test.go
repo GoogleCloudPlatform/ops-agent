@@ -167,8 +167,7 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	filePath := invalidTestdataDir +  "/linux"
-	hostInfo, _ := host.Info()
-	if hostInfo.OS ==  "windows"{
+	if isWindows {
 		filePath = invalidTestdataDir + "/windows"
 	}
 	files, err := ioutil.ReadDir(filePath)
