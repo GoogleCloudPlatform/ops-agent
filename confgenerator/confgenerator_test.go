@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
-
+	"github.com/shirou/gopsutil/host"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -31,6 +31,8 @@ const (
 	defaultWindowsGoldenPath = "windows_default_config"
 	defaultLogsDir           = "/var/log/google-cloud-ops-agent/subagents"
 	defaultStateDir          = "/var/lib/google-cloud-ops-agent/fluent-bit"
+	windowsDefaultLogsDir    = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\log"
+	windowsDefaultStateDir   = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run"
 )
 
 var (
@@ -39,16 +41,30 @@ var (
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
 	updateGolden                     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	validUnifiedConfigFilePathFormat = validTestdataDir + "/%s/input.yaml"
-	goldenMainPath                   = validTestdataDir + "/%s/golden_fluent_bit_main.conf"
-	goldenParserPath                 = validTestdataDir + "/%s/golden_fluent_bit_parser.conf"
-	goldenCollectdPath               = validTestdataDir + "/%s/golden_collectd.conf"
-	goldenOtelPath                   = validTestdataDir + "/%s/golden_otel.conf"
-	invalidTestdataFilePathFormat    = invalidTestdataDir + "/%s"
+	goldenMainPath                   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
+	goldenParserPath                 = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
+	goldenCollectdPath               = validTestdataDir + "/%s/%s/golden_collectd.conf"
+	goldenOtelPath                   = validTestdataDir + "/%s/%s/golden_otel.conf"
 )
 
+var isWindows bool
+
+func init() {
+	hostInfo, _ := host.Info()
+        if hostInfo.OS ==  "windows"{
+		isWindows = true
+	}
+}
+
 func TestGenerateConfsWithValidInput(t *testing.T) {
-	dirPath := validTestdataDir
+	dirPath := validTestdataDir +  "/linux"
+	logsDir := defaultLogsDir
+	stateDir := defaultStateDir
+	if isWindows {
+		dirPath = validTestdataDir + "/windows"
+		logsDir = windowsDefaultLogsDir
+		stateDir = windowsDefaultStateDir
+	}
 	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +73,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	for _, d := range dirs {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(validUnifiedConfigFilePathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(dirPath + "/%s/input.yaml", testName)
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
@@ -76,13 +92,11 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				t.Fatalf("ParseUnifiedConfig got %v", err)
 			}
 
-			isWindows := strings.Contains(d.Name(), "windows")
-
 			// Retrieve the expected golden conf files.
-			expectedMainConfig := expectedConfig(testName, goldenMainPath, t, isWindows)
-			expectedParserConfig := expectedConfig(testName, goldenParserPath, t, isWindows)
+			expectedMainConfig := expectedConfig(testName, goldenMainPath, t)
+			expectedParserConfig := expectedConfig(testName, goldenParserPath, t)
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
@@ -91,7 +105,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			updateOrCompareGolden(t, testName, expectedParserConfig, parserConf, goldenParserPath)
 
 			if isWindows {
-				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t, true)
+				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t)
 				otelConf, err := uc.GenerateOtelConfig()
 				if err != nil {
 					t.Fatalf("GenerateOtelConfig got %v", err)
@@ -99,10 +113,10 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, expectedOtelConfig, otelConf, goldenOtelPath)
 			} else {
-				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t, false)
+				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t)
 				collectdConf, err := uc.GenerateCollectdConfig(defaultLogsDir)
 				if err != nil {
-					t.Fatalf("GenerateCollectdConfig ggot %v", err)
+					t.Fatalf("GenerateCollectdConfig got %v", err)
 				}
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, expectedCollectdConfig, collectdConf, goldenCollectdPath)
@@ -111,13 +125,14 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	}
 }
 
-func expectedConfig(testName string, validFilePathFormat string, t *testing.T, isWindows bool) string {
-	goldenPath := fmt.Sprintf(validFilePathFormat, testName)
+func expectedConfig(testName string, validFilePathFormat string, t *testing.T) string {
+	goldenPath := fmt.Sprintf(validFilePathFormat, "linux", testName)
 	var defaultPath string
 	if isWindows {
-		defaultPath = fmt.Sprintf(validFilePathFormat, defaultWindowsGoldenPath)
+		defaultPath = fmt.Sprintf(validFilePathFormat, "windows", defaultWindowsGoldenPath)
+		goldenPath = fmt.Sprintf(validFilePathFormat, "windows", testName)
 	} else {
-		defaultPath = fmt.Sprintf(validFilePathFormat, defaultGoldenPath)
+		defaultPath = fmt.Sprintf(validFilePathFormat, "linux", defaultGoldenPath)
 	}
 	rawExpectedConfig, err := ioutil.ReadFile(goldenPath)
 	if err != nil {
@@ -136,7 +151,10 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
-			goldenPath := fmt.Sprintf(path, testName)
+			goldenPath := fmt.Sprintf(path, "linux", testName)
+			if isWindows {
+				goldenPath = fmt.Sprintf(path, "windows", testName)
+			}
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
@@ -148,7 +166,10 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
-	filePath := invalidTestdataDir
+	filePath := invalidTestdataDir +  "/linux"
+	if isWindows {
+		filePath = invalidTestdataDir + "/windows"
+	}
 	files, err := ioutil.ReadDir(filePath)
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +177,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	for _, f := range files {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(invalidTestdataFilePathFormat, testName)
+			unifiedConfigFilePath := fmt.Sprintf(filePath + "/%s", testName)
 			data, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
