@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
+	"github.com/shirou/gopsutil/host"
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
@@ -196,18 +196,23 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 
 // defaultTails returns the default Tail sections for the agents' own logs.
 func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
-	return []*conf.Tail{
-		{
+	tails = []*conf.Tail{}
+	tailFluentbit := conf.Tail{
 			Tag:  "ops-agent-fluent-bit",
 			DB:   filepath.Join(stateDir, "buffers", "ops-agent-fluent-bit"),
 			Path: filepath.Join(logsDir, "logging-module.log"),
-		},
-		{
+		}
+	tailCollectd := conf.Tail{
 			Tag:  "ops-agent-collectd",
 			DB:   filepath.Join(stateDir, "buffers", "ops-agent-collectd"),
 			Path: filepath.Join(logsDir, "metrics-module.log"),
-		},
+		}
+	tails = append(tails, &tailFluentbit)
+	hostInfo, _ := host.Info()
+        if hostInfo.OS != "windows" {
+		tails = append(tails, &tailCollectd)
 	}
+	return tails
 }
 
 // defaultStackdriverOutputs returns the default Stackdriver sections for the agents' own logs.
@@ -496,7 +501,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 			if f, ok := fileReceiverFactories[rID]; ok {
 				fbTail := conf.Tail{
 					Tag:  fmt.Sprintf("%s.%s", pID, rID),
-					DB:   fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					DB:   filepath.Join(stateDir, "buffers", pID+"_"+rID),
 					Path: strings.Join(f.IncludePaths, ","),
 				}
 				if len(f.ExcludePaths) != 0 {
@@ -520,7 +525,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 					Tag:          fmt.Sprintf("%s.%s", pID, rID),
 					Channels:     strings.Join(f.Channels, ","),
 					Interval_Sec: "1",
-					DB:           fmt.Sprintf("%s/buffers/%s_%s", stateDir, pID, rID),
+					DB:           filepath.Join(stateDir, "buffers", pID+"_"+rID),
 				}
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
