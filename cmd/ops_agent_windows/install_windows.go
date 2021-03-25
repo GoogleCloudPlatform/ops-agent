@@ -32,10 +32,10 @@ func install() error {
 		if err := eventlog.InstallAsEventCreate(s.name, eventlog.Error|eventlog.Warning|eventlog.Info); err != nil {
 			// Ignore error since it likely means the event log already exists.
 		}
-		var deps []string
+		deps := []string{"rpcss"}
 		if i > 0 {
 			// All services depend on the config generation service.
-			deps = []string{services[0].name}
+			deps = append(deps, services[0].name)
 		}
 		serviceHandle, err := m.OpenService(s.name)
 		if err == nil {
@@ -48,22 +48,32 @@ func install() error {
 			config.DisplayName = s.displayName
 			config.BinaryPathName = escapeExe(s.exepath, s.args)
 			config.Dependencies = deps
+			config.DelayedAutoStart = true
 			if err := serviceHandle.UpdateConfig(config); err != nil {
 				return err
 			}
-			handles[i] = serviceHandle
-			continue
+		} else {
+			serviceHandle, err = m.CreateService(
+				s.name,
+				s.exepath,
+				mgr.Config{
+					DisplayName:      s.displayName,
+					StartType:        mgr.StartAutomatic,
+					Dependencies:     deps,
+					DelayedAutoStart: true,
+				},
+				s.args...,
+			)
+			if err != nil {
+				return err
+			}
+			defer serviceHandle.Close()
 		}
-		serviceHandle, err = m.CreateService(
-			s.name,
-			s.exepath,
-			mgr.Config{DisplayName: s.displayName, StartType: mgr.StartAutomatic, Dependencies: deps},
-			s.args...,
-		)
-		if err != nil {
-			return err
-		}
-		defer serviceHandle.Close()
+		// restart after 1s then 2s, reset error counter after 60s
+		serviceHandle.SetRecoveryActions([]mgr.RecoveryAction{
+			{Type: mgr.ServiceRestart, Delay: time.Second},
+			{Type: mgr.ServiceRestart, Delay: 2 * time.Second},
+		}, 60)
 		handles[i] = serviceHandle
 	}
 	// Automatically (re)start the Ops Agent service.
