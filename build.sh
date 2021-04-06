@@ -80,7 +80,7 @@ function build_fluentbit() {
 
 function build_opsagent() {
   mkdir -p "$DESTDIR$prefix/libexec"
-  go build -o "$DESTDIR$prefix/libexec/generate_config" github.com/GoogleCloudPlatform/ops-agent/cmd/generate_config
+  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
 }
 
 function build_systemd() {
