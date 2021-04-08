@@ -18,6 +18,7 @@ package conf
 import (
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -353,6 +354,17 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 		}
 		stackdriverConfigSections = append(stackdriverConfigSections, configSection)
 	}
+
+	// make sure all collections are sorted so that generated configs are consistently generated
+	sort.Strings(tailConfigSections)
+	sort.Strings(syslogConfigSections)
+	sort.Strings(wineventlogConfigSections)
+	sort.Strings(filterParserConfigSections)
+	sort.Strings(filterModifyAddLogNameConfigSections)
+	sort.Strings(filterRewriteTagSections)
+	sort.Strings(filterModifyRemoveLogNameConfigSections)
+	sort.Strings(stackdriverConfigSections)
+
 	configSections := mainConfigSections{
 		TailConfigSections:                      tailConfigSections,
 		SyslogConfigSections:                    syslogConfigSections,
