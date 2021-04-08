@@ -20,8 +20,9 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
-	"github.com/shirou/gopsutil/host"
+
 	"github.com/google/go-cmp/cmp"
+	"github.com/shirou/gopsutil/host"
 )
 
 const (
@@ -40,24 +41,24 @@ var (
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
-	updateGolden                     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	goldenMainPath                   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
-	goldenParserPath                 = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
-	goldenCollectdPath               = validTestdataDir + "/%s/%s/golden_collectd.conf"
-	goldenOtelPath                   = validTestdataDir + "/%s/%s/golden_otel.conf"
+	updateGolden       = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+	goldenMainPath     = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
+	goldenParserPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
+	goldenCollectdPath = validTestdataDir + "/%s/%s/golden_collectd.conf"
+	goldenOtelPath     = validTestdataDir + "/%s/%s/golden_otel.conf"
 )
 
 var isWindows bool
 
 func init() {
 	hostInfo, _ := host.Info()
-        if hostInfo.OS ==  "windows"{
+	if hostInfo.OS == "windows" {
 		isWindows = true
 	}
 }
 
 func TestGenerateConfsWithValidInput(t *testing.T) {
-	dirPath := validTestdataDir +  "/linux"
+	dirPath := validTestdataDir + "/linux"
 	logsDir := defaultLogsDir
 	stateDir := defaultStateDir
 	if isWindows {
@@ -73,7 +74,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	for _, d := range dirs {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(dirPath + "/%s/input.yaml", testName)
+			unifiedConfigFilePath := fmt.Sprintf(dirPath+"/%s/input.yaml", testName)
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
@@ -166,7 +167,7 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
-	filePath := invalidTestdataDir +  "/linux"
+	filePath := invalidTestdataDir + "/linux"
 	if isWindows {
 		filePath = invalidTestdataDir + "/windows"
 	}
@@ -177,7 +178,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	for _, f := range files {
 		testName := f.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(filePath + "/%s", testName)
+			unifiedConfigFilePath := fmt.Sprintf(filePath+"/%s", testName)
 			data, err := ioutil.ReadFile(unifiedConfigFilePath)
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
