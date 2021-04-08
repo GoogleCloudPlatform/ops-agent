@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"github.com/shirou/gopsutil/host"
+
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
+	"github.com/shirou/gopsutil/host"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -198,18 +199,18 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 	tails = []*conf.Tail{}
 	tailFluentbit := conf.Tail{
-			Tag:  "ops-agent-fluent-bit",
-			DB:   filepath.Join(stateDir, "buffers", "ops-agent-fluent-bit"),
-			Path: filepath.Join(logsDir, "logging-module.log"),
-		}
+		Tag:  "ops-agent-fluent-bit",
+		DB:   filepath.Join(stateDir, "buffers", "ops-agent-fluent-bit"),
+		Path: filepath.Join(logsDir, "logging-module.log"),
+	}
 	tailCollectd := conf.Tail{
-			Tag:  "ops-agent-collectd",
-			DB:   filepath.Join(stateDir, "buffers", "ops-agent-collectd"),
-			Path: filepath.Join(logsDir, "metrics-module.log"),
-		}
+		Tag:  "ops-agent-collectd",
+		DB:   filepath.Join(stateDir, "buffers", "ops-agent-collectd"),
+		Path: filepath.Join(logsDir, "metrics-module.log"),
+	}
 	tails = append(tails, &tailFluentbit)
 	hostInfo, _ := host.Info()
-        if hostInfo.OS != "windows" {
+	if hostInfo.OS != "windows" {
 		tails = append(tails, &tailCollectd)
 	}
 	return tails
