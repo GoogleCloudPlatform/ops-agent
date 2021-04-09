@@ -131,9 +131,14 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
-&& zypper update \
-# Pin Golang version to 1.14 to bypass b/182517088#comment14. The long-term solution is tracked by b/184743026.
-&& zypper -n install bison>3.4 go1.14 \
+&& zypper -n update \
+# Temporary workaround for https://bugzilla.opensuse.org/show_bug.cgi?id=1127849
+# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
+# Installing "go" currently produces one such solution.
+# By downloading go separately, the RPM will be cached and not downloaded again by the install, thereby permuting the sequence enough to (curently) avoid the segfault.
+# This can happen again in the future if any other changes happen to the packages in the solution.
+&& zypper -n download go \
+&& zypper -n install bison>3.4 go \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
 
