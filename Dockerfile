@@ -19,7 +19,7 @@ FROM debian:buster AS buster
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
-RUN apt-get update && \
+RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
@@ -33,7 +33,7 @@ FROM debian:stretch AS stretch
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
-RUN echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list && \
+RUN set -x; echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t stretch-backports install golang && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -47,7 +47,7 @@ RUN ./pkg/deb/build.sh
 
 FROM ubuntu:focal AS focal
 
-RUN apt-get update && \
+RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
@@ -59,7 +59,7 @@ RUN ./pkg/deb/build.sh
 
 FROM ubuntu:bionic AS bionic
 
-RUN apt-get update && \
+RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
     add-apt-repository ppa:longsleep/golang-backports && \
     apt-get update && \
@@ -74,7 +74,7 @@ RUN ./pkg/deb/build.sh
 
 FROM ubuntu:xenial AS xenial
 
-RUN apt-get update && \
+RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
     add-apt-repository ppa:gophers/archive && \
     apt-get update && \
@@ -95,7 +95,7 @@ RUN echo DEBUILD_PREPEND_PATH=/usr/lib/go-1.11/bin >> /etc/devscripts.conf && \
 
 FROM centos:7 AS centos7
 
-RUN yum -y update && \
+RUN set -x; yum -y update && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
     gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
@@ -110,7 +110,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM centos:8 AS centos8
 
-RUN yum -y update && \
+RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
     yum config-manager --set-enabled powertools && \
     yum -y install golang git systemd \
@@ -126,7 +126,7 @@ RUN ./pkg/rpm/build.sh
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/leap:42.3 as sles12
 
-RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
 # Add home:Ledest:devel repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
@@ -148,7 +148,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 as sles15
 
-RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
 # Add home:ptrommler:formal repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_15.1/devel:languages:go.repo \
