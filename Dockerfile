@@ -131,7 +131,7 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
-&& zypper upgrade \
+&& zypper update \
 && zypper -n install bison>3.4 go \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
@@ -147,7 +147,7 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 && zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_15.1/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
-&& zypper upgrade \
+&& zypper update \
 && zypper -n install bison>3.4 go \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
