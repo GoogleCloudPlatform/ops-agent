@@ -132,7 +132,8 @@ RUN zypper -n install git systemd autoconf automake flex libtool libcurl-devel l
 && zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
 && zypper update \
-&& zypper -n install bison>3.4 go \
+# Pin Golang version to 1.14 to bypass b/182517088#comment14. The long-term solution is tracked by b/184743026.
+&& zypper -n install bison>3.4 go1.14 \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
 
