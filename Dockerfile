@@ -20,10 +20,14 @@ FROM debian:buster AS buster
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -33,13 +37,16 @@ FROM debian:stretch AS stretch
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
-RUN set -x; echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list && \
+RUN set -x; \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t stretch-backports install golang && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -48,10 +55,14 @@ RUN ./pkg/deb/build.sh
 FROM ubuntu:focal AS focal
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install golang git systemd \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -60,13 +71,14 @@ RUN ./pkg/deb/build.sh
 FROM ubuntu:bionic AS bionic
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
-    add-apt-repository ppa:longsleep/golang-backports && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install golang-go git systemd \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -75,23 +87,20 @@ RUN ./pkg/deb/build.sh
 FROM ubuntu:xenial AS xenial
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
-    add-apt-repository ppa:gophers/archive && \
-    apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install golang-1.11-go git systemd \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 
-# golang-1.11-go installs Go in a separate directory, so it needs to
-# be added to the PATH for build.sh to find it. But debuild cleans PATH,
-# so we need to tell it to re-add it after cleaning PATH.
-RUN echo DEBUILD_PREPEND_PATH=/usr/lib/go-1.11/bin >> /etc/devscripts.conf && \
-    ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 FROM centos:7 AS centos7
 
@@ -101,8 +110,12 @@ RUN set -x; yum -y update && \
     gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
     expect rpm-sign && \
     yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum install -y cmake3 golang && \
+    yum install -y cmake3 && \
     ln -fs cmake3 /usr/bin/cmake
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -113,11 +126,14 @@ FROM centos:8 AS centos8
 RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
     yum config-manager --set-enabled powertools && \
-    yum -y install golang git systemd \
+    yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
     expect rpm-sign
 
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -129,18 +145,17 @@ FROM opensuse/leap:42.3 as sles12
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
 # Add home:Ledest:devel repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
-&& zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_42.3/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
 && zypper -n update \
-# Temporary workaround for https://bugzilla.opensuse.org/show_bug.cgi?id=1127849
 # zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
-# Installing "go" currently produces one such solution.
-# By downloading go separately, the RPM will be cached and not downloaded again by the install, thereby permuting the sequence enough to (curently) avoid the segfault.
-# This can happen again in the future if any other changes happen to the packages in the solution.
-&& zypper -n download go \
-&& zypper -n install bison>3.4 go \
+# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
+&& zypper -n install bison>3.4 \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -151,12 +166,15 @@ FROM opensuse/leap:15.1 as sles15
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros \
 # Add home:ptrommler:formal repo to install >3.4 bison
 && zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
-&& zypper addrepo https://download.opensuse.org/repositories/devel:languages:go/openSUSE_Leap_15.1/devel:languages:go.repo \
 && zypper -n --gpg-auto-import-keys refresh \
 && zypper -n update \
-&& zypper -n install bison>3.4 go \
+&& zypper -n install bison>3.4 \
 # Allow fluent-bit to find systemd
 && ln -fs /usr/lib/systemd /lib/systemd
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work

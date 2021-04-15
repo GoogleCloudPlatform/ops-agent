@@ -27,43 +27,16 @@ subagentdir=$prefix/subagents
 
 set -x -e
 
+export PATH=/usr/local/go/bin:$PATH
+
 if [ -z "$DESTDIR" ]; then
   DESTDIR=$(mktemp -d)
 fi
 
-function build_collectd() {
-  cd submodules/collectd
-  autoreconf -f -i
-  ./configure --prefix=$subagentdir/collectd \
-    --with-useragent="google-cloud-ops-agent-metrics/${PKG_VERSION}" \
-    --with-data-max-name-len=256 \
-    --disable-all-plugins \
-    --disable-static \
-    --enable-cpu \
-    --enable-df \
-    --enable-disk \
-    --enable-load \
-    --enable-logfile \
-    --enable-memory \
-    --enable-swap \
-    --enable-syslog \
-    --enable-interface \
-    --enable-tcpconns \
-    --enable-aggregation \
-    --enable-protocols \
-    --enable-plugin_mem \
-    --enable-processes \
-    --enable-stackdriver_agent \
-    --enable-network \
-    --enable-match_regex --enable-target_set \
-    --enable-target_replace --enable-target_scale \
-    --enable-match_throttle_metadata_keys \
-    --enable-write_log \
-    --enable-unixsock \
-    --enable-write_gcm \
-    --enable-debug
-  make -j8
-  make DESTDIR="$DESTDIR" install
+function build_otel() {
+  cd submodules/opentelemetry-operations-collector
+  mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector"
+  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" ./cmd/otelopscol
 }
 
 function build_fluentbit() {
@@ -106,7 +79,7 @@ function build_systemd() {
   done
 }
 
-(build_collectd)
+(build_otel)
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)
