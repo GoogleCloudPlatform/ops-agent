@@ -150,9 +150,7 @@ func (s *service) startSubagents() error {
 		}
 		defer handle.Close()
 		if err := handle.Start(); err != nil {
-			err = fmt.Errorf("failed to start %q: %v", svc.name, err)
-			s.log.Error(1, err.Error())
-			return err
+			return fmt.Errorf("failed to start %q: %v", svc.name, err)
 		}
 	}
 	return nil
