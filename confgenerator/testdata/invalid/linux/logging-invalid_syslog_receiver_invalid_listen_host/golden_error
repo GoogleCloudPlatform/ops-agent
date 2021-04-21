@@ -1,0 +1,1 @@
+pipeline "test_pipeline" cannot have an exporter "test_google_cloud_logging" which is not "google_cloud_logging" type

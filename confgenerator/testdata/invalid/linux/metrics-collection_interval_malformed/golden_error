@@ -1,0 +1,1 @@
+receiver hostmetrics_receiver has invalid collection interval "24": time: missing unit in duration "24"

@@ -44,6 +44,8 @@ var (
 	goldenParserPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
 	goldenCollectdPath = validTestdataDir + "/%s/%s/golden_collectd.conf"
 	goldenOtelPath     = validTestdataDir + "/%s/%s/golden_otel.conf"
+	goldenErrorPath    = invalidTestdataDir + "/%s/%s/golden_error"
+	invalidInputPath   = invalidTestdataDir + "/%s/%s/input.yaml"
 )
 
 var platform string
@@ -93,8 +95,8 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			}
 
 			// Retrieve the expected golden conf files.
-			expectedMainConfig := expectedConfig(testName, goldenMainPath, t)
-			expectedParserConfig := expectedConfig(testName, goldenParserPath, t)
+			expectedMainConfig := readFileContent(testName, goldenMainPath, t, true)
+			expectedParserConfig := readFileContent(testName, goldenParserPath, t, true)
 			// Generate the actual conf files.
 			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
 			if err != nil {
@@ -105,7 +107,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			updateOrCompareGolden(t, testName, expectedParserConfig, parserConf, goldenParserPath)
 
 			if platform == "windows" {
-				expectedOtelConfig := expectedConfig(testName, goldenOtelPath, t)
+				expectedOtelConfig := readFileContent(testName, goldenOtelPath, t, true)
 				otelConf, err := uc.GenerateOtelConfig()
 				if err != nil {
 					t.Fatalf("GenerateOtelConfig got %v", err)
@@ -113,7 +115,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, expectedOtelConfig, otelConf, goldenOtelPath)
 			} else {
-				expectedCollectdConfig := expectedConfig(testName, goldenCollectdPath, t)
+				expectedCollectdConfig := readFileContent(testName, goldenCollectdPath, t, true)
 				collectdConf, err := uc.GenerateCollectdConfig(defaultLogsDir)
 				if err != nil {
 					t.Fatalf("GenerateCollectdConfig got %v", err)
@@ -125,24 +127,24 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	}
 }
 
-func expectedConfig(testName string, validFilePathFormat string, t *testing.T) string {
-	goldenPath := fmt.Sprintf(validFilePathFormat, platform, testName)
-	rawExpectedConfig, err := ioutil.ReadFile(goldenPath)
+func readFileContent(testName string, filePathFormat string, t *testing.T, respectGolden bool) []byte {
+	filePath := fmt.Sprintf(filePathFormat, platform, testName)
+	rawExpectedConfig, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		if *updateGolden {
+		if *updateGolden && respectGolden {
 			// Tolerate the file not found error because we will overwrite it later anyway.
-			return ""
+			return []byte("")
 		} else {
-			t.Fatalf("test %q: error reading the golden conf from %s : %s", testName, goldenPath, err)
+			t.Fatalf("test %q: error reading the file from %s : %s", testName, filePath, err)
 		}
 	}
-	return string(rawExpectedConfig)
+	return rawExpectedConfig
 }
 
-func updateOrCompareGolden(t *testing.T, testName string, expected string, actual string, path string) {
+func updateOrCompareGolden(t *testing.T, testName string, expectedBytes []byte, actual string, path string) {
 	t.Helper()
-	expected = strings.ReplaceAll(expected, "\r\n", "\n")
-	actual = strings.ReplaceAll(actual, "\r\n", "\n")
+	expected := strings.TrimSuffix(strings.TrimSuffix(strings.ReplaceAll(string(expectedBytes), "\r\n", "\n"), "\n"), "\r")
+	actual = strings.TrimSuffix(strings.TrimSuffix(strings.ReplaceAll(actual, "\r\n", "\n"), "\n"), "\r")
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
@@ -152,32 +154,32 @@ func updateOrCompareGolden(t *testing.T, testName string, expected string, actua
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 			}
 		} else {
-			t.Fatalf("conf mismatch (-got +want):\n%s", diff)
+			t.Fatalf("test %q: golden file at %s mismatch (-got +want):\n%s", testName, path, diff)
 		}
 	}
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
-	filePath := invalidTestdataDir + "/" + platform
-	files, err := ioutil.ReadDir(filePath)
+	dirPath := invalidTestdataDir + "/" + platform
+	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range files {
-		testName := f.Name()
+	for _, d := range dirs {
+		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
-			unifiedConfigFilePath := fmt.Sprintf(filePath+"/%s", testName)
-			data, err := ioutil.ReadFile(unifiedConfigFilePath)
-			if err != nil {
-				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
-			}
-			uc, err := ParseUnifiedConfig(data)
-			if err != nil {
-				// Unparsable config is a success for this test
-				return
-			}
-			if err := generateConfigs(uc, defaultLogsDir, defaultStateDir); err == nil {
-				t.Errorf("test %q: generateConfigs succeeded, want error. input yaml:\n%s", testName, data)
+			invalidInput := readFileContent(testName, invalidInputPath, t, false)
+			expectedError := readFileContent(testName, goldenErrorPath, t, true)
+			// The expected error could be triggered by:
+			// 1. Parsing phase of the agent config when the config is not YAML.
+			// 2. Config generation phase when the config is invalid.
+			if uc, actualError := ParseUnifiedConfig(invalidInput); actualError == nil {
+				actualError = generateConfigs(uc, defaultLogsDir, defaultStateDir)
+				if actualError == nil {
+					t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
+				} else {
+					updateOrCompareGolden(t, testName, expectedError, actualError.Error(), goldenErrorPath)
+				}
 			}
 		})
 	}

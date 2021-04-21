@@ -1,0 +1,1 @@
+pipeline "default_pipeline" cannot have an exporter "google" which is not "google_cloud_logging" type
