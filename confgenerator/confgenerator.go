@@ -576,7 +576,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 						Prefix:        "agent.googleapis.com/",
 					}
 					stackdriverList = append(stackdriverList, &stackdriver)
-					exportNameMap[eID] = "stackdriver/" + eID
+					exportNameMap[eID] = "googlecloud/" + eID
 				}
 			default:
 				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)

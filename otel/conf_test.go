@@ -164,7 +164,7 @@ func TestStackdriver(t *testing.T) {
 				UserAgent:     "$USERAGENT",
 				Prefix:        "agent.googleapis.com/",
 			},
-			expectedStackdriverConfig: `stackdriver/agent:
+			expectedStackdriverConfig: `googlecloud/agent:
     user_agent: $USERAGENT
     metric:
       prefix: agent.googleapis.com/`,
@@ -192,12 +192,12 @@ func TestService(t *testing.T) {
 				ID:         "system",
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
 				Receivers:  "[hostmetrics/hostmetrics]",
-				Exporters:  "[stackdriver/google]",
+				Exporters:  "[googlecloud/google]",
 			},
 			expectedServiceConfig: `metrics/system:
       receivers:  [hostmetrics/hostmetrics]
       processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
-      exporters: [stackdriver/google]`,
+      exporters: [googlecloud/google]`,
 		},
 	}
 	for _, tc := range tests {
@@ -245,18 +245,18 @@ func TestGenerateOtelConfig(t *testing.T) {
 				ID:         "system",
 				Receivers:  "[hostmetrics/hostmetrics]",
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Exporters:  "[stackdriver/google]",
+				Exporters:  "[googlecloud/google]",
 			},
 				{
 					ID:         "mssql",
 					Receivers:  "[windowsperfcounters/mssql_mssql]",
 					Processors: "[metricstransform/mssql,resourcedetection]",
-					Exporters:  "[stackdriver/google]",
+					Exporters:  "[googlecloud/google]",
 				},
 				{ID: "iis",
 					Receivers:  "[windowsperfcounters/iis_iis]",
 					Processors: "[metricstransform/iis,resourcedetection]",
-					Exporters:  "[stackdriver/google]",
+					Exporters:  "[googlecloud/google]",
 				},
 			},
 			want: `receivers:
@@ -681,11 +681,11 @@ processors:
           - action: toggle_scalar_data_type
   
 exporters:
-  stackdriver/google:
+  googlecloud/google:
     user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
-  stackdriver/agent:
+  googlecloud/agent:
     user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
@@ -703,19 +703,19 @@ service:
         - metricstransform/agent
         - resourcedetection
       exporters:
-        - stackdriver/agent
+        - googlecloud/agent
     metrics/system:
       receivers:  [hostmetrics/hostmetrics]
       processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
-      exporters: [stackdriver/google]
+      exporters: [googlecloud/google]
     metrics/mssql:
       receivers:  [windowsperfcounters/mssql_mssql]
       processors: [metricstransform/mssql,resourcedetection]
-      exporters: [stackdriver/google]
+      exporters: [googlecloud/google]
     metrics/iis:
       receivers:  [windowsperfcounters/iis_iis]
       processors: [metricstransform/iis,resourcedetection]
-      exporters: [stackdriver/google]
+      exporters: [googlecloud/google]
     `,
 		},
 	}

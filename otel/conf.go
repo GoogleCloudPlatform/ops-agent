@@ -88,7 +88,7 @@ service:
           - Transactions/sec
           - Write Transactions/sec`
 
-	stackdriverExporterConf = `stackdriver/{{.StackdriverID}}:
+	stackdriverExporterConf = `googlecloud/{{.StackdriverID}}:
     user_agent: {{.UserAgent}}
     metric:
       prefix: {{.Prefix}}`
@@ -110,7 +110,7 @@ service:
         - metricstransform/agent
         - resourcedetection
       exporters:
-        - stackdriver/agent`
+        - googlecloud/agent`
 
 	serviceConf = `metrics/{{.ID}}:
       receivers:  {{.Receivers}}
