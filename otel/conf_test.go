@@ -720,13 +720,15 @@ service:
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))")
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
-			t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))")
+			if err != nil {
+				t.Errorf("got error: %v, want no error", err)
+				return
+			}
+			if diff := diff.Diff(tc.want, got); diff != "" {
+				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
+			}
+		})
 	}
 }
