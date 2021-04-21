@@ -45,7 +45,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to start subagents: %v", err))
-		// TODO: Ignore failures for partial startup?
+		// ERROR_SERVICE_DEPENDENCY_FAIL
+		return false, 0x0000042C
 	}
 	s.log.Info(1, "started subagents")
 	defer func() {
@@ -149,8 +150,7 @@ func (s *service) startSubagents() error {
 		}
 		defer handle.Close()
 		if err := handle.Start(); err != nil {
-			// TODO: Should we be ignoring failures for partial startup?
-			s.log.Error(1, fmt.Sprintf("failed to start %q: %v", svc.name, err))
+			return fmt.Errorf("failed to start %q: %v", svc.name, err)
 		}
 	}
 	return nil
