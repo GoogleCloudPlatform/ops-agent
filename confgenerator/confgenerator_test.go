@@ -176,22 +176,25 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 				// Unparsable config is a success for this test
 				return
 			}
-			// TODO(lingshi): Figure out some more robust way to distinguish logging and metrics.
-			if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "logging-") {
-				if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir); err == nil {
-					t.Errorf("test %q: GenerateFluentBitConfigs succeeded, want error. file:\n%s", testName, data)
-				}
-			} else if strings.Contains(testName, "windows") {
-				if _, err := uc.GenerateOtelConfig(); err == nil {
-					t.Errorf("test %q: GenerateOtelConfigs succeeded, want error. file:\n%s", testName, data)
-				}
-			} else if strings.HasPrefix(testName, "all-") || strings.HasPrefix(testName, "metrics-") {
-				if _, err := uc.GenerateCollectdConfig(defaultLogsDir); err == nil {
-					t.Errorf("test %q: GenerateCollectdConfig succeeded, want error. file:\n%s", testName, data)
-				}
-			} else {
-				t.Errorf("test %q: Unsupported test type. Must start with 'logging-' or 'metrics-'.", testName)
+			if err := generateConfigs(uc, defaultLogsDir, defaultStateDir); err == nil {
+				t.Errorf("test %q: generateConfigs succeeded, want error. input yaml:\n%s", testName, data)
 			}
 		})
 	}
+}
+
+func generateConfigs(uc UnifiedConfig, defaultLogsDir string, defaultStateDir string) (err error) {
+	if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir); err != nil {
+		return err
+	}
+	if platform == "windows" {
+		if _, err := uc.GenerateOtelConfig(); err != nil {
+			return err
+		}
+	} else {
+		if _, err := uc.GenerateCollectdConfig(defaultLogsDir); err != nil {
+			return err
+		}
+	}
+	return nil
 }
