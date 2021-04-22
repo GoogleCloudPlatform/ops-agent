@@ -1,1 +1,1 @@
-exporter "google" of pipeline "default_pipeline" is not defined
+metrics exporter "google" from pipeline "default_pipeline" is not defined.

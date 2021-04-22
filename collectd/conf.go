@@ -236,7 +236,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 		}
 		invalidReceiverIDs := findInvalid(definedReceiverIDs, pipeline.ReceiverIDs)
 		if len(invalidReceiverIDs) > 0 {
-			return nil, fmt.Errorf("metrics receivers not defined: %v", invalidReceiverIDs)
+			return nil, fmt.Errorf("metrics receiver %q from pipeline %q is not defined.", invalidReceiverIDs[0], pipelineID)
 		}
 
 		if len(pipeline.ExporterIDs) != 1 {
@@ -244,7 +244,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 		}
 		invalidExporterIDs := findInvalid(definedExporterIDs, pipeline.ExporterIDs)
 		if len(invalidExporterIDs) > 0 {
-			return nil, fmt.Errorf("metrics exporters not defined: %v", invalidExporterIDs)
+			return nil, fmt.Errorf("metrics exporter %q from pipeline %q is not defined.", invalidExporterIDs[0], pipelineID)
 		}
 	}
 	return &collectdConf, nil

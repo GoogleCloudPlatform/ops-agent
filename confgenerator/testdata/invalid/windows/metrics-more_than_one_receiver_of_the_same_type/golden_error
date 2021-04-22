@@ -1,1 +1,1 @@
-receiver "mssql" of pipeline "default_pipeline" is not defined
+metrics receiver "mssql" from pipeline "default_pipeline" is not defined.

@@ -1,0 +1,19 @@
+metrics:
+  receivers:
+    hostmetrics_1:
+      type: hostmetrics
+      collection_interval: 60s
+    mssql:
+      type: mssql
+      collection_interval: 60s
+    iis:
+      type: iis
+      collection_interval: 60s
+  exporters:
+    google:
+      type: google_cloud_monitoring
+  service:
+    pipelines:
+      custom_pipeline:
+        receivers: [hostmetrics_2,mssql,iis]
+        exporters: [google]

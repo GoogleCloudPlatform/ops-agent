@@ -460,7 +460,7 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 				iisList = append(iisList, &iis)
 				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
 			} else {
-				return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+				return nil, nil, nil, nil, fmt.Errorf(`metrics receiver %q from pipeline %q is not defined.`, rID, pID)
 			}
 		}
 	}
@@ -485,7 +485,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 				return nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, eID)
 			}
 			if _, ok := exporters[eID]; !ok {
-				return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
+				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
 			}
 			exporter := exporters[eID]
 			switch exporter.Type {
@@ -553,7 +553,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
 			}
-			return nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			return nil, nil, nil, fmt.Errorf(`logging receiver %q from pipeline %q is not defined.`, rID, pID)
 		}
 	}
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
@@ -571,7 +571,7 @@ func generateFluentBitFilters(processors map[string]*processor, pipelines map[st
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
 			if !isDefaultProcessor(processorID) && !ok {
-				return nil, fmt.Errorf(`logging processor not defined: %q`, processorID)
+				return nil, fmt.Errorf(`logging processor %q from pipeline %q is not defined.`, processorID, pipelineID)
 			}
 			fbFilterParser := conf.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pipelineID),
@@ -618,10 +618,11 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 			if strings.HasPrefix(exporterID, "lib:") {
 				return nil, nil, nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
 			}
-			// if exporterID is google or we can find this ID is a google_cloud_logging type from the Stackdriver Exporter map
-			if e, ok := exporters[exporterID]; !(ok && e.Type == "google_cloud_logging") {
-				return nil, nil, nil, nil,
-					fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
+			e, ok := exporters[exporterID]
+			if !ok {
+				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
+			} else if e.Type != "google_cloud_logging" {
+				return nil, nil, nil, nil, fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
