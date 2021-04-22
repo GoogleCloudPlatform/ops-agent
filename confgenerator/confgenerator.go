@@ -116,7 +116,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
-		return UnifiedConfig{}, err
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err.Error())
 	}
 	return config, nil
 }
