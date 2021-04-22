@@ -54,7 +54,7 @@ service:
       disk:
       filesystem:
       network:
-      swap:
+      paging:
       process:`
 
 	iisReceiverConf = `windowsperfcounters/iis_{{.IISID}}:
@@ -331,15 +331,15 @@ service:
           - action: update_label
             label: state
             new_label: tcp_state
-      # system.swap.usage -> swap/bytes_used
-      - metric_name: system.swap.usage
+      # system.paging.usage -> swap/bytes_used
+      - metric_name: system.paging.usage
         action: update
         new_name: swap/bytes_used
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-      # system.swap.utilization -> swap/percent_used
-      - metric_name: system.swap.utilization
+      # system.paging.utilization -> swap/percent_used
+      - metric_name: system.paging.utilization
         action: update
         new_name: swap/percent_used
       # duplicate swap/percent_used -> pagefile/percent_used
@@ -351,8 +351,8 @@ service:
           - action: aggregate_labels
             label_set: [ state ]
             aggregation_type: sum
-      # system.swap.paging_ops -> swap/io
-      - metric_name: system.swap.paging_ops
+      # system.paging.operations -> swap/io
+      - metric_name: system.paging.operations
         action: update
         new_name: swap/io
         operations:
