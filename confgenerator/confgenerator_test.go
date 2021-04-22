@@ -143,18 +143,18 @@ func readFileContent(testName string, filePathFormat string, t *testing.T, respe
 
 func updateOrCompareGolden(t *testing.T, testName string, expectedBytes []byte, actual string, path string) {
 	t.Helper()
-	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-	actual = strings.ReplaceAll(actual, "\r\n", "\n")
+	expected := strings.TrimSuffix(strings.ReplaceAll(string(expectedBytes), "\r\n", "\n"), "\n")
+	actual = strings.TrimSuffix(strings.ReplaceAll(actual, "\r\n", "\n"), "\n")
+	goldenPath := fmt.Sprintf(path, platform, testName)
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
-			goldenPath := fmt.Sprintf(path, platform, testName)
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 			}
 		} else {
-			t.Fatalf("test %q: golden file at %s mismatch (-got +want):\n%s", testName, path, diff)
+			t.Fatalf("test %q: golden file at %s mismatch (-got +want):\n%s", testName, goldenPath, diff)
 		}
 	}
 }
@@ -173,13 +173,14 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 			// The expected error could be triggered by:
 			// 1. Parsing phase of the agent config when the config is not YAML.
 			// 2. Config generation phase when the config is invalid.
-			if uc, actualError := ParseUnifiedConfig(invalidInput); actualError == nil {
+			uc, actualError := ParseUnifiedConfig(invalidInput)
+			if actualError == nil {
 				actualError = generateConfigs(uc, defaultLogsDir, defaultStateDir)
-				if actualError == nil {
-					t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
-				} else {
-					updateOrCompareGolden(t, testName, expectedError, actualError.Error(), goldenErrorPath)
-				}
+			}
+			if actualError == nil {
+				t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
+			} else {
+				updateOrCompareGolden(t, testName, expectedError, actualError.Error(), goldenErrorPath)
 			}
 		})
 	}
