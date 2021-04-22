@@ -1,0 +1,1 @@
+receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID "lib:syslog" is not allowed.
