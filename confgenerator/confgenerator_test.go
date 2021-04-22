@@ -143,8 +143,8 @@ func readFileContent(testName string, filePathFormat string, t *testing.T, respe
 
 func updateOrCompareGolden(t *testing.T, testName string, expectedBytes []byte, actual string, path string) {
 	t.Helper()
-	expected := strings.TrimSuffix(strings.TrimSuffix(strings.ReplaceAll(string(expectedBytes), "\r\n", "\n"), "\n"), "\r")
-	actual = strings.TrimSuffix(strings.TrimSuffix(strings.ReplaceAll(actual, "\r\n", "\n"), "\n"), "\r")
+	expected := strings.TrimSuffix(strings.TrimSuffix(string(expectedBytes), "\n"), "\r")
+	actual = strings.TrimSuffix(strings.TrimSuffix(actual, "\n"), "\r")
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
