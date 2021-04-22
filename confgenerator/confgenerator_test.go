@@ -18,7 +18,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -143,8 +142,7 @@ func readFileContent(testName string, filePathFormat string, t *testing.T, respe
 
 func updateOrCompareGolden(t *testing.T, testName string, expectedBytes []byte, actual string, path string) {
 	t.Helper()
-	expected := strings.TrimSuffix(strings.TrimSuffix(string(expectedBytes), "\n"), "\r")
-	actual = strings.TrimSuffix(strings.TrimSuffix(actual, "\n"), "\r")
+	expected := string(expectedBytes)
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
