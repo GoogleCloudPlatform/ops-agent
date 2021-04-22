@@ -493,8 +493,14 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 			}
 		}
 	}
-	if len(hostMetricsList) > 1 || len(mssqlList) > 1 || len(iisList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`Only one receiver of the same type in [hostmetrics, mssql, iis] is allowed.`)
+	if len(hostMetricsList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "hostmetrics" is allowed.`)
+	}
+	if len(mssqlList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "mssql" is allowed.`)
+	}
+	if len(iisList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "iis" is allowed.`)
 	}
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }

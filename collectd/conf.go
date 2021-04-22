@@ -183,8 +183,8 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 
 	// Validate Metrics.Receivers.
-	if len(metrics.Receivers) != 1 {
-		return nil, errors.New("exactly one metrics receiver with type 'hostmetrics' is required.")
+	if len(metrics.Receivers) > 1 {
+		return nil, errors.New(`At most one metrics receiver with type "hostmetrics" is allowed.`)
 	}
 	for receiverID, receiver := range metrics.Receivers {
 		if strings.HasPrefix(receiverID, "lib:") {
