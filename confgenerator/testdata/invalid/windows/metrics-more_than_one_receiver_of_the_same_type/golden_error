@@ -1,0 +1,1 @@
+receiver "mssql" of pipeline "default_pipeline" is not defined
