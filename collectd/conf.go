@@ -191,7 +191,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 			return nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, receiverID)
 		}
 		if receiver.Type != "hostmetrics" {
-			return nil, fmt.Errorf("type %s is not supported for metrics receiver %s. Only 'hostmetrics' is supported.", receiver.Type, receiverID)
+			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
 		}
 		collectdConf.enableHostMetrics = true
 
@@ -218,7 +218,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 			return nil, fmt.Errorf(`export id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
 		}
 		if exporter.Type != "google_cloud_monitoring" {
-			return nil, fmt.Errorf("metrics exporter type %q is not supported. Only 'google_cloud_monitoring' is supported.", exporter.Type)
+			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
 		}
 		definedExporterIDs[exporterID] = true
 	}

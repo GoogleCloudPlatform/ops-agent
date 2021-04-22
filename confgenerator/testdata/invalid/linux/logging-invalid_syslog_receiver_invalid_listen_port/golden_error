@@ -1,1 +1,1 @@
-pipeline "test_pipeline" cannot have an exporter "test_google_cloud_logging" which is not "google_cloud_logging" type
+logging exporter "test_google_cloud_logging" with type "google" is not supported. Supported logging exporter types: [google_cloud_logging].

@@ -32,6 +32,20 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+var (
+	// Supported component types.
+	supportedComponentTypes = map[string][]string{
+		"linux_logging_exporter":   []string{"google_cloud_logging"},
+		"linux_logging_receiver":   []string{"files", "syslog"},
+		"linux_metrics_exporter":   []string{"google_cloud_monitoring"},
+		"linux_metrics_receiver":   []string{"hostmetrics"},
+		"windows_logging_receiver": []string{"files", "syslog", "windows_event_log"},
+		"windows_logging_exporter": []string{"google_cloud_logging"},
+		"windows_metrics_receiver": []string{"hostmetrics", "iis", "mssql"},
+		"windows_metrics_exporter": []string{"google_cloud_monitoring"},
+	}
+)
+
 type UnifiedConfig struct {
 	Logging *logging          `yaml:"logging"`
 	Metrics *collectd.Metrics `yaml:"metrics"`
@@ -181,7 +195,8 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			} else {
-				return nil, fmt.Errorf(`receiver inside default pipeline %q should have type as one of the "hostmetrics, mssql, iis"`, rID)
+				// TODO: replace receiverNameMap[rID] with the actual receiver type.
+				return nil, unsupportedComponentTypeError("windows", "metrics", "receiver", receiverNameMap[rID], rID)
 			}
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
@@ -216,6 +231,7 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 	if hostInfo.OS != "windows" {
 		tails = append(tails, &tailCollectd)
 	}
+
 	return tails
 }
 
@@ -343,10 +359,22 @@ func extractOtelReceiverFactories(receivers map[string]collectd.Receiver) (map[s
 				CollectionInterval: r.CollectionInterval,
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics, mssql, iis"`, n)
+			return nil, nil, nil, unsupportedComponentTypeError("windows", "metrics", "receiver", r.Type, n)
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
+}
+
+func unsupportedComponentTypeError(
+	platform string, // "linux", or "windows".
+	subagent string, // "logging", or "metrics".
+	component string, // "receiver", "processor", or "exporter".
+	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
+	id string, // ID of the receiver, processor, or exporter.
+) error {
+	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
+	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+		subagent, component, id, t, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
 }
 
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
@@ -413,7 +441,8 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				Channels: r.Channels,
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
+			// TODO: Fix the supported types. It should be windowsLoggingReceiverTypes for Windows and linuxLoggingReceiverType for Linux.
+			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, n)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
@@ -499,7 +528,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 					exportNameMap[eID] = "stackdriver/" + eID
 				}
 			default:
-				return nil, nil, fmt.Errorf(`exporter %q should have type as "google_cloud_monitoring"`, eID)
+				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)
 			}
 		}
 	}
@@ -622,7 +651,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 			if !ok {
 				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
 			} else if e.Type != "google_cloud_logging" {
-				return nil, nil, nil, nil, fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
+				return nil, nil, nil, nil, unsupportedComponentTypeError("linux", "logging", "exporter", e.Type, exporterID)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
@@ -680,7 +709,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
 		default:
-			return nil, nil, fmt.Errorf(`processor %q should be one of the type \"parse_json\", \"parse_regex\"`, name)
+			return nil, nil, fmt.Errorf(`logging processor %q with type %q is not supported. Supported logging processor types: [parse_json, parse_regex].`, name, t)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil
