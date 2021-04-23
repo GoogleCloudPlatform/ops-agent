@@ -350,7 +350,6 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 	}
 	for _, s := range stackdrivers {
 		s.UserAgent = userAgent
-		fmt.Println(userAgent)
 		configSection, err := s.renderConfig()
 		if err != nil {
 			return "", err
