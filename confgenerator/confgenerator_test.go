@@ -55,8 +55,14 @@ func init() {
 	hostInfo, _ = host.Info()
 	if hostInfo.OS == "windows" {
 		platform = "windows"
+		//In order to make test data static, we put static value for platform-wise fields.
+		hostInfo.Platform = "win_platform"
+		hostInfo.PlatformVersion = "win_platform_version"
 	} else {
 		platform = "linux"
+		//In order to make test data static, we put static value for platform-wise fields.
+		hostInfo.Platform = "linux_platform"
+		hostInfo.PlatformVersion = "linux_platform_version"
 	}
 }
 
@@ -68,7 +74,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 		logsDir = windowsDefaultLogsDir
 		stateDir = windowsDefaultStateDir
 	}
-	dirs, err = ioutil.ReadDir(dirPath)
+	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		t.Fatal(err)
 	}
