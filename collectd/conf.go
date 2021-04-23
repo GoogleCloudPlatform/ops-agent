@@ -144,6 +144,15 @@ LoadPlugin swap
 	"process":    ``,
 }
 
+func reservedIdPrefixError(
+	component string, // "receiver", "processor", or "exporter".
+	id string, // ID of the receiver, processor, or exporter.
+) error {
+	// e.g. metrics receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+	return fmt.Errorf(`metrics %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+		component, id, component)
+}
+
 func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
@@ -188,7 +197,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 	for receiverID, receiver := range metrics.Receivers {
 		if strings.HasPrefix(receiverID, "lib:") {
-			return nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, receiverID)
+			return nil, reservedIdPrefixError("receiver", receiverID)
 		}
 		if receiver.Type != "hostmetrics" {
 			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
@@ -215,7 +224,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 	for exporterID, exporter := range metrics.Exporters {
 		if strings.HasPrefix(exporterID, "lib:") {
-			return nil, fmt.Errorf(`export id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+			return nil, reservedIdPrefixError("exporter", exporterID)
 		}
 		if exporter.Type != "google_cloud_monitoring" {
 			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
@@ -229,7 +238,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 	for pipelineID, pipeline := range metrics.Service.Pipelines {
 		if strings.HasPrefix(pipelineID, "lib:") {
-			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pipelineID)
+			return nil, reservedIdPrefixError("pipeline", pipelineID)
 		}
 		if len(pipeline.ReceiverIDs) != 1 {
 			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")

@@ -1,0 +1,1 @@
+metrics pipeline id "lib:pipeline_1" is not allowed because prefix 'lib:' is reserved for pre-defined pipelines.

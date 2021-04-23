@@ -6,10 +6,10 @@ logging:
       - /var/log/messages
       - /var/log/syslog
   exporters:
-    google:
+    lib:exporter_1:
       type: google_cloud_logging
   service:
     pipelines:
-      lib:default_pipeline:
+      default_pipeline:
         receivers: [syslog]
-        exporters: [google]
+        exporters: [lib:exporter_1]

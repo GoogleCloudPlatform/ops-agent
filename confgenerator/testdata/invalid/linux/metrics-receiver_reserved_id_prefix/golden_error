@@ -1,0 +1,1 @@
+metrics receiver id "lib:receiver_1" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.

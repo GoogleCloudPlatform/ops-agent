@@ -178,7 +178,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
 		if strings.HasPrefix(pID, "lib:") {
-			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pID)
+			return nil, reservedIdPrefixError("metrics", "pipeline", pID)
 		}
 
 		p := pipelines[pID]
@@ -377,13 +377,23 @@ func unsupportedComponentTypeError(
 		subagent, component, id, t, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
 }
 
+func reservedIdPrefixError(
+	subagent string, // "logging", or "metrics".
+	component string, // "receiver", "processor", or "exporter".
+	id string, // ID of the receiver, processor, or exporter.
+) error {
+	// e.g. logging receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+		subagent, component, id, component)
+}
+
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for n, r := range receivers {
 		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
+			return nil, nil, nil, reservedIdPrefixError("logging", "receiver", n)
 		}
 		switch r.Type {
 		case "files":
@@ -462,7 +472,7 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if strings.HasPrefix(rID, "lib:") {
-				return nil, nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
+				return nil, nil, nil, nil, reservedIdPrefixError("metrics", "receiver", rID)
 			}
 			if _, ok := receiverNameMap[rID]; ok {
 				continue
@@ -517,7 +527,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
 			if strings.HasPrefix(eID, "lib:") {
-				return nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, eID)
+				return nil, nil, reservedIdPrefixError("metrics", "exporter", eID)
 			}
 			if _, ok := exporters[eID]; !ok {
 				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
@@ -641,7 +651,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	var pipelineIDs []string
 	for p := range pipelines {
 		if strings.HasPrefix(p, "lib:") {
-			return nil, nil, nil, nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, p)
+			return nil, nil, nil, nil, reservedIdPrefixError("logging", "pipeline", p)
 		}
 		pipelineIDs = append(pipelineIDs, p)
 	}
@@ -651,7 +661,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
 			if strings.HasPrefix(exporterID, "lib:") {
-				return nil, nil, nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+				return nil, nil, nil, nil, reservedIdPrefixError("logging", "exporter", exporterID)
 			}
 			e, ok := exporters[exporterID]
 			if !ok {
@@ -688,7 +698,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	var names []string
 	for n := range processors {
 		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, fmt.Errorf(`process id prefix 'lib:' is reserved for pre-defined processors. Processor ID %q is not allowed.`, n)
+			return nil, nil, reservedIdPrefixError("logging", "processor", n)
 		}
 		names = append(names, n)
 	}

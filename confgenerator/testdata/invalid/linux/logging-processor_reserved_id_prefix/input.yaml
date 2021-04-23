@@ -6,11 +6,9 @@ logging:
       - /var/log/messages
       - /var/log/syslog
   processors:
-    lib:parse_json_1:
+    lib:processor_1:
       type: parse_json
       field: key_1
-      time_key: time_key_1
-      time_format: time_format_1
   exporters:
     google:
       type: google_cloud_logging
@@ -18,5 +16,5 @@ logging:
     pipelines:
       default_pipeline:
         receivers: [syslog]
-        processors: [lib:parse_json_1]
+        processors: [lib:processor_1]
         exporters: [google]

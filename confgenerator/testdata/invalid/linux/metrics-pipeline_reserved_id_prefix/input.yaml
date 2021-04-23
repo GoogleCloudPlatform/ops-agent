@@ -2,12 +2,12 @@ metrics:
   receivers:
     hostmetrics:
       type: hostmetrics
-      collection_interval: 40s
+      collection_interval: 60s
   exporters:
     google:
       type: google_cloud_monitoring
   service:
     pipelines:
-      lib:default_pipeline:
+      lib:pipeline_1:
         receivers: [hostmetrics]
         exporters: [google]

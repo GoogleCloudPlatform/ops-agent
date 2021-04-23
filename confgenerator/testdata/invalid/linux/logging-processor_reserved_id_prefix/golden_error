@@ -1,0 +1,1 @@
+logging processor id "lib:processor_1" is not allowed because prefix 'lib:' is reserved for pre-defined processors.
