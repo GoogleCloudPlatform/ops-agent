@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
 	"github.com/shirou/gopsutil/host"
+	"github.com/GoogleCloudPlatform/ops-agent/version"
 
+	"text/template"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -105,8 +106,8 @@ func (uc *UnifiedConfig) GenerateCollectdConfig(logsDir string) (config string, 
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logs`
 // does not exist as a top-level field in the input yaml format.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string) (mainConfig string, parserConfig string, err error) {
-	return generateFluentBitConfigs(uc.Logging, logsDir, stateDir)
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (mainConfig string, parserConfig string, err error) {
+	return generateFluentBitConfigs(uc.Logging, logsDir, stateDir, hostInfo)
 }
 
 func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
@@ -196,7 +197,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
-func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
+func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tails []*conf.Tail) {
 	tails = []*conf.Tail{}
 	tailFluentbit := conf.Tail{
 		Tag:  "ops-agent-fluent-bit",
@@ -209,7 +210,6 @@ func defaultTails(logsDir string, stateDir string) (tails []*conf.Tail) {
 		Path: filepath.Join(logsDir, "metrics-module.log"),
 	}
 	tails = append(tails, &tailFluentbit)
-	hostInfo, _ := host.Info()
 	if hostInfo.OS != "windows" {
 		tails = append(tails, &tailCollectd)
 	}
@@ -225,8 +225,28 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
-func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string) (string, string, error) {
-	fbTails := defaultTails(logsDir, stateDir)
+func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
+	userAgent := map[string]string{
+	    "Prefix":     prefix,
+	    "AgentVersion": version.Version,
+	    "BuildDistro":   version.BuildDistro,
+	    "Platform": hostInfo.OS,
+	    "ShortName": hostInfo.Platform,
+	    "ShortVersion": hostInfo.PlatformVersion,
+	}
+	var userAgentTemplate = template.Must(template.New("mssql").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}} (Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
+	var userAgentBuilder strings.Builder
+	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	return userAgentBuilder.String(), nil
+}
+
+func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	fbTails := defaultTails(logsDir, stateDir, hostInfo)
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
+	fmt.Println(userAgent)
 	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
@@ -263,7 +283,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string)
 			return "", "", err
 		}
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers)
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
 	if err != nil {
 		return "", "", err
 	}

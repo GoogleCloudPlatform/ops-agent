@@ -49,9 +49,10 @@ var (
 )
 
 var platform string
+var hostInfo *host.InfoStat
 
 func init() {
-	hostInfo, _ := host.Info()
+	hostInfo, _ = host.Info()
 	if hostInfo.OS == "windows" {
 		platform = "windows"
 	} else {
@@ -67,7 +68,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 		logsDir = windowsDefaultLogsDir
 		stateDir = windowsDefaultStateDir
 	}
-	dirs, err := ioutil.ReadDir(dirPath)
+	dirs, err = ioutil.ReadDir(dirPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +99,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			expectedMainConfig := readFileContent(testName, goldenMainPath, t, true)
 			expectedParserConfig := readFileContent(testName, goldenParserPath, t, true)
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
@@ -187,7 +188,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 }
 
 func generateConfigs(uc UnifiedConfig, defaultLogsDir string, defaultStateDir string) (err error) {
-	if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir, hostInfo); err != nil {
 		return err
 	}
 	if platform == "windows" {
