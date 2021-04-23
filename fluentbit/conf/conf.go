@@ -207,6 +207,9 @@ const (
     Rotate_Wait        30
     # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
     Skip_Long_Lines    On
+    # For new discovered files on start, upload the whole file, not just the content that
+    # gets written after start.
+    Read_from_Head     True
 {{- if (ne .ExcludePath "")}}
     # Exclude files matching this criteria.
     Exclude_Path       {{.ExcludePath}}
