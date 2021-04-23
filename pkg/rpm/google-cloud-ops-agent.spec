@@ -47,6 +47,9 @@ DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}-preset/*-%{name}*
 
 %post
+if [ $1 -ne 1 ]; then  # Upgrade
+  systemctl daemon-reload >/dev/null 2>&1 || :
+fi
 %systemd_post google-cloud-ops-agent.target
 if [ $1 -eq 1 ]; then  # Initial installation
   systemctl start google-cloud-ops-agent.target >/dev/null 2>&1 || :
