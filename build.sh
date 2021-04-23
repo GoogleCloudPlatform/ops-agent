@@ -27,7 +27,7 @@ subagentdir=$prefix/subagents
 BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/version"
 BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=$(lsb_release -is | tr A-Z a-z)$(lsb_release -rs)"
 BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}"
-LD_FLAGS="-ldflags \"${BUILD_X1} ${BUILD_X2}\""
+LD_FLAGS="\"${BUILD_X1} ${BUILD_X2}\""
 
 set -x -e
 
@@ -84,7 +84,7 @@ function build_fluentbit() {
 
 function build_opsagent() {
   mkdir -p "$DESTDIR$prefix/libexec"
-  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" ${LD_FLAGS} github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" -ldflags "$LD_FLAGS" github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
 }
 
 function build_systemd() {
