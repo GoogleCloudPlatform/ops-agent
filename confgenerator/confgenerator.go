@@ -44,6 +44,16 @@ var (
 		"windows_metrics_receiver": []string{"hostmetrics", "iis", "mssql"},
 		"windows_metrics_exporter": []string{"google_cloud_monitoring"},
 	}
+
+	// Supported parameters.
+	supportedParameters = map[string][]string{
+		"files":             []string{"include_paths", "exclude_paths"},
+		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
+		"windows_event_log": []string{"channels"},
+		"parse_json":        []string{"field", "time_key", "time_format"},
+		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
+		"hostmetrics":       []string{"collection_interval"},
+	}
 )
 
 type UnifiedConfig struct {
@@ -387,72 +397,85 @@ func reservedIdPrefixError(
 		subagent, component, id, component)
 }
 
+func unsupportedParameterError(
+	subagent string, // "logging", or "metrics".
+	component string, // "receiver", "processor", or "exporter".
+	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
+	id string, // ID of the receiver, processor, or exporter.
+	parameter string, // name of the parameter that is not supported.
+) error {
+	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
+	// for "files" type logging receiver: [include_paths, exclude_paths].
+	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
+		parameter, subagent, component, id, t, subagent, component, strings.Join(supportedParameters[t], ", "))
+}
+
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
-	for n, r := range receivers {
-		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, nil, reservedIdPrefixError("logging", "receiver", n)
+	for rID, r := range receivers {
+		if strings.HasPrefix(rID, "lib:") {
+			return nil, nil, nil, reservedIdPrefixError("logging", "receiver", rID)
 		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "channels"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
 			}
-			fileReceiverFactories[n] = &fileReceiverFactory{
+			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
 				ExcludePaths: r.ExcludePaths,
 			}
 		case "syslog":
 			if r.IncludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "include_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, n)
+				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, rID)
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "channels"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
 			}
-			syslogReceiverFactories[n] = &syslogReceiverFactory{
+			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
 				ListenHost:        r.ListenHost,
 				ListenPort:        r.ListenPort,
 			}
 		case "windows_event_log":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
 			}
 			if r.IncludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "include_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
-			wineventlogReceiverFactories[n] = &wineventlogReceiverFactory{
+			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
 		default:
 			// TODO: Fix the supported types. It should be windowsLoggingReceiverTypes for Windows and linuxLoggingReceiverType for Linux.
-			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, n)
+			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, rID)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil

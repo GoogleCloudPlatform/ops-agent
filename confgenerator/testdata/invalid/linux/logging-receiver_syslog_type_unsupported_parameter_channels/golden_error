@@ -1,0 +1,1 @@
+parameter "channels" in logging receiver "reciever_1" is not supported. Supported parameters for "syslog" type logging receiver: [transport_protocol, listen_host, listen_port].
