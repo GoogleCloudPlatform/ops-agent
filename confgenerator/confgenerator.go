@@ -397,6 +397,17 @@ func reservedIdPrefixError(
 		subagent, component, id, component)
 }
 
+func missingRequiredParameterError(
+	subagent string, // "logging", or "metrics".
+	component string, // "receiver", "processor", or "exporter".
+	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
+	id string, // ID of the receiver, processor, or exporter.
+	parameter string, // name of the parameter that is not supported.
+) error {
+	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
+	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, t)
+}
+
 func unsupportedParameterError(
 	subagent string, // "logging", or "metrics".
 	component string, // "receiver", "processor", or "exporter".
@@ -431,6 +442,9 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			}
 			if r.Channels != nil {
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
+			}
+			if r.IncludePaths == nil {
+				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "include_paths")
 			}
 			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
@@ -469,6 +483,9 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			}
 			if r.ExcludePaths != nil {
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
+			}
+			if r.Channels == nil {
+				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "channels")
 			}
 			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
@@ -740,6 +757,9 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
+			if p.Regex == "" {
+				return nil, nil, missingRequiredParameterError("logging", "processor", p.Type, name, "regex")
+			}
 			fbRegexParser := conf.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,

@@ -1,0 +1,13 @@
+logging:
+  receivers:
+    receiver_1:
+      type: files
+      include_paths: ""
+  exporters: 
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      test_pipeline:
+        receivers: [receiver_1]
+        exporters: [google]
