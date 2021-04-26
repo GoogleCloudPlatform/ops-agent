@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
 	"github.com/shirou/gopsutil/host"
-	"github.com/GoogleCloudPlatform/ops-agent/version"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 
 	"text/template"
 	yaml "gopkg.in/yaml.v2"
