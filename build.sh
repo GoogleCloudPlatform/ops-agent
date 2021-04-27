@@ -24,7 +24,7 @@ systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 
 . VERSION
-BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/version"
+BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version"
 BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=$(lsb_release -is | tr A-Z a-z)$(lsb_release -rs)"
 BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}"
 LD_FLAGS="${BUILD_X1} ${BUILD_X2}"
