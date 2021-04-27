@@ -225,6 +225,7 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
+var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}} (Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
 func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	userAgent := map[string]string{
 	    "Prefix":     prefix,
@@ -234,7 +235,6 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	    "ShortName": hostInfo.Platform,
 	    "ShortVersion": hostInfo.PlatformVersion,
 	}
-	var userAgentTemplate = template.Must(template.New("mssql").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}} (Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
 	var userAgentBuilder strings.Builder
 	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {
 		fmt.Println(err.Error())
