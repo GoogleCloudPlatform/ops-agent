@@ -134,6 +134,7 @@ service:
         match_type: strict
         metric_names:
           - system.network.dropped
+          - system.filesystem.inodes.usage
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   metricstransform/system:
@@ -320,13 +321,17 @@ service:
               # transmit -> tx
               - value: transmit
                 new_value: tx
-      # system.network.tcp_connections -> network/tcp_connections
-      - metric_name: system.network.tcp_connections
+      # system.network.connections -> network/tcp_connections
+      - metric_name: system.network.connections
         action: update
         new_name: network/tcp_connections
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+          # remove udp data
+          - action: delete_label_value
+            label: protocol
+            label_value: udp
           # change label state -> tcp_state
           - action: update_label
             label: state
