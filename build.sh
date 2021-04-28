@@ -25,7 +25,8 @@ subagentdir=$prefix/subagents
 
 . VERSION
 BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version"
-BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=$(lsb_release -is | tr A-Z a-z)$(lsb_release -rs)"
+release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for centos
+BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=$(lsb_release -is | tr A-Z a-z)${release_version%%.}"
 BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}"
 LD_FLAGS="${BUILD_X1} ${BUILD_X2}"
 
