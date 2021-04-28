@@ -20,7 +20,6 @@ BuildRequires: systemd
 %else
 BuildRequires: systemd-rpm-macros
 %endif
-Conflicts: stackdriver-agent, google-fluentd
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %description
