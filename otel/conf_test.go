@@ -528,6 +528,10 @@ processors:
           - action: update_label
             label: state
             new_label: tcp_state
+          # remove protocol label
+          - action: aggregate_labels
+            label_set: [ state ]
+            aggregation_type: sum
       # system.paging.usage -> swap/bytes_used
       - metric_name: system.paging.usage
         action: update
