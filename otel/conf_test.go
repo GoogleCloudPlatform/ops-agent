@@ -327,6 +327,7 @@ processors:
         metric_names:
           - system.network.dropped
           - system.filesystem.inodes.usage
+          - system.paging.faults
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   metricstransform/system:
@@ -409,9 +410,10 @@ processors:
       - metric_name: system.disk.pending_operations
         action: update
         new_name: disk/pending_operations
-        operations:
-          # change data type from int64 -> double
-          - action: toggle_scalar_data_type
+      # system.disk.merged -> disk/merged_operations
+      - metric_name: system.disk.merged
+        action: update
+        new_name: agent.googleapis.com/disk/merged_operations
       # system.filesystem.usage -> disk/bytes_used
       - metric_name: system.filesystem.usage
         action: update
