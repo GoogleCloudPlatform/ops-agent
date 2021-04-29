@@ -1,7 +1,6 @@
 # escape=`
 
 ARG WINDOWS_VERSION=ltsc2019
-ARG PKG_VERSION
 #
 # Builder Image - Windows Server Core
 #
