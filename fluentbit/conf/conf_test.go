@@ -597,12 +597,14 @@ func TestWinlogErrors(t *testing.T) {
 func TestStackdriver(t *testing.T) {
 	s := Stackdriver{
 		Match: "test_match",
+		UserAgent: "user_agent",
 	}
 	want := `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name           stackdriver
-    resource       gce_instance
-    Match_Regex    ^(test_match)$
+    Name              stackdriver
+    resource          gce_instance
+    stackdriver_agent user_agent
+    Match_Regex       ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -821,7 +823,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil, "")
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -858,7 +860,7 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil); err == nil {
+		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil, ""); err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}
@@ -998,7 +1000,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.wineventlogs, nil, nil, nil, nil, nil)
+		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.wineventlogs, nil, nil, nil, nil, nil, "")
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return

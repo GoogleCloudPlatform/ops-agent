@@ -49,13 +49,20 @@ var (
 )
 
 var platform string
+var hostInfo *host.InfoStat
 
 func init() {
-	hostInfo, _ := host.Info()
+	hostInfo, _ = host.Info()
 	if hostInfo.OS == "windows" {
 		platform = "windows"
+		//In order to make test data static, we put static value for platform-wise fields.
+		hostInfo.Platform = "win_platform"
+		hostInfo.PlatformVersion = "win_platform_version"
 	} else {
 		platform = "linux"
+		//In order to make test data static, we put static value for platform-wise fields.
+		hostInfo.Platform = "linux_platform"
+		hostInfo.PlatformVersion = "linux_platform_version"
 	}
 }
 
@@ -98,7 +105,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			expectedMainConfig := readFileContent(testName, goldenMainPath, t, true)
 			expectedParserConfig := readFileContent(testName, goldenParserPath, t, true)
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
@@ -143,8 +150,8 @@ func readFileContent(testName string, filePathFormat string, t *testing.T, respe
 
 func updateOrCompareGolden(t *testing.T, testName string, expectedBytes []byte, actual string, path string) {
 	t.Helper()
-	expected := strings.TrimSuffix(strings.ReplaceAll(string(expectedBytes), "\r\n", "\n"), "\n")
-	actual = strings.TrimSuffix(strings.ReplaceAll(actual, "\r\n", "\n"), "\n")
+	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+	actual = strings.ReplaceAll(actual, "\r\n", "\n")
 	goldenPath := fmt.Sprintf(path, platform, testName)
 	if diff := cmp.Diff(actual, expected); diff != "" {
 		if *updateGolden {
@@ -187,7 +194,7 @@ func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 }
 
 func generateConfigs(uc UnifiedConfig, defaultLogsDir string, defaultStateDir string) (err error) {
-	if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigs(defaultLogsDir, defaultStateDir, hostInfo); err != nil {
 		return err
 	}
 	if platform == "windows" {
