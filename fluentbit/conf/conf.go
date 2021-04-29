@@ -253,9 +253,10 @@ const (
 
 	stackdriverConf = `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name           stackdriver
-    resource       gce_instance
-    Match_Regex    ^({{.Match}})$
+    Name              stackdriver
+    resource          gce_instance
+    stackdriver_agent {{.UserAgent}}
+    Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -289,7 +290,7 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 	filterModifyAddLogNames []*FilterModifyAddLogName,
 	filterRewriteTags []*FilterRewriteTag,
 	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
-	stackdrivers []*Stackdriver) (string, error) {
+	stackdrivers []*Stackdriver, userAgent string) (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
 	wineventlogConfigSections := []string{}
@@ -348,6 +349,7 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 		filterModifyRemoveLogNameConfigSections = append(filterModifyRemoveLogNameConfigSections, configSection)
 	}
 	for _, s := range stackdrivers {
+		s.UserAgent = userAgent
 		configSection, err := s.renderConfig()
 		if err != nil {
 			return "", err
@@ -738,6 +740,7 @@ func (w WindowsEventlog) renderConfig() (string, error) {
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
 	Match string
+	UserAgent string
 }
 
 var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
@@ -750,6 +753,13 @@ func (s Stackdriver) renderConfig() (string, error) {
 			field:  "Match",
 		}
 	}
+	if s.UserAgent == "" {
+                return "", emptyFieldErr{
+                        plugin: "stackdriver",
+                        field:  "stackdriver_agent",
+                }
+        }
+
 	var renderedStackdriverConfig strings.Builder
 	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
 		return "", err

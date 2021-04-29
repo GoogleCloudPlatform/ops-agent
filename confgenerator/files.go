@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"github.com/shirou/gopsutil/host"
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
@@ -22,7 +23,8 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string) error {
 	switch service {
 	case "fluentbit":
-		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir)
+		hostInfo, _ := host.Info()
+		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
