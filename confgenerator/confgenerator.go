@@ -146,7 +146,6 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 			return "", err
 		}
 	}
-	fmt.Println("before")
 	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent)
 	if err != nil {
 		return "", err
