@@ -53,6 +53,7 @@ var hostInfo *host.InfoStat
 
 func init() {
 	hostInfo, _ = host.Info()
+	hostInfo.OS = "windows"
 	if hostInfo.OS == "windows" {
 		platform = "windows"
 		//In order to make test data static, we put static value for platform-wise fields.
@@ -115,7 +116,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 
 			if platform == "windows" {
 				expectedOtelConfig := readFileContent(testName, goldenOtelPath, t, true)
-				otelConf, err := uc.GenerateOtelConfig()
+				otelConf, err := uc.GenerateOtelConfig(hostInfo)
 				if err != nil {
 					t.Fatalf("GenerateOtelConfig got %v", err)
 				}
@@ -198,7 +199,7 @@ func generateConfigs(uc UnifiedConfig, defaultLogsDir string, defaultStateDir st
 		return err
 	}
 	if platform == "windows" {
-		if _, err := uc.GenerateOtelConfig(); err != nil {
+		if _, err := uc.GenerateOtelConfig(hostInfo); err != nil {
 			return err
 		}
 	} else {
