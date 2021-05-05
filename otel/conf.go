@@ -101,11 +101,6 @@ service:
         static_configs:
         - targets: ['0.0.0.0:8888']`
 
-	agentExporterConf = `stackdriver/agent:
-    user_agent: $USERAGENT
-    metric:
-      prefix: agent.googleapis.com/`
-
 	agentServiceConf = `# reports agent self-observability metrics to cloud monitoring
     metrics/agent:
       receivers:
@@ -628,13 +623,17 @@ func (s Stackdriver) renderConfig() (string, error) {
 	return renderedStackdriverConfig.String(), nil
 }
 
-func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisList []*IIS, stackdriverList []*Stackdriver, serviceList []*Service) (string, error) {
+func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisList []*IIS, stackdriverList []*Stackdriver, serviceList []*Service, userAgent string) (string, error) {
 	receiversConfigSection := []string{}
 	exportersConfigSection := []string{}
 	processorsConfigSection := []string{}
 	serviceConfigSection := []string{}
 	receiversConfigSection = append(receiversConfigSection, agentReceiverConf)
-	exportersConfigSection = append(exportersConfigSection, agentExporterConf)
+	agentExporter := Stackdriver{
+		StackdriverID: "agent",
+		Prefix:        "agent.googleapis.com/",
+	}
+	stackdriverList = append(stackdriverList, &agentExporter)
 	serviceConfigSection = append(serviceConfigSection, agentServiceConf)
 	for _, h := range hostMetricsList {
 		configSection, err := h.renderConfig()
@@ -658,6 +657,7 @@ func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisL
 		receiversConfigSection = append(receiversConfigSection, configSection)
 	}
 	for _, s := range stackdriverList {
+		s.UserAgent = userAgent
 		configSection, err := s.renderConfig()
 		if err != nil {
 			return "", err
