@@ -95,8 +95,8 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig() (config string, err error) {
-	return generateOtelConfig(uc.Metrics)
+func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (config string, err error) {
+	return generateOtelConfig(uc.Metrics, hostInfo)
 }
 
 func (uc *UnifiedConfig) GenerateCollectdConfig(logsDir string) (config string, err error) {
@@ -119,7 +119,8 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	return config, nil
 }
 
-func generateOtelConfig(metrics *collectd.Metrics) (string, error) {
+func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Collector", hostInfo)
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -145,7 +146,7 @@ func generateOtelConfig(metrics *collectd.Metrics) (string, error) {
 			return "", err
 		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList)
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent)
 	if err != nil {
 		return "", err
 	}
@@ -489,7 +490,6 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 				if _, ok := exportNameMap[eID]; !ok {
 					stackdriver := otel.Stackdriver{
 						StackdriverID: eID,
-						UserAgent:     "$USERAGENT",
 						Prefix:        "agent.googleapis.com/",
 					}
 					stackdriverList = append(stackdriverList, &stackdriver)

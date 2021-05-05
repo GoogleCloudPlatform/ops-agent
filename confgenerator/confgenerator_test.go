@@ -115,7 +115,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 
 			if platform == "windows" {
 				expectedOtelConfig := readFileContent(testName, goldenOtelPath, t, true)
-				otelConf, err := uc.GenerateOtelConfig()
+				otelConf, err := uc.GenerateOtelConfig(hostInfo)
 				if err != nil {
 					t.Fatalf("GenerateOtelConfig got %v", err)
 				}
@@ -198,7 +198,7 @@ func generateConfigs(uc UnifiedConfig, defaultLogsDir string, defaultStateDir st
 		return err
 	}
 	if platform == "windows" {
-		if _, err := uc.GenerateOtelConfig(); err != nil {
+		if _, err := uc.GenerateOtelConfig(hostInfo); err != nil {
 			return err
 		}
 	} else {

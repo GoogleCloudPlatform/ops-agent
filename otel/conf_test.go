@@ -681,12 +681,12 @@ processors:
           - action: toggle_scalar_data_type
   
 exporters:
-  stackdriver/agent:
-    user_agent: $USERAGENT
+  stackdriver/google:
+    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
-  stackdriver/google:
-    user_agent: $USERAGENT
+  stackdriver/agent:
+    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
   
@@ -720,7 +720,7 @@ service:
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList)
+		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))")
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
