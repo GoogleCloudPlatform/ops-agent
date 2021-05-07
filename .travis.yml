@@ -9,4 +9,9 @@ go:
 
 go_import_path: github.com/GoogleCloudPlatform/ops-agent
 
-script: go test -mod=mod ./...
+before_install:
+- go get github.com/mattn/goveralls
+
+script:
+- go test -mod=mod ./...
+- $GOPATH/bin/goveralls -service=travis-ci
