@@ -739,7 +739,7 @@ func (w WindowsEventlog) renderConfig() (string, error) {
 
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
-	Match string
+	Match     string
 	UserAgent string
 }
 
@@ -754,11 +754,11 @@ func (s Stackdriver) renderConfig() (string, error) {
 		}
 	}
 	if s.UserAgent == "" {
-                return "", emptyFieldErr{
-                        plugin: "stackdriver",
-                        field:  "stackdriver_agent",
-                }
-        }
+		return "", emptyFieldErr{
+			plugin: "stackdriver",
+			field:  "stackdriver_agent",
+		}
+	}
 
 	var renderedStackdriverConfig strings.Builder
 	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
