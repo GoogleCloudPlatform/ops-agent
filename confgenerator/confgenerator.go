@@ -20,13 +20,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
 	"github.com/shirou/gopsutil/host"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 
 	"text/template"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -227,14 +229,15 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 }
 
 var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
+
 func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	userAgent := map[string]string{
-	    "Prefix":     prefix,
-	    "AgentVersion": version.Version,
-	    "BuildDistro":   version.BuildDistro,
-	    "Platform": hostInfo.OS,
-	    "ShortName": hostInfo.Platform,
-	    "ShortVersion": hostInfo.PlatformVersion,
+		"Prefix":       prefix,
+		"AgentVersion": version.Version,
+		"BuildDistro":  version.BuildDistro,
+		"Platform":     hostInfo.OS,
+		"ShortName":    hostInfo.Platform,
+		"ShortVersion": hostInfo.PlatformVersion,
 	}
 	var userAgentBuilder strings.Builder
 	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {

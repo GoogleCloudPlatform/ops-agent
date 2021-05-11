@@ -10,9 +10,12 @@ go:
 go_import_path: github.com/GoogleCloudPlatform/ops-agent
 
 before_install:
+- go get golang.org/x/tools/cmd/goimports
 - go get github.com/mattn/goveralls
 
 script:
+# Only enforce the format check on Linux to avoid the newline difference in Linux and Windows.
+- if [ "$TRAVIS_OS_NAME" = "linux" ] && [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
 - go test -mod=mod ./...
 
 after_success:

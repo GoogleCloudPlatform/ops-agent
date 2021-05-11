@@ -596,7 +596,7 @@ func TestWinlogErrors(t *testing.T) {
 
 func TestStackdriver(t *testing.T) {
 	s := Stackdriver{
-		Match: "test_match",
+		Match:     "test_match",
 		UserAgent: "user_agent",
 	}
 	want := `[OUTPUT]
