@@ -1,0 +1,19 @@
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      collection_interval: 60s
+    mssql:
+      type: mssql
+      collection_interval: 60s
+    iis:
+      type: iis
+      collection_interval: 60s
+  exporters:
+    exporter_1:
+      type: unsupported_type
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics,mssql,iis]
+        exporters: [exporter_1]

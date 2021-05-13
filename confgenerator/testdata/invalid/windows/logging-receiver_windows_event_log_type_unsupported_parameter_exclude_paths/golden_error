@@ -1,0 +1,1 @@
+parameter "exclude_paths" in logging receiver "receiver_1" is not supported. Supported parameters for "windows_event_log" type logging receiver: [channels].

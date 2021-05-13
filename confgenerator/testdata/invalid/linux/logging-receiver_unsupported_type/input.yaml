@@ -1,0 +1,15 @@
+logging:
+  receivers:
+    receiver_1:
+      type: unsupported_type
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      custom_pipeline:
+        receivers: [receiver_1]
+        exporters: [google]

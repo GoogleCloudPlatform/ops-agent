@@ -144,6 +144,14 @@ LoadPlugin swap
 	"process":    ``,
 }
 
+// reservedIdPrefixError returns an error message for when the user tries to define a reserved ID.
+// The component should be "receiver", "processor", or "exporter".
+func reservedIdPrefixError(component, id string) error {
+	// e.g. metrics receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+	return fmt.Errorf(`metrics %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+		component, id, component)
+}
+
 func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
@@ -183,15 +191,15 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 
 	// Validate Metrics.Receivers.
-	if len(metrics.Receivers) != 1 {
-		return nil, errors.New("exactly one metrics receiver with type 'hostmetrics' is required.")
+	if len(metrics.Receivers) > 1 {
+		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
 	}
 	for receiverID, receiver := range metrics.Receivers {
 		if strings.HasPrefix(receiverID, "lib:") {
-			return nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, receiverID)
+			return nil, reservedIdPrefixError("receiver", receiverID)
 		}
 		if receiver.Type != "hostmetrics" {
-			return nil, fmt.Errorf("type %s is not supported for metrics receiver %s. Only 'hostmetrics' is supported.", receiver.Type, receiverID)
+			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
 		}
 		collectdConf.enableHostMetrics = true
 
@@ -215,10 +223,10 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 	for exporterID, exporter := range metrics.Exporters {
 		if strings.HasPrefix(exporterID, "lib:") {
-			return nil, fmt.Errorf(`export id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+			return nil, reservedIdPrefixError("exporter", exporterID)
 		}
 		if exporter.Type != "google_cloud_monitoring" {
-			return nil, fmt.Errorf("metrics exporter type %q is not supported. Only 'google_cloud_monitoring' is supported.", exporter.Type)
+			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
 		}
 		definedExporterIDs[exporterID] = true
 	}
@@ -229,14 +237,14 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 	}
 	for pipelineID, pipeline := range metrics.Service.Pipelines {
 		if strings.HasPrefix(pipelineID, "lib:") {
-			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pipelineID)
+			return nil, reservedIdPrefixError("pipeline", pipelineID)
 		}
 		if len(pipeline.ReceiverIDs) != 1 {
 			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
 		}
 		invalidReceiverIDs := findInvalid(definedReceiverIDs, pipeline.ReceiverIDs)
 		if len(invalidReceiverIDs) > 0 {
-			return nil, fmt.Errorf("metrics receivers not defined: %v", invalidReceiverIDs)
+			return nil, fmt.Errorf("metrics receiver %q from pipeline %q is not defined.", invalidReceiverIDs[0], pipelineID)
 		}
 
 		if len(pipeline.ExporterIDs) != 1 {
@@ -244,7 +252,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 		}
 		invalidExporterIDs := findInvalid(definedExporterIDs, pipeline.ExporterIDs)
 		if len(invalidExporterIDs) > 0 {
-			return nil, fmt.Errorf("metrics exporters not defined: %v", invalidExporterIDs)
+			return nil, fmt.Errorf("metrics exporter %q from pipeline %q is not defined.", invalidExporterIDs[0], pipelineID)
 		}
 	}
 	return &collectdConf, nil
