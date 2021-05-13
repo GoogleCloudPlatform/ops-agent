@@ -32,6 +32,30 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+var (
+	// Supported component types.
+	supportedComponentTypes = map[string][]string{
+		"linux_logging_exporter":   []string{"google_cloud_logging"},
+		"linux_logging_receiver":   []string{"files", "syslog"},
+		"linux_metrics_exporter":   []string{"google_cloud_monitoring"},
+		"linux_metrics_receiver":   []string{"hostmetrics"},
+		"windows_logging_receiver": []string{"files", "syslog", "windows_event_log"},
+		"windows_logging_exporter": []string{"google_cloud_logging"},
+		"windows_metrics_receiver": []string{"hostmetrics", "iis", "mssql"},
+		"windows_metrics_exporter": []string{"google_cloud_monitoring"},
+	}
+
+	// Supported parameters.
+	supportedParameters = map[string][]string{
+		"files":             []string{"include_paths", "exclude_paths"},
+		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
+		"windows_event_log": []string{"channels"},
+		"parse_json":        []string{"field", "time_key", "time_format"},
+		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
+		"hostmetrics":       []string{"collection_interval"},
+	}
+)
+
 type UnifiedConfig struct {
 	Logging *logging          `yaml:"logging"`
 	Metrics *collectd.Metrics `yaml:"metrics"`
@@ -116,7 +140,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
-		return UnifiedConfig{}, err
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
 	}
 	return config, nil
 }
@@ -164,7 +188,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
 		if strings.HasPrefix(pID, "lib:") {
-			return nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, pID)
+			return nil, reservedIdPrefixError("metrics", "pipeline", pID)
 		}
 
 		p := pipelines[pID]
@@ -181,7 +205,8 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			} else {
-				return nil, fmt.Errorf(`receiver inside default pipeline %q should have type as one of the "hostmetrics, mssql, iis"`, rID)
+				// TODO: replace receiverNameMap[rID] with the actual receiver type.
+				return nil, unsupportedComponentTypeError("windows", "metrics", "receiver", receiverNameMap[rID], rID)
 			}
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
@@ -216,6 +241,7 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 	if hostInfo.OS != "windows" {
 		tails = append(tails, &tailCollectd)
 	}
+
 	return tails
 }
 
@@ -343,77 +369,125 @@ func extractOtelReceiverFactories(receivers map[string]collectd.Receiver) (map[s
 				CollectionInterval: r.CollectionInterval,
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "hostmetrics, mssql, iis"`, n)
+			return nil, nil, nil, unsupportedComponentTypeError("windows", "metrics", "receiver", r.Type, n)
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
+}
+
+// unsupportedComponentTypeError returns an error message when users specify a receiver, processor, or exporter type that is not supported.
+// platform should be "linux" or "windows".
+// subagent should be "logging", or "metrics".
+// component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics".
+// id is the id of the receiver, processor, or exporter.
+func unsupportedComponentTypeError(platform, subagent, component, componentType, id string) error {
+	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
+	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+		subagent, component, id, componentType, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
+}
+
+// reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// id is the ID of the receiver, processor, or exporter.
+func reservedIdPrefixError(subagent, component, id string) error {
+	// e.g. logging receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+		subagent, component, id, component)
+}
+
+// missingRequiredParameterError returns an error message when users miss a required parameter.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// parameter is name of the parameter that is missing.
+func missingRequiredParameterError(subagent, component, componentType, id, parameter string) error {
+	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
+	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, componentType)
+}
+
+// unsupportedParameterError returns an error message when users specifies an unsupported parameter.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// parameter is name of the parameter that is not supported.
+func unsupportedParameterError(subagent, component, componentType, id, parameter string) error {
+	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
+	// for "files" type logging receiver: [include_paths, exclude_paths].
+	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
+		parameter, subagent, component, id, componentType, subagent, component, strings.Join(supportedParameters[componentType], ", "))
 }
 
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
-	for n, r := range receivers {
-		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, n)
+	for rID, r := range receivers {
+		if strings.HasPrefix(rID, "lib:") {
+			return nil, nil, nil, reservedIdPrefixError("logging", "receiver", rID)
 		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, fmt.Errorf(`files type receiver %q should not have field "channels"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
 			}
-			fileReceiverFactories[n] = &fileReceiverFactory{
+			if r.IncludePaths == nil {
+				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "include_paths")
+			}
+			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
 				ExcludePaths: r.ExcludePaths,
 			}
 		case "syslog":
 			if r.IncludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "include_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, n)
+				return nil, nil, nil, fmt.Errorf(`unknown transport protocol %q in the logging receiver %q. Supported transport protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should not have field "channels"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
 			}
-			syslogReceiverFactories[n] = &syslogReceiverFactory{
+			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
 				ListenHost:        r.ListenHost,
 				ListenPort:        r.ListenPort,
 			}
 		case "windows_event_log":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "transport_protocol"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_host"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "listen_port"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
 			}
 			if r.IncludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "include_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, fmt.Errorf(`windows_event_log type receiver %q should not have field "exclude_paths"`, n)
+				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
-			wineventlogReceiverFactories[n] = &wineventlogReceiverFactory{
+			if r.Channels == nil {
+				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "channels")
+			}
+			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf(`receiver %q should have type as one of the "files", "syslog"`, n)
+			// TODO: Fix the supported types. It should be windowsLoggingReceiverTypes for Windows and linuxLoggingReceiverType for Linux.
+			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, rID)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
@@ -433,7 +507,7 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if strings.HasPrefix(rID, "lib:") {
-				return nil, nil, nil, nil, fmt.Errorf(`receiver id prefix 'lib:' is reserved for pre-defined receivers. Receiver ID %q is not allowed.`, rID)
+				return nil, nil, nil, nil, reservedIdPrefixError("metrics", "receiver", rID)
 			}
 			if _, ok := receiverNameMap[rID]; ok {
 				continue
@@ -460,12 +534,18 @@ func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsR
 				iisList = append(iisList, &iis)
 				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
 			} else {
-				return nil, nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+				return nil, nil, nil, nil, fmt.Errorf(`metrics receiver %q from pipeline %q is not defined.`, rID, pID)
 			}
 		}
 	}
-	if len(hostMetricsList) > 1 || len(mssqlList) > 1 || len(iisList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`Only one receiver of the same type in [hostmetrics, mssql, iis] is allowed.`)
+	if len(hostMetricsList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "hostmetrics" is allowed.`)
+	}
+	if len(mssqlList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "mssql" is allowed.`)
+	}
+	if len(iisList) > 1 {
+		return nil, nil, nil, nil, fmt.Errorf(`At most one metrics receiver with type "iis" is allowed.`)
 	}
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
@@ -482,10 +562,10 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
 			if strings.HasPrefix(eID, "lib:") {
-				return nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, eID)
+				return nil, nil, reservedIdPrefixError("metrics", "exporter", eID)
 			}
 			if _, ok := exporters[eID]; !ok {
-				return nil, nil, fmt.Errorf(`exporter %q of pipeline %q is not defined`, eID, pID)
+				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
 			}
 			exporter := exporters[eID]
 			switch exporter.Type {
@@ -499,7 +579,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 					exportNameMap[eID] = "stackdriver/" + eID
 				}
 			default:
-				return nil, nil, fmt.Errorf(`exporter %q should have type as "google_cloud_monitoring"`, eID)
+				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)
 			}
 		}
 	}
@@ -553,7 +633,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
 			}
-			return nil, nil, nil, fmt.Errorf(`receiver %q of pipeline %q is not defined`, rID, pID)
+			return nil, nil, nil, fmt.Errorf(`logging receiver %q from pipeline %q is not defined.`, rID, pID)
 		}
 	}
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
@@ -571,7 +651,7 @@ func generateFluentBitFilters(processors map[string]*processor, pipelines map[st
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
 			if !isDefaultProcessor(processorID) && !ok {
-				return nil, fmt.Errorf(`logging processor not defined: %q`, processorID)
+				return nil, fmt.Errorf(`logging processor %q from pipeline %q is not defined.`, processorID, pipelineID)
 			}
 			fbFilterParser := conf.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pipelineID),
@@ -606,7 +686,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	var pipelineIDs []string
 	for p := range pipelines {
 		if strings.HasPrefix(p, "lib:") {
-			return nil, nil, nil, nil, fmt.Errorf(`pipeline id prefix 'lib:' is reserved for pre-defined pipelines. Pipeline ID %q is not allowed.`, p)
+			return nil, nil, nil, nil, reservedIdPrefixError("logging", "pipeline", p)
 		}
 		pipelineIDs = append(pipelineIDs, p)
 	}
@@ -616,12 +696,13 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
 			if strings.HasPrefix(exporterID, "lib:") {
-				return nil, nil, nil, nil, fmt.Errorf(`exporter id prefix 'lib:' is reserved for pre-defined exporters. Exporter ID %q is not allowed.`, exporterID)
+				return nil, nil, nil, nil, reservedIdPrefixError("logging", "exporter", exporterID)
 			}
-			// if exporterID is google or we can find this ID is a google_cloud_logging type from the Stackdriver Exporter map
-			if e, ok := exporters[exporterID]; !(ok && e.Type == "google_cloud_logging") {
-				return nil, nil, nil, nil,
-					fmt.Errorf(`pipeline %q cannot have an exporter %q which is not "google_cloud_logging" type`, pipelineID, exporterID)
+			e, ok := exporters[exporterID]
+			if !ok {
+				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
+			} else if e.Type != "google_cloud_logging" {
+				return nil, nil, nil, nil, unsupportedComponentTypeError("linux", "logging", "exporter", e.Type, exporterID)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
@@ -652,7 +733,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	var names []string
 	for n := range processors {
 		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, fmt.Errorf(`process id prefix 'lib:' is reserved for pre-defined processors. Processor ID %q is not allowed.`, n)
+			return nil, nil, reservedIdPrefixError("logging", "processor", n)
 		}
 		names = append(names, n)
 	}
@@ -671,6 +752,9 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
+			if p.Regex == "" {
+				return nil, nil, missingRequiredParameterError("logging", "processor", p.Type, name, "regex")
+			}
 			fbRegexParser := conf.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,
@@ -679,7 +763,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
 		default:
-			return nil, nil, fmt.Errorf(`processor %q should be one of the type \"parse_json\", \"parse_regex\"`, name)
+			return nil, nil, fmt.Errorf(`logging processor %q with type %q is not supported. Supported logging processor types: [parse_json, parse_regex].`, name, t)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil

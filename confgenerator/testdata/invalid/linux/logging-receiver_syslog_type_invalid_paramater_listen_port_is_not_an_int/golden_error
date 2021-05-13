@@ -1,0 +1,2 @@
+the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
+  line 6: cannot unmarshal !!str `abc` into uint16

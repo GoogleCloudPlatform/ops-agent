@@ -1,0 +1,15 @@
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  exporters:
+    lib:exporter_1:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
+        exporters: [lib:exporter_1]

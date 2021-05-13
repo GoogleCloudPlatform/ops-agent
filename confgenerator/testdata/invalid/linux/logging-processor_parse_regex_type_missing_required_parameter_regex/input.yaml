@@ -1,0 +1,19 @@
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  processors:
+    processor_1:
+      type: parse_regex
+      field: field_1
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
+        exporters: [google]

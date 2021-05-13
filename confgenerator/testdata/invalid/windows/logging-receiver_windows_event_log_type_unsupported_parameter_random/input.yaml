@@ -1,0 +1,14 @@
+logging:
+  receivers:
+    receiver_1:
+      type: windows_event_log
+      channels: [System,Application,Security]
+      unsupported_parameter: some_value
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [windows_event_log]
+        exporters: [google]

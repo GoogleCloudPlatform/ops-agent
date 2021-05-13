@@ -1,0 +1,14 @@
+logging:
+  receivers:
+    lib:receiver_1:
+      type: files
+      include_paths:
+      - /var/log/user-log
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [lib:receiver_1]
+        exporters: [google]
