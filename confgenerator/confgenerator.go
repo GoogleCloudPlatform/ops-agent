@@ -140,7 +140,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	err := yaml.UnmarshalStrict(input, &config)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err.Error())
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
 	}
 	return config, nil
 }
@@ -375,50 +375,45 @@ func extractOtelReceiverFactories(receivers map[string]collectd.Receiver) (map[s
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-func unsupportedComponentTypeError(
-	platform string, // "linux", or "windows".
-	subagent string, // "logging", or "metrics".
-	component string, // "receiver", "processor", or "exporter".
-	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
-	id string, // ID of the receiver, processor, or exporter.
-) error {
+// unsupportedComponentTypeError returns an error message when users specify a receiver, processor, or exporter type that is not supported.
+// platform should be "linux" or "windows".
+// subagent should be "logging", or "metrics".
+// component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics".
+// id is the id of the receiver, processor, or exporter.
+func unsupportedComponentTypeError(platform, subagent, component, componentType, id string) error {
 	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
 	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-		subagent, component, id, t, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
+		subagent, component, id, componentType, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
 }
 
-func reservedIdPrefixError(
-	subagent string, // "logging", or "metrics".
-	component string, // "receiver", "processor", or "exporter".
-	id string, // ID of the receiver, processor, or exporter.
-) error {
+// reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// id is the ID of the receiver, processor, or exporter.
+func reservedIdPrefixError(subagent, component, id string) error {
 	// e.g. logging receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
 		subagent, component, id, component)
 }
 
-func missingRequiredParameterError(
-	subagent string, // "logging", or "metrics".
-	component string, // "receiver", "processor", or "exporter".
-	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
-	id string, // ID of the receiver, processor, or exporter.
-	parameter string, // name of the parameter that is not supported.
-) error {
+// missingRequiredParameterError returns an error message when users miss a required parameter.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// parameter is name of the parameter that is missing.
+func missingRequiredParameterError(subagent, component, componentType, id, parameter string) error {
 	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
-	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, t)
+	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, componentType)
 }
 
-func unsupportedParameterError(
-	subagent string, // "logging", or "metrics".
-	component string, // "receiver", "processor", or "exporter".
-	t string, // type of the receiver, processor, or exporter. e.g. "hostmetrics".
-	id string, // ID of the receiver, processor, or exporter.
-	parameter string, // name of the parameter that is not supported.
-) error {
+// unsupportedParameterError returns an error message when users specifies an unsupported parameter.
+// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
+// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// parameter is name of the parameter that is not supported.
+func unsupportedParameterError(subagent, component, componentType, id, parameter string) error {
 	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
 	// for "files" type logging receiver: [include_paths, exclude_paths].
 	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
-		parameter, subagent, component, id, t, subagent, component, strings.Join(supportedParameters[t], ", "))
+		parameter, subagent, component, id, componentType, subagent, component, strings.Join(supportedParameters[componentType], ", "))
 }
 
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {

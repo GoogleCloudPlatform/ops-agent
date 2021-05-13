@@ -144,10 +144,9 @@ LoadPlugin swap
 	"process":    ``,
 }
 
-func reservedIdPrefixError(
-	component string, // "receiver", "processor", or "exporter".
-	id string, // ID of the receiver, processor, or exporter.
-) error {
+// reservedIdPrefixError returns an error message for when the user tries to define a reserved ID.
+// The component should be "receiver", "processor", or "exporter".
+func reservedIdPrefixError(component, id string) error {
 	// e.g. metrics receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 	return fmt.Errorf(`metrics %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
 		component, id, component)
@@ -193,7 +192,7 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 
 	// Validate Metrics.Receivers.
 	if len(metrics.Receivers) > 1 {
-		return nil, errors.New(`At most one metrics receiver with type "hostmetrics" is allowed.`)
+		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
 	}
 	for receiverID, receiver := range metrics.Receivers {
 		if strings.HasPrefix(receiverID, "lib:") {
