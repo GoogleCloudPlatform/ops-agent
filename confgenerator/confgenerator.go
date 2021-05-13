@@ -458,7 +458,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, nil, fmt.Errorf(`syslog type receiver %q should have the mode as one of the "tcp", "udp"`, rID)
+				return nil, nil, nil, fmt.Errorf(`unknown transport protocol %q in the logging receiver %q. Supported transport protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
 			}
 			if r.Channels != nil {
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
