@@ -1,6 +1,6 @@
 metrics:
   receivers:
-    hostmetrics_receiver:
+    receiver_1:
       type: hostmetrics
       collection_interval: 24
   exporters:
@@ -9,5 +9,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics_receiver]
+        receivers: [receiver_1]
         exporters: [google_exporter]
