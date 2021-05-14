@@ -509,11 +509,11 @@ func (e emptyFieldErr) Error() string {
 func validateCollectionInterval(collectionInterval string, pluginName string) (bool, error) {
 	t, err := time.ParseDuration(collectionInterval)
 	if err != nil {
-		return false, fmt.Errorf("receiver %s has invalid collection interval %q: %s", pluginName, collectionInterval, err)
+		return false, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", pluginName, collectionInterval, err)
 	}
 	interval := t.Seconds()
 	if interval < 10 {
-		return false, fmt.Errorf("collection interval %vs for metrics receiver %s is below the minimum threshold of 10s.", interval, pluginName)
+		return false, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %vs that is below the minimum threshold of \"10s\".", pluginName, interval)
 	}
 	return true, nil
 }

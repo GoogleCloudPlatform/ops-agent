@@ -206,11 +206,11 @@ func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
 		if receiver.CollectionInterval != "" {
 			t, err := time.ParseDuration(receiver.CollectionInterval)
 			if err != nil {
-				return nil, fmt.Errorf("receiver %s has invalid collection interval %q: %s", receiverID, receiver.CollectionInterval, err)
+				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", receiverID, receiver.CollectionInterval, err)
 			}
 			interval := t.Seconds()
 			if interval < 10 {
-				return nil, fmt.Errorf("collection interval %vs for metrics receiver %s is below the minimum threshold of 10s.", interval, receiverID)
+				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
 			}
 			collectdConf.scrapeInternal = interval
 		}
