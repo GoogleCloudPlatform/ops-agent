@@ -413,7 +413,7 @@ processors:
       # system.disk.merged -> disk/merged_operations
       - metric_name: system.disk.merged
         action: update
-        new_name: agent.googleapis.com/disk/merged_operations
+        new_name: disk/merged_operations
       # system.filesystem.usage -> disk/bytes_used
       - metric_name: system.filesystem.usage
         action: update
