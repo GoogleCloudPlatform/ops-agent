@@ -218,6 +218,9 @@ service:
       - metric_name: system.disk.pending_operations
         action: update
         new_name: disk/pending_operations
+        operations:
+          # change data type from int64 -> double
+          - action: toggle_scalar_data_type
       # system.disk.merged -> disk/merged_operations
       - metric_name: system.disk.merged
         action: update
