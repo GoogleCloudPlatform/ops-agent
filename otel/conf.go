@@ -207,6 +207,13 @@ service:
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
+      # system.disk.weighted_io_time -> disk/weighted_io_time
+      - metric_name: system.disk.weighted_io_time
+        action: update
+        new_name: disk/weighted_io_time
+        operations:
+          # change data type from double -> int64
+          - action: toggle_scalar_data_type
       # system.disk.operation_time -> disk/operation_time
       - metric_name: system.disk.operation_time
         action: update
