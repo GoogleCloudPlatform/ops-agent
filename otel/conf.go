@@ -194,10 +194,12 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: update_label
             label: state
             new_label: cpu_state
+{{- if .Windows}}
           # take mean over cpu_number dimension, retaining only cpu_state
           - action: aggregate_labels
             label_set: [ cpu_state ]
             aggregation_type: mean
+{{- end}}
       # system.cpu.load_average.1m -> cpu/load_1m
       - metric_name: system.cpu.load_average.1m
         action: update

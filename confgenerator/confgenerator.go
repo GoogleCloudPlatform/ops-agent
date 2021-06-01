@@ -180,7 +180,7 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 		Service:     serviceList,
 
 		UserAgent: userAgent,
-		Windows:   true,
+		Windows:   hostInfo.OS == "windows",
 	}.Generate()
 	if err != nil {
 		return "", err
