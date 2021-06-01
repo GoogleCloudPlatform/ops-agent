@@ -172,7 +172,16 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 			return "", err
 		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent)
+	otelConfig, err := otel.Config{
+		HostMetrics: hostMetricsList,
+		MSSQL:       mssqlList,
+		IIS:         iisList,
+		Stackdriver: stackdriverList,
+		Service:     serviceList,
+
+		UserAgent: userAgent,
+		Windows:   true,
+	}.Generate()
 	if err != nil {
 		return "", err
 	}
