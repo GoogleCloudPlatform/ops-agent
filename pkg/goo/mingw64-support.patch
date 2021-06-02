@@ -1,0 +1,157 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5e88c994..70a226fd 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -423,7 +423,7 @@ if(FLB_TLS)
+   add_subdirectory(${FLB_PATH_LIB_MBEDTLS} EXCLUDE_FROM_ALL)
+ 
+   # Link OpenSSL statically on Windows.
+-  if (FLB_SYSTEM_WINDOWS)
++  if (FLB_SYSTEM_WINDOWS AND MSVC)
+     set(OPENSSL_USE_STATIC_LIBS ON)
+     set(OPENSSL_MSVC_STATIC_RT  ON)
+   endif()
+diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
+index b55aef20..da6c27e9 100644
+--- a/cmake/luajit.cmake
++++ b/cmake/luajit.cmake
+@@ -11,6 +11,10 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
+ set(LUAJIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${FLB_PATH_LIB_LUAJIT})
+ set(LUAJIT_DEST ${CMAKE_CURRENT_BINARY_DIR})
+ 
++if(NOT DEFINED CMAKE_HOST_C_COMPILER)
++  set(CMAKE_HOST_C_COMPILER, ${CMAKE_C_COMPILER})
++endif()
++
+ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+   set(CFLAGS "${CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+ endif()
+@@ -22,7 +26,7 @@ ExternalProject_Add(luajit
+   EXCLUDE_FROM_ALL TRUE
+   SOURCE_DIR ${LUAJIT_SRC}
+   CONFIGURE_COMMAND ./configure
+-  BUILD_COMMAND $(MAKE) CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC"
++  BUILD_COMMAND $(MAKE) HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC" Q=
+   INSTALL_COMMAND cp src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
+ 
+ # luajit (Windows)
+diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
+index 30dd4cdf..dac3fe14 100644
+--- a/include/fluent-bit/flb_compat.h
++++ b/include/fluent-bit/flb_compat.h
+@@ -28,17 +28,12 @@
+ #ifndef FLB_COMPAT_H
+ #define FLB_COMPAT_H
+ 
+-/*
+- * libmonkey exposes compat macros for <unistd.h>, which some platforms lack,
+- * so include the header here.
+- */
+-#include <monkey/mk_core.h>
+-
+ #ifdef FLB_SYSTEM_WINDOWS
+ #define WIN32_LEAN_AND_MEAN
+ #include <winsock2.h>
++#include <ws2tcpip.h>
+ #include <windows.h>
+-#include <Wincrypt.h> /* flb_io_tls.c */
++#include <wincrypt.h> /* flb_io_tls.c */
+ 
+ #include <monkey/mk_core/mk_sleep.h>
+ #include <fluent-bit/flb_dlfcn_win32.h>
+@@ -123,11 +118,13 @@ static inline char* realpath(char *path, char *buf)
+     return _fullpath(NULL, path, 0);
+ }
+ 
++#ifdef _MSC_VER
+ static inline int usleep(LONGLONG usec)
+ {
+     // Convert into 100ns unit.
+     return nanosleep(usec * 10);
+ }
++#endif
+ #else
+ #include <netdb.h>
+ #include <netinet/in.h>
+@@ -140,4 +137,10 @@ static inline int usleep(LONGLONG usec)
+ #define FLB_DIRCHAR '/'
+ #endif
+ 
++/*
++ * libmonkey exposes compat macros for <unistd.h>, which some platforms lack,
++ * so include the header here.
++ */
++#include <monkey/mk_core.h>
++
+ #endif
+diff --git a/lib/monkey/include/monkey/mk_core/external/winpthreads.h b/lib/monkey/include/monkey/mk_core/external/winpthreads.h
+index 97045a69..f28366d2 100644
+--- a/lib/monkey/include/monkey/mk_core/external/winpthreads.h
++++ b/lib/monkey/include/monkey/mk_core/external/winpthreads.h
+@@ -101,7 +101,7 @@ extern "C" {
+ #define PTHREAD_BARRIER_SERIAL_THREAD 1
+ 
+ /* Windows doesn't have this, so declare it ourselves. */
+-#if (_MSC_VER < 1900)
++#if defined(_MSC_VER) && (_MSC_VER < 1900)
+ struct timespec
+ {
+   /* long long in windows is the same as long in unix for 64bit */
+diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
+index 6034a54b..676050f1 100644
+--- a/plugins/CMakeLists.txt
++++ b/plugins/CMakeLists.txt
+@@ -148,7 +148,9 @@ endif()
+ 
+ if (FLB_SYSTEM_WINDOWS)
+   REGISTER_IN_PLUGIN("in_winlog")
+-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
++  if (MSVC)
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
++  endif()
+ else()
+   REGISTER_IN_PLUGIN("in_serial")
+ endif()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 76940076..d5e9c2b8 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -61,7 +61,9 @@ if(FLB_SYSTEM_WINDOWS)
+     ${src}
+     flb_dlfcn_win32.c
+     )
+-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
++  if(MSVC)
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
++  endif()
+ endif()
+ 
+ if(FLB_PARSER)
+@@ -199,12 +201,21 @@ check_symbol_exists(accept4 "sys/socket.h" HAVE_ACCEPT4)
+ 
+ # Core dependencies
+ if(FLB_SYSTEM_WINDOWS)
+-  set(FLB_DEPS
+-    "ws2_32.lib"
+-    "crypt32.lib"
+-    "Bcrypt.lib"
+-    "Shlwapi.lib"
+-    )
++  if(MSVC)
++    set(FLB_DEPS
++      "ws2_32.lib"
++      "crypt32.lib"
++      "Bcrypt.lib"
++      "Shlwapi.lib"
++      )
++  else()
++    set(FLB_DEPS
++      "ws2_32.dll"
++      "crypt32.dll"
++      "Bcrypt.dll"
++      "Shlwapi.dll"
++      )
++  endif()
+ else()
+   set(FLB_DEPS
+     ${FLB_DEPS}

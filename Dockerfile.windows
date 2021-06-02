@@ -15,6 +15,7 @@ RUN go mod init unused; \
 
 #COPY . /work
 #WORKDIR /work
+#RUN patch -d ./submodules/fluent-bit/ <./pkg/goo/mingw64-support.patch
 #RUN ./pkg/goo/build.sh
 #
 #FROM scratch
