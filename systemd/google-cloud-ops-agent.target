@@ -14,8 +14,8 @@
 
 [Unit]
 Description=Google Cloud Ops Agent
-Requires=google-cloud-ops-agent.service google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-collectd.service
-After=google-cloud-ops-agent.service google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-collectd.service
+Requires=google-cloud-ops-agent.service google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
+After=google-cloud-ops-agent.service google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
 
 [Install]
 WantedBy=multi-user.target
