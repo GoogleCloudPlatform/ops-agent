@@ -1,22 +1,25 @@
 package otel
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/kylelemons/godebug/diff"
 )
 
-func TestHostMetrics(t *testing.T) {
+func TestSection(t *testing.T) {
 	tests := []struct {
-		hostmetrics               HostMetrics
-		expectedHostMetricsConfig string
+		name    string
+		section interface{}
+		want    string
 	}{
 		{
-			hostmetrics: HostMetrics{
+			section: HostMetrics{
 				HostMetricsID:      "hostmetrics",
 				CollectionInterval: "60s",
 			},
-			expectedHostMetricsConfig: `hostmetrics/hostmetrics:
+			want: `hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
       cpu:
@@ -25,68 +28,36 @@ func TestHostMetrics(t *testing.T) {
       disk:
       filesystem:
       network:
-      swap:
+      paging:
       process:`,
 		},
-	}
-	for _, tc := range tests {
-		got, err := tc.hostmetrics.renderConfig()
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.expectedHostMetricsConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran hostmetrics.renderConfig() returned unexpected diff (-want +got):\n%s", tc.hostmetrics, diff)
-		}
-	}
-}
-
-func TestHostMetricsErrors(t *testing.T) {
-	tests := []struct {
-		name        string
-		hostmetrics HostMetrics
-	}{
 		{
 			name: "empty collection interval",
-			hostmetrics: HostMetrics{
+			section: HostMetrics{
 				HostMetricsID: "hostmetrics",
 				//CollectionInterval: "60s",
 			},
 		},
 		{
 			name: "invalid collection interval",
-			hostmetrics: HostMetrics{
+			section: HostMetrics{
 				HostMetricsID:      "hostmetrics",
 				CollectionInterval: "60",
 			},
 		},
 		{
 			name: "collection interval too short",
-			hostmetrics: HostMetrics{
+			section: HostMetrics{
 				HostMetricsID:      "hostmetrics",
 				CollectionInterval: "1s",
 			},
 		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.hostmetrics.renderConfig(); err == nil {
-			t.Errorf("test %q: hostmetrics.renderConfig() succeeded, want error.", tc.name)
-		}
-	}
-
-}
-
-func TestIIS(t *testing.T) {
-	tests := []struct {
-		iis               IIS
-		expectedIISConfig string
-	}{
 		{
-			iis: IIS{
+			section: IIS{
 				IISID:              "iis",
 				CollectionInterval: "60s",
 			},
-			expectedIISConfig: `windowsperfcounters/iis_iis:
+			want: `windowsperfcounters/iis_iis:
     collection_interval: 60s
     perfcounters:
       - object: Web Service
@@ -104,30 +75,12 @@ func TestIIS(t *testing.T) {
           - Total Put Requests
           - Total Trace Requests`,
 		},
-	}
-	for _, tc := range tests {
-		got, err := tc.iis.renderConfig()
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.expectedIISConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran iis.renderConfig() returned unexpected diff (-want +got):\n%s", tc.iis, diff)
-		}
-	}
-}
-
-func TestMSSQL(t *testing.T) {
-	tests := []struct {
-		mssql               MSSQL
-		expectedMSSQLConfig string
-	}{
 		{
-			mssql: MSSQL{
+			section: MSSQL{
 				MSSQLID:            "mssql",
 				CollectionInterval: "60s",
 			},
-			expectedMSSQLConfig: `windowsperfcounters/mssql_mssql:
+			want: `windowsperfcounters/mssql_mssql:
     collection_interval: 60s
     perfcounters:
       - object: SQLServer:General Statistics
@@ -140,75 +93,54 @@ func TestMSSQL(t *testing.T) {
           - Transactions/sec
           - Write Transactions/sec`,
 		},
-	}
-	for _, tc := range tests {
-		got, err := tc.mssql.renderConfig()
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.expectedMSSQLConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran mssql.renderConfig() returned unexpected diff (-want +got):\n%s", tc.mssql, diff)
-		}
-	}
-}
-
-func TestStackdriver(t *testing.T) {
-	tests := []struct {
-		stackdriver               Stackdriver
-		expectedStackdriverConfig string
-	}{
 		{
-			stackdriver: Stackdriver{
+			section: Stackdriver{
 				StackdriverID: "agent",
 				UserAgent:     "$USERAGENT",
 				Prefix:        "agent.googleapis.com/",
 			},
-			expectedStackdriverConfig: `stackdriver/agent:
+			want: `googlecloud/agent:
     user_agent: $USERAGENT
     metric:
       prefix: agent.googleapis.com/`,
 		},
-	}
-	for _, tc := range tests {
-		got, err := tc.stackdriver.renderConfig()
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.expectedStackdriverConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", tc.stackdriver, diff)
-		}
-	}
-}
-
-func TestService(t *testing.T) {
-	tests := []struct {
-		service               Service
-		expectedServiceConfig string
-	}{
 		{
-			service: Service{
+			section: Service{
 				ID:         "system",
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
 				Receivers:  "[hostmetrics/hostmetrics]",
-				Exporters:  "[stackdriver/google]",
+				Exporters:  "[googlecloud/google]",
 			},
-			expectedServiceConfig: `metrics/system:
+			want: `metrics/system:
       receivers:  [hostmetrics/hostmetrics]
       processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
-      exporters: [stackdriver/google]`,
+      exporters: [googlecloud/google]`,
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.service.renderConfig()
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
+		typeObj := reflect.ValueOf(tc.section).Type()
+		name := typeObj.Name()
+		if tc.name != "" {
+			name = name + "/" + tc.name
 		}
-		if diff := diff.Diff(tc.expectedServiceConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran service.renderConfig() returned unexpected diff (-want +got):\n%s", tc.service, diff)
-		}
+		t.Run(name, func(t *testing.T) {
+			var b strings.Builder
+			err := confTemplate.ExecuteTemplate(&b, strings.ToLower(typeObj.Name()), tc.section)
+			got := b.String()
+			if tc.want != "" {
+				if err != nil {
+					t.Errorf("got error: %v, want no error", err)
+					return
+				}
+				if diff := diff.Diff(tc.want, got); diff != "" {
+					t.Errorf("service.renderConfig() returned unexpected diff (-want +got):\n%s", diff)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("rendering configuration succeeded, want error.")
+				}
+			}
+		})
 	}
 }
 
@@ -245,18 +177,18 @@ func TestGenerateOtelConfig(t *testing.T) {
 				ID:         "system",
 				Receivers:  "[hostmetrics/hostmetrics]",
 				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Exporters:  "[stackdriver/google]",
+				Exporters:  "[googlecloud/google]",
 			},
 				{
 					ID:         "mssql",
 					Receivers:  "[windowsperfcounters/mssql_mssql]",
 					Processors: "[metricstransform/mssql,resourcedetection]",
-					Exporters:  "[stackdriver/google]",
+					Exporters:  "[googlecloud/google]",
 				},
 				{ID: "iis",
 					Receivers:  "[windowsperfcounters/iis_iis]",
 					Processors: "[metricstransform/iis,resourcedetection]",
-					Exporters:  "[stackdriver/google]",
+					Exporters:  "[googlecloud/google]",
 				},
 			},
 			want: `receivers:
@@ -276,7 +208,7 @@ func TestGenerateOtelConfig(t *testing.T) {
       disk:
       filesystem:
       network:
-      swap:
+      paging:
       process:
   windowsperfcounters/mssql_mssql:
     collection_interval: 60s
@@ -307,7 +239,6 @@ func TestGenerateOtelConfig(t *testing.T) {
           - Total Post Requests
           - Total Put Requests
           - Total Trace Requests
-  
 processors:
   resourcedetection:
     detectors: [gce]
@@ -325,7 +256,9 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-          - system.network.dropped_packets
+          - system.network.dropped
+          - system.filesystem.inodes.usage
+          - system.paging.faults
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   metricstransform/system:
@@ -345,10 +278,6 @@ processors:
           - action: update_label
             label: state
             new_label: cpu_state
-          # take mean over cpu_number dimension, retaining only cpu_state
-          - action: aggregate_labels
-            label_set: [ cpu_state ]
-            aggregation_type: mean
       # system.cpu.utilization -> cpu/utilization
       - metric_name: system.cpu.utilization
         action: update
@@ -362,10 +291,6 @@ processors:
           - action: update_label
             label: state
             new_label: cpu_state
-          # take mean over cpu_number dimension, retaining only cpu_state
-          - action: aggregate_labels
-            label_set: [ cpu_state ]
-            aggregation_type: mean
       # system.cpu.load_average.1m -> cpu/load_1m
       - metric_name: system.cpu.load_average.1m
         action: update
@@ -386,14 +311,21 @@ processors:
       - metric_name: system.disk.write_io
         action: update
         new_name: disk/write_bytes_count
-      # system.disk.ops -> disk/operation_count
-      - metric_name: system.disk.ops
+      # system.disk.operations -> disk/operation_count
+      - metric_name: system.disk.operations
         action: update
         new_name: disk/operation_count
       # system.disk.io_time -> disk/io_time
       - metric_name: system.disk.io_time
         action: update
         new_name: disk/io_time
+        operations:
+          # change data type from double -> int64
+          - action: toggle_scalar_data_type
+      # system.disk.weighted_io_time -> disk/weighted_io_time
+      - metric_name: system.disk.weighted_io_time
+        action: update
+        new_name: disk/weighted_io_time
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
@@ -411,6 +343,10 @@ processors:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+      # system.disk.merged -> disk/merged_operations
+      - metric_name: system.disk.merged
+        action: update
+        new_name: disk/merged_operations
       # system.filesystem.usage -> disk/bytes_used
       - metric_name: system.filesystem.usage
         action: update
@@ -512,26 +448,34 @@ processors:
               # transmit -> tx
               - value: transmit
                 new_value: tx
-      # system.network.tcp_connections -> network/tcp_connections
-      - metric_name: system.network.tcp_connections
+      # system.network.connections -> network/tcp_connections
+      - metric_name: system.network.connections
         action: update
         new_name: network/tcp_connections
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+          # remove udp data
+          - action: delete_label_value
+            label: protocol
+            label_value: udp
           # change label state -> tcp_state
           - action: update_label
             label: state
             new_label: tcp_state
-      # system.swap.usage -> swap/bytes_used
-      - metric_name: system.swap.usage
+          # remove protocol label
+          - action: aggregate_labels
+            label_set: [ state ]
+            aggregation_type: sum
+      # system.paging.usage -> swap/bytes_used
+      - metric_name: system.paging.usage
         action: update
         new_name: swap/bytes_used
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-      # system.swap.utilization -> swap/percent_used
-      - metric_name: system.swap.utilization
+      # system.paging.utilization -> swap/percent_used
+      - metric_name: system.paging.utilization
         action: update
         new_name: swap/percent_used
       # duplicate swap/percent_used -> pagefile/percent_used
@@ -543,8 +487,8 @@ processors:
           - action: aggregate_labels
             label_set: [ state ]
             aggregation_type: sum
-      # system.swap.paging_ops -> swap/io
-      - metric_name: system.swap.paging_ops
+      # system.paging.operations -> swap/io
+      - metric_name: system.paging.operations
         action: update
         new_name: swap/io
         operations:
@@ -679,19 +623,16 @@ processors:
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
-  
 exporters:
-  stackdriver/google:
+  googlecloud/google:
     user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
-  stackdriver/agent:
+  googlecloud/agent:
     user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
     metric:
       prefix: agent.googleapis.com/
-  
 extensions:
-  
 service:
   pipelines:
     # reports agent self-observability metrics to cloud monitoring
@@ -703,30 +644,41 @@ service:
         - metricstransform/agent
         - resourcedetection
       exporters:
-        - stackdriver/agent
+        - googlecloud/agent
     metrics/system:
       receivers:  [hostmetrics/hostmetrics]
       processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
-      exporters: [stackdriver/google]
+      exporters: [googlecloud/google]
     metrics/mssql:
       receivers:  [windowsperfcounters/mssql_mssql]
       processors: [metricstransform/mssql,resourcedetection]
-      exporters: [stackdriver/google]
+      exporters: [googlecloud/google]
     metrics/iis:
       receivers:  [windowsperfcounters/iis_iis]
       processors: [metricstransform/iis,resourcedetection]
-      exporters: [stackdriver/google]
-    `,
+      exporters: [googlecloud/google]
+`,
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))")
-		if err != nil {
-			t.Errorf("got error: %v, want no error", err)
-			return
-		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
-			t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Config{
+				HostMetrics: tc.hostMetricsList,
+				MSSQL:       tc.mssqlList,
+				IIS:         tc.iisList,
+				Stackdriver: tc.stackdriverList,
+				Service:     tc.serviceList,
+
+				UserAgent: "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))",
+				Windows:   true,
+			}.Generate()
+			if err != nil {
+				t.Errorf("got error: %v, want no error", err)
+				return
+			}
+			if diff := diff.Diff(got, tc.want); diff != "" {
+				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-got +want):\n%s", tc.name, diff)
+			}
+		})
 	}
 }

@@ -22,31 +22,39 @@ import (
 	"time"
 )
 
-const (
-	confTemplate = `receivers:
-  {{range .ReceiversConfigSection -}}
-  {{.}}
-  {{end}}
+var templateFunctions = template.FuncMap{
+	"notEmpty":                   notEmpty,
+	"validateCollectionInterval": validateCollectionInterval,
+}
+
+var confTemplate = template.Must(template.New("conf").Funcs(templateFunctions).Parse(
+	`receivers:
+  {{template "agentreceiver" .}}
+{{- range .HostMetrics}}
+  {{template "hostmetrics" .}}
+{{- end}}
+{{- range .MSSQL}}
+  {{template "mssql" .}}
+{{- end}}
+{{- range .IIS}}
+  {{template "iis" .}}
+{{- end}}
 processors:
-  {{range .ProcessorsConfigSection -}}
-  {{.}}
-  {{end}}
+  {{template "defaultprocessor" .}}
 exporters:
-  {{range .ExportersConfigSection -}}
-  {{.}}
-  {{end}}
+{{- range .Stackdriver}}
+  {{template "stackdriver" .}}
+{{- end}}
 extensions:
-  {{range .ExtensionsConfigSection -}}
-  {{.}}
-  {{end}}
 service:
   pipelines:
-    {{range .ServiceConfigSection -}}
-    {{.}}
-    {{end}}`
-
-	hostmetricsReceiverConf = `hostmetrics/{{.HostMetricsID}}:
-    collection_interval: {{.CollectionInterval}}
+    {{template "agentservice" .}}
+{{- range .Service}}
+    {{template "service" .}}
+{{- end}}
+{{define "hostmetrics" -}}
+  hostmetrics/{{.HostMetricsID}}:
+    collection_interval: {{.CollectionInterval | validateCollectionInterval "hostmetrics"}}
     scrapers:
       cpu:
       load:
@@ -54,11 +62,13 @@ service:
       disk:
       filesystem:
       network:
-      swap:
-      process:`
+      paging:
+      process:
+{{- end -}}
 
-	iisReceiverConf = `windowsperfcounters/iis_{{.IISID}}:
-    collection_interval: {{.CollectionInterval}}
+{{define "iis" -}}
+windowsperfcounters/iis_{{.IISID}}:
+    collection_interval: {{.CollectionInterval | validateCollectionInterval "iis"}}
     perfcounters:
       - object: Web Service
         instances: _Total
@@ -73,9 +83,11 @@ service:
           - Total Options Requests
           - Total Post Requests
           - Total Put Requests
-          - Total Trace Requests`
+          - Total Trace Requests
+{{- end -}}
 
-	mssqlReceiverConf = `windowsperfcounters/mssql_{{.MSSQLID}}:
+{{define "mssql" -}}
+windowsperfcounters/mssql_{{.MSSQLID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
@@ -86,22 +98,28 @@ service:
         instances: _Total
         counters:
           - Transactions/sec
-          - Write Transactions/sec`
+          - Write Transactions/sec
+{{- end -}}
 
-	stackdriverExporterConf = `stackdriver/{{.StackdriverID}}:
+{{define "stackdriver" -}}
+  googlecloud/{{.StackdriverID}}:
     user_agent: {{.UserAgent}}
     metric:
-      prefix: {{.Prefix}}`
+      prefix: {{.Prefix}}
+{{- end -}}
 
-	agentReceiverConf = `prometheus/agent:
+{{define "agentreceiver" -}}
+  prometheus/agent:
     config:
       scrape_configs:
       - job_name: 'otel-collector'
         scrape_interval: 1m
         static_configs:
-        - targets: ['0.0.0.0:8888']`
+        - targets: ['0.0.0.0:8888']
+{{- end -}}
 
-	agentServiceConf = `# reports agent self-observability metrics to cloud monitoring
+{{define "agentservice" -}}
+    # reports agent self-observability metrics to cloud monitoring
     metrics/agent:
       receivers:
         - prometheus/agent
@@ -110,14 +128,18 @@ service:
         - metricstransform/agent
         - resourcedetection
       exporters:
-        - stackdriver/agent`
+        - googlecloud/agent
+{{- end -}}
 
-	serviceConf = `metrics/{{.ID}}:
+{{define "service" -}}
+    metrics/{{.ID}}:
       receivers:  {{.Receivers}}
       processors: {{.Processors}}
-      exporters: {{.Exporters}}`
+      exporters: {{.Exporters}}
+{{- end -}}
 
-	defaultProcessorConf = `resourcedetection:
+{{define "defaultprocessor" -}}
+  resourcedetection:
     detectors: [gce]
 
   # perform custom transformations that aren't supported by the metricstransform processor
@@ -133,7 +155,9 @@ service:
       exclude:
         match_type: strict
         metric_names:
-          - system.network.dropped_packets
+          - system.network.dropped
+          - system.filesystem.inodes.usage
+          - system.paging.faults
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   metricstransform/system:
@@ -153,10 +177,6 @@ service:
           - action: update_label
             label: state
             new_label: cpu_state
-          # take mean over cpu_number dimension, retaining only cpu_state
-          - action: aggregate_labels
-            label_set: [ cpu_state ]
-            aggregation_type: mean
       # system.cpu.utilization -> cpu/utilization
       - metric_name: system.cpu.utilization
         action: update
@@ -170,10 +190,6 @@ service:
           - action: update_label
             label: state
             new_label: cpu_state
-          # take mean over cpu_number dimension, retaining only cpu_state
-          - action: aggregate_labels
-            label_set: [ cpu_state ]
-            aggregation_type: mean
       # system.cpu.load_average.1m -> cpu/load_1m
       - metric_name: system.cpu.load_average.1m
         action: update
@@ -194,14 +210,21 @@ service:
       - metric_name: system.disk.write_io
         action: update
         new_name: disk/write_bytes_count
-      # system.disk.ops -> disk/operation_count
-      - metric_name: system.disk.ops
+      # system.disk.operations -> disk/operation_count
+      - metric_name: system.disk.operations
         action: update
         new_name: disk/operation_count
       # system.disk.io_time -> disk/io_time
       - metric_name: system.disk.io_time
         action: update
         new_name: disk/io_time
+        operations:
+          # change data type from double -> int64
+          - action: toggle_scalar_data_type
+      # system.disk.weighted_io_time -> disk/weighted_io_time
+      - metric_name: system.disk.weighted_io_time
+        action: update
+        new_name: disk/weighted_io_time
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
@@ -219,6 +242,10 @@ service:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+      # system.disk.merged -> disk/merged_operations
+      - metric_name: system.disk.merged
+        action: update
+        new_name: disk/merged_operations
       # system.filesystem.usage -> disk/bytes_used
       - metric_name: system.filesystem.usage
         action: update
@@ -320,26 +347,34 @@ service:
               # transmit -> tx
               - value: transmit
                 new_value: tx
-      # system.network.tcp_connections -> network/tcp_connections
-      - metric_name: system.network.tcp_connections
+      # system.network.connections -> network/tcp_connections
+      - metric_name: system.network.connections
         action: update
         new_name: network/tcp_connections
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+          # remove udp data
+          - action: delete_label_value
+            label: protocol
+            label_value: udp
           # change label state -> tcp_state
           - action: update_label
             label: state
             new_label: tcp_state
-      # system.swap.usage -> swap/bytes_used
-      - metric_name: system.swap.usage
+          # remove protocol label
+          - action: aggregate_labels
+            label_set: [ state ]
+            aggregation_type: sum
+      # system.paging.usage -> swap/bytes_used
+      - metric_name: system.paging.usage
         action: update
         new_name: swap/bytes_used
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-      # system.swap.utilization -> swap/percent_used
-      - metric_name: system.swap.utilization
+      # system.paging.utilization -> swap/percent_used
+      - metric_name: system.paging.utilization
         action: update
         new_name: swap/percent_used
       # duplicate swap/percent_used -> pagefile/percent_used
@@ -351,8 +386,8 @@ service:
           - action: aggregate_labels
             label_set: [ state ]
             aggregation_type: sum
-      # system.swap.paging_ops -> swap/io
-      - metric_name: system.swap.paging_ops
+      # system.paging.operations -> swap/io
+      - metric_name: system.paging.operations
         action: update
         new_name: swap/io
         operations:
@@ -486,16 +521,8 @@ service:
         new_name: agent/monitoring/point_count
         operations:
           # change data type from double -> int64
-          - action: toggle_scalar_data_type`
-)
-
-type configSections struct {
-	ReceiversConfigSection  []string
-	ProcessorsConfigSection []string
-	ExportersConfigSection  []string
-	ExtensionsConfigSection []string
-	ServiceConfigSection    []string
-}
+          - action: toggle_scalar_data_type
+{{- end -}}`))
 
 type emptyFieldErr struct {
 	plugin string
@@ -506,16 +533,29 @@ func (e emptyFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
 }
 
-func validateCollectionInterval(collectionInterval string, pluginName string) (bool, error) {
+func notEmpty(plugin, field, value string) (string, error) {
+	if value == "" {
+		return "", emptyFieldErr{
+			plugin: plugin,
+			field:  field,
+		}
+	}
+	return value, nil
+}
+
+func validateCollectionInterval(pluginName, collectionInterval string) (string, error) {
+	if _, err := notEmpty(pluginName, "collection_interval", collectionInterval); err != nil {
+		return "", err
+	}
 	t, err := time.ParseDuration(collectionInterval)
 	if err != nil {
-		return false, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", pluginName, collectionInterval, err)
+		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", pluginName, collectionInterval, err)
 	}
 	interval := t.Seconds()
 	if interval < 10 {
-		return false, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %vs that is below the minimum threshold of \"10s\".", pluginName, interval)
+		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %vs that is below the minimum threshold of \"10s\".", pluginName, interval)
 	}
-	return true, nil
+	return collectionInterval, nil
 }
 
 type MSSQL struct {
@@ -523,71 +563,14 @@ type MSSQL struct {
 	CollectionInterval string
 }
 
-var mssqlTemplate = template.Must(template.New("mssql").Parse(mssqlReceiverConf))
-
-func (m MSSQL) renderConfig() (string, error) {
-	if m.CollectionInterval == "" {
-		return "", emptyFieldErr{
-			plugin: "mssql",
-			field:  "collection_interval",
-		}
-	}
-	if v, err := validateCollectionInterval(m.CollectionInterval, m.MSSQLID); !v {
-		return "", err
-	}
-	var renderedMSSQLConfig strings.Builder
-	if err := mssqlTemplate.Execute(&renderedMSSQLConfig, m); err != nil {
-		return "", err
-	}
-	return renderedMSSQLConfig.String(), nil
-}
-
 type IIS struct {
 	IISID              string
 	CollectionInterval string
 }
 
-var iisTemplate = template.Must(template.New("iis").Parse(iisReceiverConf))
-
-func (i IIS) renderConfig() (string, error) {
-	if i.CollectionInterval == "" {
-		return "", emptyFieldErr{
-			plugin: "iis",
-			field:  "collection_interval",
-		}
-	}
-	if v, err := validateCollectionInterval(i.CollectionInterval, i.IISID); !v {
-		return "", err
-	}
-	var renderedIISConfig strings.Builder
-	if err := iisTemplate.Execute(&renderedIISConfig, i); err != nil {
-		return "", err
-	}
-	return renderedIISConfig.String(), nil
-}
-
 type HostMetrics struct {
 	HostMetricsID      string
 	CollectionInterval string
-}
-
-var hostMetricsTemplate = template.Must(template.New("hostmetrics").Parse(hostmetricsReceiverConf))
-
-func (h HostMetrics) renderConfig() (string, error) {
-	if h.CollectionInterval == "" {
-		return "", emptyFieldErr{
-			plugin: "hostmetrics",
-			field:  "collection_interval",
-		}
-	}
-	if v, err := validateCollectionInterval(h.CollectionInterval, h.HostMetricsID); !v {
-		return "", err
-	}
-	var renderedHostMetricsConfig strings.Builder
-	if err := hostMetricsTemplate.Execute(&renderedHostMetricsConfig, h); err != nil {
-		return "", err
-	}
-	return renderedHostMetricsConfig.String(), nil
 }
 
 type Service struct {
@@ -597,94 +580,36 @@ type Service struct {
 	Exporters  string
 }
 
-var serviceTemplate = template.Must(template.New("service").Parse(serviceConf))
-
-func (s Service) renderConfig() (string, error) {
-	var renderedServiceConfig strings.Builder
-	if err := serviceTemplate.Execute(&renderedServiceConfig, s); err != nil {
-		return "", err
-	}
-	return renderedServiceConfig.String(), nil
-}
-
 type Stackdriver struct {
 	StackdriverID string
 	UserAgent     string
 	Prefix        string
 }
 
-var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverExporterConf))
+type Config struct {
+	HostMetrics []*HostMetrics
+	MSSQL       []*MSSQL
+	IIS         []*IIS
+	Stackdriver []*Stackdriver
+	Service     []*Service
 
-func (s Stackdriver) renderConfig() (string, error) {
-	var renderedStackdriverConfig strings.Builder
-	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
-		return "", err
-	}
-	return renderedStackdriverConfig.String(), nil
+	UserAgent string
+	Windows   bool
 }
 
-func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisList []*IIS, stackdriverList []*Stackdriver, serviceList []*Service, userAgent string) (string, error) {
-	receiversConfigSection := []string{}
-	exportersConfigSection := []string{}
-	processorsConfigSection := []string{}
-	serviceConfigSection := []string{}
-	receiversConfigSection = append(receiversConfigSection, agentReceiverConf)
-	agentExporter := Stackdriver{
+func (c Config) Generate() (string, error) {
+	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
 		StackdriverID: "agent",
 		Prefix:        "agent.googleapis.com/",
-	}
-	stackdriverList = append(stackdriverList, &agentExporter)
-	serviceConfigSection = append(serviceConfigSection, agentServiceConf)
-	for _, h := range hostMetricsList {
-		configSection, err := h.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		receiversConfigSection = append(receiversConfigSection, configSection)
-	}
-	for _, m := range mssqlList {
-		configSection, err := m.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		receiversConfigSection = append(receiversConfigSection, configSection)
-	}
-	for _, i := range iisList {
-		configSection, err := i.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		receiversConfigSection = append(receiversConfigSection, configSection)
-	}
-	for _, s := range stackdriverList {
-		s.UserAgent = userAgent
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		exportersConfigSection = append(exportersConfigSection, configSection)
-	}
-	for _, s := range serviceList {
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		serviceConfigSection = append(serviceConfigSection, configSection)
-	}
-	processorsConfigSection = append(processorsConfigSection, defaultProcessorConf)
-	configSections := configSections{
-		ReceiversConfigSection:  receiversConfigSection,
-		ProcessorsConfigSection: processorsConfigSection,
-		ExportersConfigSection:  exportersConfigSection,
-		ServiceConfigSection:    serviceConfigSection,
-	}
-	conf, err := template.New("otelConf").Parse(confTemplate)
-	if err != nil {
-		return "", err
+		UserAgent:     c.UserAgent,
+	})
+
+	for _, s := range c.Stackdriver {
+		s.UserAgent = c.UserAgent
 	}
 
 	var configBuilder strings.Builder
-	if err := conf.Execute(&configBuilder, configSections); err != nil {
+	if err := confTemplate.Execute(&configBuilder, c); err != nil {
 		return "", err
 	}
 	return configBuilder.String(), nil

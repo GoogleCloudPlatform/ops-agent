@@ -172,8 +172,18 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 			return "", err
 		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent)
+	otelConfig, err := otel.Config{
+		HostMetrics: hostMetricsList,
+		MSSQL:       mssqlList,
+		IIS:         iisList,
+		Stackdriver: stackdriverList,
+		Service:     serviceList,
+
+		UserAgent: userAgent,
+		Windows:   hostInfo.OS == "windows",
+	}.Generate()
 	if err != nil {
+		// TODO: unwrap template errors so users don't see extraneous template line numbers
 		return "", err
 	}
 	return otelConfig, nil
@@ -576,7 +586,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 						Prefix:        "agent.googleapis.com/",
 					}
 					stackdriverList = append(stackdriverList, &stackdriver)
-					exportNameMap[eID] = "stackdriver/" + eID
+					exportNameMap[eID] = "googlecloud/" + eID
 				}
 			default:
 				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)
