@@ -30,7 +30,7 @@ metrics:
   receivers:
     hostmetrics:
       type: hostmetrics
-      collection_interval: 40s
+      collection_interval: 30s
   exporters:
     google:
       type: google_cloud_monitoring
