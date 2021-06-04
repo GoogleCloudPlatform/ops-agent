@@ -1,1 +1,1 @@
-template: conf:27:49: executing "hostmetrics" at <validateCollectionInterval "hostmetrics">: error calling validateCollectionInterval: parameter "collection_interval" in metrics receiver "hostmetrics" has invalid value "24" that is not an interval (e.g. "60s"). Detailed error: time: missing unit in duration "24"
+parameter "collection_interval" in metrics receiver "receiver_1" has invalid value "24" that is not an interval (e.g. "60s"). Detailed error: time: missing unit in duration "24"

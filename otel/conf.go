@@ -17,6 +17,7 @@ package otel
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -54,7 +55,7 @@ service:
 {{- end}}
 {{define "hostmetrics" -}}
   hostmetrics/{{.HostMetricsID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval "hostmetrics"}}
+    collection_interval: {{.CollectionInterval | validateCollectionInterval .HostMetricsID}}
     scrapers:
       cpu:
       load:
@@ -68,7 +69,7 @@ service:
 
 {{define "iis" -}}
 windowsperfcounters/iis_{{.IISID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval "iis"}}
+    collection_interval: {{.CollectionInterval | validateCollectionInterval .IISID}}
     perfcounters:
       - object: Web Service
         instances: _Total
@@ -88,7 +89,7 @@ windowsperfcounters/iis_{{.IISID}}:
 
 {{define "mssql" -}}
 windowsperfcounters/mssql_{{.MSSQLID}}:
-    collection_interval: {{.CollectionInterval}}
+    collection_interval: {{.CollectionInterval | validateCollectionInterval .MSSQLID}}
     perfcounters:
       - object: SQLServer:General Statistics
         instances: _Total
@@ -570,7 +571,7 @@ func validateCollectionInterval(pluginName, collectionInterval string) (string, 
 	}
 	interval := t.Seconds()
 	if interval < 10 {
-		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %vs that is below the minimum threshold of \"10s\".", pluginName, interval)
+		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", pluginName, interval)
 	}
 	return collectionInterval, nil
 }
@@ -614,6 +615,15 @@ type Config struct {
 	Windows   bool
 }
 
+func extractFunctionError(err error) error {
+	errRe := regexp.MustCompile(`template: \S+: executing "[^"]+" at <[^>]+>: error calling \S+: `)
+	m := errRe.FindStringIndex(err.Error())
+	if m != nil {
+		return fmt.Errorf(err.Error()[m[1]:])
+	}
+	return err
+}
+
 func (c Config) Generate() (string, error) {
 	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
 		StackdriverID: "agent",
@@ -627,7 +637,7 @@ func (c Config) Generate() (string, error) {
 
 	var configBuilder strings.Builder
 	if err := confTemplate.Execute(&configBuilder, c); err != nil {
-		return "", err
+		return "", extractFunctionError(err)
 	}
 	return configBuilder.String(), nil
 }
