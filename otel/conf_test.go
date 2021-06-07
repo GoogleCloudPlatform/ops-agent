@@ -503,6 +503,10 @@ processors:
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
+          # add process label default to 'all'
+          - action: add_label
+            new_label: process
+            new_value: all
           # change label state -> user_or_syst
           - action: update_label
             label: state
@@ -515,10 +519,20 @@ processors:
       - metric_name: process.disk.read_io
         action: update
         new_name: processes/disk/read_bytes_count
+        operations:
+          # add process label default to 'all'
+          - action: add_label
+            new_label: process
+            new_value: all
       # process.disk.write_io (as named after custom split logic) -> processes/disk/write_bytes_count
       - metric_name: process.disk.write_io
         action: update
         new_name: processes/disk/write_bytes_count
+        operations:
+          # add process label default to 'all'
+          - action: add_label
+            new_label: process
+            new_value: all
       # process.memory.physical_usage -> processes/rss_usage
       - metric_name: process.memory.physical_usage
         action: update
@@ -526,6 +540,10 @@ processors:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+          # add process label default to 'all'
+          - action: add_label
+            new_label: process
+            new_value: all
       # process.memory.virtual_usage -> processes/vm_usage
       - metric_name: process.memory.virtual_usage
         action: update
@@ -533,6 +551,10 @@ processors:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
+          # add process label default to 'all'
+          - action: add_label
+            new_label: process
+            new_value: all
 
   # filter to include only agent metrics supported by cloud monitoring
   filter/agent:
