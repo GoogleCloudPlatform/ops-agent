@@ -49,7 +49,7 @@ type platformConfig struct {
 	defaultLogsDir  string
 	defaultStateDir string
 	defaultConfig   string
-	*host.InfoStat
+	host.InfoStat
 }
 
 var platforms = []platformConfig{
@@ -57,7 +57,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 		defaultConfig:   "default-config.yaml",
-		InfoStat: &host.InfoStat{
+		InfoStat: host.InfoStat{
 			OS:              "linux",
 			Platform:        "linux_platform",
 			PlatformVersion: "linux_platform_version",
@@ -67,7 +67,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
 		defaultConfig:   "windows-default-config.yaml",
-		InfoStat: &host.InfoStat{
+		InfoStat: host.InfoStat{
 			OS:              "windows",
 			Platform:        "win_platform",
 			PlatformVersion: "win_platform_version",
@@ -127,7 +127,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			expectedParserConfig := readFileContent(t, platform.OS, d.Name(), goldenParserPath, true)
 
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, &platform.InfoStat)
 			if err != nil {
 				t.Errorf("GenerateFluentBitConfigs got %v", err)
 			} else {
@@ -138,7 +138,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 
 			if platform.OS == "windows" {
 				expectedOtelConfig := readFileContent(t, platform.OS, d.Name(), goldenOtelPath, true)
-				otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
+				otelConf, err := uc.GenerateOtelConfig(&platform.InfoStat)
 				if err != nil {
 					t.Errorf("GenerateOtelConfig got %v", err)
 				} else {
@@ -233,12 +233,12 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, &platform.InfoStat); err != nil {
 		return err
 	}
 
 	if platform.OS == "windows" {
-		if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
+		if _, err = uc.GenerateOtelConfig(&platform.InfoStat); err != nil {
 			return err
 		}
 	} else {
