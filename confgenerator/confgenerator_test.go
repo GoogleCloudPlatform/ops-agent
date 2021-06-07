@@ -49,7 +49,7 @@ type platformConfig struct {
 	defaultLogsDir  string
 	defaultStateDir string
 	defaultConfig   string
-	host.InfoStat
+	*host.InfoStat
 }
 
 var platforms = []platformConfig{
@@ -57,7 +57,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 		defaultConfig:   "default-config.yaml",
-		InfoStat: host.InfoStat{
+		InfoStat: &host.InfoStat{
 			OS:              "linux",
 			Platform:        "linux_platform",
 			PlatformVersion: "linux_platform_version",
@@ -67,7 +67,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
 		defaultConfig:   "windows-default-config.yaml",
-		InfoStat: host.InfoStat{
+		InfoStat: &host.InfoStat{
 			OS:              "windows",
 			Platform:        "win_platform",
 			PlatformVersion: "win_platform_version",
@@ -89,6 +89,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 	t.Parallel()
 	filepathJoin = testJoin
 	for _, platform := range platforms {
+		platform := platform // create a new 'platform'
 		t.Run(platform.OS, func(t *testing.T) {
 			t.Parallel()
 			testGenerateConfsWithValidInput(t, platform)
@@ -103,13 +104,14 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 		t.Fatal(err)
 	}
 	for _, d := range dirs {
-		t.Run(d.Name(), func(t *testing.T) {
+		testName := d.Name()
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			unifiedConfigFilePath := filepath.Join(dirPath, d.Name(), "/input.yaml")
+			unifiedConfigFilePath := filepath.Join(dirPath, testName, "/input.yaml")
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
-			if d.Name() == "default_config" {
+			if testName == "default_config" {
 				unifiedConfigFilePath = platform.defaultConfig
 			}
 
@@ -123,36 +125,36 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			}
 
 			// Retrieve the expected golden conf files.
-			expectedMainConfig := readFileContent(t, platform.OS, d.Name(), goldenMainPath, true)
-			expectedParserConfig := readFileContent(t, platform.OS, d.Name(), goldenParserPath, true)
+			expectedMainConfig := readFileContent(t, platform.OS, testName, goldenMainPath, true)
+			expectedParserConfig := readFileContent(t, platform.OS, testName, goldenParserPath, true)
 
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, &platform.InfoStat)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
 				t.Errorf("GenerateFluentBitConfigs got %v", err)
 			} else {
 				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(t, d.Name(), platform.OS, expectedMainConfig, mainConf, goldenMainPath)
-				updateOrCompareGolden(t, d.Name(), platform.OS, expectedParserConfig, parserConf, goldenParserPath)
+				updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
+				updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 			}
 
 			if platform.OS == "windows" {
-				expectedOtelConfig := readFileContent(t, platform.OS, d.Name(), goldenOtelPath, true)
-				otelConf, err := uc.GenerateOtelConfig(&platform.InfoStat)
+				expectedOtelConfig := readFileContent(t, platform.OS, testName, goldenOtelPath, true)
+				otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 				if err != nil {
 					t.Errorf("GenerateOtelConfig got %v", err)
 				} else {
 					// Compare the expected and actual and error out in case of diff.
-					updateOrCompareGolden(t, d.Name(), platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
+					updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 				}
 			} else {
-				expectedCollectdConfig := readFileContent(t, platform.OS, d.Name(), goldenCollectdPath, true)
+				expectedCollectdConfig := readFileContent(t, platform.OS, testName, goldenCollectdPath, true)
 				collectdConf, err := uc.GenerateCollectdConfig(platform.defaultLogsDir)
 				if err != nil {
 					t.Errorf("GenerateCollectdConfig got %v", err)
 				} else {
 					// Compare the expected and actual and error out in case of diff.
-					updateOrCompareGolden(t, d.Name(), platform.OS, expectedCollectdConfig, collectdConf, goldenCollectdPath)
+					updateOrCompareGolden(t, testName, platform.OS, expectedCollectdConfig, collectdConf, goldenCollectdPath)
 				}
 			}
 		})
@@ -194,6 +196,7 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	for _, platform := range platforms {
+		platform := platform // create a new 'platform'
 		t.Run(platform.OS, func(t *testing.T) {
 			t.Parallel()
 			testGenerateConfigsWithInvalidInput(t, platform)
@@ -208,16 +211,17 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 		t.Fatal(err)
 	}
 	for _, d := range dirs {
-		t.Run(d.Name(), func(t *testing.T) {
+		testName := d.Name()
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			invalidInput := readFileContent(t, platform.OS, d.Name(), invalidInputPath, false)
-			expectedError := readFileContent(t, platform.OS, d.Name(), goldenErrorPath, true)
+			invalidInput := readFileContent(t, platform.OS, testName, invalidInputPath, false)
+			expectedError := readFileContent(t, platform.OS, testName, goldenErrorPath, true)
 			actualError := generateConfigs(invalidInput, platform)
 
 			if actualError == nil {
-				t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", d.Name(), expectedError, invalidInput)
+				t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
 			} else {
-				updateOrCompareGolden(t, d.Name(), platform.OS, expectedError, actualError.Error(), goldenErrorPath)
+				updateOrCompareGolden(t, testName, platform.OS, expectedError, actualError.Error(), goldenErrorPath)
 			}
 		})
 	}
@@ -233,12 +237,12 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, &platform.InfoStat); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
 		return err
 	}
 
 	if platform.OS == "windows" {
-		if _, err = uc.GenerateOtelConfig(&platform.InfoStat); err != nil {
+		if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
 			return err
 		}
 	} else {
