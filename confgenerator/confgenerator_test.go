@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"path/filepath"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -94,7 +95,7 @@ var platforms = []platformConfig{
 func TestGenerateConfsWithValidInput(t *testing.T) {
 	for _, platform := range platforms {
 		t.Run(platform.OS, func(t *testing.T) {
-			dirPath := validTestdataDir + "/" + platform.OS
+			dirPath := filepath.Join(validTestdataDir, platform.OS)
 			dirs, err := ioutil.ReadDir(dirPath)
 			if err != nil {
 				t.Fatal(err)
@@ -102,14 +103,14 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 			for _, d := range dirs {
 				testName := d.Name()
 				t.Run(testName, func(t *testing.T) {
-					unifiedConfigFilePath := fmt.Sprintf("%s/%s/input.yaml", dirPath, testName)
+					unifiedConfigFilePath := filepath.Join(dirPath, testName, "/input.yaml")
 					// Special-case the default config.  It lives directly in the
 					// confgenerator directory.  The golden files are still in the
 					// testdata directory.
 					if d.Name() == "default_config" {
 						unifiedConfigFilePath = platform.defaultConfig
 					}
-
+					
 					data, err := ioutil.ReadFile(unifiedConfigFilePath)
 					if err != nil {
 						t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
@@ -118,21 +119,20 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 					if err != nil {
 						t.Fatalf("ParseUnifiedConfig got %v", err)
 					}
-
-					// GenerateFluentBitConfigs depends on filepath.Join, so actual runtime.GOOS is consequential
-					if platform.OS == hostInfo.OS {
-						// Retrieve the expected golden conf files.
-						expectedMainConfig := readFileContent(t, platform.OS, testName, goldenMainPath, true)
-						expectedParserConfig := readFileContent(t, platform.OS, testName, goldenParserPath, true)
-						// Generate the actual conf files.
-						mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, hostInfo)
-						if err != nil {
-							t.Fatalf("GenerateFluentBitConfigs got %v", err)
-						}
-						// Compare the expected and actual and error out in case of diff.
-						updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
-						updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
+					
+					// Retrieve the expected golden conf files.
+					expectedMainConfig := readFileContent(t, platform.OS, testName, goldenMainPath, true)
+					expectedParserConfig := readFileContent(t, platform.OS, testName, goldenParserPath, true)
+					// Generate the actual conf files.
+					setFilepathJoin(platform.OS)
+					mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
+					setFilepathJoin(runtime.GOOS)
+					if err != nil {
+						t.Fatalf("GenerateFluentBitConfigs got %v", err)
 					}
+					// Compare the expected and actual and error out in case of diff.
+					updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
+					updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 
 					if platform.OS == "windows" {
 						expectedOtelConfig := readFileContent(t, platform.OS, testName, goldenOtelPath, true)
@@ -192,7 +192,7 @@ func updateOrCompareGolden(t *testing.T, testName, goos string, expectedBytes []
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	for _, platform := range platforms {
 		t.Run(platform.OS, func(t *testing.T) {
-			dirPath := invalidTestdataDir + "/" + platform.OS
+			dirPath := filepath.Join(invalidTestdataDir, platform.OS)
 			dirs, err := ioutil.ReadDir(dirPath)
 			if err != nil {
 				t.Fatal(err)
@@ -238,4 +238,14 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		}
 	}
 	return nil
+}
+
+func setFilepathJoin(goos string) {
+	separator := "/"
+	if goos == "windows" {
+		separator = `\`
+	}
+	filepathJoin = func(elem ...string) string {
+		return strings.Join(elem, separator)
+	}
 }
