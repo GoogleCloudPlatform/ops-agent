@@ -56,8 +56,11 @@ var (
 	}
 )
 
-// Use real filepath.Join in actual executable
-var filepathJoin = filepath.Join
+// filepathJoin uses the real filepath.Join in actual executable
+// but can be overriden in tests to impersonate an alternate OS.
+var filepathJoin = func(_ string, elem ...string) string {
+	return filepath.Join(elem...)
+}
 
 type UnifiedConfig struct {
 	Logging *logging          `yaml:"logging"`
@@ -242,13 +245,13 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 	tails = []*conf.Tail{}
 	tailFluentbit := conf.Tail{
 		Tag:  "ops-agent-fluent-bit",
-		DB:   filepathJoin(stateDir, "buffers", "ops-agent-fluent-bit"),
-		Path: filepathJoin(logsDir, "logging-module.log"),
+		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
+		Path: filepathJoin(hostInfo.OS, logsDir, "logging-module.log"),
 	}
 	tailCollectd := conf.Tail{
 		Tag:  "ops-agent-collectd",
-		DB:   filepathJoin(stateDir, "buffers", "ops-agent-collectd"),
-		Path: filepathJoin(logsDir, "metrics-module.log"),
+		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-collectd"),
+		Path: filepathJoin(hostInfo.OS, logsDir, "metrics-module.log"),
 	}
 	tails = append(tails, &tailFluentbit)
 	if hostInfo.OS != "windows" {
@@ -305,7 +308,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string,
 			return "", "", err
 		}
 		extractedTails := []*conf.Tail{}
-		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir)
+		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -602,7 +605,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
+func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
@@ -617,7 +620,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 			if f, ok := fileReceiverFactories[rID]; ok {
 				fbTail := conf.Tail{
 					Tag:  fmt.Sprintf("%s.%s", pID, rID),
-					DB:   filepathJoin(stateDir, "buffers", pID+"_"+rID),
+					DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
 					Path: strings.Join(f.IncludePaths, ","),
 				}
 				if len(f.ExcludePaths) != 0 {
@@ -641,7 +644,7 @@ func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFacto
 					Tag:          fmt.Sprintf("%s.%s", pID, rID),
 					Channels:     strings.Join(f.Channels, ","),
 					Interval_Sec: "1",
-					DB:           filepathJoin(stateDir, "buffers", pID+"_"+rID),
+					DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
 				}
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
