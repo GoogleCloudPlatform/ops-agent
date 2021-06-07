@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -85,9 +86,23 @@ func testJoin(goos string, elem ...string) string {
 	return strings.Join(elem, separator)
 }
 
-func TestGenerateConfsWithValidInput(t *testing.T) {
-	t.Parallel()
+func overrideFilepathJoin(t *testing.T) {
+	if filepath.Join("a", "b", "c") != filepathJoin(runtime.GOOS, "a", "b", "c") {
+		t.Fatalf("default filepathJoin behaves unexpectedly")
+	}
 	filepathJoin = testJoin
+
+	if `a\b\c` != filepathJoin("windows", "a", "b", "c") {
+		t.Fatalf("test version of filepathJoin does not work for 'windows'")
+	}
+	if "a/b/c" != filepathJoin("linux", "a", "b", "c") {
+		t.Fatalf("test version of filepathJoin does not work for 'linux'")
+	}
+}
+
+func TestGenerateConfsWithValidInput(t *testing.T) {
+	overrideFilepathJoin(t)
+	t.Parallel()
 	for _, platform := range platforms {
 		platform := platform // create a new 'platform'
 		t.Run(platform.OS, func(t *testing.T) {
