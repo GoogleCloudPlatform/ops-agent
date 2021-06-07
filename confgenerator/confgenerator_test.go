@@ -48,44 +48,44 @@ var (
 var hostInfo = func() *host.InfoStat {
 	//In order to make test data static, we put static value for platform-wise fields.
 	if runtime.GOOS == "windows" {
-		return &host.InfoStat {
-			OS: "windows",
-			Platform: "win_platform",
+		return &host.InfoStat{
+			OS:              "windows",
+			Platform:        "win_platform",
 			PlatformVersion: "win_platform_version",
 		}
 	}
-	return &host.InfoStat {
-		OS: "linux",
-		Platform: "linux_platform",
+	return &host.InfoStat{
+		OS:              "linux",
+		Platform:        "linux_platform",
 		PlatformVersion: "linux_platform_version",
 	}
 }()
 
 type platformConfig struct {
-	defaultLogsDir      string
-	defaultStateDir     string
-	defaultConfig string
+	defaultLogsDir  string
+	defaultStateDir string
+	defaultConfig   string
 	*host.InfoStat
 }
 
 var platforms = []platformConfig{
 	platformConfig{
-		defaultLogsDir:      "/var/log/google-cloud-ops-agent/subagents",
-		defaultStateDir:     "/var/lib/google-cloud-ops-agent/fluent-bit",
-		defaultConfig: "default-config.yaml",
-		InfoStat: &host.InfoStat {
-			OS: "linux",
-			Platform: "linux_platform",
+		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+		defaultConfig:   "default-config.yaml",
+		InfoStat: &host.InfoStat{
+			OS:              "linux",
+			Platform:        "linux_platform",
 			PlatformVersion: "linux_platform_version",
 		},
 	},
 	platformConfig{
-		defaultLogsDir:      `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
-		defaultStateDir:     `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-		defaultConfig: "windows-default-config.yaml",
-		InfoStat: &host.InfoStat {
-			OS: "windows",
-			Platform: "win_platform",
+		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
+		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
+		defaultConfig:   "windows-default-config.yaml",
+		InfoStat: &host.InfoStat{
+			OS:              "windows",
+			Platform:        "win_platform",
 			PlatformVersion: "win_platform_version",
 		},
 	},
