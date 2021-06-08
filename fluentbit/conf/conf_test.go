@@ -604,6 +604,7 @@ func TestStackdriver(t *testing.T) {
     Name              stackdriver
     resource          gce_instance
     stackdriver_agent user_agent
+    workers           8
     Match_Regex       ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
