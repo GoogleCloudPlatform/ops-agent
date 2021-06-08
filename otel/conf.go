@@ -402,7 +402,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
-          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -419,7 +418,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: processes/disk/read_bytes_count
         operations:
-          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -428,7 +426,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: processes/disk/write_bytes_count
         operations:
-          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -439,7 +436,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -450,7 +446,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
