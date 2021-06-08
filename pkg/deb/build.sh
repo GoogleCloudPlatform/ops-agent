@@ -4,8 +4,6 @@ set -ex
 
 . VERSION
 
-cd pkg/deb
-
 # Add changelog entry
 dch --create -b --package google-cloud-ops-agent -M \
   --distribution $(lsb_release -cs) \
@@ -14,5 +12,3 @@ dch --create -b --package google-cloud-ops-agent -M \
 
 # Build .debs
 debuild -us -uc -sa
-cd ../..
-cp pkg/google-cloud-ops-agent*.deb /
