@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -76,35 +75,10 @@ var platforms = []platformConfig{
 	},
 }
 
-// testJoin can be used to override filepathJoin in order
-// to impersonate the behavior of an alternate OS.
-func testJoin(goos string, elem ...string) string {
-	separator := "/"
-	if goos == "windows" {
-		separator = `\`
-	}
-	return strings.Join(elem, separator)
-}
-
-func overrideFilepathJoin(t *testing.T) {
-	if filepath.Join("a", "b", "c") != filepathJoin(runtime.GOOS, "a", "b", "c") {
-		t.Fatalf("default filepathJoin behaves unexpectedly")
-	}
-	filepathJoin = testJoin
-
-	if `a\b\c` != filepathJoin("windows", "a", "b", "c") {
-		t.Fatalf("test version of filepathJoin does not work for 'windows'")
-	}
-	if "a/b/c" != filepathJoin("linux", "a", "b", "c") {
-		t.Fatalf("test version of filepathJoin does not work for 'linux'")
-	}
-}
-
 func TestGenerateConfsWithValidInput(t *testing.T) {
-	overrideFilepathJoin(t)
 	t.Parallel()
 	for _, platform := range platforms {
-		platform := platform // create a new 'platform'
+		platform := platform
 		t.Run(platform.OS, func(t *testing.T) {
 			t.Parallel()
 			testGenerateConfsWithValidInput(t, platform)
@@ -140,13 +114,13 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			}
 
 			// Retrieve the expected golden conf files.
-			expectedMainConfig := readFileContent(t, platform.OS, testName, goldenMainPath, true)
-			expectedParserConfig := readFileContent(t, platform.OS, testName, goldenParserPath, true)
+			expectedMainConfig := readFileContent(t, testName, platform.OS, goldenMainPath, true)
+			expectedParserConfig := readFileContent(t, testName, platform.OS, goldenParserPath, true)
 
 			// Generate the actual conf files.
 			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
-				t.Errorf("GenerateFluentBitConfigs got %v", err)
+				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			} else {
 				// Compare the expected and actual and error out in case of diff.
 				updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
@@ -154,7 +128,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			}
 
 			if platform.OS == "windows" {
-				expectedOtelConfig := readFileContent(t, platform.OS, testName, goldenOtelPath, true)
+				expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
 				otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 				if err != nil {
 					t.Errorf("GenerateOtelConfig got %v", err)
@@ -163,7 +137,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 					updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 				}
 			} else {
-				expectedCollectdConfig := readFileContent(t, platform.OS, testName, goldenCollectdPath, true)
+				expectedCollectdConfig := readFileContent(t, testName, platform.OS, goldenCollectdPath, true)
 				collectdConf, err := uc.GenerateCollectdConfig(platform.defaultLogsDir)
 				if err != nil {
 					t.Errorf("GenerateCollectdConfig got %v", err)
@@ -176,7 +150,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 	}
 }
 
-func readFileContent(t *testing.T, goos string, testName string, filePathFormat string, respectGolden bool) []byte {
+func readFileContent(t *testing.T, testName string, goos string, filePathFormat string, respectGolden bool) []byte {
 	filePath := fmt.Sprintf(filePathFormat, goos, testName)
 	rawExpectedConfig, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -211,7 +185,7 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	for _, platform := range platforms {
-		platform := platform // create a new 'platform'
+		platform := platform
 		t.Run(platform.OS, func(t *testing.T) {
 			t.Parallel()
 			testGenerateConfigsWithInvalidInput(t, platform)
@@ -229,8 +203,8 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			invalidInput := readFileContent(t, platform.OS, testName, invalidInputPath, false)
-			expectedError := readFileContent(t, platform.OS, testName, goldenErrorPath, true)
+			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
+			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
 			actualError := generateConfigs(invalidInput, platform)
 
 			if actualError == nil {

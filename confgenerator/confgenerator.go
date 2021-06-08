@@ -17,17 +17,15 @@ package confgenerator
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
 	"github.com/shirou/gopsutil/host"
-
-	"text/template"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -56,10 +54,14 @@ var (
 	}
 )
 
-// filepathJoin uses the real filepath.Join in actual executable
-// but can be overriden in tests to impersonate an alternate OS.
-var filepathJoin = func(_ string, elem ...string) string {
-	return filepath.Join(elem...)
+// filepathJoin is used in place of filepath.Join so that
+// the separator can be overriden for cross-platform tests
+func filepathJoin(goos string, elem ...string) string {
+	separator := "/"
+	if goos == "windows" {
+		separator = `\`
+	}
+	return strings.Join(elem, separator)
 }
 
 type UnifiedConfig struct {
