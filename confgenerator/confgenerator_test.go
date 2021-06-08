@@ -95,8 +95,12 @@ func TestDefaultFilepathJoin(t *testing.T) {
 	abc := filepath.Join("a", "b", "c")
 	linuxAbc := defaultFilepathJoin("linux", "a", "b", "c")
 	windowsAbc := defaultFilepathJoin("windows", "a", "b", "c")
-	if abc != linuxAbc || abc != windowsAbc {
-		t.Fatal("The default filepathJoin function does not match filepath.Join")
+
+	if abc != linuxAbc {
+		t.Errorf(`defaultFilepathJoin("linux") does not match filepath.Join: %q`, linuxAbc)
+	}
+	if abc != windowsAbc {
+		t.Errorf(`defaultFilepathJoin("windows") does not match filepath.Join: %q`, windowsAbc)
 	}
 }
 
@@ -155,20 +159,18 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 				expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
 				otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 				if err != nil {
-					t.Errorf("GenerateOtelConfig got %v", err)
-				} else {
-					// Compare the expected and actual and error out in case of diff.
-					updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
+					t.Fatalf("GenerateOtelConfig got %v", err)
 				}
+				// Compare the expected and actual and error out in case of diff.
+				updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 			} else {
 				expectedCollectdConfig := readFileContent(t, testName, platform.OS, goldenCollectdPath, true)
 				collectdConf, err := uc.GenerateCollectdConfig(platform.defaultLogsDir)
 				if err != nil {
-					t.Errorf("GenerateCollectdConfig got %v", err)
-				} else {
-					// Compare the expected and actual and error out in case of diff.
-					updateOrCompareGolden(t, testName, platform.OS, expectedCollectdConfig, collectdConf, goldenCollectdPath)
+					t.Fatalf("GenerateCollectdConfig got %v", err)
 				}
+				// Compare the expected and actual and error out in case of diff.
+				updateOrCompareGolden(t, testName, platform.OS, expectedCollectdConfig, collectdConf, goldenCollectdPath)
 			}
 		})
 	}
