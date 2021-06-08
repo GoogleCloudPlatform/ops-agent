@@ -503,7 +503,7 @@ processors:
         operations:
           # change data type from double -> int64
           - action: toggle_scalar_data_type
-          # add process label default to 'all'
+          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -520,7 +520,7 @@ processors:
         action: update
         new_name: processes/disk/read_bytes_count
         operations:
-          # add process label default to 'all'
+          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -529,7 +529,7 @@ processors:
         action: update
         new_name: processes/disk/write_bytes_count
         operations:
-          # add process label default to 'all'
+          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -540,7 +540,7 @@ processors:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-          # add process label default to 'all'
+          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
@@ -551,7 +551,7 @@ processors:
         operations:
           # change data type from int64 -> double
           - action: toggle_scalar_data_type
-          # add process label default to 'all'
+          # hardcode the 'process' label to 'all' to match collectd behavior
           - action: add_label
             new_label: process
             new_value: all
