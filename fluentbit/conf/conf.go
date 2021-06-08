@@ -256,6 +256,7 @@ const (
     Name              stackdriver
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
+    workers           8
     Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
