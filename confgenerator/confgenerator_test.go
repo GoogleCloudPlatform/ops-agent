@@ -75,6 +75,31 @@ var platforms = []platformConfig{
 	},
 }
 
+func init() {
+	// filepathJoin is overriden for tests in order to
+	// impersonate the behavior of an alternate OS.
+	filepathJoin = func(goos string, elem ...string) string {
+		separator := "/"
+		if goos == "windows" {
+			separator = `\`
+		}
+		return strings.Join(elem, separator)
+	}
+}
+
+func TestDefaultFilepathJoin(t *testing.T) {
+	t.Parallel()
+
+	// Test that the default filepathJoin function does not
+	// generate paths that are dependent on the specified OS.
+	abc := filepath.Join("a", "b", "c")
+	linuxAbc := defaultFilepathJoin("linux", "a", "b", "c")
+	windowsAbc := defaultFilepathJoin("windows", "a", "b", "c")
+	if abc != linuxAbc || abc != windowsAbc {
+		t.Fatal("The default filepathJoin function does not match filepath.Join")
+	}
+}
+
 func TestGenerateConfsWithValidInput(t *testing.T) {
 	t.Parallel()
 	for _, platform := range platforms {
@@ -121,11 +146,10 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got %v", err)
-			} else {
-				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
-				updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 			}
+			// Compare the expected and actual and error out in case of diff.
+			updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
+			updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 
 			if platform.OS == "windows" {
 				expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)

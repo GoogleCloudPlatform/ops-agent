@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -54,14 +55,12 @@ var (
 	}
 )
 
-// filepathJoin is used in place of filepath.Join so that
-// the separator can be overriden for cross-platform tests
-func filepathJoin(goos string, elem ...string) string {
-	separator := "/"
-	if goos == "windows" {
-		separator = `\`
-	}
-	return strings.Join(elem, separator)
+// filepathJoin uses the real filepath.Join in actual executable
+// but can be overriden in tests to impersonate an alternate OS.
+var filepathJoin = defaultFilepathJoin
+
+func defaultFilepathJoin(_ string, elem ...string) string {
+	return filepath.Join(elem...)
 }
 
 type UnifiedConfig struct {
