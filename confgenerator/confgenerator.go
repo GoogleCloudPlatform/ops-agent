@@ -154,6 +154,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 
 func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
+	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics", hostInfo)
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -187,6 +188,7 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 		Service:     serviceList,
 
 		UserAgent: userAgent,
+		Version:   versionLabel,
 		Windows:   hostInfo.OS == "windows",
 	}.Generate()
 	if err != nil {
@@ -270,10 +272,25 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
+var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
 var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}})`))
 
+func getVersionLabel(prefix string, hostInfo *host.InfoStat) (string, error) {
+	params := map[string]string{
+		"Prefix":       prefix,
+		"AgentVersion": version.Version,
+		"BuildDistro":  version.BuildDistro,
+	}
+	var versionLabelBuilder strings.Builder
+	if err := versionLabelTemplate.Execute(&versionLabelBuilder, params); err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	return versionLabelBuilder.String(), nil
+}
+
 func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
-	userAgent := map[string]string{
+	params := map[string]string{
 		"Prefix":       prefix,
 		"AgentVersion": version.Version,
 		"BuildDistro":  version.BuildDistro,
@@ -282,7 +299,7 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
 	var userAgentBuilder strings.Builder
-	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {
+	if err := userAgentTemplate.Execute(&userAgentBuilder, params); err != nil {
 		fmt.Println(err.Error())
 		return "", err
 	}
