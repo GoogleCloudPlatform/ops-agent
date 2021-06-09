@@ -170,15 +170,16 @@ func TestGenerateOtelConfig(t *testing.T) {
 			}},
 			stackdriverList: []*Stackdriver{{
 				StackdriverID: "google",
-				UserAgent:     "$USERAGENT",
+				UserAgent:     "$IGNORED_VALUE",
 				Prefix:        "agent.googleapis.com/",
 			}},
-			serviceList: []*Service{{
-				ID:         "system",
-				Receivers:  "[hostmetrics/hostmetrics]",
-				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Exporters:  "[googlecloud/google]",
-			},
+			serviceList: []*Service{
+				{
+					ID:         "system",
+					Receivers:  "[hostmetrics/hostmetrics]",
+					Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+					Exporters:  "[googlecloud/google]",
+				},
 				{
 					ID:         "mssql",
 					Receivers:  "[windowsperfcounters/mssql_mssql]",
@@ -650,11 +651,11 @@ processors:
           - action: toggle_scalar_data_type
 exporters:
   googlecloud/google:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
   googlecloud/agent:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
 extensions:
@@ -694,7 +695,7 @@ service:
 				Stackdriver: tc.stackdriverList,
 				Service:     tc.serviceList,
 
-				UserAgent: "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))",
+				UserAgent: "Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)",
 				Windows:   true,
 			}.Generate()
 			if err != nil {

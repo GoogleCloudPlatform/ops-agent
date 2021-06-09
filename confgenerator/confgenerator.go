@@ -153,7 +153,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 }
 
 func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Collector", hostInfo)
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -270,7 +270,7 @@ func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
 	}
 }
 
-var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
+var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}})`))
 
 func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	userAgent := map[string]string{
