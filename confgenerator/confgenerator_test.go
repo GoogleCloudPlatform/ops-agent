@@ -36,12 +36,12 @@ var (
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
-	updateGolden       = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	goldenMainPath     = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
-	goldenParserPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
-	goldenOtelPath     = validTestdataDir + "/%s/%s/golden_otel.conf"
-	goldenErrorPath    = invalidTestdataDir + "/%s/%s/golden_error"
-	invalidInputPath   = invalidTestdataDir + "/%s/%s/input.yaml"
+	updateGolden     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+	goldenMainPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
+	goldenParserPath = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
+	goldenOtelPath   = validTestdataDir + "/%s/%s/golden_otel.conf"
+	goldenErrorPath  = invalidTestdataDir + "/%s/%s/golden_error"
+	invalidInputPath = invalidTestdataDir + "/%s/%s/input.yaml"
 )
 
 type platformConfig struct {
