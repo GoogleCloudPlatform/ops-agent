@@ -395,6 +395,14 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: aggregate_labels
             label_set: [ direction ]
             aggregation_type: sum
+          - action: update_label
+            label: direction
+            # change label value page_in -> in, page_out -> out
+            value_actions:
+              - value: page_in
+                new_value: in
+              - value: page_out
+                new_value: out
       # process.cpu.time -> processes/cpu_time
       - metric_name: process.cpu.time
         action: update
