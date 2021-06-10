@@ -61,6 +61,8 @@ function build_fluentbit() {
   # flags to disable them. Prune after build.
   rm "${DESTDIR}/lib/systemd/system/fluent-bit.service"
   rm -r "${DESTDIR}/usr/etc"
+  # Rename our binary
+  mv "${DESTDIR}/usr/bin/fluent-bit" "${DESTDIR}/usr/bin/google-fluent-bit"
 }
 
 function build_opsagent() {
@@ -97,6 +99,7 @@ function build_systemd() {
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)
+
 # TODO: Build sample config file
 mkdir -p "$DESTDIR/$sysconfdir/google-cloud-ops-agent/"
 cp "confgenerator/default-config.yaml" "$DESTDIR/$sysconfdir/google-cloud-ops-agent/config.yaml"
