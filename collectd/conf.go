@@ -22,33 +22,9 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
-
-// Ops Agent config.
-// TODO(lingshi) Move these structs and the validation logic to the confgenerator folder. Make them pointers.
-type Metrics struct {
-	Receivers map[string]Receiver `yaml:"receivers"`
-	Exporters map[string]Exporter `yaml:"exporters"`
-	Service   Service             `yaml:"service"`
-}
-
-type Receiver struct {
-	Type               string `yaml:"type"`
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
-}
-
-type Exporter struct {
-	Type string `yaml:"type"`
-}
-
-type Service struct {
-	Pipelines map[string]Pipeline `yaml:"pipelines"`
-}
-
-type Pipeline struct {
-	ReceiverIDs []string `yaml:"receivers"`
-	ExporterIDs []string `yaml:"exporters"`
-}
 
 // Collectd internal config related.
 type collectdConf struct {
@@ -152,7 +128,7 @@ func reservedIdPrefixError(component, id string) error {
 		component, id, component)
 }
 
-func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
+func GenerateCollectdConfig(metrics *config.Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
 	collectdConf, err := validatedCollectdConfig(metrics)
@@ -176,7 +152,7 @@ func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
 	return sb.String(), nil
 }
 
-func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
+func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	collectdConf := collectdConf{
 		scrapeInternal:    defaultScrapeInterval,
 		enableHostMetrics: false,

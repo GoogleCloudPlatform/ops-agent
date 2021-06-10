@@ -24,6 +24,7 @@ import (
 	"text/template"
 
 	"github.com/GoogleCloudPlatform/ops-agent/collectd"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
@@ -67,8 +68,8 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 }
 
 type UnifiedConfig struct {
-	Logging *logging          `yaml:"logging"`
-	Metrics *collectd.Metrics `yaml:"metrics"`
+	Logging *logging        `yaml:"logging"`
+	Metrics *config.Metrics `yaml:"metrics"`
 }
 
 type logging struct {
@@ -155,7 +156,7 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	return config, nil
 }
 
-func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
+func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	hostMetricsList := []*otel.HostMetrics{}
@@ -197,7 +198,7 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 	return otelConfig, nil
 }
 
-func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]collectd.Pipeline) ([]*otel.Service, error) {
+func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*config.MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
 	var pipelineIDs []string
 	for p := range pipelines {
@@ -389,7 +390,7 @@ type iisReceiverFactory struct {
 	CollectionInterval string
 }
 
-func extractOtelReceiverFactories(receivers map[string]collectd.Receiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
@@ -538,7 +539,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(receivers map[string]collectd.Receiver, pipelines map[string]collectd.Pipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelines map[string]*config.MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -599,7 +600,7 @@ func generateOtelReceivers(receivers map[string]collectd.Receiver, pipelines map
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
-func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map[string]collectd.Pipeline) ([]*otel.Stackdriver, map[string]string, error) {
+func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelines map[string]*config.MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
 	var pipelineIDs []string
