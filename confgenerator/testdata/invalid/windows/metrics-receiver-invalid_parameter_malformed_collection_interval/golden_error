@@ -1,1 +1,0 @@
-template: conf:27:49: executing "hostmetrics" at <validateCollectionInterval "hostmetrics">: error calling validateCollectionInterval: parameter "collection_interval" in metrics receiver "hostmetrics" has invalid value "40" that is not an interval (e.g. "60s"). Detailed error: time: missing unit in duration "40"

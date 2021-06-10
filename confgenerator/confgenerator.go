@@ -190,7 +190,6 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 		Windows:   hostInfo.OS == "windows",
 	}.Generate()
 	if err != nil {
-		// TODO: unwrap template errors so users don't see extraneous template line numbers
 		return "", err
 	}
 	return otelConfig, nil
