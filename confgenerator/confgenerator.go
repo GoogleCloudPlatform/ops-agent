@@ -206,12 +206,16 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	}
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
+		cid := componentID{subagent: "metrics", component: "pipeline", id: pID}
 		if strings.HasPrefix(pID, "lib:") {
-			return nil, reservedIdPrefixError("metrics", "pipeline", pID)
+			return nil, reservedIdPrefixError(cid)
 		}
 
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
+			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+			// TODO: replace receiverNameMap[rID] with the actual receiver type.
+			cid := componentID{platform: "windows", subagent: "metrics", component: "receiver", componentType: receiverNameMap[rID], id: rID}
 			var pipelineID string
 			var defaultProcessors []string
 			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
@@ -224,9 +228,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			} else {
-				// TODO: Fix the supported types. It should be windows_metrics_receiver for Windows and linux_metrics_receiver for Linux.
-				// TODO: replace receiverNameMap[rID] with the actual receiver type.
-				return nil, unsupportedComponentTypeError("windows", "metrics", "receiver", receiverNameMap[rID], rID)
+				return nil, unsupportedComponentTypeError(cid)
 			}
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
@@ -395,6 +397,8 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
+		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+		cid := componentID{subagent: "metrics", component: "receiver", componentType: r.Type, id: n, platform: "windows"}
 		switch r.Type {
 		case "hostmetrics":
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
@@ -409,51 +413,59 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 				CollectionInterval: r.CollectionInterval,
 			}
 		default:
-			return nil, nil, nil, unsupportedComponentTypeError("windows", "metrics", "receiver", r.Type, n)
+			return nil, nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-// unsupportedComponentTypeError returns an error message when users specify a receiver, processor, or exporter type that is not supported.
-// platform should be "linux" or "windows".
-// subagent should be "logging", or "metrics".
-// component should be "receiver", "processor", or "exporter".
-// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics".
+type componentID struct {
+	// subagent should be "logging", or "metrics".
+	subagent string
+	// component should be "receiver", "processor", or "exporter".
+	component string
+	// id is the id of the component.
+	id string
+	// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+	componentType string
+	// platform should be "linux" or "windows".
+	platform string
+}
+
+// unsupportedComponentTypeError returns an error message when users specify a component type that is not supported.
 // id is the id of the receiver, processor, or exporter.
-func unsupportedComponentTypeError(platform, subagent, component, componentType, id string) error {
+func unsupportedComponentTypeError(id componentID) error {
 	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
 	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-		subagent, component, id, componentType, subagent, component, strings.Join(supportedComponentTypes[platform+"_"+subagent+"_"+component], ", "))
+		id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedComponentTypes[id.platform+"_"+id.subagent+"_"+id.component], ", "))
 }
 
 // reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
-// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
-// id is the ID of the receiver, processor, or exporter.
-func reservedIdPrefixError(subagent, component, id string) error {
+// id is the id of the pipeline, receiver, processor, or exporter.
+func reservedIdPrefixError(id componentID) error {
 	// e.g. logging receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-		subagent, component, id, component)
+		id.subagent, id.component, id.id, id.component)
 }
 
 // missingRequiredParameterError returns an error message when users miss a required parameter.
-// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
-// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter that is missing.
-func missingRequiredParameterError(subagent, component, componentType, id, parameter string) error {
+func missingRequiredParameterError(id componentID, parameter string) error {
 	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
-	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, componentType)
+	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, id.subagent, id.component, id.id, id.componentType)
 }
 
 // unsupportedParameterError returns an error message when users specifies an unsupported parameter.
-// subagent should be "logging", or "metrics". component should be "receiver", "processor", or "exporter".
-// t is the type of the receiver, processor, or exporter. e.g. "hostmetrics". id is the id of the receiver, processor, or exporter.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter that is not supported.
-func unsupportedParameterError(subagent, component, componentType, id, parameter string) error {
+func unsupportedParameterError(id componentID, parameter string) error {
 	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
 	// for "files" type logging receiver: [include_paths, exclude_paths].
 	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
-		parameter, subagent, component, id, componentType, subagent, component, strings.Join(supportedParameters[componentType], ", "))
+		parameter, id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedParameters[id.componentType], ", "))
 }
 
 func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
@@ -461,25 +473,27 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for rID, r := range receivers {
+		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+		cid := componentID{subagent: "logging", component: "receiver", componentType: r.Type, id: rID, platform: "windows"}
 		if strings.HasPrefix(rID, "lib:") {
-			return nil, nil, nil, reservedIdPrefixError("logging", "receiver", rID)
+			return nil, nil, nil, reservedIdPrefixError(cid)
 		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
+				return nil, nil, nil, unsupportedParameterError(cid, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
+				return nil, nil, nil, unsupportedParameterError(cid, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
+				return nil, nil, nil, unsupportedParameterError(cid, "listen_port")
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
+				return nil, nil, nil, unsupportedParameterError(cid, "channels")
 			}
 			if r.IncludePaths == nil {
-				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "include_paths")
+				return nil, nil, nil, missingRequiredParameterError(cid, "include_paths")
 			}
 			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
@@ -487,10 +501,10 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			}
 		case "syslog":
 			if r.IncludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
+				return nil, nil, nil, unsupportedParameterError(cid, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
+				return nil, nil, nil, unsupportedParameterError(cid, "exclude_paths")
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
 				return nil, nil, nil, fmt.Errorf(`unknown transport_protocol %q in the logging receiver %q. Supported transport_protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
@@ -499,10 +513,10 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				return nil, nil, nil, fmt.Errorf(`unknown listen_host %q in the logging receiver %q. Value of listen_host for %q type logging receiver should be a valid IP.`, r.ListenHost, rID, r.Type)
 			}
 			if r.ListenPort == 0 {
-				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "listen_port")
+				return nil, nil, nil, missingRequiredParameterError(cid, "listen_port")
 			}
 			if r.Channels != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")
+				return nil, nil, nil, unsupportedParameterError(cid, "channels")
 			}
 			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
@@ -511,29 +525,28 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 			}
 		case "windows_event_log":
 			if r.TransportProtocol != "" {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "transport_protocol")
+				return nil, nil, nil, unsupportedParameterError(cid, "transport_protocol")
 			}
 			if r.ListenHost != "" {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_host")
+				return nil, nil, nil, unsupportedParameterError(cid, "listen_host")
 			}
 			if r.ListenPort != 0 {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "listen_port")
+				return nil, nil, nil, unsupportedParameterError(cid, "listen_port")
 			}
 			if r.IncludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "include_paths")
+				return nil, nil, nil, unsupportedParameterError(cid, "include_paths")
 			}
 			if r.ExcludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
+				return nil, nil, nil, unsupportedParameterError(cid, "exclude_paths")
 			}
 			if r.Channels == nil {
-				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "channels")
+				return nil, nil, nil, missingRequiredParameterError(cid, "channels")
 			}
 			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
 		default:
-			// TODO: Fix the supported types. It should be windows_logging_receiver for Windows and linux_logging_receiver for Linux.
-			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, rID)
+			return nil, nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
@@ -556,8 +569,9 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
+			cid := componentID{subagent: "metrics", component: "receiver", id: rID}
 			if strings.HasPrefix(rID, "lib:") {
-				return nil, nil, nil, nil, reservedIdPrefixError("metrics", "receiver", rID)
+				return nil, nil, nil, nil, reservedIdPrefixError(cid)
 			}
 			if _, ok := receiverNameMap[rID]; ok {
 				continue
@@ -611,13 +625,16 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
+			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+			cid := componentID{subagent: "metrics", component: "exporter", id: eID, platform: "windows"}
 			if strings.HasPrefix(eID, "lib:") {
-				return nil, nil, reservedIdPrefixError("metrics", "exporter", eID)
+				return nil, nil, reservedIdPrefixError(cid)
 			}
 			if _, ok := exporters[eID]; !ok {
 				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
 			}
 			exporter := exporters[eID]
+			cid.componentType = exporter.Type
 			switch exporter.Type {
 			case "google_cloud_monitoring":
 				if _, ok := exportNameMap[eID]; !ok {
@@ -629,8 +646,7 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 					exportNameMap[eID] = "googlecloud/" + eID
 				}
 			default:
-				// TODO: Fix the supported types. It should be windows_metrics_exporter for Windows and linux_metrics_exporter for Linux.
-				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)
+				return nil, nil, unsupportedComponentTypeError(cid)
 			}
 		}
 	}
@@ -740,8 +756,9 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	fbStackdrivers := []*conf.Stackdriver{}
 	var pipelineIDs []string
 	for p := range pipelines {
+		cid := componentID{subagent: "logging", component: "pipeline", id: p}
 		if strings.HasPrefix(p, "lib:") {
-			return nil, nil, nil, nil, reservedIdPrefixError("logging", "pipeline", p)
+			return nil, nil, nil, nil, reservedIdPrefixError(cid)
 		}
 		pipelineIDs = append(pipelineIDs, p)
 	}
@@ -750,15 +767,17 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	for _, pipelineID := range pipelineIDs {
 		pipeline := pipelines[pipelineID]
 		for _, exporterID := range pipeline.Exporters {
+			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+			cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux"}
 			if strings.HasPrefix(exporterID, "lib:") {
-				return nil, nil, nil, nil, reservedIdPrefixError("logging", "exporter", exporterID)
+				return nil, nil, nil, nil, reservedIdPrefixError(cid)
 			}
 			e, ok := exporters[exporterID]
 			if !ok {
 				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
 			} else if e.Type != "google_cloud_logging" {
-				// TODO: Fix the supported types. It should be windows_logging_exporter for Windows and linux_logging_exporter for Linux.
-				return nil, nil, nil, nil, unsupportedComponentTypeError("linux", "logging", "exporter", e.Type, exporterID)
+				cid.componentType = e.Type
+				return nil, nil, nil, nil, unsupportedComponentTypeError(cid)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
@@ -791,8 +810,9 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	fbRegexParsers := []*conf.ParserRegex{}
 	var names []string
 	for n := range processors {
+		cid := componentID{subagent: "logging", component: "processor", id: n}
 		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, reservedIdPrefixError("logging", "processor", n)
+			return nil, nil, reservedIdPrefixError(cid)
 		}
 		names = append(names, n)
 	}
@@ -800,6 +820,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 
 	for _, name := range names {
 		p := processors[name]
+		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
 		switch t := p.Type; t {
 		case "parse_json":
 			fbJSONParser := conf.ParserJSON{
@@ -810,7 +831,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
 			if p.Regex == "" {
-				return nil, nil, missingRequiredParameterError("logging", "processor", p.Type, name, "regex")
+				return nil, nil, missingRequiredParameterError(cid, "regex")
 			}
 			fbRegexParser := conf.ParserRegex{
 				Name:       name,
@@ -820,7 +841,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
 		default:
-			return nil, nil, unsupportedComponentTypeError("linux", "logging", "processor", p.Type, name)
+			return nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil
