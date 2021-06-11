@@ -717,15 +717,15 @@ func generateFluentBitFilters(processors map[string]*processor, pipelines map[st
 		pipelineIDs = append(pipelineIDs, p)
 	}
 	sort.Strings(pipelineIDs)
-	for _, pipelineID := range pipelineIDs {
-		pipeline := pipelines[pipelineID]
+	for _, pID := range pipelineIDs {
+		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
 			if !isDefaultProcessor(processorID) && !ok {
-				return nil, fmt.Errorf(`logging processor %q from pipeline %q is not defined.`, processorID, pipelineID)
+				return nil, fmt.Errorf(`logging processor %q from pipeline %q is not defined.`, processorID, pID)
 			}
 			fbFilterParser := conf.FilterParser{
-				Match:   fmt.Sprintf("%s.*", pipelineID),
+				Match:   fmt.Sprintf("%s.*", pID),
 				Parser:  processorID,
 				KeyName: "message",
 			}
@@ -756,16 +756,16 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	fbStackdrivers := []*conf.Stackdriver{}
 	var pipelineIDs []string
 	for p := range pipelines {
-		cid := componentID{subagent: "logging", component: "pipeline", id: p}
-		if strings.HasPrefix(p, "lib:") {
-			return nil, nil, nil, nil, reservedIdPrefixError(cid)
-		}
 		pipelineIDs = append(pipelineIDs, p)
 	}
 	sort.Strings(pipelineIDs)
 	stackdriverExporters := make(map[string][]string)
-	for _, pipelineID := range pipelineIDs {
-		pipeline := pipelines[pipelineID]
+	for _, pID := range pipelineIDs {
+		cid := componentID{subagent: "logging", component: "pipeline", id: pID}
+		if strings.HasPrefix(pID, "lib:") {
+			return nil, nil, nil, nil, reservedIdPrefixError(cid)
+		}
+		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
 			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
 			cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux"}
@@ -774,7 +774,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 			}
 			e, ok := exporters[exporterID]
 			if !ok {
-				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
+				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pID)
 			} else if e.Type != "google_cloud_logging" {
 				cid.componentType = e.Type
 				return nil, nil, nil, nil, unsupportedComponentTypeError(cid)
@@ -782,12 +782,12 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
 				fbFilterModifyAddLogNames = append(fbFilterModifyAddLogNames, &conf.FilterModifyAddLogName{
-					Match:   fmt.Sprintf("%s.%s", pipelineID, rID),
+					Match:   fmt.Sprintf("%s.%s", pID, rID),
 					LogName: rID,
 				})
 				// generate single rewriteTag for this pipeline
 				fbFilterRewriteTags = append(fbFilterRewriteTags, &conf.FilterRewriteTag{
-					Match: fmt.Sprintf("%s.%s", pipelineID, rID),
+					Match: fmt.Sprintf("%s.%s", pID, rID),
 				})
 				fbFilterModifyRemoveLogNames = append(fbFilterModifyRemoveLogNames, &conf.FilterModifyRemoveLogName{
 					Match: rID,
@@ -810,10 +810,6 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	fbRegexParsers := []*conf.ParserRegex{}
 	var names []string
 	for n := range processors {
-		cid := componentID{subagent: "logging", component: "processor", id: n}
-		if strings.HasPrefix(n, "lib:") {
-			return nil, nil, reservedIdPrefixError(cid)
-		}
 		names = append(names, n)
 	}
 	sort.Strings(names)
@@ -821,6 +817,9 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	for _, name := range names {
 		p := processors[name]
 		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
+		if strings.HasPrefix(name, "lib:") {
+			return nil, nil, reservedIdPrefixError(cid)
+		}
 		switch t := p.Type; t {
 		case "parse_json":
 			fbJSONParser := conf.ParserJSON{
