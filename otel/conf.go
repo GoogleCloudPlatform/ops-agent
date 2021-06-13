@@ -516,7 +516,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           # add version label
           - action: add_label
             new_label: version
-            new_value: $USERAGENT
+            new_value: {{.Version}}
       # otelcol_process_memory_rss -> agent/memory_usage
       - metric_name: otelcol_process_memory_rss
         action: update
@@ -620,6 +620,7 @@ type Config struct {
 	Service     []*Service
 
 	UserAgent string
+	Version   string
 	Windows   bool
 }
 

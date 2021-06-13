@@ -36,13 +36,12 @@ var (
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
-	updateGolden       = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	goldenMainPath     = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
-	goldenParserPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
-	goldenCollectdPath = validTestdataDir + "/%s/%s/golden_collectd.conf"
-	goldenOtelPath     = validTestdataDir + "/%s/%s/golden_otel.conf"
-	goldenErrorPath    = invalidTestdataDir + "/%s/%s/golden_error"
-	invalidInputPath   = invalidTestdataDir + "/%s/%s/input.yaml"
+	updateGolden     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+	goldenMainPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
+	goldenParserPath = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
+	goldenOtelPath   = validTestdataDir + "/%s/%s/golden_otel.conf"
+	goldenErrorPath  = invalidTestdataDir + "/%s/%s/golden_error"
+	invalidInputPath = invalidTestdataDir + "/%s/%s/input.yaml"
 )
 
 type platformConfig struct {
@@ -155,23 +154,13 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
 			updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 
-			if platform.OS == "windows" {
-				expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
-				otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
-				if err != nil {
-					t.Fatalf("GenerateOtelConfig got %v", err)
-				}
-				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
-			} else {
-				expectedCollectdConfig := readFileContent(t, testName, platform.OS, goldenCollectdPath, true)
-				collectdConf, err := uc.GenerateCollectdConfig(platform.defaultLogsDir)
-				if err != nil {
-					t.Fatalf("GenerateCollectdConfig got %v", err)
-				}
-				// Compare the expected and actual and error out in case of diff.
-				updateOrCompareGolden(t, testName, platform.OS, expectedCollectdConfig, collectdConf, goldenCollectdPath)
+			expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
+			otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
+			if err != nil {
+				t.Fatalf("GenerateOtelConfig got %v", err)
 			}
+			// Compare the expected and actual and error out in case of diff.
+			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 		})
 	}
 }
@@ -256,14 +245,8 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if platform.OS == "windows" {
-		if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
-			return err
-		}
-	} else {
-		if _, err := uc.GenerateCollectdConfig(platform.defaultLogsDir); err != nil {
-			return err
-		}
+	if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
+		return err
 	}
 	return nil
 }
