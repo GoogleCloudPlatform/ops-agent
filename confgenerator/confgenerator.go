@@ -68,60 +68,8 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 }
 
 type UnifiedConfig struct {
-	Logging *logging        `yaml:"logging"`
+	Logging *config.Logging `yaml:"logging"`
 	Metrics *config.Metrics `yaml:"metrics"`
-}
-
-type logging struct {
-	Receivers  map[string]*receiver  `yaml:"receivers"`
-	Processors map[string]*processor `yaml:"processors"`
-	Exporters  map[string]*exporter  `yaml:"exporters"`
-	Service    *loggingService       `yaml:"service"`
-}
-
-type receiver struct {
-	// Required. It is either file or syslog.
-	Type string `yaml:"type"`
-
-	// Valid for type "files".
-	IncludePaths []string `yaml:"include_paths"`
-	ExcludePaths []string `yaml:"exclude_paths"`
-
-	// Valid for type "syslog".
-	TransportProtocol string `yaml:"transport_protocol"`
-	ListenHost        string `yaml:"listen_host"`
-	ListenPort        uint16 `yaml:"listen_port"`
-
-	//Valid for type "windows_event_log".
-	Channels []string `yaml:"channels"`
-}
-
-type processor struct {
-	// Required. It is either parse_json or parse_regex.
-	Type string `yaml:"type"`
-
-	// Valid for parse_regex only.
-	Regex string `yaml:"regex"`
-
-	// Valid for type parse_json and parse_regex.
-	Field      string `yaml:"field"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
-}
-
-type exporter struct {
-	// Required. It can only be `google_cloud_logging` now. More type may be supported later.
-	Type string `yaml:"type"`
-}
-
-type loggingService struct {
-	Pipelines map[string]*loggingPipeline
-}
-
-type loggingPipeline struct {
-	Receivers  []string `yaml:"receivers"`
-	Processors []string `yaml:"processors"`
-	Exporters  []string `yaml:"exporters"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -318,7 +266,7 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
-func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func generateFluentBitConfigs(logging *config.Logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
@@ -468,7 +416,7 @@ func unsupportedParameterError(id componentID, parameter string) error {
 		parameter, id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedParameters[id.componentType], ", "))
 }
 
-func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
+func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
@@ -656,7 +604,7 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateFluentBitInputs(receivers map[string]*receiver, pipelines map[string]*loggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
+func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipelines map[string]*config.LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
@@ -710,7 +658,7 @@ func generateFluentBitInputs(receivers map[string]*receiver, pipelines map[strin
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*processor, pipelines map[string]*loggingPipeline) ([]*conf.FilterParser, error) {
+func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pipelines map[string]*config.LoggingPipeline) ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
 	var pipelineIDs []string
 	for p := range pipelines {
@@ -748,7 +696,7 @@ func isDefaultProcessor(name string) bool {
 	}
 }
 
-func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline, hostInfo *host.InfoStat) (
+func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipelines map[string]*config.LoggingPipeline, hostInfo *host.InfoStat) (
 	[]*conf.FilterModifyAddLogName, []*conf.FilterRewriteTag, []*conf.FilterModifyRemoveLogName, []*conf.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
@@ -805,7 +753,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
 }
 
-func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
 	var names []string

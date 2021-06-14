@@ -21,6 +21,59 @@ import (
 	"time"
 )
 
+// Ops Agent logging config.
+type Logging struct {
+	Receivers  map[string]*LoggingReceiver  `yaml:"receivers"`
+	Processors map[string]*LoggingProcessor `yaml:"processors"`
+	Exporters  map[string]*LoggingExporter  `yaml:"exporters"`
+	Service    *LoggingService              `yaml:"service"`
+}
+
+type LoggingReceiver struct {
+	// Required. It is either file or syslog.
+	Type string `yaml:"type"`
+
+	// Valid for type "files".
+	IncludePaths []string `yaml:"include_paths"`
+	ExcludePaths []string `yaml:"exclude_paths"`
+
+	// Valid for type "syslog".
+	TransportProtocol string `yaml:"transport_protocol"`
+	ListenHost        string `yaml:"listen_host"`
+	ListenPort        uint16 `yaml:"listen_port"`
+
+	// Valid for type "windows_event_log".
+	Channels []string `yaml:"channels"`
+}
+
+type LoggingProcessor struct {
+	// Required. It is either parse_json or parse_regex.
+	Type string `yaml:"type"`
+
+	// Valid for parse_regex only.
+	Regex string `yaml:"regex"`
+
+	// Valid for type parse_json and parse_regex.
+	Field      string `yaml:"field"`       // optional, default to "message"
+	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
+	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
+}
+
+type LoggingExporter struct {
+	// Required. It can only be `google_cloud_logging` now. More type may be supported later.
+	Type string `yaml:"type"`
+}
+
+type LoggingService struct {
+	Pipelines map[string]*LoggingPipeline
+}
+
+type LoggingPipeline struct {
+	Receivers  []string `yaml:"receivers"`
+	Processors []string `yaml:"processors"`
+	Exporters  []string `yaml:"exporters"`
+}
+
 // Ops Agent metrics config.
 type Metrics struct {
 	Receivers map[string]*MetricsReceiver `yaml:"receivers"`
