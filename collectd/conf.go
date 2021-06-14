@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
@@ -180,13 +179,9 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 		collectdConf.enableHostMetrics = true
 
 		if receiver.CollectionInterval != "" {
-			t, err := time.ParseDuration(receiver.CollectionInterval)
+			interval, err := config.ValidateCollectionInterval(receiverID, receiver.CollectionInterval)
 			if err != nil {
-				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", receiverID, receiver.CollectionInterval, err)
-			}
-			interval := t.Seconds()
-			if interval < 10 {
-				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
+				return nil, err
 			}
 			collectdConf.scrapeInternal = interval
 		}

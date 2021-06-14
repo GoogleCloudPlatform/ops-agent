@@ -15,6 +15,12 @@
 // Package config represents the Ops Agent configuration.
 package config
 
+import (
+	"fmt"
+	"math"
+	"time"
+)
+
 // Ops Agent metrics config.
 type Metrics struct {
 	Receivers map[string]*MetricsReceiver `yaml:"receivers"`
@@ -38,4 +44,16 @@ type MetricsService struct {
 type MetricsPipeline struct {
 	ReceiverIDs []string `yaml:"receivers"`
 	ExporterIDs []string `yaml:"exporters"`
+}
+
+func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
+	t, err := time.ParseDuration(collectionInterval)
+	if err != nil {
+		return math.NaN(), fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", receiverID, collectionInterval, err)
+	}
+	interval := t.Seconds()
+	if interval < 10 {
+		return math.NaN(), fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
+	}
+	return interval, nil
 }
