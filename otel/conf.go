@@ -220,6 +220,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: disk/io_time
         operations:
+          # convert s to ms
+          - action: experimental_scale_value
+            experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
       # system.disk.weighted_io_time -> disk/weighted_io_time
@@ -234,6 +237,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: disk/operation_time
         operations:
+          # convert s to ms
+          - action: experimental_scale_value
+            experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
       # system.disk.pending_operations -> disk/pending_operations
