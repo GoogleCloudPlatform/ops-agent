@@ -365,8 +365,11 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
             new_label: tcp_state
           # remove protocol label
           - action: aggregate_labels
-            label_set: [ state ]
+            label_set: [ tcp_state ]
             aggregation_type: sum
+	  - action: add_label
+	    new_label: port
+	    new_value: all
       # system.paging.usage -> swap/bytes_used
       - metric_name: system.paging.usage
         action: update
