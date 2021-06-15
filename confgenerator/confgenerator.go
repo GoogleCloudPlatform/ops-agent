@@ -166,11 +166,8 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 	receiverNameMap := make(map[string]string)
 	exporterNameMap := make(map[string]string)
 	if metrics != nil {
-		hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(metrics.Receivers)
-		if err != nil {
-			return "", err
-		}
-		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, metrics.Service.Pipelines)
+		var err error
+		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -544,11 +541,15 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(hostmetricsReceiverFactories map[string]*hostmetricsReceiverFactory, mssqlReceiverFactories map[string]*mssqlReceiverFactory, iisReceiverFactories map[string]*iisReceiverFactory, pipelines map[string]collectd.Pipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]collectd.Receiver, pipelines map[string]collectd.Pipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
 	receiverNameMap := make(map[string]string)
+	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -784,6 +785,8 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 }
 
 func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+	fbJSONParsers := []*conf.ParserJSON{}
+	fbRegexParsers := []*conf.ParserRegex{}
 	var names []string
 	for n := range processors {
 		if strings.HasPrefix(n, "lib:") {
@@ -793,8 +796,6 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 	}
 	sort.Strings(names)
 
-	fbJSONParsers := []*conf.ParserJSON{}
-	fbRegexParsers := []*conf.ParserRegex{}
 	for _, name := range names {
 		p := processors[name]
 		switch t := p.Type; t {
