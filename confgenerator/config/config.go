@@ -21,6 +21,10 @@ import (
 	"time"
 )
 
+type configComponent struct {
+	Type string `yaml:"type"`
+}
+
 // Ops Agent logging config.
 type Logging struct {
 	Receivers  map[string]*LoggingReceiver  `yaml:"receivers"`
@@ -30,8 +34,7 @@ type Logging struct {
 }
 
 type LoggingReceiver struct {
-	// Required. It is either file or syslog.
-	Type string `yaml:"type"`
+	configComponent `yaml:",inline"`
 
 	// Valid for type "files".
 	IncludePaths []string `yaml:"include_paths"`
@@ -47,8 +50,7 @@ type LoggingReceiver struct {
 }
 
 type LoggingProcessor struct {
-	// Required. It is either parse_json or parse_regex.
-	Type string `yaml:"type"`
+	configComponent `yaml:",inline"`
 
 	// Valid for parse_regex only.
 	Regex string `yaml:"regex"`
@@ -60,8 +62,7 @@ type LoggingProcessor struct {
 }
 
 type LoggingExporter struct {
-	// Required. It can only be `google_cloud_logging` now. More type may be supported later.
-	Type string `yaml:"type"`
+	configComponent `yaml:",inline"`
 }
 
 type LoggingService struct {
@@ -82,12 +83,13 @@ type Metrics struct {
 }
 
 type MetricsReceiver struct {
-	Type               string `yaml:"type"`
+	configComponent `yaml:",inline"`
+
 	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
 }
 
 type MetricsExporter struct {
-	Type string `yaml:"type"`
+	configComponent `yaml:",inline"`
 }
 
 type MetricsService struct {
