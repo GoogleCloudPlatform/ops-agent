@@ -119,14 +119,6 @@ LoadPlugin swap
 	"process":    ``,
 }
 
-// reservedIdPrefixError returns an error message for when the user tries to define a reserved ID.
-// The component should be "receiver", "processor", or "exporter".
-func reservedIdPrefixError(component, id string) error {
-	// e.g. metrics receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
-	return fmt.Errorf(`metrics %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-		component, id, component)
-}
-
 func GenerateCollectdConfig(metrics *config.Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
@@ -169,10 +161,10 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	if len(metrics.Receivers) > 1 {
 		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
 	}
+	if err := config.ValidateComponentIds(metrics.Receivers, "metrics", "receiver"); err != nil {
+		return nil, err
+	}
 	for receiverID, receiver := range metrics.Receivers {
-		if strings.HasPrefix(receiverID, "lib:") {
-			return nil, reservedIdPrefixError("receiver", receiverID)
-		}
 		if receiver.Type != "hostmetrics" {
 			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
 		}
@@ -192,10 +184,10 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	if len(metrics.Exporters) != 1 {
 		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
 	}
+	if err := config.ValidateComponentIds(metrics.Exporters, "metrics", "exporter"); err != nil {
+		return nil, err
+	}
 	for exporterID, exporter := range metrics.Exporters {
-		if strings.HasPrefix(exporterID, "lib:") {
-			return nil, reservedIdPrefixError("exporter", exporterID)
-		}
 		if exporter.Type != "google_cloud_monitoring" {
 			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
 		}
@@ -206,10 +198,10 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	if len(metrics.Service.Pipelines) != 1 {
 		return nil, errors.New("exactly one metrics service pipeline is required.")
 	}
+	if err := config.ValidateComponentIds(metrics.Service.Pipelines, "metrics", "pipeline"); err != nil {
+		return nil, err
+	}
 	for pipelineID, pipeline := range metrics.Service.Pipelines {
-		if strings.HasPrefix(pipelineID, "lib:") {
-			return nil, reservedIdPrefixError("pipeline", pipelineID)
-		}
 		if len(pipeline.ReceiverIDs) != 1 {
 			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
 		}

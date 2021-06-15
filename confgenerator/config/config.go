@@ -18,6 +18,9 @@ package config
 import (
 	"fmt"
 	"math"
+	"reflect"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -111,4 +114,44 @@ func ValidateCollectionInterval(receiverID string, collectionInterval string) (f
 		return math.NaN(), fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
 	}
 	return interval, nil
+}
+
+// mapKeys returns keys from a map[string]Any as a map[string]interface{}.
+func mapKeys(m interface{}) map[string]interface{} {
+	keys := map[string]interface{}{}
+	for iter := reflect.ValueOf(m).MapRange(); iter.Next(); {
+		k := iter.Key()
+		if k.Kind() != reflect.String {
+			panic(fmt.Sprintf("key %v not a string", k))
+		}
+		keys[k.String()] = nil
+	}
+	return keys
+}
+
+// sortedKeys returns keys from a map[string]Any as a sorted string slice.
+func sortedKeys(m interface{}) []string {
+	var r []string
+	for k := range mapKeys(m) {
+		r = append(r, k)
+	}
+	sort.Strings(r)
+	return r
+}
+
+func ValidateComponentIds(components interface{}, subagent string, component string) error {
+	for _, id := range sortedKeys(components) {
+		if strings.HasPrefix(id, "lib:") {
+			return reservedIdPrefixError(subagent, component, id)
+		}
+	}
+	return nil
+}
+
+// reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
+// id is the id of the pipeline, receiver, processor, or exporter.
+func reservedIdPrefixError(subagent string, component string, id string) error {
+	// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+		subagent, component, id, component)
 }

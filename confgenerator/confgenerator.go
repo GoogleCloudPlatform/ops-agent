@@ -148,17 +148,15 @@ func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (strin
 
 func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*config.MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
+	if err := config.ValidateComponentIds(pipelines, "metrics", "pipeline"); err != nil {
+		return nil, err
+	}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
 	}
 	sort.Strings(pipelineIDs)
 	for _, pID := range pipelineIDs {
-		cid := componentID{subagent: "metrics", component: "pipeline", id: pID}
-		if strings.HasPrefix(pID, "lib:") {
-			return nil, reservedIdPrefixError(cid)
-		}
-
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
@@ -388,14 +386,6 @@ func unsupportedComponentTypeError(id componentID) error {
 		id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedComponentTypes[id.platform+"_"+id.subagent+"_"+id.component], ", "))
 }
 
-// reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
-// id is the id of the pipeline, receiver, processor, or exporter.
-func reservedIdPrefixError(id componentID) error {
-	// e.g. logging receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
-	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-		id.subagent, id.component, id.id, id.component)
-}
-
 // missingRequiredParameterError returns an error message when users miss a required parameter.
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
@@ -420,12 +410,12 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
+	if err := config.ValidateComponentIds(receivers, "logging", "receiver"); err != nil {
+		return nil, nil, nil, err
+	}
 	for rID, r := range receivers {
 		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
 		cid := componentID{subagent: "logging", component: "receiver", componentType: r.Type, id: rID, platform: "windows"}
-		if strings.HasPrefix(rID, "lib:") {
-			return nil, nil, nil, reservedIdPrefixError(cid)
-		}
 		switch r.Type {
 		case "files":
 			if r.TransportProtocol != "" {
@@ -505,6 +495,12 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
 	receiverNameMap := make(map[string]string)
+	if err := config.ValidateComponentIds(pipelines, "metrics", "pipeline"); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := config.ValidateComponentIds(receivers, "metrics", "receiver"); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -517,10 +513,6 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
-			cid := componentID{subagent: "metrics", component: "receiver", id: rID}
-			if strings.HasPrefix(rID, "lib:") {
-				return nil, nil, nil, nil, reservedIdPrefixError(cid)
-			}
 			if _, ok := receiverNameMap[rID]; ok {
 				continue
 			}
@@ -565,6 +557,9 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelines map[string]*config.MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
+	if err := config.ValidateComponentIds(exporters, "metrics", "exporter"); err != nil {
+		return nil, nil, err
+	}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -573,16 +568,12 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 	for _, pID := range pipelineIDs {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
-			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-			cid := componentID{subagent: "metrics", component: "exporter", id: eID, platform: "windows"}
-			if strings.HasPrefix(eID, "lib:") {
-				return nil, nil, reservedIdPrefixError(cid)
-			}
 			if _, ok := exporters[eID]; !ok {
 				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
 			}
 			exporter := exporters[eID]
-			cid.componentType = exporter.Type
+			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+			cid := componentID{subagent: "metrics", component: "exporter", id: eID, platform: "windows", componentType: exporter.Type}
 			switch exporter.Type {
 			case "google_cloud_monitoring":
 				if _, ok := exportNameMap[eID]; !ok {
@@ -702,6 +693,12 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterModifyRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 	fbStackdrivers := []*conf.Stackdriver{}
+	if err := config.ValidateComponentIds(pipelines, "logging", "pipeline"); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := config.ValidateComponentIds(exporters, "logging", "exporter"); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
@@ -709,22 +706,14 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	sort.Strings(pipelineIDs)
 	stackdriverExporters := make(map[string][]string)
 	for _, pID := range pipelineIDs {
-		cid := componentID{subagent: "logging", component: "pipeline", id: pID}
-		if strings.HasPrefix(pID, "lib:") {
-			return nil, nil, nil, nil, reservedIdPrefixError(cid)
-		}
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
-			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-			cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux"}
-			if strings.HasPrefix(exporterID, "lib:") {
-				return nil, nil, nil, nil, reservedIdPrefixError(cid)
-			}
 			e, ok := exporters[exporterID]
 			if !ok {
 				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pID)
 			} else if e.Type != "google_cloud_logging" {
-				cid.componentType = e.Type
+				// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
+				cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux", componentType: e.Type}
 				return nil, nil, nil, nil, unsupportedComponentTypeError(cid)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
@@ -756,6 +745,9 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
+	if err := config.ValidateComponentIds(processors, "logging", "processor"); err != nil {
+		return nil, nil, err
+	}
 	var names []string
 	for n := range processors {
 		names = append(names, n)
@@ -765,9 +757,6 @@ func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]
 	for _, name := range names {
 		p := processors[name]
 		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
-		if strings.HasPrefix(name, "lib:") {
-			return nil, nil, reservedIdPrefixError(cid)
-		}
 		switch t := p.Type; t {
 		case "parse_json":
 			fbJSONParser := conf.ParserJSON{
