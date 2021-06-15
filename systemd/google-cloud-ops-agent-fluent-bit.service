@@ -14,8 +14,7 @@
 
 [Unit]
 Description=Google Cloud Ops Agent - Logging Agent
-PartOf=google-cloud-ops-agent.target
-After=google-cloud-ops-agent.service
+PartOf=google-cloud-ops-agent.service
 Requires=network.target
 After=network.target
 RefuseManualStart=true

@@ -13,7 +13,7 @@ override_dh_auto_install:
 	CODE_VERSION=$(code_version) BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
 
 override_dh_installsystemd:
-	dh_installsystemd google-cloud-ops-agent.target
+	dh_installsystemd google-cloud-ops-agent.service
 
 override_dh_systemd_start:
-	dh_systemd_start google-cloud-ops-agent.target
+	dh_systemd_start google-cloud-ops-agent.service

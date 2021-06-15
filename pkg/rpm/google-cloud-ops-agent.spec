@@ -48,15 +48,30 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 %{_unitdir}-preset/*-%{name}*
 
 %post
-%systemd_post google-cloud-ops-agent.target
+%systemd_post google-cloud-ops-agent.service
+if [ "$(systemctl show -p LoadState --value google-cloud-ops-agent.target 2>/dev/null || :)" = "loaded" ]; then
+  systemctl stop google-cloud-ops-agent.target > /dev/null 2>&1 || :
+  # If there was a .target installed, copy its enabledness
+  if systemctl is-enabled google-cloud-ops-agent.target > /dev/null 2>&1; then
+    systemctl enable google-cloud-ops-agent.service > /dev/null 2>&1 || :
+    systemctl start google-cloud-ops-agent.service > /dev/null 2>&1 || :
+  else
+    systemctl disable google-cloud-ops-agent.service > /dev/null 2>&1 || :
+  fi
+
+  # Clean up old .target
+  # RPM will remove the .target file after this scriplet runs
+  systemctl --no-reload disable google-cloud-ops-agent.target > /dev/null 2>&1 || :
+fi
+
 if [ $1 -eq 1 ]; then  # Initial installation
-  systemctl start google-cloud-ops-agent.target >/dev/null 2>&1 || :
+  systemctl start google-cloud-ops-agent.service >/dev/null 2>&1 || :
 fi
 
 %preun
-%systemd_preun google-cloud-ops-agent.target
+%systemd_preun google-cloud-ops-agent.service
 
 %postun
-%systemd_postun_with_restart google-cloud-ops-agent.target
+%systemd_postun_with_restart google-cloud-ops-agent.service
 
 %changelog

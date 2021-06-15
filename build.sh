@@ -79,7 +79,7 @@ function build_systemd() {
     sed "s|@PREFIX@|$prefix|g; s|@SYSCONFDIR@|$sysconfdir|g" "$1" > "$DESTDIR$systemdsystemunitdir/$2"
   }
   mkdir -p "$DESTDIR$systemdsystemunitdir"
-  for f in systemd/*.service systemd/*.target; do
+  for f in systemd/*.service; do
     install_unit "$f" "$(basename "$f")"
   done
   if [ "$(systemctl --version | grep -Po '^systemd \K\d+')" -lt 240 ]; then

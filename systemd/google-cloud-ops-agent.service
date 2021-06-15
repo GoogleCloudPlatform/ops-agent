@@ -13,10 +13,8 @@
 # limitations under the License.
 
 [Unit]
-Description=Google Cloud Ops Agent Noop
-PartOf=google-cloud-ops-agent.target
-RefuseManualStart=true
-RefuseManualStop=true
+Description=Google Cloud Ops Agent
+Requires=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
 
 [Service]
 Type=oneshot
