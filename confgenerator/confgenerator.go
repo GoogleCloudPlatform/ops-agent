@@ -265,10 +265,11 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 }
 
 // defaultStackdriverOutputs returns the default Stackdriver sections for the agents' own logs.
-func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
+func defaultStackdriverOutputs(hostInfo *host.InfoStat) (stackdrivers []*conf.Stackdriver) {
 	return []*conf.Stackdriver{
 		{
-			Match: "ops-agent-fluent-bit|ops-agent-collectd",
+			Match:   "ops-agent-fluent-bit|ops-agent-collectd",
+			Workers: getWorkers(hostInfo),
 		},
 	}
 }
@@ -306,10 +307,18 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
+func getWorkers(hostInfo *host.InfoStat) int {
+	if hostInfo.OS == "linux" {
+		return 8
+	} else {
+		return 1
+	}
+}
+
 func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	fbStackdrivers := defaultStackdriverOutputs()
+	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
 	fbFilterParsers := []*conf.FilterParser{}
@@ -335,7 +344,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string,
 			return "", "", err
 		}
 		extractedStackdrivers := []*conf.Stackdriver{}
-		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines)
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -711,7 +720,7 @@ func isDefaultProcessor(name string) bool {
 	}
 }
 
-func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline) (
+func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline, hostInfo *host.InfoStat) (
 	[]*conf.FilterModifyAddLogName, []*conf.FilterRewriteTag, []*conf.FilterModifyRemoveLogName, []*conf.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
@@ -758,7 +767,8 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	}
 	for _, tags := range stackdriverExporters {
 		fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-			Match: strings.Join(tags, "|"),
+			Match:   strings.Join(tags, "|"),
+			Workers: getWorkers(hostInfo),
 		})
 	}
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
