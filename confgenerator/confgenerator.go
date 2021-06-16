@@ -278,7 +278,7 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	if hostInfo.OS == "linux" {
 		return 8
 	} else {
-		return 1
+		return 0
 	}
 }
 
