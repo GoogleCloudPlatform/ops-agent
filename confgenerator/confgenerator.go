@@ -307,11 +307,11 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
-func getWorkers(hostInfo *host.InfoStat) int {
+func getWorkers(hostInfo *host.InfoStat) string {
 	if hostInfo.OS == "linux" {
-		return 8
+		return "\n    workers           8"
 	} else {
-		return 1
+		return ""
 	}
 }
 
