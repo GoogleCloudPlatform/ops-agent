@@ -255,7 +255,8 @@ const (
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
     resource          gce_instance
-    stackdriver_agent {{.UserAgent}}{{.Workers}}
+    stackdriver_agent {{.UserAgent}}{{if .Workers}}
+    workers           {{.Workers}}{{end}}
     Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
@@ -741,7 +742,7 @@ func (w WindowsEventlog) renderConfig() (string, error) {
 type Stackdriver struct {
 	Match     string
 	UserAgent string
-	Workers   string
+	Workers   int
 }
 
 var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
