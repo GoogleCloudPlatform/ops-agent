@@ -34,14 +34,16 @@ import (
 var (
 	// Supported component types.
 	supportedComponentTypes = map[string][]string{
-		"linux_logging_exporter":   []string{"google_cloud_logging"},
-		"linux_logging_receiver":   []string{"files", "syslog"},
-		"linux_metrics_exporter":   []string{"google_cloud_monitoring"},
-		"linux_metrics_receiver":   []string{"hostmetrics"},
-		"windows_logging_receiver": []string{"files", "syslog", "windows_event_log"},
-		"windows_logging_exporter": []string{"google_cloud_logging"},
-		"windows_metrics_receiver": []string{"hostmetrics", "iis", "mssql"},
-		"windows_metrics_exporter": []string{"google_cloud_monitoring"},
+		"linux_logging_receiver":    []string{"files", "syslog"},
+		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
+		"linux_logging_exporter":    []string{"google_cloud_logging"},
+		"linux_metrics_receiver":    []string{"hostmetrics"},
+		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
+		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
+		"windows_logging_processor": []string{"parse_json", "parse_regex"},
+		"windows_logging_exporter":  []string{"google_cloud_logging"},
+		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
+		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
 	}
 
 	// Supported parameters.
@@ -808,7 +810,7 @@ func extractFluentBitParsers(processors map[string]*processor) ([]*conf.ParserJS
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
 		default:
-			return nil, nil, fmt.Errorf(`logging processor %q with type %q is not supported. Supported logging processor types: [parse_json, parse_regex].`, name, t)
+			return nil, nil, unsupportedComponentTypeError("linux", "logging", "processor", p.Type, name)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil
