@@ -36,32 +36,45 @@ type Logging struct {
 	Service    *LoggingService              `yaml:"service"`
 }
 
+type LoggingReceiverFiles struct {
+	IncludePaths []string `yaml:"include_paths"`
+	ExcludePaths []string `yaml:"exclude_paths"` // optional
+}
+
+type LoggingReceiverSyslog struct {
+	TransportProtocol string `yaml:"transport_protocol"` // one of "tcp" or "udp"
+	ListenHost        string `yaml:"listen_host"`
+	ListenPort        uint16 `yaml:"listen_port"`
+}
+
+type LoggingReceiverWinevtlog struct {
+	Channels []string `yaml:"channels"`
+}
+
 type LoggingReceiver struct {
 	configComponent `yaml:",inline"`
 
-	// Valid for type "files".
-	IncludePaths []string `yaml:"include_paths"`
-	ExcludePaths []string `yaml:"exclude_paths"`
+	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
+	LoggingReceiverSyslog    `yaml:",inline"` // Type "syslog"
+	LoggingReceiverWinevtlog `yaml:",inline"` // Type "windows_event_log"
+}
 
-	// Valid for type "syslog".
-	TransportProtocol string `yaml:"transport_protocol"`
-	ListenHost        string `yaml:"listen_host"`
-	ListenPort        uint16 `yaml:"listen_port"`
+type LoggingProcessorParseJson struct {
+	Field      string `yaml:"field"`       // optional, default to "message"
+	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
+	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
+}
 
-	// Valid for type "windows_event_log".
-	Channels []string `yaml:"channels"`
+type LoggingProcessorParseRegex struct {
+	Regex string `yaml:"regex"`
+
+	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
 }
 
 type LoggingProcessor struct {
 	configComponent `yaml:",inline"`
 
-	// Valid for parse_regex only.
-	Regex string `yaml:"regex"`
-
-	// Valid for type parse_json and parse_regex.
-	Field      string `yaml:"field"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
+	LoggingProcessorParseRegex `yaml:",inline"` // Type "parse_json" or "parse_regex"
 }
 
 type LoggingExporter struct {
