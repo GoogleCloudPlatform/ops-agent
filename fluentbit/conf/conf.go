@@ -255,8 +255,10 @@ const (
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
     resource          gce_instance
-    stackdriver_agent {{.UserAgent}}{{if .Workers}}
-    workers           {{.Workers}}{{end}}
+    stackdriver_agent {{.UserAgent}}
+    {{- if .Workers}}
+    workers           {{.Workers}}
+    {{- end}}
     Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
