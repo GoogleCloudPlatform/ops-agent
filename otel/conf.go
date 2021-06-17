@@ -65,6 +65,7 @@ service:
       network:
       paging:
       process:
+      processes:
 {{- end -}}
 
 {{define "iis" -}}
