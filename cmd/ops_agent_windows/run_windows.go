@@ -113,7 +113,7 @@ func (s *service) generateConfigs() error {
 	if err != nil {
 		return err
 	}
-	uc, err := config.ParseUnifiedConfig(data)
+	uc, err := config.ParseUnifiedConfig(data, "windows")
 	if err != nil {
 		return err
 	}

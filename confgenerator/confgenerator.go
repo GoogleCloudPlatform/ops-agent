@@ -30,20 +30,6 @@ import (
 )
 
 var (
-	// Supported component types.
-	supportedComponentTypes = map[string][]string{
-		"linux_logging_receiver":    []string{"files", "syslog"},
-		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
-		"linux_logging_exporter":    []string{"google_cloud_logging"},
-		"linux_metrics_receiver":    []string{"hostmetrics"},
-		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
-		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
-		"windows_logging_processor": []string{"parse_json", "parse_regex"},
-		"windows_logging_exporter":  []string{"google_cloud_logging"},
-		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
-		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
-	}
-
 	// Supported parameters.
 	supportedParameters = map[string][]string{
 		"files":             []string{"include_paths", "exclude_paths"},
@@ -110,9 +96,6 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
-			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-			// TODO: replace receiverNameMap[rID] with the actual receiver type.
-			cid := componentID{platform: "windows", subagent: "metrics", component: "receiver", componentType: receiverNameMap[rID], id: rID}
 			var pipelineID string
 			var defaultProcessors []string
 			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
@@ -124,8 +107,6 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
-			} else {
-				return nil, unsupportedComponentTypeError(cid)
 			}
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
@@ -297,8 +278,6 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
-		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-		cid := componentID{subagent: "metrics", component: "receiver", componentType: r.Type, id: n, platform: "windows"}
 		switch r.Type {
 		case "hostmetrics":
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
@@ -312,8 +291,6 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 			iisReceiverFactories[n] = &iisReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
-		default:
-			return nil, nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
@@ -330,14 +307,6 @@ type componentID struct {
 	componentType string
 	// platform should be "linux" or "windows".
 	platform string
-}
-
-// unsupportedComponentTypeError returns an error message when users specify a component type that is not supported.
-// id is the id of the receiver, processor, or exporter.
-func unsupportedComponentTypeError(id componentID) error {
-	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
-	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-		id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedComponentTypes[id.platform+"_"+id.subagent+"_"+id.component], ", "))
 }
 
 // missingRequiredParameterError returns an error message when users miss a required parameter.
@@ -434,8 +403,6 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
-		default:
-			return nil, nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
@@ -502,8 +469,6 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 			if !ok {
 				continue
 			}
-			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-			cid := componentID{subagent: "metrics", component: "exporter", id: eID, platform: "windows", componentType: exporter.Type}
 			switch exporter.Type {
 			case "google_cloud_monitoring":
 				if _, ok := exportNameMap[eID]; !ok {
@@ -514,8 +479,6 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 					stackdriverList = append(stackdriverList, &stackdriver)
 					exportNameMap[eID] = "googlecloud/" + eID
 				}
-			default:
-				return nil, nil, unsupportedComponentTypeError(cid)
 			}
 		}
 	}
@@ -603,12 +566,6 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	for _, pID := range config.SortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
-			e := exporters[exporterID]
-			if e.Type != "google_cloud_logging" {
-				// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-				cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux", componentType: e.Type}
-				return nil, nil, nil, nil, unsupportedComponentTypeError(cid)
-			}
 			// for each receiver, generate a output plugin with the specified receiver id
 			for _, rID := range pipeline.Receivers {
 				fbFilterModifyAddLogNames = append(fbFilterModifyAddLogNames, &conf.FilterModifyAddLogName{
@@ -660,8 +617,6 @@ func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]
 				TimeFormat: p.TimeFormat,
 			}
 			fbRegexParsers = append(fbRegexParsers, &fbRegexParser)
-		default:
-			return nil, nil, unsupportedComponentTypeError(cid)
 		}
 	}
 	return fbJSONParsers, fbRegexParsers, nil

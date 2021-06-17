@@ -40,12 +40,12 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
+func ParseUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	if err := yaml.UnmarshalStrict(input, &config); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
 	}
-	if err := config.Validate(); err != nil {
+	if err := config.Validate(platform); err != nil {
 		return config, err
 	}
 	return config, nil
@@ -144,30 +144,45 @@ type MetricsPipeline struct {
 	ExporterIDs []string `yaml:"exporters"`
 }
 
-func (uc *UnifiedConfig) Validate() error {
+func (uc *UnifiedConfig) Validate(platform string) error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(); err != nil {
+		if err := uc.Logging.Validate(platform); err != nil {
 			return err
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.Metrics.Validate(); err != nil {
+		if err := uc.Metrics.Validate(platform); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (l *Logging) Validate() error {
+func (l *Logging) Validate(platform string) error {
 	subagent := "logging"
 	if err := validateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	for id, r := range l.Receivers {
+		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
+			return err
+		}
+	}
 	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
 		return err
 	}
+	for id, p := range l.Processors {
+		if err := p.ValidateType(subagent, "processor", id, platform); err != nil {
+			return err
+		}
+	}
 	if err := validateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
 		return err
+	}
+	for id, e := range l.Exporters {
+		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
+			return err
+		}
 	}
 	if l.Service == nil {
 		return nil
@@ -197,13 +212,23 @@ func (l *Logging) Validate() error {
 	return nil
 }
 
-func (m *Metrics) Validate() error {
+func (m *Metrics) Validate(platform string) error {
 	subagent := "metrics"
 	if err := validateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	for id, r := range m.Receivers {
+		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
+			return err
+		}
+	}
 	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
 		return err
+	}
+	for id, e := range m.Exporters {
+		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
+			return err
+		}
 	}
 	if m.Service == nil {
 		return nil
@@ -223,6 +248,23 @@ func (m *Metrics) Validate() error {
 	return nil
 }
 
+func sliceContains(slice []string, value string) bool {
+	for _, e := range slice {
+		if e == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *configComponent) ValidateType(subagent string, component string, id string, platform string) error {
+	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+component]
+	if !sliceContains(supportedTypes, c.Type) {
+		return unsupportedComponentTypeError(subagent, component, id, c.Type, supportedTypes)
+	}
+	return nil
+}
+
 func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
 	t, err := time.ParseDuration(collectionInterval)
 	if err != nil {
@@ -235,9 +277,33 @@ func ValidateCollectionInterval(receiverID string, collectionInterval string) (f
 	return interval, nil
 }
 
-var defaultProcessors = []string{
-	"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
-	"lib:nginx", "lib:syslog-rfc3164", "lib:syslog-rfc5424"}
+var (
+	defaultProcessors = []string{
+		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
+		"lib:nginx", "lib:syslog-rfc3164", "lib:syslog-rfc5424"}
+
+	supportedComponentTypes = map[string][]string{
+		"linux_logging_receiver":    []string{"files", "syslog"},
+		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
+		"linux_logging_exporter":    []string{"google_cloud_logging"},
+		"linux_metrics_receiver":    []string{"hostmetrics"},
+		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
+		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
+		"windows_logging_processor": []string{"parse_json", "parse_regex"},
+		"windows_logging_exporter":  []string{"google_cloud_logging"},
+		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
+		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
+	}
+
+	supportedParameters = map[string][]string{
+		"files":             []string{"include_paths", "exclude_paths"},
+		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
+		"windows_event_log": []string{"channels"},
+		"parse_json":        []string{"field", "time_key", "time_format"},
+		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
+		"hostmetrics":       []string{"collection_interval"},
+	}
+)
 
 // mapKeys returns keys from a map[string]Any as a map[string]interface{}.
 func mapKeys(m interface{}) map[string]interface{} {
@@ -296,4 +362,12 @@ func reservedIdPrefixError(subagent string, component string, id string) error {
 	// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
 		subagent, component, id, component)
+}
+
+// unsupportedComponentTypeError returns an error message when users specify a component type that is not supported.
+// id is the id of the receiver, processor, or exporter.
+func unsupportedComponentTypeError(subagent string, component string, id string, componentType string, supportedTypes []string) error {
+	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
+	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+		subagent, component, id, componentType, subagent, component, strings.Join(supportedTypes, ", "))
 }
