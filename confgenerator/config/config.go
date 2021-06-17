@@ -163,6 +163,9 @@ func (l *Logging) Validate() error {
 	if err := ValidateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	if err := ValidateComponentIds(l.Processors, subagent, "processor"); err != nil {
+		return err
+	}
 	if err := ValidateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
 		return err
 	}
@@ -175,6 +178,16 @@ func (l *Logging) Validate() error {
 	for _, id := range SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
 		if err := validateComponentKeys(l.Receivers, p.Receivers, subagent, "receiver", id); err != nil {
+			return err
+		}
+		validProcessors := map[string]*LoggingProcessor{}
+		for k, v := range l.Processors {
+			validProcessors[k] = v
+		}
+		for _, k := range defaultProcessors {
+			validProcessors[k] = nil
+		}
+		if err := validateComponentKeys(validProcessors, p.Processors, subagent, "processor", id); err != nil {
 			return err
 		}
 		if err := validateComponentKeys(l.Exporters, p.Exporters, subagent, "exporter", id); err != nil {
@@ -221,6 +234,10 @@ func ValidateCollectionInterval(receiverID string, collectionInterval string) (f
 	}
 	return interval, nil
 }
+
+var defaultProcessors = []string{
+	"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
+	"lib:nginx", "lib:syslog-rfc3164", "lib:syslog-rfc5424"}
 
 // mapKeys returns keys from a map[string]Any as a map[string]interface{}.
 func mapKeys(m interface{}) map[string]interface{} {

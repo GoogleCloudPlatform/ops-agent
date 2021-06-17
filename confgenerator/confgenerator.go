@@ -579,9 +579,6 @@ func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pi
 		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
-			if !isDefaultProcessor(processorID) && !ok {
-				return nil, fmt.Errorf(`logging processor %q from pipeline %q is not defined.`, processorID, pID)
-			}
 			fbFilterParser := conf.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pID),
 				Parser:  processorID,
@@ -594,16 +591,6 @@ func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pi
 		}
 	}
 	return fbFilterParsers, nil
-}
-
-func isDefaultProcessor(name string) bool {
-	switch name {
-	case "lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb", "lib:nginx",
-		"lib:syslog-rfc3164", "lib:syslog-rfc5424":
-		return true
-	default:
-		return false
-	}
 }
 
 func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipelines map[string]*config.LoggingPipeline, hostInfo *host.InfoStat) (
@@ -651,9 +638,6 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
-	if err := config.ValidateComponentIds(processors, "logging", "processor"); err != nil {
-		return nil, nil, err
-	}
 	for _, name := range config.SortedKeys(processors) {
 		p := processors[name]
 		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
