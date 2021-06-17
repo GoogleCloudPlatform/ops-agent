@@ -160,19 +160,19 @@ func (uc *UnifiedConfig) Validate() error {
 
 func (l *Logging) Validate() error {
 	subagent := "logging"
-	if err := ValidateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
+	if err := validateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
-	if err := ValidateComponentIds(l.Processors, subagent, "processor"); err != nil {
+	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
 		return err
 	}
-	if err := ValidateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
+	if err := validateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
 		return err
 	}
 	if l.Service == nil {
 		return nil
 	}
-	if err := ValidateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
+	if err := validateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
 	for _, id := range SortedKeys(l.Service.Pipelines) {
@@ -199,16 +199,16 @@ func (l *Logging) Validate() error {
 
 func (m *Metrics) Validate() error {
 	subagent := "metrics"
-	if err := ValidateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
+	if err := validateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
-	if err := ValidateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
+	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
 		return err
 	}
 	if m.Service == nil {
 		return nil
 	}
-	if err := ValidateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
+	if err := validateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
 	for _, id := range SortedKeys(m.Service.Pipelines) {
@@ -273,7 +273,7 @@ func findInvalid(actual []string, allowed map[string]interface{}) []string {
 	return invalid
 }
 
-func ValidateComponentIds(components interface{}, subagent string, component string) error {
+func validateComponentIds(components interface{}, subagent string, component string) error {
 	for _, id := range SortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			return reservedIdPrefixError(subagent, component, id)
