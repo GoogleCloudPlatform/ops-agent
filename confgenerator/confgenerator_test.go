@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/collectd"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 )
@@ -137,7 +139,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
 			}
-			uc, err := ParseUnifiedConfig(data)
+			uc, err := config.ParseUnifiedConfig(data)
 			if err != nil {
 				t.Fatalf("ParseUnifiedConfig got %v", err)
 			}
@@ -147,9 +149,9 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			expectedParserConfig := readFileContent(t, testName, platform.OS, goldenParserPath, true)
 
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
+			mainConf, parserConf, err := generateFluentBitConfigs(uc.Logging, platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
-				t.Fatalf("GenerateFluentBitConfigs got %v", err)
+				t.Fatalf("generateFluentBitConfigs got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
@@ -157,7 +159,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 
 			if platform.OS != "windows" {
 				expectedCollectdConfig := readFileContent(t, testName, platform.OS, goldenCollectdPath, true)
-				collectdConf, err := uc.GenerateCollectdConfig(platform.defaultLogsDir)
+				collectdConf, err := collectd.GenerateCollectdConfig(uc.Metrics, platform.defaultLogsDir)
 				if err != nil {
 					t.Fatalf("GenerateCollectdConfig got %v", err)
 				}
@@ -166,9 +168,9 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			}
 
 			expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
-			otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
+			otelConf, err := generateOtelConfig(uc.Metrics, platform.InfoStat)
 			if err != nil {
-				t.Fatalf("GenerateOtelConfig got %v", err)
+				t.Fatalf("generateOtelConfig got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
@@ -247,22 +249,22 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
 func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
-	uc, err := ParseUnifiedConfig(invalidInput)
+	uc, err := config.ParseUnifiedConfig(invalidInput)
 	if err != nil {
 		return err
 	}
 
-	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
+	if _, _, err := generateFluentBitConfigs(uc.Logging, platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
 		return err
 	}
 
 	if platform.OS != "windows" {
-		if _, err := uc.GenerateCollectdConfig(platform.defaultLogsDir); err != nil {
+		if _, err := collectd.GenerateCollectdConfig(uc.Metrics, platform.defaultLogsDir); err != nil {
 			return err
 		}
 	}
 
-	if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
+	if _, err = generateOtelConfig(uc.Metrics, platform.InfoStat); err != nil {
 		return err
 	}
 	return nil

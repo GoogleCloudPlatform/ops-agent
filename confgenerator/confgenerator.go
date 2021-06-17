@@ -22,14 +22,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
 	"github.com/shirou/gopsutil/host"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -64,43 +61,6 @@ var filepathJoin = defaultFilepathJoin
 
 func defaultFilepathJoin(_ string, elem ...string) string {
 	return filepath.Join(elem...)
-}
-
-type UnifiedConfig struct {
-	Logging *config.Logging `yaml:"logging"`
-	Metrics *config.Metrics `yaml:"metrics"`
-}
-
-func (uc *UnifiedConfig) HasLogging() bool {
-	return uc.Logging != nil
-}
-
-func (uc *UnifiedConfig) HasMetrics() bool {
-	return uc.Metrics != nil
-}
-
-func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (config string, err error) {
-	return generateOtelConfig(uc.Metrics, hostInfo)
-}
-
-func (uc *UnifiedConfig) GenerateCollectdConfig(logsDir string) (config string, err error) {
-	return collectd.GenerateCollectdConfig(uc.Metrics, logsDir)
-}
-
-// GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
-// in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logs`
-// does not exist as a top-level field in the input yaml format.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (mainConfig string, parserConfig string, err error) {
-	return generateFluentBitConfigs(uc.Logging, logsDir, stateDir, hostInfo)
-}
-
-func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
-	config := UnifiedConfig{}
-	err := yaml.UnmarshalStrict(input, &config)
-	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
-	}
-	return config, nil
 }
 
 func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (string, error) {
@@ -258,6 +218,9 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
+// generateFluentBitConfigs generates FluentBit configuration from unified agents configuration
+// in yaml. generateFluentBitConfigs returns empty configurations without an error if `logging`
+// does not exist as a top-level field in the input yaml format.
 func generateFluentBitConfigs(logging *config.Logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)

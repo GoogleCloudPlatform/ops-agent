@@ -22,7 +22,32 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	yaml "gopkg.in/yaml.v2"
 )
+
+// Ops Agent config.
+type UnifiedConfig struct {
+	Logging *Logging `yaml:"logging"`
+	Metrics *Metrics `yaml:"metrics"`
+}
+
+func (uc *UnifiedConfig) HasLogging() bool {
+	return uc.Logging != nil
+}
+
+func (uc *UnifiedConfig) HasMetrics() bool {
+	return uc.Metrics != nil
+}
+
+func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
+	config := UnifiedConfig{}
+	err := yaml.UnmarshalStrict(input, &config)
+	if err != nil {
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
+	}
+	return config, nil
+}
 
 type configComponent struct {
 	Type string `yaml:"type"`

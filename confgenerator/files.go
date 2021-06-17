@@ -20,6 +20,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/collectd"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -28,18 +30,18 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	uc, err := ParseUnifiedConfig(data)
+	uc, err := config.ParseUnifiedConfig(data)
 	if err != nil {
 		return err
 	}
-	return uc.GenerateFiles(service, logsDir, stateDir, outDir)
+	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
 }
 
-func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string) error {
+func GenerateFilesFromConfig(uc *config.UnifiedConfig, service, logsDir, stateDir, outDir string) error {
 	hostInfo, _ := host.Info()
 	switch service {
 	case "fluentbit":
-		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
+		mainConfig, parserConfig, err := generateFluentBitConfigs(uc.Logging, logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -56,7 +58,7 @@ func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "collectd":
-		collectdConfig, err := uc.GenerateCollectdConfig(logsDir)
+		collectdConfig, err := collectd.GenerateCollectdConfig(uc.Metrics, logsDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -69,7 +71,7 @@ func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
+		otelConfig, err := generateOtelConfig(uc.Metrics, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
