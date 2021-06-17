@@ -238,7 +238,7 @@ func TestGenerateOtelConfig(t *testing.T) {
 			}},
 			stackdriverList: []*Stackdriver{{
 				StackdriverID: "google",
-				UserAgent:     "$USERAGENT",
+				UserAgent:     "$IGNORED_VALUE",
 				Prefix:        "agent.googleapis.com/",
 			}},
 			serviceList: []*Service{{
@@ -647,7 +647,7 @@ processors:
           # add version label
           - action: add_label
             new_label: version
-            new_value: $USERAGENT
+            new_value: google-cloud-ops-agent-metrics/latest-build_distro
       # otelcol_process_memory_rss -> agent/memory_usage
       - metric_name: otelcol_process_memory_rss
         action: update
@@ -682,11 +682,11 @@ processors:
   
 exporters:
   stackdriver/google:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
   stackdriver/agent:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
   
@@ -720,7 +720,7 @@ service:
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))")
+		got, err := GenerateOtelConfig(tc.hostMetricsList, tc.mssqlList, tc.iisList, tc.stackdriverList, tc.serviceList, "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)", "google-cloud-ops-agent-metrics/latest-build_distro")
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return

@@ -146,7 +146,8 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 }
 
 func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Collector", hostInfo)
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
+	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -172,7 +173,7 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 			return "", err
 		}
 	}
-	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent)
+	otelConfig, err := otel.GenerateOtelConfig(hostMetricsList, mssqlList, iisList, stackdriverList, serviceList, userAgent, versionLabel)
 	if err != nil {
 		return "", err
 	}
@@ -255,23 +256,37 @@ func defaultStackdriverOutputs(hostInfo *host.InfoStat) (stackdrivers []*conf.St
 	}
 }
 
-var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
+var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
+var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}})`))
 
-func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
-	userAgent := map[string]string{
+func expandTemplate(t *template.Template, prefix string, extraParams map[string]string) (string, error) {
+	params := map[string]string{
 		"Prefix":       prefix,
 		"AgentVersion": version.Version,
 		"BuildDistro":  version.BuildDistro,
+	}
+	for k, v := range extraParams {
+		params[k] = v
+	}
+	var b strings.Builder
+	if err := t.Execute(&b, params); err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	return b.String(), nil
+}
+
+func getVersionLabel(prefix string) (string, error) {
+	return expandTemplate(versionLabelTemplate, prefix, nil)
+}
+
+func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
+	extraParams := map[string]string{
 		"Platform":     hostInfo.OS,
 		"ShortName":    hostInfo.Platform,
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
-	var userAgentBuilder strings.Builder
-	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {
-		fmt.Println(err.Error())
-		return "", err
-	}
-	return userAgentBuilder.String(), nil
+	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
 func getWorkers(hostInfo *host.InfoStat) int {

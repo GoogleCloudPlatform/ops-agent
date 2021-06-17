@@ -117,7 +117,7 @@ service:
       processors: {{.Processors}}
       exporters: {{.Exporters}}`
 
-	defaultProcessorConf = `resourcedetection:
+	processorsConf = `resourcedetection:
     detectors: [gce]
 
   # perform custom transformations that aren't supported by the metricstransform processor
@@ -455,7 +455,7 @@ service:
           # add version label
           - action: add_label
             new_label: version
-            new_value: $USERAGENT
+            new_value: {{.Version}}
       # otelcol_process_memory_rss -> agent/memory_usage
       - metric_name: otelcol_process_memory_rss
         action: update
@@ -607,6 +607,20 @@ func (s Service) renderConfig() (string, error) {
 	return renderedServiceConfig.String(), nil
 }
 
+type Processors struct {
+	Version string
+}
+
+var processorsTemplate = template.Must(template.New("processors").Parse(processorsConf))
+
+func (p Processors) renderConfig() (string, error) {
+	var renderedConfig strings.Builder
+	if err := processorsTemplate.Execute(&renderedConfig, p); err != nil {
+		return "", err
+	}
+	return renderedConfig.String(), nil
+}
+
 type Stackdriver struct {
 	StackdriverID string
 	UserAgent     string
@@ -623,7 +637,7 @@ func (s Stackdriver) renderConfig() (string, error) {
 	return renderedStackdriverConfig.String(), nil
 }
 
-func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisList []*IIS, stackdriverList []*Stackdriver, serviceList []*Service, userAgent string) (string, error) {
+func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisList []*IIS, stackdriverList []*Stackdriver, serviceList []*Service, userAgent string, versionLabel string) (string, error) {
 	receiversConfigSection := []string{}
 	exportersConfigSection := []string{}
 	processorsConfigSection := []string{}
@@ -671,7 +685,14 @@ func GenerateOtelConfig(hostMetricsList []*HostMetrics, mssqlList []*MSSQL, iisL
 		}
 		serviceConfigSection = append(serviceConfigSection, configSection)
 	}
-	processorsConfigSection = append(processorsConfigSection, defaultProcessorConf)
+	p := Processors{
+		Version: versionLabel,
+	}
+	configSection, err := p.renderConfig()
+	if err != nil {
+		return "", err
+	}
+	processorsConfigSection = append(processorsConfigSection, configSection)
 	configSections := configSections{
 		ReceiversConfigSection:  receiversConfigSection,
 		ProcessorsConfigSection: processorsConfigSection,
