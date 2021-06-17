@@ -42,9 +42,11 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 
 func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
-	err := yaml.UnmarshalStrict(input, &config)
-	if err != nil {
+	if err := yaml.UnmarshalStrict(input, &config); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
+	}
+	if err := config.Validate(); err != nil {
+		return config, err
 	}
 	return config, nil
 }
@@ -142,6 +144,72 @@ type MetricsPipeline struct {
 	ExporterIDs []string `yaml:"exporters"`
 }
 
+func (uc *UnifiedConfig) Validate() error {
+	if uc.Logging != nil {
+		if err := uc.Logging.Validate(); err != nil {
+			return err
+		}
+	}
+	if uc.Metrics != nil {
+		if err := uc.Metrics.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (l *Logging) Validate() error {
+	subagent := "logging"
+	if err := ValidateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
+		return err
+	}
+	if err := ValidateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
+		return err
+	}
+	if l.Service == nil {
+		return nil
+	}
+	if err := ValidateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
+		return err
+	}
+	for _, id := range SortedKeys(l.Service.Pipelines) {
+		p := l.Service.Pipelines[id]
+		if err := validateComponentKeys(l.Receivers, p.Receivers, subagent, "receiver", id); err != nil {
+			return err
+		}
+		if err := validateComponentKeys(l.Exporters, p.Exporters, subagent, "exporter", id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *Metrics) Validate() error {
+	subagent := "metrics"
+	if err := ValidateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
+		return err
+	}
+	if err := ValidateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
+		return err
+	}
+	if m.Service == nil {
+		return nil
+	}
+	if err := ValidateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
+		return err
+	}
+	for _, id := range SortedKeys(m.Service.Pipelines) {
+		p := m.Service.Pipelines[id]
+		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+			return err
+		}
+		if err := validateComponentKeys(m.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
 	t, err := time.ParseDuration(collectionInterval)
 	if err != nil {
@@ -177,11 +245,30 @@ func SortedKeys(m interface{}) []string {
 	return r
 }
 
+// findInvalid returns all strings from a slice that are not in allowed.
+func findInvalid(actual []string, allowed map[string]interface{}) []string {
+	var invalid []string
+	for _, v := range actual {
+		if _, ok := allowed[v]; !ok {
+			invalid = append(invalid, v)
+		}
+	}
+	return invalid
+}
+
 func ValidateComponentIds(components interface{}, subagent string, component string) error {
 	for _, id := range SortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			return reservedIdPrefixError(subagent, component, id)
 		}
+	}
+	return nil
+}
+
+func validateComponentKeys(components interface{}, refs []string, subagent string, component string, pipeline string) error {
+	invalid := findInvalid(refs, mapKeys(components))
+	if len(invalid) > 0 {
+		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, component, invalid[0], pipeline)
 	}
 	return nil
 }

@@ -148,8 +148,6 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 		scrapeInternal:    defaultScrapeInterval,
 		enableHostMetrics: false,
 	}
-	definedReceiverIDs := map[string]bool{}
-	definedExporterIDs := map[string]bool{}
 
 	// Skip validation if metrics config is not set.
 	// In other words receivers, exporters and pipelines are all empty.
@@ -160,9 +158,6 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	// Validate Metrics.Receivers.
 	if len(metrics.Receivers) > 1 {
 		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
-	}
-	if err := config.ValidateComponentIds(metrics.Receivers, "metrics", "receiver"); err != nil {
-		return nil, err
 	}
 	for receiverID, receiver := range metrics.Receivers {
 		if receiver.Type != "hostmetrics" {
@@ -177,45 +172,28 @@ func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 			}
 			collectdConf.scrapeInternal = interval
 		}
-		definedReceiverIDs[receiverID] = true
 	}
 
 	// Validate Metrics.Exporters.
 	if len(metrics.Exporters) != 1 {
 		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
 	}
-	if err := config.ValidateComponentIds(metrics.Exporters, "metrics", "exporter"); err != nil {
-		return nil, err
-	}
 	for exporterID, exporter := range metrics.Exporters {
 		if exporter.Type != "google_cloud_monitoring" {
 			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
 		}
-		definedExporterIDs[exporterID] = true
 	}
 
 	// Validate Metrics.Service.
 	if len(metrics.Service.Pipelines) != 1 {
 		return nil, errors.New("exactly one metrics service pipeline is required.")
 	}
-	if err := config.ValidateComponentIds(metrics.Service.Pipelines, "metrics", "pipeline"); err != nil {
-		return nil, err
-	}
-	for pipelineID, pipeline := range metrics.Service.Pipelines {
+	for _, pipeline := range metrics.Service.Pipelines {
 		if len(pipeline.ReceiverIDs) != 1 {
 			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
 		}
-		invalidReceiverIDs := findInvalid(definedReceiverIDs, pipeline.ReceiverIDs)
-		if len(invalidReceiverIDs) > 0 {
-			return nil, fmt.Errorf("metrics receiver %q from pipeline %q is not defined.", invalidReceiverIDs[0], pipelineID)
-		}
-
 		if len(pipeline.ExporterIDs) != 1 {
 			return nil, errors.New("exactly one exporter id is required in the metrics service pipeline exporter id list.")
-		}
-		invalidExporterIDs := findInvalid(definedExporterIDs, pipeline.ExporterIDs)
-		if len(invalidExporterIDs) > 0 {
-			return nil, fmt.Errorf("metrics exporter %q from pipeline %q is not defined.", invalidExporterIDs[0], pipelineID)
 		}
 	}
 	return &collectdConf, nil

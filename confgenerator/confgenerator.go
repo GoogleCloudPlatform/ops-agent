@@ -107,9 +107,6 @@ func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (strin
 
 func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*config.MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
-	if err := config.ValidateComponentIds(pipelines, "metrics", "pipeline"); err != nil {
-		return nil, err
-	}
 	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
@@ -367,9 +364,6 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
-	if err := config.ValidateComponentIds(receivers, "logging", "receiver"); err != nil {
-		return nil, nil, nil, err
-	}
 	for rID, r := range receivers {
 		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
 		cid := componentID{subagent: "logging", component: "receiver", componentType: r.Type, id: rID, platform: "windows"}
@@ -452,12 +446,6 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
 	receiverNameMap := make(map[string]string)
-	if err := config.ValidateComponentIds(pipelines, "metrics", "pipeline"); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := config.ValidateComponentIds(receivers, "metrics", "receiver"); err != nil {
-		return nil, nil, nil, nil, err
-	}
 	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -489,8 +477,6 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 				}
 				iisList = append(iisList, &iis)
 				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
-			} else {
-				return nil, nil, nil, nil, fmt.Errorf(`metrics receiver %q from pipeline %q is not defined.`, rID, pID)
 			}
 		}
 	}
@@ -509,16 +495,13 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelines map[string]*config.MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
-	if err := config.ValidateComponentIds(exporters, "metrics", "exporter"); err != nil {
-		return nil, nil, err
-	}
 	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
-			if _, ok := exporters[eID]; !ok {
-				return nil, nil, fmt.Errorf(`metrics exporter %q from pipeline %q is not defined.`, eID, pID)
+			exporter, ok := exporters[eID]
+			if !ok {
+				continue
 			}
-			exporter := exporters[eID]
 			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
 			cid := componentID{subagent: "metrics", component: "exporter", id: eID, platform: "windows", componentType: exporter.Type}
 			switch exporter.Type {
@@ -585,7 +568,6 @@ func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipel
 				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				continue
 			}
-			return nil, nil, nil, fmt.Errorf(`logging receiver %q from pipeline %q is not defined.`, rID, pID)
 		}
 	}
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
@@ -630,20 +612,12 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterModifyRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 	fbStackdrivers := []*conf.Stackdriver{}
-	if err := config.ValidateComponentIds(pipelines, "logging", "pipeline"); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := config.ValidateComponentIds(exporters, "logging", "exporter"); err != nil {
-		return nil, nil, nil, nil, err
-	}
 	stackdriverExporters := make(map[string][]string)
 	for _, pID := range config.SortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
-			e, ok := exporters[exporterID]
-			if !ok {
-				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pID)
-			} else if e.Type != "google_cloud_logging" {
+			e := exporters[exporterID]
+			if e.Type != "google_cloud_logging" {
 				// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
 				cid := componentID{subagent: "logging", component: "exporter", id: exporterID, platform: "linux", componentType: e.Type}
 				return nil, nil, nil, nil, unsupportedComponentTypeError(cid)
