@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -151,12 +150,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 	if err := config.ValidateComponentIds(pipelines, "metrics", "pipeline"); err != nil {
 		return nil, err
 	}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
@@ -505,12 +499,7 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if _, ok := receiverNameMap[rID]; ok {
@@ -560,12 +549,7 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 	if err := config.ValidateComponentIds(exporters, "metrics", "exporter"); err != nil {
 		return nil, nil, err
 	}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
 			if _, ok := exporters[eID]; !ok {
@@ -603,12 +587,7 @@ func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipel
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
 			if f, ok := fileReceiverFactories[rID]; ok {
@@ -651,12 +630,7 @@ func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipel
 
 func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pipelines map[string]*config.LoggingPipeline) ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
@@ -699,13 +673,8 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	if err := config.ValidateComponentIds(exporters, "logging", "exporter"); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	var pipelineIDs []string
-	for p := range pipelines {
-		pipelineIDs = append(pipelineIDs, p)
-	}
-	sort.Strings(pipelineIDs)
 	stackdriverExporters := make(map[string][]string)
-	for _, pID := range pipelineIDs {
+	for _, pID := range config.SortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
 			e, ok := exporters[exporterID]
@@ -748,13 +717,7 @@ func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]
 	if err := config.ValidateComponentIds(processors, "logging", "processor"); err != nil {
 		return nil, nil, err
 	}
-	var names []string
-	for n := range processors {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
+	for _, name := range config.SortedKeys(processors) {
 		p := processors[name]
 		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
 		switch t := p.Type; t {

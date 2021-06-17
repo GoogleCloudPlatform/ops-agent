@@ -129,8 +129,8 @@ func mapKeys(m interface{}) map[string]interface{} {
 	return keys
 }
 
-// sortedKeys returns keys from a map[string]Any as a sorted string slice.
-func sortedKeys(m interface{}) []string {
+// SortedKeys returns keys from a map[string]Any as a sorted string slice.
+func SortedKeys(m interface{}) []string {
 	var r []string
 	for k := range mapKeys(m) {
 		r = append(r, k)
@@ -140,7 +140,7 @@ func sortedKeys(m interface{}) []string {
 }
 
 func ValidateComponentIds(components interface{}, subagent string, component string) error {
-	for _, id := range sortedKeys(components) {
+	for _, id := range SortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			return reservedIdPrefixError(subagent, component, id)
 		}
