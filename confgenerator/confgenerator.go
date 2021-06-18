@@ -348,15 +348,6 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 			}
 		}
 	}
-	if len(hostMetricsList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`at most one metrics receiver with type "hostmetrics" is allowed.`)
-	}
-	if len(mssqlList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`at most one metrics receiver with type "mssql" is allowed.`)
-	}
-	if len(iisList) > 1 {
-		return nil, nil, nil, nil, fmt.Errorf(`at most one metrics receiver with type "iis" is allowed.`)
-	}
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
@@ -382,9 +373,6 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 				}
 			}
 		}
-	}
-	if len(stackdriverList) > 1 {
-		return nil, nil, fmt.Errorf(`Only one exporter of the same type in [google_cloud_monitoring] is allowed.`)
 	}
 	return stackdriverList, exportNameMap, nil
 }

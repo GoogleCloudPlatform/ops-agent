@@ -219,6 +219,15 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(l.Exporters, p.Exporters, subagent, "exporter", id); err != nil {
 			return err
 		}
+		if err := validateComponentTypeCounts(l.Receivers, p.Receivers, subagent, "receiver"); err != nil {
+			return err
+		}
+		if err := validateComponentTypeCounts(l.Processors, p.Processors, subagent, "processor"); err != nil {
+			return err
+		}
+		if err := validateComponentTypeCounts(l.Exporters, p.Exporters, subagent, "exporter"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -263,6 +272,12 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 		if err := validateComponentKeys(m.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
+			return err
+		}
+		if err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		}
+		if err := validateComponentTypeCounts(m.Exporters, p.ExporterIDs, subagent, "exporter"); err != nil {
 			return err
 		}
 	}
@@ -397,6 +412,13 @@ var (
 		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
 	}
 
+	componentTypeLimits = map[string]int{
+		"google_cloud_monitoring": 1,
+		"hostmetrics": 1,
+		"iis": 1,
+		"mssql": 1,
+	}
+
 	supportedParameters = map[string][]string{
 		"files":             []string{"include_paths", "exclude_paths"},
 		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
@@ -474,6 +496,30 @@ func validateComponentKeys(components interface{}, refs []string, subagent strin
 	invalid := findInvalid(refs, mapKeys(components))
 	if len(invalid) > 0 {
 		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, component, invalid[0], pipeline)
+	}
+	return nil
+}
+
+func validateComponentTypeCounts(components interface{}, refs []string, subagent string, component string) error {
+	r := map[string]int{}
+	cm := reflect.ValueOf(components)
+	for _, id := range refs {
+		v := cm.MapIndex(reflect.ValueOf(id))
+		if !v.IsValid() {
+			continue // Some reserved ids don't map to components.
+		}
+		t := v.Elem().FieldByName("Type").String()
+		if _, ok := r[t]; ok {
+			r[t] += 1
+		} else {
+			r[t] = 1
+		}
+		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
+			if limit == 1 {
+				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, component, t)
+			}
+			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, component, t)
+		}
 	}
 	return nil
 }
