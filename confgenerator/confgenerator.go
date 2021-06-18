@@ -29,18 +29,6 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-var (
-	// Supported parameters.
-	supportedParameters = map[string][]string{
-		"files":             []string{"include_paths", "exclude_paths"},
-		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
-		"windows_event_log": []string{"channels"},
-		"parse_json":        []string{"field", "time_key", "time_format"},
-		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
-		"hostmetrics":       []string{"collection_interval"},
-	}
-)
-
 // filepathJoin uses the real filepath.Join in actual executable
 // but can be overriden in tests to impersonate an alternate OS.
 var filepathJoin = defaultFilepathJoin
@@ -296,85 +284,23 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-type componentID struct {
-	// subagent should be "logging", or "metrics".
-	subagent string
-	// component should be "receiver", "processor", or "exporter".
-	component string
-	// id is the id of the component.
-	id string
-	// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-	componentType string
-	// platform should be "linux" or "windows".
-	platform string
-}
-
-// missingRequiredParameterError returns an error message when users miss a required parameter.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-// parameter is name of the parameter that is missing.
-func missingRequiredParameterError(id componentID, parameter string) error {
-	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
-	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, id.subagent, id.component, id.id, id.componentType)
-}
-
-// unsupportedParameterError returns an error message when users specifies an unsupported parameter.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-// parameter is name of the parameter that is not supported.
-func unsupportedParameterError(id componentID, parameter string) error {
-	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
-	// for "files" type logging receiver: [include_paths, exclude_paths].
-	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
-		parameter, id.subagent, id.component, id.id, id.componentType, id.subagent, id.component, strings.Join(supportedParameters[id.componentType], ", "))
-}
-
 func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for rID, r := range receivers {
-		// TODO: Fix the platform. It should be "windows" for Windows and "linux" for Linux.
-		cid := componentID{subagent: "logging", component: "receiver", componentType: r.Type, id: rID, platform: "windows"}
 		switch r.Type {
 		case "files":
-			if r.TransportProtocol != "" {
-				return nil, nil, nil, unsupportedParameterError(cid, "transport_protocol")
-			}
-			if r.ListenHost != "" {
-				return nil, nil, nil, unsupportedParameterError(cid, "listen_host")
-			}
-			if r.ListenPort != 0 {
-				return nil, nil, nil, unsupportedParameterError(cid, "listen_port")
-			}
-			if r.Channels != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "channels")
-			}
-			if r.IncludePaths == nil {
-				return nil, nil, nil, missingRequiredParameterError(cid, "include_paths")
-			}
 			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
 				ExcludePaths: r.ExcludePaths,
 			}
 		case "syslog":
-			if r.IncludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "include_paths")
-			}
-			if r.ExcludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "exclude_paths")
-			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
 				return nil, nil, nil, fmt.Errorf(`unknown transport_protocol %q in the logging receiver %q. Supported transport_protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
 			}
 			if net.ParseIP(r.ListenHost) == nil {
 				return nil, nil, nil, fmt.Errorf(`unknown listen_host %q in the logging receiver %q. Value of listen_host for %q type logging receiver should be a valid IP.`, r.ListenHost, rID, r.Type)
-			}
-			if r.ListenPort == 0 {
-				return nil, nil, nil, missingRequiredParameterError(cid, "listen_port")
-			}
-			if r.Channels != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "channels")
 			}
 			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
@@ -382,24 +308,6 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 				ListenPort:        r.ListenPort,
 			}
 		case "windows_event_log":
-			if r.TransportProtocol != "" {
-				return nil, nil, nil, unsupportedParameterError(cid, "transport_protocol")
-			}
-			if r.ListenHost != "" {
-				return nil, nil, nil, unsupportedParameterError(cid, "listen_host")
-			}
-			if r.ListenPort != 0 {
-				return nil, nil, nil, unsupportedParameterError(cid, "listen_port")
-			}
-			if r.IncludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "include_paths")
-			}
-			if r.ExcludePaths != nil {
-				return nil, nil, nil, unsupportedParameterError(cid, "exclude_paths")
-			}
-			if r.Channels == nil {
-				return nil, nil, nil, missingRequiredParameterError(cid, "channels")
-			}
 			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
@@ -597,7 +505,6 @@ func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]
 	fbRegexParsers := []*conf.ParserRegex{}
 	for _, name := range config.SortedKeys(processors) {
 		p := processors[name]
-		cid := componentID{subagent: "logging", component: "processor", componentType: p.Type, id: name, platform: "linux"}
 		switch t := p.Type; t {
 		case "parse_json":
 			fbJSONParser := conf.ParserJSON{
@@ -607,9 +514,6 @@ func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
-			if p.Regex == "" {
-				return nil, nil, missingRequiredParameterError(cid, "regex")
-			}
 			fbRegexParser := conf.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,

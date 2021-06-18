@@ -65,7 +65,7 @@ type Logging struct {
 
 type LoggingReceiverFiles struct {
 	IncludePaths []string `yaml:"include_paths"`
-	ExcludePaths []string `yaml:"exclude_paths"` // optional
+	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
 }
 
 type LoggingReceiverSyslog struct {
@@ -81,15 +81,15 @@ type LoggingReceiverWinevtlog struct {
 type LoggingReceiver struct {
 	configComponent `yaml:",inline"`
 
-	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
 	LoggingReceiverSyslog    `yaml:",inline"` // Type "syslog"
+	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
 	LoggingReceiverWinevtlog `yaml:",inline"` // Type "windows_event_log"
 }
 
 type LoggingProcessorParseJson struct {
-	Field      string `yaml:"field"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format"` // optional, must be provided if time_key is present
+	Field      string `yaml:"field,omitempty"`       // optional, default to "message"
+	TimeKey    string `yaml:"time_key,omitempty"`    // optional, by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // optional, must be provided if time_key is present
 }
 
 type LoggingProcessorParseRegex struct {
@@ -163,24 +163,34 @@ func (l *Logging) Validate(platform string) error {
 	if err := validateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
+		return err
+	}
+	if err := validateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
+		return err
+	}
 	for id, r := range l.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
 			return err
 		}
-	}
-	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
-		return err
 	}
 	for id, p := range l.Processors {
 		if err := p.ValidateType(subagent, "processor", id, platform); err != nil {
 			return err
 		}
 	}
-	if err := validateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
-		return err
-	}
 	for id, e := range l.Exporters {
 		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
+			return err
+		}
+	}
+	for id, r := range l.Receivers {
+		if err := r.ValidateParameters(subagent, "receiver", id); err != nil {
+			return err
+		}
+	}
+	for id, p := range l.Processors {
+		if err := p.ValidateParameters(subagent, "processor", id); err != nil {
 			return err
 		}
 	}
@@ -217,16 +227,26 @@ func (m *Metrics) Validate(platform string) error {
 	if err := validateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
+		return err
+	}
 	for id, r := range m.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
 			return err
 		}
 	}
-	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
-		return err
-	}
 	for id, e := range m.Exporters {
 		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
+			return err
+		}
+	}
+	for id, r := range m.Receivers {
+		if err := r.ValidateParameters(subagent, "receiver", id); err != nil {
+			return err
+		}
+	}
+	for id, r := range m.Receivers {
+		if _, err := ValidateCollectionInterval(id, r.CollectionInterval); err != nil {
 			return err
 		}
 	}
@@ -261,6 +281,75 @@ func (c *configComponent) ValidateType(subagent string, component string, id str
 	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+component]
 	if !sliceContains(supportedTypes, c.Type) {
 		return unsupportedComponentTypeError(subagent, component, id, c.Type, supportedTypes)
+	}
+	return nil
+}
+
+func (r *LoggingReceiver) ValidateParameters(subagent string, component string, id string) error {
+	supportedParameters := supportedParameters[r.Type]
+	return validateParameters(*r, subagent, component, id, r.Type, supportedParameters)
+}
+
+func (p *LoggingProcessor) ValidateParameters(subagent string, component string, id string) error {
+	supportedParameters := supportedParameters[p.Type]
+	return validateParameters(*p, subagent, component, id, p.Type, supportedParameters)
+}
+
+func (r *MetricsReceiver) ValidateParameters(subagent string, component string, id string) error {
+	supportedParameters := supportedParameters[r.Type]
+	return validateParameters(*r, subagent, component, id, r.Type, supportedParameters)
+}
+
+type yamlField struct {
+	Name     string
+	Required bool
+	IsZero   bool
+}
+
+func nonZeroFields(sm reflect.Value) []yamlField {
+	var parameters []yamlField
+	tm := sm.Type()
+	if tm.NumField() != sm.NumField() {
+		panic(fmt.Sprintf("expected the number of fields in %v and %v to match", sm, tm))
+	}
+	for i := 0; i < tm.NumField(); i++ {
+		f := tm.Field(i)
+		t, _ := f.Tag.Lookup("yaml")
+		split := strings.Split(t, ",")
+		n := split[0]
+		annotations := split[1:]
+		if n == "-" {
+			continue
+		} else if n == "" {
+			n = strings.ToLower(f.Name)
+		}
+		v := sm.Field(i)
+		if sliceContains(annotations, "inline") {
+			// Expand inline structs.
+			parameters = append(parameters, nonZeroFields(v)...)
+		} else if f.Name[:1] != strings.ToLower(f.Name[:1]) { // skip private non-struct fields
+			parameters = append(parameters, yamlField{Name: n, Required: !sliceContains(annotations, "omitempty"), IsZero: v.IsZero()})
+		}
+	}
+	return parameters
+}
+
+func validateParameters(s interface{}, subagent string, component string, id string, componentType string, supportedParameters []string) error {
+	// Include type when checking.
+	allParameters := []string{"type"}
+	allParameters = append(allParameters, supportedParameters...)
+	sm := reflect.ValueOf(s)
+	parameters := nonZeroFields(sm)
+	for _, p := range parameters {
+		if !sliceContains(allParameters, p.Name) {
+			if !p.IsZero {
+				return unsupportedParameterError(subagent, component, id, componentType, p.Name, supportedParameters)
+			}
+			continue
+		}
+		if p.IsZero && p.Required {
+			return missingRequiredParameterError(subagent, component, id, componentType, p.Name)
+		}
 	}
 	return nil
 }
@@ -302,6 +391,8 @@ var (
 		"parse_json":        []string{"field", "time_key", "time_format"},
 		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
 		"hostmetrics":       []string{"collection_interval"},
+		"iis":               []string{"collection_interval"},
+		"mssql":             []string{"collection_interval"},
 	}
 )
 
@@ -370,4 +461,24 @@ func unsupportedComponentTypeError(subagent string, component string, id string,
 	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
 	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
 		subagent, component, id, componentType, subagent, component, strings.Join(supportedTypes, ", "))
+}
+
+// missingRequiredParameterError returns an error message when users miss a required parameter.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+// parameter is name of the parameter that is missing.
+func missingRequiredParameterError(subagent string, component string, id string, componentType string, parameter string) error {
+	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
+	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, componentType)
+}
+
+// unsupportedParameterError returns an error message when users specifies an unsupported parameter.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+// parameter is name of the parameter that is not supported.
+func unsupportedParameterError(subagent string, component string, id string, componentType string, parameter string, supportedParameters []string) error {
+	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
+	// for "files" type logging receiver: [include_paths, exclude_paths].
+	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
+		parameter, subagent, component, id, componentType, subagent, component, strings.Join(supportedParameters, ", "))
 }
