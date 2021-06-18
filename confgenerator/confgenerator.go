@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"net"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -497,7 +498,13 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "exclude_paths")
 			}
 			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, nil, fmt.Errorf(`unknown transport protocol %q in the logging receiver %q. Supported transport protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
+				return nil, nil, nil, fmt.Errorf(`unknown transport_protocol %q in the logging receiver %q. Supported transport_protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
+			}
+			if net.ParseIP(r.ListenHost) == nil {
+				return nil, nil, nil, fmt.Errorf(`unknown listen_host %q in the logging receiver %q. Value of listen_host for %q type logging receiver should be a valid IP.`, r.ListenHost, rID, r.Type)
+			}
+			if r.ListenPort == 0 {
+				return nil, nil, nil, missingRequiredParameterError("logging", "receiver", r.Type, rID, "listen_port")
 			}
 			if r.Channels != nil {
 				return nil, nil, nil, unsupportedParameterError("logging", "receiver", r.Type, rID, "channels")

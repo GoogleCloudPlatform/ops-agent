@@ -1,1 +1,1 @@
-unknown transport protocol "unknown_protocol" in the logging receiver "receiver_1". Supported transport protocol for "syslog" type logging receiver: [tcp, udp].
+unknown transport_protocol "unknown_protocol" in the logging receiver "receiver_1". Supported transport_protocol for "syslog" type logging receiver: [tcp, udp].
