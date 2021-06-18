@@ -329,12 +329,9 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string,
 	regexParsers := []*conf.ParserRegex{}
 
 	if logging != nil && logging.Service != nil {
-		fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, err := extractReceiverFactories(logging.Receivers)
-		if err != nil {
-			return "", "", err
-		}
 		extractedTails := []*conf.Tail{}
-		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, logging.Service.Pipelines, stateDir, hostInfo)
+		var err error
+		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -642,10 +639,14 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateFluentBitInputs(fileReceiverFactories map[string]*fileReceiverFactory, syslogReceiverFactories map[string]*syslogReceiverFactory, wineventlogReceiverFactories map[string]*wineventlogReceiverFactory, pipelines map[string]*loggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
+func generateFluentBitInputs(receivers map[string]*receiver, pipelines map[string]*loggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
+	fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, err := extractReceiverFactories(receivers)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	var pipelineIDs []string
 	for p := range pipelines {
 		pipelineIDs = append(pipelineIDs, p)
