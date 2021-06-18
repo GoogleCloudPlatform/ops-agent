@@ -17,7 +17,6 @@ package confgenerator
 
 import (
 	"fmt"
-	"net"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -296,12 +295,6 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 				ExcludePaths: r.ExcludePaths,
 			}
 		case "syslog":
-			if r.TransportProtocol != "tcp" && r.TransportProtocol != "udp" {
-				return nil, nil, nil, fmt.Errorf(`unknown transport_protocol %q in the logging receiver %q. Supported transport_protocol for %q type logging receiver: [tcp, udp].`, r.TransportProtocol, rID, r.Type)
-			}
-			if net.ParseIP(r.ListenHost) == nil {
-				return nil, nil, nil, fmt.Errorf(`unknown listen_host %q in the logging receiver %q. Value of listen_host for %q type logging receiver should be a valid IP.`, r.ListenHost, rID, r.Type)
-			}
 			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
 				ListenHost:        r.ListenHost,

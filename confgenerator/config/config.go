@@ -18,6 +18,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"net"
 	"reflect"
 	"sort"
 	"strings"
@@ -286,23 +287,21 @@ func (c *configComponent) ValidateType(subagent string, component string, id str
 }
 
 func (r *LoggingReceiver) ValidateParameters(subagent string, component string, id string) error {
-	supportedParameters := supportedParameters[r.Type]
-	return validateParameters(*r, subagent, component, id, r.Type, supportedParameters)
+	return validateParameters(*r, subagent, component, id, r.Type)
 }
 
 func (p *LoggingProcessor) ValidateParameters(subagent string, component string, id string) error {
-	supportedParameters := supportedParameters[p.Type]
-	return validateParameters(*p, subagent, component, id, p.Type, supportedParameters)
+	return validateParameters(*p, subagent, component, id, p.Type)
 }
 
 func (r *MetricsReceiver) ValidateParameters(subagent string, component string, id string) error {
-	supportedParameters := supportedParameters[r.Type]
-	return validateParameters(*r, subagent, component, id, r.Type, supportedParameters)
+	return validateParameters(*r, subagent, component, id, r.Type)
 }
 
 type yamlField struct {
 	Name     string
 	Required bool
+	Value    interface{}
 	IsZero   bool
 }
 
@@ -328,16 +327,23 @@ func nonZeroFields(sm reflect.Value) []yamlField {
 			// Expand inline structs.
 			parameters = append(parameters, nonZeroFields(v)...)
 		} else if f.Name[:1] != strings.ToLower(f.Name[:1]) { // skip private non-struct fields
-			parameters = append(parameters, yamlField{Name: n, Required: !sliceContains(annotations, "omitempty"), IsZero: v.IsZero()})
+			parameters = append(parameters, yamlField{
+				Name:     n,
+				Required: !sliceContains(annotations, "omitempty"),
+				Value:    v.Interface(),
+				IsZero:   v.IsZero(),
+			})
 		}
 	}
 	return parameters
 }
 
-func validateParameters(s interface{}, subagent string, component string, id string, componentType string, supportedParameters []string) error {
+func validateParameters(s interface{}, subagent string, component string, id string, componentType string) error {
+	supportedParameters := supportedParameters[componentType]
 	// Include type when checking.
 	allParameters := []string{"type"}
 	allParameters = append(allParameters, supportedParameters...)
+	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
 	sm := reflect.ValueOf(s)
 	parameters := nonZeroFields(sm)
 	for _, p := range parameters {
@@ -349,6 +355,13 @@ func validateParameters(s interface{}, subagent string, component string, id str
 		}
 		if p.IsZero && p.Required {
 			return missingRequiredParameterError(subagent, component, id, componentType, p.Name)
+		}
+		if hasAdditionalValidation {
+			if f, ok := additionalValidation[p.Name]; ok {
+				if err := f(p.Value, p.Name, subagent, component, id, componentType); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -393,6 +406,24 @@ var (
 		"hostmetrics":       []string{"collection_interval"},
 		"iis":               []string{"collection_interval"},
 		"mssql":             []string{"collection_interval"},
+	}
+
+	additionalParameterValidation = map[string]map[string]func(interface{}, string, string, string, string, string) error{
+		"syslog": map[string]func(interface{}, string, string, string, string, string) error{
+			"transport_protocol": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
+				validValues := []string{"tcp", "udp"}
+				if !sliceContains(validValues, v.(string)) {
+					return fmt.Errorf(`unknown %s %q in the %s %s %q. Supported %s for %q type %s %s: [%s].`, p, v, subagent, component, id, p, componentType, subagent, component, strings.Join(validValues, ", "))
+				}
+				return nil
+			},
+			"listen_host": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
+				if net.ParseIP(v.(string)) == nil {
+					return fmt.Errorf(`unknown %s %q in the %s %s %q. Value of %s for %q type %s %s should be a valid IP.`, p, v, subagent, component, id, p, componentType, subagent, component)
+				}
+				return nil
+			},
+		},
 	}
 )
 
