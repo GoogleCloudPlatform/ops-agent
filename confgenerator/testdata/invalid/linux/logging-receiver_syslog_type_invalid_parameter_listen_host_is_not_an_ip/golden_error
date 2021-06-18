@@ -1,0 +1,1 @@
+unknown listen_host "abc" in the logging receiver "receiver_1". Value of listen_host for "syslog" type logging receiver should be a valid IP.

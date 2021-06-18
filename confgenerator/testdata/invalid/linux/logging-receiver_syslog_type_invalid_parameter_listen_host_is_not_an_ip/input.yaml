@@ -1,0 +1,15 @@
+logging:
+  receivers:
+    receiver_1:
+      type: syslog
+      listen_host: abc
+      listen_port: 1111
+      transport_protocol: tcp
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [receiver_1]
+        exporters: [google]
