@@ -255,11 +255,6 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 	}
-	for id, r := range m.Receivers {
-		if _, err := ValidateCollectionInterval(id, r.CollectionInterval); err != nil {
-			return err
-		}
-	}
 	if m.Service == nil {
 		return nil
 	}
@@ -382,16 +377,24 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	return nil
 }
 
-func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
-	t, err := time.ParseDuration(collectionInterval)
+func validateCollectionInterval(v interface{}, p string, subagent string, component string, id string) (float64, error) {
+	t, err := time.ParseDuration(v.(string))
 	if err != nil {
-		return math.NaN(), fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", receiverID, collectionInterval, err)
+		return math.NaN(), fmt.Errorf(`parameter %q in %s %s %q has invalid value %q that is not an interval (e.g. "60s"). Detailed error: %s`, p, subagent, component, id, v, err)
 	}
 	interval := t.Seconds()
 	if interval < 10 {
-		return math.NaN(), fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
+		return math.NaN(), fmt.Errorf(`parameter %q in %s %s %q has invalid value %q that is below the minimum threshold of "10s".`, p, subagent, component, id, v)
 	}
 	return interval, nil
+}
+
+func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
+	t, err := validateCollectionInterval(collectionInterval, "collection_interval", "metrics", "receiver", receiverID)
+	if err != nil {
+		return math.NaN(), fmt.Errorf("Late %s", err.Error())
+	}
+	return t, nil
 }
 
 var (
@@ -430,6 +433,13 @@ var (
 		"mssql":             []string{"collection_interval"},
 	}
 
+	collectionIntervalValidation = map[string]func(interface{}, string, string, string, string, string) error{
+		"collection_interval": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
+			_, err := validateCollectionInterval(v, p, subagent, component, id)
+			return err
+		},
+	}
+
 	additionalParameterValidation = map[string]map[string]func(interface{}, string, string, string, string, string) error{
 		"syslog": map[string]func(interface{}, string, string, string, string, string) error{
 			"transport_protocol": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
@@ -446,6 +456,9 @@ var (
 				return nil
 			},
 		},
+		"hostmetrics": collectionIntervalValidation,
+		"iis": collectionIntervalValidation,
+		"mssql": collectionIntervalValidation,
 	}
 )
 
