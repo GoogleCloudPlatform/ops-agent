@@ -233,12 +233,19 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 			t.Parallel()
 			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
 			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
-			actualError := generateConfigs(invalidInput, platform)
+			actualError := generateConfigs(invalidInput, platform, false)
 
 			if actualError == nil {
 				t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
 			} else {
 				updateOrCompareGolden(t, testName, platform.OS, expectedError, actualError.Error(), goldenErrorPath)
+			}
+
+			if platform.OS != "windows" {
+				collectdError := generateConfigs(invalidInput, platform, true)
+				if diff := cmp.Diff(collectdError.Error(), actualError.Error()); diff != "" {
+					t.Errorf("test %q: generateConfigs collectd/otel mismatch (-got +want):\n%s\ninvalid input:\n%s", testName, diff, invalidInput)
+				}
 			}
 		})
 	}
@@ -248,7 +255,7 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 // 1. Parsing phase of the agent config when the config is not YAML.
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
-func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
+func generateConfigs(invalidInput []byte, platform platformConfig, enableCollectd bool) (err error) {
 	uc, err := config.ParseUnifiedConfig(invalidInput, platform.OS)
 	if err != nil {
 		return err
@@ -258,7 +265,7 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if platform.OS != "windows" {
+	if enableCollectd && platform.OS != "windows" {
 		if _, err := collectd.GenerateCollectdConfig(uc.Metrics, platform.defaultLogsDir); err != nil {
 			return err
 		}
