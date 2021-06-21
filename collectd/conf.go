@@ -17,7 +17,6 @@
 package collectd
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"text/template"
@@ -122,7 +121,7 @@ LoadPlugin swap
 func GenerateCollectdConfig(metrics *config.Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
-	collectdConf, err := validatedCollectdConfig(metrics)
+	collectdConf, err := extractCollectdConfig(metrics)
 	if err != nil {
 		return "", err
 	}
@@ -143,71 +142,29 @@ func GenerateCollectdConfig(metrics *config.Metrics, logsDir string) (string, er
 	return sb.String(), nil
 }
 
-func validatedCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
+func extractCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	collectdConf := collectdConf{
 		scrapeInternal:    defaultScrapeInterval,
 		enableHostMetrics: false,
 	}
 
-	// Skip validation if metrics config is not set.
-	// In other words receivers, exporters and pipelines are all empty.
-	if metrics == nil || (len(metrics.Receivers) == 0 && len(metrics.Exporters) == 0 && len(metrics.Service.Pipelines) == 0) {
+	if metrics == nil {
 		return &collectdConf, nil
 	}
 
-	// Validate Metrics.Receivers.
-	if len(metrics.Receivers) > 1 {
-		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
-	}
 	for receiverID, receiver := range metrics.Receivers {
-		if receiver.Type != "hostmetrics" {
-			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
-		}
 		collectdConf.enableHostMetrics = true
 
 		if receiver.CollectionInterval != "" {
 			interval, err := config.ValidateCollectionInterval(receiverID, receiver.CollectionInterval)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Collectd: %s", err.Error())
 			}
 			collectdConf.scrapeInternal = interval
 		}
 	}
 
-	// Validate Metrics.Exporters.
-	if len(metrics.Exporters) != 1 {
-		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
-	}
-	for exporterID, exporter := range metrics.Exporters {
-		if exporter.Type != "google_cloud_monitoring" {
-			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
-		}
-	}
-
-	// Validate Metrics.Service.
-	if len(metrics.Service.Pipelines) != 1 {
-		return nil, errors.New("exactly one metrics service pipeline is required.")
-	}
-	for _, pipeline := range metrics.Service.Pipelines {
-		if len(pipeline.ReceiverIDs) != 1 {
-			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
-		}
-		if len(pipeline.ExporterIDs) != 1 {
-			return nil, errors.New("exactly one exporter id is required in the metrics service pipeline exporter id list.")
-		}
-	}
 	return &collectdConf, nil
-}
-
-// Checks if any string in a []string type slice is not in an allowed slice.
-func findInvalid(allowed map[string]bool, actual []string) []string {
-	var invalid []string
-	for _, v := range actual {
-		if !allowed[v] {
-			invalid = append(invalid, v)
-		}
-	}
-	return invalid
 }
 
 // Write the configuration line for the scrape interval. If the user didn't
