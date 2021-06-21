@@ -153,7 +153,8 @@ func ParseUnifiedConfig(input []byte) (UnifiedConfig, error) {
 }
 
 func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (string, error) {
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Collector", hostInfo)
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
+	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -187,6 +188,7 @@ func generateOtelConfig(metrics *collectd.Metrics, hostInfo *host.InfoStat) (str
 		Service:     serviceList,
 
 		UserAgent: userAgent,
+		Version:   versionLabel,
 		Windows:   hostInfo.OS == "windows",
 	}.Generate()
 	if err != nil {
@@ -221,6 +223,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			} else {
+				// TODO: Fix the supported types. It should be windows_metrics_receiver for Windows and linux_metrics_receiver for Linux.
 				// TODO: replace receiverNameMap[rID] with the actual receiver type.
 				return nil, unsupportedComponentTypeError("windows", "metrics", "receiver", receiverNameMap[rID], rID)
 			}
@@ -262,37 +265,60 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 }
 
 // defaultStackdriverOutputs returns the default Stackdriver sections for the agents' own logs.
-func defaultStackdriverOutputs() (stackdrivers []*conf.Stackdriver) {
+func defaultStackdriverOutputs(hostInfo *host.InfoStat) (stackdrivers []*conf.Stackdriver) {
 	return []*conf.Stackdriver{
 		{
-			Match: "ops-agent-fluent-bit|ops-agent-collectd",
+			Match:   "ops-agent-fluent-bit|ops-agent-collectd",
+			Workers: getWorkers(hostInfo),
 		},
 	}
 }
 
-var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}},gzip(gfe))`))
+var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
+var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}})`))
 
-func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
-	userAgent := map[string]string{
+func expandTemplate(t *template.Template, prefix string, extraParams map[string]string) (string, error) {
+	params := map[string]string{
 		"Prefix":       prefix,
 		"AgentVersion": version.Version,
 		"BuildDistro":  version.BuildDistro,
+	}
+	for k, v := range extraParams {
+		params[k] = v
+	}
+	var b strings.Builder
+	if err := t.Execute(&b, params); err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	return b.String(), nil
+}
+
+func getVersionLabel(prefix string) (string, error) {
+	return expandTemplate(versionLabelTemplate, prefix, nil)
+}
+
+func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
+	extraParams := map[string]string{
 		"Platform":     hostInfo.OS,
 		"ShortName":    hostInfo.Platform,
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
-	var userAgentBuilder strings.Builder
-	if err := userAgentTemplate.Execute(&userAgentBuilder, userAgent); err != nil {
-		fmt.Println(err.Error())
-		return "", err
+	return expandTemplate(userAgentTemplate, prefix, extraParams)
+}
+
+func getWorkers(hostInfo *host.InfoStat) int {
+	if hostInfo.OS == "linux" {
+		return 8
+	} else {
+		return 0
 	}
-	return userAgentBuilder.String(), nil
 }
 
 func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	fbStackdrivers := defaultStackdriverOutputs()
+	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
 	fbFilterParsers := []*conf.FilterParser{}
@@ -318,7 +344,7 @@ func generateFluentBitConfigs(logging *logging, logsDir string, stateDir string,
 			return "", "", err
 		}
 		extractedStackdrivers := []*conf.Stackdriver{}
-		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines)
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -502,7 +528,7 @@ func extractReceiverFactories(receivers map[string]*receiver) (map[string]*fileR
 				Channels: r.Channels,
 			}
 		default:
-			// TODO: Fix the supported types. It should be windowsLoggingReceiverTypes for Windows and linuxLoggingReceiverType for Linux.
+			// TODO: Fix the supported types. It should be windows_logging_receiver for Windows and linux_logging_receiver for Linux.
 			return nil, nil, nil, unsupportedComponentTypeError("windows", "logging", "receiver", r.Type, rID)
 		}
 	}
@@ -595,6 +621,7 @@ func generateOtelExporters(exporters map[string]collectd.Exporter, pipelines map
 					exportNameMap[eID] = "googlecloud/" + eID
 				}
 			default:
+				// TODO: Fix the supported types. It should be windows_metrics_exporter for Windows and linux_metrics_exporter for Linux.
 				return nil, nil, unsupportedComponentTypeError("windows", "metrics", "exporter", exporter.Type, eID)
 			}
 		}
@@ -693,7 +720,7 @@ func isDefaultProcessor(name string) bool {
 	}
 }
 
-func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline) (
+func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string]*loggingPipeline, hostInfo *host.InfoStat) (
 	[]*conf.FilterModifyAddLogName, []*conf.FilterRewriteTag, []*conf.FilterModifyRemoveLogName, []*conf.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
@@ -718,6 +745,7 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 			if !ok {
 				return nil, nil, nil, nil, fmt.Errorf(`logging exporter %q from pipeline %q is not defined.`, exporterID, pipelineID)
 			} else if e.Type != "google_cloud_logging" {
+				// TODO: Fix the supported types. It should be windows_logging_exporter for Windows and linux_logging_exporter for Linux.
 				return nil, nil, nil, nil, unsupportedComponentTypeError("linux", "logging", "exporter", e.Type, exporterID)
 			}
 			// for each receiver, generate a output plugin with the specified receiver id
@@ -739,7 +767,8 @@ func extractExporterPlugins(exporters map[string]*exporter, pipelines map[string
 	}
 	for _, tags := range stackdriverExporters {
 		fbStackdrivers = append(fbStackdrivers, &conf.Stackdriver{
-			Match: strings.Join(tags, "|"),
+			Match:   strings.Join(tags, "|"),
+			Workers: getWorkers(hostInfo),
 		})
 	}
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil

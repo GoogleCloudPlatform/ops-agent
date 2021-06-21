@@ -170,15 +170,16 @@ func TestGenerateOtelConfig(t *testing.T) {
 			}},
 			stackdriverList: []*Stackdriver{{
 				StackdriverID: "google",
-				UserAgent:     "$USERAGENT",
+				UserAgent:     "$IGNORED_VALUE",
 				Prefix:        "agent.googleapis.com/",
 			}},
-			serviceList: []*Service{{
-				ID:         "system",
-				Receivers:  "[hostmetrics/hostmetrics]",
-				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Exporters:  "[googlecloud/google]",
-			},
+			serviceList: []*Service{
+				{
+					ID:         "system",
+					Receivers:  "[hostmetrics/hostmetrics]",
+					Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+					Exporters:  "[googlecloud/google]",
+				},
 				{
 					ID:         "mssql",
 					Receivers:  "[windowsperfcounters/mssql_mssql]",
@@ -320,6 +321,9 @@ processors:
         action: update
         new_name: disk/io_time
         operations:
+          # convert s to ms
+          - action: experimental_scale_value
+            experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
       # system.disk.weighted_io_time -> disk/weighted_io_time
@@ -327,6 +331,9 @@ processors:
         action: update
         new_name: disk/weighted_io_time
         operations:
+          # convert s to ms
+          - action: experimental_scale_value
+            experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
       # system.disk.operation_time -> disk/operation_time
@@ -334,6 +341,9 @@ processors:
         action: update
         new_name: disk/operation_time
         operations:
+          # convert s to ms
+          - action: experimental_scale_value
+            experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
       # system.disk.pending_operations -> disk/pending_operations
@@ -465,8 +475,11 @@ processors:
             new_label: tcp_state
           # remove protocol label
           - action: aggregate_labels
-            label_set: [ state ]
+            label_set: [ tcp_state ]
             aggregation_type: sum
+          - action: add_label
+            new_label: port
+            new_value: all
       # system.paging.usage -> swap/bytes_used
       - metric_name: system.paging.usage
         action: update
@@ -616,7 +629,7 @@ processors:
           # add version label
           - action: add_label
             new_label: version
-            new_value: $USERAGENT
+            new_value: google-cloud-ops-agent-metrics/latest-build_distro
       # otelcol_process_memory_rss -> agent/memory_usage
       - metric_name: otelcol_process_memory_rss
         action: update
@@ -650,11 +663,11 @@ processors:
           - action: toggle_scalar_data_type
 exporters:
   googlecloud/google:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
   googlecloud/agent:
-    user_agent: Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
     metric:
       prefix: agent.googleapis.com/
 extensions:
@@ -694,7 +707,8 @@ service:
 				Stackdriver: tc.stackdriverList,
 				Service:     tc.serviceList,
 
-				UserAgent: "Google-Cloud-Ops-Agent-Collector/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version,gzip(gfe))",
+				UserAgent: "Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)",
+				Version:   "google-cloud-ops-agent-metrics/latest-build_distro",
 				Windows:   true,
 			}.Generate()
 			if err != nil {
