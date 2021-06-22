@@ -1,1 +1,1 @@
-parameter "exclude_paths" in logging receiver "receiver_1" is not supported. Supported parameters for "syslog" type logging receiver: [transport_protocol, listen_host, listen_port].
+parameter "exclude_paths" in "syslog" type logging receiver "receiver_1" is not supported. Supported parameters: [transport_protocol, listen_host, listen_port].

@@ -1,1 +1,1 @@
-parameter "channels" is required in logging receiver "receiver_1" because its type is "windows_event_log".
+parameter "channels" in "windows_event_log" type logging receiver "receiver_1" is required.

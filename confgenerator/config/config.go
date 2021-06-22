@@ -375,8 +375,8 @@ func validateParameters(s interface{}, subagent string, component string, id str
 		}
 		if hasAdditionalValidation {
 			if f, ok := additionalValidation[p.Name]; ok {
-				if err := f(p.Value, p.Name, subagent, component, id, componentType); err != nil {
-					return err
+				if err := f(p.Value); err != nil {
+					return invalidParameterValueError(subagent, component, id, componentType, p.Name, p.Value, err)
 				}
 			}
 		}
@@ -384,22 +384,22 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	return nil
 }
 
-func validateCollectionInterval(v interface{}, p string, subagent string, component string, id string) (float64, error) {
+func validateCollectionInterval(v interface{}) (float64, error) {
 	t, err := time.ParseDuration(v.(string))
 	if err != nil {
-		return math.NaN(), fmt.Errorf(`parameter %q in %s %s %q has invalid value %q that is not an interval (e.g. "60s"). Detailed error: %s`, p, subagent, component, id, v, err)
+		return math.NaN(), fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
 	}
 	interval := t.Seconds()
 	if interval < 10 {
-		return math.NaN(), fmt.Errorf(`parameter %q in %s %s %q has invalid value %q that is below the minimum threshold of "10s".`, p, subagent, component, id, v)
+		return math.NaN(), fmt.Errorf(`below the minimum threshold of "10s".`)
 	}
 	return interval, nil
 }
 
 func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
-	t, err := validateCollectionInterval(collectionInterval, "collection_interval", "metrics", "receiver", receiverID)
+	t, err := validateCollectionInterval(collectionInterval)
 	if err != nil {
-		return math.NaN(), fmt.Errorf("Late %s", err.Error())
+		return math.NaN(), fmt.Errorf(`parameter "collection_interval" in metrics receiver %q has invalid value %q: %s`, receiverID, collectionInterval, err.Error())
 	}
 	return t, nil
 }
@@ -424,9 +424,9 @@ var (
 
 	componentTypeLimits = map[string]int{
 		"google_cloud_monitoring": 1,
-		"hostmetrics": 1,
-		"iis": 1,
-		"mssql": 1,
+		"hostmetrics":             1,
+		"iis":                     1,
+		"mssql":                   1,
 	}
 
 	supportedParameters = map[string][]string{
@@ -440,32 +440,32 @@ var (
 		"mssql":             []string{"collection_interval"},
 	}
 
-	collectionIntervalValidation = map[string]func(interface{}, string, string, string, string, string) error{
-		"collection_interval": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
-			_, err := validateCollectionInterval(v, p, subagent, component, id)
+	collectionIntervalValidation = map[string]func(interface{}) error{
+		"collection_interval": func(v interface{}) error {
+			_, err := validateCollectionInterval(v)
 			return err
 		},
 	}
 
-	additionalParameterValidation = map[string]map[string]func(interface{}, string, string, string, string, string) error{
-		"syslog": map[string]func(interface{}, string, string, string, string, string) error{
-			"transport_protocol": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
+	additionalParameterValidation = map[string]map[string]func(interface{}) error{
+		"syslog": map[string]func(interface{}) error{
+			"transport_protocol": func(v interface{}) error {
 				validValues := []string{"tcp", "udp"}
 				if !sliceContains(validValues, v.(string)) {
-					return fmt.Errorf(`unknown %s %q in the %s %s %q. Supported %s for %q type %s %s: [%s].`, p, v, subagent, component, id, p, componentType, subagent, component, strings.Join(validValues, ", "))
+					return fmt.Errorf(`must be one of [%s].`, strings.Join(validValues, ", "))
 				}
 				return nil
 			},
-			"listen_host": func(v interface{}, p string, subagent string, component string, id string, componentType string) error {
+			"listen_host": func(v interface{}) error {
 				if net.ParseIP(v.(string)) == nil {
-					return fmt.Errorf(`unknown %s %q in the %s %s %q. Value of %s for %q type %s %s should be a valid IP.`, p, v, subagent, component, id, p, componentType, subagent, component)
+					return fmt.Errorf(`must be a valid IP.`)
 				}
 				return nil
 			},
 		},
 		"hostmetrics": collectionIntervalValidation,
-		"iis": collectionIntervalValidation,
-		"mssql": collectionIntervalValidation,
+		"iis":         collectionIntervalValidation,
+		"mssql":       collectionIntervalValidation,
 	}
 )
 
@@ -560,22 +560,42 @@ func unsupportedComponentTypeError(subagent string, component string, id string,
 		subagent, component, id, componentType, subagent, component, strings.Join(supportedTypes, ", "))
 }
 
+// parameterErrorPrefix returns the common parameter error prefix.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+// parameter is name of the parameter.
+func parameterErrorPrefix(subagent string, component string, id string, componentType string, parameter string) string {
+	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, component, id)
+}
+
 // missingRequiredParameterError returns an error message when users miss a required parameter.
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter that is missing.
 func missingRequiredParameterError(subagent string, component string, id string, componentType string, parameter string) error {
-	// e.g. parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
-	return fmt.Errorf(`parameter %q is required in %s %s %q because its type is %q.`, parameter, subagent, component, id, componentType)
+	// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
+	return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, component, id, componentType, parameter))
 }
 
-// unsupportedParameterError returns an error message when users specifies an unsupported parameter.
+// unsupportedParameterError returns an error message when users specify an unsupported parameter.
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter that is not supported.
 func unsupportedParameterError(subagent string, component string, id string, componentType string, parameter string, supportedParameters []string) error {
-	// e.g. parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters
-	// for "files" type logging receiver: [include_paths, exclude_paths].
-	return fmt.Errorf(`parameter %q in %s %s %q is not supported. Supported parameters for %q type %s %s: [%s].`,
-		parameter, subagent, component, id, componentType, subagent, component, strings.Join(supportedParameters, ", "))
+	// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
+	// Supported parameters: [include_paths, exclude_paths].
+	return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
+		parameterErrorPrefix(subagent, component, id, componentType, parameter), strings.Join(supportedParameters, ", "))
+}
+
+// invalidParameterValueError returns an error message when users specify an invalid parameter value.
+// id is the id of the receiver, processor, or exporter.
+// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+// parameter is name of the parameter whose value is invalid.
+// value is the value of that parameter.
+// err is the validation error message for the parameter value.
+func invalidParameterValueError(subagent string, component string, id string, componentType string, parameter string, value interface{}, err error) error {
+	// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1" has invalid
+	// value "1s": below the minimum threshold of "10s".
+	return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, component, id, componentType, parameter), value, err)
 }

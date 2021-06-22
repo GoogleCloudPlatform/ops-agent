@@ -1,1 +1,1 @@
-parameter "listen_host" is required in logging receiver "receiver_1" because its type is "syslog".
+parameter "listen_host" in "syslog" type logging receiver "receiver_1" is required.

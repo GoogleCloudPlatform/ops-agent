@@ -1,1 +1,1 @@
-parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters for "windows_event_log" type logging receiver: [channels].
+parameter "transport_protocol" in "windows_event_log" type logging receiver "receiver_1" is not supported. Supported parameters: [channels].

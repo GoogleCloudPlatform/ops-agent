@@ -1,1 +1,1 @@
-unknown transport_protocol "unknown_protocol" in the logging receiver "receiver_1". Supported transport_protocol for "syslog" type logging receiver: [tcp, udp].
+parameter "transport_protocol" in "syslog" type logging receiver "receiver_1" has invalid value "unknown_protocol": must be one of [tcp, udp].
