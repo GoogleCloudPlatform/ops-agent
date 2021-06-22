@@ -291,7 +291,10 @@ func sliceContains(slice []string, value string) bool {
 func (c *configComponent) ValidateType(subagent string, component string, id string, platform string) error {
 	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+component]
 	if !sliceContains(supportedTypes, c.Type) {
-		return unsupportedComponentTypeError(subagent, component, id, c.Type, supportedTypes)
+		// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported.
+		// Supported metrics receiver types: [hostmetrics, iis, mssql].
+		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+			subagent, component, id, c.Type, subagent, component, strings.Join(supportedTypes, ", "))
 	}
 	return nil
 }
@@ -366,17 +369,23 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	for _, p := range parameters {
 		if !sliceContains(allParameters, p.Name) {
 			if !p.IsZero {
-				return unsupportedParameterError(subagent, component, id, componentType, p.Name, supportedParameters)
+				// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
+				// Supported parameters: [include_paths, exclude_paths].
+				return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
+					parameterErrorPrefix(subagent, component, id, componentType, p.Name), strings.Join(supportedParameters, ", "))
 			}
 			continue
 		}
 		if p.IsZero && p.Required {
-			return missingRequiredParameterError(subagent, component, id, componentType, p.Name)
+			// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
+			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, component, id, componentType, p.Name))
 		}
 		if hasAdditionalValidation {
 			if f, ok := additionalValidation[p.Name]; ok {
 				if err := f(p.Value); err != nil {
-					return invalidParameterValueError(subagent, component, id, componentType, p.Name, p.Value, err)
+					// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1"
+					// has invalid value "1s": below the minimum threshold of "10s".
+					return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, component, id, componentType, p.Name), p.Value, err)
 				}
 			}
 		}
@@ -506,7 +515,9 @@ func findInvalid(actual []string, allowed map[string]interface{}) []string {
 func validateComponentIds(components interface{}, subagent string, component string) error {
 	for _, id := range SortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
-			return reservedIdPrefixError(subagent, component, id)
+			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
+				subagent, component, id, component)
 		}
 	}
 	return nil
@@ -544,58 +555,10 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 	return nil
 }
 
-// reservedIdPrefixError returns an error message when users specify a id that starts with "lib:" which is reserved.
-// id is the id of the pipeline, receiver, processor, or exporter.
-func reservedIdPrefixError(subagent string, component string, id string) error {
-	// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
-	return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-		subagent, component, id, component)
-}
-
-// unsupportedComponentTypeError returns an error message when users specify a component type that is not supported.
-// id is the id of the receiver, processor, or exporter.
-func unsupportedComponentTypeError(subagent string, component string, id string, componentType string, supportedTypes []string) error {
-	// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql].
-	return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-		subagent, component, id, componentType, subagent, component, strings.Join(supportedTypes, ", "))
-}
-
 // parameterErrorPrefix returns the common parameter error prefix.
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter.
 func parameterErrorPrefix(subagent string, component string, id string, componentType string, parameter string) string {
 	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, component, id)
-}
-
-// missingRequiredParameterError returns an error message when users miss a required parameter.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-// parameter is name of the parameter that is missing.
-func missingRequiredParameterError(subagent string, component string, id string, componentType string, parameter string) error {
-	// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
-	return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, component, id, componentType, parameter))
-}
-
-// unsupportedParameterError returns an error message when users specify an unsupported parameter.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-// parameter is name of the parameter that is not supported.
-func unsupportedParameterError(subagent string, component string, id string, componentType string, parameter string, supportedParameters []string) error {
-	// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
-	// Supported parameters: [include_paths, exclude_paths].
-	return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
-		parameterErrorPrefix(subagent, component, id, componentType, parameter), strings.Join(supportedParameters, ", "))
-}
-
-// invalidParameterValueError returns an error message when users specify an invalid parameter value.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
-// parameter is name of the parameter whose value is invalid.
-// value is the value of that parameter.
-// err is the validation error message for the parameter value.
-func invalidParameterValueError(subagent string, component string, id string, componentType string, parameter string, value interface{}, err error) error {
-	// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1" has invalid
-	// value "1s": below the minimum threshold of "10s".
-	return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, component, id, componentType, parameter), value, err)
 }
