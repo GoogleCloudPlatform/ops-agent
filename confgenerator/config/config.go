@@ -315,37 +315,45 @@ type yamlField struct {
 	IsZero   bool
 }
 
-func nonZeroFields(sm reflect.Value) []yamlField {
-	var parameters []yamlField
-	tm := sm.Type()
-	if tm.NumField() != sm.NumField() {
-		panic(fmt.Sprintf("expected the number of fields in %v and %v to match", sm, tm))
-	}
-	for i := 0; i < tm.NumField(); i++ {
-		f := tm.Field(i)
-		t, _ := f.Tag.Lookup("yaml")
-		split := strings.Split(t, ",")
-		n := split[0]
-		annotations := split[1:]
-		if n == "-" {
-			continue
-		} else if n == "" {
-			n = strings.ToLower(f.Name)
+// collectYamlFields takes a struct object, and extracts all fields annotated by yaml tags.
+// Fields from embedded structs with the "inline" annotation are flattened.
+// For each field, it collects the yaml name, the value, and whether the value is unset/zero.
+// Fields with the "omitempty" annotation are marked as optional.
+func collectYamlFields(s interface{}) []yamlField {
+	var recurse func(reflect.Value) []yamlField
+	recurse = func(sm reflect.Value) []yamlField {
+		var parameters []yamlField
+		tm := sm.Type()
+		if tm.NumField() != sm.NumField() {
+			panic(fmt.Sprintf("expected the number of fields in %v and %v to match", sm, tm))
 		}
-		v := sm.Field(i)
-		if sliceContains(annotations, "inline") {
-			// Expand inline structs.
-			parameters = append(parameters, nonZeroFields(v)...)
-		} else if f.Name[:1] != strings.ToLower(f.Name[:1]) { // skip private non-struct fields
-			parameters = append(parameters, yamlField{
-				Name:     n,
-				Required: !sliceContains(annotations, "omitempty"),
-				Value:    v.Interface(),
-				IsZero:   v.IsZero(),
-			})
+		for i := 0; i < tm.NumField(); i++ {
+			f := tm.Field(i)
+			t, _ := f.Tag.Lookup("yaml")
+			split := strings.Split(t, ",")
+			n := split[0]
+			annotations := split[1:]
+			if n == "-" {
+				continue
+			} else if n == "" {
+				n = strings.ToLower(f.Name)
+			}
+			v := sm.Field(i)
+			if sliceContains(annotations, "inline") {
+				// Expand inline structs.
+				parameters = append(parameters, recurse(v)...)
+			} else if f.Name[:1] != strings.ToLower(f.Name[:1]) { // skip private non-struct fields
+				parameters = append(parameters, yamlField{
+					Name:     n,
+					Required: !sliceContains(annotations, "omitempty"),
+					Value:    v.Interface(),
+					IsZero:   v.IsZero(),
+				})
+			}
 		}
+		return parameters
 	}
-	return parameters
+	return recurse(reflect.ValueOf(s))
 }
 
 func validateParameters(s interface{}, subagent string, component string, id string, componentType string) error {
@@ -354,8 +362,7 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	allParameters := []string{"type"}
 	allParameters = append(allParameters, supportedParameters...)
 	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
-	sm := reflect.ValueOf(s)
-	parameters := nonZeroFields(sm)
+	parameters := collectYamlFields(s)
 	for _, p := range parameters {
 		if !sliceContains(allParameters, p.Name) {
 			if !p.IsZero {
