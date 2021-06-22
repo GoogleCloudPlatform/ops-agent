@@ -27,7 +27,7 @@ StateDirectory=google-cloud-ops-agent/fluent-bit
 LogsDirectory=google-cloud-ops-agent/subagents
 Type=simple
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -service=fluentbit -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs ${LOGS_DIRECTORY} -state ${STATE_DIRECTORY}
-ExecStart=@PREFIX@/subagents/fluent-bit/bin/fluent-bit --config ${RUNTIME_DIRECTORY}/fluent_bit_main.conf --parser ${RUNTIME_DIRECTORY}/fluent_bit_parser.conf --log_file ${LOGS_DIRECTORY}/logging-module.log --storage_path ${STATE_DIRECTORY}/buffers
+ExecStart=/usr/lib/google-cloud-ops-agent/fluent-bit --config ${RUNTIME_DIRECTORY}/fluent_bit_main.conf --parser ${RUNTIME_DIRECTORY}/fluent_bit_parser.conf --log_file ${LOGS_DIRECTORY}/logging-module.log --storage_path ${STATE_DIRECTORY}/buffers
 Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes
