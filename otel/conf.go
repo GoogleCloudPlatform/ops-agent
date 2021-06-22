@@ -421,11 +421,18 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: processes/cpu_time
         operations:
+          # scale from seconds to microseconds
+          - action: experimental_scale_value
+            experimental_scale: 1000000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
           - action: add_label
             new_label: process
             new_value: all
+          # retain only user and syst state label values
+          - action: delete_label_value
+            label: state
+            label_value: wait
           # change label state -> user_or_syst
           - action: update_label
             label: state
