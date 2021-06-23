@@ -65,6 +65,7 @@ service:
       network:
       paging:
       process:
+      processes:
 {{- end -}}
 
 {{define "iis" -}}
@@ -379,6 +380,10 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: add_label
             new_label: port
             new_value: all
+      # system.processes.created -> processes/fork_count
+      - metric_name: system.processes.created
+        action: update
+        new_name: processes/fork_count
       # system.paging.usage -> swap/bytes_used
       - metric_name: system.paging.usage
         action: update
