@@ -29,7 +29,8 @@ func TestSection(t *testing.T) {
       filesystem:
       network:
       paging:
-      process:`,
+      process:
+      processes:`,
 		},
 		{
 			name: "empty collection interval",
@@ -211,6 +212,7 @@ func TestGenerateOtelConfig(t *testing.T) {
       network:
       paging:
       process:
+      processes:
   windowsperfcounters/mssql_mssql:
     collection_interval: 60s
     perfcounters:
@@ -480,6 +482,10 @@ processors:
           - action: add_label
             new_label: port
             new_value: all
+      # system.processes.created -> processes/fork_count
+      - metric_name: system.processes.created
+        action: update
+        new_name: processes/fork_count
       # system.paging.usage -> swap/bytes_used
       - metric_name: system.paging.usage
         action: update
