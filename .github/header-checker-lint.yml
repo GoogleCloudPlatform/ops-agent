@@ -1,0 +1,6 @@
+allowedLicenses:
+  - Apache-2.0
+sourceFileExtensions:
+  - go
+  - ps1
+  - sh
