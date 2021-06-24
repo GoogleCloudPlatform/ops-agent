@@ -1,1 +1,1 @@
-parameter "listen_host" in logging receiver "receiver_1" is not supported. Supported parameters for "files" type logging receiver: [include_paths, exclude_paths].
+parameter "listen_host" in "files" type logging receiver "receiver_1" is not supported. Supported parameters: [include_paths, exclude_paths].

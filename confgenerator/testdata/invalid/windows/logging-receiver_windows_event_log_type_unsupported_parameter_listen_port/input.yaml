@@ -10,5 +10,5 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [windows_event_log]
+        receivers: [receiver_1]
         exporters: [google]

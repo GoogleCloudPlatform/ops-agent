@@ -1,1 +1,1 @@
-"syslog" plugin should not have empty field: "Port"
+parameter "listen_port" in "syslog" type logging receiver "receiver_1" is required.

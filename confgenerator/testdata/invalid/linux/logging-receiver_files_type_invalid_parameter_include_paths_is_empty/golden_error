@@ -1,1 +1,1 @@
-parameter "include_paths" is required in logging receiver "receiver_1" because its type is "files".
+parameter "include_paths" in "files" type logging receiver "receiver_1" is required.

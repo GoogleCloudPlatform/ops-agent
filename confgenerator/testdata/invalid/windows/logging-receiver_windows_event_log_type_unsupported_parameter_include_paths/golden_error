@@ -1,1 +1,1 @@
-parameter "include_paths" in logging receiver "receiver_1" is not supported. Supported parameters for "windows_event_log" type logging receiver: [channels].
+parameter "include_paths" in "windows_event_log" type logging receiver "receiver_1" is not supported. Supported parameters: [channels].

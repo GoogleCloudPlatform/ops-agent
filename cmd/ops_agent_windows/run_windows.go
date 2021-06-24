@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -77,7 +78,7 @@ func (s *service) parseFlags(args []string) error {
 	return fs.Parse(allArgs)
 }
 
-func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
+func (s *service) checkForStandaloneAgents(unified *config.UnifiedConfig) error {
 	mgr, err := mgr.Connect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to service manager: %s", err)
@@ -112,7 +113,7 @@ func (s *service) generateConfigs() error {
 	if err != nil {
 		return err
 	}
-	uc, err := confgenerator.ParseUnifiedConfig(data)
+	uc, err := config.ParseUnifiedConfig(data, "windows")
 	if err != nil {
 		return err
 	}
@@ -124,7 +125,8 @@ func (s *service) generateConfigs() error {
 		"otel",
 		"fluentbit",
 	} {
-		if err := uc.GenerateFiles(
+		if err := confgenerator.GenerateFilesFromConfig(
+			&uc,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),

@@ -1,6 +1,6 @@
 logging:
   receivers:
-    syslog:
+    receiver_1:
       type: files
       include_paths:
       - /var/log/messages
@@ -12,5 +12,5 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [syslog]
+        receivers: [receiver_1]
         exporters: [google]

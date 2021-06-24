@@ -1,1 +1,1 @@
-got invalid value for "syslog" plugin's field "Listen", should be a valid IP
+parameter "listen_host" in "syslog" type logging receiver "receiver_1" is required.

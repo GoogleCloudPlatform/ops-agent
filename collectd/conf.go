@@ -17,38 +17,12 @@
 package collectd
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"text/template"
-	"time"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
-
-// Ops Agent config.
-// TODO(lingshi) Move these structs and the validation logic to the confgenerator folder. Make them pointers.
-type Metrics struct {
-	Receivers map[string]Receiver `yaml:"receivers"`
-	Exporters map[string]Exporter `yaml:"exporters"`
-	Service   Service             `yaml:"service"`
-}
-
-type Receiver struct {
-	Type               string `yaml:"type"`
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
-}
-
-type Exporter struct {
-	Type string `yaml:"type"`
-}
-
-type Service struct {
-	Pipelines map[string]Pipeline `yaml:"pipelines"`
-}
-
-type Pipeline struct {
-	ReceiverIDs []string `yaml:"receivers"`
-	ExporterIDs []string `yaml:"exporters"`
-}
 
 // Collectd internal config related.
 type collectdConf struct {
@@ -144,18 +118,10 @@ LoadPlugin swap
 	"process":    ``,
 }
 
-// reservedIdPrefixError returns an error message for when the user tries to define a reserved ID.
-// The component should be "receiver", "processor", or "exporter".
-func reservedIdPrefixError(component, id string) error {
-	// e.g. metrics receiver id %q is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
-	return fmt.Errorf(`metrics %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-		component, id, component)
-}
-
-func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
+func GenerateCollectdConfig(metrics *config.Metrics, logsDir string) (string, error) {
 	var sb strings.Builder
 
-	collectdConf, err := validatedCollectdConfig(metrics)
+	collectdConf, err := extractCollectdConfig(metrics)
 	if err != nil {
 		return "", err
 	}
@@ -176,97 +142,29 @@ func GenerateCollectdConfig(metrics *Metrics, logsDir string) (string, error) {
 	return sb.String(), nil
 }
 
-func validatedCollectdConfig(metrics *Metrics) (*collectdConf, error) {
+func extractCollectdConfig(metrics *config.Metrics) (*collectdConf, error) {
 	collectdConf := collectdConf{
 		scrapeInternal:    defaultScrapeInterval,
 		enableHostMetrics: false,
 	}
-	definedReceiverIDs := map[string]bool{}
-	definedExporterIDs := map[string]bool{}
 
-	// Skip validation if metrics config is not set.
-	// In other words receivers, exporters and pipelines are all empty.
-	if metrics == nil || (len(metrics.Receivers) == 0 && len(metrics.Exporters) == 0 && len(metrics.Service.Pipelines) == 0) {
+	if metrics == nil {
 		return &collectdConf, nil
 	}
 
-	// Validate Metrics.Receivers.
-	if len(metrics.Receivers) > 1 {
-		return nil, errors.New(`at most one metrics receiver with type "hostmetrics" is allowed.`)
-	}
 	for receiverID, receiver := range metrics.Receivers {
-		if strings.HasPrefix(receiverID, "lib:") {
-			return nil, reservedIdPrefixError("receiver", receiverID)
-		}
-		if receiver.Type != "hostmetrics" {
-			return nil, fmt.Errorf("metrics receiver %q with type %q is not supported. Supported metrics receiver types: [hostmetrics].", receiverID, receiver.Type)
-		}
 		collectdConf.enableHostMetrics = true
 
 		if receiver.CollectionInterval != "" {
-			t, err := time.ParseDuration(receiver.CollectionInterval)
+			interval, err := config.ValidateCollectionInterval(receiverID, receiver.CollectionInterval)
 			if err != nil {
-				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", receiverID, receiver.CollectionInterval, err)
-			}
-			interval := t.Seconds()
-			if interval < 10 {
-				return nil, fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", receiverID, interval)
+				return nil, fmt.Errorf("Collectd: %s", err.Error())
 			}
 			collectdConf.scrapeInternal = interval
 		}
-		definedReceiverIDs[receiverID] = true
 	}
 
-	// Validate Metrics.Exporters.
-	if len(metrics.Exporters) != 1 {
-		return nil, errors.New("exactly one metrics exporter with type 'google_cloud_monitoring' is required.")
-	}
-	for exporterID, exporter := range metrics.Exporters {
-		if strings.HasPrefix(exporterID, "lib:") {
-			return nil, reservedIdPrefixError("exporter", exporterID)
-		}
-		if exporter.Type != "google_cloud_monitoring" {
-			return nil, fmt.Errorf("metrics exporter %q with type %q is not supported. Supported metrics exporter types: [google_cloud_monitoring].", exporterID, exporter.Type)
-		}
-		definedExporterIDs[exporterID] = true
-	}
-
-	// Validate Metrics.Service.
-	if len(metrics.Service.Pipelines) != 1 {
-		return nil, errors.New("exactly one metrics service pipeline is required.")
-	}
-	for pipelineID, pipeline := range metrics.Service.Pipelines {
-		if strings.HasPrefix(pipelineID, "lib:") {
-			return nil, reservedIdPrefixError("pipeline", pipelineID)
-		}
-		if len(pipeline.ReceiverIDs) != 1 {
-			return nil, errors.New("exactly one receiver id is required in the metrics service pipeline receiver id list.")
-		}
-		invalidReceiverIDs := findInvalid(definedReceiverIDs, pipeline.ReceiverIDs)
-		if len(invalidReceiverIDs) > 0 {
-			return nil, fmt.Errorf("metrics receiver %q from pipeline %q is not defined.", invalidReceiverIDs[0], pipelineID)
-		}
-
-		if len(pipeline.ExporterIDs) != 1 {
-			return nil, errors.New("exactly one exporter id is required in the metrics service pipeline exporter id list.")
-		}
-		invalidExporterIDs := findInvalid(definedExporterIDs, pipeline.ExporterIDs)
-		if len(invalidExporterIDs) > 0 {
-			return nil, fmt.Errorf("metrics exporter %q from pipeline %q is not defined.", invalidExporterIDs[0], pipelineID)
-		}
-	}
 	return &collectdConf, nil
-}
-
-// Checks if any string in a []string type slice is not in an allowed slice.
-func findInvalid(allowed map[string]bool, actual []string) []string {
-	var invalid []string
-	for _, v := range actual {
-		if !allowed[v] {
-			invalid = append(invalid, v)
-		}
-	}
-	return invalid
 }
 
 // Write the configuration line for the scrape interval. If the user didn't

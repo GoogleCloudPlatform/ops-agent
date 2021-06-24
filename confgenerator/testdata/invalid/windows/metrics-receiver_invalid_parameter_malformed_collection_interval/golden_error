@@ -1,1 +1,1 @@
-parameter "collection_interval" in metrics receiver "receiver_1" has invalid value "24" that is not an interval (e.g. "60s"). Detailed error: time: missing unit in duration "24"
+parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1" has invalid value "24": not an interval (e.g. "60s"). Detailed error: time: missing unit in duration "24"

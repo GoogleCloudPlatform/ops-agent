@@ -1,2 +1,2 @@
 the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
-  line 8: field field_1 not found in type confgenerator.receiver
+  line 8: field field_1 not found in type config.LoggingReceiver
