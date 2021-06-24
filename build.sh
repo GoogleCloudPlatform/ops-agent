@@ -52,12 +52,12 @@ function build_fluentbit() {
   cd submodules/fluent-bit
   mkdir -p build
   cd build
-  # CMAKE_INSTALL_PREFIX and CMAKE_INSTALL_BINDIR here will cause the binary to
-  # be put at /usr/lib/google-cloud-ops-agent/./fluent-bit
+  # CMAKE_INSTALL_PREFIX here will cause the binary to be put at
+  # /usr/lib/google-cloud-ops-agent/bin/fluent-bit
   # Additionally, -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so
   cmake .. -DCMAKE_INSTALL_PREFIX=/usr/lib/google-cloud-ops-agent \
-    -DCMAKE_INSTALL_BINDIR=. -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF
+    -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service or configuration, but there are no cmake
