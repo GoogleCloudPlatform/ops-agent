@@ -257,9 +257,7 @@ const (
     Name              stackdriver
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
-    {{- if .Workers}}
     workers           {{.Workers}}
-    {{- end}}
     Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
@@ -760,6 +758,12 @@ func (s Stackdriver) renderConfig() (string, error) {
 		return "", emptyFieldErr{
 			plugin: "stackdriver",
 			field:  "stackdriver_agent",
+		}
+	}
+	if s.Workers == 0 {
+		return "", emptyFieldErr{
+			plugin: "stackdriver",
+			field:  "workers",
 		}
 	}
 

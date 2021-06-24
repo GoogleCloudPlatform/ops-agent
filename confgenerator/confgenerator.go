@@ -203,8 +203,8 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 func getWorkers(hostInfo *host.InfoStat) int {
 	if hostInfo.OS == "linux" {
 		return 8
-	} else {
-		return 0
+	} else { // Windows
+		return 8
 	}
 }
 
