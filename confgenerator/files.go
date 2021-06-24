@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/collectd"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/shirou/gopsutil/host"
 )
@@ -56,19 +55,6 @@ func GenerateFilesFromConfig(uc *config.UnifiedConfig, service, logsDir, stateDi
 		}
 		path = filepath.Join(outDir, "fluent_bit_parser.conf")
 		if err := ioutil.WriteFile(path, []byte(parserConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-	case "collectd":
-		collectdConfig, err := collectd.GenerateCollectdConfig(uc.Metrics, logsDir)
-		if err != nil {
-			return fmt.Errorf("can't parse configuration: %w", err)
-		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", outDir, err)
-		}
-		path := filepath.Join(outDir, "collectd.conf")
-		if err := ioutil.WriteFile(path, []byte(collectdConfig), 0644); err != nil {
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "otel":
