@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 )
@@ -137,7 +136,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
 			}
-			uc, err := config.ParseUnifiedConfig(data, platform.OS)
+			uc, err := ParseUnifiedConfig(data, platform.OS)
 			if err != nil {
 				t.Fatalf("ParseUnifiedConfig got %v", err)
 			}
@@ -237,7 +236,7 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
 func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
-	uc, err := config.ParseUnifiedConfig(invalidInput, platform.OS)
+	uc, err := ParseUnifiedConfig(invalidInput, platform.OS)
 	if err != nil {
 		return err
 	}

@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -30,14 +29,14 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	uc, err := config.ParseUnifiedConfig(data, hostInfo.OS)
+	uc, err := ParseUnifiedConfig(data, hostInfo.OS)
 	if err != nil {
 		return err
 	}
 	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
 }
 
-func GenerateFilesFromConfig(uc *config.UnifiedConfig, service, logsDir, stateDir, outDir string) error {
+func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {
 	hostInfo, _ := host.Info()
 	switch service {
 	case "fluentbit":

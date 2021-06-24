@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config represents the Ops Agent configuration.
-package config
+package confgenerator
 
 import (
 	"fmt"
