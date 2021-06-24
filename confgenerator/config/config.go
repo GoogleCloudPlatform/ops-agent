@@ -345,7 +345,7 @@ func collectYamlFields(s interface{}) []yamlField {
 			if sliceContains(annotations, "inline") {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
-			} else if f.Name[:1] != strings.ToLower(f.Name[:1]) { // skip private non-struct fields
+			} else if f.PkgPath == "" { // skip private non-struct fields
 				parameters = append(parameters, yamlField{
 					Name:     n,
 					Required: !sliceContains(annotations, "omitempty"),
