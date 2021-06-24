@@ -199,7 +199,7 @@ func (l *Logging) Validate(platform string) error {
 	if err := validateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
-	for _, id := range SortedKeys(l.Service.Pipelines) {
+	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
 		if err := validateComponentKeys(l.Receivers, p.Receivers, subagent, "receiver", id); err != nil {
 			return err
@@ -259,7 +259,7 @@ func (m *Metrics) Validate(platform string) error {
 	if err := validateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
-	for _, id := range SortedKeys(m.Service.Pipelines) {
+	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
 		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
@@ -501,8 +501,8 @@ func mapKeys(m interface{}) map[string]bool {
 	return keys
 }
 
-// SortedKeys returns keys from a map[string]Any as a sorted string slice.
-func SortedKeys(m interface{}) []string {
+// sortedKeys returns keys from a map[string]Any as a sorted string slice.
+func sortedKeys(m interface{}) []string {
 	var r []string
 	for k := range mapKeys(m) {
 		r = append(r, k)
@@ -523,7 +523,7 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 }
 
 func validateComponentIds(components interface{}, subagent string, component string) error {
-	for _, id := range SortedKeys(components) {
+	for _, id := range sortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,

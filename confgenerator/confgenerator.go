@@ -80,7 +80,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 
 func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			var pipelineID string
@@ -319,7 +319,7 @@ func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if _, ok := receiverNameMap[rID]; ok {
@@ -355,7 +355,7 @@ func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[
 func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
 			exporter, ok := exporters[eID]
@@ -386,7 +386,7 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
 			if f, ok := fileReceiverFactories[rID]; ok {
@@ -428,7 +428,7 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 
 func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
@@ -453,7 +453,7 @@ func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map
 	fbFilterModifyRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 	fbStackdrivers := []*conf.Stackdriver{}
 	stackdriverExporters := make(map[string][]string)
-	for _, pID := range SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
 			// for each receiver, generate a output plugin with the specified receiver id
@@ -485,7 +485,7 @@ func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map
 func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
-	for _, name := range SortedKeys(processors) {
+	for _, name := range sortedKeys(processors) {
 		p := processors[name]
 		switch t := p.Type; t {
 		case "parse_json":
