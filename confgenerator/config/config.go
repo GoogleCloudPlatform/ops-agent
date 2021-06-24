@@ -478,15 +478,40 @@ var (
 	}
 )
 
-// mapKeys returns keys from a map[string]Any as a map[string]interface{}.
-func mapKeys(m interface{}) map[string]interface{} {
-	keys := map[string]interface{}{}
-	for iter := reflect.ValueOf(m).MapRange(); iter.Next(); {
-		k := iter.Key()
-		if k.Kind() != reflect.String {
-			panic(fmt.Sprintf("key %v not a string", k))
+// mapKeys returns keys from a map[string]Any as a map[string]bool.
+func mapKeys(m interface{}) map[string]bool {
+	keys := map[string]bool{}
+	switch m := m.(type) {
+	case map[string]*LoggingReceiver:
+		for k := range m {
+			keys[k] = true
 		}
-		keys[k.String()] = nil
+	case map[string]*LoggingProcessor:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*LoggingExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*LoggingPipeline:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*MetricsReceiver:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*MetricsExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*MetricsPipeline:
+		for k := range m {
+			keys[k] = true
+		}
+	default:
+		panic(fmt.Sprintf("Unknown type: %T", m))
 	}
 	return keys
 }
@@ -502,10 +527,10 @@ func SortedKeys(m interface{}) []string {
 }
 
 // findInvalid returns all strings from a slice that are not in allowed.
-func findInvalid(actual []string, allowed map[string]interface{}) []string {
+func findInvalid(actual []string, allowed map[string]bool) []string {
 	var invalid []string
 	for _, v := range actual {
-		if _, ok := allowed[v]; !ok {
+		if !allowed[v] {
 			invalid = append(invalid, v)
 		}
 	}
