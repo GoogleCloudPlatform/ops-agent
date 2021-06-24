@@ -1,6 +1,6 @@
 logging:
   receivers:
-    reciever_1:
+    receiver_1:
       type: syslog
       listen_host: 1.1.1.1
       listen_port: 1111
@@ -12,5 +12,5 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [syslog]
+        receivers: [receiver_1]
         exporters: [google]

@@ -1,9 +1,10 @@
 logging:
   receivers:
     receiver_1:
-      type: windows_event_log
-      channels: [System,Application,Security]
-      unsupported_parameter: some_value
+      type: syslog
+      listen_host: abc
+      listen_port: 1111
+      transport_protocol: tcp
   exporters:
     google:
       type: google_cloud_logging

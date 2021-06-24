@@ -1,1 +1,1 @@
-parameter "transport_protocol" in logging receiver "receiver_1" is not supported. Supported parameters for "files" type logging receiver: [include_paths, exclude_paths].
+parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported. Supported parameters: [include_paths, exclude_paths].

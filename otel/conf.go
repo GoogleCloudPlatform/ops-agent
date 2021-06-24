@@ -20,11 +20,11 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-	"time"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
 
 var templateFunctions = template.FuncMap{
-	"notEmpty":                   notEmpty,
 	"validateCollectionInterval": validateCollectionInterval,
 }
 
@@ -593,17 +593,12 @@ func notEmpty(plugin, field, value string) (string, error) {
 	return value, nil
 }
 
-func validateCollectionInterval(pluginName, collectionInterval string) (string, error) {
-	if _, err := notEmpty(pluginName, "collection_interval", collectionInterval); err != nil {
+func validateCollectionInterval(receiverID, collectionInterval string) (string, error) {
+	if _, err := notEmpty(receiverID, "collection_interval", collectionInterval); err != nil {
 		return "", err
 	}
-	t, err := time.ParseDuration(collectionInterval)
-	if err != nil {
-		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value %q that is not an interval (e.g. \"60s\"). Detailed error: %s", pluginName, collectionInterval, err)
-	}
-	interval := t.Seconds()
-	if interval < 10 {
-		return "", fmt.Errorf("parameter \"collection_interval\" in metrics receiver %q has invalid value \"%vs\" that is below the minimum threshold of \"10s\".", pluginName, interval)
+	if _, err := config.ValidateCollectionInterval(receiverID, collectionInterval); err != nil {
+		return "", err
 	}
 	return collectionInterval, nil
 }

@@ -12,5 +12,5 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [syslog]
+        receivers: [receiver_1]
         exporters: [google]

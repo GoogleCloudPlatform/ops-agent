@@ -1,3 +1,17 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package confgenerator
 
 import (
@@ -6,26 +20,29 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/collectd"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/shirou/gopsutil/host"
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
+	hostInfo, _ := host.Info()
 	data, err := ioutil.ReadFile(input)
 	if err != nil {
 		return err
 	}
-	uc, err := ParseUnifiedConfig(data)
+	uc, err := config.ParseUnifiedConfig(data, hostInfo.OS)
 	if err != nil {
 		return err
 	}
-	return uc.GenerateFiles(service, logsDir, stateDir, outDir)
+	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
 }
 
-func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string) error {
+func GenerateFilesFromConfig(uc *config.UnifiedConfig, service, logsDir, stateDir, outDir string) error {
 	hostInfo, _ := host.Info()
 	switch service {
 	case "fluentbit":
-		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
+		mainConfig, parserConfig, err := generateFluentBitConfigs(uc.Logging, logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -42,7 +59,7 @@ func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "collectd":
-		collectdConfig, err := uc.GenerateCollectdConfig(logsDir)
+		collectdConfig, err := collectd.GenerateCollectdConfig(uc.Metrics, logsDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -55,7 +72,7 @@ func (uc *UnifiedConfig) GenerateFiles(service, logsDir, stateDir, outDir string
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
+		otelConfig, err := generateOtelConfig(uc.Metrics, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}

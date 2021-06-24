@@ -1,1 +1,1 @@
-parameter "regex" is required in logging processor "processor_1" because its type is "parse_regex".
+parameter "regex" in "parse_regex" type logging processor "processor_1" is required.

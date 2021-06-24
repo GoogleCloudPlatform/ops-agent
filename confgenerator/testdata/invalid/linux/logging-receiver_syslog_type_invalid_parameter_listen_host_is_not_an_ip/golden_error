@@ -1,0 +1,1 @@
+parameter "listen_host" in "syslog" type logging receiver "receiver_1" has invalid value "abc": must be a valid IP.
