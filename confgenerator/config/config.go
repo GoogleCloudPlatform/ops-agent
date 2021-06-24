@@ -17,7 +17,6 @@ package config
 
 import (
 	"fmt"
-	"math"
 	"net"
 	"reflect"
 	"sort"
@@ -393,26 +392,6 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	return nil
 }
 
-func validateCollectionInterval(v interface{}) (float64, error) {
-	t, err := time.ParseDuration(v.(string))
-	if err != nil {
-		return math.NaN(), fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
-	}
-	interval := t.Seconds()
-	if interval < 10 {
-		return math.NaN(), fmt.Errorf(`below the minimum threshold of "10s".`)
-	}
-	return interval, nil
-}
-
-func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
-	t, err := validateCollectionInterval(collectionInterval)
-	if err != nil {
-		return math.NaN(), fmt.Errorf(`parameter "collection_interval" in metrics receiver %q has invalid value %q: %s`, receiverID, collectionInterval, err.Error())
-	}
-	return t, nil
-}
-
 var (
 	defaultProcessors = []string{
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
@@ -451,8 +430,15 @@ var (
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
 		"collection_interval": func(v interface{}) error {
-			_, err := validateCollectionInterval(v)
-			return err
+			t, err := time.ParseDuration(v.(string))
+			if err != nil {
+				return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
+			}
+			interval := t.Seconds()
+			if interval < 10 {
+				return fmt.Errorf(`below the minimum threshold of "10s".`)
+			}
+			return nil
 		},
 	}
 

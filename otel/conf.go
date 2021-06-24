@@ -20,15 +20,9 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
 
-var templateFunctions = template.FuncMap{
-	"validateCollectionInterval": validateCollectionInterval,
-}
-
-var confTemplate = template.Must(template.New("conf").Funcs(templateFunctions).Parse(
+var confTemplate = template.Must(template.New("conf").Parse(
 	`receivers:
   {{template "agentreceiver" .}}
 {{- range .HostMetrics}}
@@ -55,7 +49,7 @@ service:
 {{- end}}
 {{define "hostmetrics" -}}
   hostmetrics/{{.HostMetricsID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .HostMetricsID}}
+    collection_interval: {{.CollectionInterval}}
     scrapers:
       cpu:
       load:
@@ -70,7 +64,7 @@ service:
 
 {{define "iis" -}}
 windowsperfcounters/iis_{{.IISID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .IISID}}
+    collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
         instances: _Total
@@ -90,7 +84,7 @@ windowsperfcounters/iis_{{.IISID}}:
 
 {{define "mssql" -}}
 windowsperfcounters/mssql_{{.MSSQLID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .MSSQLID}}
+    collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
         instances: _Total
@@ -591,16 +585,6 @@ func notEmpty(plugin, field, value string) (string, error) {
 		}
 	}
 	return value, nil
-}
-
-func validateCollectionInterval(receiverID, collectionInterval string) (string, error) {
-	if _, err := notEmpty(receiverID, "collection_interval", collectionInterval); err != nil {
-		return "", err
-	}
-	if _, err := config.ValidateCollectionInterval(receiverID, collectionInterval); err != nil {
-		return "", err
-	}
-	return collectionInterval, nil
 }
 
 type MSSQL struct {
