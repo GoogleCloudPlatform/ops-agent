@@ -35,7 +35,8 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-func generateOtelConfig(metrics *Metrics, hostInfo *host.InfoStat) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
+	metrics := uc.Metrics
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	hostMetricsList := []*otel.HostMetrics{}
@@ -182,10 +183,11 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
-// generateFluentBitConfigs generates FluentBit configuration from unified agents configuration
-// in yaml. generateFluentBitConfigs returns empty configurations without an error if `logging`
+// GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
+// in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
 // does not exist as a top-level field in the input yaml format.
-func generateFluentBitConfigs(logging *Logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	logging := uc.Logging
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	fbStackdrivers := defaultStackdriverOutputs(hostInfo)

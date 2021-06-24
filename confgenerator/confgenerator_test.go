@@ -146,18 +146,18 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			expectedParserConfig := readFileContent(t, testName, platform.OS, goldenParserPath, true)
 
 			// Generate the actual conf files.
-			mainConf, parserConf, err := generateFluentBitConfigs(uc.Logging, platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
-				t.Fatalf("generateFluentBitConfigs got %v", err)
+				t.Fatalf("GenerateFluentBitConfigs got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
 			updateOrCompareGolden(t, testName, platform.OS, expectedParserConfig, parserConf, goldenParserPath)
 
 			expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
-			otelConf, err := generateOtelConfig(uc.Metrics, platform.InfoStat)
+			otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 			if err != nil {
-				t.Fatalf("generateOtelConfig got %v", err)
+				t.Fatalf("GenerateOtelConfig got %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
@@ -241,11 +241,11 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if _, _, err := generateFluentBitConfigs(uc.Logging, platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
 		return err
 	}
 
-	if _, err = generateOtelConfig(uc.Metrics, platform.InfoStat); err != nil {
+	if _, err = uc.GenerateOtelConfig(platform.InfoStat); err != nil {
 		return err
 	}
 	return nil

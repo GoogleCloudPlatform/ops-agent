@@ -40,7 +40,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 	hostInfo, _ := host.Info()
 	switch service {
 	case "fluentbit":
-		mainConfig, parserConfig, err := generateFluentBitConfigs(uc.Logging, logsDir, stateDir, hostInfo)
+		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -57,7 +57,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 			return fmt.Errorf("can't write %q: %w", path, err)
 		}
 	case "otel":
-		otelConfig, err := generateOtelConfig(uc.Metrics, hostInfo)
+		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
