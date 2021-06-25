@@ -265,11 +265,11 @@ processors:
         action: update
         new_name: cpu/utilization
         operations:
-          # take avg over cpu dimension, retaining only label: state
+          # take avg over cpu dimension, retaining only state label
           - action: aggregate_labels
             label_set: [state]
             aggregation_type: mean
-          # create new label cpu_number
+          # add blank cpu_number label
           - action: add_label
             new_label: cpu_number
             new_value: " "
