@@ -33,27 +33,6 @@ func TestSection(t *testing.T) {
       processes:`,
 		},
 		{
-			name: "empty collection interval",
-			section: HostMetrics{
-				HostMetricsID: "hostmetrics",
-				//CollectionInterval: "60s",
-			},
-		},
-		{
-			name: "invalid collection interval",
-			section: HostMetrics{
-				HostMetricsID:      "hostmetrics",
-				CollectionInterval: "60",
-			},
-		},
-		{
-			name: "collection interval too short",
-			section: HostMetrics{
-				HostMetricsID:      "hostmetrics",
-				CollectionInterval: "1s",
-			},
-		},
-		{
 			section: IIS{
 				IISID:              "iis",
 				CollectionInterval: "60s",

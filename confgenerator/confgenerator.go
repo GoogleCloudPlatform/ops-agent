@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package confgenerator provides functions to generate subagents configuration from unified agent.
+// Package confgenerator represents the Ops Agent configuration and provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
 import (
@@ -21,7 +21,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
@@ -36,7 +35,8 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
+	metrics := uc.Metrics
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	hostMetricsList := []*otel.HostMetrics{}
@@ -78,9 +78,9 @@ func generateOtelConfig(metrics *config.Metrics, hostInfo *host.InfoStat) (strin
 	return otelConfig, nil
 }
 
-func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*config.MetricsPipeline) ([]*otel.Service, error) {
+func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			var pipelineID string
@@ -183,10 +183,11 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
-// generateFluentBitConfigs generates FluentBit configuration from unified agents configuration
-// in yaml. generateFluentBitConfigs returns empty configurations without an error if `logging`
+// GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
+// in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
 // does not exist as a top-level field in the input yaml format.
-func generateFluentBitConfigs(logging *config.Logging, logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	logging := uc.Logging
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
@@ -260,7 +261,7 @@ type iisReceiverFactory struct {
 	CollectionInterval string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
@@ -283,7 +284,7 @@ func extractOtelReceiverFactories(receivers map[string]*config.MetricsReceiver) 
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
+func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
@@ -309,7 +310,7 @@ func extractReceiverFactories(receivers map[string]*config.LoggingReceiver) (map
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelines map[string]*config.MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -318,7 +319,7 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if _, ok := receiverNameMap[rID]; ok {
@@ -351,10 +352,10 @@ func generateOtelReceivers(receivers map[string]*config.MetricsReceiver, pipelin
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
-func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelines map[string]*config.MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
+func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
 			exporter, ok := exporters[eID]
@@ -377,7 +378,7 @@ func generateOtelExporters(exporters map[string]*config.MetricsExporter, pipelin
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipelines map[string]*config.LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
+func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
 	fbTails := []*conf.Tail{}
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
@@ -385,7 +386,7 @@ func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipel
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.Receivers {
 			if f, ok := fileReceiverFactories[rID]; ok {
@@ -425,9 +426,9 @@ func generateFluentBitInputs(receivers map[string]*config.LoggingReceiver, pipel
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pipelines map[string]*config.LoggingPipeline) ([]*conf.FilterParser, error) {
+func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.Processors {
 			p, ok := processors[processorID]
@@ -445,14 +446,14 @@ func generateFluentBitFilters(processors map[string]*config.LoggingProcessor, pi
 	return fbFilterParsers, nil
 }
 
-func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipelines map[string]*config.LoggingPipeline, hostInfo *host.InfoStat) (
+func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
 	[]*conf.FilterModifyAddLogName, []*conf.FilterRewriteTag, []*conf.FilterModifyRemoveLogName, []*conf.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterModifyRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
 	fbStackdrivers := []*conf.Stackdriver{}
 	stackdriverExporters := make(map[string][]string)
-	for _, pID := range config.SortedKeys(pipelines) {
+	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
 		for _, exporterID := range pipeline.Exporters {
 			// for each receiver, generate a output plugin with the specified receiver id
@@ -481,10 +482,10 @@ func extractExporterPlugins(exporters map[string]*config.LoggingExporter, pipeli
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
 }
 
-func extractFluentBitParsers(processors map[string]*config.LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
+func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*conf.ParserJSON, []*conf.ParserRegex, error) {
 	fbJSONParsers := []*conf.ParserJSON{}
 	fbRegexParsers := []*conf.ParserRegex{}
-	for _, name := range config.SortedKeys(processors) {
+	for _, name := range sortedKeys(processors) {
 		p := processors[name]
 		switch t := p.Type; t {
 		case "parse_json":

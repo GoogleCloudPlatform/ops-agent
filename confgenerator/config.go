@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config represents the Ops Agent configuration.
-package config
+package confgenerator
 
 import (
 	"fmt"
-	"math"
 	"net"
 	"reflect"
 	"sort"
@@ -201,7 +199,7 @@ func (l *Logging) Validate(platform string) error {
 	if err := validateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
-	for _, id := range SortedKeys(l.Service.Pipelines) {
+	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
 		if err := validateComponentKeys(l.Receivers, p.Receivers, subagent, "receiver", id); err != nil {
 			return err
@@ -261,7 +259,7 @@ func (m *Metrics) Validate(platform string) error {
 	if err := validateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
 		return err
 	}
-	for _, id := range SortedKeys(m.Service.Pipelines) {
+	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
 		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
@@ -393,26 +391,6 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	return nil
 }
 
-func validateCollectionInterval(v interface{}) (float64, error) {
-	t, err := time.ParseDuration(v.(string))
-	if err != nil {
-		return math.NaN(), fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
-	}
-	interval := t.Seconds()
-	if interval < 10 {
-		return math.NaN(), fmt.Errorf(`below the minimum threshold of "10s".`)
-	}
-	return interval, nil
-}
-
-func ValidateCollectionInterval(receiverID string, collectionInterval string) (float64, error) {
-	t, err := validateCollectionInterval(collectionInterval)
-	if err != nil {
-		return math.NaN(), fmt.Errorf(`parameter "collection_interval" in metrics receiver %q has invalid value %q: %s`, receiverID, collectionInterval, err.Error())
-	}
-	return t, nil
-}
-
 var (
 	defaultProcessors = []string{
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
@@ -451,8 +429,15 @@ var (
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
 		"collection_interval": func(v interface{}) error {
-			_, err := validateCollectionInterval(v)
-			return err
+			t, err := time.ParseDuration(v.(string))
+			if err != nil {
+				return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
+			}
+			interval := t.Seconds()
+			if interval < 10 {
+				return fmt.Errorf(`below the minimum threshold of "10s".`)
+			}
+			return nil
 		},
 	}
 
@@ -516,8 +501,8 @@ func mapKeys(m interface{}) map[string]bool {
 	return keys
 }
 
-// SortedKeys returns keys from a map[string]Any as a sorted string slice.
-func SortedKeys(m interface{}) []string {
+// sortedKeys returns keys from a map[string]Any as a sorted string slice.
+func sortedKeys(m interface{}) []string {
 	var r []string
 	for k := range mapKeys(m) {
 		r = append(r, k)
@@ -538,7 +523,7 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 }
 
 func validateComponentIds(components interface{}, subagent string, component string) error {
-	for _, id := range SortedKeys(components) {
+	for _, id := range sortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
