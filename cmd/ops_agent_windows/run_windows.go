@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -78,7 +77,7 @@ func (s *service) parseFlags(args []string) error {
 	return fs.Parse(allArgs)
 }
 
-func (s *service) checkForStandaloneAgents(unified *config.UnifiedConfig) error {
+func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
 	mgr, err := mgr.Connect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to service manager: %s", err)
@@ -113,7 +112,7 @@ func (s *service) generateConfigs() error {
 	if err != nil {
 		return err
 	}
-	uc, err := config.ParseUnifiedConfig(data, "windows")
+	uc, err := confgenerator.ParseUnifiedConfig(data, "windows")
 	if err != nil {
 		return err
 	}
