@@ -16,8 +16,6 @@
 package otel
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 	"text/template"
 )
@@ -568,25 +566,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: toggle_scalar_data_type
 {{- end -}}`))
 
-type emptyFieldErr struct {
-	plugin string
-	field  string
-}
-
-func (e emptyFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
-}
-
-func notEmpty(plugin, field, value string) (string, error) {
-	if value == "" {
-		return "", emptyFieldErr{
-			plugin: plugin,
-			field:  field,
-		}
-	}
-	return value, nil
-}
-
 type MSSQL struct {
 	MSSQLID            string
 	CollectionInterval string
@@ -627,15 +606,6 @@ type Config struct {
 	Windows   bool
 }
 
-func extractFunctionError(err error) error {
-	errRe := regexp.MustCompile(`template: \S+: executing "[^"]+" at <[^>]+>: error calling \S+: `)
-	m := errRe.FindStringIndex(err.Error())
-	if m != nil {
-		return fmt.Errorf(err.Error()[m[1]:])
-	}
-	return err
-}
-
 func (c Config) Generate() (string, error) {
 	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
 		StackdriverID: "agent",
@@ -649,7 +619,7 @@ func (c Config) Generate() (string, error) {
 
 	var configBuilder strings.Builder
 	if err := confTemplate.Execute(&configBuilder, c); err != nil {
-		return "", extractFunctionError(err)
+		return "", err
 	}
 	return configBuilder.String(), nil
 }
