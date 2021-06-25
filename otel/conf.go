@@ -16,19 +16,11 @@
 package otel
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 	"text/template"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/config"
 )
 
-var templateFunctions = template.FuncMap{
-	"validateCollectionInterval": validateCollectionInterval,
-}
-
-var confTemplate = template.Must(template.New("conf").Funcs(templateFunctions).Parse(
+var confTemplate = template.Must(template.New("conf").Parse(
 	`receivers:
   {{template "agentreceiver" .}}
 {{- range .HostMetrics}}
@@ -55,7 +47,7 @@ service:
 {{- end}}
 {{define "hostmetrics" -}}
   hostmetrics/{{.HostMetricsID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .HostMetricsID}}
+    collection_interval: {{.CollectionInterval}}
     scrapers:
       cpu:
       load:
@@ -70,7 +62,7 @@ service:
 
 {{define "iis" -}}
 windowsperfcounters/iis_{{.IISID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .IISID}}
+    collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
         instances: _Total
@@ -90,7 +82,7 @@ windowsperfcounters/iis_{{.IISID}}:
 
 {{define "mssql" -}}
 windowsperfcounters/mssql_{{.MSSQLID}}:
-    collection_interval: {{.CollectionInterval | validateCollectionInterval .MSSQLID}}
+    collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
         instances: _Total
@@ -574,35 +566,6 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: toggle_scalar_data_type
 {{- end -}}`))
 
-type emptyFieldErr struct {
-	plugin string
-	field  string
-}
-
-func (e emptyFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
-}
-
-func notEmpty(plugin, field, value string) (string, error) {
-	if value == "" {
-		return "", emptyFieldErr{
-			plugin: plugin,
-			field:  field,
-		}
-	}
-	return value, nil
-}
-
-func validateCollectionInterval(receiverID, collectionInterval string) (string, error) {
-	if _, err := notEmpty(receiverID, "collection_interval", collectionInterval); err != nil {
-		return "", err
-	}
-	if _, err := config.ValidateCollectionInterval(receiverID, collectionInterval); err != nil {
-		return "", err
-	}
-	return collectionInterval, nil
-}
-
 type MSSQL struct {
 	MSSQLID            string
 	CollectionInterval string
@@ -643,15 +606,6 @@ type Config struct {
 	Windows   bool
 }
 
-func extractFunctionError(err error) error {
-	errRe := regexp.MustCompile(`template: \S+: executing "[^"]+" at <[^>]+>: error calling \S+: `)
-	m := errRe.FindStringIndex(err.Error())
-	if m != nil {
-		return fmt.Errorf(err.Error()[m[1]:])
-	}
-	return err
-}
-
 func (c Config) Generate() (string, error) {
 	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
 		StackdriverID: "agent",
@@ -665,7 +619,7 @@ func (c Config) Generate() (string, error) {
 
 	var configBuilder strings.Builder
 	if err := confTemplate.Execute(&configBuilder, c); err != nil {
-		return "", extractFunctionError(err)
+		return "", err
 	}
 	return configBuilder.String(), nil
 }

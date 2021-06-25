@@ -436,15 +436,6 @@ func (e emptyFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
 }
 
-type nonPositiveFieldErr struct {
-	plugin string
-	field  string
-}
-
-func (e nonPositiveFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin's field %q should not be <= 0", e.plugin, e.field)
-}
-
 // A FilterParser represents the configuration data for fluentBit's filter parser plugin.
 type FilterParser struct {
 	Match   string
