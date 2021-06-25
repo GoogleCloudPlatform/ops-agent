@@ -119,15 +119,26 @@ type LoggingPipeline struct {
 
 // Ops Agent metrics config.
 type Metrics struct {
-	Receivers map[string]*MetricsReceiver `yaml:"receivers"`
-	Exporters map[string]*MetricsExporter `yaml:"exporters"`
-	Service   *MetricsService             `yaml:"service"`
+	Receivers  map[string]*MetricsReceiver  `yaml:"receivers"`
+	Processors map[string]*MetricsProcessor `yaml:"processors"`
+	Exporters  map[string]*MetricsExporter  `yaml:"exporters"`
+	Service    *MetricsService              `yaml:"service"`
 }
 
 type MetricsReceiver struct {
 	configComponent `yaml:",inline"`
 
 	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+}
+
+type MetricsProcessorExcludeMetrics struct {
+	MetricPrefixes []string `yaml:"metric_prefixes"`
+}
+
+type MetricsProcessor struct {
+	configComponent `yaml:",inline"`
+
+	MetricsProcessorExcludeMetrics `yaml:",inline"` // Type "exclude_metrics"
 }
 
 type MetricsExporter struct {
@@ -139,8 +150,9 @@ type MetricsService struct {
 }
 
 type MetricsPipeline struct {
-	ReceiverIDs []string `yaml:"receivers"`
-	ExporterIDs []string `yaml:"exporters"`
+	ReceiverIDs  []string `yaml:"receivers"`
+	ProcessorIDs []string `yaml:"processors"`
+	ExporterIDs  []string `yaml:"exporters"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -235,6 +247,9 @@ func (m *Metrics) Validate(platform string) error {
 	if err := validateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
 		return err
 	}
+	if err := validateComponentIds(m.Processors, subagent, "processor"); err != nil {
+		return err
+	}
 	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
 		return err
 	}
@@ -243,8 +258,18 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 	}
+	for id, p := range m.Processors {
+		if err := p.ValidateType(subagent, "processor", id, platform); err != nil {
+			return err
+		}
+	}
 	for id, e := range m.Exporters {
 		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
+			return err
+		}
+	}
+	for id, p := range m.Processors {
+		if err := p.ValidateParameters(subagent, "processor", id); err != nil {
 			return err
 		}
 	}
@@ -264,10 +289,16 @@ func (m *Metrics) Validate(platform string) error {
 		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
+		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
+			return err
+		}
 		if err := validateComponentKeys(m.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
 			return err
 		}
 		if err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		}
+		if err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
 		if err := validateComponentTypeCounts(m.Exporters, p.ExporterIDs, subagent, "exporter"); err != nil {
@@ -307,6 +338,10 @@ func (p *LoggingProcessor) ValidateParameters(subagent string, component string,
 
 func (r *MetricsReceiver) ValidateParameters(subagent string, component string, id string) error {
 	return validateParameters(*r, subagent, component, id, r.Type)
+}
+
+func (p *MetricsProcessor) ValidateParameters(subagent string, component string, id string) error {
+	return validateParameters(*p, subagent, component, id, p.Type)
 }
 
 type yamlField struct {
@@ -401,11 +436,13 @@ var (
 		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
 		"linux_logging_exporter":    []string{"google_cloud_logging"},
 		"linux_metrics_receiver":    []string{"hostmetrics"},
+		"linux_metrics_processor":   []string{"exclude_metrics"},
 		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
 		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
 		"windows_logging_processor": []string{"parse_json", "parse_regex"},
 		"windows_logging_exporter":  []string{"google_cloud_logging"},
 		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
+		"windows_metrics_processor": []string{"exclude_metrics"},
 		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
 	}
 
@@ -425,6 +462,7 @@ var (
 		"hostmetrics":       []string{"collection_interval"},
 		"iis":               []string{"collection_interval"},
 		"mssql":             []string{"collection_interval"},
+		"exclude_metrics":   []string{"metric_prefixes"},
 	}
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
@@ -460,6 +498,16 @@ var (
 		"hostmetrics": collectionIntervalValidation,
 		"iis":         collectionIntervalValidation,
 		"mssql":       collectionIntervalValidation,
+		"exclude_metrics": map[string]func(interface{}) error{
+			"metric_prefixes": func(v interface{}) error {
+				for _, prefix := range v.([]string) {
+					if !strings.HasSuffix(prefix, "/*") {
+						return fmt.Errorf(`must end with "/*"`)
+					}
+				}
+				return nil
+			},
+		},
 	}
 )
 
@@ -484,6 +532,10 @@ func mapKeys(m interface{}) map[string]bool {
 			keys[k] = true
 		}
 	case map[string]*MetricsReceiver:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]*MetricsProcessor:
 		for k := range m {
 			keys[k] = true
 		}

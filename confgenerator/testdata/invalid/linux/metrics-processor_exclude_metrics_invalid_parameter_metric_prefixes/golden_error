@@ -1,0 +1,1 @@
+parameter "metric_prefixes" in "exclude_metrics" type metrics processor "metrics_filter" has invalid value ["agent.googleapis.com/processes/not_end_with_forward_slash_with_star"]: must end with "/*"
