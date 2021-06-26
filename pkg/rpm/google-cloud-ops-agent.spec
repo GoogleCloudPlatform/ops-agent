@@ -39,7 +39,7 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 
 %files
 %config %{_confdir}/config.yaml
-/usr/lib/google-cloud-ops-agent/fluent-bit
+/usr/lib/google-cloud-ops-agent/bin/fluent-bit
 %{_subagentdir}/opentelemetry-collector/*
 # We aren't using %{_libexecdir} here because that would be lib on some
 # platforms, but the build.sh script hard-codes libexec.
