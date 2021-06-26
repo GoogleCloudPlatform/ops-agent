@@ -21,6 +21,7 @@ var (
 )
 
 func main() {
+	infoLog := log.New(os.Stdout, log.Prefix(), log.Flags())
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -36,12 +37,12 @@ func main() {
 			if err := install(); err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("installed services")
+			infoLog.Printf("installed services")
 		} else if *uninstallServices {
 			if err := uninstall(); err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("uninstalled services")
+			infoLog.Printf("uninstalled services")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
 			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
