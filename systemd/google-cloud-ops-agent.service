@@ -19,3 +19,6 @@ Requires=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opente
 [Service]
 Type=oneshot
 ExecStart=/bin/true
+
+[Install]
+WantedBy=multi-user.target
