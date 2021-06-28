@@ -1,7 +1,5 @@
 #!/bin/sh
 set -e
-# Upgrade from <2.0 needs to stop the .target
-deb-systemd-invoke stop 'google-cloud-ops-agent.target' >/dev/null 2>&1 || true
 
 # If <2.0 was installed, copy its enabledness.
 if deb-systemd-helper --quiet debian-installed google-cloud-ops-agent.target; then

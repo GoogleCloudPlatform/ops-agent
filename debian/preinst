@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+# Upgrade from <2.0 needs to stop the .target
+# The .target's state will be copied to the .service in postinst
+deb-systemd-invoke stop 'google-cloud-ops-agent.target' >/dev/null 2>&1 || true
+
+#DEBHELPER#
