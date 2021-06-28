@@ -8,6 +8,7 @@ metrics:
       type: exclude_metrics
       metric_prefixes:
       - agent.googleapis.com/processes/not_end_with_forward_slash_with_star
+      - not.agent.googleapis.com/processes/*
   exporters:
     google:
       type: google_cloud_monitoring

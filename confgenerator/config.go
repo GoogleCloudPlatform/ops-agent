@@ -500,10 +500,18 @@ var (
 		"mssql":       collectionIntervalValidation,
 		"exclude_metrics": map[string]func(interface{}) error{
 			"metric_prefixes": func(v interface{}) error {
+				var errors []string
 				for _, prefix := range v.([]string) {
 					if !strings.HasSuffix(prefix, "/*") {
-						return fmt.Errorf(`must end with "/*"`)
+						errors = append(errors, fmt.Sprintf(`%s must end with "/*"`, prefix))
 					}
+					// TODO: Relax prefix must be `agent.googleapis.com/` check, when it starts supporting metrics with other prefixes
+					if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
+						errors = append(errors, fmt.Sprintf(`%s must start with "agent.googleapis.com/"`, prefix))
+					}
+				}
+				if len(errors) > 0 {
+					return fmt.Errorf(strings.Join(errors, " | "))
 				}
 				return nil
 			},

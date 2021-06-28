@@ -426,7 +426,7 @@ func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines m
 			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
 				var metricNames []string
 				for _, glob := range p.MetricPrefixes {
-					// TODO: Remove trim prefix `agent.googleapis.com/`, when it starts supporting metrics with other prefixes
+					// TODO: Relax trim prefix `agent.googleapis.com/`, when it starts supporting metrics with other prefixes
 					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
 					// TODO: Move this glob to regexp into a filter function inside otel/conf.go as template function.
 					var literals []string
