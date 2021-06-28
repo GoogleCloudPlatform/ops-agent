@@ -18,6 +18,7 @@ package confgenerator
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -423,16 +424,21 @@ func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines m
 				continue
 			}
 			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
-				var metricPrefixes []string
-				for _, prefix := range p.MetricPrefixes {
-					prefix = strings.TrimPrefix(prefix, "agent.googleapis.com/")
-					prefix = strings.TrimSuffix(prefix, "*")
-					metricPrefixes = append(metricPrefixes, prefix+".*")
+				var metricNames []string
+				for _, glob := range p.MetricPrefixes {
+					// TODO: Remove trim prefix `agent.googleapis.com/`, when it starts supporting metrics with other prefixes
+					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+					// TODO: Move this glob to regexp into a filter function inside otel/conf.go as template function.
+					var literals []string
+					for _, g := range strings.Split(glob, "*") {
+						literals = append(literals, regexp.QuoteMeta(g))
+					}
+					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
 				}
 				processorNameMap[processorID] = "filter/exclude_" + processorID
 				excludeMetrics := otel.ExcludeMetrics{
 					ExcludeMetricsID: processorNameMap[processorID],
-					MetricPrefixes:   fmt.Sprintf("[%s]", strings.Join(metricPrefixes, ",")),
+					MetricNames:      metricNames,
 				}
 				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
 			}

@@ -68,7 +68,10 @@ service:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: {{.MetricPrefixes}}
+        metric_names:
+        {{- range .MetricNames}}
+          - {{printf "%q" .}}
+        {{- end}}
 {{- end -}}
 
 {{define "iis" -}}
@@ -594,7 +597,7 @@ type HostMetrics struct {
 
 type ExcludeMetrics struct {
 	ExcludeMetricsID string
-	MetricPrefixes   string
+	MetricNames      []string
 }
 
 type Service struct {
