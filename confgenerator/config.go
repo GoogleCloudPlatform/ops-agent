@@ -503,11 +503,11 @@ var (
 				var errors []string
 				for _, prefix := range v.([]string) {
 					if !strings.HasSuffix(prefix, "/*") {
-						errors = append(errors, fmt.Sprintf(`%s must end with "/*"`, prefix))
+						errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
 					}
 					// TODO: Relax prefix must be `agent.googleapis.com/` check, when it starts supporting metrics with other prefixes
 					if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
-						errors = append(errors, fmt.Sprintf(`%s must start with "agent.googleapis.com/"`, prefix))
+						errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
 					}
 				}
 				if len(errors) > 0 {

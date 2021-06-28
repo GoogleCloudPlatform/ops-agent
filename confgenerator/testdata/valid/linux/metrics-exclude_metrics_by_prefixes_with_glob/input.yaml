@@ -37,8 +37,8 @@ metrics:
     metrics_filter:
       type: exclude_metrics
       metric_prefixes:
-      - agent.googleapis.com/cpu/*
-      - agent.googleapis.com/iis/*
+      - agent.googleapis.com/proce*ses/*
+      - agent.googleapis.com/c*u/*
   exporters:
     google:
       type: google_cloud_monitoring
