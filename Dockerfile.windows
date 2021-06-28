@@ -127,8 +127,9 @@ WORKDIR /work
 COPY . /work
 
 ARG WINDOWS_VERSION
-ARG PKG_VERSION=latest
-RUN go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=windows-$env:WINDOWS_VERSION -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
+ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
+RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
+    go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
     Copy-Item -Path confgenerator/windows-default-config.yaml -Destination /work/out/config/config.yaml;
 
