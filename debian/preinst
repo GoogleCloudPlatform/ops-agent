@@ -9,7 +9,8 @@ deb-systemd-invoke stop 'google-cloud-ops-agent.target' >/dev/null 2>&1 || true
 # that state into the dsh state file so the postinst can avoid enabling
 # google-cloud-ops-agent.service
 if deb-systemd-helper --quiet debian-installed google-cloud-ops-agent.target \
-  && ! deb-systemd-helper --quiet is-enabled google-cloud-ops-agent.target; then
+  && deb-systemd-helper --quiet was-enabled google-cloud-ops-agent.target 2>/dev/null \
+  && ! deb-systemd-helper --quiet is-enabled google-cloud-ops-agent.target 2>/dev/null; then
   deb-systemd-helper disable google-cloud-ops-agent.target
 fi
 
