@@ -18,6 +18,7 @@ package confgenerator
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -44,8 +45,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	iisList := []*otel.IIS{}
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
+	excludeMetricsList := []*otel.ExcludeMetrics{}
 	receiverNameMap := make(map[string]string)
 	exporterNameMap := make(map[string]string)
+	processorNameMap := make(map[string]string)
 	if metrics != nil {
 		var err error
 		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
@@ -56,17 +59,22 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, metrics.Service.Pipelines)
+		excludeMetricsList, processorNameMap, err = generateOtelProcessors(metrics.Processors, metrics.Service.Pipelines)
+		if err != nil {
+			return "", err
+		}
+		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
 	}
 	otelConfig, err := otel.Config{
-		HostMetrics: hostMetricsList,
-		MSSQL:       mssqlList,
-		IIS:         iisList,
-		Stackdriver: stackdriverList,
-		Service:     serviceList,
+		HostMetrics:    hostMetricsList,
+		MSSQL:          mssqlList,
+		IIS:            iisList,
+		ExcludeMetrics: excludeMetricsList,
+		Stackdriver:    stackdriverList,
+		Service:        serviceList,
 
 		UserAgent: userAgent,
 		Version:   versionLabel,
@@ -78,7 +86,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
+func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -95,6 +103,13 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			}
+
+			var processorIDs []string
+			processorIDs = append(processorIDs, defaultProcessors...)
+			for _, processorID := range p.ProcessorIDs {
+				processorIDs = append(processorIDs, processorNameMap[processorID])
+			}
+
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
 				pExportIDs = append(pExportIDs, exporterNameMap[eID])
@@ -102,7 +117,7 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 			service := otel.Service{
 				ID:         pipelineID,
 				Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
-				Processors: fmt.Sprintf("[%s]", strings.Join(defaultProcessors, ",")),
+				Processors: fmt.Sprintf("[%s]", strings.Join(processorIDs, ",")),
 				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 			}
 			serviceList = append(serviceList, &service)
@@ -261,6 +276,10 @@ type iisReceiverFactory struct {
 	CollectionInterval string
 }
 
+type excludemetricsProcessorFactory struct {
+	MetricsPattern []string
+}
+
 func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
@@ -282,6 +301,19 @@ func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[st
 		}
 	}
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
+}
+
+func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
+	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
+	for n, p := range processors {
+		switch p.Type {
+		case "exclude_metrics":
+			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
+				MetricsPattern: p.MetricsPattern,
+			}
+		}
+	}
+	return excludemetricsProcessorFactories, nil
 }
 
 func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
@@ -376,6 +408,43 @@ func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[
 		}
 	}
 	return stackdriverList, exportNameMap, nil
+}
+
+func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+	excludeMetricsList := []*otel.ExcludeMetrics{}
+	processorNameMap := make(map[string]string)
+	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, pID := range sortedKeys(pipelines) {
+		p := pipelines[pID]
+		for _, processorID := range p.ProcessorIDs {
+			if _, ok := processorNameMap[processorID]; ok {
+				continue
+			}
+			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
+				var metricNames []string
+				for _, glob := range p.MetricsPattern {
+					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
+					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
+					var literals []string
+					for _, g := range strings.Split(glob, "*") {
+						literals = append(literals, regexp.QuoteMeta(g))
+					}
+					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
+				}
+				processorNameMap[processorID] = "filter/exclude_" + processorID
+				excludeMetrics := otel.ExcludeMetrics{
+					ExcludeMetricsID: processorNameMap[processorID],
+					MetricNames:      metricNames,
+				}
+				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
+			}
+		}
+	}
+	return excludeMetricsList, processorNameMap, nil
 }
 
 func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*conf.Tail, []*conf.Syslog, []*conf.WindowsEventlog, error) {
