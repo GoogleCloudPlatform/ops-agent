@@ -139,6 +139,11 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 				userSpecifiedConfPath = platform.defaultConfig
 				builtInConfPath = platform.builtInConfig
 			}
+			// Special-case for testing no config, aka there is no user config file.
+			// The golden files are still in the testdata directory.
+			if testName == "no_config" {
+				userSpecifiedConfPath = "file_path_not_exists"
+			}
 			if err = MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
 				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
 			}
