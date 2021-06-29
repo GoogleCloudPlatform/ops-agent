@@ -49,7 +49,8 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 
 %post
 %systemd_post google-cloud-ops-agent.service
-if [ "$(systemctl show -p LoadState --value google-cloud-ops-agent.target 2>/dev/null || :)" = "loaded" ]; then
+# rhel7 systemctl does not support --value
+if [ "$(systemctl show -p LoadState google-cloud-ops-agent.target 2>/dev/null || :)" = "LoadState=loaded" ]; then
   systemctl stop google-cloud-ops-agent.target > /dev/null 2>&1 || :
   # If there was a .target installed, copy its enabledness
   if systemctl is-enabled google-cloud-ops-agent.target > /dev/null 2>&1; then
