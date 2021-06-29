@@ -18,6 +18,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
@@ -26,8 +27,6 @@ var (
 	service  = flag.String("service", "", "service to generate config for")
 	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
 	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to read the user specified agent config")
-	builtin  = flag.String("builtin", "/etc/google-cloud-ops-agent/debugging/built-in-config.yaml", "path to write the built-in agent config for debugging purpose")
-	merged   = flag.String("merged", "/etc/google-cloud-ops-agent/debugging/merged-config.yaml", "path to write the merged agent config for debugging purpose")
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
@@ -39,8 +38,10 @@ func main() {
 	}
 }
 func run() error {
-	if err := confgenerator.MergeConfFiles(*builtin, *input, *merged, "linux"); err != nil {
+	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+	confDebugFolder := filepath.Join(os.Getenv("RUNTIME_DIRECTORY"), "conf", "debug")
+	if err := confgenerator.MergeConfFiles(*input, confDebugFolder, "linux"); err != nil {
 		return err
 	}
-	return confgenerator.GenerateFiles(*merged, *service, *logsDir, *stateDir, *outDir)
+	return confgenerator.GenerateFiles(filepath.Join(confDebugFolder, "merged-config.yaml"), *service, *logsDir, *stateDir, *outDir)
 }

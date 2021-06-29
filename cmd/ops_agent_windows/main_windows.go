@@ -99,8 +99,6 @@ func initServices() error {
 			self,
 			[]string{
 				"-in", filepath.Join(base, "../config/config.yaml"),
-				"-builtin", filepath.Join(base, "../config/debugging/built-in-config.yaml"),
-				"-merged", filepath.Join(base, "../config/debugging/merged-config.yaml"),
 				"-out", configOutDir,
 			},
 		},

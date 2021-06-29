@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
@@ -130,7 +131,13 @@ var (
 	}
 )
 
-func MergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string) error {
+func MergeConfFiles(userConfPath, confDebugFolder, platform string) error {
+	builtInConfPath := filepath.Join(confDebugFolder, "built-in-config.yaml")
+	mergedConfPath := filepath.Join(confDebugFolder, "merged-config.yaml")
+	return mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform)
+}
+
+func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string) error {
 	builtInStruct := builtInConfStructs[platform]
 	builtInYaml, err := yaml.Marshal(builtInStruct)
 	if err != nil {
@@ -139,7 +146,7 @@ func MergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 
 	// Write the built-in conf to disk for debugging purpose.
 
-	if err := WriteConfigFile(builtInYaml, builtInConfPath); err != nil {
+	if err := writeConfigFile(builtInYaml, builtInConfPath); err != nil {
 		return err
 	}
 

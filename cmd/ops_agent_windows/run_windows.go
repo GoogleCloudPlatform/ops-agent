@@ -26,8 +26,6 @@ func containsString(all []string, s string) bool {
 type service struct {
 	log          debug.Log
 	userConf     string
-	builtInConf  string
-	mergedConf   string
 	outDirectory string
 }
 
@@ -74,8 +72,6 @@ func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "in", "", "path to read the user specified agent config")
-	fs.StringVar(&s.builtInConf, "builtin", "", "path to write the built-in agent config for debugging purpose")
-	fs.StringVar(&s.mergedConf, "merged", "", "path to write the merged agent config for debugging purpose")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
 
 	allArgs := append([]string{}, os.Args[1:]...)
@@ -114,10 +110,12 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 }
 
 func (s *service) generateConfigs() error {
-	if err := confgenerator.MergeConfFiles(s.builtInConf, s.userConf, s.mergedConf, "windows"); err != nil {
+	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+	confDebugFolder := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "conf", "debug")
+	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows"); err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile(s.mergedConf)
+	data, err := ioutil.ReadFile(filepath.Join(confDebugFolder, "merged-config.yaml"))
 	if err != nil {
 		return err
 	}

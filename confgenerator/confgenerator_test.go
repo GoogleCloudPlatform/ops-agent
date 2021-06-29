@@ -38,6 +38,7 @@ var (
 	// Add "-v" to show details for which files are updated with what:
 	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
 	updateGolden     = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+	defaultConfig    = "default-config.yaml"
 	goldenMainPath   = validTestdataDir + "/%s/%s/golden_fluent_bit_main.conf"
 	goldenParserPath = validTestdataDir + "/%s/%s/golden_fluent_bit_parser.conf"
 	goldenOtelPath   = validTestdataDir + "/%s/%s/golden_otel.conf"
@@ -49,7 +50,6 @@ var (
 type platformConfig struct {
 	defaultLogsDir  string
 	defaultStateDir string
-	defaultConfig   string
 	builtInConfig   string
 	*host.InfoStat
 }
@@ -58,7 +58,6 @@ var platforms = []platformConfig{
 	platformConfig{
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-		defaultConfig:   "default-config.yaml",
 		builtInConfig:   "built-in-config-linux.yaml",
 		InfoStat: &host.InfoStat{
 			OS:              "linux",
@@ -69,7 +68,6 @@ var platforms = []platformConfig{
 	platformConfig{
 		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-		defaultConfig:   "windows-default-config.yaml",
 		builtInConfig:   "built-in-config-windows.yaml",
 		InfoStat: &host.InfoStat{
 			OS:              "windows",
@@ -136,15 +134,10 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
 			if testName == "default_config" {
-				userSpecifiedConfPath = platform.defaultConfig
+				userSpecifiedConfPath = defaultConfig
 				builtInConfPath = platform.builtInConfig
 			}
-			// Special-case for testing no config, aka there is no user config file.
-			// The golden files are still in the testdata directory.
-			if testName == "no_config" {
-				userSpecifiedConfPath = "file_path_not_exists"
-			}
-			if err = MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
+			if err = mergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
 				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
 			}
 
@@ -251,7 +244,7 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
 			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
 
-			actualError := MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS)
+			actualError := mergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS)
 			if actualError == nil {
 				mergedInput := readFileContent(t, testName, platform.OS, mergedInputPath, false)
 				actualError = generateConfigs(mergedInput, platform)

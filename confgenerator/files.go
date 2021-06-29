@@ -53,10 +53,10 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		if err = WriteConfigFile([]byte(mainConfig), filepath.Join(outDir, "fluent_bit_main.conf")); err != nil {
+		if err = writeConfigFile([]byte(mainConfig), filepath.Join(outDir, "fluent_bit_main.conf")); err != nil {
 			return err
 		}
-		if err = WriteConfigFile([]byte(parserConfig), filepath.Join(outDir, "fluent_bit_parser.conf")); err != nil {
+		if err = writeConfigFile([]byte(parserConfig), filepath.Join(outDir, "fluent_bit_parser.conf")); err != nil {
 			return err
 		}
 	case "otel":
@@ -64,7 +64,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
+		if err = writeConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
 			return err
 		}
 	default:
@@ -73,7 +73,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 	return nil
 }
 
-func WriteConfigFile(content []byte, path string) error {
+func writeConfigFile(content []byte, path string) error {
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for %q: %w", path, err)
