@@ -163,6 +163,8 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
       exclude:
         match_type: strict
         metric_names:
+          # Temporarily exclude system.cpu.time (cpu/usage_time)
+          - system.cpu.time
           - system.network.dropped
           - system.filesystem.inodes.usage
           - system.paging.faults
