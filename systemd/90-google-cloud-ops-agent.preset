@@ -1,1 +1,1 @@
-enable google-cloud-ops-agent.target
+enable google-cloud-ops-agent.service
