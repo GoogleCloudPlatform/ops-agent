@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+# If <2.0 was installed, copy its enabledness.
+if deb-systemd-helper --quiet debian-installed google-cloud-ops-agent.target; then
+  if deb-systemd-helper --quiet was-enabled google-cloud-ops-agent.target; then
+    echo "google-cloud-ops-agent.target was enabled; enabling google-cloud-ops-agent.service"
+    deb-systemd-helper enable google-cloud-ops-agent.service
+    deb-systemd-invoke start google-cloud-ops-agent.service > /dev/null || true
+  else
+    echo "google-cloud-ops-agent.target was disabled; disabling google-cloud-ops-agent.service"
+    deb-systemd-helper update-state google-cloud-ops-agent.service
+  fi
+fi
+
+#DEBHELPER#
+
+# Remove the <2.0 unit and its associated state.
+deb-systemd-helper purge google-cloud-ops-agent.target
+deb-systemd-helper purge google-cloud-ops-agent-collectd.service
