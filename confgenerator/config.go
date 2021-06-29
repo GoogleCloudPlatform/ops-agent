@@ -132,7 +132,7 @@ type MetricsReceiver struct {
 }
 
 type MetricsProcessorExcludeMetrics struct {
-	MetricPrefixes []string `yaml:"metric_prefixes"`
+	MetricsPattern []string `yaml:"metrics_pattern"`
 }
 
 type MetricsProcessor struct {
@@ -462,7 +462,7 @@ var (
 		"hostmetrics":       []string{"collection_interval"},
 		"iis":               []string{"collection_interval"},
 		"mssql":             []string{"collection_interval"},
-		"exclude_metrics":   []string{"metric_prefixes"},
+		"exclude_metrics":   []string{"metrics_pattern"},
 	}
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
@@ -499,13 +499,13 @@ var (
 		"iis":         collectionIntervalValidation,
 		"mssql":       collectionIntervalValidation,
 		"exclude_metrics": map[string]func(interface{}) error{
-			"metric_prefixes": func(v interface{}) error {
+			"metrics_pattern": func(v interface{}) error {
 				var errors []string
 				for _, prefix := range v.([]string) {
 					if !strings.HasSuffix(prefix, "/*") {
 						errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
 					}
-					// TODO: Relax prefix must be `agent.googleapis.com/` check, when it starts supporting metrics with other prefixes
+					// TODO: Relax the prefix check when we support metrics with other prefixes.
 					if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
 						errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
 					}

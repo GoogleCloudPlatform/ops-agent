@@ -277,7 +277,7 @@ type iisReceiverFactory struct {
 }
 
 type excludemetricsProcessorFactory struct {
-	MetricPrefixes []string
+	MetricsPattern []string
 }
 
 func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
@@ -309,7 +309,7 @@ func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map
 		switch p.Type {
 		case "exclude_metrics":
 			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
-				MetricPrefixes: p.MetricPrefixes,
+				MetricsPattern: p.MetricsPattern,
 			}
 		}
 	}
@@ -425,10 +425,10 @@ func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines m
 			}
 			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
 				var metricNames []string
-				for _, glob := range p.MetricPrefixes {
-					// TODO: Relax trim prefix `agent.googleapis.com/`, when it starts supporting metrics with other prefixes
+				for _, glob := range p.MetricsPattern {
+					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
 					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
-					// TODO: Move this glob to regexp into a filter function inside otel/conf.go as template function.
+					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
 					var literals []string
 					for _, g := range strings.Split(glob, "*") {
 						literals = append(literals, regexp.QuoteMeta(g))

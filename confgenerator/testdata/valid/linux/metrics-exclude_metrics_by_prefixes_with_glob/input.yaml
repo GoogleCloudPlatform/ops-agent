@@ -36,7 +36,7 @@ metrics:
   processors:
     metrics_filter:
       type: exclude_metrics
-      metric_prefixes:
+      metrics_pattern:
       - agent.googleapis.com/proce*ses/*
       - agent.googleapis.com/c*u/*
   exporters:
