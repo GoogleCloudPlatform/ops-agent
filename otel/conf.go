@@ -197,7 +197,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           # add blank cpu_number label
           - action: add_label
             new_label: cpu_number
-            new_value: " "
+            new_value: ""
           # change label state -> cpu_state
           - action: update_label
             label: state
