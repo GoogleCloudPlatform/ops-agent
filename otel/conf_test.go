@@ -87,13 +87,13 @@ func TestSection(t *testing.T) {
 		{
 			section: Service{
 				ID:         "system",
-				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+				Processors: "[agentmetrics/system,filter/system,googlemetricstransform/system,resourcedetection]",
 				Receivers:  "[hostmetrics/hostmetrics]",
 				Exporters:  "[googlecloud/google]",
 			},
 			want: `metrics/system:
       receivers:  [hostmetrics/hostmetrics]
-      processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
+      processors: [agentmetrics/system,filter/system,googlemetricstransform/system,resourcedetection]
       exporters: [googlecloud/google]`,
 		},
 	}
@@ -157,18 +157,18 @@ func TestGenerateOtelConfig(t *testing.T) {
 				{
 					ID:         "system",
 					Receivers:  "[hostmetrics/hostmetrics]",
-					Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
+					Processors: "[agentmetrics/system,filter/system,googlemetricstransform/system,resourcedetection]",
 					Exporters:  "[googlecloud/google]",
 				},
 				{
 					ID:         "mssql",
 					Receivers:  "[windowsperfcounters/mssql_mssql]",
-					Processors: "[metricstransform/mssql,resourcedetection]",
+					Processors: "[googlemetricstransform/mssql,resourcedetection]",
 					Exporters:  "[googlecloud/google]",
 				},
 				{ID: "iis",
 					Receivers:  "[windowsperfcounters/iis_iis]",
-					Processors: "[metricstransform/iis,resourcedetection]",
+					Processors: "[googlemetricstransform/iis,resourcedetection]",
 					Exporters:  "[googlecloud/google]",
 				},
 			},
@@ -225,7 +225,7 @@ processors:
   resourcedetection:
     detectors: [gce]
 
-  # perform custom transformations that aren't supported by the metricstransform processor
+  # perform custom transformations that aren't supported by the googlemetricstransform processor
   agentmetrics/system:
     # 1. converts up down sum types to gauges
     # 2. combines resource process metrics into metrics with processes as labels
@@ -243,7 +243,7 @@ processors:
           - system.paging.faults
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  metricstransform/system:
+  googlemetricstransform/system:
     transforms:
       # system.cpu.time -> cpu/usage_time
       - metric_name: system.cpu.time
@@ -580,7 +580,7 @@ processors:
           - otelcol_googlecloudmonitoring_point_count
 
   # convert from windows perf counter formats to cloud monitoring formats
-  metricstransform/iis:
+  googlemetricstransform/iis:
     transforms:
       - include: \Web Service(_Total)\Current Connections
         action: update
@@ -600,7 +600,7 @@ processors:
         submatch_case: lower
 
   # convert from windows perf counter formats to cloud monitoring formats
-  metricstransform/mssql:
+  googlemetricstransform/mssql:
     transforms:
       - include: \SQLServer:General Statistics(_Total)\User Connections
         action: update
@@ -613,7 +613,7 @@ processors:
         new_name: mssql/write_transaction_rate
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  metricstransform/agent:
+  googlemetricstransform/agent:
     transforms:
       # otelcol_process_uptime -> agent/uptime
       - metric_name: otelcol_process_uptime
@@ -675,21 +675,21 @@ service:
         - prometheus/agent
       processors:
         - filter/agent
-        - metricstransform/agent
+        - googlemetricstransform/agent
         - resourcedetection
       exporters:
         - googlecloud/agent
     metrics/system:
       receivers:  [hostmetrics/hostmetrics]
-      processors: [agentmetrics/system,filter/system,metricstransform/system,resourcedetection]
+      processors: [agentmetrics/system,filter/system,googlemetricstransform/system,resourcedetection]
       exporters: [googlecloud/google]
     metrics/mssql:
       receivers:  [windowsperfcounters/mssql_mssql]
-      processors: [metricstransform/mssql,resourcedetection]
+      processors: [googlemetricstransform/mssql,resourcedetection]
       exporters: [googlecloud/google]
     metrics/iis:
       receivers:  [windowsperfcounters/iis_iis]
-      processors: [metricstransform/iis,resourcedetection]
+      processors: [googlemetricstransform/iis,resourcedetection]
       exporters: [googlecloud/google]
 `,
 		},

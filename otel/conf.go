@@ -133,7 +133,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         - prometheus/agent
       processors:
         - filter/agent
-        - metricstransform/agent
+        - googlemetricstransform/agent
         - resourcedetection
       exporters:
         - googlecloud/agent
@@ -150,7 +150,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
   resourcedetection:
     detectors: [gce]
 
-  # perform custom transformations that aren't supported by the metricstransform processor
+  # perform custom transformations that aren't supported by the googlemetricstransform processor
   agentmetrics/system:
     # 1. converts up down sum types to gauges
     # 2. combines resource process metrics into metrics with processes as labels
@@ -168,7 +168,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - system.paging.faults
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  metricstransform/system:
+  googlemetricstransform/system:
     transforms:
       # system.cpu.time -> cpu/usage_time
       - metric_name: system.cpu.time
@@ -505,7 +505,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - otelcol_googlecloudmonitoring_point_count
 
   # convert from windows perf counter formats to cloud monitoring formats
-  metricstransform/iis:
+  googlemetricstransform/iis:
     transforms:
       - include: \Web Service(_Total)\Current Connections
         action: update
@@ -525,7 +525,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         submatch_case: lower
 
   # convert from windows perf counter formats to cloud monitoring formats
-  metricstransform/mssql:
+  googlemetricstransform/mssql:
     transforms:
       - include: \SQLServer:General Statistics(_Total)\User Connections
         action: update
@@ -538,7 +538,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         new_name: mssql/write_transaction_rate
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  metricstransform/agent:
+  googlemetricstransform/agent:
     transforms:
       # otelcol_process_uptime -> agent/uptime
       - metric_name: otelcol_process_uptime
