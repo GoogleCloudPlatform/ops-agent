@@ -582,7 +582,6 @@ processors:
           - otelcol_process_memory_rss
           - otelcol_grpc_io_client_completed_rpcs
           - otelcol_googlecloudmonitoring_point_count
-
   # convert from windows perf counter formats to cloud monitoring formats
   googlemetricstransform/iis:
     transforms:
@@ -602,7 +601,6 @@ processors:
         action: combine
         new_name: iis/request_count
         submatch_case: lower
-
   # convert from windows perf counter formats to cloud monitoring formats
   googlemetricstransform/mssql:
     transforms:
@@ -615,7 +613,6 @@ processors:
       - include: \SQLServer:Databases(_Total)\Write Transactions/sec
         action: update
         new_name: mssql/write_transaction_rate
-
   # convert from opentelemetry metric formats to cloud monitoring formats
   googlemetricstransform/agent:
     transforms:
