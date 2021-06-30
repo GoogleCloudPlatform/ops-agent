@@ -13,17 +13,14 @@
 # limitations under the License.
 
 logging:
-  service:
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-  exporters:
-    google:
-      type: google_cloud_monitoring
+  processors:
+    parse_json_1:
+      type: parse_regex
+      field: key_1
+      regex: regex_pattern_1
+      time_key: time_key_1
+      time_format: time_format_1
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics]
-        exporters: [google]
+        processors: [parse_json_1]

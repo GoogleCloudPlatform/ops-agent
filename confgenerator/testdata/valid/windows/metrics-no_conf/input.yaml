@@ -11,17 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-logging:
-  receivers:
-    windows_event_log:
-      type: windows_event_log
-      channels: [System,Application,Security]
-  exporters:
-    google:
-      type: google_cloud_logging
+metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [windows_event_log]
-        exporters: [google]
+        receivers: []
+        exporters: []

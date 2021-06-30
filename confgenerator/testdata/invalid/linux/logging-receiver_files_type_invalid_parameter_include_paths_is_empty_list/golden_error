@@ -1,1 +1,1 @@
-"tail" plugin should not have empty field: "Path"
+parameter "include_paths" in "files" type logging receiver "receiver_1" is required.

@@ -24,16 +24,25 @@ import (
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	hostInfo, _ := host.Info()
-	data, err := ioutil.ReadFile(input)
-	if err != nil {
-		return err
-	}
-	uc, err := ParseUnifiedConfig(data, hostInfo.OS)
+	uc, err := ReadUnifiedConfigFromFile(input)
 	if err != nil {
 		return err
 	}
 	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
+}
+
+func ReadUnifiedConfigFromFile(path string) (UnifiedConfig, error) {
+	uc := UnifiedConfig{}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return uc, err
+	}
+	uc, err = UnmarshalYamlToUnifiedConfig(data)
+	if err != nil {
+		return uc, err
+	}
+	return uc, nil
 }
 
 func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {
@@ -44,33 +53,33 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", outDir, err)
+		if err = writeConfigFile([]byte(mainConfig), filepath.Join(outDir, "fluent_bit_main.conf")); err != nil {
+			return err
 		}
-		path := filepath.Join(outDir, "fluent_bit_main.conf")
-		if err := ioutil.WriteFile(path, []byte(mainConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
-		}
-		path = filepath.Join(outDir, "fluent_bit_parser.conf")
-		if err := ioutil.WriteFile(path, []byte(parserConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
+		if err = writeConfigFile([]byte(parserConfig), filepath.Join(outDir, "fluent_bit_parser.conf")); err != nil {
+			return err
 		}
 	case "otel":
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		// Make sure the output directory exists before generating configs.
-		if err := os.MkdirAll(outDir, 0755); err != nil {
-			return fmt.Errorf("can't create output directory %q: %w", outDir, err)
-		}
-		path := filepath.Join(outDir, "otel.yaml")
-		if err := ioutil.WriteFile(path, []byte(otelConfig), 0644); err != nil {
-			return fmt.Errorf("can't write %q: %w", path, err)
+		if err = writeConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
+			return err
 		}
 	default:
 		return fmt.Errorf("unknown service %q", service)
+	}
+	return nil
+}
+
+func writeConfigFile(content []byte, path string) error {
+	// Make sure the directory exists before writing the file.
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %q: %w", path, err)
+	}
+	if err := ioutil.WriteFile(path, content, 0644); err != nil {
+		return fmt.Errorf("failed to write file to %q: %w", path, err)
 	}
 	return nil
 }
