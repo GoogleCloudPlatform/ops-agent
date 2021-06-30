@@ -242,6 +242,7 @@ processors:
           - system.filesystem.inodes.usage
           - system.paging.faults
           - system.disk.operation_time
+          - system.processes.count
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   googlemetricstransform/system:
