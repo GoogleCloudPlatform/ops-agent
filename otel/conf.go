@@ -168,6 +168,8 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - system.network.dropped
           - system.filesystem.inodes.usage
           - system.paging.faults
+          - system.disk.operation_time
+          - system.processes.count
 
   # convert from opentelemetry metric formats to cloud monitoring formats
   googlemetricstransform/system:
@@ -248,8 +250,8 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
             experimental_scale: 1000
           # change data type from double -> int64
           - action: toggle_scalar_data_type
-      # system.disk.operation_time -> disk/operation_time
-      - metric_name: system.disk.operation_time
+      # system.disk.average_operation_time -> disk/operation_time
+      - metric_name: system.disk.average_operation_time
         action: update
         new_name: disk/operation_time
         operations:
