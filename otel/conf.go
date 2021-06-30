@@ -34,13 +34,13 @@ var confTemplate = template.Must(template.New("conf").Parse(
 {{- end}}
 processors:
   {{template "systemprocessor" .}}
-  {{template "agentprocessor" .}}
 {{- if .IIS}}
   {{template "iisprocessor" .}}
 {{- end}}
 {{- if .MSSQL}}
   {{template "mssqlprocessor" .}}
 {{- end}}
+  {{template "agentprocessor" .}}
 {{- range .ExcludeMetrics}}
   {{template "excludemetrics" .}}
 {{- end}}
