@@ -19,7 +19,3 @@ metrics:
       metrics_pattern:
       - agent.googleapis.com/processes/*
       - agent.googleapis.com/cpu/*
-  service:
-    pipelines:
-      default_pipeline:
-        processors: [metrics_filter]
