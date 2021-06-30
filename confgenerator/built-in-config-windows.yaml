@@ -27,7 +27,10 @@ metrics:
     mssql:
       type: mssql
       collection_interval: 60s
-  processors: {}
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern: []
   exporters:
     google:
       type: google_cloud_monitoring
@@ -38,6 +41,7 @@ metrics:
         - hostmetrics
         - iis
         - mssql
-        processors: []
+        processors:
+        - metrics_filter
         exporters:
         - google

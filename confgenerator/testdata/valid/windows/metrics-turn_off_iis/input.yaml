@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 metrics:
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [hostmetrics,mssql]
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern:
+        - agent.googleapis.com/iis/*
