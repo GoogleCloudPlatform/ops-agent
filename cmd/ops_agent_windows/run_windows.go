@@ -71,7 +71,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
-	fs.StringVar(&s.userConf, "in", "", "path to read the user specified agent config")
+	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
 
 	allArgs := append([]string{}, os.Args[1:]...)

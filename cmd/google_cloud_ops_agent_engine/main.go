@@ -26,7 +26,7 @@ import (
 var (
 	service  = flag.String("service", "", "service to generate config for")
 	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to read the user specified agent config")
+	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
