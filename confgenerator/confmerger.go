@@ -58,6 +58,11 @@ var (
 						CollectionInterval: "60s",
 					},
 				},
+				Processors: map[string]*MetricsProcessor{
+					"metrics_filter": &MetricsProcessor{
+						configComponent: configComponent{Type: "exclude_metrics"},
+					},
+				},
 				Exporters: map[string]*MetricsExporter{
 					"google": &MetricsExporter{
 						configComponent: configComponent{Type: "google_cloud_monitoring"},
@@ -66,8 +71,9 @@ var (
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs: []string{"hostmetrics"},
-							ExporterIDs: []string{"google"},
+							ReceiverIDs:  []string{"hostmetrics"},
+							ProcessorIDs: []string{"metrics_filter"},
+							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
@@ -113,6 +119,11 @@ var (
 						CollectionInterval: "60s",
 					},
 				},
+				Processors: map[string]*MetricsProcessor{
+					"metrics_filter": &MetricsProcessor{
+						configComponent: configComponent{Type: "exclude_metrics"},
+					},
+				},
 				Exporters: map[string]*MetricsExporter{
 					"google": &MetricsExporter{
 						configComponent: configComponent{Type: "google_cloud_monitoring"},
@@ -121,8 +132,9 @@ var (
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs: []string{"hostmetrics", "iis", "mssql"},
-							ExporterIDs: []string{"google"},
+							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
+							ProcessorIDs: []string{"metrics_filter"},
+							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
@@ -240,7 +252,6 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides metrics.processors.
-		original.Metrics.Processors = map[string]*MetricsProcessor{}
 		for k, v := range overrides.Metrics.Processors {
 			original.Metrics.Processors[k] = v
 		}
@@ -252,26 +263,8 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 
 		if overrides.Metrics.Service != nil {
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
-				if name == "default_pipeline" {
-					// overrides metrics.service.pipelines.default_pipeline.receivers
-					if ids := pipeline.ReceiverIDs; ids != nil {
-						original.Metrics.Service.Pipelines["default_pipeline"].ReceiverIDs = ids
-					}
-
-					//
-					// overrides metrics.service.pipelines.default_pipeline.processors
-					if ids := pipeline.ProcessorIDs; ids != nil {
-						original.Metrics.Service.Pipelines["default_pipeline"].ProcessorIDs = ids
-					}
-
-					// Overrides metrics.service.pipelines.default_pipeline.exporters
-					if ids := pipeline.ExporterIDs; ids != nil {
-						original.Metrics.Service.Pipelines["default_pipeline"].ExporterIDs = ids
-					}
-				} else {
-					// Overrides metrics.service.pipelines.<non_default_pipelines>
-					original.Metrics.Service.Pipelines[name] = pipeline
-				}
+				// Overrides metrics.service.pipelines.<non_default_pipelines>
+				original.Metrics.Service.Pipelines[name] = pipeline
 			}
 		}
 	}
