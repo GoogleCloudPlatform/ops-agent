@@ -55,7 +55,7 @@ function build_fluentbit() {
   # CMAKE_INSTALL_PREFIX here will cause the binary to be put at
   # /usr/lib/google-cloud-ops-agent/bin/fluent-bit
   # Additionally, -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr/lib/google-cloud-ops-agent \
+  cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit \
     -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF
   make -j8
@@ -63,7 +63,7 @@ function build_fluentbit() {
   # We don't want fluent-bit's service or configuration, but there are no cmake
   # flags to disable them. Prune after build.
   rm "${DESTDIR}/lib/systemd/system/fluent-bit.service"
-  rm -r "${DESTDIR}/usr/lib/google-cloud-ops-agent/etc"
+  rm -r "${DESTDIR}${subagentdir}/fluent-bit/etc"
 }
 
 function build_opsagent() {
