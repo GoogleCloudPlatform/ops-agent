@@ -12,16 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-  exporters:
-    google:
-      type: google_cloud_monitoring
+logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics]
-        exporters: [google]
+        receivers: []
+        exporters: []

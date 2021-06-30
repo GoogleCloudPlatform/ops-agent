@@ -66,11 +66,11 @@ logging:
       type: parse_regex
       regex: regex_pattern_3
       time_format: time_format_3
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
+      default_pipeline:
+        receivers: []
+        exporters: []
       pipeline1:
         receivers:
         - log_source_id1
@@ -99,16 +99,3 @@ logging:
         - lib:syslog-rfc3164
         exporters:
         - google
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-  exporters:
-    google:
-      type: google_cloud_monitoring
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [hostmetrics]
-        exporters: [google]

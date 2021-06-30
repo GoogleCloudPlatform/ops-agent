@@ -97,7 +97,10 @@ func initServices() error {
 			serviceName,
 			serviceDisplayName,
 			self,
-			[]string{"-in", filepath.Join(base, "../config/config.yaml"), "-out", configOutDir},
+			[]string{
+				"-in", filepath.Join(base, "../config/config.yaml"),
+				"-out", configOutDir,
+			},
 		},
 		{
 			fmt.Sprintf("%s-opentelemetry-collector", serviceName),

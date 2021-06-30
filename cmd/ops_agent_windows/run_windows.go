@@ -24,8 +24,9 @@ func containsString(all []string, s string) bool {
 }
 
 type service struct {
-	log                  debug.Log
-	inFile, outDirectory string
+	log          debug.Log
+	userConf     string
+	outDirectory string
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -70,8 +71,9 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
-	fs.StringVar(&s.inFile, "in", "", "input filename")
-	fs.StringVar(&s.outDirectory, "out", "", "output directory")
+	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
+	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
+
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
 	return fs.Parse(allArgs)
@@ -108,11 +110,16 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 }
 
 func (s *service) generateConfigs() error {
-	data, err := ioutil.ReadFile(s.inFile)
+	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+	confDebugFolder := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "conf", "debug")
+	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows"); err != nil {
+		return err
+	}
+	data, err := ioutil.ReadFile(filepath.Join(confDebugFolder, "merged-config.yaml"))
 	if err != nil {
 		return err
 	}
-	uc, err := confgenerator.ParseUnifiedConfig(data, "windows")
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(data, "windows")
 	if err != nil {
 		return err
 	}
