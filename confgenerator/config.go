@@ -49,6 +49,19 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
+func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
+	toYaml, err := yaml.Marshal(uc)
+	if err != nil {
+		return UnifiedConfig{}, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
+	}
+	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml)
+	if err != nil {
+		return UnifiedConfig{}, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
+	}
+
+	return fromYaml, nil
+}
+
 func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	if err := yaml.UnmarshalStrict(input, &config); err != nil {

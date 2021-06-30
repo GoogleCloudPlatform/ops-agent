@@ -1,0 +1,34 @@
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      default_pipeline:
+        receivers:
+        - syslog
+        exporters:
+        - google
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      collection_interval: 60s
+  processors: {}
+  exporters:
+    google:
+      type: google_cloud_monitoring
+  service:
+    pipelines:
+      default_pipeline:
+        receivers:
+        - hostmetrics
+        processors: []
+        exporters:
+        - google

@@ -50,6 +50,7 @@ type platformConfig struct {
 	defaultLogsDir  string
 	defaultStateDir string
 	defaultConfig   string
+	builtInConfig   string
 	*host.InfoStat
 }
 
@@ -58,6 +59,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 		defaultConfig:   "default-config.yaml",
+		builtInConfig:   "built-in-config-linux.yaml",
 		InfoStat: &host.InfoStat{
 			OS:              "linux",
 			Platform:        "linux_platform",
@@ -68,6 +70,7 @@ var platforms = []platformConfig{
 		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
 		defaultConfig:   "windows-default-config.yaml",
+		builtInConfig:   "built-in-config-windows.yaml",
 		InfoStat: &host.InfoStat{
 			OS:              "windows",
 			Platform:        "win_platform",
@@ -127,14 +130,15 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
+			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
 			if testName == "default_config" {
 				userSpecifiedConfPath = platform.defaultConfig
+				builtInConfPath = platform.builtInConfig
 			}
-			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
 			if err = MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
 				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
 			}
@@ -170,8 +174,10 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 
 			// Clean up built-in and merged config now that the test passes.
-			if err = os.Remove(builtInConfPath); err != nil {
-				t.Fatalf("DeleteFile(%q) got: %v", builtInConfPath, err)
+			if testName != "default_config" {
+				if err = os.Remove(builtInConfPath); err != nil {
+					t.Fatalf("DeleteFile(%q) got: %v", builtInConfPath, err)
+				}
 			}
 			if err = os.Remove(mergedConfPath); err != nil {
 				t.Fatalf("DeleteFile(%q) got: %v", mergedConfPath, err)

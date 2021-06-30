@@ -114,7 +114,9 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 }
 
 func (s *service) generateConfigs() error {
-	confgenerator.MergeConfFiles(s.builtInConf, s.userConf, s.mergedConf, "windows")
+	if err := confgenerator.MergeConfFiles(s.builtInConf, s.userConf, s.mergedConf, "windows"); err != nil {
+		return err
+	}
 	data, err := ioutil.ReadFile(s.mergedConf)
 	if err != nil {
 		return err
