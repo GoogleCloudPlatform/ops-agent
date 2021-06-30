@@ -11,23 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-    mssql:
-      type: mssql
-      collection_interval: 60s
-    iis:
-      type: iis
-      collection_interval: 60s
-  exporters:
-    google:
-      type: google_cloud_monitoring
+logging:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics,mssql,iis]
-        exporters: [google]
+        receivers: []
+        exporters: []

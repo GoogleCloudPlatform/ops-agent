@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -42,6 +43,7 @@ var (
 	goldenOtelPath   = validTestdataDir + "/%s/%s/golden_otel.conf"
 	goldenErrorPath  = invalidTestdataDir + "/%s/%s/golden_error"
 	invalidInputPath = invalidTestdataDir + "/%s/%s/input.yaml"
+	mergedInputPath  = invalidTestdataDir + "/%s/%s/merged-config.yaml"
 )
 
 type platformConfig struct {
@@ -124,21 +126,26 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			unifiedConfigFilePath := filepath.Join(dirPath, testName, "/input.yaml")
+			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
 			if testName == "default_config" {
-				unifiedConfigFilePath = platform.defaultConfig
+				userSpecifiedConfPath = platform.defaultConfig
+			}
+			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
+			if err = MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
+				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
 			}
 
-			data, err := ioutil.ReadFile(unifiedConfigFilePath)
+			data, err := ioutil.ReadFile(mergedConfPath)
 			if err != nil {
-				t.Fatalf("ReadFile(%q) got %v", unifiedConfigFilePath, err)
+				t.Fatalf("ReadFile(%q) got: %v", userSpecifiedConfPath, err)
 			}
-			uc, err := ParseUnifiedConfig(data, platform.OS)
+			uc, err := ParseUnifiedConfigAndValidate(data, platform.OS)
 			if err != nil {
-				t.Fatalf("ParseUnifiedConfig got %v", err)
+				t.Fatalf("ParseUnifiedConfigAndValidate got: %v", err)
 			}
 
 			// Retrieve the expected golden conf files.
@@ -148,7 +155,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			// Generate the actual conf files.
 			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
-				t.Fatalf("GenerateFluentBitConfigs got %v", err)
+				t.Fatalf("GenerateFluentBitConfigs got: %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedMainConfig, mainConf, goldenMainPath)
@@ -157,10 +164,18 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			expectedOtelConfig := readFileContent(t, testName, platform.OS, goldenOtelPath, true)
 			otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 			if err != nil {
-				t.Fatalf("GenerateOtelConfig got %v", err)
+				t.Fatalf("GenerateOtelConfig got: %v", err)
 			}
 			// Compare the expected and actual and error out in case of diff.
 			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
+
+			// Clean up built-in and merged config now that the test passes.
+			if err = os.Remove(builtInConfPath); err != nil {
+				t.Fatalf("DeleteFile(%q) got: %v", builtInConfPath, err)
+			}
+			if err = os.Remove(mergedConfPath); err != nil {
+				t.Fatalf("DeleteFile(%q) got: %v", mergedConfPath, err)
+			}
 		})
 	}
 }
@@ -218,15 +233,29 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
+			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
+			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
+
 			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
 			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
-			actualError := generateConfigs(invalidInput, platform)
 
+			actualError := MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS)
+			if actualError == nil {
+				mergedInput := readFileContent(t, testName, platform.OS, mergedInputPath, false)
+				actualError = generateConfigs(mergedInput, platform)
+			}
 			if actualError == nil {
 				t.Errorf("test %q: generateConfigs succeeded, want error:\n%s\ninvalid input:\n%s", testName, expectedError, invalidInput)
 			} else {
 				updateOrCompareGolden(t, testName, platform.OS, expectedError, actualError.Error(), goldenErrorPath)
 			}
+
+			// Clean up built-in and merged config now that the test passes.
+			if err = os.Remove(builtInConfPath); err != nil {
+				t.Fatalf("DeleteFile(%q) got: %v", builtInConfPath, err)
+			}
+			os.Remove(mergedConfPath)
 		})
 	}
 }
@@ -236,7 +265,7 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
 func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
-	uc, err := ParseUnifiedConfig(invalidInput, platform.OS)
+	uc, err := ParseUnifiedConfigAndValidate(invalidInput, platform.OS)
 	if err != nil {
 		return err
 	}

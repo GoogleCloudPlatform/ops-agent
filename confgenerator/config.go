@@ -25,6 +25,16 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// TODO(lingshi): Figure out a cleaner way to do "required" validation.
+// The "omitempty" annotation is reserved to make YAML marshal/unmarshal results reasonable.
+var requiredFields = []string{
+	"channels",
+	"include_paths",
+	"listen_host",
+	"listen_port",
+	"regex",
+}
+
 // Ops Agent config.
 type UnifiedConfig struct {
 	Logging *Logging `yaml:"logging"`
@@ -39,12 +49,20 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func ParseUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
+func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	if err := yaml.UnmarshalStrict(input, &config); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
 	}
-	if err := config.Validate(platform); err != nil {
+	return config, nil
+}
+
+func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig, error) {
+	config, err := UnmarshalYamlToUnifiedConfig(input)
+	if err != nil {
+		return UnifiedConfig{}, err
+	}
+	if err = config.Validate(platform); err != nil {
 		return config, err
 	}
 	return config, nil
@@ -56,25 +74,25 @@ type configComponent struct {
 
 // Ops Agent logging config.
 type Logging struct {
-	Receivers  map[string]*LoggingReceiver  `yaml:"receivers"`
-	Processors map[string]*LoggingProcessor `yaml:"processors"`
-	Exporters  map[string]*LoggingExporter  `yaml:"exporters"`
+	Receivers  map[string]*LoggingReceiver  `yaml:"receivers,omitempty"`
+	Processors map[string]*LoggingProcessor `yaml:"processors,omitempty"`
+	Exporters  map[string]*LoggingExporter  `yaml:"exporters,omitempty"`
 	Service    *LoggingService              `yaml:"service"`
 }
 
 type LoggingReceiverFiles struct {
-	IncludePaths []string `yaml:"include_paths"`
+	IncludePaths []string `yaml:"include_paths,omitempty"`
 	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
 }
 
 type LoggingReceiverSyslog struct {
-	TransportProtocol string `yaml:"transport_protocol"` // one of "tcp" or "udp"
-	ListenHost        string `yaml:"listen_host"`
-	ListenPort        uint16 `yaml:"listen_port"`
+	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
+	ListenHost        string `yaml:"listen_host,omitempty"`
+	ListenPort        uint16 `yaml:"listen_port,omitempty"`
 }
 
 type LoggingReceiverWinevtlog struct {
-	Channels []string `yaml:"channels"`
+	Channels []string `yaml:"channels,omitempty"`
 }
 
 type LoggingReceiver struct {
@@ -92,7 +110,7 @@ type LoggingProcessorParseJson struct {
 }
 
 type LoggingProcessorParseRegex struct {
-	Regex string `yaml:"regex"`
+	Regex string `yaml:"regex,omitempty"`
 
 	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
 }
@@ -112,9 +130,9 @@ type LoggingService struct {
 }
 
 type LoggingPipeline struct {
-	Receivers  []string `yaml:"receivers"`
-	Processors []string `yaml:"processors"`
-	Exporters  []string `yaml:"exporters"`
+	ReceiverIDs  []string `yaml:"receivers,omitempty"`
+	ProcessorIDs []string `yaml:"processors,omitempty"`
+	ExporterIDs  []string `yaml:"exporters,omitempty"`
 }
 
 // Ops Agent metrics config.
@@ -213,7 +231,7 @@ func (l *Logging) Validate(platform string) error {
 	}
 	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
-		if err := validateComponentKeys(l.Receivers, p.Receivers, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
 		validProcessors := map[string]*LoggingProcessor{}
@@ -223,19 +241,19 @@ func (l *Logging) Validate(platform string) error {
 		for _, k := range defaultProcessors {
 			validProcessors[k] = nil
 		}
-		if err := validateComponentKeys(validProcessors, p.Processors, subagent, "processor", id); err != nil {
+		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentKeys(l.Exporters, p.Exporters, subagent, "exporter", id); err != nil {
+		if err := validateComponentKeys(l.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Receivers, p.Receivers, subagent, "receiver"); err != nil {
+		if err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Processors, p.Processors, subagent, "processor"); err != nil {
+		if err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Exporters, p.Exporters, subagent, "exporter"); err != nil {
+		if err := validateComponentTypeCounts(l.Exporters, p.ExporterIDs, subagent, "exporter"); err != nil {
 			return err
 		}
 	}
@@ -381,7 +399,7 @@ func collectYamlFields(s interface{}) []yamlField {
 			} else if f.PkgPath == "" { // skip private non-struct fields
 				parameters = append(parameters, yamlField{
 					Name:     n,
-					Required: !sliceContains(annotations, "omitempty"),
+					Required: sliceContains(requiredFields, n),
 					Value:    v.Interface(),
 					IsZero:   v.IsZero(),
 				})

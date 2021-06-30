@@ -24,16 +24,25 @@ import (
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	hostInfo, _ := host.Info()
-	data, err := ioutil.ReadFile(input)
-	if err != nil {
-		return err
-	}
-	uc, err := ParseUnifiedConfig(data, hostInfo.OS)
+	uc, err := ReadUnifiedConfigFromFile(input)
 	if err != nil {
 		return err
 	}
 	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
+}
+
+func ReadUnifiedConfigFromFile(path string) (UnifiedConfig, error) {
+	uc := UnifiedConfig{}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return uc, err
+	}
+	uc, err = UnmarshalYamlToUnifiedConfig(data)
+	if err != nil {
+		return uc, err
+	}
+	return uc, nil
 }
 
 func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {

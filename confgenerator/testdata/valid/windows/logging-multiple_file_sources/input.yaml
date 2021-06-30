@@ -14,9 +14,6 @@
 
 logging:
   receivers:
-    windows_event_log:
-      type: windows_event_log
-      channels: [System,Application,Security]
     log_source_id1:
       type: files
       include_paths:
@@ -33,14 +30,8 @@ logging:
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
-      default_pipeline:
-        receivers: [windows_event_log]
-        exporters: [google]
       pipeline1:
         receivers:
         - log_source_id1
@@ -53,23 +44,3 @@ logging:
         - parser_id5
         exporters:
         - google
-
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-    mssql:
-      type: mssql
-      collection_interval: 60s
-    iis:
-      type: iis
-      collection_interval: 60s
-  exporters:
-    google:
-      type: google_cloud_monitoring
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [hostmetrics,mssql,iis]
-        exporters: [google]

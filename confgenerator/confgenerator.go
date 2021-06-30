@@ -457,7 +457,7 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
-		for _, rID := range p.Receivers {
+		for _, rID := range p.ReceiverIDs {
 			if f, ok := fileReceiverFactories[rID]; ok {
 				fbTail := conf.Tail{
 					Tag:  fmt.Sprintf("%s.%s", pID, rID),
@@ -499,7 +499,7 @@ func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines
 	fbFilterParsers := []*conf.FilterParser{}
 	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
-		for _, processorID := range pipeline.Processors {
+		for _, processorID := range pipeline.ProcessorIDs {
 			p, ok := processors[processorID]
 			fbFilterParser := conf.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pID),
@@ -524,9 +524,9 @@ func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map
 	stackdriverExporters := make(map[string][]string)
 	for _, pID := range sortedKeys(pipelines) {
 		pipeline := pipelines[pID]
-		for _, exporterID := range pipeline.Exporters {
+		for _, exporterID := range pipeline.ExporterIDs {
 			// for each receiver, generate a output plugin with the specified receiver id
-			for _, rID := range pipeline.Receivers {
+			for _, rID := range pipeline.ReceiverIDs {
 				fbFilterModifyAddLogNames = append(fbFilterModifyAddLogNames, &conf.FilterModifyAddLogName{
 					Match:   fmt.Sprintf("%s.%s", pID, rID),
 					LogName: rID,

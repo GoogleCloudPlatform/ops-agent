@@ -24,8 +24,11 @@ func containsString(all []string, s string) bool {
 }
 
 type service struct {
-	log                  debug.Log
-	inFile, outDirectory string
+	log          debug.Log
+	userConf     string
+	builtInConf  string
+	mergedConf   string
+	outDirectory string
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -70,8 +73,11 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
-	fs.StringVar(&s.inFile, "in", "", "input filename")
-	fs.StringVar(&s.outDirectory, "out", "", "output directory")
+	fs.StringVar(&s.userConf, "in", "", "path to read the user specified agent config")
+	fs.StringVar(&s.builtInConf, "builtin", "", "path to write the built-in agent config for debugging purpose")
+	fs.StringVar(&s.mergedConf, "merged", "", "path to write the merged agent config for debugging purpose")
+	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
+
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
 	return fs.Parse(allArgs)
@@ -108,11 +114,12 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 }
 
 func (s *service) generateConfigs() error {
-	data, err := ioutil.ReadFile(s.inFile)
+	confgenerator.MergeConfFiles(s.builtInConf, s.userConf, s.mergedConf, "windows")
+	data, err := ioutil.ReadFile(s.mergedConf)
 	if err != nil {
 		return err
 	}
-	uc, err := confgenerator.ParseUnifiedConfig(data, "windows")
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(data, "windows")
 	if err != nil {
 		return err
 	}
