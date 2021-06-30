@@ -33,7 +33,14 @@ var confTemplate = template.Must(template.New("conf").Parse(
   {{template "iis" .}}
 {{- end}}
 processors:
-  {{template "defaultprocessor" .}}
+  {{template "systemprocessor" .}}
+  {{template "agentprocessor" .}}
+{{- if .IIS}}
+  {{template "iisprocessor" .}}
+{{- end}}
+{{- if .MSSQL}}
+  {{template "mssqlprocessor" .}}
+{{- end}}
 {{- range .ExcludeMetrics}}
   {{template "excludemetrics" .}}
 {{- end}}
@@ -146,7 +153,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
       exporters: {{.Exporters}}
 {{- end -}}
 
-{{define "defaultprocessor" -}}
+{{define "systemprocessor" -}}
   resourcedetection:
     detectors: [gce]
 
@@ -503,7 +510,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - otelcol_process_memory_rss
           - otelcol_grpc_io_client_completed_rpcs
           - otelcol_googlecloudmonitoring_point_count
+{{- end -}}
 
+{{define "iisprocessor" -}}
   # convert from windows perf counter formats to cloud monitoring formats
   googlemetricstransform/iis:
     transforms:
@@ -523,7 +532,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: combine
         new_name: iis/request_count
         submatch_case: lower
+{{- end -}}
 
+{{define "mssqlprocessor" -}}
   # convert from windows perf counter formats to cloud monitoring formats
   googlemetricstransform/mssql:
     transforms:
@@ -536,7 +547,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
       - include: \SQLServer:Databases(_Total)\Write Transactions/sec
         action: update
         new_name: mssql/write_transaction_rate
+{{- end -}}
 
+{{define "agentprocessor" -}}
   # convert from opentelemetry metric formats to cloud monitoring formats
   googlemetricstransform/agent:
     transforms:
