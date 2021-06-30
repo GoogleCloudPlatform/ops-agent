@@ -299,6 +299,7 @@ func TestTail(t *testing.T) {
     DB                 test_db
     Path               test_path
     Tag                test_tag
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -334,6 +335,7 @@ func TestTail(t *testing.T) {
     DB                 test_db
     Path               test_path
     Tag                test_tag
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -371,6 +373,7 @@ func TestTail(t *testing.T) {
     DB                 test_db
     Path               test_path
     Tag                test_tag
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -731,6 +734,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     DB                 test_db1
     Path               test_path1
     Tag                test_tag1
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -759,6 +763,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     DB                 test_db2
     Path               test_path2
     Tag                test_tag2
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -932,6 +937,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
     DB                 test_db1
     Path               test_path1
     Tag                test_tag1
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
@@ -960,6 +966,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
     DB                 test_db2
     Path               test_path2
     Tag                test_tag2
+    Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
     # Set the max size a bit larger to accommodate for long log lines.
