@@ -94,13 +94,13 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 			var pipelineID string
 			var defaultProcessors []string
 			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
-				defaultProcessors = []string{"agentmetrics/system", "filter/system", "googlemetricstransform/system", "resourcedetection"}
+				defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 				pipelineID = "system"
 			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
-				defaultProcessors = []string{"googlemetricstransform/mssql", "resourcedetection"}
+				defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
 				pipelineID = "mssql"
 			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
-				defaultProcessors = []string{"googlemetricstransform/iis", "resourcedetection"}
+				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
 			}
 
