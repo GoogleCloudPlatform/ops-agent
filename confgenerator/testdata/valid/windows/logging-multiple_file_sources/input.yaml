@@ -35,12 +35,8 @@ logging:
       pipeline1:
         receivers:
         - log_source_id1
-        exporters:
-        - google
       pipeline2:
         receivers:
         - log_source_id2
         processors:
         - parser_id5
-        exporters:
-        - google

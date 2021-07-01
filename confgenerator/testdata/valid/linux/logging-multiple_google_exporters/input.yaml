@@ -47,38 +47,24 @@ logging:
       regex: regex_pattern_5
       time_key: time_key_5
       time_format: time_format_5
-  exporters:
-    google1:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: []
-        exporters: []
       pipeline1:
         receivers:
         - log_source_id1
-        exporters:
-        - google1
       pipeline2:
         receivers:
         - log_source_id2
-        exporters:
-        - google
       pipeline3:
         receivers:
         - log_source_id3
-        exporters:
-        - google1
       pipeline4:
         receivers:
         - log_source_id4
-        exporters:
-        - google
       pipeline5:
         receivers:
         - log_source_id5
         processors:
         - parser_id5
-        exporters:
-        - google

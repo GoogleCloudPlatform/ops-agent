@@ -2,11 +2,7 @@ metrics:
   receivers:
     receiver_1:
       type: unsupported_type
-  exporters:
-    google:
-      type: google_cloud_monitoring
   service:
     pipelines:
       custom_pipeline:
         receivers: [receiver_1]
-        exporters: [google]
