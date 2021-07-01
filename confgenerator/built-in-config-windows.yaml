@@ -35,5 +35,3 @@ metrics:
         - mssql
         processors:
         - metrics_filter
-        exporters:
-        - google

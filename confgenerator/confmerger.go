@@ -111,7 +111,6 @@ var (
 						"default_pipeline": &MetricsPipeline{
 							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
 							ProcessorIDs: []string{"metrics_filter"},
-							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
