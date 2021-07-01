@@ -37,16 +37,10 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Exporters: map[string]*LoggingExporter{
-					"google": &LoggingExporter{
-						configComponent: configComponent{Type: "google_cloud_logging"},
-					},
-				},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
 							ReceiverIDs: []string{"syslog"},
-							ExporterIDs: []string{"google"},
 						},
 					},
 				},
@@ -63,17 +57,11 @@ var (
 						configComponent: configComponent{Type: "exclude_metrics"},
 					},
 				},
-				Exporters: map[string]*MetricsExporter{
-					"google": &MetricsExporter{
-						configComponent: configComponent{Type: "google_cloud_monitoring"},
-					},
-				},
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
 							ReceiverIDs:  []string{"hostmetrics"},
 							ProcessorIDs: []string{"metrics_filter"},
-							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
@@ -90,16 +78,10 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Exporters: map[string]*LoggingExporter{
-					"google": &LoggingExporter{
-						configComponent: configComponent{Type: "google_cloud_logging"},
-					},
-				},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
 							ReceiverIDs: []string{"windows_event_log"},
-							ExporterIDs: []string{"google"},
 						},
 					},
 				},
@@ -122,11 +104,6 @@ var (
 				Processors: map[string]*MetricsProcessor{
 					"metrics_filter": &MetricsProcessor{
 						configComponent: configComponent{Type: "exclude_metrics"},
-					},
-				},
-				Exporters: map[string]*MetricsExporter{
-					"google": &MetricsExporter{
-						configComponent: configComponent{Type: "google_cloud_monitoring"},
 					},
 				},
 				Service: &MetricsService{
@@ -218,6 +195,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides logging.exporters.
+		original.Logging.Exporters = map[string]*LoggingExporter{}
 		for k, v := range overrides.Logging.Exporters {
 			original.Logging.Exporters[k] = v
 		}
@@ -257,6 +235,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides metrics.exporters.
+		original.Metrics.Exporters = map[string]*MetricsExporter{}
 		for k, v := range overrides.Metrics.Exporters {
 			original.Metrics.Exporters[k] = v
 		}
