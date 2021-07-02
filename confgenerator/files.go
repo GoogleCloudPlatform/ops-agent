@@ -24,7 +24,12 @@ import (
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	uc, err := ReadUnifiedConfigFromFile(input)
+	hostInfo, _ := host.Info()
+	data, err := ioutil.ReadFile(input)
+	if err != nil {
+		return err
+	}
+	uc, err := ParseUnifiedConfigAndValidate(data, hostInfo.OS)
 	if err != nil {
 		return err
 	}
@@ -48,6 +53,8 @@ func ReadUnifiedConfigFromFile(path string) (UnifiedConfig, error) {
 func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {
 	hostInfo, _ := host.Info()
 	switch service {
+	case "": // Validate-only.
+		return nil
 	case "fluentbit":
 		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
