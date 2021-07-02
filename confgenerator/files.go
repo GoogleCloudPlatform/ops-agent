@@ -24,7 +24,12 @@ import (
 )
 
 func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	uc, err := ReadUnifiedConfigFromFile(input)
+	hostInfo, _ := host.Info()
+	data, err := ioutil.ReadFile(input)
+	if err != nil {
+		return err
+	}
+	uc, err := ParseUnifiedConfigAndValidate(data, hostInfo.OS)
 	if err != nil {
 		return err
 	}
