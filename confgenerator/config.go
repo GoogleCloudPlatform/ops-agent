@@ -16,6 +16,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"reflect"
 	"sort"
@@ -152,7 +153,7 @@ type LoggingPipeline struct {
 type Metrics struct {
 	Receivers  map[string]*MetricsReceiver  `yaml:"receivers"`
 	Processors map[string]*MetricsProcessor `yaml:"processors"`
-	Exporters  map[string]*MetricsExporter  `yaml:"exporters"`
+	Exporters  map[string]*MetricsExporter  `yaml:"exporters,omitempty"`
 	Service    *MetricsService              `yaml:"service"`
 }
 
@@ -183,7 +184,7 @@ type MetricsService struct {
 type MetricsPipeline struct {
 	ReceiverIDs  []string `yaml:"receivers"`
 	ProcessorIDs []string `yaml:"processors"`
-	ExporterIDs  []string `yaml:"exporters"`
+	ExporterIDs  []string `yaml:"exporters,omitempty"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -208,8 +209,8 @@ func (l *Logging) Validate(platform string) error {
 	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
 		return err
 	}
-	if err := validateComponentIds(l.Exporters, subagent, "exporter"); err != nil {
-		return err
+	if len(l.Exporters) > 0 {
+		log.Print(`The "metrics.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
 	}
 	for id, r := range l.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
@@ -218,11 +219,6 @@ func (l *Logging) Validate(platform string) error {
 	}
 	for id, p := range l.Processors {
 		if err := p.ValidateType(subagent, "processor", id, platform); err != nil {
-			return err
-		}
-	}
-	for id, e := range l.Exporters {
-		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
 			return err
 		}
 	}
@@ -257,17 +253,14 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentKeys(l.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
-			return err
-		}
 		if err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		}
 		if err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Exporters, p.ExporterIDs, subagent, "exporter"); err != nil {
-			return err
+		if len(p.ExporterIDs) > 0 {
+			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil
@@ -281,8 +274,8 @@ func (m *Metrics) Validate(platform string) error {
 	if err := validateComponentIds(m.Processors, subagent, "processor"); err != nil {
 		return err
 	}
-	if err := validateComponentIds(m.Exporters, subagent, "exporter"); err != nil {
-		return err
+	if len(m.Exporters) > 0 {
+		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
 	}
 	for id, r := range m.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
@@ -291,11 +284,6 @@ func (m *Metrics) Validate(platform string) error {
 	}
 	for id, p := range m.Processors {
 		if err := p.ValidateType(subagent, "processor", id, platform); err != nil {
-			return err
-		}
-	}
-	for id, e := range m.Exporters {
-		if err := e.ValidateType(subagent, "exporter", id, platform); err != nil {
 			return err
 		}
 	}
@@ -323,17 +311,14 @@ func (m *Metrics) Validate(platform string) error {
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentKeys(m.Exporters, p.ExporterIDs, subagent, "exporter", id); err != nil {
-			return err
-		}
 		if err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		}
 		if err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(m.Exporters, p.ExporterIDs, subagent, "exporter"); err != nil {
-			return err
+		if len(p.ExporterIDs) > 0 {
+			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil

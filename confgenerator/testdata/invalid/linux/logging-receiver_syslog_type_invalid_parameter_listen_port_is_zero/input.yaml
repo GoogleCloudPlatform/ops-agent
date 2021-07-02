@@ -5,11 +5,7 @@ logging:
       listen_host: "1.1.1.1"
       listen_port: 0
       transport_protocol: tcp
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: [receiver_1]
-        exporters: [google]

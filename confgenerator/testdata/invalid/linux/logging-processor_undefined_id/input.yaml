@@ -9,12 +9,8 @@ logging:
     json_processor_1:
       type: parse_json
       field: key_1
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       custom_pipeline:
         receivers: [syslog]
         processors: [json_processor_2]
-        exporters: [google]

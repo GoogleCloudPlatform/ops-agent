@@ -5,11 +5,7 @@ logging:
       include_paths:
       - /var/log/messages
       - /var/log/syslog
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       lib:pipeline_1:
         receivers: [syslog]
-        exporters: [google]

@@ -8,11 +8,7 @@ logging:
   processors:
     processor_1:
       type: unsupported_type
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: [syslog]
-        exporters: [google]

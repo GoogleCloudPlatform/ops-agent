@@ -6,11 +6,7 @@ logging:
       - /var/log/messages
       - /var/log/syslog
       listen_port: 520
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: [receiver_1]
-        exporters: [google]
