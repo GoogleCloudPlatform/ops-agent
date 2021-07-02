@@ -14,7 +14,7 @@
 
 [Unit]
 Description=Google Cloud Ops Agent
-Requires=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
+Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
 
 [Service]
 Type=oneshot
