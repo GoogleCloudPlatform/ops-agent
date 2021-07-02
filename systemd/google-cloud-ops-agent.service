@@ -14,13 +14,14 @@
 
 [Unit]
 Description=Google Cloud Ops Agent
-Requires=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
+Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
 
 [Service]
 Type=oneshot
 # Validate the config.
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 ExecStart=/bin/true
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
