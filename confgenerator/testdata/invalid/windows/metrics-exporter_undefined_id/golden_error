@@ -1,1 +1,0 @@
-metrics exporter "google_2" from pipeline "custom_pipeline" is not defined.

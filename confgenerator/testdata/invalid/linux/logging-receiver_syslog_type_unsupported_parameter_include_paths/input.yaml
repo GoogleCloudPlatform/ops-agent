@@ -6,11 +6,7 @@ logging:
       listen_port: 1111
       transport_protocol: tcp
       include_paths: [/var/log/user-log]
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: [receiver_1]
-        exporters: [google]

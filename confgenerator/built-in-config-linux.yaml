@@ -5,16 +5,11 @@ logging:
       include_paths:
       - /var/log/messages
       - /var/log/syslog
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers:
         - syslog
-        exporters:
-        - google
 metrics:
   receivers:
     hostmetrics:
@@ -24,9 +19,6 @@ metrics:
     metrics_filter:
       type: exclude_metrics
       metrics_pattern: []
-  exporters:
-    google:
-      type: google_cloud_monitoring
   service:
     pipelines:
       default_pipeline:
@@ -34,5 +26,3 @@ metrics:
         - hostmetrics
         processors:
         - metrics_filter
-        exporters:
-        - google

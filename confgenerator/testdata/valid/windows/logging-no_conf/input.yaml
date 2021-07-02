@@ -16,4 +16,3 @@ logging:
     pipelines:
       default_pipeline:
         receivers: []
-        exporters: []

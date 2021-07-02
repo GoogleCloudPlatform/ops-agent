@@ -9,11 +9,7 @@ logging:
     processor_1:
       type: parse_regex
       field: field_1
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       default_pipeline:
         receivers: [syslog]
-        exporters: [google]

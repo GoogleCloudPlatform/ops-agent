@@ -44,28 +44,19 @@ logging:
     pipelines:
       default_pipeline:
         receivers: []
-        exporters: []
       pipeline1:
         receivers:
         - log_source_id1
-        exporters:
-        - google
       pipeline2:
         receivers:
         - log_source_id2
-        exporters:
-        - google
       pipeline3:
         receivers:
         - test_syslog_source_id_tcp
         processors:
         - lib:syslog-rfc5424
-        exporters:
-        - google
       pipeline4:
         receivers:
         - test_syslog_source_id_udp
         processors:
         - lib:syslog-rfc3164
-        exporters:
-        - google

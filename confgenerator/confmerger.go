@@ -37,16 +37,10 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Exporters: map[string]*LoggingExporter{
-					"google": &LoggingExporter{
-						configComponent: configComponent{Type: "google_cloud_logging"},
-					},
-				},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
 							ReceiverIDs: []string{"syslog"},
-							ExporterIDs: []string{"google"},
 						},
 					},
 				},
@@ -63,17 +57,11 @@ var (
 						configComponent: configComponent{Type: "exclude_metrics"},
 					},
 				},
-				Exporters: map[string]*MetricsExporter{
-					"google": &MetricsExporter{
-						configComponent: configComponent{Type: "google_cloud_monitoring"},
-					},
-				},
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
 							ReceiverIDs:  []string{"hostmetrics"},
 							ProcessorIDs: []string{"metrics_filter"},
-							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
@@ -90,16 +78,10 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Exporters: map[string]*LoggingExporter{
-					"google": &LoggingExporter{
-						configComponent: configComponent{Type: "google_cloud_logging"},
-					},
-				},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
 							ReceiverIDs: []string{"windows_event_log"},
-							ExporterIDs: []string{"google"},
 						},
 					},
 				},
@@ -124,17 +106,11 @@ var (
 						configComponent: configComponent{Type: "exclude_metrics"},
 					},
 				},
-				Exporters: map[string]*MetricsExporter{
-					"google": &MetricsExporter{
-						configComponent: configComponent{Type: "google_cloud_monitoring"},
-					},
-				},
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
 							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
 							ProcessorIDs: []string{"metrics_filter"},
-							ExporterIDs:  []string{"google"},
 						},
 					},
 				},
@@ -216,13 +192,12 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		for k, v := range overrides.Logging.Processors {
 			original.Logging.Processors[k] = v
 		}
-
-		// Overrides logging.exporters.
-		for k, v := range overrides.Logging.Exporters {
-			original.Logging.Exporters[k] = v
-		}
+		// Skip deprecated logging.exporters.
+		// Override logging.service.pipelines
 		if overrides.Logging.Service != nil {
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
+				// skips logging.service.pipelines.*.exporters
+				pipeline.ExporterIDs = nil
 				if name == "default_pipeline" {
 					// overrides logging.service.pipelines.default_pipeline.receivers
 					if ids := pipeline.ReceiverIDs; ids != nil {
@@ -232,11 +207,6 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 					// overrides logging.service.pipelines.default_pipeline.processors
 					if ids := pipeline.ProcessorIDs; ids != nil {
 						original.Logging.Service.Pipelines["default_pipeline"].ProcessorIDs = ids
-					}
-
-					// overrides logging.service.pipelines.default_pipeline.exporters
-					if ids := pipeline.ExporterIDs; ids != nil {
-						original.Logging.Service.Pipelines["default_pipeline"].ExporterIDs = ids
 					}
 				} else {
 					// Overrides logging.service.pipelines.<non_default_pipelines>
@@ -257,13 +227,16 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides metrics.exporters.
+		original.Metrics.Exporters = map[string]*MetricsExporter{}
 		for k, v := range overrides.Metrics.Exporters {
 			original.Metrics.Exporters[k] = v
 		}
 
 		if overrides.Metrics.Service != nil {
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
-				// Overrides metrics.service.pipelines.<non_default_pipelines>
+				// skips metrics.service.pipelines.*.exporters
+				pipeline.ExporterIDs = nil
+				// Overrides metrics.service.pipelines.*
 				original.Metrics.Service.Pipelines[name] = pipeline
 			}
 		}

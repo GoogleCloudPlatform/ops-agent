@@ -50,6 +50,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	exporterNameMap := make(map[string]string)
 	processorNameMap := make(map[string]string)
 	if metrics != nil {
+		// Override any user-specified exporters
+		// TODO: Refactor remaining code to not consult these fields
+		metrics.Exporters = map[string]*MetricsExporter{
+			"google": &MetricsExporter{
+				configComponent: configComponent{Type: "google_cloud_monitoring"},
+			},
+		}
+		for _, p := range metrics.Service.Pipelines {
+			p.ExporterIDs = []string{"google"}
+		}
 		var err error
 		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
@@ -216,6 +226,17 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	regexParsers := []*conf.ParserRegex{}
 
 	if logging != nil && logging.Service != nil {
+		// Override any user-specified exporters
+		// TODO: Refactor remaining code to not consult these fields
+		logging.Exporters = map[string]*LoggingExporter{
+			"google": &LoggingExporter{
+				configComponent: configComponent{Type: "google_cloud_logging"},
+			},
+		}
+		for _, p := range logging.Service.Pipelines {
+			p.ExporterIDs = []string{"google"}
+		}
+
 		extractedTails := []*conf.Tail{}
 		var err error
 		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
