@@ -156,6 +156,8 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
     # 2. combines resource process metrics into metrics with processes as labels
     # 3. splits "disk.io" metrics into read & write metrics
     # 4. creates utilization metrics from usage metrics
+    blank_metrics:
+    - system.cpu.utilization
 
   # filter out metrics not currently supported by cloud monitoring
   filter/system:
@@ -194,9 +196,13 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         action: update
         new_name: cpu/utilization
         operations:
-          # change label cpu -> cpu_number
+          # take avg over cpu dimension, retaining only state label
+          - action: aggregate_labels
+            label_set: [state, blank]
+            aggregation_type: mean
+          # add blank cpu_number label
           - action: update_label
-            label: cpu
+            label: blank
             new_label: cpu_number
           # change label state -> cpu_state
           - action: update_label
