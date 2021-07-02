@@ -18,6 +18,8 @@ Requires=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opente
 
 [Service]
 Type=oneshot
+# Validate the config.
+ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -service=validate-only -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 ExecStart=/bin/true
 
 [Install]

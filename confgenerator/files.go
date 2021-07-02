@@ -72,6 +72,8 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err = writeConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
 			return err
 		}
+	case "validate-only":
+		return nil
 	default:
 		return fmt.Errorf("unknown service %q", service)
 	}
