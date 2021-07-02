@@ -133,7 +133,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         - prometheus/agent
       processors:
         - filter/agent
-        - googlemetricstransform/agent
+        - metricstransform/agent
         - resourcedetection
       exporters:
         - googlecloud/agent
@@ -150,12 +150,11 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
   resourcedetection:
     detectors: [gce]
 
-  # perform custom transformations that aren't supported by the googlemetricstransform processor
+  # perform custom transformations that aren't supported by the metricstransform processor
   agentmetrics/system:
-    # 1. converts up down sum types to gauges
-    # 2. combines resource process metrics into metrics with processes as labels
-    # 3. splits "disk.io" metrics into read & write metrics
-    # 4. creates utilization metrics from usage metrics
+    # https://github.com/GoogleCloudPlatform/opentelemetry-operations-collector/blob/master/processor/agentmetricsprocessor/agentmetricsprocessor.go#L58
+    blank_label_metrics:
+    - system.cpu.utilization
 
   # filter out metrics not currently supported by cloud monitoring
   filter/system:
@@ -172,7 +171,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - system.processes.count
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  googlemetricstransform/system:
+  metricstransform/system:
     transforms:
       # system.cpu.time -> cpu/usage_time
       - metric_name: system.cpu.time
@@ -196,12 +195,12 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         operations:
           # take avg over cpu dimension, retaining only state label
           - action: aggregate_labels
-            label_set: [state]
+            label_set: [state, blank]
             aggregation_type: mean
           # add blank cpu_number label
-          - action: add_label
+          - action: update_label
+            label: blank
             new_label: cpu_number
-            new_value: ""
           # change label state -> cpu_state
           - action: update_label
             label: state
@@ -509,7 +508,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - otelcol_googlecloudmonitoring_point_count
 
   # convert from windows perf counter formats to cloud monitoring formats
-  googlemetricstransform/iis:
+  metricstransform/iis:
     transforms:
       - include: \Web Service(_Total)\Current Connections
         action: update
@@ -529,7 +528,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         submatch_case: lower
 
   # convert from windows perf counter formats to cloud monitoring formats
-  googlemetricstransform/mssql:
+  metricstransform/mssql:
     transforms:
       - include: \SQLServer:General Statistics(_Total)\User Connections
         action: update
@@ -542,7 +541,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         new_name: mssql/write_transaction_rate
 
   # convert from opentelemetry metric formats to cloud monitoring formats
-  googlemetricstransform/agent:
+  metricstransform/agent:
     transforms:
       # otelcol_process_uptime -> agent/uptime
       - metric_name: otelcol_process_uptime
