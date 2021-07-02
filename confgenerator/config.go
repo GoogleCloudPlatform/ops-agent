@@ -210,7 +210,7 @@ func (l *Logging) Validate(platform string) error {
 		return err
 	}
 	if len(l.Exporters) > 0 {
-		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
+		log.Print(`The "metrics.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
 	}
 	for id, r := range l.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
