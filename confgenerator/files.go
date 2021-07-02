@@ -53,6 +53,8 @@ func ReadUnifiedConfigFromFile(path string) (UnifiedConfig, error) {
 func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {
 	hostInfo, _ := host.Info()
 	switch service {
+	case "": // Validate-only.
+		return nil
 	case "fluentbit":
 		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
@@ -72,8 +74,6 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err = writeConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
 			return err
 		}
-	case "validate-only":
-		return nil
 	default:
 		return fmt.Errorf("unknown service %q", service)
 	}
