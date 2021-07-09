@@ -106,7 +106,7 @@ type LoggingReceiverSyslog struct {
 }
 
 type LoggingReceiverWinevtlog struct {
-	Channels []string `yaml:"channels,omitempty"`
+	Channels []string `yaml:"channels,omitempty,flow"`
 }
 
 type LoggingReceiver struct {
@@ -144,9 +144,9 @@ type LoggingService struct {
 }
 
 type LoggingPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers,omitempty"`
-	ProcessorIDs []string `yaml:"processors,omitempty"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,omitempty,flow"`
+	ProcessorIDs []string `yaml:"processors,omitempty,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 // Ops Agent metrics config.
@@ -164,7 +164,7 @@ type MetricsReceiver struct {
 }
 
 type MetricsProcessorExcludeMetrics struct {
-	MetricsPattern []string `yaml:"metrics_pattern"`
+	MetricsPattern []string `yaml:"metrics_pattern,flow"`
 }
 
 type MetricsProcessor struct {
@@ -182,9 +182,9 @@ type MetricsService struct {
 }
 
 type MetricsPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers"`
-	ProcessorIDs []string `yaml:"processors"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,flow"`
+	ProcessorIDs []string `yaml:"processors,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
