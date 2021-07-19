@@ -244,7 +244,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 		fbTails = append(fbTails, extractedTails...)
-		fbFilterParsers, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
+		fbFilterParsers, err = logging.generateFluentBitFilters()
 		if err != nil {
 			return "", "", err
 		}
@@ -516,21 +516,42 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]*conf.FilterParser, error) {
+// TODO: Refactor this into separate receiver classes for each type
+var builtinReceiverProcessors = map[string][]string{
+	"apache_access": []string{"lib:apache2"},
+}
+
+func (lr LoggingReceiver) Processors() []string {
+	var p []string
+	p = append(p, builtinReceiverProcessors[lr.Type]...)
+	p = append(p, lr.ProcessorNames...)
+	return p
+}
+
+func (l *Logging) generateFluentBitFilters() ([]*conf.FilterParser, error) {
 	fbFilterParsers := []*conf.FilterParser{}
-	for _, pID := range sortedKeys(pipelines) {
-		pipeline := pipelines[pID]
-		for _, processorID := range pipeline.ProcessorIDs {
-			p, ok := processors[processorID]
-			fbFilterParser := conf.FilterParser{
-				Match:   fmt.Sprintf("%s.*", pID),
-				Parser:  processorID,
-				KeyName: "message",
+	addFilter := func(pID, rID, processorID string) {
+		p, ok := l.Processors[processorID]
+		fbFilterParser := conf.FilterParser{
+			Match:   fmt.Sprintf("%s.%s", pID, rID),
+			Parser:  processorID,
+			KeyName: "message",
+		}
+		if ok && p.Field != "" {
+			fbFilterParser.KeyName = p.Field
+		}
+		fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
+	}
+	for _, pID := range sortedKeys(l.Service.Pipelines) {
+		pipeline := l.Service.Pipelines[pID]
+		for _, rID := range pipeline.ReceiverIDs {
+			receiver := l.Receivers[rID]
+			// N.B. Assumes Processors() returns a new slice each call
+			ps := receiver.Processors()
+			ps = append(ps, pipeline.ProcessorIDs...)
+			for _, processorID := range ps {
+				addFilter(pID, rID, processorID)
 			}
-			if ok && p.Field != "" {
-				fbFilterParser.KeyName = p.Field
-			}
-			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 		}
 	}
 	return fbFilterParsers, nil

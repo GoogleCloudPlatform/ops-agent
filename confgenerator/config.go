@@ -112,6 +112,8 @@ type LoggingReceiverWinevtlog struct {
 type LoggingReceiver struct {
 	configComponent `yaml:",inline"`
 
+	ProcessorNames []string `yaml:"processors,omitempty"`
+
 	LoggingReceiverSyslog    `yaml:",inline"` // Type "syslog"
 	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
 	LoggingReceiverWinevtlog `yaml:",inline"` // Type "windows_event_log"
@@ -159,6 +161,8 @@ type Metrics struct {
 
 type MetricsReceiver struct {
 	configComponent `yaml:",inline"`
+
+	ProcessorNames []string `yaml:"processors,omitempty"`
 
 	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
 }
@@ -412,6 +416,9 @@ func validateParameters(s interface{}, subagent string, component string, id str
 	supportedParameters := supportedParameters[componentType]
 	// Include type when checking.
 	allParameters := []string{"type"}
+	if component == "receiver" {
+		allParameters = append(allParameters, "processors")
+	}
 	allParameters = append(allParameters, supportedParameters...)
 	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
 	parameters := collectYamlFields(s)
