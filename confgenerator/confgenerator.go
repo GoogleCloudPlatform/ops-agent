@@ -75,7 +75,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
+		serviceList, err = uc.generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -99,26 +99,40 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
+// TODO: Refactor this into separate receiver classes for each type
+var builtinMetricsReceiverProcessors = map[string][]string{
+	"hostmetrics": []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"},
+	"mssql":       []string{"metricstransform/mssql", "resourcedetection"},
+	"iis":         []string{"metricstransform/iis", "resourcedetection"},
+	"mysql":       []string{"resourcedetection"},
+}
+
+func (mr MetricsReceiver) Processors(processorNameMap map[string]string) []string {
+	var p []string
+	p = append(p, builtinMetricsReceiverProcessors[mr.Type]...)
+	for _, name := range mr.ProcessorNames {
+		p = append(p, processorNameMap[name])
+	}
+	return p
+}
+
+func (uc *UnifiedConfig) generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			var pipelineID string
-			var defaultProcessors []string
 			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
-				defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 				pipelineID = "system"
 			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
-				defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
 				pipelineID = "mssql"
 			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
-				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
 				pipelineID = "iis"
+			} else {
+				pipelineID = pID
 			}
 
-			var processorIDs []string
-			processorIDs = append(processorIDs, defaultProcessors...)
+			processorIDs := uc.Metrics.Receivers[rID].Processors(processorNameMap)
 			for _, processorID := range p.ProcessorIDs {
 				processorIDs = append(processorIDs, processorNameMap[processorID])
 			}
@@ -555,13 +569,13 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 }
 
 // TODO: Refactor this into separate receiver classes for each type
-var builtinReceiverProcessors = map[string][]string{
+var builtinLoggingReceiverProcessors = map[string][]string{
 	"apache_access": []string{"lib:apache2"},
 }
 
 func (lr LoggingReceiver) Processors() []string {
 	var p []string
-	p = append(p, builtinReceiverProcessors[lr.Type]...)
+	p = append(p, builtinLoggingReceiverProcessors[lr.Type]...)
 	p = append(p, lr.ProcessorNames...)
 	return p
 }
