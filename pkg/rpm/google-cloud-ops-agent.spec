@@ -26,9 +26,8 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 %description
 The Google Cloud Ops Agent collects metrics and logs from the system.
 
-%define _prefix /opt/%{name}
+%define _installdir /usr/libexec/%{name}
 %define _confdir /etc/%{name}
-%define _subagentdir %{_prefix}/subagents
 
 %prep
 
@@ -39,11 +38,9 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 
 %files
 %config %{_confdir}/config.yaml
-%{_subagentdir}/fluent-bit/*
-%{_subagentdir}/opentelemetry-collector/*
-# We aren't using %{_libexecdir} here because that would be lib on some
-# platforms, but the build.sh script hard-codes libexec.
-%{_prefix}/libexec/google_cloud_ops_agent_engine
+%{_installdir}/fluent-bit
+%{_installdir}/otelopscol
+%{_installdir}/google_cloud_ops_agent_engine
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
 
