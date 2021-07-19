@@ -80,6 +80,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 			return "", err
 		}
 	}
+
 	otelConfig, err := otel.Config{
 		HostMetrics:    hostMetricsList,
 		MSSQL:          mssqlList,
@@ -343,12 +344,12 @@ func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[st
 			if strings.Contains(r.Address, "/") {
 				net = "unix"
 			}
-			config := &mysql.Config{
-				User:   r.User,
-				Passwd: r.Password,
-				Net:    net,
-				Addr:   r.Address,
-			}
+			config := mysql.NewConfig()
+			config.User = r.User
+			config.Passwd = r.Password
+			config.Net = net
+			config.Addr = r.Address
+
 			prometheusExecFactories[n] = otel.PrometheusExec{
 				ID:                 n,
 				CollectionInterval: r.CollectionInterval,

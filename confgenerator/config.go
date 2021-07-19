@@ -466,7 +466,7 @@ var (
 		"linux_logging_receiver":    []string{"files", "syslog", "apache_access"},
 		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
 		"linux_logging_exporter":    []string{"google_cloud_logging"},
-		"linux_metrics_receiver":    []string{"hostmetrics"},
+		"linux_metrics_receiver":    []string{"hostmetrics", "mysql"},
 		"linux_metrics_processor":   []string{"exclude_metrics"},
 		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
 		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log", "apache_access"},
@@ -493,6 +493,7 @@ var (
 		"hostmetrics":       []string{"collection_interval"},
 		"iis":               []string{"collection_interval"},
 		"mssql":             []string{"collection_interval"},
+		"mysql":             []string{"collection_interval", "user", "password", "address"},
 		"exclude_metrics":   []string{"metrics_pattern"},
 		"apache_access":     []string{},
 	}
