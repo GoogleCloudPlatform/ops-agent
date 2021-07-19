@@ -165,6 +165,14 @@ type MetricsReceiver struct {
 	ProcessorNames []string `yaml:"processors,omitempty"`
 
 	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+
+	MetricsReceiverMySQL `yaml:",inline"`
+}
+
+type MetricsReceiverMySQL struct {
+	User     string `yaml:"user,omitempty"`
+	Password string `yaml:"password,omitempty"`
+	Address  string `yaml:"address,omitempty"`
 }
 
 type MetricsProcessorExcludeMetrics struct {

@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/fluentbit/conf"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/GoogleCloudPlatform/ops-agent/otel"
+	"github.com/go-sql-driver/mysql"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -43,6 +44,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
+	var prometheusExecList []*otel.PrometheusExec
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
 	excludeMetricsList := []*otel.ExcludeMetrics{}
@@ -61,7 +63,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 			p.ExporterIDs = []string{"google"}
 		}
 		var err error
-		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
+		hostMetricsList, mssqlList, iisList, prometheusExecList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -82,6 +84,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		HostMetrics:    hostMetricsList,
 		MSSQL:          mssqlList,
 		IIS:            iisList,
+		PrometheusExec: prometheusExecList,
 		ExcludeMetrics: excludeMetricsList,
 		Stackdriver:    stackdriverList,
 		Service:        serviceList,
@@ -301,10 +304,11 @@ type excludemetricsProcessorFactory struct {
 	MetricsPattern []string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, map[string]otel.PrometheusExec, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
+	prometheusExecFactories := map[string]otel.PrometheusExec{}
 	for n, r := range receivers {
 		switch r.Type {
 		case "hostmetrics":
@@ -319,9 +323,29 @@ func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[st
 			iisReceiverFactories[n] = &iisReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
+		case "mysql":
+			// TODO: Replace with native otel mysql receiver when ready.
+			net := "tcp"
+			if strings.Contains(r.Address, "/") {
+				net = "unix"
+			}
+			config := &mysql.Config{
+				User:   r.User,
+				Passwd: r.Password,
+				Net:    net,
+				Addr:   r.Address,
+			}
+			prometheusExecFactories[n] = otel.PrometheusExec{
+				ID:                 n,
+				CollectionInterval: r.CollectionInterval,
+				Exec:               fmt.Sprintf("mysqld_exporter --web.listen-address=:{{port}}"),
+				Env: map[string]string{
+					"DATA_SOURCE_NAME": config.FormatDSN(),
+				},
+			}
 		}
 	}
-	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
+	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, prometheusExecFactories, nil
 }
 
 func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
@@ -372,14 +396,15 @@ func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, []*otel.PrometheusExec, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
+	prometheusExecList := []*otel.PrometheusExec{}
 	receiverNameMap := make(map[string]string)
-	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
+	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, prometheusExecReceiverFactories, err := extractOtelReceiverFactories(receivers)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -408,10 +433,14 @@ func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[
 				}
 				iisList = append(iisList, &iis)
 				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
+			} else if i, ok := prometheusExecReceiverFactories[rID]; ok {
+				i := i
+				prometheusExecList = append(prometheusExecList, &i)
+				receiverNameMap[rID] = "prometheus_exec/" + rID
 			}
 		}
 	}
-	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
+	return hostMetricsList, mssqlList, iisList, prometheusExecList, receiverNameMap, nil
 }
 
 func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {

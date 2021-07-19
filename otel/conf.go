@@ -32,6 +32,9 @@ var confTemplate = template.Must(template.New("conf").Parse(
 {{- range .IIS}}
   {{template "iis" .}}
 {{- end}}
+{{- range .PrometheusExec}}
+  {{template "prometheus_exec"}}
+{{- end}}
 processors:
   {{template "defaultprocessor" .}}
 {{- range .ExcludeMetrics}}
@@ -107,6 +110,17 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
         counters:
           - Transactions/sec
           - Write Transactions/sec
+{{- end -}}
+
+{{define "prometheus_exec" -}}
+prometheus_exec/{{.ID}}:
+    scrape__interval: {{.CollectionInterval}}
+    exec: {{printf "%q" .Exec}}
+    env:
+{{range $name, $value := .Env}}
+    - name: {{printf "%q" $name}}
+      value: {{printf "%q" $value}}
+{{end}}
 {{- end -}}
 
 {{define "stackdriver" -}}
@@ -602,6 +616,13 @@ type HostMetrics struct {
 	CollectionInterval string
 }
 
+type PrometheusExec struct {
+	ID                 string
+	CollectionInterval string
+	Exec               string
+	Env                map[string]string
+}
+
 type ExcludeMetrics struct {
 	ExcludeMetricsID string
 	MetricNames      []string
@@ -624,6 +645,7 @@ type Config struct {
 	HostMetrics    []*HostMetrics
 	MSSQL          []*MSSQL
 	IIS            []*IIS
+	PrometheusExec []*PrometheusExec
 	Stackdriver    []*Stackdriver
 	Service        []*Service
 	ExcludeMetrics []*ExcludeMetrics
