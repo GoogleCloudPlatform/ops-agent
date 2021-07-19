@@ -343,6 +343,15 @@ func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for rID, r := range receivers {
 		switch r.Type {
+		case "apache_access":
+			fileReceiverFactories[rID] = &fileReceiverFactory{
+				IncludePaths: []string{
+					"/var/log/apache*/access.log",
+					"/var/log/apache*/access_log",
+					"/var/log/httpd/access.log",
+					"/var/log/httpd/access_log",
+				},
+			}
 		case "files":
 			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,

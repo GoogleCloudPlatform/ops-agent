@@ -455,13 +455,13 @@ var (
 		"lib:nginx", "lib:syslog-rfc3164", "lib:syslog-rfc5424"}
 
 	supportedComponentTypes = map[string][]string{
-		"linux_logging_receiver":    []string{"files", "syslog"},
+		"linux_logging_receiver":    []string{"files", "syslog", "apache_access"},
 		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
 		"linux_logging_exporter":    []string{"google_cloud_logging"},
 		"linux_metrics_receiver":    []string{"hostmetrics"},
 		"linux_metrics_processor":   []string{"exclude_metrics"},
 		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
-		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
+		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log", "apache_access"},
 		"windows_logging_processor": []string{"parse_json", "parse_regex"},
 		"windows_logging_exporter":  []string{"google_cloud_logging"},
 		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
@@ -486,6 +486,7 @@ var (
 		"iis":               []string{"collection_interval"},
 		"mssql":             []string{"collection_interval"},
 		"exclude_metrics":   []string{"metrics_pattern"},
+		"apache_access":     []string{},
 	}
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
