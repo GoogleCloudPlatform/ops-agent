@@ -91,7 +91,7 @@ type Logging struct {
 	Receivers  map[string]*LoggingReceiver  `yaml:"receivers,omitempty"`
 	Processors map[string]*LoggingProcessor `yaml:"processors,omitempty"`
 	Exporters  map[string]*LoggingExporter  `yaml:"exporters,omitempty"`
-	Service    *LoggingService              `yaml:"service"`
+	Service    *LoggingService              `yaml:"service,omitempty"`
 }
 
 type LoggingReceiverFiles struct {
@@ -156,7 +156,7 @@ type Metrics struct {
 	Receivers  map[string]*MetricsReceiver  `yaml:"receivers"`
 	Processors map[string]*MetricsProcessor `yaml:"processors"`
 	Exporters  map[string]*MetricsExporter  `yaml:"exporters,omitempty"`
-	Service    *MetricsService              `yaml:"service"`
+	Service    *MetricsService              `yaml:"service,omitempty"`
 }
 
 type MetricsReceiver struct {

@@ -6,11 +6,6 @@ logging:
       - System
       - Application
       - Security
-  service:
-    pipelines:
-      default_pipeline:
-        receivers:
-        - windows_event_log
 metrics:
   receivers:
     hostmetrics:
@@ -26,10 +21,3 @@ metrics:
     metrics_filter:
       type: exclude_metrics
       metrics_pattern: []
-  service:
-    pipelines:
-      default_pipeline:
-        receivers:
-        - hostmetrics
-        - iis
-        - mssql

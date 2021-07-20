@@ -37,13 +37,6 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Service: &LoggingService{
-					Pipelines: map[string]*LoggingPipeline{
-						"default_pipeline": &LoggingPipeline{
-							ReceiverIDs: []string{"syslog"},
-						},
-					},
-				},
 			},
 			Metrics: &Metrics{
 				Receivers: map[string]*MetricsReceiver{
@@ -55,13 +48,6 @@ var (
 				Processors: map[string]*MetricsProcessor{
 					"metrics_filter": &MetricsProcessor{
 						configComponent: configComponent{Type: "exclude_metrics"},
-					},
-				},
-				Service: &MetricsService{
-					Pipelines: map[string]*MetricsPipeline{
-						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs: []string{"hostmetrics"},
-						},
 					},
 				},
 			},
@@ -77,13 +63,6 @@ var (
 					},
 				},
 				Processors: map[string]*LoggingProcessor{},
-				Service: &LoggingService{
-					Pipelines: map[string]*LoggingPipeline{
-						"default_pipeline": &LoggingPipeline{
-							ReceiverIDs: []string{"windows_event_log"},
-						},
-					},
-				},
 			},
 			Metrics: &Metrics{
 				Receivers: map[string]*MetricsReceiver{
@@ -103,13 +82,6 @@ var (
 				Processors: map[string]*MetricsProcessor{
 					"metrics_filter": &MetricsProcessor{
 						configComponent: configComponent{Type: "exclude_metrics"},
-					},
-				},
-				Service: &MetricsService{
-					Pipelines: map[string]*MetricsPipeline{
-						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs: []string{"hostmetrics", "iis", "mssql"},
-						},
 					},
 				},
 			},
@@ -169,6 +141,9 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
+	defaultMetricReceivers := sortedKeys(original.Metrics.Receivers)
+	defaultLoggingReceivers := sortedKeys(original.Logging.Receivers)
+
 	// For "default_pipeline", we go one level deeper.
 	// this covers 2 cases:
 	// 1. if "<receivers / processors / exporters>: []" is specified explicitly in user config, the entity gets cleared.
@@ -193,6 +168,16 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		// Skip deprecated logging.exporters.
 		// Override logging.service.pipelines
 		if overrides.Logging.Service != nil {
+			// For backwards compatibility with existing user configs that have pipelines, add a default_pipeline.
+			if len(overrides.Logging.Service.Pipelines) > 0 {
+				original.Logging.Service = &LoggingService{
+					Pipelines: map[string]*LoggingPipeline{
+						"default_pipeline": &LoggingPipeline{
+							ReceiverIDs: defaultLoggingReceivers,
+						},
+					},
+				}
+			}
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
 				// skips logging.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil
@@ -231,6 +216,16 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		if overrides.Metrics.Service != nil {
+			// For backwards compatibility with existing user configs that have pipelines, add a default_pipeline.
+			if len(overrides.Metrics.Service.Pipelines) > 0 {
+				original.Metrics.Service = &MetricsService{
+					Pipelines: map[string]*MetricsPipeline{
+						"default_pipeline": &MetricsPipeline{
+							ReceiverIDs: defaultMetricReceivers,
+						},
+					},
+				}
+			}
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
 				// skips metrics.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil

@@ -5,11 +5,6 @@ logging:
       include_paths:
       - /var/log/messages
       - /var/log/syslog
-  service:
-    pipelines:
-      default_pipeline:
-        receivers:
-        - syslog
 metrics:
   receivers:
     hostmetrics:
@@ -19,8 +14,3 @@ metrics:
     metrics_filter:
       type: exclude_metrics
       metrics_pattern: []
-  service:
-    pipelines:
-      default_pipeline:
-        receivers:
-        - hostmetrics

@@ -38,7 +38,7 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 }
 
 func (m *Metrics) Pipelines() map[string]*MetricsPipeline {
-	if len(m.Service.Pipelines) > 0 {
+	if m.Service != nil && len(m.Service.Pipelines) > 0 {
 		// TODO: Error if there are unreferenced receivers or processoes?
 		for _, p := range m.Service.Pipelines {
 			p.ExporterIDs = []string{"google"}
@@ -56,7 +56,7 @@ func (m *Metrics) Pipelines() map[string]*MetricsPipeline {
 }
 
 func (l *Logging) Pipelines() map[string]*LoggingPipeline {
-	if len(l.Service.Pipelines) > 0 {
+	if l.Service != nil && len(l.Service.Pipelines) > 0 {
 		// TODO: Error if there are unreferenced receivers or processoes?
 		for _, p := range l.Service.Pipelines {
 			p.ExporterIDs = []string{"google"}
@@ -283,7 +283,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	jsonParsers := []*conf.ParserJSON{}
 	regexParsers := []*conf.ParserRegex{}
 
-	if logging != nil && logging.Service != nil {
+	if logging != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
 		logging.Exporters = map[string]*LoggingExporter{
