@@ -60,8 +60,7 @@ var (
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs:  []string{"hostmetrics"},
-							ProcessorIDs: []string{"metrics_filter"},
+							ReceiverIDs: []string{"hostmetrics"},
 						},
 					},
 				},
@@ -109,8 +108,7 @@ var (
 				Service: &MetricsService{
 					Pipelines: map[string]*MetricsPipeline{
 						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
-							ProcessorIDs: []string{"metrics_filter"},
+							ReceiverIDs: []string{"hostmetrics", "iis", "mssql"},
 						},
 					},
 				},

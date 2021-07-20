@@ -37,6 +37,42 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 	return filepath.Join(elem...)
 }
 
+func (m *Metrics) Pipelines() map[string]*MetricsPipeline {
+	if len(m.Service.Pipelines) > 0 {
+		// TODO: Error if there are unreferenced receivers or processoes?
+		for _, p := range m.Service.Pipelines {
+			p.ExporterIDs = []string{"google"}
+		}
+		return m.Service.Pipelines
+	}
+	out := map[string]*MetricsPipeline{}
+	for rID := range m.Receivers {
+		out[rID] = &MetricsPipeline{
+			ReceiverIDs: []string{rID},
+			ExporterIDs: []string{"google"},
+		}
+	}
+	return out
+}
+
+func (l *Logging) Pipelines() map[string]*LoggingPipeline {
+	if len(l.Service.Pipelines) > 0 {
+		// TODO: Error if there are unreferenced receivers or processoes?
+		for _, p := range l.Service.Pipelines {
+			p.ExporterIDs = []string{"google"}
+		}
+		return l.Service.Pipelines
+	}
+	out := map[string]*LoggingPipeline{}
+	for rID := range l.Receivers {
+		out[rID] = &LoggingPipeline{
+			ReceiverIDs: []string{rID},
+			ExporterIDs: []string{"google"},
+		}
+	}
+	return out
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
 	metrics := uc.Metrics
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
@@ -59,15 +95,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 				configComponent: configComponent{Type: "google_cloud_monitoring"},
 			},
 		}
-		for _, p := range metrics.Service.Pipelines {
-			p.ExporterIDs = []string{"google"}
-		}
+		pipelines := uc.Metrics.Pipelines()
 		var err error
-		hostMetricsList, mssqlList, iisList, prometheusExecList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
+		hostMetricsList, mssqlList, iisList, prometheusExecList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, pipelines)
 		if err != nil {
 			return "", err
 		}
-		stackdriverList, exporterNameMap, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
+		stackdriverList, exporterNameMap, err = generateOtelExporters(metrics.Exporters, pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -75,7 +109,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		serviceList, err = uc.generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
+		serviceList, err = uc.generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -113,6 +147,9 @@ func (mr MetricsReceiver) BuiltinProcessors() []string {
 	return builtinMetricsReceiverProcessors[mr.Type]
 }
 func (mr MetricsReceiver) Processors() []string {
+	if mr.ProcessorNames == nil {
+		return []string{"metrics_filter"}
+	}
 	var out []string
 	out = append(out, mr.ProcessorNames...)
 	return out
@@ -254,13 +291,10 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 				configComponent: configComponent{Type: "google_cloud_logging"},
 			},
 		}
-		for _, p := range logging.Service.Pipelines {
-			p.ExporterIDs = []string{"google"}
-		}
-
 		extractedTails := []*conf.Tail{}
+		pipelines := uc.Logging.Pipelines()
 		var err error
-		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
+		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, pipelines, stateDir, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -270,7 +304,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 		extractedStackdrivers := []*conf.Stackdriver{}
-		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, pipelines, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
@@ -494,8 +528,9 @@ func (uc *UnifiedConfig) generateOtelProcessors() ([]*otel.ExcludeMetrics, map[s
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, pID := range sortedKeys(uc.Metrics.Service.Pipelines) {
-		p := uc.Metrics.Service.Pipelines[pID]
+	pipelines := uc.Metrics.Pipelines()
+	for _, pID := range sortedKeys(pipelines) {
+		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			processorIDs := uc.Metrics.Receivers[rID].Processors()
 			processorIDs = append(processorIDs, p.ProcessorIDs...)
@@ -602,8 +637,9 @@ func (l *Logging) generateFluentBitFilters() ([]*conf.FilterParser, error) {
 		}
 		fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 	}
-	for _, pID := range sortedKeys(l.Service.Pipelines) {
-		pipeline := l.Service.Pipelines[pID]
+	pipelines := l.Pipelines()
+	for _, pID := range sortedKeys(pipelines) {
+		pipeline := pipelines[pID]
 		for _, rID := range pipeline.ReceiverIDs {
 			receiver := l.Receivers[rID]
 			// N.B. Assumes Processors() returns a new slice each call

@@ -195,7 +195,7 @@ type MetricsService struct {
 
 type MetricsPipeline struct {
 	ReceiverIDs  []string `yaml:"receivers"`
-	ProcessorIDs []string `yaml:"processors"`
+	ProcessorIDs []string `yaml:"processors,omitempty"`
 	ExporterIDs  []string `yaml:"exporters,omitempty"`
 }
 

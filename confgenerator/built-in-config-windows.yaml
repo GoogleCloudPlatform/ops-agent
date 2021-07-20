@@ -33,5 +33,3 @@ metrics:
         - hostmetrics
         - iis
         - mssql
-        processors:
-        - metrics_filter
