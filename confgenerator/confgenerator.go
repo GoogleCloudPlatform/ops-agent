@@ -71,7 +71,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		excludeMetricsList, processorNameMap, err = generateOtelProcessors(metrics.Processors, metrics.Service.Pipelines)
+		excludeMetricsList, processorNameMap, err = uc.generateOtelProcessors()
 		if err != nil {
 			return "", err
 		}
@@ -108,13 +108,14 @@ var builtinMetricsReceiverProcessors = map[string][]string{
 	"mysql":       []string{"resourcedetection"},
 }
 
-func (mr MetricsReceiver) Processors(processorNameMap map[string]string) []string {
-	var p []string
-	p = append(p, builtinMetricsReceiverProcessors[mr.Type]...)
-	for _, name := range mr.ProcessorNames {
-		p = append(p, processorNameMap[name])
-	}
-	return p
+func (mr MetricsReceiver) BuiltinProcessors() []string {
+	// TODO: Put the builtin processors into processorNameMap so they can just be returned from mr.Processors()
+	return builtinMetricsReceiverProcessors[mr.Type]
+}
+func (mr MetricsReceiver) Processors() []string {
+	var out []string
+	out = append(out, mr.ProcessorNames...)
+	return out
 }
 
 func (uc *UnifiedConfig) generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
@@ -133,9 +134,11 @@ func (uc *UnifiedConfig) generateOtelServices(receiverNameMap map[string]string,
 				pipelineID = pID
 			}
 
-			processorIDs := uc.Metrics.Receivers[rID].Processors(processorNameMap)
-			for _, processorID := range p.ProcessorIDs {
-				processorIDs = append(processorIDs, processorNameMap[processorID])
+			otProcessorIDs := uc.Metrics.Receivers[rID].BuiltinProcessors()
+			processorIDs := uc.Metrics.Receivers[rID].Processors()
+			processorIDs = append(processorIDs, p.ProcessorIDs...)
+			for _, processorID := range processorIDs {
+				otProcessorIDs = append(otProcessorIDs, processorNameMap[processorID])
 			}
 
 			var pExportIDs []string
@@ -145,7 +148,7 @@ func (uc *UnifiedConfig) generateOtelServices(receiverNameMap map[string]string,
 			service := otel.Service{
 				ID:         pipelineID,
 				Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
-				Processors: fmt.Sprintf("[%s]", strings.Join(processorIDs, ",")),
+				Processors: fmt.Sprintf("[%s]", strings.Join(otProcessorIDs, ",")),
 				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 			}
 			serviceList = append(serviceList, &service)
@@ -484,37 +487,41 @@ func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+func (uc *UnifiedConfig) generateOtelProcessors() ([]*otel.ExcludeMetrics, map[string]string, error) {
 	excludeMetricsList := []*otel.ExcludeMetrics{}
 	processorNameMap := make(map[string]string)
-	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
+	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(uc.Metrics.Processors)
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, pID := range sortedKeys(pipelines) {
-		p := pipelines[pID]
-		for _, processorID := range p.ProcessorIDs {
-			if _, ok := processorNameMap[processorID]; ok {
-				continue
-			}
-			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
-				var metricNames []string
-				for _, glob := range p.MetricsPattern {
-					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
-					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
-					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
-					var literals []string
-					for _, g := range strings.Split(glob, "*") {
-						literals = append(literals, regexp.QuoteMeta(g))
+	for _, pID := range sortedKeys(uc.Metrics.Service.Pipelines) {
+		p := uc.Metrics.Service.Pipelines[pID]
+		for _, rID := range p.ReceiverIDs {
+			processorIDs := uc.Metrics.Receivers[rID].Processors()
+			processorIDs = append(processorIDs, p.ProcessorIDs...)
+			for _, processorID := range processorIDs {
+				if _, ok := processorNameMap[processorID]; ok {
+					continue
+				}
+				if p, ok := excludemetricsProcessorFactories[processorID]; ok {
+					var metricNames []string
+					for _, glob := range p.MetricsPattern {
+						// TODO: Remove TrimPrefix when we support metrics with other prefixes.
+						glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+						// TODO: Move this glob to regexp into a template function inside otel/conf.go.
+						var literals []string
+						for _, g := range strings.Split(glob, "*") {
+							literals = append(literals, regexp.QuoteMeta(g))
+						}
+						metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
 					}
-					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
+					processorNameMap[processorID] = "filter/exclude_" + processorID
+					excludeMetrics := otel.ExcludeMetrics{
+						ExcludeMetricsID: processorNameMap[processorID],
+						MetricNames:      metricNames,
+					}
+					excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
 				}
-				processorNameMap[processorID] = "filter/exclude_" + processorID
-				excludeMetrics := otel.ExcludeMetrics{
-					ExcludeMetricsID: processorNameMap[processorID],
-					MetricNames:      metricNames,
-				}
-				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
 			}
 		}
 	}
