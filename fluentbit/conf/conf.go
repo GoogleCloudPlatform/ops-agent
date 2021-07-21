@@ -43,7 +43,7 @@ const (
     # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
     storage.sync               normal
     # Enable the data integrity check when writing and reading data from the filesystem.
-    storage.checksum           on
+    storage.checksum           false
     # The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
     storage.backlog.mem_limit  50M
     # Enable storage metrics in the built-in HTTP server.
