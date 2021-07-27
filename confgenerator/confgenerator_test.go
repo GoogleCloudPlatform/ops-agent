@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	validTestdataDir   = "testdata/valid"
-	invalidTestdataDir = "testdata/invalid"
-	// Relative path to the confgenerator folder.
+	// Relative paths to the confgenerator folder.
+	validTestdataDir    = "testdata/valid"
+	invalidTestdataDir  = "testdata/invalid"
 	defaultUserConfPath = "default-config.yaml"
 	// Test name inside the confgenerator/testdata/valid/{linux|windows} folders.
 	builtInConfTestName = "all-built_in_config"
