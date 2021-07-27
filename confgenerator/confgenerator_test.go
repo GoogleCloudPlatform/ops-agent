@@ -30,7 +30,10 @@ import (
 const (
 	validTestdataDir   = "testdata/valid"
 	invalidTestdataDir = "testdata/invalid"
-	defaultConfig      = "default-config.yaml"
+	// Relative path to the ops-agent/confgenerator folder.
+	defaultUserConfPath = "default-config.yaml"
+	// Test name inside ops-agent/confgenerator/testdata/valid/{linux|windows}
+	builtInConfTestName = "all-built_in_config"
 )
 
 var (
@@ -133,8 +136,8 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			// Special-case the default config.  It lives directly in the
 			// confgenerator directory.  The golden files are still in the
 			// testdata directory.
-			if testName == "default_config" {
-				userSpecifiedConfPath = defaultConfig
+			if testName == builtInConfTestName {
+				userSpecifiedConfPath = defaultUserConfPath
 				builtInConfPath = platform.builtInConfig
 			}
 			if err = mergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
@@ -172,7 +175,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			updateOrCompareGolden(t, testName, platform.OS, expectedOtelConfig, otelConf, goldenOtelPath)
 
 			// Clean up built-in and merged config now that the test passes.
-			if testName != "default_config" {
+			if testName != builtInConfTestName {
 				if err = os.Remove(builtInConfPath); err != nil {
 					t.Fatalf("DeleteFile(%q) got: %v", builtInConfPath, err)
 				}
