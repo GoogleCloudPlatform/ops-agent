@@ -30,9 +30,9 @@ import (
 const (
 	validTestdataDir   = "testdata/valid"
 	invalidTestdataDir = "testdata/invalid"
-	// Relative path to the ops-agent/confgenerator folder.
+	// Relative path to the confgenerator folder.
 	defaultUserConfPath = "default-config.yaml"
-	// Test name inside ops-agent/confgenerator/testdata/valid/{linux|windows}
+	// Test name inside the confgenerator/testdata/valid/{linux|windows} folders.
 	builtInConfTestName = "all-built_in_config"
 )
 
