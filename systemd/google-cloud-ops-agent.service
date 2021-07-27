@@ -19,7 +19,7 @@ Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelem
 [Service]
 Type=oneshot
 # Validate the config.
-ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
+ExecStartPre=@PREFIX@/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 ExecStart=/bin/true
 RemainAfterExit=yes
 
