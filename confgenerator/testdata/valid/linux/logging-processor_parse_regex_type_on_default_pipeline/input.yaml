@@ -14,7 +14,7 @@
 
 logging:
   processors:
-    parse_json_1:
+    parse_regex_1:
       type: parse_regex
       field: key_1
       regex: regex_pattern_1
@@ -23,4 +23,4 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        processors: [parse_json_1]
+        processors: [parse_regex_1]
