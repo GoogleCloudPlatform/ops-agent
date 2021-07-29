@@ -26,16 +26,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// TODO(lingshi): Figure out a cleaner way to do "required" validation.
-// The "omitempty" annotation is reserved to make YAML marshal/unmarshal results reasonable.
-var requiredFields = []string{
-	"channels",
-	"include_paths",
-	"listen_host",
-	"listen_port",
-	"regex",
-}
-
 // Ops Agent config.
 type UnifiedConfig struct {
 	Logging *Logging `yaml:"logging"`
@@ -83,7 +73,7 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 }
 
 type configComponent struct {
-	Type string `yaml:"type"`
+	Type string `yaml:"type" validate:"required"`
 }
 
 // Ops Agent logging config.
@@ -95,18 +85,18 @@ type Logging struct {
 }
 
 type LoggingReceiverFiles struct {
-	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
+	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
+	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
 }
 
 type LoggingReceiverSyslog struct {
 	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
-	ListenHost        string `yaml:"listen_host,omitempty"`
-	ListenPort        uint16 `yaml:"listen_port,omitempty"`
+	ListenHost        string `yaml:"listen_host,omitempty" validate:"required"`
+	ListenPort        uint16 `yaml:"listen_port,omitempty" validate:"required"`
 }
 
 type LoggingReceiverWinevtlog struct {
-	Channels []string `yaml:"channels,omitempty,flow"`
+	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
 }
 
 type LoggingReceiver struct {
@@ -118,13 +108,13 @@ type LoggingReceiver struct {
 }
 
 type LoggingProcessorParseJson struct {
-	Field      string `yaml:"field,omitempty"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // optional, must be provided if time_key is present
+	Field      string `yaml:"field,omitempty"`       // default to "message"
+	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
 }
 
 type LoggingProcessorParseRegex struct {
-	Regex string `yaml:"regex,omitempty"`
+	Regex string `yaml:"regex,omitempty" validate:"required"`
 
 	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
 }
@@ -160,11 +150,11 @@ type Metrics struct {
 type MetricsReceiver struct {
 	configComponent `yaml:",inline"`
 
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+	CollectionInterval string `yaml:"collection_interval" validate:"required"` // time.Duration format
 }
 
 type MetricsProcessorExcludeMetrics struct {
-	MetricsPattern []string `yaml:"metrics_pattern,flow"`
+	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
 }
 
 type MetricsProcessor struct {
@@ -395,9 +385,14 @@ func collectYamlFields(s interface{}) []yamlField {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
 			} else if f.PkgPath == "" { // skip private non-struct fields
+				t, e := f.Tag.Lookup("validate")
+				if !e {
+					t = ""
+				}
+				validation := strings.Split(t, ",")
 				parameters = append(parameters, yamlField{
 					Name:     n,
-					Required: sliceContains(requiredFields, n),
+					Required: sliceContains(validation, "required"),
 					Value:    v.Interface(),
 					IsZero:   v.IsZero(),
 				})
