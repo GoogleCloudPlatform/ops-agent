@@ -26,16 +26,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// TODO(lingshi): Figure out a cleaner way to do "required" validation.
-// The "omitempty" annotation is reserved to make YAML marshal/unmarshal results reasonable.
-var requiredFields = []string{
-	"channels",
-	"include_paths",
-	"listen_host",
-	"listen_port",
-	"regex",
-}
-
 // Ops Agent config.
 type UnifiedConfig struct {
 	Logging *Logging `yaml:"logging"`
@@ -96,11 +86,11 @@ type Logging struct {
 
 type LoggingReceiverFiles struct {
 	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
+	ExcludePaths []string `yaml:"exclude_paths,omitempty" config:"optional"`
 }
 
 type LoggingReceiverSyslog struct {
-	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
+	TransportProtocol string `yaml:"transport_protocol,omitempty" config:"optional"` // one of "tcp" or "udp"
 	ListenHost        string `yaml:"listen_host,omitempty"`
 	ListenPort        uint16 `yaml:"listen_port,omitempty"`
 }
@@ -118,9 +108,9 @@ type LoggingReceiver struct {
 }
 
 type LoggingProcessorParseJson struct {
-	Field      string `yaml:"field,omitempty"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // optional, must be provided if time_key is present
+	Field      string `yaml:"field,omitempty" config:"optional"`       // default to "message"
+	TimeKey    string `yaml:"time_key,omitempty" config:"optional"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty" config:"optional"` // must be provided if time_key is present
 }
 
 type LoggingProcessorParseRegex struct {
@@ -395,9 +385,13 @@ func collectYamlFields(s interface{}) []yamlField {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
 			} else if f.PkgPath == "" { // skip private non-struct fields
+				t, e := f.Tag.Lookup("config")
+				if !e {
+					t = ""
+				}
 				parameters = append(parameters, yamlField{
 					Name:     n,
-					Required: sliceContains(requiredFields, n),
+					Required: t != "optional",
 					Value:    v.Interface(),
 					IsZero:   v.IsZero(),
 				})
