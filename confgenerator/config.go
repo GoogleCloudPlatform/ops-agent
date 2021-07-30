@@ -117,18 +117,22 @@ type LoggingReceiver interface {
 	component
 }
 
-type LoggingReceiverFiles struct { // Type "files"
+type LoggingReceiverFiles struct {
 	configComponent `yaml:",inline"`
 
 	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
 }
 
-func init() {
-	registerLoggingReceiverType("files", func() component { return &LoggingReceiverFiles{} })
+func (r LoggingReceiverFiles) Type() string {
+	return "files"
 }
 
-type LoggingReceiverSyslog struct { // Type "syslog"
+func init() {
+	registerLoggingReceiverType(func() component { return &LoggingReceiverFiles{} })
+}
+
+type LoggingReceiverSyslog struct {
 	configComponent `yaml:",inline"`
 
 	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
@@ -136,18 +140,26 @@ type LoggingReceiverSyslog struct { // Type "syslog"
 	ListenPort        uint16 `yaml:"listen_port,omitempty" validate:"required"`
 }
 
-func init() {
-	registerLoggingReceiverType("syslog", func() component { return &LoggingReceiverSyslog{} })
+func (r LoggingReceiverSyslog) Type() string {
+	return "syslog"
 }
 
-type LoggingReceiverWinevtlog struct { // Type "windows_event_log"
+func init() {
+	registerLoggingReceiverType(func() component { return &LoggingReceiverSyslog{} })
+}
+
+type LoggingReceiverWinevtlog struct {
 	configComponent `yaml:",inline"`
 
 	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
 }
 
+func (r LoggingReceiverWinevtlog) Type() string {
+	return "windows_event_log"
+}
+
 func init() {
-	registerLoggingReceiverType("windows_event_log", func() component { return &LoggingReceiverWinevtlog{} })
+	registerLoggingReceiverType(func() component { return &LoggingReceiverWinevtlog{} })
 }
 
 var loggingReceiverTypes = &componentTypeRegistry{
@@ -155,7 +167,8 @@ var loggingReceiverTypes = &componentTypeRegistry{
 	TypeMap: map[string]func() component{},
 }
 
-func registerLoggingReceiverType(name string, constructor func() component) error {
+func registerLoggingReceiverType(constructor func() component) error {
+	name := constructor().(LoggingReceiver).Type()
 	if _, ok := loggingReceiverTypes.TypeMap[name]; ok {
 		return fmt.Errorf("Duplicate receiver type: %q", name)
 	}
