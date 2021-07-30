@@ -87,10 +87,16 @@ func (c *configComponent) Type() string {
 	return c.ComponentType
 }
 
-func unmarshalComponentYaml(typeMap map[string]func() component, inner *interface{}, unmarshal func(interface{}) error) error {
+type componentTypeRegistry struct {
+	Subagent string
+	Kind     string
+	TypeMap  map[string]func() component
+}
+
+func unmarshalComponentYaml(registry *componentTypeRegistry, inner *interface{}, unmarshal func(interface{}) error) error {
 	c := configComponent{}
 	unmarshal(&c) // Get the type; ignore the error
-	f := typeMap[c.Type()]
+	f := registry.TypeMap[c.Type()]
 	if f == nil {
 		return fmt.Errorf("Unknown type %q", c.Type())
 	}
@@ -144,13 +150,16 @@ func init() {
 	registerLoggingReceiverType("windows_event_log", func() component { return &LoggingReceiverWinevtlog{} })
 }
 
-var loggingReceiverTypes = map[string]func() component{}
+var loggingReceiverTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "receiver",
+	TypeMap: map[string]func() component{},
+}
 
 func registerLoggingReceiverType(name string, constructor func() component) error {
-	if _, ok := loggingReceiverTypes[name]; ok {
+	if _, ok := loggingReceiverTypes.TypeMap[name]; ok {
 		return fmt.Errorf("Duplicate receiver type: %q", name)
 	}
-	loggingReceiverTypes[name] = constructor
+	loggingReceiverTypes.TypeMap[name] = constructor
 	return nil
 }
 
