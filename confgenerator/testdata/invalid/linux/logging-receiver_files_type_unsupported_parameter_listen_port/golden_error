@@ -1,1 +1,2 @@
-parameter "listen_port" in "files" type logging receiver "receiver_1" is not supported. Supported parameters: [include_paths, exclude_paths].
+the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
+  line 8: field listen_port not found in type confgenerator.LoggingReceiverFiles

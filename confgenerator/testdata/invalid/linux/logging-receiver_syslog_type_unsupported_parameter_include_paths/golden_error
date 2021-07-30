@@ -1,1 +1,2 @@
-parameter "include_paths" in "syslog" type logging receiver "receiver_1" is not supported. Supported parameters: [transport_protocol, listen_host, listen_port].
+the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
+  line 8: field include_paths not found in type confgenerator.LoggingReceiverSyslog
