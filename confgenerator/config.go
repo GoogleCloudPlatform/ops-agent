@@ -72,39 +72,109 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
+type component interface {
+	Type() string
+	ValidateType(subagent string, component string, id string, platform string) error
+	ValidateParameters(subagent string, component string, id string) error
+	//Validate() error
+}
+
 type configComponent struct {
-	Type string `yaml:"type"`
+	ComponentType string `yaml:"type"`
+}
+
+func (c *configComponent) Type() string {
+	return c.ComponentType
+}
+
+func unmarshalComponentYaml(typeMap map[string]func() component, inner *interface{}, unmarshal func(interface{}) error) error {
+	c := configComponent{}
+	unmarshal(&c) // Get the type; ignore the error
+	f := typeMap[c.Type()]
+	if f == nil {
+		return fmt.Errorf("Unknown type %q", c.Type())
+	}
+	*inner = f()
+	return unmarshal(*inner)
 }
 
 // Ops Agent logging config.
+type loggingReceiverMap map[string]LoggingReceiver
 type Logging struct {
-	Receivers  map[string]*LoggingReceiver  `yaml:"receivers,omitempty"`
+	Receivers  loggingReceiverMap           `yaml:"receivers,omitempty"`
 	Processors map[string]*LoggingProcessor `yaml:"processors,omitempty"`
 	Exporters  map[string]*LoggingExporter  `yaml:"exporters,omitempty"`
 	Service    *LoggingService              `yaml:"service"`
 }
 
-type LoggingReceiverFiles struct {
+type LoggingReceiver interface {
+	component
+}
+
+type LoggingReceiverFiles struct { // Type "files"
+	configComponent `yaml:",inline"`
+
 	IncludePaths []string `yaml:"include_paths,omitempty"`
 	ExcludePaths []string `yaml:"exclude_paths,omitempty" config:"optional"`
 }
 
-type LoggingReceiverSyslog struct {
+func init() {
+	registerLoggingReceiverType("files", func() component { return &LoggingReceiverFiles{} })
+}
+
+type LoggingReceiverSyslog struct { // Type "syslog"
+	configComponent `yaml:",inline"`
+
 	TransportProtocol string `yaml:"transport_protocol,omitempty" config:"optional"` // one of "tcp" or "udp"
 	ListenHost        string `yaml:"listen_host,omitempty"`
 	ListenPort        uint16 `yaml:"listen_port,omitempty"`
 }
 
-type LoggingReceiverWinevtlog struct {
+func init() {
+	registerLoggingReceiverType("syslog", func() component { return &LoggingReceiverSyslog{} })
+}
+
+type LoggingReceiverWinevtlog struct { // Type "windows_event_log"
+	configComponent `yaml:",inline"`
+
 	Channels []string `yaml:"channels,omitempty,flow"`
 }
 
-type LoggingReceiver struct {
-	configComponent `yaml:",inline"`
+func init() {
+	registerLoggingReceiverType("windows_event_log", func() component { return &LoggingReceiverWinevtlog{} })
+}
 
-	LoggingReceiverSyslog    `yaml:",inline"` // Type "syslog"
-	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
-	LoggingReceiverWinevtlog `yaml:",inline"` // Type "windows_event_log"
+var loggingReceiverTypes = map[string]func() component{}
+
+func registerLoggingReceiverType(name string, constructor func() component) error {
+	if _, ok := loggingReceiverTypes[name]; ok {
+		return fmt.Errorf("Duplicate receiver type: %q", name)
+	}
+	loggingReceiverTypes[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingReceiverWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(loggingReceiverTypes, &l.inner, unmarshal)
+}
+
+func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingReceiverWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingReceiverMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingReceiver)
+	}
+	return nil
 }
 
 type LoggingProcessorParseJson struct {
@@ -325,29 +395,37 @@ func sliceContains(slice []string, value string) bool {
 
 func (c *configComponent) ValidateType(subagent string, kind string, id string, platform string) error {
 	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+kind]
-	if !sliceContains(supportedTypes, c.Type) {
+	if !sliceContains(supportedTypes, c.Type()) {
 		// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported.
 		// Supported metrics receiver types: [hostmetrics, iis, mssql].
 		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-			subagent, kind, id, c.Type, subagent, kind, strings.Join(supportedTypes, ", "))
+			subagent, kind, id, c.Type(), subagent, kind, strings.Join(supportedTypes, ", "))
 	}
 	return nil
 }
 
-func (r *LoggingReceiver) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type)
+func (r *LoggingReceiverFiles) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type())
+}
+
+func (r *LoggingReceiverSyslog) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type())
+}
+
+func (r *LoggingReceiverWinevtlog) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type())
 }
 
 func (p *LoggingProcessor) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type)
+	return validateParameters(*p, subagent, kind, id, p.Type())
 }
 
 func (r *MetricsReceiver) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type)
+	return validateParameters(*r, subagent, kind, id, r.Type())
 }
 
 func (p *MetricsProcessor) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type)
+	return validateParameters(*p, subagent, kind, id, p.Type())
 }
 
 type yamlField struct {
@@ -533,7 +611,11 @@ var (
 func mapKeys(m interface{}) map[string]bool {
 	keys := map[string]bool{}
 	switch m := m.(type) {
-	case map[string]*LoggingReceiver:
+	case map[string]LoggingReceiver:
+		for k := range m {
+			keys[k] = true
+		}
+	case loggingReceiverMap:
 		for k := range m {
 			keys[k] = true
 		}
@@ -619,7 +701,7 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		if !v.IsValid() {
 			continue // Some reserved ids don't map to components.
 		}
-		t := v.Elem().FieldByName("Type").String()
+		t := v.Interface().(component).Type()
 		if _, ok := r[t]; ok {
 			r[t] += 1
 		} else {

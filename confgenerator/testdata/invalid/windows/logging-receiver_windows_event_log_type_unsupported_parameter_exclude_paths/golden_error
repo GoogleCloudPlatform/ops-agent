@@ -1,1 +1,2 @@
-parameter "exclude_paths" in "windows_event_log" type logging receiver "receiver_1" is not supported. Supported parameters: [channels].
+the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
+  line 6: field exclude_paths not found in type confgenerator.LoggingReceiverWinevtlog
