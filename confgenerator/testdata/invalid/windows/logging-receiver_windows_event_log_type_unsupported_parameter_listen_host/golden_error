@@ -1,2 +1,2 @@
 the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
-  line 6: field listen_host not found in type confgenerator.LoggingReceiverWinevtlog
+  line 6: parameter "listen_host" in "windows_event_log" type logging receiver "???" is not supported. Supported parameters: [channels].

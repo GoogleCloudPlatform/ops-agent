@@ -19,6 +19,7 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -102,15 +103,39 @@ func (r *componentTypeRegistry) registerType(constructor func() component) error
 	return nil
 }
 
+var parameterErrRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
+
 func (r *componentTypeRegistry) unmarshalComponentYaml(inner *interface{}, unmarshal func(interface{}) error) error {
 	c := configComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	f := r.TypeMap[c.Type()]
 	if f == nil {
-		return fmt.Errorf("Unknown %s %s type %q", r.Subagent, r.Kind, c.Type())
+		// TODO: propagate platform into the validation code and use the supported types per platform.
+		supportedTypes := sortedKeys(r.TypeMap)
+		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+			r.Subagent, r.Kind, "???", c.Type(),
+			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
-	*inner = f()
-	return unmarshal(*inner)
+	o := f()
+	*inner = o
+	if err := unmarshal(*inner); err != nil {
+		m := parameterErrRe.FindStringSubmatchIndex(err.Error())
+		if m == nil {
+			return err
+		}
+		t := o.Type()
+		fields := collectYamlFields(o)
+		supportedParameters := []string{}
+		for _, f := range fields[1:] { // The first field is always "type".
+			supportedParameters = append(supportedParameters, f.Name)
+		}
+		n := err.Error()[m[2]:m[3]]
+		return fmt.Errorf(
+			`%s%s is not supported. Supported parameters: [%s].`, err.Error()[:m[0]],
+			parameterErrorPrefix(r.Subagent, r.Kind, "???", t, n),
+			strings.Join(supportedParameters, ", "))
+	}
+	return nil
 }
 
 // Ops Agent logging config.
@@ -925,6 +950,10 @@ func mapKeys(m interface{}) map[string]bool {
 			keys[k] = true
 		}
 	case map[string]*MetricsPipeline:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]func() component:
 		for k := range m {
 			keys[k] = true
 		}
