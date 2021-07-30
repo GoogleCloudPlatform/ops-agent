@@ -3,8 +3,6 @@ logging:
     receiver_1:
       type: files
       include_paths: ""
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       test_pipeline:
