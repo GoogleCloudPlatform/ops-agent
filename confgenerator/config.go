@@ -107,11 +107,12 @@ func unmarshalComponentYaml(registry *componentTypeRegistry, inner *interface{},
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
+type loggingExporterMap map[string]LoggingExporter
 type Logging struct {
-	Receivers  loggingReceiverMap          `yaml:"receivers,omitempty"`
-	Processors loggingProcessorMap         `yaml:"processors,omitempty"`
-	Exporters  map[string]*LoggingExporter `yaml:"exporters,omitempty"`
-	Service    *LoggingService             `yaml:"service"`
+	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty"`
+	Processors loggingProcessorMap `yaml:"processors,omitempty"`
+	Exporters  loggingExporterMap  `yaml:"exporters,omitempty"`
+	Service    *LoggingService     `yaml:"service"`
 }
 
 type LoggingReceiver interface {
@@ -280,8 +281,57 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 	return nil
 }
 
-type LoggingExporter struct {
+type LoggingExporter interface {
+	component
+}
+
+type LoggingExporterGoogleCloudLogging struct {
 	configComponent `yaml:",inline"`
+}
+
+func (r LoggingExporterGoogleCloudLogging) Type() string {
+	return "google_cloud_logging"
+}
+
+func init() {
+	registerLoggingExporterType(func() component { return &LoggingExporterGoogleCloudLogging{} })
+}
+
+var loggingExporterTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "exporter",
+	TypeMap: map[string]func() component{},
+}
+
+func registerLoggingExporterType(constructor func() component) error {
+	name := constructor().(LoggingExporter).Type()
+	if _, ok := loggingExporterTypes.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate exporter type: %q", name)
+	}
+	loggingExporterTypes.TypeMap[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingExporterWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(loggingExporterTypes, &l.inner, unmarshal)
+}
+
+func (m *loggingExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingExporterWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingExporterMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingExporter)
+	}
+	return nil
 }
 
 type LoggingService struct {
@@ -521,6 +571,10 @@ func (p *LoggingProcessorParseRegex) ValidateParameters(subagent string, kind st
 	return validateParameters(*p, subagent, kind, id, p.Type())
 }
 
+func (r *LoggingExporterGoogleCloudLogging) ValidateParameters(subagent string, kind string, id string) error {
+	panic("Should never be called")
+}
+
 func (r *MetricsReceiver) ValidateParameters(subagent string, kind string, id string) error {
 	return validateParameters(*r, subagent, kind, id, r.Type())
 }
@@ -708,7 +762,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*LoggingExporter:
+	case map[string]LoggingExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case loggingExporterMap:
 		for k := range m {
 			keys[k] = true
 		}
