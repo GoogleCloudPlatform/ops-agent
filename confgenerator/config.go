@@ -345,17 +345,104 @@ type LoggingPipeline struct {
 }
 
 // Ops Agent metrics config.
+type metricsReceiverMap map[string]MetricsReceiver
 type Metrics struct {
-	Receivers  map[string]*MetricsReceiver  `yaml:"receivers"`
+	Receivers  metricsReceiverMap           `yaml:"receivers"`
 	Processors map[string]*MetricsProcessor `yaml:"processors"`
 	Exporters  map[string]*MetricsExporter  `yaml:"exporters,omitempty"`
 	Service    *MetricsService              `yaml:"service"`
 }
 
-type MetricsReceiver struct {
+type MetricsReceiver interface {
+	component
+	GetCollectionInterval() string
+}
+
+type metricsReceiverShared struct {
+	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+}
+
+func (r *metricsReceiverShared) GetCollectionInterval() string {
+	return r.CollectionInterval
+}
+
+type MetricsReceiverHostmetrics struct {
 	configComponent `yaml:",inline"`
 
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverHostmetrics) Type() string {
+	return "hostmetrics"
+}
+
+func init() {
+	registerMetricsReceiverType(func() component { return &MetricsReceiverHostmetrics{} })
+}
+
+type MetricsReceiverIis struct {
+	configComponent `yaml:",inline"`
+
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverIis) Type() string {
+	return "iis"
+}
+
+func init() {
+	registerMetricsReceiverType(func() component { return &MetricsReceiverIis{} })
+}
+
+type MetricsReceiverMssql struct {
+	configComponent `yaml:",inline"`
+
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverMssql) Type() string {
+	return "mssql"
+}
+
+func init() {
+	registerMetricsReceiverType(func() component { return &MetricsReceiverMssql{} })
+}
+
+var metricsReceiverTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "receiver",
+	TypeMap: map[string]func() component{},
+}
+
+func registerMetricsReceiverType(constructor func() component) error {
+	name := constructor().(MetricsReceiver).Type()
+	if _, ok := metricsReceiverTypes.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate receiver type: %q", name)
+	}
+	metricsReceiverTypes.TypeMap[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsReceiverWrapper struct {
+	inner interface{}
+}
+
+func (m *metricsReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(metricsReceiverTypes, &m.inner, unmarshal)
+}
+
+func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsReceiverWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsReceiverMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsReceiver)
+	}
+	return nil
 }
 
 type MetricsProcessorExcludeMetrics struct {
@@ -575,8 +662,40 @@ func (r *LoggingExporterGoogleCloudLogging) ValidateParameters(subagent string, 
 	panic("Should never be called")
 }
 
-func (r *MetricsReceiver) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type())
+func validateSharedParameters(r MetricsReceiver, subagent string, kind string, id string) error {
+	if err := validateParameters(r, subagent, kind, id, r.Type()); err != nil {
+		return err
+	}
+
+	validateCollectionInterval := func(collectionInterval string) error {
+		t, err := time.ParseDuration(collectionInterval)
+		if err != nil {
+			return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
+		}
+		interval := t.Seconds()
+		if interval < 10 {
+			return fmt.Errorf(`below the minimum threshold of "10s".`)
+		}
+		return nil
+	}
+
+	collectionInterval := r.GetCollectionInterval()
+	if err := validateCollectionInterval(collectionInterval); err != nil {
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "collection_interval"), collectionInterval, err)
+	}
+	return nil
+}
+
+func (r *MetricsReceiverHostmetrics) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
+}
+
+func (r *MetricsReceiverIis) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
+}
+
+func (r *MetricsReceiverMssql) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
 }
 
 func (p *MetricsProcessor) ValidateParameters(subagent string, kind string, id string) error {
@@ -632,7 +751,11 @@ func collectYamlFields(s interface{}) []yamlField {
 		}
 		return parameters
 	}
-	return recurse(reflect.ValueOf(s))
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return recurse(v)
 }
 
 func validateParameters(s interface{}, subagent string, kind string, id string, componentType string) error {
@@ -697,30 +820,10 @@ var (
 	}
 
 	supportedParameters = map[string][]string{
-		"hostmetrics":     []string{"collection_interval"},
-		"iis":             []string{"collection_interval"},
-		"mssql":           []string{"collection_interval"},
 		"exclude_metrics": []string{"metrics_pattern"},
 	}
 
-	collectionIntervalValidation = map[string]func(interface{}) error{
-		"collection_interval": func(v interface{}) error {
-			t, err := time.ParseDuration(v.(string))
-			if err != nil {
-				return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
-			}
-			interval := t.Seconds()
-			if interval < 10 {
-				return fmt.Errorf(`below the minimum threshold of "10s".`)
-			}
-			return nil
-		},
-	}
-
 	additionalParameterValidation = map[string]map[string]func(interface{}) error{
-		"hostmetrics": collectionIntervalValidation,
-		"iis":         collectionIntervalValidation,
-		"mssql":       collectionIntervalValidation,
 		"exclude_metrics": map[string]func(interface{}) error{
 			"metrics_pattern": func(v interface{}) error {
 				var errors []string
@@ -774,7 +877,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsReceiver:
+	case map[string]MetricsReceiver:
+		for k := range m {
+			keys[k] = true
+		}
+	case metricsReceiverMap:
 		for k := range m {
 			keys[k] = true
 		}
