@@ -228,8 +228,8 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	if logging != nil && logging.Service != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
-		logging.Exporters = map[string]*LoggingExporter{
-			"google": &LoggingExporter{
+		logging.Exporters = map[string]LoggingExporter{
+			"google": &LoggingExporterGoogleCloudLogging{
 				configComponent: configComponent{ComponentType: "google_cloud_logging"},
 			},
 		}
@@ -546,7 +546,7 @@ func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines 
 	return groups, nil
 }
 
-func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
+func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
 	[]*fluentbit.FilterModifyAddLogName, []*fluentbit.FilterRewriteTag, []*fluentbit.FilterModifyRemoveLogName, []*fluentbit.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*fluentbit.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
