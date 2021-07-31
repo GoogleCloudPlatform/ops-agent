@@ -1,1 +1,1 @@
-the agent config file is not valid YAML. detailed error: Unknown type "unsupported_type"
+the agent config file is not valid YAML. detailed error: Unknown metrics processor type "unsupported_type"

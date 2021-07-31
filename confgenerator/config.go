@@ -93,12 +93,21 @@ type componentTypeRegistry struct {
 	TypeMap  map[string]func() component
 }
 
-func unmarshalComponentYaml(registry *componentTypeRegistry, inner *interface{}, unmarshal func(interface{}) error) error {
+func (r *componentTypeRegistry) registerType(constructor func() component) error {
+	name := constructor().(component).Type()
+	if _, ok := r.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate %s %s type: %q", r.Subagent, r.Kind, name)
+	}
+	r.TypeMap[name] = constructor
+	return nil
+}
+
+func (r *componentTypeRegistry) unmarshalComponentYaml(inner *interface{}, unmarshal func(interface{}) error) error {
 	c := configComponent{}
 	unmarshal(&c) // Get the type; ignore the error
-	f := registry.TypeMap[c.Type()]
+	f := r.TypeMap[c.Type()]
 	if f == nil {
-		return fmt.Errorf("Unknown type %q", c.Type())
+		return fmt.Errorf("Unknown %s %s type %q", r.Subagent, r.Kind, c.Type())
 	}
 	*inner = f()
 	return unmarshal(*inner)
@@ -131,7 +140,7 @@ func (r LoggingReceiverFiles) Type() string {
 }
 
 func init() {
-	registerLoggingReceiverType(func() component { return &LoggingReceiverFiles{} })
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
 }
 
 type LoggingReceiverSyslog struct {
@@ -147,7 +156,7 @@ func (r LoggingReceiverSyslog) Type() string {
 }
 
 func init() {
-	registerLoggingReceiverType(func() component { return &LoggingReceiverSyslog{} })
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
 }
 
 type LoggingReceiverWinevtlog struct {
@@ -161,21 +170,12 @@ func (r LoggingReceiverWinevtlog) Type() string {
 }
 
 func init() {
-	registerLoggingReceiverType(func() component { return &LoggingReceiverWinevtlog{} })
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} })
 }
 
 var loggingReceiverTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "receiver",
 	TypeMap: map[string]func() component{},
-}
-
-func registerLoggingReceiverType(constructor func() component) error {
-	name := constructor().(LoggingReceiver).Type()
-	if _, ok := loggingReceiverTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate receiver type: %q", name)
-	}
-	loggingReceiverTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -184,7 +184,7 @@ type loggingReceiverWrapper struct {
 }
 
 func (l *loggingReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(loggingReceiverTypes, &l.inner, unmarshal)
+	return loggingReceiverTypes.unmarshalComponentYaml(&l.inner, unmarshal)
 }
 
 func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -226,7 +226,7 @@ func (r LoggingProcessorParseJson) Type() string {
 }
 
 func init() {
-	registerLoggingProcessorType(func() component { return &LoggingProcessorParseJson{} })
+	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
 }
 
 type LoggingProcessorParseRegex struct {
@@ -241,21 +241,12 @@ func (r LoggingProcessorParseRegex) Type() string {
 }
 
 func init() {
-	registerLoggingProcessorType(func() component { return &LoggingProcessorParseRegex{} })
+	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseRegex{} })
 }
 
 var loggingProcessorTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "processor",
 	TypeMap: map[string]func() component{},
-}
-
-func registerLoggingProcessorType(constructor func() component) error {
-	name := constructor().(LoggingProcessor).Type()
-	if _, ok := loggingProcessorTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate processor type: %q", name)
-	}
-	loggingProcessorTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -264,7 +255,7 @@ type loggingProcessorWrapper struct {
 }
 
 func (l *loggingProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(loggingProcessorTypes, &l.inner, unmarshal)
+	return loggingProcessorTypes.unmarshalComponentYaml(&l.inner, unmarshal)
 }
 
 func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -294,21 +285,12 @@ func (r LoggingExporterGoogleCloudLogging) Type() string {
 }
 
 func init() {
-	registerLoggingExporterType(func() component { return &LoggingExporterGoogleCloudLogging{} })
+	loggingExporterTypes.registerType(func() component { return &LoggingExporterGoogleCloudLogging{} })
 }
 
 var loggingExporterTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "exporter",
 	TypeMap: map[string]func() component{},
-}
-
-func registerLoggingExporterType(constructor func() component) error {
-	name := constructor().(LoggingExporter).Type()
-	if _, ok := loggingExporterTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate exporter type: %q", name)
-	}
-	loggingExporterTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -317,7 +299,7 @@ type loggingExporterWrapper struct {
 }
 
 func (l *loggingExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(loggingExporterTypes, &l.inner, unmarshal)
+	return loggingExporterTypes.unmarshalComponentYaml(&l.inner, unmarshal)
 }
 
 func (m *loggingExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -379,7 +361,7 @@ func (r MetricsReceiverHostmetrics) Type() string {
 }
 
 func init() {
-	registerMetricsReceiverType(func() component { return &MetricsReceiverHostmetrics{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverHostmetrics{} })
 }
 
 type MetricsReceiverIis struct {
@@ -393,7 +375,7 @@ func (r MetricsReceiverIis) Type() string {
 }
 
 func init() {
-	registerMetricsReceiverType(func() component { return &MetricsReceiverIis{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} })
 }
 
 type MetricsReceiverMssql struct {
@@ -407,21 +389,12 @@ func (r MetricsReceiverMssql) Type() string {
 }
 
 func init() {
-	registerMetricsReceiverType(func() component { return &MetricsReceiverMssql{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} })
 }
 
 var metricsReceiverTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "receiver",
 	TypeMap: map[string]func() component{},
-}
-
-func registerMetricsReceiverType(constructor func() component) error {
-	name := constructor().(MetricsReceiver).Type()
-	if _, ok := metricsReceiverTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate receiver type: %q", name)
-	}
-	metricsReceiverTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -430,7 +403,7 @@ type metricsReceiverWrapper struct {
 }
 
 func (m *metricsReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(metricsReceiverTypes, &m.inner, unmarshal)
+	return metricsReceiverTypes.unmarshalComponentYaml(&m.inner, unmarshal)
 }
 
 func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -462,21 +435,12 @@ func (r MetricsProcessorExcludeMetrics) Type() string {
 }
 
 func init() {
-	registerMetricsProcessorType(func() component { return &MetricsProcessorExcludeMetrics{} })
+	metricsProcessorTypes.registerType(func() component { return &MetricsProcessorExcludeMetrics{} })
 }
 
 var metricsProcessorTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "processor",
 	TypeMap: map[string]func() component{},
-}
-
-func registerMetricsProcessorType(constructor func() component) error {
-	name := constructor().(MetricsProcessor).Type()
-	if _, ok := metricsProcessorTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate processor type: %q", name)
-	}
-	metricsProcessorTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -485,7 +449,7 @@ type metricsProcessorWrapper struct {
 }
 
 func (m *metricsProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(metricsProcessorTypes, &m.inner, unmarshal)
+	return metricsProcessorTypes.unmarshalComponentYaml(&m.inner, unmarshal)
 }
 
 func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -515,21 +479,12 @@ func (r MetricsExporterGoogleCloudMonitoring) Type() string {
 }
 
 func init() {
-	registerMetricsExporterType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
+	metricsExporterTypes.registerType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
 }
 
 var metricsExporterTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "exporter",
 	TypeMap: map[string]func() component{},
-}
-
-func registerMetricsExporterType(constructor func() component) error {
-	name := constructor().(MetricsExporter).Type()
-	if _, ok := metricsExporterTypes.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate exporter type: %q", name)
-	}
-	metricsExporterTypes.TypeMap[name] = constructor
-	return nil
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -538,7 +493,7 @@ type metricsExporterWrapper struct {
 }
 
 func (l *metricsExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	return unmarshalComponentYaml(metricsExporterTypes, &l.inner, unmarshal)
+	return metricsExporterTypes.unmarshalComponentYaml(&l.inner, unmarshal)
 }
 
 func (m *metricsExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
