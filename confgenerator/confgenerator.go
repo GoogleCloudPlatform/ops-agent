@@ -519,7 +519,7 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]fluentbit.FilterParserGroup, error) {
+func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]fluentbit.FilterParserGroup, error) {
 	// Note: Keep each pipeline's filters in a separate group, because
 	// the order within that group is important, even though the order
 	// of the groups themselves does not matter.
@@ -534,8 +534,8 @@ func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines
 				Parser:  processorID,
 				KeyName: "message",
 			}
-			if ok && p.Field != "" {
-				fbFilterParser.KeyName = p.Field
+			if ok && p.GetField() != "" {
+				fbFilterParser.KeyName = p.GetField()
 			}
 			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 		}
@@ -582,13 +582,14 @@ func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
 }
 
-func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*fluentbit.ParserJSON, []*fluentbit.ParserRegex, error) {
+func extractFluentBitParsers(processors map[string]LoggingProcessor) ([]*fluentbit.ParserJSON, []*fluentbit.ParserRegex, error) {
 	fbJSONParsers := []*fluentbit.ParserJSON{}
 	fbRegexParsers := []*fluentbit.ParserRegex{}
 	for _, name := range sortedKeys(processors) {
 		p := processors[name]
 		switch t := p.Type(); t {
 		case "parse_json":
+			p := p.(*LoggingProcessorParseJson)
 			fbJSONParser := fluentbit.ParserJSON{
 				Name:       name,
 				TimeKey:    p.TimeKey,
@@ -596,6 +597,7 @@ func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*fluent
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
+			p := p.(*LoggingProcessorParseRegex)
 			fbRegexParser := fluentbit.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,

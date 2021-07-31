@@ -34,7 +34,7 @@ var (
 						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
 					},
 				},
-				Processors: map[string]*LoggingProcessor{},
+				Processors: map[string]LoggingProcessor{},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
@@ -73,7 +73,7 @@ var (
 						Channels:        []string{"System", "Application", "Security"},
 					},
 				},
-				Processors: map[string]*LoggingProcessor{},
+				Processors: map[string]LoggingProcessor{},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
@@ -184,7 +184,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides logging.processors.
-		original.Logging.Processors = map[string]*LoggingProcessor{}
+		original.Logging.Processors = map[string]LoggingProcessor{}
 		for k, v := range overrides.Logging.Processors {
 			original.Logging.Processors[k] = v
 		}
