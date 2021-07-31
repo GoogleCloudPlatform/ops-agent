@@ -52,8 +52,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	if metrics != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
-		metrics.Exporters = map[string]*MetricsExporter{
-			"google": &MetricsExporter{
+		metrics.Exporters = map[string]MetricsExporter{
+			"google": &MetricsExporterGoogleCloudMonitoring{
 				configComponent: configComponent{ComponentType: "google_cloud_monitoring"},
 			},
 		}
@@ -412,7 +412,7 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
-func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
+func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
 	for _, pID := range sortedKeys(pipelines) {
