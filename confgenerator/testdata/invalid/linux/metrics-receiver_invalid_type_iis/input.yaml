@@ -1,0 +1,9 @@
+metrics:
+  receivers:
+    receiver_1:
+      type: iis
+      collection_interval: 60s
+  service:
+    pipelines:
+      custom_pipeline:
+        receivers: [receiver_1]

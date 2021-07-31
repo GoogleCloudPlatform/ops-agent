@@ -1,0 +1,9 @@
+metrics:
+  receivers:
+    receiver_1:
+      type: mssql
+      collection_interval: 60s
+  service:
+    pipelines:
+      custom_pipeline:
+        receivers: [receiver_1]
