@@ -347,11 +347,12 @@ type LoggingPipeline struct {
 // Ops Agent metrics config.
 type metricsReceiverMap map[string]MetricsReceiver
 type metricsProcessorMap map[string]MetricsProcessor
+type metricsExporterMap map[string]MetricsExporter
 type Metrics struct {
-	Receivers  metricsReceiverMap          `yaml:"receivers"`
-	Processors metricsProcessorMap         `yaml:"processors"`
-	Exporters  map[string]*MetricsExporter `yaml:"exporters,omitempty"`
-	Service    *MetricsService             `yaml:"service"`
+	Receivers  metricsReceiverMap  `yaml:"receivers"`
+	Processors metricsProcessorMap `yaml:"processors"`
+	Exporters  metricsExporterMap  `yaml:"exporters,omitempty"`
+	Service    *MetricsService     `yaml:"service"`
 }
 
 type MetricsReceiver interface {
@@ -501,8 +502,57 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 	return nil
 }
 
-type MetricsExporter struct {
+type MetricsExporter interface {
+	component
+}
+
+type MetricsExporterGoogleCloudMonitoring struct {
 	configComponent `yaml:",inline"`
+}
+
+func (r MetricsExporterGoogleCloudMonitoring) Type() string {
+	return "google_cloud_monitoring"
+}
+
+func init() {
+	registerMetricsExporterType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
+}
+
+var metricsExporterTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "exporter",
+	TypeMap: map[string]func() component{},
+}
+
+func registerMetricsExporterType(constructor func() component) error {
+	name := constructor().(MetricsExporter).Type()
+	if _, ok := metricsExporterTypes.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate exporter type: %q", name)
+	}
+	metricsExporterTypes.TypeMap[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsExporterWrapper struct {
+	inner interface{}
+}
+
+func (l *metricsExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(metricsExporterTypes, &l.inner, unmarshal)
+}
+
+func (m *metricsExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsExporterWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsExporterMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsExporter)
+	}
+	return nil
 }
 
 type MetricsService struct {
@@ -765,6 +815,10 @@ func (p *MetricsProcessorExcludeMetrics) ValidateParameters(subagent string, kin
 	return nil
 }
 
+func (r *MetricsExporterGoogleCloudMonitoring) ValidateParameters(subagent string, kind string, id string) error {
+	panic("Should never be called")
+}
+
 type yamlField struct {
 	Name     string
 	Required bool
@@ -909,7 +963,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsExporter:
+	case map[string]MetricsExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case metricsExporterMap:
 		for k := range m {
 			keys[k] = true
 		}

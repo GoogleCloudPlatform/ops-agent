@@ -223,7 +223,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides metrics.exporters.
-		original.Metrics.Exporters = map[string]*MetricsExporter{}
+		original.Metrics.Exporters = map[string]MetricsExporter{}
 		for k, v := range overrides.Metrics.Exporters {
 			original.Metrics.Exporters[k] = v
 		}
