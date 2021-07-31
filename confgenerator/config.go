@@ -106,11 +106,12 @@ func unmarshalComponentYaml(registry *componentTypeRegistry, inner *interface{},
 
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
+type loggingProcessorMap map[string]LoggingProcessor
 type Logging struct {
-	Receivers  loggingReceiverMap           `yaml:"receivers,omitempty"`
-	Processors map[string]*LoggingProcessor `yaml:"processors,omitempty"`
-	Exporters  map[string]*LoggingExporter  `yaml:"exporters,omitempty"`
-	Service    *LoggingService              `yaml:"service"`
+	Receivers  loggingReceiverMap          `yaml:"receivers,omitempty"`
+	Processors loggingProcessorMap         `yaml:"processors,omitempty"`
+	Exporters  map[string]*LoggingExporter `yaml:"exporters,omitempty"`
+	Service    *LoggingService             `yaml:"service"`
 }
 
 type LoggingReceiver interface {
@@ -199,22 +200,84 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
-type LoggingProcessorParseJson struct {
+type LoggingProcessor interface {
+	component
+	GetField() string
+}
+
+type loggingProcessorParseShared struct {
 	Field      string `yaml:"field,omitempty" config:"optional"`       // default to "message"
 	TimeKey    string `yaml:"time_key,omitempty" config:"optional"`    // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty" config:"optional"` // must be provided if time_key is present
 }
 
-type LoggingProcessorParseRegex struct {
-	Regex string `yaml:"regex,omitempty"`
-
-	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
+func (p loggingProcessorParseShared) GetField() string {
+	return p.Field
 }
 
-type LoggingProcessor struct {
-	configComponent `yaml:",inline"`
+type LoggingProcessorParseJson struct {
+	configComponent             `yaml:",inline"`
+	loggingProcessorParseShared `yaml:",inline"`
+}
 
-	LoggingProcessorParseRegex `yaml:",inline"` // Type "parse_json" or "parse_regex"
+func (r LoggingProcessorParseJson) Type() string {
+	return "parse_json"
+}
+
+func init() {
+	registerLoggingProcessorType(func() component { return &LoggingProcessorParseJson{} })
+}
+
+type LoggingProcessorParseRegex struct {
+	configComponent             `yaml:",inline"`
+	loggingProcessorParseShared `yaml:",inline"`
+
+	Regex string `yaml:"regex,omitempty"`
+}
+
+func (r LoggingProcessorParseRegex) Type() string {
+	return "parse_regex"
+}
+
+func init() {
+	registerLoggingProcessorType(func() component { return &LoggingProcessorParseRegex{} })
+}
+
+var loggingProcessorTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "processor",
+	TypeMap: map[string]func() component{},
+}
+
+func registerLoggingProcessorType(constructor func() component) error {
+	name := constructor().(LoggingProcessor).Type()
+	if _, ok := loggingProcessorTypes.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate processor type: %q", name)
+	}
+	loggingProcessorTypes.TypeMap[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingProcessorWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(loggingProcessorTypes, &l.inner, unmarshal)
+}
+
+func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingProcessorWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingProcessorMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingProcessor)
+	}
+	return nil
 }
 
 type LoggingExporter struct {
@@ -325,7 +388,7 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
-		validProcessors := map[string]*LoggingProcessor{}
+		validProcessors := map[string]LoggingProcessor{}
 		for k, v := range l.Processors {
 			validProcessors[k] = v
 		}
@@ -450,7 +513,11 @@ func (r *LoggingReceiverWinevtlog) ValidateParameters(subagent string, kind stri
 	return validateParameters(*r, subagent, kind, id, r.Type())
 }
 
-func (p *LoggingProcessor) ValidateParameters(subagent string, kind string, id string) error {
+func (p *LoggingProcessorParseJson) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*p, subagent, kind, id, p.Type())
+}
+
+func (p *LoggingProcessorParseRegex) ValidateParameters(subagent string, kind string, id string) error {
 	return validateParameters(*p, subagent, kind, id, p.Type())
 }
 
@@ -576,8 +643,6 @@ var (
 	}
 
 	supportedParameters = map[string][]string{
-		"parse_json":      []string{"field", "time_key", "time_format"},
-		"parse_regex":     []string{"field", "time_key", "time_format", "regex"},
 		"hostmetrics":     []string{"collection_interval"},
 		"iis":             []string{"collection_interval"},
 		"mssql":           []string{"collection_interval"},
@@ -635,7 +700,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*LoggingProcessor:
+	case map[string]LoggingProcessor:
+		for k := range m {
+			keys[k] = true
+		}
+	case loggingProcessorMap:
 		for k := range m {
 			keys[k] = true
 		}
