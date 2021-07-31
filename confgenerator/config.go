@@ -431,7 +431,19 @@ func (r *LoggingReceiverFiles) ValidateParameters(subagent string, kind string, 
 }
 
 func (r *LoggingReceiverSyslog) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type())
+	if err := validateParameters(*r, subagent, kind, id, r.Type()); err != nil {
+		return err
+	}
+	validProtocolValues := []string{"tcp", "udp"}
+	if !sliceContains(validProtocolValues, r.TransportProtocol) {
+		err := fmt.Errorf(`must be one of [%s].`, strings.Join(validProtocolValues, ", "))
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "transport_protocol"), r.TransportProtocol, err)
+	}
+	if net.ParseIP(r.ListenHost) == nil {
+		err := fmt.Errorf(`must be a valid IP.`)
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "listen_host"), r.ListenHost, err)
+	}
+	return nil
 }
 
 func (r *LoggingReceiverWinevtlog) ValidateParameters(subagent string, kind string, id string) error {
@@ -508,7 +520,7 @@ func validateParameters(s interface{}, subagent string, kind string, id string, 
 	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
 	parameters := collectYamlFields(s)
 	for _, p := range parameters {
-		if !sliceContains(allParameters, p.Name) {
+		if supportedParameters != nil && !sliceContains(allParameters, p.Name) {
 			if !p.IsZero {
 				// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
 				// Supported parameters: [include_paths, exclude_paths].
@@ -562,15 +574,12 @@ var (
 	}
 
 	supportedParameters = map[string][]string{
-		"files":             []string{"include_paths", "exclude_paths"},
-		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
-		"windows_event_log": []string{"channels"},
-		"parse_json":        []string{"field", "time_key", "time_format"},
-		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
-		"hostmetrics":       []string{"collection_interval"},
-		"iis":               []string{"collection_interval"},
-		"mssql":             []string{"collection_interval"},
-		"exclude_metrics":   []string{"metrics_pattern"},
+		"parse_json":      []string{"field", "time_key", "time_format"},
+		"parse_regex":     []string{"field", "time_key", "time_format", "regex"},
+		"hostmetrics":     []string{"collection_interval"},
+		"iis":             []string{"collection_interval"},
+		"mssql":           []string{"collection_interval"},
+		"exclude_metrics": []string{"metrics_pattern"},
 	}
 
 	collectionIntervalValidation = map[string]func(interface{}) error{
@@ -588,21 +597,6 @@ var (
 	}
 
 	additionalParameterValidation = map[string]map[string]func(interface{}) error{
-		"syslog": map[string]func(interface{}) error{
-			"transport_protocol": func(v interface{}) error {
-				validValues := []string{"tcp", "udp"}
-				if !sliceContains(validValues, v.(string)) {
-					return fmt.Errorf(`must be one of [%s].`, strings.Join(validValues, ", "))
-				}
-				return nil
-			},
-			"listen_host": func(v interface{}) error {
-				if net.ParseIP(v.(string)) == nil {
-					return fmt.Errorf(`must be a valid IP.`)
-				}
-				return nil
-			},
-		},
 		"hostmetrics": collectionIntervalValidation,
 		"iis":         collectionIntervalValidation,
 		"mssql":       collectionIntervalValidation,
