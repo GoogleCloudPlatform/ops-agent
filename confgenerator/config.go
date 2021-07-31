@@ -346,11 +346,12 @@ type LoggingPipeline struct {
 
 // Ops Agent metrics config.
 type metricsReceiverMap map[string]MetricsReceiver
+type metricsProcessorMap map[string]MetricsProcessor
 type Metrics struct {
-	Receivers  metricsReceiverMap           `yaml:"receivers"`
-	Processors map[string]*MetricsProcessor `yaml:"processors"`
-	Exporters  map[string]*MetricsExporter  `yaml:"exporters,omitempty"`
-	Service    *MetricsService              `yaml:"service"`
+	Receivers  metricsReceiverMap          `yaml:"receivers"`
+	Processors metricsProcessorMap         `yaml:"processors"`
+	Exporters  map[string]*MetricsExporter `yaml:"exporters,omitempty"`
+	Service    *MetricsService             `yaml:"service"`
 }
 
 type MetricsReceiver interface {
@@ -445,14 +446,59 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 	return nil
 }
 
+type MetricsProcessor interface {
+	component
+}
+
 type MetricsProcessorExcludeMetrics struct {
+	configComponent `yaml:",inline"`
+
 	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
 }
 
-type MetricsProcessor struct {
-	configComponent `yaml:",inline"`
+func (r MetricsProcessorExcludeMetrics) Type() string {
+	return "exclude_metrics"
+}
 
-	MetricsProcessorExcludeMetrics `yaml:",inline"` // Type "exclude_metrics"
+func init() {
+	registerMetricsProcessorType(func() component { return &MetricsProcessorExcludeMetrics{} })
+}
+
+var metricsProcessorTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "processor",
+	TypeMap: map[string]func() component{},
+}
+
+func registerMetricsProcessorType(constructor func() component) error {
+	name := constructor().(MetricsProcessor).Type()
+	if _, ok := metricsProcessorTypes.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate processor type: %q", name)
+	}
+	metricsProcessorTypes.TypeMap[name] = constructor
+	return nil
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsProcessorWrapper struct {
+	inner interface{}
+}
+
+func (m *metricsProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return unmarshalComponentYaml(metricsProcessorTypes, &m.inner, unmarshal)
+}
+
+func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsProcessorWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsProcessorMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsProcessor)
+	}
+	return nil
 }
 
 type MetricsExporter struct {
@@ -698,8 +744,25 @@ func (r *MetricsReceiverMssql) ValidateParameters(subagent string, kind string, 
 	return validateSharedParameters(r, subagent, kind, id)
 }
 
-func (p *MetricsProcessor) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type())
+func (p *MetricsProcessorExcludeMetrics) ValidateParameters(subagent string, kind string, id string) error {
+	if err := validateParameters(*p, subagent, kind, id, p.Type()); err != nil {
+		return err
+	}
+	var errors []string
+	for _, prefix := range p.MetricsPattern {
+		if !strings.HasSuffix(prefix, "/*") {
+			errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
+		}
+		// TODO: Relax the prefix check when we support metrics with other prefixes.
+		if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
+			errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
+		}
+	}
+	if len(errors) > 0 {
+		err := fmt.Errorf(strings.Join(errors, " | "))
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, p.Type(), "metrics_pattern"), p.MetricsPattern, err)
+	}
+	return nil
 }
 
 type yamlField struct {
@@ -757,34 +820,12 @@ func collectYamlFields(s interface{}) []yamlField {
 }
 
 func validateParameters(s interface{}, subagent string, kind string, id string, componentType string) error {
-	supportedParameters := supportedParameters[componentType]
-	// Include type when checking.
-	allParameters := []string{"type"}
-	allParameters = append(allParameters, supportedParameters...)
-	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
+	// Check for required parameters.
 	parameters := collectYamlFields(s)
 	for _, p := range parameters {
-		if supportedParameters != nil && !sliceContains(allParameters, p.Name) {
-			if !p.IsZero {
-				// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
-				// Supported parameters: [include_paths, exclude_paths].
-				return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
-					parameterErrorPrefix(subagent, kind, id, componentType, p.Name), strings.Join(supportedParameters, ", "))
-			}
-			continue
-		}
 		if p.IsZero && p.Required {
 			// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
 			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name))
-		}
-		if hasAdditionalValidation {
-			if f, ok := additionalValidation[p.Name]; ok {
-				if err := f(p.Value); err != nil {
-					// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1"
-					// has invalid value "1s": below the minimum threshold of "10s".
-					return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name), p.Value, err)
-				}
-			}
 		}
 	}
 	return nil
@@ -815,31 +856,6 @@ var (
 		"hostmetrics":             1,
 		"iis":                     1,
 		"mssql":                   1,
-	}
-
-	supportedParameters = map[string][]string{
-		"exclude_metrics": []string{"metrics_pattern"},
-	}
-
-	additionalParameterValidation = map[string]map[string]func(interface{}) error{
-		"exclude_metrics": map[string]func(interface{}) error{
-			"metrics_pattern": func(v interface{}) error {
-				var errors []string
-				for _, prefix := range v.([]string) {
-					if !strings.HasSuffix(prefix, "/*") {
-						errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
-					}
-					// TODO: Relax the prefix check when we support metrics with other prefixes.
-					if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
-						errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
-					}
-				}
-				if len(errors) > 0 {
-					return fmt.Errorf(strings.Join(errors, " | "))
-				}
-				return nil
-			},
-		},
 	}
 )
 
@@ -883,7 +899,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsProcessor:
+	case map[string]MetricsProcessor:
+		for k := range m {
+			keys[k] = true
+		}
+	case metricsProcessorMap:
 		for k := range m {
 			keys[k] = true
 		}
