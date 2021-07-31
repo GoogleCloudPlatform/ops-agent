@@ -301,21 +301,24 @@ type excludemetricsProcessorFactory struct {
 	MetricsPattern []string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
 		switch r.Type() {
 		case "hostmetrics":
+			r := r.(*MetricsReceiverHostmetrics)
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
 		case "mssql":
+			r := r.(*MetricsReceiverMssql)
 			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
 		case "iis":
+			r := r.(*MetricsReceiverIis)
 			iisReceiverFactories[n] = &iisReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
@@ -366,7 +369,7 @@ func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}

@@ -44,10 +44,10 @@ var (
 				},
 			},
 			Metrics: &Metrics{
-				Receivers: map[string]*MetricsReceiver{
-					"hostmetrics": &MetricsReceiver{
-						configComponent:    configComponent{ComponentType: "hostmetrics"},
-						CollectionInterval: "60s",
+				Receivers: map[string]MetricsReceiver{
+					"hostmetrics": &MetricsReceiverHostmetrics{
+						configComponent:       configComponent{ComponentType: "hostmetrics"},
+						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
 				Processors: map[string]*MetricsProcessor{
@@ -83,18 +83,18 @@ var (
 				},
 			},
 			Metrics: &Metrics{
-				Receivers: map[string]*MetricsReceiver{
-					"hostmetrics": &MetricsReceiver{
-						configComponent:    configComponent{ComponentType: "hostmetrics"},
-						CollectionInterval: "60s",
+				Receivers: map[string]MetricsReceiver{
+					"hostmetrics": &MetricsReceiverHostmetrics{
+						configComponent:       configComponent{ComponentType: "hostmetrics"},
+						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
-					"iis": &MetricsReceiver{
-						configComponent:    configComponent{ComponentType: "iis"},
-						CollectionInterval: "60s",
+					"iis": &MetricsReceiverIis{
+						configComponent:       configComponent{ComponentType: "iis"},
+						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
-					"mssql": &MetricsReceiver{
-						configComponent:    configComponent{ComponentType: "mssql"},
-						CollectionInterval: "60s",
+					"mssql": &MetricsReceiverMssql{
+						configComponent:       configComponent{ComponentType: "mssql"},
+						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
 				Processors: map[string]*MetricsProcessor{
