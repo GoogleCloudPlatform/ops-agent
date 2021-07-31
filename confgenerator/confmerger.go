@@ -50,8 +50,8 @@ var (
 						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
-				Processors: map[string]*MetricsProcessor{
-					"metrics_filter": &MetricsProcessor{
+				Processors: map[string]MetricsProcessor{
+					"metrics_filter": &MetricsProcessorExcludeMetrics{
 						configComponent: configComponent{ComponentType: "exclude_metrics"},
 					},
 				},
@@ -97,8 +97,8 @@ var (
 						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
-				Processors: map[string]*MetricsProcessor{
-					"metrics_filter": &MetricsProcessor{
+				Processors: map[string]MetricsProcessor{
+					"metrics_filter": &MetricsProcessorExcludeMetrics{
 						configComponent: configComponent{ComponentType: "exclude_metrics"},
 					},
 				},

@@ -327,11 +327,12 @@ func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[str
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
+func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
 	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
 	for n, p := range processors {
 		switch p.Type() {
 		case "exclude_metrics":
+			p := p.(*MetricsProcessorExcludeMetrics)
 			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
 				MetricsPattern: p.MetricsPattern,
 			}
@@ -437,7 +438,7 @@ func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
 	excludeMetricsList := []*otel.ExcludeMetrics{}
 	processorNameMap := make(map[string]string)
 	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
