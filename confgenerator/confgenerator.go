@@ -60,6 +60,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		for _, p := range metrics.Service.Pipelines {
 			p.ExporterIDs = []string{"google"}
 		}
+
 		var err error
 		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
@@ -94,6 +95,167 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		return "", err
 	}
 	return otelConfig, nil
+}
+
+type hostmetricsReceiverFactory struct {
+	CollectionInterval string
+}
+
+type mssqlReceiverFactory struct {
+	CollectionInterval string
+}
+
+type iisReceiverFactory struct {
+	CollectionInterval string
+}
+
+func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
+	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
+	iisReceiverFactories := map[string]*iisReceiverFactory{}
+	for n, r := range receivers {
+		switch r.Type() {
+		case "hostmetrics":
+			r := r.(*MetricsReceiverHostmetrics)
+			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
+		case "mssql":
+			r := r.(*MetricsReceiverMssql)
+			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
+		case "iis":
+			r := r.(*MetricsReceiverIis)
+			iisReceiverFactories[n] = &iisReceiverFactory{
+				CollectionInterval: r.CollectionInterval,
+			}
+		}
+	}
+	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
+}
+
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+	hostMetricsList := []*otel.HostMetrics{}
+	mssqlList := []*otel.MSSQL{}
+	iisList := []*otel.IIS{}
+	receiverNameMap := make(map[string]string)
+	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	for _, pID := range sortedKeys(pipelines) {
+		p := pipelines[pID]
+		for _, rID := range p.ReceiverIDs {
+			if _, ok := receiverNameMap[rID]; ok {
+				continue
+			}
+			if h, ok := hostmetricsReceiverFactories[rID]; ok {
+				hostMetrics := otel.HostMetrics{
+					HostMetricsID:      rID,
+					CollectionInterval: h.CollectionInterval,
+				}
+				hostMetricsList = append(hostMetricsList, &hostMetrics)
+				receiverNameMap[rID] = "hostmetrics/" + rID
+			} else if m, ok := mssqlReceiverFactories[rID]; ok {
+				mssql := otel.MSSQL{
+					MSSQLID:            rID,
+					CollectionInterval: m.CollectionInterval,
+				}
+				mssqlList = append(mssqlList, &mssql)
+				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
+			} else if i, ok := iisReceiverFactories[rID]; ok {
+				iis := otel.IIS{
+					IISID:              rID,
+					CollectionInterval: i.CollectionInterval,
+				}
+				iisList = append(iisList, &iis)
+				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
+			}
+		}
+	}
+	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
+}
+
+func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
+	stackdriverList := []*otel.Stackdriver{}
+	exportNameMap := make(map[string]string)
+	for _, pID := range sortedKeys(pipelines) {
+		p := pipelines[pID]
+		for _, eID := range p.ExporterIDs {
+			exporter, ok := exporters[eID]
+			if !ok {
+				continue
+			}
+			switch exporter.Type() {
+			case "google_cloud_monitoring":
+				if _, ok := exportNameMap[eID]; !ok {
+					stackdriver := otel.Stackdriver{
+						StackdriverID: eID,
+						Prefix:        "agent.googleapis.com/",
+					}
+					stackdriverList = append(stackdriverList, &stackdriver)
+					exportNameMap[eID] = "googlecloud/" + eID
+				}
+			}
+		}
+	}
+	return stackdriverList, exportNameMap, nil
+}
+
+type excludemetricsProcessorFactory struct {
+	MetricsPattern []string
+}
+
+func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
+	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
+	for n, p := range processors {
+		switch p.Type() {
+		case "exclude_metrics":
+			p := p.(*MetricsProcessorExcludeMetrics)
+			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
+				MetricsPattern: p.MetricsPattern,
+			}
+		}
+	}
+	return excludemetricsProcessorFactories, nil
+}
+
+func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+	excludeMetricsList := []*otel.ExcludeMetrics{}
+	processorNameMap := make(map[string]string)
+	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, pID := range sortedKeys(pipelines) {
+		p := pipelines[pID]
+		for _, processorID := range p.ProcessorIDs {
+			if _, ok := processorNameMap[processorID]; ok {
+				continue
+			}
+			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
+				var metricNames []string
+				for _, glob := range p.MetricsPattern {
+					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
+					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
+					var literals []string
+					for _, g := range strings.Split(glob, "*") {
+						literals = append(literals, regexp.QuoteMeta(g))
+					}
+					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
+				}
+				processorNameMap[processorID] = "filter/exclude_" + processorID
+				excludeMetrics := otel.ExcludeMetrics{
+					ExcludeMetricsID: processorNameMap[processorID],
+					MetricNames:      metricNames,
+				}
+				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
+			}
+		}
+	}
+	return excludeMetricsList, processorNameMap, nil
 }
 
 func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
@@ -134,6 +296,68 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 		}
 	}
 	return serviceList, nil
+}
+
+// GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
+// in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
+// does not exist as a top-level field in the input yaml format.
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	logging := uc.Logging
+	fbTails := defaultTails(logsDir, stateDir, hostInfo)
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
+	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
+	fbSyslogs := []*fluentbit.Syslog{}
+	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
+	fbFilterParserGroups := []fluentbit.FilterParserGroup{}
+	fbFilterAddLogNames := []*fluentbit.FilterModifyAddLogName{}
+	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
+	fbFilterRemoveLogNames := []*fluentbit.FilterModifyRemoveLogName{}
+	jsonParsers := []*fluentbit.ParserJSON{}
+	regexParsers := []*fluentbit.ParserRegex{}
+
+	if logging != nil && logging.Service != nil {
+		// Override any user-specified exporters
+		// TODO: Refactor remaining code to not consult these fields
+		logging.Exporters = map[string]LoggingExporter{
+			"google": &LoggingExporterGoogleCloudLogging{
+				configComponent: configComponent{ComponentType: "google_cloud_logging"},
+			},
+		}
+		for _, p := range logging.Service.Pipelines {
+			p.ExporterIDs = []string{"google"}
+		}
+
+		extractedTails := []*fluentbit.Tail{}
+		var err error
+		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
+		if err != nil {
+			return "", "", err
+		}
+		fbTails = append(fbTails, extractedTails...)
+		fbFilterParserGroups, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
+		if err != nil {
+			return "", "", err
+		}
+		extractedStackdrivers := []*fluentbit.Stackdriver{}
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
+		if err != nil {
+			return "", "", err
+		}
+		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
+		jsonParsers, regexParsers, err = extractFluentBitParsers(logging.Processors)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	mainConfig, err := fluentbit.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParserGroups, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
+	if err != nil {
+		return "", "", err
+	}
+	parserConfig, err := fluentbit.GenerateFluentBitParserConfig(jsonParsers, regexParsers)
+	if err != nil {
+		return "", "", err
+	}
+	return mainConfig, parserConfig, nil
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
@@ -208,68 +432,6 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
-// GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
-// in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
-// does not exist as a top-level field in the input yaml format.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
-	logging := uc.Logging
-	fbTails := defaultTails(logsDir, stateDir, hostInfo)
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
-	fbSyslogs := []*fluentbit.Syslog{}
-	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
-	fbFilterParserGroups := []fluentbit.FilterParserGroup{}
-	fbFilterAddLogNames := []*fluentbit.FilterModifyAddLogName{}
-	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
-	fbFilterRemoveLogNames := []*fluentbit.FilterModifyRemoveLogName{}
-	jsonParsers := []*fluentbit.ParserJSON{}
-	regexParsers := []*fluentbit.ParserRegex{}
-
-	if logging != nil && logging.Service != nil {
-		// Override any user-specified exporters
-		// TODO: Refactor remaining code to not consult these fields
-		logging.Exporters = map[string]LoggingExporter{
-			"google": &LoggingExporterGoogleCloudLogging{
-				configComponent: configComponent{ComponentType: "google_cloud_logging"},
-			},
-		}
-		for _, p := range logging.Service.Pipelines {
-			p.ExporterIDs = []string{"google"}
-		}
-
-		extractedTails := []*fluentbit.Tail{}
-		var err error
-		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
-		if err != nil {
-			return "", "", err
-		}
-		fbTails = append(fbTails, extractedTails...)
-		fbFilterParserGroups, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
-		if err != nil {
-			return "", "", err
-		}
-		extractedStackdrivers := []*fluentbit.Stackdriver{}
-		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
-		if err != nil {
-			return "", "", err
-		}
-		fbStackdrivers = append(fbStackdrivers, extractedStackdrivers...)
-		jsonParsers, regexParsers, err = extractFluentBitParsers(logging.Processors)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	mainConfig, err := fluentbit.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParserGroups, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
-	if err != nil {
-		return "", "", err
-	}
-	parserConfig, err := fluentbit.GenerateFluentBitParserConfig(jsonParsers, regexParsers)
-	if err != nil {
-		return "", "", err
-	}
-	return mainConfig, parserConfig, nil
-}
-
 type syslogReceiverFactory struct {
 	TransportProtocol string
 	ListenHost        string
@@ -283,62 +445,6 @@ type fileReceiverFactory struct {
 
 type wineventlogReceiverFactory struct {
 	Channels []string
-}
-
-type hostmetricsReceiverFactory struct {
-	CollectionInterval string
-}
-
-type mssqlReceiverFactory struct {
-	CollectionInterval string
-}
-
-type iisReceiverFactory struct {
-	CollectionInterval string
-}
-
-type excludemetricsProcessorFactory struct {
-	MetricsPattern []string
-}
-
-func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
-	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
-	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
-	iisReceiverFactories := map[string]*iisReceiverFactory{}
-	for n, r := range receivers {
-		switch r.Type() {
-		case "hostmetrics":
-			r := r.(*MetricsReceiverHostmetrics)
-			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		case "mssql":
-			r := r.(*MetricsReceiverMssql)
-			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		case "iis":
-			r := r.(*MetricsReceiverIis)
-			iisReceiverFactories[n] = &iisReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		}
-	}
-	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
-}
-
-func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
-	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
-	for n, p := range processors {
-		switch p.Type() {
-		case "exclude_metrics":
-			p := p.(*MetricsProcessorExcludeMetrics)
-			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
-				MetricsPattern: p.MetricsPattern,
-			}
-		}
-	}
-	return excludemetricsProcessorFactories, nil
 }
 
 func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
@@ -368,111 +474,6 @@ func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]
 		}
 	}
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
-}
-
-func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
-	hostMetricsList := []*otel.HostMetrics{}
-	mssqlList := []*otel.MSSQL{}
-	iisList := []*otel.IIS{}
-	receiverNameMap := make(map[string]string)
-	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	for _, pID := range sortedKeys(pipelines) {
-		p := pipelines[pID]
-		for _, rID := range p.ReceiverIDs {
-			if _, ok := receiverNameMap[rID]; ok {
-				continue
-			}
-			if h, ok := hostmetricsReceiverFactories[rID]; ok {
-				hostMetrics := otel.HostMetrics{
-					HostMetricsID:      rID,
-					CollectionInterval: h.CollectionInterval,
-				}
-				hostMetricsList = append(hostMetricsList, &hostMetrics)
-				receiverNameMap[rID] = "hostmetrics/" + rID
-			} else if m, ok := mssqlReceiverFactories[rID]; ok {
-				mssql := otel.MSSQL{
-					MSSQLID:            rID,
-					CollectionInterval: m.CollectionInterval,
-				}
-				mssqlList = append(mssqlList, &mssql)
-				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
-			} else if i, ok := iisReceiverFactories[rID]; ok {
-				iis := otel.IIS{
-					IISID:              rID,
-					CollectionInterval: i.CollectionInterval,
-				}
-				iisList = append(iisList, &iis)
-				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
-			}
-		}
-	}
-	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
-}
-
-func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
-	stackdriverList := []*otel.Stackdriver{}
-	exportNameMap := make(map[string]string)
-	for _, pID := range sortedKeys(pipelines) {
-		p := pipelines[pID]
-		for _, eID := range p.ExporterIDs {
-			exporter, ok := exporters[eID]
-			if !ok {
-				continue
-			}
-			switch exporter.Type() {
-			case "google_cloud_monitoring":
-				if _, ok := exportNameMap[eID]; !ok {
-					stackdriver := otel.Stackdriver{
-						StackdriverID: eID,
-						Prefix:        "agent.googleapis.com/",
-					}
-					stackdriverList = append(stackdriverList, &stackdriver)
-					exportNameMap[eID] = "googlecloud/" + eID
-				}
-			}
-		}
-	}
-	return stackdriverList, exportNameMap, nil
-}
-
-func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
-	excludeMetricsList := []*otel.ExcludeMetrics{}
-	processorNameMap := make(map[string]string)
-	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, pID := range sortedKeys(pipelines) {
-		p := pipelines[pID]
-		for _, processorID := range p.ProcessorIDs {
-			if _, ok := processorNameMap[processorID]; ok {
-				continue
-			}
-			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
-				var metricNames []string
-				for _, glob := range p.MetricsPattern {
-					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
-					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
-					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
-					var literals []string
-					for _, g := range strings.Split(glob, "*") {
-						literals = append(literals, regexp.QuoteMeta(g))
-					}
-					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
-				}
-				processorNameMap[processorID] = "filter/exclude_" + processorID
-				excludeMetrics := otel.ExcludeMetrics{
-					ExcludeMetricsID: processorNameMap[processorID],
-					MetricNames:      metricNames,
-				}
-				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
-			}
-		}
-	}
-	return excludeMetricsList, processorNameMap, nil
 }
 
 func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
