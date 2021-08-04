@@ -587,8 +587,8 @@ service:
           - action: toggle_scalar_data_type
 {{- end -}}`))
 
-type MSSQL struct {
-	MSSQLID            string
+type HostMetrics struct {
+	HostMetricsID      string
 	CollectionInterval string
 }
 
@@ -597,14 +597,20 @@ type IIS struct {
 	CollectionInterval string
 }
 
-type HostMetrics struct {
-	HostMetricsID      string
+type MSSQL struct {
+	MSSQLID            string
 	CollectionInterval string
 }
 
 type ExcludeMetrics struct {
 	ExcludeMetricsID string
 	MetricNames      []string
+}
+
+type Stackdriver struct {
+	StackdriverID string
+	UserAgent     string
+	Prefix        string
 }
 
 type Service struct {
@@ -614,19 +620,13 @@ type Service struct {
 	Exporters  string
 }
 
-type Stackdriver struct {
-	StackdriverID string
-	UserAgent     string
-	Prefix        string
-}
-
 type Config struct {
 	HostMetrics    []*HostMetrics
-	MSSQL          []*MSSQL
 	IIS            []*IIS
+	MSSQL          []*MSSQL
+	ExcludeMetrics []*ExcludeMetrics
 	Stackdriver    []*Stackdriver
 	Service        []*Service
-	ExcludeMetrics []*ExcludeMetrics
 	UserAgent      string
 	Version        string
 	Windows        bool

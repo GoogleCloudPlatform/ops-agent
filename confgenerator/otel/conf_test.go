@@ -142,8 +142,8 @@ func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
 		name            string
 		hostMetricsList []*HostMetrics
-		mssqlList       []*MSSQL
 		iisList         []*IIS
+		mssqlList       []*MSSQL
 		stackdriverList []*Stackdriver
 		serviceList     []*Service
 		want            string
@@ -154,12 +154,12 @@ func TestGenerateOtelConfig(t *testing.T) {
 				HostMetricsID:      "hostmetrics/hostmetrics",
 				CollectionInterval: "60s",
 			}},
-			mssqlList: []*MSSQL{{
-				MSSQLID:            "windowsperfcounters/mssql_mssql",
-				CollectionInterval: "60s",
-			}},
 			iisList: []*IIS{{
 				IISID:              "windowsperfcounters/iis_iis",
+				CollectionInterval: "60s",
+			}},
+			mssqlList: []*MSSQL{{
+				MSSQLID:            "windowsperfcounters/mssql_mssql",
 				CollectionInterval: "60s",
 			}},
 			stackdriverList: []*Stackdriver{{
@@ -180,7 +180,8 @@ func TestGenerateOtelConfig(t *testing.T) {
 					Processors: "[metricstransform/mssql,resourcedetection]",
 					Exporters:  "[googlecloud/google]",
 				},
-				{ID: "iis",
+				{
+					ID:         "iis",
 					Receivers:  "[windowsperfcounters/iis_iis]",
 					Processors: "[metricstransform/iis,resourcedetection]",
 					Exporters:  "[googlecloud/google]",
@@ -715,8 +716,8 @@ service:
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := Config{
 				HostMetrics: tc.hostMetricsList,
-				MSSQL:       tc.mssqlList,
 				IIS:         tc.iisList,
+				MSSQL:       tc.mssqlList,
 				Stackdriver: tc.stackdriverList,
 				Service:     tc.serviceList,
 
