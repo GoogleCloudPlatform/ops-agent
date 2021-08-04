@@ -583,8 +583,9 @@ service:
 
 type Receiver interface {
 	Generate() (string, error)
-	pipelineID() string
-	defaultProcessors() []string
+	GetID() string
+	DefaultPipelineID() string
+	DefaultProcessors() []string
 }
 
 type HostMetrics struct {
@@ -600,11 +601,15 @@ func (r *HostMetrics) Generate() (string, error) {
 	return builder.String(), nil
 }
 
-func (r *HostMetrics) defaultProcessors() []string {
+func (r *HostMetrics) GetID() string {
+	return r.HostMetricsID
+}
+
+func (r *HostMetrics) DefaultProcessors() []string {
 	return []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
 }
 
-func (r *HostMetrics) pipelineID() string {
+func (r *HostMetrics) DefaultPipelineID() string {
 	return "system"
 }
 
@@ -621,11 +626,15 @@ func (r *IIS) Generate() (string, error) {
 	return builder.String(), nil
 }
 
-func (r *IIS) defaultProcessors() []string {
+func (r *IIS) GetID() string {
+	return r.IISID
+}
+
+func (r *IIS) DefaultProcessors() []string {
 	return []string{"metricstransform/iis", "resourcedetection"}
 }
 
-func (r *IIS) pipelineID() string {
+func (r *IIS) DefaultPipelineID() string {
 	return "iis"
 }
 
@@ -642,11 +651,15 @@ func (r *MSSQL) Generate() (string, error) {
 	return builder.String(), nil
 }
 
-func (r *MSSQL) defaultProcessors() []string {
+func (r *MSSQL) GetID() string {
+	return r.MSSQLID
+}
+
+func (r *MSSQL) DefaultProcessors() []string {
 	return []string{"metricstransform/mssql", "resourcedetection"}
 }
 
-func (r *MSSQL) pipelineID() string {
+func (r *MSSQL) DefaultPipelineID() string {
 	return "mssql"
 }
 
