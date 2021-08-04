@@ -97,72 +97,44 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-type hostmetricsReceiverFactory struct {
-	CollectionInterval string
-}
-
-type mssqlReceiverFactory struct {
-	CollectionInterval string
-}
-
-type iisReceiverFactory struct {
-	CollectionInterval string
-}
-
 func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
 	receiverNameMap := make(map[string]string)
-	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
-	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
-	iisReceiverFactories := map[string]*iisReceiverFactory{}
-	for n, r := range receivers {
-		switch r.Type() {
-		case "hostmetrics":
-			r := r.(*MetricsReceiverHostmetrics)
-			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		case "mssql":
-			r := r.(*MetricsReceiverMssql)
-			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		case "iis":
-			r := r.(*MetricsReceiverIis)
-			iisReceiverFactories[n] = &iisReceiverFactory{
-				CollectionInterval: r.CollectionInterval,
-			}
-		}
-	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if _, ok := receiverNameMap[rID]; ok {
 				continue
 			}
-			if h, ok := hostmetricsReceiverFactories[rID]; ok {
-				hostMetrics := otel.HostMetrics{
-					HostMetricsID:      rID,
-					CollectionInterval: h.CollectionInterval,
+			if r, ok := receivers[rID]; ok {
+				switch r.Type() {
+				case "hostmetrics":
+					r := r.(*MetricsReceiverHostmetrics)
+					hostMetrics := otel.HostMetrics{
+						HostMetricsID:      rID,
+						CollectionInterval: r.CollectionInterval,
+					}
+					hostMetricsList = append(hostMetricsList, &hostMetrics)
+					receiverNameMap[rID] = "hostmetrics/" + rID
+				case "mssql":
+					r := r.(*MetricsReceiverMssql)
+					mssql := otel.MSSQL{
+						MSSQLID:            rID,
+						CollectionInterval: r.CollectionInterval,
+					}
+					mssqlList = append(mssqlList, &mssql)
+					receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
+				case "iis":
+					r := r.(*MetricsReceiverIis)
+					iis := otel.IIS{
+						IISID:              rID,
+						CollectionInterval: r.CollectionInterval,
+					}
+					iisList = append(iisList, &iis)
+					receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
 				}
-				hostMetricsList = append(hostMetricsList, &hostMetrics)
-				receiverNameMap[rID] = "hostmetrics/" + rID
-			} else if m, ok := mssqlReceiverFactories[rID]; ok {
-				mssql := otel.MSSQL{
-					MSSQLID:            rID,
-					CollectionInterval: m.CollectionInterval,
-				}
-				mssqlList = append(mssqlList, &mssql)
-				receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
-			} else if i, ok := iisReceiverFactories[rID]; ok {
-				iis := otel.IIS{
-					IISID:              rID,
-					CollectionInterval: i.CollectionInterval,
-				}
-				iisList = append(iisList, &iis)
-				receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
 			}
 		}
 	}
