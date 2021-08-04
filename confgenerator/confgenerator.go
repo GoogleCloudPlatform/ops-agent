@@ -109,7 +109,11 @@ type iisReceiverFactory struct {
 	CollectionInterval string
 }
 
-func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+	hostMetricsList := []*otel.HostMetrics{}
+	mssqlList := []*otel.MSSQL{}
+	iisList := []*otel.IIS{}
+	receiverNameMap := make(map[string]string)
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
@@ -131,18 +135,6 @@ func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[str
 				CollectionInterval: r.CollectionInterval,
 			}
 		}
-	}
-	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
-}
-
-func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
-	hostMetricsList := []*otel.HostMetrics{}
-	mssqlList := []*otel.MSSQL{}
-	iisList := []*otel.IIS{}
-	receiverNameMap := make(map[string]string)
-	hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, err := extractOtelReceiverFactories(receivers)
-	if err != nil {
-		return nil, nil, nil, nil, err
 	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -207,7 +199,9 @@ type excludemetricsProcessorFactory struct {
 	MetricsPattern []string
 }
 
-func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
+func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+	excludeMetricsList := []*otel.ExcludeMetrics{}
+	processorNameMap := make(map[string]string)
 	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
 	for n, p := range processors {
 		switch p.Type() {
@@ -217,16 +211,6 @@ func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[
 				MetricsPattern: p.MetricsPattern,
 			}
 		}
-	}
-	return excludemetricsProcessorFactories, nil
-}
-
-func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
-	excludeMetricsList := []*otel.ExcludeMetrics{}
-	processorNameMap := make(map[string]string)
-	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
-	if err != nil {
-		return nil, nil, err
 	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -447,7 +431,10 @@ type wineventlogReceiverFactory struct {
 	Channels []string
 }
 
-func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
+func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
+	fbTails := []*fluentbit.Tail{}
+	fbSyslogs := []*fluentbit.Syslog{}
+	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
@@ -472,17 +459,6 @@ func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]
 				Channels: r.Channels,
 			}
 		}
-	}
-	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
-}
-
-func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
-	fbTails := []*fluentbit.Tail{}
-	fbSyslogs := []*fluentbit.Syslog{}
-	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
-	fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, err := extractReceiverFactories(receivers)
-	if err != nil {
-		return nil, nil, nil, err
 	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
