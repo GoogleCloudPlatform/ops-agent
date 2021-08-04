@@ -30,7 +30,7 @@ func TestSection(t *testing.T) {
 	}{
 		{
 			section: HostMetrics{
-				HostMetricsID:      "hostmetrics",
+				HostMetricsID:      "hostmetrics/hostmetrics",
 				CollectionInterval: "60s",
 			},
 			want: `hostmetrics/hostmetrics:
@@ -48,7 +48,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: IIS{
-				IISID:              "iis",
+				IISID:              "windowsperfcounters/iis_iis",
 				CollectionInterval: "60s",
 			},
 			want: `windowsperfcounters/iis_iis:
@@ -71,7 +71,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: MSSQL{
-				MSSQLID:            "mssql",
+				MSSQLID:            "windowsperfcounters/mssql_mssql",
 				CollectionInterval: "60s",
 			},
 			want: `windowsperfcounters/mssql_mssql:
@@ -89,7 +89,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: Stackdriver{
-				StackdriverID: "agent",
+				StackdriverID: "googlecloud/agent",
 				UserAgent:     "$USERAGENT",
 				Prefix:        "agent.googleapis.com/",
 			},
@@ -151,19 +151,19 @@ func TestGenerateOtelConfig(t *testing.T) {
 		{
 			name: "default system metrics config",
 			hostMetricsList: []*HostMetrics{{
-				HostMetricsID:      "hostmetrics",
+				HostMetricsID:      "hostmetrics/hostmetrics",
 				CollectionInterval: "60s",
 			}},
 			mssqlList: []*MSSQL{{
-				MSSQLID:            "mssql",
+				MSSQLID:            "windowsperfcounters/mssql_mssql",
 				CollectionInterval: "60s",
 			}},
 			iisList: []*IIS{{
-				IISID:              "iis",
+				IISID:              "windowsperfcounters/iis_iis",
 				CollectionInterval: "60s",
 			}},
 			stackdriverList: []*Stackdriver{{
-				StackdriverID: "google",
+				StackdriverID: "googlecloud/google",
 				UserAgent:     "$IGNORED_VALUE",
 				Prefix:        "agent.googleapis.com/",
 			}},

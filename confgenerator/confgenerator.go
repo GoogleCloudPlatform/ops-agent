@@ -112,21 +112,21 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 				switch r := r.(type) {
 				case *MetricsReceiverHostmetrics:
 					hostMetrics := otel.HostMetrics{
-						HostMetricsID:      rID,
+						HostMetricsID:      "hostmetrics/" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
 					hostMetricsList = append(hostMetricsList, &hostMetrics)
 					receiverNameMap[rID] = "hostmetrics/" + rID
 				case *MetricsReceiverMssql:
 					mssql := otel.MSSQL{
-						MSSQLID:            rID,
+						MSSQLID:            "windowsperfcounters/mssql_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
 					mssqlList = append(mssqlList, &mssql)
 					receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
 				case *MetricsReceiverIis:
 					iis := otel.IIS{
-						IISID:              rID,
+						IISID:              "windowsperfcounters/iis_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
 					iisList = append(iisList, &iis)
@@ -152,7 +152,7 @@ func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[s
 			case "google_cloud_monitoring":
 				if _, ok := exportNameMap[eID]; !ok {
 					stackdriver := otel.Stackdriver{
-						StackdriverID: eID,
+						StackdriverID: "googlecloud/" + eID,
 						Prefix:        "agent.googleapis.com/",
 					}
 					stackdriverList = append(stackdriverList, &stackdriver)
