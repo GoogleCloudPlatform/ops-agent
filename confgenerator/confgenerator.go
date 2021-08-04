@@ -164,47 +164,37 @@ func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[s
 	return stackdriverList, exportNameMap, nil
 }
 
-type excludemetricsProcessorFactory struct {
-	MetricsPattern []string
-}
-
 func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
 	excludeMetricsList := []*otel.ExcludeMetrics{}
 	processorNameMap := make(map[string]string)
-	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
-	for n, p := range processors {
-		switch p.Type() {
-		case "exclude_metrics":
-			p := p.(*MetricsProcessorExcludeMetrics)
-			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
-				MetricsPattern: p.MetricsPattern,
-			}
-		}
-	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, processorID := range p.ProcessorIDs {
 			if _, ok := processorNameMap[processorID]; ok {
 				continue
 			}
-			if p, ok := excludemetricsProcessorFactories[processorID]; ok {
-				var metricNames []string
-				for _, glob := range p.MetricsPattern {
-					// TODO: Remove TrimPrefix when we support metrics with other prefixes.
-					glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
-					// TODO: Move this glob to regexp into a template function inside otel/conf.go.
-					var literals []string
-					for _, g := range strings.Split(glob, "*") {
-						literals = append(literals, regexp.QuoteMeta(g))
+			if p, ok := processors[processorID]; ok {
+				switch p.Type() {
+				case "exclude_metrics":
+					p := p.(*MetricsProcessorExcludeMetrics)
+					var metricNames []string
+					for _, glob := range p.MetricsPattern {
+						// TODO: Remove TrimPrefix when we support metrics with other prefixes.
+						glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+						// TODO: Move this glob to regexp into a template function inside otel/conf.go.
+						var literals []string
+						for _, g := range strings.Split(glob, "*") {
+							literals = append(literals, regexp.QuoteMeta(g))
+						}
+						metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
 					}
-					metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
+					processorNameMap[processorID] = "filter/exclude_" + processorID
+					excludeMetrics := otel.ExcludeMetrics{
+						ExcludeMetricsID: processorNameMap[processorID],
+						MetricNames:      metricNames,
+					}
+					excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
 				}
-				processorNameMap[processorID] = "filter/exclude_" + processorID
-				excludeMetrics := otel.ExcludeMetrics{
-					ExcludeMetricsID: processorNameMap[processorID],
-					MetricNames:      metricNames,
-				}
-				excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
 			}
 		}
 	}
