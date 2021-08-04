@@ -375,84 +375,45 @@ func getWorkers(hostInfo *host.InfoStat) int {
 	}
 }
 
-type syslogReceiverFactory struct {
-	TransportProtocol string
-	ListenHost        string
-	ListenPort        uint16
-}
-
-type fileReceiverFactory struct {
-	IncludePaths []string
-	ExcludePaths []string
-}
-
-type wineventlogReceiverFactory struct {
-	Channels []string
-}
-
 func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
 	fbTails := []*fluentbit.Tail{}
 	fbSyslogs := []*fluentbit.Syslog{}
 	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
-	fileReceiverFactories := map[string]*fileReceiverFactory{}
-	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
-	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
-	for rID, r := range receivers {
-		switch r.Type() {
-		case "files":
-			r := r.(*LoggingReceiverFiles)
-			fileReceiverFactories[rID] = &fileReceiverFactory{
-				IncludePaths: r.IncludePaths,
-				ExcludePaths: r.ExcludePaths,
-			}
-		case "syslog":
-			r := r.(*LoggingReceiverSyslog)
-			syslogReceiverFactories[rID] = &syslogReceiverFactory{
-				TransportProtocol: r.TransportProtocol,
-				ListenHost:        r.ListenHost,
-				ListenPort:        r.ListenPort,
-			}
-		case "windows_event_log":
-			r := r.(*LoggingReceiverWinevtlog)
-			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
-				Channels: r.Channels,
-			}
-		}
-	}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
-			if f, ok := fileReceiverFactories[rID]; ok {
-				fbTail := fluentbit.Tail{
-					Tag:  fmt.Sprintf("%s.%s", pID, rID),
-					DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
-					Path: strings.Join(f.IncludePaths, ","),
+			if r, ok := receivers[rID]; ok {
+				switch r.Type() {
+				case "files":
+					r := r.(*LoggingReceiverFiles)
+					fbTail := fluentbit.Tail{
+						Tag:  fmt.Sprintf("%s.%s", pID, rID),
+						DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
+						Path: strings.Join(r.IncludePaths, ","),
+					}
+					if len(r.ExcludePaths) != 0 {
+						fbTail.ExcludePath = strings.Join(r.ExcludePaths, ",")
+					}
+					fbTails = append(fbTails, &fbTail)
+				case "syslog":
+					r := r.(*LoggingReceiverSyslog)
+					fbSyslog := fluentbit.Syslog{
+						Tag:    fmt.Sprintf("%s.%s", pID, rID),
+						Listen: r.ListenHost,
+						Mode:   r.TransportProtocol,
+						Port:   r.ListenPort,
+					}
+					fbSyslogs = append(fbSyslogs, &fbSyslog)
+				case "windows_event_log":
+					r := r.(*LoggingReceiverWinevtlog)
+					fbWinlog := fluentbit.WindowsEventlog{
+						Tag:          fmt.Sprintf("%s.%s", pID, rID),
+						Channels:     strings.Join(r.Channels, ","),
+						Interval_Sec: "1",
+						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
+					}
+					fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
 				}
-				if len(f.ExcludePaths) != 0 {
-					fbTail.ExcludePath = strings.Join(f.ExcludePaths, ",")
-				}
-				fbTails = append(fbTails, &fbTail)
-				continue
-			}
-			if f, ok := syslogReceiverFactories[rID]; ok {
-				fbSyslog := fluentbit.Syslog{
-					Tag:    fmt.Sprintf("%s.%s", pID, rID),
-					Listen: f.ListenHost,
-					Mode:   f.TransportProtocol,
-					Port:   f.ListenPort,
-				}
-				fbSyslogs = append(fbSyslogs, &fbSyslog)
-				continue
-			}
-			if f, ok := wineventlogReceiverFactories[rID]; ok {
-				fbWinlog := fluentbit.WindowsEventlog{
-					Tag:          fmt.Sprintf("%s.%s", pID, rID),
-					Channels:     strings.Join(f.Channels, ","),
-					Interval_Sec: "1",
-					DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
-				}
-				fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
-				continue
 			}
 		}
 	}
