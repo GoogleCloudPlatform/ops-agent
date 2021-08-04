@@ -27,17 +27,20 @@ $envFromMatch = {
 $InstallDir = [regex]::Replace($InstallDir,'^<([^>]+)>',$envFromMatch)
 
 $configFilePath = "$InstallDir\config\config.yaml"
-if (-not(Test-Path -Path $configFilePath -PathType Leaf)) {
-     try {
-         Copy-Item -Path "$InstallDir\config\default-config.yaml" -Destination $configFilePath
-         Write-Host "The file [$configFilePath] has been created."
+
+if ($Action -eq "install") {
+    if (-not(Test-Path -Path $configFilePath -PathType Leaf)) {
+         try {
+             Copy-Item -Path "$InstallDir\config\default-config.yaml" -Destination $configFilePath
+             Write-Host "The file [$configFilePath] has been created."
+         }
+         catch {
+             throw $_.Exception.Message
+         }
      }
-     catch {
-         throw $_.Exception.Message
+     else {
+         Write-Host "Keep [$configFilePath] as-is because a file with that name already exists."
      }
- }
- else {
-     Write-Host "Keep [$configFilePath] as-is because a file with that name already exists."
- }
+}
 
 & "$InstallDir\bin\google-cloud-ops-agent.exe" "--$Action"
