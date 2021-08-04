@@ -23,15 +23,9 @@ import (
 var confTemplate = template.Must(template.New("conf").Parse(
 	`receivers:
   {{template "agentreceiver" .}}
-{{- range .HostMetrics}}
-  {{template "hostmetrics" .}}
-{{- end}}
-{{- range .MSSQL}}
-  {{template "mssql" .}}
-{{- end}}
-{{- range .IIS}}
-  {{template "iis" .}}
-{{- end}}
+{{- range .Receivers}}
+  {{.Generate -}}
+{{end}}
 processors:
   {{template "defaultprocessor" .}}
 {{- range .ExcludeMetrics}}
@@ -587,9 +581,31 @@ service:
           - action: toggle_scalar_data_type
 {{- end -}}`))
 
+type Receiver interface {
+	Generate() (string, error)
+	pipelineID() string
+	defaultProcessors() []string
+}
+
 type HostMetrics struct {
 	HostMetricsID      string
 	CollectionInterval string
+}
+
+func (r *HostMetrics) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "hostmetrics", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *HostMetrics) defaultProcessors() []string {
+	return []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
+}
+
+func (r *HostMetrics) pipelineID() string {
+	return "system"
 }
 
 type IIS struct {
@@ -597,9 +613,41 @@ type IIS struct {
 	CollectionInterval string
 }
 
+func (r *IIS) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "iis", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *IIS) defaultProcessors() []string {
+	return []string{"metricstransform/iis", "resourcedetection"}
+}
+
+func (r *IIS) pipelineID() string {
+	return "iis"
+}
+
 type MSSQL struct {
 	MSSQLID            string
 	CollectionInterval string
+}
+
+func (r *MSSQL) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "mssql", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *MSSQL) defaultProcessors() []string {
+	return []string{"metricstransform/mssql", "resourcedetection"}
+}
+
+func (r *MSSQL) pipelineID() string {
+	return "mssql"
 }
 
 type ExcludeMetrics struct {
@@ -621,9 +669,7 @@ type Service struct {
 }
 
 type Config struct {
-	HostMetrics    []*HostMetrics
-	IIS            []*IIS
-	MSSQL          []*MSSQL
+	Receivers      []Receiver
 	ExcludeMetrics []*ExcludeMetrics
 	Stackdriver    []*Stackdriver
 	Service        []*Service
