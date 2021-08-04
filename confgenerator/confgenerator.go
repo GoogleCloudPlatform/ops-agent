@@ -218,7 +218,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
 	fbSyslogs := []*conf.Syslog{}
 	fbWinEventlogs := []*conf.WindowsEventlog{}
-	fbFilterParsers := []*conf.FilterParser{}
+	fbFilterParserGroups := []conf.FilterParserGroup{}
 	fbFilterAddLogNames := []*conf.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*conf.FilterRewriteTag{}
 	fbFilterRemoveLogNames := []*conf.FilterModifyRemoveLogName{}
@@ -244,7 +244,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 		fbTails = append(fbTails, extractedTails...)
-		fbFilterParsers, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
+		fbFilterParserGroups, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
 		if err != nil {
 			return "", "", err
 		}
@@ -259,7 +259,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 	}
-	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParsers, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
+	mainConfig, err := conf.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParserGroups, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
 	if err != nil {
 		return "", "", err
 	}
@@ -516,9 +516,13 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]*conf.FilterParser, error) {
-	fbFilterParsers := []*conf.FilterParser{}
+func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]conf.FilterParserGroup, error) {
+	// Note: Keep each pipeline's filters in a separate group, because
+	// the order within that group is important, even though the order
+	// of the groups themselves does not matter.
+	groups := []conf.FilterParserGroup{}
 	for _, pID := range sortedKeys(pipelines) {
+		fbFilterParsers := []*conf.FilterParser{}
 		pipeline := pipelines[pID]
 		for _, processorID := range pipeline.ProcessorIDs {
 			p, ok := processors[processorID]
@@ -532,8 +536,11 @@ func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines
 			}
 			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 		}
+		if len(fbFilterParsers) > 0 {
+			groups = append(groups, fbFilterParsers)
+		}
 	}
-	return fbFilterParsers, nil
+	return groups, nil
 }
 
 func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (

@@ -290,7 +290,7 @@ type parserConfigSections struct {
 }
 
 // GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs []*WindowsEventlog, filterParsers []*FilterParser,
+func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs []*WindowsEventlog, filterParserGroups []FilterParserGroup,
 	filterModifyAddLogNames []*FilterModifyAddLogName,
 	filterRewriteTags []*FilterRewriteTag,
 	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
@@ -324,12 +324,16 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 		}
 		wineventlogConfigSections = append(wineventlogConfigSections, configSection)
 	}
-	for _, f := range filterParsers {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
+	for _, filterParsers := range filterParserGroups {
+		var filters []string
+		for _, f := range filterParsers {
+			configSection, err := f.renderConfig()
+			if err != nil {
+				return "", err
+			}
+			filters = append(filters, configSection)
 		}
-		filterParserConfigSections = append(filterParserConfigSections, configSection)
+		filterParserConfigSections = append(filterParserConfigSections, strings.Join(filters, "\n\n"))
 	}
 	for _, f := range filterModifyAddLogNames {
 		configSection, err := f.renderConfig()
@@ -436,6 +440,9 @@ type emptyFieldErr struct {
 func (e emptyFieldErr) Error() string {
 	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
 }
+
+// A FilterParserGroup represents a list of filters to be applied in order.
+type FilterParserGroup []*FilterParser
 
 // A FilterParser represents the configuration data for fluentBit's filter parser plugin.
 type FilterParser struct {
