@@ -44,7 +44,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
 	excludeMetricsList := []*otel.ExcludeMetrics{}
-	receiverNameMap := make(map[string]string)
+	receiverMap := make(map[string]otel.Receiver)
 	exporterNameMap := make(map[string]string)
 	processorNameMap := make(map[string]string)
 	if metrics != nil {
@@ -60,7 +60,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 
 		var err error
-		receiverList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
+		receiverList, receiverMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -72,7 +72,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		serviceList, err = generateOtelServices(receiverNameMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
+		serviceList, err = generateOtelServices(receiverMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -93,15 +93,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]otel.Receiver, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]otel.Receiver, map[string]otel.Receiver, error) {
 	hostMetricsList := []otel.Receiver{}
 	mssqlList := []otel.Receiver{}
 	iisList := []otel.Receiver{}
-	receiverNameMap := make(map[string]string)
+	receiverMap := make(map[string]otel.Receiver)
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
-			if _, ok := receiverNameMap[rID]; ok {
+			if _, ok := receiverMap[rID]; ok {
 				continue
 			}
 			if r, ok := receivers[rID]; ok {
@@ -112,21 +112,21 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 						CollectionInterval: r.CollectionInterval,
 					}
 					hostMetricsList = append(hostMetricsList, &hostMetrics)
-					receiverNameMap[rID] = "hostmetrics/" + rID
+					receiverMap[rID] = &hostMetrics
 				case *MetricsReceiverMssql:
 					mssql := otel.MSSQL{
 						MSSQLID:            "windowsperfcounters/mssql_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
 					mssqlList = append(mssqlList, &mssql)
-					receiverNameMap[rID] = "windowsperfcounters/mssql_" + rID
+					receiverMap[rID] = &mssql
 				case *MetricsReceiverIis:
 					iis := otel.IIS{
 						IISID:              "windowsperfcounters/iis_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
 					iisList = append(iisList, &iis)
-					receiverNameMap[rID] = "windowsperfcounters/iis_" + rID
+					receiverMap[rID] = &iis
 				}
 			}
 		}
@@ -135,7 +135,7 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 	receiverList = append(receiverList, hostMetricsList...)
 	receiverList = append(receiverList, mssqlList...)
 	receiverList = append(receiverList, iisList...)
-	return receiverList, receiverNameMap, nil
+	return receiverList, receiverMap, nil
 }
 
 func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
@@ -201,26 +201,18 @@ func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines ma
 	return excludeMetricsList, processorNameMap, nil
 }
 
-func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
+func generateOtelServices(receiverMap map[string]otel.Receiver, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
-			var pipelineID string
-			var defaultProcessors []string
-			if strings.HasPrefix(receiverNameMap[rID], "hostmetrics/") {
-				defaultProcessors = []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
-				pipelineID = "system"
-			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/mssql") {
-				defaultProcessors = []string{"metricstransform/mssql", "resourcedetection"}
-				pipelineID = "mssql"
-			} else if strings.HasPrefix(receiverNameMap[rID], "windowsperfcounters/iis") {
-				defaultProcessors = []string{"metricstransform/iis", "resourcedetection"}
-				pipelineID = "iis"
+			r, ok := receiverMap[rID]
+			if !ok {
+				panic(fmt.Sprintf("Internal error: receiver %q not found", rID))
 			}
 
 			var processorIDs []string
-			processorIDs = append(processorIDs, defaultProcessors...)
+			processorIDs = append(processorIDs, r.DefaultProcessors()...)
 			for _, processorID := range p.ProcessorIDs {
 				processorIDs = append(processorIDs, processorNameMap[processorID])
 			}
@@ -230,8 +222,8 @@ func generateOtelServices(receiverNameMap map[string]string, exporterNameMap map
 				pExportIDs = append(pExportIDs, exporterNameMap[eID])
 			}
 			service := otel.Service{
-				ID:         pipelineID,
-				Receivers:  fmt.Sprintf("[%s]", receiverNameMap[rID]),
+				ID:         r.DefaultPipelineID(),
+				Receivers:  fmt.Sprintf("[%s]", r.GetID()),
 				Processors: fmt.Sprintf("[%s]", strings.Join(processorIDs, ",")),
 				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
 			}
