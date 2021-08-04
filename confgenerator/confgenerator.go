@@ -81,8 +81,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	}
 	otelConfig, err := otel.Config{
 		HostMetrics:    hostMetricsList,
-		MSSQL:          mssqlList,
 		IIS:            iisList,
+		MSSQL:          mssqlList,
 		ExcludeMetrics: excludeMetricsList,
 		Stackdriver:    stackdriverList,
 		Service:        serviceList,
