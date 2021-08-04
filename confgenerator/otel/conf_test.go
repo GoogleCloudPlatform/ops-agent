@@ -141,27 +141,27 @@ func TestSection(t *testing.T) {
 func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
 		name            string
-		hostMetricsList []*HostMetrics
-		iisList         []*IIS
-		mssqlList       []*MSSQL
+		receiverList    []Receiver
 		stackdriverList []*Stackdriver
 		serviceList     []*Service
 		want            string
 	}{
 		{
 			name: "default system metrics config",
-			hostMetricsList: []*HostMetrics{{
-				HostMetricsID:      "hostmetrics/hostmetrics",
-				CollectionInterval: "60s",
-			}},
-			iisList: []*IIS{{
-				IISID:              "windowsperfcounters/iis_iis",
-				CollectionInterval: "60s",
-			}},
-			mssqlList: []*MSSQL{{
-				MSSQLID:            "windowsperfcounters/mssql_mssql",
-				CollectionInterval: "60s",
-			}},
+			receiverList: []Receiver{
+				&HostMetrics{
+					HostMetricsID:      "hostmetrics/hostmetrics",
+					CollectionInterval: "60s",
+				},
+				&MSSQL{
+					MSSQLID:            "windowsperfcounters/mssql_mssql",
+					CollectionInterval: "60s",
+				},
+				&IIS{
+					IISID:              "windowsperfcounters/iis_iis",
+					CollectionInterval: "60s",
+				},
+			},
 			stackdriverList: []*Stackdriver{{
 				StackdriverID: "googlecloud/google",
 				UserAgent:     "$IGNORED_VALUE",
@@ -715,9 +715,7 @@ service:
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := Config{
-				HostMetrics: tc.hostMetricsList,
-				IIS:         tc.iisList,
-				MSSQL:       tc.mssqlList,
+				Receivers:   tc.receiverList,
 				Stackdriver: tc.stackdriverList,
 				Service:     tc.serviceList,
 

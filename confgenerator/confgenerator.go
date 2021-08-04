@@ -40,9 +40,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	metrics := uc.Metrics
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
-	hostMetricsList := []*otel.HostMetrics{}
-	mssqlList := []*otel.MSSQL{}
-	iisList := []*otel.IIS{}
+	receiverList := []otel.Receiver{}
 	stackdriverList := []*otel.Stackdriver{}
 	serviceList := []*otel.Service{}
 	excludeMetricsList := []*otel.ExcludeMetrics{}
@@ -62,7 +60,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 
 		var err error
-		hostMetricsList, mssqlList, iisList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
+		receiverList, receiverNameMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
@@ -80,9 +78,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 	}
 	otelConfig, err := otel.Config{
-		HostMetrics:    hostMetricsList,
-		IIS:            iisList,
-		MSSQL:          mssqlList,
+		Receivers:      receiverList,
 		ExcludeMetrics: excludeMetricsList,
 		Stackdriver:    stackdriverList,
 		Service:        serviceList,
@@ -97,10 +93,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
-	hostMetricsList := []*otel.HostMetrics{}
-	mssqlList := []*otel.MSSQL{}
-	iisList := []*otel.IIS{}
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]otel.Receiver, map[string]string, error) {
+	hostMetricsList := []otel.Receiver{}
+	mssqlList := []otel.Receiver{}
+	iisList := []otel.Receiver{}
 	receiverNameMap := make(map[string]string)
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -138,7 +134,11 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 			}
 		}
 	}
-	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
+	receiverList := []otel.Receiver{}
+	receiverList = append(receiverList, hostMetricsList...)
+	receiverList = append(receiverList, mssqlList...)
+	receiverList = append(receiverList, iisList...)
+	return receiverList, receiverNameMap, nil
 }
 
 func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
