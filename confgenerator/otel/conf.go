@@ -49,7 +49,7 @@ service:
     {{template "service" .}}
 {{- end}}
 {{define "hostmetrics" -}}
-  hostmetrics/{{.HostMetricsID}}:
+  {{.HostMetricsID}}:
     collection_interval: {{.CollectionInterval}}
     scrapers:
       cpu:
@@ -75,7 +75,7 @@ service:
 {{- end -}}
 
 {{define "iis" -}}
-windowsperfcounters/iis_{{.IISID}}:
+{{.IISID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
@@ -95,7 +95,7 @@ windowsperfcounters/iis_{{.IISID}}:
 {{- end -}}
 
 {{define "mssql" -}}
-windowsperfcounters/mssql_{{.MSSQLID}}:
+{{.MSSQLID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
@@ -110,7 +110,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
 {{- end -}}
 
 {{define "stackdriver" -}}
-  googlecloud/{{.StackdriverID}}:
+  {{.StackdriverID}}:
     user_agent: {{.UserAgent}}
     metric:
       prefix: {{.Prefix}}
@@ -634,7 +634,7 @@ type Config struct {
 
 func (c Config) Generate() (string, error) {
 	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
-		StackdriverID: "agent",
+		StackdriverID: "googlecloud/agent",
 		Prefix:        "agent.googleapis.com/",
 		UserAgent:     c.UserAgent,
 	})
