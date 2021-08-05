@@ -41,39 +41,6 @@ func TestFilterParser(t *testing.T) {
 	}
 }
 
-func TestFilterParserErrors(t *testing.T) {
-	tests := []struct {
-		filterParser FilterParser
-	}{
-		{
-			filterParser: FilterParser{},
-		},
-		{
-			filterParser: FilterParser{
-				Match:   "test_match",
-				KeyName: "test_key_name",
-			},
-		},
-		{
-			filterParser: FilterParser{
-				Match:  "test_match",
-				Parser: "test_parser",
-			},
-		},
-		{
-			filterParser: FilterParser{
-				KeyName: "test_key_name",
-				Parser:  "test_parser",
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.filterParser.renderConfig(); err == nil {
-			t.Errorf("FilterParser %v: FilterParser.renderConfig() succeeded, want error", tc.filterParser)
-		}
-	}
-}
-
 func TestFilterRewriteTag(t *testing.T) {
 	f := FilterRewriteTag{
 		Match: "test_match",
@@ -91,13 +58,6 @@ func TestFilterRewriteTag(t *testing.T) {
 	}
 	if diff := diff.Diff(want, got); diff != "" {
 		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
-	}
-}
-
-func TestFilterRewriteTagError(t *testing.T) {
-	f := FilterRewriteTag{}
-	if _, err := f.renderConfig(); err == nil {
-		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() succeeded, want error", f)
 	}
 }
 
@@ -147,37 +107,6 @@ func TestParserJSON(t *testing.T) {
 		}
 		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserJSON %v: ParserJSON.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserJSON, diff)
-		}
-	}
-}
-
-func TestParserJSONErrors(t *testing.T) {
-	tests := []struct {
-		parserJSON ParserJSON
-	}{
-		{
-			parserJSON: ParserJSON{},
-		},
-		{
-			parserJSON: ParserJSON{
-				TimeKey:    "test_time_key",
-				TimeFormat: "test_time_format",
-			},
-		},
-		{
-			parserJSON: ParserJSON{
-				TimeKey: "test_time_key",
-			},
-		},
-		{
-			parserJSON: ParserJSON{
-				TimeFormat: "test_time_format",
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.parserJSON.renderConfig(); err == nil {
-			t.Errorf("ParserJSON %v: ParserJSON.renderConfig() succeeded, want error", tc.parserJSON)
 		}
 	}
 }
@@ -245,39 +174,6 @@ func TestParserRegex(t *testing.T) {
 		}
 		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserRegex %v: ParserRegex.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserRegex, diff)
-		}
-	}
-}
-
-func TestParserRegexErrors(t *testing.T) {
-	tests := []struct {
-		parserRegex ParserRegex
-	}{
-		{},
-		{
-			parserRegex: ParserRegex{
-				TimeKey:    "test_time_key",
-				TimeFormat: "test_time_format",
-			},
-		},
-		{
-			parserRegex: ParserRegex{
-				Name:       "test_name",
-				TimeKey:    "test_time_key",
-				TimeFormat: "test_time_format",
-			},
-		},
-		{
-			parserRegex: ParserRegex{
-				Regex:      "test_regex",
-				TimeKey:    "test_time_key",
-				TimeFormat: "test_time_format",
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.parserRegex.renderConfig(); err == nil {
-			t.Errorf("ParserRegex %v: ParserRegex.renderConfig() succeeded, want error", tc.parserRegex)
 		}
 	}
 }
@@ -411,36 +307,6 @@ func TestTail(t *testing.T) {
 	}
 }
 
-func TestTailErrors(t *testing.T) {
-	tests := []struct {
-		tail Tail
-	}{
-		{
-			tail: Tail{
-				DB:   "test_db",
-				Path: "test_path",
-			},
-		},
-		{
-			tail: Tail{
-				Tag:  "test_tag",
-				Path: "test_path",
-			},
-		},
-		{
-			tail: Tail{
-				Tag: "test_tag",
-				DB:  "test_db",
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.tail.renderConfig(); err == nil {
-			t.Errorf("Tail %v: Tail.renderConfig() succeeded, want error", tc.tail)
-		}
-	}
-}
-
 func TestSyslog(t *testing.T) {
 	tests := []struct {
 		syslog               Syslog
@@ -486,53 +352,6 @@ func TestSyslog(t *testing.T) {
 	}
 }
 
-func TestSyslogErrors(t *testing.T) {
-	tests := []struct {
-		name   string
-		syslog Syslog
-	}{
-		{
-			name: "invalide mode",
-			syslog: Syslog{
-				Mode:   "invalid_mode",
-				Listen: "0.0.0.0",
-				Port:   1234,
-				Tag:    "test_tag",
-			},
-		},
-		{
-			name: "invalid listen",
-			syslog: Syslog{
-				Mode:   "tcp",
-				Listen: "non-IP",
-				Port:   1234,
-				Tag:    "test_tag",
-			},
-		},
-		{
-			name: "invalid port",
-			syslog: Syslog{
-				Mode:   "tcp",
-				Listen: "0.0.0.0",
-				Tag:    "test_tag",
-			},
-		},
-		{
-			name: "tag not provided",
-			syslog: Syslog{
-				Mode:   "tcp",
-				Listen: "0.0.0.0",
-				Port:   1234,
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.syslog.renderConfig(); err == nil {
-			t.Errorf("test %q: syslog.renderConfig() succeeded, want error.", tc.name)
-		}
-	}
-}
-
 func TestWinlog(t *testing.T) {
 	tests := []struct {
 		wineventlog          WindowsEventlog
@@ -562,37 +381,6 @@ func TestWinlog(t *testing.T) {
 		}
 		if diff := diff.Diff(tc.expectedWinlogConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran wineventlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
-		}
-	}
-}
-
-func TestWinlogErrors(t *testing.T) {
-	tests := []struct {
-		name        string
-		wineventlog WindowsEventlog
-	}{
-		{
-			name: "empty channels",
-			wineventlog: WindowsEventlog{
-				Tag:          "test_tag",
-				Channels:     "",
-				Interval_Sec: "1",
-				DB:           "test_DB",
-			},
-		},
-		{
-			name: "empty tag",
-			wineventlog: WindowsEventlog{
-				Tag:          "",
-				Channels:     "test_chl",
-				Interval_Sec: "1",
-				DB:           "test_DB",
-			},
-		},
-	}
-	for _, tc := range tests {
-		if _, err := tc.wineventlog.renderConfig(); err == nil {
-			t.Errorf("test %q: wineventlog.renderConfig() succeeded, want error.", tc.name)
 		}
 	}
 }
@@ -627,13 +415,6 @@ func TestStackdriver(t *testing.T) {
 	}
 	if diff := diff.Diff(want, got); diff != "" {
 		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
-	}
-}
-
-func TestStackdriverError(t *testing.T) {
-	s := Stackdriver{}
-	if _, err := s.renderConfig(); err == nil {
-		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() succeeded, want error", s)
 	}
 }
 
@@ -840,42 +621,6 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		}
 		if diff := diff.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
-		}
-	}
-}
-
-func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
-	tests := []struct {
-		name    string
-		tails   []*Tail
-		syslogs []*Syslog
-	}{
-		{
-			name: "an invalid Tail exists",
-			tails: []*Tail{{
-				DB:   "test_db",
-				Path: "test_path",
-			},
-			},
-		},
-		{
-			name: "an invalid Syslog exists",
-			syslogs: []*Syslog{{
-				Mode:   "not_syslog",
-				Listen: "",
-				Port:   0,
-				Tag:    "",
-			},
-			},
-		},
-	}
-	for _, tc := range tests {
-		_, _, err := Config{
-			Tails:   tc.tails,
-			Syslogs: tc.syslogs,
-		}.Generate()
-		if err == nil {
-			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}
 }
@@ -1201,32 +946,6 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 		}
 		if diff := diff.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitParserConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
-		}
-	}
-}
-
-func TestGenerateFluentBitParserConfigErrors(t *testing.T) {
-	tests := []struct {
-		name         string
-		jsonParsers  []*ParserJSON
-		regexParsers []*ParserRegex
-	}{
-		{
-			name:        "an invalid json parser exists",
-			jsonParsers: []*ParserJSON{{}},
-		},
-		{
-			name:         "an invalid regex parser exists",
-			regexParsers: []*ParserRegex{{}},
-		},
-	}
-	for _, tc := range tests {
-		_, _, err := Config{
-			JsonParsers:  tc.jsonParsers,
-			RegexParsers: tc.regexParsers,
-		}.Generate()
-		if err == nil {
-			t.Errorf("test %q: GenerateFluentBitParserConfig succeeded, want error", tc.name)
 		}
 	}
 }

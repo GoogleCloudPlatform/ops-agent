@@ -16,8 +16,6 @@
 package fluentbit
 
 import (
-	"fmt"
-	"net"
 	"sort"
 	"strings"
 	"text/template"
@@ -457,15 +455,6 @@ func (c Config) Generate() (mainConfig string, parserConfig string, err error) {
 	return mainConfig, parserConfig, nil
 }
 
-type emptyFieldErr struct {
-	plugin string
-	field  string
-}
-
-func (e emptyFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
-}
-
 // A FilterParserGroup represents a list of filters to be applied in order.
 type FilterParserGroup []*FilterParser
 
@@ -477,24 +466,6 @@ type FilterParser struct {
 }
 
 func (f FilterParser) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Match",
-		}
-	}
-	if f.KeyName == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "KeyName",
-		}
-	}
-	if f.Parser == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Parser",
-		}
-	}
 	var renderedFilterParserConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterParserConfig, "filter_parser", f); err != nil {
 		return "", err
@@ -510,18 +481,6 @@ type FilterModifyAddLogName struct {
 }
 
 func (f FilterModifyAddLogName) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - add logName",
-			field:  "Match",
-		}
-	}
-	if f.LogName == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - add logName",
-			field:  "LogName",
-		}
-	}
 	var renderedFilterModifyAddLogNameConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyAddLogNameConfig, "filter_modify_add_log_name", f); err != nil {
 		return "", err
@@ -536,12 +495,6 @@ type FilterModifyRemoveLogName struct {
 }
 
 func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - remove logName",
-			field:  "Match",
-		}
-	}
 	var renderedFilterModifyRemoveLogNameConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyRemoveLogNameConfig, "filter_modify_remove_log_name", f); err != nil {
 		return "", err
@@ -555,12 +508,6 @@ type FilterRewriteTag struct {
 }
 
 func (f FilterRewriteTag) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Match",
-		}
-	}
 	var renderedFilterRewriteTagConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterRewriteTagConfig, "filter_rewrite_tag", f); err != nil {
 		return "", err
@@ -577,12 +524,6 @@ type ParserJSON struct {
 
 // renderConfig generates a section for configure fluentBit JSON parser.
 func (p ParserJSON) renderConfig() (string, error) {
-	if p.Name == "" {
-		return "", emptyFieldErr{
-			plugin: "json parser",
-			field:  "name",
-		}
-	}
 	var b strings.Builder
 	if err := parserConfTemplate.ExecuteTemplate(&b, "parserJSON", p); err != nil {
 		return "", err
@@ -600,18 +541,6 @@ type ParserRegex struct {
 
 // renderConfig generates a section for configure fluentBit Regex parser.
 func (p ParserRegex) renderConfig() (string, error) {
-	if p.Name == "" {
-		return "", emptyFieldErr{
-			plugin: "regex parser",
-			field:  "name",
-		}
-	}
-	if p.Regex == "" {
-		return "", emptyFieldErr{
-			plugin: "regex parser",
-			field:  "regex",
-		}
-	}
 	var b strings.Builder
 	if err := parserConfTemplate.ExecuteTemplate(&b, "parserRegex", p); err != nil {
 		return "", err
@@ -629,40 +558,11 @@ type Tail struct {
 
 // renderConfig generates a section for configure fluentBit tail parser.
 func (t Tail) renderConfig() (string, error) {
-	if t.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "Tag",
-		}
-	}
-	//TODO: Add check that Path is a comma separated list.
-	if t.Path == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "Path",
-		}
-	}
-	if t.DB == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "DB",
-		}
-	}
 	var renderedTailConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedTailConfig, "tail", t); err != nil {
 		return "", err
 	}
 	return renderedTailConfig.String(), nil
-}
-
-type invalidValueErr struct {
-	plugin                string
-	field                 string
-	validValueExplanation string
-}
-
-func (e invalidValueErr) Error() string {
-	return fmt.Sprintf("got invalid value for %q plugin's field %q, should be %s", e.plugin, e.field, e.validValueExplanation)
 }
 
 // A Syslog represents the configuration data for fluentBit's syslog input plugin.
@@ -675,38 +575,6 @@ type Syslog struct {
 
 // renderConfig generates a section for configure fluentBit syslog input plugin.
 func (s Syslog) renderConfig() (string, error) {
-	switch m := s.Mode; m {
-	case "tcp", "udp":
-		if net.ParseIP(s.Listen) == nil {
-			return "", invalidValueErr{
-				plugin:                "syslog",
-				field:                 "Listen",
-				validValueExplanation: "a valid IP",
-			}
-		}
-		if s.Port == 0 {
-			return "", emptyFieldErr{
-				plugin: "syslog",
-				field:  "Port",
-			}
-		}
-	case "unix_tcp", "unix_udp":
-		// TODO: pending decision on setting up unix_tcp, unix_udp
-		fallthrough
-	default:
-		return "", invalidValueErr{
-			plugin:                "syslog",
-			field:                 "Mode",
-			validValueExplanation: "one of \"tcp\", \"udp\"",
-		}
-	}
-	if s.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "syslog",
-			field:  "Tag",
-		}
-	}
-
 	var renderedSyslogConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedSyslogConfig, "syslog", s); err != nil {
 		return "", err
@@ -724,21 +592,6 @@ type WindowsEventlog struct {
 
 // renderConfig generates a section for configure fluentBit wineventlog input plugin.
 func (w WindowsEventlog) renderConfig() (string, error) {
-	//TODO: Add check that Channels is a comma separated list.
-	if w.Channels == "" {
-		return "", emptyFieldErr{
-			plugin: "windows_event_log",
-			field:  "Channels",
-		}
-	}
-
-	if w.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "windows_event_log",
-			field:  "Tag",
-		}
-	}
-
 	var renderedWineventlogConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedWineventlogConfig, "wineventlog", w); err != nil {
 		return "", err
@@ -755,19 +608,6 @@ type Stackdriver struct {
 
 // renderConfig generates a section for configure fluentBit stackdriver output plugin.
 func (s Stackdriver) renderConfig() (string, error) {
-	if s.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "stackdriver",
-			field:  "Match",
-		}
-	}
-	if s.UserAgent == "" {
-		return "", emptyFieldErr{
-			plugin: "stackdriver",
-			field:  "stackdriver_agent",
-		}
-	}
-
 	var renderedStackdriverConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedStackdriverConfig, "stackdriver", s); err != nil {
 		return "", err
