@@ -28,12 +28,12 @@ var confTemplate = template.Must(template.New("conf").Parse(
 {{end}}
 processors:
   {{template "defaultprocessor" .}}
-{{- range .ExcludeMetrics}}
-  {{template "excludemetrics" .}}
+{{- range .Processors}}
+  {{.Generate -}}
 {{- end}}
 exporters:
-{{- range .Stackdriver}}
-  {{template "stackdriver" .}}
+{{- range .Exporters}}
+  {{.Generate -}}
 {{- end}}
 extensions:
 service:
@@ -663,15 +663,49 @@ func (r *MSSQL) DefaultPipelineID() string {
 	return "mssql"
 }
 
+type Processor interface {
+	Generate() (string, error)
+	GetID() string
+}
+
 type ExcludeMetrics struct {
 	ExcludeMetricsID string
 	MetricNames      []string
+}
+
+func (p *ExcludeMetrics) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "excludemetrics", p); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (p *ExcludeMetrics) GetID() string {
+	return p.ExcludeMetricsID
+}
+
+type Exporter interface {
+	Generate() (string, error)
+	GetID() string
 }
 
 type Stackdriver struct {
 	StackdriverID string
 	UserAgent     string
 	Prefix        string
+}
+
+func (e *Stackdriver) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "stackdriver", e); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (e *Stackdriver) GetID() string {
+	return e.StackdriverID
 }
 
 type Service struct {
@@ -682,23 +716,24 @@ type Service struct {
 }
 
 type Config struct {
-	Receivers      []Receiver
-	ExcludeMetrics []*ExcludeMetrics
-	Stackdriver    []*Stackdriver
-	Service        []*Service
-	UserAgent      string
-	Version        string
-	Windows        bool
+	Receivers  []Receiver
+	Processors []Processor
+	Exporters  []Exporter
+	Service    []*Service
+	UserAgent  string
+	Version    string
+	Windows    bool
 }
 
 func (c Config) Generate() (string, error) {
-	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
+	c.Exporters = append(c.Exporters, &Stackdriver{
 		StackdriverID: "googlecloud/agent",
 		Prefix:        "agent.googleapis.com/",
 		UserAgent:     c.UserAgent,
 	})
 
-	for _, s := range c.Stackdriver {
+	for _, s := range c.Exporters {
+		s := s.(*Stackdriver)
 		s.UserAgent = c.UserAgent
 	}
 

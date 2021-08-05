@@ -140,11 +140,11 @@ func TestSection(t *testing.T) {
 
 func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
-		name            string
-		receiverList    []Receiver
-		stackdriverList []*Stackdriver
-		serviceList     []*Service
-		want            string
+		name         string
+		receiverList []Receiver
+		exporterList []Exporter
+		serviceList  []*Service
+		want         string
 	}{
 		{
 			name: "default system metrics config",
@@ -162,11 +162,13 @@ func TestGenerateOtelConfig(t *testing.T) {
 					CollectionInterval: "60s",
 				},
 			},
-			stackdriverList: []*Stackdriver{{
-				StackdriverID: "googlecloud/google",
-				UserAgent:     "$IGNORED_VALUE",
-				Prefix:        "agent.googleapis.com/",
-			}},
+			exporterList: []Exporter{
+				&Stackdriver{
+					StackdriverID: "googlecloud/google",
+					UserAgent:     "$IGNORED_VALUE",
+					Prefix:        "agent.googleapis.com/",
+				},
+			},
 			serviceList: []*Service{
 				{
 					ID:         "system",
@@ -715,9 +717,9 @@ service:
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := Config{
-				Receivers:   tc.receiverList,
-				Stackdriver: tc.stackdriverList,
-				Service:     tc.serviceList,
+				Receivers: tc.receiverList,
+				Exporters: tc.exporterList,
+				Service:   tc.serviceList,
 
 				UserAgent: "Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)",
 				Version:   "google-cloud-ops-agent-metrics/latest-build_distro",

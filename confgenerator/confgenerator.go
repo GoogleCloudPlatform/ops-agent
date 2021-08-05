@@ -41,12 +41,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	receiverList := []otel.Receiver{}
-	stackdriverList := []*otel.Stackdriver{}
+	exporterList := []otel.Exporter{}
 	serviceList := []*otel.Service{}
-	excludeMetricsList := []*otel.ExcludeMetrics{}
+	processorList := []otel.Processor{}
 	receiverMap := make(map[string]otel.Receiver)
-	exporterNameMap := make(map[string]string)
-	processorNameMap := make(map[string]string)
+	exporterMap := make(map[string]otel.Exporter)
+	processorMap := make(map[string]otel.Processor)
 	if metrics != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
@@ -64,24 +64,24 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		stackdriverList, exporterNameMap, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
+		exporterList, exporterMap, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
-		excludeMetricsList, processorNameMap, err = generateOtelProcessors(metrics.Processors, metrics.Service.Pipelines)
+		processorList, processorMap, err = generateOtelProcessors(metrics.Processors, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
-		serviceList, err = generateOtelServices(receiverMap, exporterNameMap, processorNameMap, metrics.Service.Pipelines)
+		serviceList, err = generateOtelServices(receiverMap, exporterMap, processorMap, metrics.Service.Pipelines)
 		if err != nil {
 			return "", err
 		}
 	}
 	otelConfig, err := otel.Config{
-		Receivers:      receiverList,
-		ExcludeMetrics: excludeMetricsList,
-		Stackdriver:    stackdriverList,
-		Service:        serviceList,
+		Receivers:  receiverList,
+		Processors: processorList,
+		Exporters:  exporterList,
+		Service:    serviceList,
 
 		UserAgent: userAgent,
 		Version:   versionLabel,
@@ -138,39 +138,38 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 	return receiverList, receiverMap, nil
 }
 
-func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
-	stackdriverList := []*otel.Stackdriver{}
-	exportNameMap := make(map[string]string)
+func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]otel.Exporter, map[string]otel.Exporter, error) {
+	exporterList := []otel.Exporter{}
+	exporterMap := make(map[string]otel.Exporter)
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, eID := range p.ExporterIDs {
-			exporter, ok := exporters[eID]
-			if !ok {
+			if _, ok := exporterMap[eID]; ok {
 				continue
 			}
-			switch exporter.Type() {
-			case "google_cloud_monitoring":
-				if _, ok := exportNameMap[eID]; !ok {
+			if exporter, ok := exporters[eID]; ok {
+				switch exporter.Type() {
+				case "google_cloud_monitoring":
 					stackdriver := otel.Stackdriver{
 						StackdriverID: "googlecloud/" + eID,
 						Prefix:        "agent.googleapis.com/",
 					}
-					stackdriverList = append(stackdriverList, &stackdriver)
-					exportNameMap[eID] = "googlecloud/" + eID
+					exporterList = append(exporterList, &stackdriver)
+					exporterMap[eID] = &stackdriver
 				}
 			}
 		}
 	}
-	return stackdriverList, exportNameMap, nil
+	return exporterList, exporterMap, nil
 }
 
-func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
-	excludeMetricsList := []*otel.ExcludeMetrics{}
-	processorNameMap := make(map[string]string)
+func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]otel.Processor, map[string]otel.Processor, error) {
+	processorList := []otel.Processor{}
+	processorMap := make(map[string]otel.Processor)
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, processorID := range p.ProcessorIDs {
-			if _, ok := processorNameMap[processorID]; ok {
+			if _, ok := processorMap[processorID]; ok {
 				continue
 			}
 			if p, ok := processors[processorID]; ok {
@@ -188,20 +187,20 @@ func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines ma
 						}
 						metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
 					}
-					processorNameMap[processorID] = "filter/exclude_" + processorID
 					excludeMetrics := otel.ExcludeMetrics{
-						ExcludeMetricsID: processorNameMap[processorID],
+						ExcludeMetricsID: "filter/exclude_" + processorID,
 						MetricNames:      metricNames,
 					}
-					excludeMetricsList = append(excludeMetricsList, &excludeMetrics)
+					processorList = append(processorList, &excludeMetrics)
+					processorMap[processorID] = &excludeMetrics
 				}
 			}
 		}
 	}
-	return excludeMetricsList, processorNameMap, nil
+	return processorList, processorMap, nil
 }
 
-func generateOtelServices(receiverMap map[string]otel.Receiver, exporterNameMap map[string]string, processorNameMap map[string]string, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
+func generateOtelServices(receiverMap map[string]otel.Receiver, exporterMap map[string]otel.Exporter, processorMap map[string]otel.Processor, pipelines map[string]*MetricsPipeline) ([]*otel.Service, error) {
 	serviceList := []*otel.Service{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -214,12 +213,12 @@ func generateOtelServices(receiverMap map[string]otel.Receiver, exporterNameMap 
 			var processorIDs []string
 			processorIDs = append(processorIDs, r.DefaultProcessors()...)
 			for _, processorID := range p.ProcessorIDs {
-				processorIDs = append(processorIDs, processorNameMap[processorID])
+				processorIDs = append(processorIDs, processorMap[processorID].GetID())
 			}
 
 			var pExportIDs []string
 			for _, eID := range p.ExporterIDs {
-				pExportIDs = append(pExportIDs, exporterNameMap[eID])
+				pExportIDs = append(pExportIDs, exporterMap[eID].GetID())
 			}
 			service := otel.Service{
 				ID:         r.DefaultPipelineID(),
