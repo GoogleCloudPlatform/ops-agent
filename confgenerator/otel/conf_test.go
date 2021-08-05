@@ -101,9 +101,9 @@ func TestSection(t *testing.T) {
 		{
 			section: Service{
 				ID:         "system",
-				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Receivers:  "[hostmetrics/hostmetrics]",
-				Exporters:  "[googlecloud/google]",
+				Processors: []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"},
+				Receivers:  []string{"hostmetrics/hostmetrics"},
+				Exporters:  []string{"googlecloud/google"},
 			},
 			want: `metrics/system:
       receivers:  [hostmetrics/hostmetrics]
@@ -172,21 +172,21 @@ func TestGenerateOtelConfig(t *testing.T) {
 			serviceList: []*Service{
 				{
 					ID:         "system",
-					Receivers:  "[hostmetrics/hostmetrics]",
-					Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+					Receivers:  []string{"hostmetrics/hostmetrics"},
+					Processors: []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
 				{
 					ID:         "mssql",
-					Receivers:  "[windowsperfcounters/mssql_mssql]",
-					Processors: "[metricstransform/mssql,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+					Receivers:  []string{"windowsperfcounters/mssql_mssql"},
+					Processors: []string{"metricstransform/mssql", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
 				{
 					ID:         "iis",
-					Receivers:  "[windowsperfcounters/iis_iis]",
-					Processors: "[metricstransform/iis,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+					Receivers:  []string{"windowsperfcounters/iis_iis"},
+					Processors: []string{"metricstransform/iis", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
 			},
 			want: `receivers:
