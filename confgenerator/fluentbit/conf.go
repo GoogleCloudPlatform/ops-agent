@@ -86,67 +86,6 @@ const (
 
 {{end}}`
 
-	parserConfTemplate = `[PARSER]
-    Name        lib:default_message_parser
-    Format      regex
-    Regex       ^(?<message>.*)$
-
-[PARSER]
-    Name        lib:apache
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:apache2
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name   lib:apache_error
-    Format regex
-    Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
-
-[PARSER]
-    Name        lib:mongodb
-    Format      regex
-    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L
-
-[PARSER]
-    Name        lib:nginx
-    Format      regex
-    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:syslog-rfc5424
-    Format      regex
-    Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
-
-[PARSER]
-    Name        lib:syslog-rfc3164
-    Format      regex
-    Regex       /^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
-    Time_Key    time
-    Time_Format %b %d %H:%M:%S
-
-{{range .JSONParserConfigSections -}}
-{{.}}
-
-{{end}}
-{{- range .RegexParserConfigSections -}}
-{{.}}
-
-{{end}}`
-
 	filterModifyAddLogNameConf = `[FILTER]
     Name  modify
     Match {{.Match}}
@@ -169,27 +108,6 @@ const (
     Rule                  $logName .* $logName false
     Emitter_Storage.type  filesystem
     Emitter_Mem_Buf_Limit 10M`
-
-	parserJSONConf = `[PARSER]
-    Name        {{.Name}}
-    Format      json
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
-{{- if (ne .TimeFormat "")}}
-    Time_Format {{.TimeFormat}}
-{{- end}}`
-
-	parserRegexConf = `[PARSER]
-    Name        {{.Name}}
-    Format      regex
-    Regex       {{.Regex}}
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
-{{- if (ne .TimeFormat "")}}
-    Time_Format {{.TimeFormat}}
-{{- end}}`
 
 	tailConf = `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
@@ -271,6 +189,88 @@ const (
     tls         On
     # Do not force certificate validation.
     tls.verify  Off`
+
+	parserConfTemplate = `[PARSER]
+    Name        lib:default_message_parser
+    Format      regex
+    Regex       ^(?<message>.*)$
+
+[PARSER]
+    Name        lib:apache
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
+    Time_Key    time
+    Time_Format %d/%b/%Y:%H:%M:%S %z
+
+[PARSER]
+    Name        lib:apache2
+    Format      regex
+    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
+    Time_Key    time
+    Time_Format %d/%b/%Y:%H:%M:%S %z
+
+[PARSER]
+    Name   lib:apache_error
+    Format regex
+    Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
+
+[PARSER]
+    Name        lib:mongodb
+    Format      regex
+    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+
+[PARSER]
+    Name        lib:nginx
+    Format      regex
+    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
+    Time_Key    time
+    Time_Format %d/%b/%Y:%H:%M:%S %z
+
+[PARSER]
+    Name        lib:syslog-rfc5424
+    Format      regex
+    Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
+
+[PARSER]
+    Name        lib:syslog-rfc3164
+    Format      regex
+    Regex       /^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
+    Time_Key    time
+    Time_Format %b %d %H:%M:%S
+
+{{range .JSONParserConfigSections -}}
+{{.}}
+
+{{end}}
+{{- range .RegexParserConfigSections -}}
+{{.}}
+
+{{end}}`
+
+	parserJSONConf = `[PARSER]
+    Name        {{.Name}}
+    Format      json
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
+{{- end}}
+{{- if (ne .TimeFormat "")}}
+    Time_Format {{.TimeFormat}}
+{{- end}}`
+
+	parserRegexConf = `[PARSER]
+    Name        {{.Name}}
+    Format      regex
+    Regex       {{.Regex}}
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
+{{- end}}
+{{- if (ne .TimeFormat "")}}
+    Time_Format {{.TimeFormat}}
+{{- end}}`
 )
 
 type mainConfigSections struct {
