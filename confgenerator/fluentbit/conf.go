@@ -23,8 +23,7 @@ import (
 	"text/template"
 )
 
-const (
-	mainConfTemplate = `[SERVICE]
+var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[SERVICE]
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
     Flush      1
@@ -84,32 +83,36 @@ const (
 {{- range .StackdriverConfigSections -}}
 {{.}}
 
-{{end}}`
-
-	filterModifyAddLogNameConf = `[FILTER]
+{{end}}
+{{- define "filter_modify_add_log_name" -}}
+[FILTER]
     Name  modify
     Match {{.Match}}
-    Add   logName {{.LogName}}`
-
-	filterModifyRemoveLogNameConf = `[FILTER]
+    Add   logName {{.LogName}}
+{{- end -}}
+{{- define "filter_modify_remove_log_name" -}}
+[FILTER]
     Name   modify
     Match  {{.Match}}
-    Remove logName`
-
-	filterParserConf = `[FILTER]
+    Remove logName
+{{- end -}}
+{{- define "filter_parser" -}}
+[FILTER]
     Name     parser
     Match    {{.Match}}
     Key_Name {{.KeyName}}
-    Parser   {{.Parser}}`
-
-	filterRewriteTagConf = `[FILTER]
+    Parser   {{.Parser}}
+{{- end -}}
+{{- define "filter_rewrite_tag" -}}
+[FILTER]
     Name                  rewrite_tag
     Match                 {{.Match}}
     Rule                  $logName .* $logName false
     Emitter_Storage.type  filesystem
-    Emitter_Mem_Buf_Limit 10M`
-
-	tailConf = `[INPUT]
+    Emitter_Mem_Buf_Limit 10M
+{{- end -}}
+{{- define "tail" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
     Tag                {{.Tag}}
@@ -140,9 +143,10 @@ const (
     # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
     # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit      10M`
-
-	syslogConf = `[INPUT]
+    Mem_Buf_Limit      10M
+{{- end -}}
+{{- define "syslog" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
     Tag            {{.Tag}}
@@ -160,17 +164,19 @@ const (
     # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
     # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit  10M`
-
-	wineventlogConf = `[INPUT]
+    Mem_Buf_Limit  10M
+{{- end -}}
+{{- define "wineventlog" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
     Name           winlog
     Tag            {{.Tag}}
     Channels       {{.Channels}}
     Interval_Sec   1
-    DB             {{.DB}}`
-
-	stackdriverConf = `[OUTPUT]
+    DB             {{.DB}}
+{{- end -}}
+{{- define "stackdriver" -}}
+[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
     Match_Regex       ^({{.Match}})$
@@ -186,9 +192,11 @@ const (
     # Enable TLS support.
     tls         On
     # Do not force certificate validation.
-    tls.verify  Off`
+    tls.verify  Off
+{{- end -}}
+`))
 
-	parserConfTemplate = `[PARSER]
+var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse(`[PARSER]
     Name        lib:default_message_parser
     Format      regex
     Regex       ^(?<message>.*)$
@@ -247,9 +255,9 @@ const (
 {{- range .RegexParserConfigSections -}}
 {{.}}
 
-{{end}}`
-
-	parserJSONConf = `[PARSER]
+{{end}}
+{{- define "parserJSON" -}}
+[PARSER]
     Name        {{.Name}}
     Format      json
 {{- if (ne .TimeKey "")}}
@@ -257,9 +265,10 @@ const (
 {{- end}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
-{{- end}}`
-
-	parserRegexConf = `[PARSER]
+{{- end}}
+{{- end -}}
+{{- define "parserRegex" -}}
+[PARSER]
     Name        {{.Name}}
     Format      regex
     Regex       {{.Regex}}
@@ -268,8 +277,9 @@ const (
 {{- end}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
-{{- end}}`
-)
+{{- end}}
+{{- end -}}
+`))
 
 type mainConfigSections struct {
 	TailConfigSections                      []string
@@ -383,13 +393,9 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
 		StackdriverConfigSections:               stackdriverConfigSections,
 	}
-	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
-	if err != nil {
-		return "", err
-	}
 
 	var mainConfigBuilder strings.Builder
-	if err := mt.Execute(&mainConfigBuilder, configSections); err != nil {
+	if err := mainConfTemplate.Execute(&mainConfigBuilder, configSections); err != nil {
 		return "", err
 	}
 	return mainConfigBuilder.String(), nil
@@ -415,16 +421,13 @@ func GenerateFluentBitParserConfig(jsonParsers []*ParserJSON, regexParsers []*Pa
 		regexParserConfigSections = append(regexParserConfigSections, configSection)
 	}
 
-	var parserConfigBuilder strings.Builder
-	parserTemplate, err := template.New("fluentBitParserConf").Parse(parserConfTemplate)
-	if err != nil {
-		return "", err
-	}
 	parsers := parserConfigSections{
 		JSONParserConfigSections:  jsonParserConfigSections,
 		RegexParserConfigSections: regexParserConfigSections,
 	}
-	if err := parserTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
+
+	var parserConfigBuilder strings.Builder
+	if err := parserConfTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
 		return "", err
 	}
 	return parserConfigBuilder.String(), nil
@@ -449,8 +452,6 @@ type FilterParser struct {
 	Parser  string
 }
 
-var filterParserTemplate = template.Must(template.New("filter_parser").Parse(filterParserConf))
-
 func (f FilterParser) renderConfig() (string, error) {
 	if f.Match == "" {
 		return "", emptyFieldErr{
@@ -471,7 +472,7 @@ func (f FilterParser) renderConfig() (string, error) {
 		}
 	}
 	var renderedFilterParserConfig strings.Builder
-	if err := filterParserTemplate.Execute(&renderedFilterParserConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterParserConfig, "filter_parser", f); err != nil {
 		return "", err
 	}
 	return renderedFilterParserConfig.String(), nil
@@ -483,8 +484,6 @@ type FilterModifyAddLogName struct {
 	Match   string
 	LogName string
 }
-
-var filterModifyAddLogNameTemplate = template.Must(template.New("filter_modify_add_log_name").Parse(filterModifyAddLogNameConf))
 
 func (f FilterModifyAddLogName) renderConfig() (string, error) {
 	if f.Match == "" {
@@ -500,7 +499,7 @@ func (f FilterModifyAddLogName) renderConfig() (string, error) {
 		}
 	}
 	var renderedFilterModifyAddLogNameConfig strings.Builder
-	if err := filterModifyAddLogNameTemplate.Execute(&renderedFilterModifyAddLogNameConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyAddLogNameConfig, "filter_modify_add_log_name", f); err != nil {
 		return "", err
 	}
 	return renderedFilterModifyAddLogNameConfig.String(), nil
@@ -512,8 +511,6 @@ type FilterModifyRemoveLogName struct {
 	Match string
 }
 
-var filterModifyRemoveLogNameTemplate = template.Must(template.New("filter_modify_remove_log_name").Parse(filterModifyRemoveLogNameConf))
-
 func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
 	if f.Match == "" {
 		return "", emptyFieldErr{
@@ -522,7 +519,7 @@ func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
 		}
 	}
 	var renderedFilterModifyRemoveLogNameConfig strings.Builder
-	if err := filterModifyRemoveLogNameTemplate.Execute(&renderedFilterModifyRemoveLogNameConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyRemoveLogNameConfig, "filter_modify_remove_log_name", f); err != nil {
 		return "", err
 	}
 	return renderedFilterModifyRemoveLogNameConfig.String(), nil
@@ -533,8 +530,6 @@ type FilterRewriteTag struct {
 	Match string
 }
 
-var filterRewriteTagTemplate = template.Must(template.New("filter_rewrite_tag").Parse(filterRewriteTagConf))
-
 func (f FilterRewriteTag) renderConfig() (string, error) {
 	if f.Match == "" {
 		return "", emptyFieldErr{
@@ -543,7 +538,7 @@ func (f FilterRewriteTag) renderConfig() (string, error) {
 		}
 	}
 	var renderedFilterRewriteTagConfig strings.Builder
-	if err := filterRewriteTagTemplate.Execute(&renderedFilterRewriteTagConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterRewriteTagConfig, "filter_rewrite_tag", f); err != nil {
 		return "", err
 	}
 	return renderedFilterRewriteTagConfig.String(), nil
@@ -556,8 +551,6 @@ type ParserJSON struct {
 	TimeFormat string
 }
 
-var parserJSONTemplate = template.Must(template.New("parserJSON").Parse(parserJSONConf))
-
 // renderConfig generates a section for configure fluentBit JSON parser.
 func (p ParserJSON) renderConfig() (string, error) {
 	if p.Name == "" {
@@ -567,7 +560,7 @@ func (p ParserJSON) renderConfig() (string, error) {
 		}
 	}
 	var b strings.Builder
-	if err := parserJSONTemplate.Execute(&b, p); err != nil {
+	if err := parserConfTemplate.ExecuteTemplate(&b, "parserJSON", p); err != nil {
 		return "", err
 	}
 	return b.String(), nil
@@ -580,8 +573,6 @@ type ParserRegex struct {
 	TimeKey    string
 	TimeFormat string
 }
-
-var parserRegexTemplate = template.Must(template.New("parserRegex").Parse(parserRegexConf))
 
 // renderConfig generates a section for configure fluentBit Regex parser.
 func (p ParserRegex) renderConfig() (string, error) {
@@ -598,7 +589,7 @@ func (p ParserRegex) renderConfig() (string, error) {
 		}
 	}
 	var b strings.Builder
-	if err := parserRegexTemplate.Execute(&b, p); err != nil {
+	if err := parserConfTemplate.ExecuteTemplate(&b, "parserRegex", p); err != nil {
 		return "", err
 	}
 	return b.String(), nil
@@ -634,13 +625,11 @@ func (t Tail) renderConfig() (string, error) {
 		}
 	}
 	var renderedTailConfig strings.Builder
-	if err := tailTemplate.Execute(&renderedTailConfig, t); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedTailConfig, "tail", t); err != nil {
 		return "", err
 	}
 	return renderedTailConfig.String(), nil
 }
-
-var tailTemplate = template.Must(template.New("tail").Parse(tailConf))
 
 type invalidValueErr struct {
 	plugin                string
@@ -659,8 +648,6 @@ type Syslog struct {
 	Port   uint16
 	Tag    string
 }
-
-var syslogTemplate = template.Must(template.New("syslog").Parse(syslogConf))
 
 // renderConfig generates a section for configure fluentBit syslog input plugin.
 func (s Syslog) renderConfig() (string, error) {
@@ -697,7 +684,7 @@ func (s Syslog) renderConfig() (string, error) {
 	}
 
 	var renderedSyslogConfig strings.Builder
-	if err := syslogTemplate.Execute(&renderedSyslogConfig, s); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedSyslogConfig, "syslog", s); err != nil {
 		return "", err
 	}
 	return renderedSyslogConfig.String(), nil
@@ -710,8 +697,6 @@ type WindowsEventlog struct {
 	Interval_Sec string
 	DB           string
 }
-
-var wineventlogTemplate = template.Must(template.New("wineventlog").Parse(wineventlogConf))
 
 // renderConfig generates a section for configure fluentBit wineventlog input plugin.
 func (w WindowsEventlog) renderConfig() (string, error) {
@@ -731,7 +716,7 @@ func (w WindowsEventlog) renderConfig() (string, error) {
 	}
 
 	var renderedWineventlogConfig strings.Builder
-	if err := wineventlogTemplate.Execute(&renderedWineventlogConfig, w); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedWineventlogConfig, "wineventlog", w); err != nil {
 		return "", err
 	}
 	return renderedWineventlogConfig.String(), nil
@@ -742,8 +727,6 @@ type Stackdriver struct {
 	Match     string
 	UserAgent string
 }
-
-var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
 
 // renderConfig generates a section for configure fluentBit stackdriver output plugin.
 func (s Stackdriver) renderConfig() (string, error) {
@@ -761,7 +744,7 @@ func (s Stackdriver) renderConfig() (string, error) {
 	}
 
 	var renderedStackdriverConfig strings.Builder
-	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedStackdriverConfig, "stackdriver", s); err != nil {
 		return "", err
 	}
 	return renderedStackdriverConfig.String(), nil
