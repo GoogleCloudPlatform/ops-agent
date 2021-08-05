@@ -18,6 +18,7 @@ package confgenerator
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -156,6 +157,17 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 	}
+
+	// make sure all collections are sorted so that generated configs are consistently generated
+	sort.Slice(fbTails, func(i, j int) bool { return fbTails[i].Tag < fbTails[j].Tag })
+	sort.Slice(fbSyslogs, func(i, j int) bool { return fbSyslogs[i].Tag < fbSyslogs[j].Tag })
+	sort.Slice(fbWinEventlogs, func(i, j int) bool { return fbWinEventlogs[i].Tag < fbWinEventlogs[j].Tag })
+	sort.Slice(fbFilterParserGroups, func(i, j int) bool { return fbFilterParserGroups[i][0].Match < fbFilterParserGroups[j][0].Match })
+	sort.Slice(fbFilterAddLogNames, func(i, j int) bool { return fbFilterAddLogNames[i].Match < fbFilterAddLogNames[j].Match })
+	sort.Slice(fbFilterRemoveLogNames, func(i, j int) bool { return fbFilterRemoveLogNames[i].Match < fbFilterRemoveLogNames[j].Match })
+	sort.Slice(fbFilterRewriteTags, func(i, j int) bool { return fbFilterRewriteTags[i].Match < fbFilterRewriteTags[j].Match })
+	sort.Slice(fbStackdrivers, func(i, j int) bool { return fbStackdrivers[i].Match < fbStackdrivers[j].Match })
+
 	mainConfig, parserConfig, err := fluentbit.Config{
 		Tails:                      fbTails,
 		Syslogs:                    fbSyslogs,
