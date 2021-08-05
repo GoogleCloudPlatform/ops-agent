@@ -16,6 +16,7 @@
 package otel
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -135,9 +136,9 @@ service:
 
 {{define "service" -}}
     metrics/{{.ID}}:
-      receivers:  {{.Receivers}}
-      processors: {{.Processors}}
-      exporters: {{.Exporters}}
+      receivers:  {{.Join .Receivers}}
+      processors: {{.Join .Processors}}
+      exporters: {{.Join .Exporters}}
 {{- end -}}
 
 {{define "defaultprocessor" -}}
@@ -710,9 +711,13 @@ func (e *Stackdriver) GetID() string {
 
 type Service struct {
 	ID         string
-	Processors string
-	Receivers  string
-	Exporters  string
+	Processors []string
+	Receivers  []string
+	Exporters  []string
+}
+
+func (s Service) Join(l []string) string {
+	return fmt.Sprintf("[%s]", strings.Join(l, ","))
 }
 
 type Config struct {

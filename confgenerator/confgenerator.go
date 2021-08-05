@@ -222,9 +222,9 @@ func generateOtelServices(receiverMap map[string]otel.Receiver, exporterMap map[
 			}
 			service := otel.Service{
 				ID:         r.DefaultPipelineID(),
-				Receivers:  fmt.Sprintf("[%s]", r.GetID()),
-				Processors: fmt.Sprintf("[%s]", strings.Join(processorIDs, ",")),
-				Exporters:  fmt.Sprintf("[%s]", strings.Join(pExportIDs, ",")),
+				Receivers:  []string{r.GetID()},
+				Processors: processorIDs,
+				Exporters:  pExportIDs,
 			}
 			serviceList = append(serviceList, &service)
 		}
