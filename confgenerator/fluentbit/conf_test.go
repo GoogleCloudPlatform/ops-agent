@@ -192,9 +192,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -228,9 +228,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -266,9 +266,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -322,9 +322,9 @@ func TestSyslog(t *testing.T) {
 			expectedSyslogConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag
     Mode           tcp
     Listen         0.0.0.0
-    Tag            test_tag
     Port           1234
     Parser         lib:default_message_parser
 
@@ -366,8 +366,8 @@ func TestWinlog(t *testing.T) {
 			},
 			expectedWinlogConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            windows_event_log
     Name           winlog
+    Tag            windows_event_log
     Channels       System,Application,Security
     Interval_Sec   1
     DB             test_DB`,
@@ -394,10 +394,10 @@ func TestStackdriver(t *testing.T) {
 	want := `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
+    Match_Regex       ^(test_match)$
     resource          gce_instance
     stackdriver_agent user_agent
     workers           8
-    Match_Regex       ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -512,9 +512,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db1
-    Path               test_path1
     Tag                test_tag1
+    Path               test_path1
+    DB                 test_db1
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -541,9 +541,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db2
-    Path               test_path2
     Tag                test_tag2
+    Path               test_path2
+    DB                 test_db2
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -570,9 +570,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag1
     Mode           tcp
     Listen         0.0.0.0
-    Tag            test_tag1
     Port           1234
     Parser         lib:default_message_parser
 
@@ -590,9 +590,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag2
     Mode           udp
     Listen         0.0.0.0
-    Tag            test_tag2
     Port           5678
     Parser         lib:default_message_parser
 
@@ -686,9 +686,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db1
-    Path               test_path1
     Tag                test_tag1
+    Path               test_path1
+    DB                 test_db1
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -715,9 +715,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db2
-    Path               test_path2
     Tag                test_tag2
+    Path               test_path2
+    DB                 test_db2
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -743,16 +743,16 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            win_tag1
     Name           winlog
+    Tag            win_tag1
     Channels       chl1
     Interval_Sec   1
     DB             test_DB1
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            win_tag2
     Name           winlog
+    Tag            win_tag2
     Channels       chl2
     Interval_Sec   1
     DB             test_DB2

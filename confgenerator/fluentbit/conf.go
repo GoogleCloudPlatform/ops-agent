@@ -113,9 +113,9 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 {{.DB}}
-    Path               {{.Path}}
     Tag                {{.Tag}}
+    Path               {{.Path}}
+    DB                 {{.DB}}
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -147,9 +147,9 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            {{.Tag}}
     Mode           {{.Mode}}
     Listen         {{.Listen}}
-    Tag            {{.Tag}}
     Port           {{.Port}}
     Parser         lib:default_message_parser
 
@@ -167,8 +167,8 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 {{- define "wineventlog" -}}
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            {{.Tag}}
     Name           winlog
+    Tag            {{.Tag}}
     Channels       {{.Channels}}
     Interval_Sec   1
     DB             {{.DB}}
@@ -177,12 +177,12 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 [OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
+    Match_Regex       ^({{.Match}})$
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
     {{- if .Workers}}
     workers           {{.Workers}}
     {{- end}}
-    Match_Regex       ^({{.Match}})$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
