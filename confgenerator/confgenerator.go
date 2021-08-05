@@ -286,11 +286,20 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 	}
-	mainConfig, err := fluentbit.GenerateFluentBitMainConfig(fbTails, fbSyslogs, fbWinEventlogs, fbFilterParserGroups, fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, fbStackdrivers, userAgent)
-	if err != nil {
-		return "", "", err
-	}
-	parserConfig, err := fluentbit.GenerateFluentBitParserConfig(jsonParsers, regexParsers)
+	mainConfig, parserConfig, err := fluentbit.Config{
+		Tails:                      fbTails,
+		Syslogs:                    fbSyslogs,
+		Wineventlogs:               fbWinEventlogs,
+		FilterParserGroups:         fbFilterParserGroups,
+		FilterModifyAddLogNames:    fbFilterAddLogNames,
+		FilterModifyRemoveLogNames: fbFilterRemoveLogNames,
+		FilterRewriteTags:          fbFilterRewriteTags,
+		Stackdrivers:               fbStackdrivers,
+		JsonParsers:                jsonParsers,
+		RegexParsers:               regexParsers,
+
+		UserAgent: userAgent,
+	}.Generate()
 	if err != nil {
 		return "", "", err
 	}

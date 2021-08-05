@@ -299,12 +299,21 @@ type parserConfigSections struct {
 	RegexParserConfigSections []string
 }
 
-// GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs []*WindowsEventlog, filterParserGroups []FilterParserGroup,
-	filterModifyAddLogNames []*FilterModifyAddLogName,
-	filterRewriteTags []*FilterRewriteTag,
-	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
-	stackdrivers []*Stackdriver, userAgent string) (string, error) {
+type Config struct {
+	Tails                      []*Tail
+	Syslogs                    []*Syslog
+	Wineventlogs               []*WindowsEventlog
+	FilterParserGroups         []FilterParserGroup
+	FilterModifyAddLogNames    []*FilterModifyAddLogName
+	FilterRewriteTags          []*FilterRewriteTag
+	FilterModifyRemoveLogNames []*FilterModifyRemoveLogName
+	Stackdrivers               []*Stackdriver
+	JsonParsers                []*ParserJSON
+	RegexParsers               []*ParserRegex
+	UserAgent                  string
+}
+
+func (c Config) generateMain() (string, error) {
 	tailConfigSections := []string{}
 	syslogConfigSections := []string{}
 	wineventlogConfigSections := []string{}
@@ -313,28 +322,28 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 	filterRewriteTagSections := []string{}
 	filterModifyRemoveLogNameConfigSections := []string{}
 	stackdriverConfigSections := []string{}
-	for _, t := range tails {
+	for _, t := range c.Tails {
 		configSection, err := t.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		tailConfigSections = append(tailConfigSections, configSection)
 	}
-	for _, s := range syslogs {
+	for _, s := range c.Syslogs {
 		configSection, err := s.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		syslogConfigSections = append(syslogConfigSections, configSection)
 	}
-	for _, w := range wineventlogs {
+	for _, w := range c.Wineventlogs {
 		configSection, err := w.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		wineventlogConfigSections = append(wineventlogConfigSections, configSection)
 	}
-	for _, filterParsers := range filterParserGroups {
+	for _, filterParsers := range c.FilterParserGroups {
 		var filters []string
 		for _, f := range filterParsers {
 			configSection, err := f.renderConfig()
@@ -345,29 +354,29 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 		}
 		filterParserConfigSections = append(filterParserConfigSections, strings.Join(filters, "\n\n"))
 	}
-	for _, f := range filterModifyAddLogNames {
+	for _, f := range c.FilterModifyAddLogNames {
 		configSection, err := f.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		filterModifyAddLogNameConfigSections = append(filterModifyAddLogNameConfigSections, configSection)
 	}
-	for _, f := range filterRewriteTags {
+	for _, f := range c.FilterRewriteTags {
 		configSection, err := f.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		filterRewriteTagSections = append(filterRewriteTagSections, configSection)
 	}
-	for _, f := range filterModifyRemoveLogNames {
+	for _, f := range c.FilterModifyRemoveLogNames {
 		configSection, err := f.renderConfig()
 		if err != nil {
 			return "", err
 		}
 		filterModifyRemoveLogNameConfigSections = append(filterModifyRemoveLogNameConfigSections, configSection)
 	}
-	for _, s := range stackdrivers {
-		s.UserAgent = userAgent
+	for _, s := range c.Stackdrivers {
+		s.UserAgent = c.UserAgent
 		configSection, err := s.renderConfig()
 		if err != nil {
 			return "", err
@@ -403,10 +412,9 @@ func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs 
 	return mainConfigBuilder.String(), nil
 }
 
-// GenerateFluentBitParserConfig generates a FluentBit parser configuration.
-func GenerateFluentBitParserConfig(jsonParsers []*ParserJSON, regexParsers []*ParserRegex) (string, error) {
+func (c Config) generateParser() (string, error) {
 	jsonParserConfigSections := []string{}
-	for _, j := range jsonParsers {
+	for _, j := range c.JsonParsers {
 		configSection, err := j.renderConfig()
 		if err != nil {
 			return "", err
@@ -415,7 +423,7 @@ func GenerateFluentBitParserConfig(jsonParsers []*ParserJSON, regexParsers []*Pa
 	}
 
 	regexParserConfigSections := []string{}
-	for _, r := range regexParsers {
+	for _, r := range c.RegexParsers {
 		configSection, err := r.renderConfig()
 		if err != nil {
 			return "", err
@@ -433,6 +441,20 @@ func GenerateFluentBitParserConfig(jsonParsers []*ParserJSON, regexParsers []*Pa
 		return "", err
 	}
 	return parserConfigBuilder.String(), nil
+}
+
+func (c Config) Generate() (mainConfig string, parserConfig string, err error) {
+	mainConfig, err = c.generateMain()
+	if err != nil {
+		return "", "", err
+	}
+
+	parserConfig, err = c.generateParser()
+	if err != nil {
+		return "", "", err
+	}
+
+	return mainConfig, parserConfig, nil
 }
 
 type emptyFieldErr struct {

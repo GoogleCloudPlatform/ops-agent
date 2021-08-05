@@ -830,7 +830,10 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil, "")
+		got, _, err := Config{
+			Tails:   tc.tails,
+			Syslogs: tc.syslogs,
+		}.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -867,7 +870,11 @@ func TestGenerateFluentBitMainConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitMainConfig(tc.tails, tc.syslogs, nil, nil, nil, nil, nil, nil, ""); err == nil {
+		_, _, err := Config{
+			Tails:   tc.tails,
+			Syslogs: tc.syslogs,
+		}.Generate()
+		if err == nil {
 			t.Errorf("test %q: GenerateFluentBitMainConfig succeeded, want error", tc.name)
 		}
 	}
@@ -1009,7 +1016,10 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitMainConfig(tc.tails, nil, tc.wineventlogs, nil, nil, nil, nil, nil, "")
+		got, _, err := Config{
+			Tails:        tc.tails,
+			Wineventlogs: tc.wineventlogs,
+		}.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
@@ -1181,7 +1191,10 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := GenerateFluentBitParserConfig(tc.jsonParsers, tc.regexParsers)
+		_, got, err := Config{
+			JsonParsers:  tc.jsonParsers,
+			RegexParsers: tc.regexParsers,
+		}.Generate()
 		if err != nil {
 			t.Errorf("test %q got error: %v, want no error", tc.name, err)
 			return
@@ -1208,7 +1221,11 @@ func TestGenerateFluentBitParserConfigErrors(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if _, err := GenerateFluentBitParserConfig(tc.jsonParsers, tc.regexParsers); err == nil {
+		_, _, err := Config{
+			JsonParsers:  tc.jsonParsers,
+			RegexParsers: tc.regexParsers,
+		}.Generate()
+		if err == nil {
 			t.Errorf("test %q: GenerateFluentBitParserConfig succeeded, want error", tc.name)
 		}
 	}
