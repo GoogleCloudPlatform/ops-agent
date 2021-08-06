@@ -57,7 +57,7 @@ func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
 func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	if err := yaml.UnmarshalStrict(input, &config); err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
 	return config, nil
 }
