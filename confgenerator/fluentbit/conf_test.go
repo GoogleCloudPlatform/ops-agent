@@ -31,13 +31,13 @@ func TestFilterParser(t *testing.T) {
     Match    test_match
     Key_Name test_key_name
     Parser   test_parser`
-	got, err := f.renderConfig()
+	got, err := f.Generate()
 	if err != nil {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("FilterParser %v: FilterParser.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+		t.Errorf("FilterParser %v: FilterParser.Generate() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
 
@@ -51,13 +51,13 @@ func TestFilterRewriteTag(t *testing.T) {
     Rule                  $logName .* $logName false
     Emitter_Storage.type  filesystem
     Emitter_Mem_Buf_Limit 10M`
-	got, err := f.renderConfig()
+	got, err := f.Generate()
 	if err != nil {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.Generate() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
 
@@ -100,13 +100,13 @@ func TestParserJSON(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.parserJSON.renderConfig()
+		got, err := tc.parserJSON.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
 		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
-			t.Errorf("ParserJSON %v: ParserJSON.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserJSON, diff)
+			t.Errorf("ParserJSON %v: ParserJSON.Generate() returned unexpected diff (-want +got):\n%s", tc.parserJSON, diff)
 		}
 	}
 }
@@ -166,14 +166,14 @@ func TestParserRegex(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.parserRegex.renderConfig()
+		got, err := tc.parserRegex.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 
 		}
 		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
-			t.Errorf("ParserRegex %v: ParserRegex.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserRegex, diff)
+			t.Errorf("ParserRegex %v: ParserRegex.Generate() returned unexpected diff (-want +got):\n%s", tc.parserRegex, diff)
 		}
 	}
 }
@@ -296,13 +296,13 @@ func TestTail(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.tail.renderConfig()
+		got, err := tc.tail.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
 		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran Tail.renderConfig() returned unexpected diff (-want +got):\n%s", tc.tail, diff)
+			t.Errorf("Tail %v: ran Tail.Generate() returned unexpected diff (-want +got):\n%s", tc.tail, diff)
 		}
 	}
 }
@@ -341,13 +341,13 @@ func TestSyslog(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.syslog.renderConfig()
+		got, err := tc.syslog.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
 		if diff := cmp.Diff(tc.expectedSyslogConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran syslog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.syslog, diff)
+			t.Errorf("Tail %v: ran syslog.Generate() returned unexpected diff (-want +got):\n%s", tc.syslog, diff)
 		}
 	}
 }
@@ -374,13 +374,13 @@ func TestWinlog(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		got, err := tc.wineventlog.renderConfig()
+		got, err := tc.wineventlog.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
 		if diff := cmp.Diff(tc.expectedWinlogConfig, got); diff != "" {
-			t.Errorf("Tail %v: ran wineventlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
+			t.Errorf("Tail %v: ran wineventlog.Generate() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
 		}
 	}
 }
@@ -408,22 +408,21 @@ func TestStackdriver(t *testing.T) {
     tls         On
     # Do not force certificate validation.
     tls.verify  Off`
-	got, err := s.renderConfig()
+	got, err := s.Generate()
 	if err != nil {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
+		t.Errorf("Stackdriver %v: Stackdriver.Generate() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
 
 func TestGenerateFluentBitMainConfig(t *testing.T) {
 	tests := []struct {
-		name    string
-		tails   []*Tail
-		syslogs []*Syslog
-		want    string
+		name   string
+		inputs []Input
+		want   string
 	}{
 		{
 			name: "zero plugins",
@@ -454,32 +453,32 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     # This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
     # Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
     # we don't want them to all be loaded into the memory.
-    storage.max_chunks_up      128
-
-`,
+    storage.max_chunks_up      128`,
 		},
 		{
 			name: "multiple tail and syslog plugins",
-			tails: []*Tail{{
-				Tag:  "test_tag1",
-				DB:   "test_db1",
-				Path: "test_path1",
-			}, {
-				Tag:  "test_tag2",
-				DB:   "test_db2",
-				Path: "test_path2",
-			}},
-			syslogs: []*Syslog{{
-				Mode:   "tcp",
-				Listen: "0.0.0.0",
-				Port:   1234,
-				Tag:    "test_tag1",
-			}, {
-				Mode:   "udp",
-				Listen: "0.0.0.0",
-				Port:   5678,
-				Tag:    "test_tag2",
-			}},
+			inputs: []Input{
+				&Tail{
+					Tag:  "test_tag1",
+					DB:   "test_db1",
+					Path: "test_path1",
+				}, &Tail{
+					Tag:  "test_tag2",
+					DB:   "test_db2",
+					Path: "test_path2",
+				},
+				&Syslog{
+					Mode:   "tcp",
+					Listen: "0.0.0.0",
+					Port:   1234,
+					Tag:    "test_tag1",
+				}, &Syslog{
+					Mode:   "udp",
+					Listen: "0.0.0.0",
+					Port:   5678,
+					Tag:    "test_tag2",
+				},
+			},
 			want: `[SERVICE]
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
@@ -605,15 +604,12 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
     # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
     # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit  10M
-
-`,
+    Mem_Buf_Limit  10M`,
 		},
 	}
 	for _, tc := range tests {
 		got, _, err := Config{
-			Tails:   tc.tails,
-			Syslogs: tc.syslogs,
+			Inputs: tc.inputs,
 		}.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
@@ -627,33 +623,34 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 
 func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 	tests := []struct {
-		name         string
-		tails        []*Tail
-		wineventlogs []*WindowsEventlog
-		want         string
+		name   string
+		inputs []Input
+		want   string
 	}{
 		{
 			name: "multiple tail and winlog plugins",
-			tails: []*Tail{{
-				Tag:  "test_tag1",
-				DB:   "test_db1",
-				Path: "test_path1",
-			}, {
-				Tag:  "test_tag2",
-				DB:   "test_db2",
-				Path: "test_path2",
-			}},
-			wineventlogs: []*WindowsEventlog{{
-				Tag:          "win_tag1",
-				Channels:     "chl1",
-				Interval_Sec: "1",
-				DB:           "test_DB1",
-			}, {
-				Tag:          "win_tag2",
-				Channels:     "chl2",
-				Interval_Sec: "1",
-				DB:           "test_DB2",
-			}},
+			inputs: []Input{
+				&Tail{
+					Tag:  "test_tag1",
+					DB:   "test_db1",
+					Path: "test_path1",
+				}, &Tail{
+					Tag:  "test_tag2",
+					DB:   "test_db2",
+					Path: "test_path2",
+				},
+				&WindowsEventlog{
+					Tag:          "win_tag1",
+					Channels:     "chl1",
+					Interval_Sec: "1",
+					DB:           "test_DB1",
+				}, &WindowsEventlog{
+					Tag:          "win_tag2",
+					Channels:     "chl2",
+					Interval_Sec: "1",
+					DB:           "test_DB2",
+				},
+			},
 			want: `[SERVICE]
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
@@ -755,15 +752,12 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
     Tag            win_tag2
     Channels       chl2
     Interval_Sec   1
-    DB             test_DB2
-
-`,
+    DB             test_DB2`,
 		},
 	}
 	for _, tc := range tests {
 		got, _, err := Config{
-			Tails:        tc.tails,
-			Wineventlogs: tc.wineventlogs,
+			Inputs: tc.inputs,
 		}.Generate()
 		if err != nil {
 			t.Errorf("got error: %v, want no error", err)
@@ -777,10 +771,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 func TestGenerateFluentBitParserConfig(t *testing.T) {
 	tests := []struct {
-		name         string
-		jsonParsers  []*ParserJSON
-		regexParsers []*ParserRegex
-		want         string
+		name    string
+		parsers []Parser
+		want    string
 	}{
 		{
 			name: "empty JSON Parsers and Regex Parsers",
@@ -840,24 +833,24 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 		},
 		{
 			name: "multiple JSON Parsers and Regex Parsers",
-			jsonParsers: []*ParserJSON{
-				{
+			parsers: []Parser{
+				&ParserJSON{
 					Name:       "test_name1",
 					TimeKey:    "test_time_key1",
 					TimeFormat: "test_time_format1",
-				}, {
+				}, &ParserJSON{
 					Name:       "test_name2",
 					TimeKey:    "test_time_key2",
 					TimeFormat: "test_time_format2",
 				},
+				&ParserRegex{
+					Name:  "test_name1",
+					Regex: "test_regex1",
+				}, &ParserRegex{
+					Name:  "test_name2",
+					Regex: "test_regex2",
+				},
 			},
-			regexParsers: []*ParserRegex{{
-				Name:  "test_name1",
-				Regex: "test_regex1",
-			}, {
-				Name:  "test_name2",
-				Regex: "test_regex2",
-			}},
 			want: `[PARSER]
     Name        lib:default_message_parser
     Format      regex
@@ -937,8 +930,7 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 	}
 	for _, tc := range tests {
 		_, got, err := Config{
-			JsonParsers:  tc.jsonParsers,
-			RegexParsers: tc.regexParsers,
+			Parsers: tc.parsers,
 		}.Generate()
 		if err != nil {
 			t.Errorf("test %q got error: %v, want no error", tc.name, err)

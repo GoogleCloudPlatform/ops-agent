@@ -298,17 +298,50 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	sort.Slice(fbFilterRewriteTags, func(i, j int) bool { return fbFilterRewriteTags[i].Match < fbFilterRewriteTags[j].Match })
 	sort.Slice(fbStackdrivers, func(i, j int) bool { return fbStackdrivers[i].Match < fbStackdrivers[j].Match })
 
+	inputs := []fluentbit.Input{}
+	for _, i := range fbTails {
+		inputs = append(inputs, i)
+	}
+	for _, i := range fbSyslogs {
+		inputs = append(inputs, i)
+	}
+	for _, i := range fbWinEventlogs {
+		inputs = append(inputs, i)
+	}
+
+	filters := []fluentbit.Filter{}
+	for _, f := range fbFilterParserGroups {
+		filters = append(filters, f)
+	}
+	for _, f := range fbFilterAddLogNames {
+		filters = append(filters, f)
+	}
+	for _, f := range fbFilterRewriteTags {
+		filters = append(filters, f)
+	}
+	for _, f := range fbFilterRemoveLogNames {
+		filters = append(filters, f)
+	}
+
+	outputs := []fluentbit.Output{}
+	for _, o := range fbStackdrivers {
+		o.UserAgent = userAgent
+		outputs = append(outputs, o)
+	}
+
+	parsers := []fluentbit.Parser{}
+	for _, p := range jsonParsers {
+		parsers = append(parsers, p)
+	}
+	for _, p := range regexParsers {
+		parsers = append(parsers, p)
+	}
+
 	mainConfig, parserConfig, err := fluentbit.Config{
-		Tails:                      fbTails,
-		Syslogs:                    fbSyslogs,
-		Wineventlogs:               fbWinEventlogs,
-		FilterParserGroups:         fbFilterParserGroups,
-		FilterModifyAddLogNames:    fbFilterAddLogNames,
-		FilterModifyRemoveLogNames: fbFilterRemoveLogNames,
-		FilterRewriteTags:          fbFilterRewriteTags,
-		Stackdrivers:               fbStackdrivers,
-		JsonParsers:                jsonParsers,
-		RegexParsers:               regexParsers,
+		Inputs:  inputs,
+		Outputs: outputs,
+		Filters: filters,
+		Parsers: parsers,
 
 		UserAgent: userAgent,
 	}.Generate()

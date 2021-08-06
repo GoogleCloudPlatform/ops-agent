@@ -49,42 +49,18 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
     # we don't want them to all be loaded into the memory.
     storage.max_chunks_up      128
 
-{{range .Tails -}}
-{{template "tail" .}}
+{{- range .Inputs}}
 
-{{end}}
-{{- range .Syslogs -}}
-{{template "syslog" .}}
+{{.Generate}}
+{{- end}}
+{{- range .Filters}}
 
-{{end}}
-{{- range .Wineventlogs -}}
-{{template "wineventlog" .}}
+{{.Generate}}
+{{- end}}
+{{- range .Outputs}}
 
-{{end}}
-{{- range .FilterParserGroups -}}
-{{- range . -}}
-{{template "filter_parser" .}}
-
-{{end -}}
-
-{{end}}
-
-{{- range .FilterModifyAddLogNames -}}
-{{template "filter_modify_add_log_name" .}}
-
-{{end}}
-{{- range .FilterRewriteTags -}}
-{{template "filter_rewrite_tag" .}}
-
-{{end}}
-{{- range .FilterModifyRemoveLogNames -}}
-{{template "filter_modify_remove_log_name" .}}
-
-{{end}}
-{{- range .Stackdrivers -}}
-{{template "stackdriver" .}}
-
-{{end}}
+{{.Generate}}
+{{- end}}
 {{- define "filter_modify_add_log_name" -}}
 [FILTER]
     Name  modify
@@ -251,15 +227,12 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
     Time_Key    time
     Time_Format %b %d %H:%M:%S
 
-{{range .JsonParsers -}}
-{{template "parserJSON" .}}
+{{- range .Parsers}}
 
-{{end}}
-{{- range .RegexParsers -}}
-{{template "parserRegex" .}}
+{{.Generate}}
+{{- end}}
 
-{{end}}
-{{- define "parserJSON" -}}
+{{define "parserJSON" -}}
 [PARSER]
     Name        {{.Name}}
     Format      json
@@ -285,24 +258,14 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
 `))
 
 type Config struct {
-	Tails                      []*Tail
-	Syslogs                    []*Syslog
-	Wineventlogs               []*WindowsEventlog
-	FilterParserGroups         []FilterParserGroup
-	FilterModifyAddLogNames    []*FilterModifyAddLogName
-	FilterRewriteTags          []*FilterRewriteTag
-	FilterModifyRemoveLogNames []*FilterModifyRemoveLogName
-	Stackdrivers               []*Stackdriver
-	JsonParsers                []*ParserJSON
-	RegexParsers               []*ParserRegex
-	UserAgent                  string
+	Inputs    []Input
+	Filters   []Filter
+	Outputs   []Output
+	Parsers   []Parser
+	UserAgent string
 }
 
 func (c Config) generateMain() (string, error) {
-	for _, s := range c.Stackdrivers {
-		s.UserAgent = c.UserAgent
-	}
-
 	var mainConfigBuilder strings.Builder
 	if err := mainConfTemplate.Execute(&mainConfigBuilder, c); err != nil {
 		return "", err
@@ -332,8 +295,24 @@ func (c Config) Generate() (mainConfig string, parserConfig string, err error) {
 	return mainConfig, parserConfig, nil
 }
 
+type Filter interface {
+	Generate() (string, error)
+}
+
 // A FilterParserGroup represents a list of filters to be applied in order.
 type FilterParserGroup []*FilterParser
+
+func (g FilterParserGroup) Generate() (string, error) {
+	var filters []string
+	for _, f := range g {
+		configSection, err := f.Generate()
+		if err != nil {
+			return "", err
+		}
+		filters = append(filters, configSection)
+	}
+	return strings.Join(filters, "\n\n"), nil
+}
 
 // A FilterParser represents the configuration data for fluentBit's filter parser plugin.
 type FilterParser struct {
@@ -342,7 +321,7 @@ type FilterParser struct {
 	Parser  string
 }
 
-func (f FilterParser) renderConfig() (string, error) {
+func (f FilterParser) Generate() (string, error) {
 	var renderedFilterParserConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterParserConfig, "filter_parser", f); err != nil {
 		return "", err
@@ -357,7 +336,7 @@ type FilterModifyAddLogName struct {
 	LogName string
 }
 
-func (f FilterModifyAddLogName) renderConfig() (string, error) {
+func (f FilterModifyAddLogName) Generate() (string, error) {
 	var renderedFilterModifyAddLogNameConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyAddLogNameConfig, "filter_modify_add_log_name", f); err != nil {
 		return "", err
@@ -371,7 +350,7 @@ type FilterModifyRemoveLogName struct {
 	Match string
 }
 
-func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
+func (f FilterModifyRemoveLogName) Generate() (string, error) {
 	var renderedFilterModifyRemoveLogNameConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyRemoveLogNameConfig, "filter_modify_remove_log_name", f); err != nil {
 		return "", err
@@ -384,12 +363,16 @@ type FilterRewriteTag struct {
 	Match string
 }
 
-func (f FilterRewriteTag) renderConfig() (string, error) {
+func (f FilterRewriteTag) Generate() (string, error) {
 	var renderedFilterRewriteTagConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterRewriteTagConfig, "filter_rewrite_tag", f); err != nil {
 		return "", err
 	}
 	return renderedFilterRewriteTagConfig.String(), nil
+}
+
+type Parser interface {
+	Generate() (string, error)
 }
 
 // A ParserJSON represents the configuration data for fluentBit's JSON parser.
@@ -399,8 +382,7 @@ type ParserJSON struct {
 	TimeFormat string
 }
 
-// renderConfig generates a section for configure fluentBit JSON parser.
-func (p ParserJSON) renderConfig() (string, error) {
+func (p ParserJSON) Generate() (string, error) {
 	var b strings.Builder
 	if err := parserConfTemplate.ExecuteTemplate(&b, "parserJSON", p); err != nil {
 		return "", err
@@ -416,13 +398,16 @@ type ParserRegex struct {
 	TimeFormat string
 }
 
-// renderConfig generates a section for configure fluentBit Regex parser.
-func (p ParserRegex) renderConfig() (string, error) {
+func (p ParserRegex) Generate() (string, error) {
 	var b strings.Builder
 	if err := parserConfTemplate.ExecuteTemplate(&b, "parserRegex", p); err != nil {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+type Input interface {
+	Generate() (string, error)
 }
 
 // A Tail represents the configuration data for fluentBit's tail input plugin.
@@ -433,8 +418,7 @@ type Tail struct {
 	DB          string
 }
 
-// renderConfig generates a section for configure fluentBit tail parser.
-func (t Tail) renderConfig() (string, error) {
+func (t Tail) Generate() (string, error) {
 	var renderedTailConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedTailConfig, "tail", t); err != nil {
 		return "", err
@@ -450,8 +434,7 @@ type Syslog struct {
 	Tag    string
 }
 
-// renderConfig generates a section for configure fluentBit syslog input plugin.
-func (s Syslog) renderConfig() (string, error) {
+func (s Syslog) Generate() (string, error) {
 	var renderedSyslogConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedSyslogConfig, "syslog", s); err != nil {
 		return "", err
@@ -467,13 +450,16 @@ type WindowsEventlog struct {
 	DB           string
 }
 
-// renderConfig generates a section for configure fluentBit wineventlog input plugin.
-func (w WindowsEventlog) renderConfig() (string, error) {
+func (w WindowsEventlog) Generate() (string, error) {
 	var renderedWineventlogConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedWineventlogConfig, "wineventlog", w); err != nil {
 		return "", err
 	}
 	return renderedWineventlogConfig.String(), nil
+}
+
+type Output interface {
+	Generate() (string, error)
 }
 
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
@@ -483,8 +469,7 @@ type Stackdriver struct {
 	Workers   int
 }
 
-// renderConfig generates a section for configure fluentBit stackdriver output plugin.
-func (s Stackdriver) renderConfig() (string, error) {
+func (s Stackdriver) Generate() (string, error) {
 	var renderedStackdriverConfig strings.Builder
 	if err := mainConfTemplate.ExecuteTemplate(&renderedStackdriverConfig, "stackdriver", s); err != nil {
 		return "", err
