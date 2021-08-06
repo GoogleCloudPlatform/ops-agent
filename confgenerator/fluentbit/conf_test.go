@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conf
+package fluentbit
 
 import (
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFilterParser(t *testing.T) {
@@ -36,7 +36,7 @@ func TestFilterParser(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("FilterParser %v: FilterParser.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -89,7 +89,7 @@ func TestFilterRewriteTag(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -145,7 +145,7 @@ func TestParserJSON(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserJSON %v: ParserJSON.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserJSON, diff)
 		}
 	}
@@ -243,7 +243,7 @@ func TestParserRegex(t *testing.T) {
 			return
 
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserRegex %v: ParserRegex.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserRegex, diff)
 		}
 	}
@@ -296,9 +296,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -332,9 +332,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -370,9 +370,9 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db
-    Path               test_path
     Tag                test_tag
+    Path               test_path
+    DB                 test_db
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -405,7 +405,7 @@ func TestTail(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran Tail.renderConfig() returned unexpected diff (-want +got):\n%s", tc.tail, diff)
 		}
 	}
@@ -456,9 +456,9 @@ func TestSyslog(t *testing.T) {
 			expectedSyslogConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag
     Mode           tcp
     Listen         0.0.0.0
-    Tag            test_tag
     Port           1234
     Parser         lib:default_message_parser
 
@@ -480,7 +480,7 @@ func TestSyslog(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedSyslogConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedSyslogConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran syslog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.syslog, diff)
 		}
 	}
@@ -547,8 +547,8 @@ func TestWinlog(t *testing.T) {
 			},
 			expectedWinlogConfig: `[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            windows_event_log
     Name           winlog
+    Tag            windows_event_log
     Channels       System,Application,Security
     Interval_Sec   1
     DB             test_DB`,
@@ -560,7 +560,7 @@ func TestWinlog(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedWinlogConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedWinlogConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran wineventlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
 		}
 	}
@@ -606,10 +606,10 @@ func TestStackdriver(t *testing.T) {
 	want := `[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
+    Match_Regex       ^(test_match)$
     resource          gce_instance
     stackdriver_agent user_agent
     workers           8
-    Match_Regex       ^(test_match)$
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -625,7 +625,7 @@ func TestStackdriver(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -731,9 +731,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db1
-    Path               test_path1
     Tag                test_tag1
+    Path               test_path1
+    DB                 test_db1
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -760,9 +760,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db2
-    Path               test_path2
     Tag                test_tag2
+    Path               test_path2
+    DB                 test_db2
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -789,9 +789,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag1
     Mode           tcp
     Listen         0.0.0.0
-    Tag            test_tag1
     Port           1234
     Parser         lib:default_message_parser
 
@@ -809,9 +809,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
+    Tag            test_tag2
     Mode           udp
     Listen         0.0.0.0
-    Tag            test_tag2
     Port           5678
     Parser         lib:default_message_parser
 
@@ -835,7 +835,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
@@ -934,9 +934,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db1
-    Path               test_path1
     Tag                test_tag1
+    Path               test_path1
+    DB                 test_db1
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -963,9 +963,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
-    DB                 test_db2
-    Path               test_path2
     Tag                test_tag2
+    Path               test_path2
+    DB                 test_db2
     Read_from_Head     True
     # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
     Buffer_Chunk_Size  512k
@@ -991,16 +991,16 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            win_tag1
     Name           winlog
+    Tag            win_tag1
     Channels       chl1
     Interval_Sec   1
     DB             test_DB1
 
 [INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Tag            win_tag2
     Name           winlog
+    Tag            win_tag2
     Channels       chl2
     Interval_Sec   1
     DB             test_DB2
@@ -1014,7 +1014,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
@@ -1186,7 +1186,7 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 			t.Errorf("test %q got error: %v, want no error", tc.name, err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitParserConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
