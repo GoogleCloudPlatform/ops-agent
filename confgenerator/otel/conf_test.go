@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestSection(t *testing.T) {
@@ -126,7 +126,7 @@ func TestSection(t *testing.T) {
 					t.Errorf("got error: %v, want no error", err)
 					return
 				}
-				if diff := diff.Diff(tc.want, got); diff != "" {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
 					t.Errorf("service.renderConfig() returned unexpected diff (-want +got):\n%s", diff)
 				}
 			} else {
@@ -729,8 +729,8 @@ service:
 				t.Errorf("got error: %v, want no error", err)
 				return
 			}
-			if diff := diff.Diff(got, tc.want); diff != "" {
-				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-got +want):\n%s", tc.name, diff)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
 	}

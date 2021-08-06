@@ -17,7 +17,7 @@ package fluentbit
 import (
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFilterParser(t *testing.T) {
@@ -36,7 +36,7 @@ func TestFilterParser(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("FilterParser %v: FilterParser.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -56,7 +56,7 @@ func TestFilterRewriteTag(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("FilterRewriteTag %v: FilterRewriteTag.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -105,7 +105,7 @@ func TestParserJSON(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserJSON %v: ParserJSON.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserJSON, diff)
 		}
 	}
@@ -172,7 +172,7 @@ func TestParserRegex(t *testing.T) {
 			return
 
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("ParserRegex %v: ParserRegex.renderConfig() returned unexpected diff (-want +got):\n%s", tc.parserRegex, diff)
 		}
 	}
@@ -301,7 +301,7 @@ func TestTail(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedTailConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedTailConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran Tail.renderConfig() returned unexpected diff (-want +got):\n%s", tc.tail, diff)
 		}
 	}
@@ -346,7 +346,7 @@ func TestSyslog(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedSyslogConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedSyslogConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran syslog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.syslog, diff)
 		}
 	}
@@ -379,7 +379,7 @@ func TestWinlog(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.expectedWinlogConfig, got); diff != "" {
+		if diff := cmp.Diff(tc.expectedWinlogConfig, got); diff != "" {
 			t.Errorf("Tail %v: ran wineventlog.renderConfig() returned unexpected diff (-want +got):\n%s", tc.wineventlog, diff)
 		}
 	}
@@ -413,7 +413,7 @@ func TestStackdriver(t *testing.T) {
 		t.Errorf("got error: %v, want no error", err)
 		return
 	}
-	if diff := diff.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Stackdriver %v: Stackdriver.renderConfig() returned unexpected diff (-want +got):\n%s", want, diff)
 	}
 }
@@ -619,7 +619,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
@@ -769,7 +769,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 			t.Errorf("got error: %v, want no error", err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitMainConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
@@ -944,7 +944,7 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
 			t.Errorf("test %q got error: %v, want no error", tc.name, err)
 			return
 		}
-		if diff := diff.Diff(tc.want, got); diff != "" {
+		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("test %q: ran GenerateFluentBitParserConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 		}
 	}
