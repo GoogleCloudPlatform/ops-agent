@@ -5,7 +5,7 @@ logging:
       listen_host: 1.1.1.1
       listen_port: 1111
       transport_protocol: tcp
-      unsupported_paramater: value_1
+      unsupported_parameter: value_1
   service:
     pipelines:
       default_pipeline:

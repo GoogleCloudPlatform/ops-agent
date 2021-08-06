@@ -1,0 +1,9 @@
+logging:
+  receivers:
+    receiver_1:
+      type: windows_event_log
+      channels: [System,Application,Security]
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [receiver_1]

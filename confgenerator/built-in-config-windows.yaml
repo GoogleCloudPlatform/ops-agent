@@ -2,15 +2,11 @@ logging:
   receivers:
     windows_event_log:
       type: windows_event_log
-      channels:
-      - System
-      - Application
-      - Security
+      channels: [System, Application, Security]
   service:
     pipelines:
       default_pipeline:
-        receivers:
-        - windows_event_log
+        receivers: [windows_event_log]
 metrics:
   receivers:
     hostmetrics:
@@ -29,9 +25,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers:
-        - hostmetrics
-        - iis
-        - mssql
-        processors:
-        - metrics_filter
+        receivers: [hostmetrics, iis, mssql]
+        processors: [metrics_filter]

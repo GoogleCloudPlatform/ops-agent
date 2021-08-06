@@ -26,16 +26,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// TODO(lingshi): Figure out a cleaner way to do "required" validation.
-// The "omitempty" annotation is reserved to make YAML marshal/unmarshal results reasonable.
-var requiredFields = []string{
-	"channels",
-	"include_paths",
-	"listen_host",
-	"listen_port",
-	"regex",
-}
-
 // Ops Agent config.
 type UnifiedConfig struct {
 	Logging *Logging `yaml:"logging"`
@@ -83,7 +73,7 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 }
 
 type configComponent struct {
-	Type string `yaml:"type"`
+	Type string `yaml:"type" validate:"required"`
 }
 
 // Ops Agent logging config.
@@ -95,18 +85,18 @@ type Logging struct {
 }
 
 type LoggingReceiverFiles struct {
-	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
+	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
+	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
 }
 
 type LoggingReceiverSyslog struct {
 	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
-	ListenHost        string `yaml:"listen_host,omitempty"`
-	ListenPort        uint16 `yaml:"listen_port,omitempty"`
+	ListenHost        string `yaml:"listen_host,omitempty" validate:"required"`
+	ListenPort        uint16 `yaml:"listen_port,omitempty" validate:"required"`
 }
 
 type LoggingReceiverWinevtlog struct {
-	Channels []string `yaml:"channels,omitempty"`
+	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
 }
 
 type LoggingReceiver struct {
@@ -118,13 +108,13 @@ type LoggingReceiver struct {
 }
 
 type LoggingProcessorParseJson struct {
-	Field      string `yaml:"field,omitempty"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // optional, must be provided if time_key is present
+	Field      string `yaml:"field,omitempty"`       // default to "message"
+	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
 }
 
 type LoggingProcessorParseRegex struct {
-	Regex string `yaml:"regex,omitempty"`
+	Regex string `yaml:"regex,omitempty" validate:"required"`
 
 	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
 }
@@ -144,9 +134,9 @@ type LoggingService struct {
 }
 
 type LoggingPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers,omitempty"`
-	ProcessorIDs []string `yaml:"processors,omitempty"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,omitempty,flow"`
+	ProcessorIDs []string `yaml:"processors,omitempty,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 // Ops Agent metrics config.
@@ -160,11 +150,11 @@ type Metrics struct {
 type MetricsReceiver struct {
 	configComponent `yaml:",inline"`
 
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+	CollectionInterval string `yaml:"collection_interval" validate:"required"` // time.Duration format
 }
 
 type MetricsProcessorExcludeMetrics struct {
-	MetricsPattern []string `yaml:"metrics_pattern"`
+	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
 }
 
 type MetricsProcessor struct {
@@ -182,9 +172,9 @@ type MetricsService struct {
 }
 
 type MetricsPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers"`
-	ProcessorIDs []string `yaml:"processors"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,flow"`
+	ProcessorIDs []string `yaml:"processors,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -210,7 +200,7 @@ func (l *Logging) Validate(platform string) error {
 		return err
 	}
 	if len(l.Exporters) > 0 {
-		log.Print(`The "metrics.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
+		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
 	}
 	for id, r := range l.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
@@ -318,7 +308,7 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
-			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil
@@ -333,31 +323,31 @@ func sliceContains(slice []string, value string) bool {
 	return false
 }
 
-func (c *configComponent) ValidateType(subagent string, component string, id string, platform string) error {
-	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+component]
+func (c *configComponent) ValidateType(subagent string, kind string, id string, platform string) error {
+	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+kind]
 	if !sliceContains(supportedTypes, c.Type) {
 		// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported.
 		// Supported metrics receiver types: [hostmetrics, iis, mssql].
 		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-			subagent, component, id, c.Type, subagent, component, strings.Join(supportedTypes, ", "))
+			subagent, kind, id, c.Type, subagent, kind, strings.Join(supportedTypes, ", "))
 	}
 	return nil
 }
 
-func (r *LoggingReceiver) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*r, subagent, component, id, r.Type)
+func (r *LoggingReceiver) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type)
 }
 
-func (p *LoggingProcessor) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*p, subagent, component, id, p.Type)
+func (p *LoggingProcessor) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*p, subagent, kind, id, p.Type)
 }
 
-func (r *MetricsReceiver) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*r, subagent, component, id, r.Type)
+func (r *MetricsReceiver) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type)
 }
 
-func (p *MetricsProcessor) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*p, subagent, component, id, p.Type)
+func (p *MetricsProcessor) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*p, subagent, kind, id, p.Type)
 }
 
 type yamlField struct {
@@ -395,9 +385,11 @@ func collectYamlFields(s interface{}) []yamlField {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
 			} else if f.PkgPath == "" { // skip private non-struct fields
+				t, _ := f.Tag.Lookup("validate")
+				validation := strings.Split(t, ",")
 				parameters = append(parameters, yamlField{
 					Name:     n,
-					Required: sliceContains(requiredFields, n),
+					Required: sliceContains(validation, "required"),
 					Value:    v.Interface(),
 					IsZero:   v.IsZero(),
 				})
@@ -408,7 +400,7 @@ func collectYamlFields(s interface{}) []yamlField {
 	return recurse(reflect.ValueOf(s))
 }
 
-func validateParameters(s interface{}, subagent string, component string, id string, componentType string) error {
+func validateParameters(s interface{}, subagent string, kind string, id string, componentType string) error {
 	supportedParameters := supportedParameters[componentType]
 	// Include type when checking.
 	allParameters := []string{"type"}
@@ -421,20 +413,20 @@ func validateParameters(s interface{}, subagent string, component string, id str
 				// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
 				// Supported parameters: [include_paths, exclude_paths].
 				return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
-					parameterErrorPrefix(subagent, component, id, componentType, p.Name), strings.Join(supportedParameters, ", "))
+					parameterErrorPrefix(subagent, kind, id, componentType, p.Name), strings.Join(supportedParameters, ", "))
 			}
 			continue
 		}
 		if p.IsZero && p.Required {
 			// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
-			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, component, id, componentType, p.Name))
+			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name))
 		}
 		if hasAdditionalValidation {
 			if f, ok := additionalValidation[p.Name]; ok {
 				if err := f(p.Value); err != nil {
 					// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1"
 					// has invalid value "1s": below the minimum threshold of "10s".
-					return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, component, id, componentType, p.Name), p.Value, err)
+					return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name), p.Value, err)
 				}
 			}
 		}
@@ -598,26 +590,26 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 	return invalid
 }
 
-func validateComponentIds(components interface{}, subagent string, component string) error {
+func validateComponentIds(components interface{}, subagent string, kind string) error {
 	for _, id := range sortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-				subagent, component, id, component)
+				subagent, kind, id, kind)
 		}
 	}
 	return nil
 }
 
-func validateComponentKeys(components interface{}, refs []string, subagent string, component string, pipeline string) error {
+func validateComponentKeys(components interface{}, refs []string, subagent string, kind string, pipeline string) error {
 	invalid := findInvalid(refs, mapKeys(components))
 	if len(invalid) > 0 {
-		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, component, invalid[0], pipeline)
+		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid[0], pipeline)
 	}
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, component string) error {
+func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) error {
 	r := map[string]int{}
 	cm := reflect.ValueOf(components)
 	for _, id := range refs {
@@ -633,9 +625,9 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		}
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
-				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, component, t)
+				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
 			}
-			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, component, t)
+			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
 		}
 	}
 	return nil
@@ -645,6 +637,6 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter.
-func parameterErrorPrefix(subagent string, component string, id string, componentType string, parameter string) string {
-	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, component, id)
+func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
+	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
 }

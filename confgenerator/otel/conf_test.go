@@ -1,3 +1,17 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package otel
 
 import (
@@ -5,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestSection(t *testing.T) {
@@ -112,7 +126,7 @@ func TestSection(t *testing.T) {
 					t.Errorf("got error: %v, want no error", err)
 					return
 				}
-				if diff := diff.Diff(tc.want, got); diff != "" {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
 					t.Errorf("service.renderConfig() returned unexpected diff (-want +got):\n%s", diff)
 				}
 			} else {
@@ -714,8 +728,8 @@ service:
 				t.Errorf("got error: %v, want no error", err)
 				return
 			}
-			if diff := diff.Diff(got, tc.want); diff != "" {
-				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-got +want):\n%s", tc.name, diff)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
 	}
