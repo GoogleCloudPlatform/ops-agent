@@ -19,22 +19,13 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
 )
-
-// TODO(lingshi): Figure out a cleaner way to do "required" validation.
-// The "omitempty" annotation is reserved to make YAML marshal/unmarshal results reasonable.
-var requiredFields = []string{
-	"channels",
-	"include_paths",
-	"listen_host",
-	"listen_port",
-	"regex",
-}
 
 // Ops Agent config.
 type UnifiedConfig struct {
@@ -66,7 +57,7 @@ func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
 func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	if err := yaml.UnmarshalStrict(input, &config); err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid YAML. detailed error: %s", err)
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
 	return config, nil
 }
@@ -82,61 +73,272 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
+type component interface {
+	Type() string
+	ValidateType(subagent string, component string, id string, platform string) error
+	ValidateParameters(subagent string, component string, id string) error
+	//Validate() error
+}
+
 type configComponent struct {
-	Type string `yaml:"type"`
+	ComponentType string `yaml:"type" validate:"required"`
+}
+
+func (c *configComponent) Type() string {
+	return c.ComponentType
+}
+
+type componentTypeRegistry struct {
+	Subagent string
+	Kind     string
+	TypeMap  map[string]func() component
+}
+
+func (r *componentTypeRegistry) registerType(constructor func() component) error {
+	name := constructor().(component).Type()
+	if _, ok := r.TypeMap[name]; ok {
+		return fmt.Errorf("Duplicate %s %s type: %q", r.Subagent, r.Kind, name)
+	}
+	r.TypeMap[name] = constructor
+	return nil
+}
+
+var parameterErrRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
+
+func (r *componentTypeRegistry) unmarshalComponentYaml(inner *interface{}, unmarshal func(interface{}) error) error {
+	c := configComponent{}
+	unmarshal(&c) // Get the type; ignore the error
+	f := r.TypeMap[c.Type()]
+	if f == nil {
+		// TODO: propagate platform into the validation code and use the supported types per platform.
+		supportedTypes := sortedKeys(r.TypeMap)
+		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
+			r.Subagent, r.Kind, "???", c.Type(),
+			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
+	}
+	o := f()
+	*inner = o
+	if err := unmarshal(*inner); err != nil {
+		m := parameterErrRe.FindStringSubmatchIndex(err.Error())
+		if m == nil {
+			return err
+		}
+		t := o.Type()
+		fields := collectYamlFields(o)
+		supportedParameters := []string{}
+		for _, f := range fields[1:] { // The first field is always "type".
+			supportedParameters = append(supportedParameters, f.Name)
+		}
+		n := err.Error()[m[2]:m[3]]
+		return fmt.Errorf(
+			`%s%s is not supported. Supported parameters: [%s].`, err.Error()[:m[0]],
+			parameterErrorPrefix(r.Subagent, r.Kind, "???", t, n),
+			strings.Join(supportedParameters, ", "))
+	}
+	return nil
 }
 
 // Ops Agent logging config.
+type loggingReceiverMap map[string]LoggingReceiver
+type loggingProcessorMap map[string]LoggingProcessor
+type loggingExporterMap map[string]LoggingExporter
 type Logging struct {
-	Receivers  map[string]*LoggingReceiver  `yaml:"receivers,omitempty"`
-	Processors map[string]*LoggingProcessor `yaml:"processors,omitempty"`
-	Exporters  map[string]*LoggingExporter  `yaml:"exporters,omitempty"`
-	Service    *LoggingService              `yaml:"service"`
+	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty"`
+	Processors loggingProcessorMap `yaml:"processors,omitempty"`
+	Exporters  loggingExporterMap  `yaml:"exporters,omitempty"`
+	Service    *LoggingService     `yaml:"service"`
+}
+
+type LoggingReceiver interface {
+	component
 }
 
 type LoggingReceiverFiles struct {
-	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"` // optional
+	configComponent `yaml:",inline"`
+
+	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
+	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+}
+
+func (r LoggingReceiverFiles) Type() string {
+	return "files"
+}
+
+func init() {
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
 }
 
 type LoggingReceiverSyslog struct {
+	configComponent `yaml:",inline"`
+
 	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
-	ListenHost        string `yaml:"listen_host,omitempty"`
-	ListenPort        uint16 `yaml:"listen_port,omitempty"`
+	ListenHost        string `yaml:"listen_host,omitempty" validate:"required"`
+	ListenPort        uint16 `yaml:"listen_port,omitempty" validate:"required"`
+}
+
+func (r LoggingReceiverSyslog) Type() string {
+	return "syslog"
+}
+
+func init() {
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
 }
 
 type LoggingReceiverWinevtlog struct {
-	Channels []string `yaml:"channels,omitempty"`
-}
-
-type LoggingReceiver struct {
 	configComponent `yaml:",inline"`
 
-	LoggingReceiverSyslog    `yaml:",inline"` // Type "syslog"
-	LoggingReceiverFiles     `yaml:",inline"` // Type "files"
-	LoggingReceiverWinevtlog `yaml:",inline"` // Type "windows_event_log"
+	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
+}
+
+func (r LoggingReceiverWinevtlog) Type() string {
+	return "windows_event_log"
+}
+
+func init() {
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} })
+}
+
+var loggingReceiverTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "receiver",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingReceiverWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return loggingReceiverTypes.unmarshalComponentYaml(&l.inner, unmarshal)
+}
+
+func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingReceiverWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingReceiverMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingReceiver)
+	}
+	return nil
+}
+
+type LoggingProcessor interface {
+	component
+	GetField() string
+}
+
+type loggingProcessorParseShared struct {
+	Field      string `yaml:"field,omitempty"`       // default to "message"
+	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
+}
+
+func (p loggingProcessorParseShared) GetField() string {
+	return p.Field
 }
 
 type LoggingProcessorParseJson struct {
-	Field      string `yaml:"field,omitempty"`       // optional, default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // optional, by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // optional, must be provided if time_key is present
+	configComponent             `yaml:",inline"`
+	loggingProcessorParseShared `yaml:",inline"`
+}
+
+func (r LoggingProcessorParseJson) Type() string {
+	return "parse_json"
+}
+
+func init() {
+	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
 }
 
 type LoggingProcessorParseRegex struct {
-	Regex string `yaml:"regex,omitempty"`
+	configComponent             `yaml:",inline"`
+	loggingProcessorParseShared `yaml:",inline"`
 
-	LoggingProcessorParseJson `yaml:",inline"` // Type "parse_json"
+	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
 
-type LoggingProcessor struct {
-	configComponent `yaml:",inline"`
-
-	LoggingProcessorParseRegex `yaml:",inline"` // Type "parse_json" or "parse_regex"
+func (r LoggingProcessorParseRegex) Type() string {
+	return "parse_regex"
 }
 
-type LoggingExporter struct {
+func init() {
+	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseRegex{} })
+}
+
+var loggingProcessorTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "processor",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingProcessorWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return loggingProcessorTypes.unmarshalComponentYaml(&l.inner, unmarshal)
+}
+
+func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingProcessorWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingProcessorMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingProcessor)
+	}
+	return nil
+}
+
+type LoggingExporter interface {
+	component
+}
+
+type LoggingExporterGoogleCloudLogging struct {
 	configComponent `yaml:",inline"`
+}
+
+func (r LoggingExporterGoogleCloudLogging) Type() string {
+	return "google_cloud_logging"
+}
+
+func init() {
+	loggingExporterTypes.registerType(func() component { return &LoggingExporterGoogleCloudLogging{} })
+}
+
+var loggingExporterTypes = &componentTypeRegistry{
+	Subagent: "logging", Kind: "exporter",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type loggingExporterWrapper struct {
+	inner interface{}
+}
+
+func (l *loggingExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return loggingExporterTypes.unmarshalComponentYaml(&l.inner, unmarshal)
+}
+
+func (m *loggingExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]loggingExporterWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = loggingExporterMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(LoggingExporter)
+	}
+	return nil
 }
 
 type LoggingService struct {
@@ -144,37 +346,193 @@ type LoggingService struct {
 }
 
 type LoggingPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers,omitempty"`
-	ProcessorIDs []string `yaml:"processors,omitempty"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,omitempty,flow"`
+	ProcessorIDs []string `yaml:"processors,omitempty,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 // Ops Agent metrics config.
+type metricsReceiverMap map[string]MetricsReceiver
+type metricsProcessorMap map[string]MetricsProcessor
+type metricsExporterMap map[string]MetricsExporter
 type Metrics struct {
-	Receivers  map[string]*MetricsReceiver  `yaml:"receivers"`
-	Processors map[string]*MetricsProcessor `yaml:"processors"`
-	Exporters  map[string]*MetricsExporter  `yaml:"exporters,omitempty"`
-	Service    *MetricsService              `yaml:"service"`
+	Receivers  metricsReceiverMap  `yaml:"receivers"`
+	Processors metricsProcessorMap `yaml:"processors"`
+	Exporters  metricsExporterMap  `yaml:"exporters,omitempty"`
+	Service    *MetricsService     `yaml:"service"`
 }
 
-type MetricsReceiver struct {
+type MetricsReceiver interface {
+	component
+	GetCollectionInterval() string
+}
+
+type metricsReceiverShared struct {
+	CollectionInterval string `yaml:"collection_interval" validate:"required"` // time.Duration format
+}
+
+func (r *metricsReceiverShared) GetCollectionInterval() string {
+	return r.CollectionInterval
+}
+
+type MetricsReceiverHostmetrics struct {
 	configComponent `yaml:",inline"`
 
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverHostmetrics) Type() string {
+	return "hostmetrics"
+}
+
+func init() {
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverHostmetrics{} })
+}
+
+type MetricsReceiverIis struct {
+	configComponent `yaml:",inline"`
+
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverIis) Type() string {
+	return "iis"
+}
+
+func init() {
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} })
+}
+
+type MetricsReceiverMssql struct {
+	configComponent `yaml:",inline"`
+
+	metricsReceiverShared `yaml:",inline"`
+}
+
+func (r MetricsReceiverMssql) Type() string {
+	return "mssql"
+}
+
+func init() {
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} })
+}
+
+var metricsReceiverTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "receiver",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsReceiverWrapper struct {
+	inner interface{}
+}
+
+func (m *metricsReceiverWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return metricsReceiverTypes.unmarshalComponentYaml(&m.inner, unmarshal)
+}
+
+func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsReceiverWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsReceiverMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsReceiver)
+	}
+	return nil
+}
+
+type MetricsProcessor interface {
+	component
 }
 
 type MetricsProcessorExcludeMetrics struct {
-	MetricsPattern []string `yaml:"metrics_pattern"`
-}
-
-type MetricsProcessor struct {
 	configComponent `yaml:",inline"`
 
-	MetricsProcessorExcludeMetrics `yaml:",inline"` // Type "exclude_metrics"
+	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
 }
 
-type MetricsExporter struct {
+func (r MetricsProcessorExcludeMetrics) Type() string {
+	return "exclude_metrics"
+}
+
+func init() {
+	metricsProcessorTypes.registerType(func() component { return &MetricsProcessorExcludeMetrics{} })
+}
+
+var metricsProcessorTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "processor",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsProcessorWrapper struct {
+	inner interface{}
+}
+
+func (m *metricsProcessorWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return metricsProcessorTypes.unmarshalComponentYaml(&m.inner, unmarshal)
+}
+
+func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsProcessorWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsProcessorMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsProcessor)
+	}
+	return nil
+}
+
+type MetricsExporter interface {
+	component
+}
+
+type MetricsExporterGoogleCloudMonitoring struct {
 	configComponent `yaml:",inline"`
+}
+
+func (r MetricsExporterGoogleCloudMonitoring) Type() string {
+	return "google_cloud_monitoring"
+}
+
+func init() {
+	metricsExporterTypes.registerType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
+}
+
+var metricsExporterTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "exporter",
+	TypeMap: map[string]func() component{},
+}
+
+// Wrapper type to store the unmarshaled YAML value.
+type metricsExporterWrapper struct {
+	inner interface{}
+}
+
+func (l *metricsExporterWrapper) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return metricsExporterTypes.unmarshalComponentYaml(&l.inner, unmarshal)
+}
+
+func (m *metricsExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Unmarshal into a temporary map to capture types.
+	tm := map[string]metricsExporterWrapper{}
+	if err := unmarshal(&tm); err != nil {
+		return err
+	}
+	// Unwrap the structs.
+	*m = metricsExporterMap{}
+	for k, r := range tm {
+		(*m)[k] = r.inner.(MetricsExporter)
+	}
+	return nil
 }
 
 type MetricsService struct {
@@ -182,9 +540,9 @@ type MetricsService struct {
 }
 
 type MetricsPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers"`
-	ProcessorIDs []string `yaml:"processors"`
-	ExporterIDs  []string `yaml:"exporters,omitempty"`
+	ReceiverIDs  []string `yaml:"receivers,flow"`
+	ProcessorIDs []string `yaml:"processors,flow"`
+	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -210,7 +568,7 @@ func (l *Logging) Validate(platform string) error {
 		return err
 	}
 	if len(l.Exporters) > 0 {
-		log.Print(`The "metrics.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
+		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
 	}
 	for id, r := range l.Receivers {
 		if err := r.ValidateType(subagent, "receiver", id, platform); err != nil {
@@ -243,7 +601,7 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
-		validProcessors := map[string]*LoggingProcessor{}
+		validProcessors := map[string]LoggingProcessor{}
 		for k, v := range l.Processors {
 			validProcessors[k] = v
 		}
@@ -318,7 +676,7 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
-			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil
@@ -333,31 +691,112 @@ func sliceContains(slice []string, value string) bool {
 	return false
 }
 
-func (c *configComponent) ValidateType(subagent string, component string, id string, platform string) error {
-	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+component]
-	if !sliceContains(supportedTypes, c.Type) {
+func (c *configComponent) ValidateType(subagent string, kind string, id string, platform string) error {
+	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+kind]
+	if !sliceContains(supportedTypes, c.Type()) {
 		// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported.
 		// Supported metrics receiver types: [hostmetrics, iis, mssql].
 		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-			subagent, component, id, c.Type, subagent, component, strings.Join(supportedTypes, ", "))
+			subagent, kind, id, c.Type(), subagent, kind, strings.Join(supportedTypes, ", "))
 	}
 	return nil
 }
 
-func (r *LoggingReceiver) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*r, subagent, component, id, r.Type)
+func (r *LoggingReceiverFiles) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type())
 }
 
-func (p *LoggingProcessor) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*p, subagent, component, id, p.Type)
+func (r *LoggingReceiverSyslog) ValidateParameters(subagent string, kind string, id string) error {
+	if err := validateParameters(*r, subagent, kind, id, r.Type()); err != nil {
+		return err
+	}
+	validProtocolValues := []string{"tcp", "udp"}
+	if !sliceContains(validProtocolValues, r.TransportProtocol) {
+		err := fmt.Errorf(`must be one of [%s].`, strings.Join(validProtocolValues, ", "))
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "transport_protocol"), r.TransportProtocol, err)
+	}
+	if net.ParseIP(r.ListenHost) == nil {
+		err := fmt.Errorf(`must be a valid IP.`)
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "listen_host"), r.ListenHost, err)
+	}
+	return nil
 }
 
-func (r *MetricsReceiver) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*r, subagent, component, id, r.Type)
+func (r *LoggingReceiverWinevtlog) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*r, subagent, kind, id, r.Type())
 }
 
-func (p *MetricsProcessor) ValidateParameters(subagent string, component string, id string) error {
-	return validateParameters(*p, subagent, component, id, p.Type)
+func (p *LoggingProcessorParseJson) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*p, subagent, kind, id, p.Type())
+}
+
+func (p *LoggingProcessorParseRegex) ValidateParameters(subagent string, kind string, id string) error {
+	return validateParameters(*p, subagent, kind, id, p.Type())
+}
+
+func (r *LoggingExporterGoogleCloudLogging) ValidateParameters(subagent string, kind string, id string) error {
+	panic("Should never be called")
+}
+
+func validateSharedParameters(r MetricsReceiver, subagent string, kind string, id string) error {
+	if err := validateParameters(r, subagent, kind, id, r.Type()); err != nil {
+		return err
+	}
+
+	validateCollectionInterval := func(collectionInterval string) error {
+		t, err := time.ParseDuration(collectionInterval)
+		if err != nil {
+			return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
+		}
+		interval := t.Seconds()
+		if interval < 10 {
+			return fmt.Errorf(`below the minimum threshold of "10s".`)
+		}
+		return nil
+	}
+
+	collectionInterval := r.GetCollectionInterval()
+	if err := validateCollectionInterval(collectionInterval); err != nil {
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "collection_interval"), collectionInterval, err)
+	}
+	return nil
+}
+
+func (r *MetricsReceiverHostmetrics) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
+}
+
+func (r *MetricsReceiverIis) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
+}
+
+func (r *MetricsReceiverMssql) ValidateParameters(subagent string, kind string, id string) error {
+	return validateSharedParameters(r, subagent, kind, id)
+}
+
+func (p *MetricsProcessorExcludeMetrics) ValidateParameters(subagent string, kind string, id string) error {
+	if err := validateParameters(*p, subagent, kind, id, p.Type()); err != nil {
+		return err
+	}
+	var errors []string
+	for _, prefix := range p.MetricsPattern {
+		if !strings.HasSuffix(prefix, "/*") {
+			errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
+		}
+		// TODO: Relax the prefix check when we support metrics with other prefixes.
+		if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
+			errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
+		}
+	}
+	if len(errors) > 0 {
+		err := fmt.Errorf(strings.Join(errors, " | "))
+		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, p.Type(), "metrics_pattern"), p.MetricsPattern, err)
+	}
+	return nil
+}
+
+func (r *MetricsExporterGoogleCloudMonitoring) ValidateParameters(subagent string, kind string, id string) error {
+	panic("Should never be called")
 }
 
 type yamlField struct {
@@ -395,9 +834,14 @@ func collectYamlFields(s interface{}) []yamlField {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
 			} else if f.PkgPath == "" { // skip private non-struct fields
+				t, e := f.Tag.Lookup("validate")
+				if !e {
+					t = ""
+				}
+				validation := strings.Split(t, ",")
 				parameters = append(parameters, yamlField{
 					Name:     n,
-					Required: sliceContains(requiredFields, n),
+					Required: sliceContains(validation, "required"),
 					Value:    v.Interface(),
 					IsZero:   v.IsZero(),
 				})
@@ -405,38 +849,20 @@ func collectYamlFields(s interface{}) []yamlField {
 		}
 		return parameters
 	}
-	return recurse(reflect.ValueOf(s))
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return recurse(v)
 }
 
-func validateParameters(s interface{}, subagent string, component string, id string, componentType string) error {
-	supportedParameters := supportedParameters[componentType]
-	// Include type when checking.
-	allParameters := []string{"type"}
-	allParameters = append(allParameters, supportedParameters...)
-	additionalValidation, hasAdditionalValidation := additionalParameterValidation[componentType]
+func validateParameters(s interface{}, subagent string, kind string, id string, componentType string) error {
+	// Check for required parameters.
 	parameters := collectYamlFields(s)
 	for _, p := range parameters {
-		if !sliceContains(allParameters, p.Name) {
-			if !p.IsZero {
-				// e.g. parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported.
-				// Supported parameters: [include_paths, exclude_paths].
-				return fmt.Errorf(`%s is not supported. Supported parameters: [%s].`,
-					parameterErrorPrefix(subagent, component, id, componentType, p.Name), strings.Join(supportedParameters, ", "))
-			}
-			continue
-		}
 		if p.IsZero && p.Required {
 			// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
-			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, component, id, componentType, p.Name))
-		}
-		if hasAdditionalValidation {
-			if f, ok := additionalValidation[p.Name]; ok {
-				if err := f(p.Value); err != nil {
-					// e.g. parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1"
-					// has invalid value "1s": below the minimum threshold of "10s".
-					return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, component, id, componentType, p.Name), p.Value, err)
-				}
-			}
+			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name))
 		}
 	}
 	return nil
@@ -468,86 +894,33 @@ var (
 		"iis":                     1,
 		"mssql":                   1,
 	}
-
-	supportedParameters = map[string][]string{
-		"files":             []string{"include_paths", "exclude_paths"},
-		"syslog":            []string{"transport_protocol", "listen_host", "listen_port"},
-		"windows_event_log": []string{"channels"},
-		"parse_json":        []string{"field", "time_key", "time_format"},
-		"parse_regex":       []string{"field", "time_key", "time_format", "regex"},
-		"hostmetrics":       []string{"collection_interval"},
-		"iis":               []string{"collection_interval"},
-		"mssql":             []string{"collection_interval"},
-		"exclude_metrics":   []string{"metrics_pattern"},
-	}
-
-	collectionIntervalValidation = map[string]func(interface{}) error{
-		"collection_interval": func(v interface{}) error {
-			t, err := time.ParseDuration(v.(string))
-			if err != nil {
-				return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
-			}
-			interval := t.Seconds()
-			if interval < 10 {
-				return fmt.Errorf(`below the minimum threshold of "10s".`)
-			}
-			return nil
-		},
-	}
-
-	additionalParameterValidation = map[string]map[string]func(interface{}) error{
-		"syslog": map[string]func(interface{}) error{
-			"transport_protocol": func(v interface{}) error {
-				validValues := []string{"tcp", "udp"}
-				if !sliceContains(validValues, v.(string)) {
-					return fmt.Errorf(`must be one of [%s].`, strings.Join(validValues, ", "))
-				}
-				return nil
-			},
-			"listen_host": func(v interface{}) error {
-				if net.ParseIP(v.(string)) == nil {
-					return fmt.Errorf(`must be a valid IP.`)
-				}
-				return nil
-			},
-		},
-		"hostmetrics": collectionIntervalValidation,
-		"iis":         collectionIntervalValidation,
-		"mssql":       collectionIntervalValidation,
-		"exclude_metrics": map[string]func(interface{}) error{
-			"metrics_pattern": func(v interface{}) error {
-				var errors []string
-				for _, prefix := range v.([]string) {
-					if !strings.HasSuffix(prefix, "/*") {
-						errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
-					}
-					// TODO: Relax the prefix check when we support metrics with other prefixes.
-					if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
-						errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
-					}
-				}
-				if len(errors) > 0 {
-					return fmt.Errorf(strings.Join(errors, " | "))
-				}
-				return nil
-			},
-		},
-	}
 )
 
 // mapKeys returns keys from a map[string]Any as a map[string]bool.
 func mapKeys(m interface{}) map[string]bool {
 	keys := map[string]bool{}
 	switch m := m.(type) {
-	case map[string]*LoggingReceiver:
+	case map[string]LoggingReceiver:
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*LoggingProcessor:
+	case loggingReceiverMap:
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*LoggingExporter:
+	case map[string]LoggingProcessor:
+		for k := range m {
+			keys[k] = true
+		}
+	case loggingProcessorMap:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]LoggingExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case loggingExporterMap:
 		for k := range m {
 			keys[k] = true
 		}
@@ -555,19 +928,35 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsReceiver:
+	case map[string]MetricsReceiver:
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsProcessor:
+	case metricsReceiverMap:
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*MetricsExporter:
+	case map[string]MetricsProcessor:
+		for k := range m {
+			keys[k] = true
+		}
+	case metricsProcessorMap:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]MetricsExporter:
+		for k := range m {
+			keys[k] = true
+		}
+	case metricsExporterMap:
 		for k := range m {
 			keys[k] = true
 		}
 	case map[string]*MetricsPipeline:
+		for k := range m {
+			keys[k] = true
+		}
+	case map[string]func() component:
 		for k := range m {
 			keys[k] = true
 		}
@@ -598,26 +987,26 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 	return invalid
 }
 
-func validateComponentIds(components interface{}, subagent string, component string) error {
+func validateComponentIds(components interface{}, subagent string, kind string) error {
 	for _, id := range sortedKeys(components) {
 		if strings.HasPrefix(id, "lib:") {
 			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
 			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-				subagent, component, id, component)
+				subagent, kind, id, kind)
 		}
 	}
 	return nil
 }
 
-func validateComponentKeys(components interface{}, refs []string, subagent string, component string, pipeline string) error {
+func validateComponentKeys(components interface{}, refs []string, subagent string, kind string, pipeline string) error {
 	invalid := findInvalid(refs, mapKeys(components))
 	if len(invalid) > 0 {
-		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, component, invalid[0], pipeline)
+		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid[0], pipeline)
 	}
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, component string) error {
+func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) error {
 	r := map[string]int{}
 	cm := reflect.ValueOf(components)
 	for _, id := range refs {
@@ -625,7 +1014,7 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		if !v.IsValid() {
 			continue // Some reserved ids don't map to components.
 		}
-		t := v.Elem().FieldByName("Type").String()
+		t := v.Interface().(component).Type()
 		if _, ok := r[t]; ok {
 			r[t] += 1
 		} else {
@@ -633,9 +1022,9 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		}
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
-				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, component, t)
+				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
 			}
-			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, component, t)
+			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
 		}
 	}
 	return nil
@@ -645,6 +1034,6 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 // id is the id of the receiver, processor, or exporter.
 // componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
 // parameter is name of the parameter.
-func parameterErrorPrefix(subagent string, component string, id string, componentType string, parameter string) string {
-	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, component, id)
+func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
+	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
 }

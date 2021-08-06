@@ -1,3 +1,17 @@
+// Copyright 2020 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package otel
 
 import (
@@ -5,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kylelemons/godebug/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestSection(t *testing.T) {
@@ -16,7 +30,7 @@ func TestSection(t *testing.T) {
 	}{
 		{
 			section: HostMetrics{
-				HostMetricsID:      "hostmetrics",
+				HostMetricsID:      "hostmetrics/hostmetrics",
 				CollectionInterval: "60s",
 			},
 			want: `hostmetrics/hostmetrics:
@@ -34,7 +48,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: IIS{
-				IISID:              "iis",
+				IISID:              "windowsperfcounters/iis_iis",
 				CollectionInterval: "60s",
 			},
 			want: `windowsperfcounters/iis_iis:
@@ -57,7 +71,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: MSSQL{
-				MSSQLID:            "mssql",
+				MSSQLID:            "windowsperfcounters/mssql_mssql",
 				CollectionInterval: "60s",
 			},
 			want: `windowsperfcounters/mssql_mssql:
@@ -75,7 +89,7 @@ func TestSection(t *testing.T) {
 		},
 		{
 			section: Stackdriver{
-				StackdriverID: "agent",
+				StackdriverID: "googlecloud/agent",
 				UserAgent:     "$USERAGENT",
 				Prefix:        "agent.googleapis.com/",
 			},
@@ -87,9 +101,9 @@ func TestSection(t *testing.T) {
 		{
 			section: Service{
 				ID:         "system",
-				Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-				Receivers:  "[hostmetrics/hostmetrics]",
-				Exporters:  "[googlecloud/google]",
+				Processors: []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"},
+				Receivers:  []string{"hostmetrics/hostmetrics"},
+				Exporters:  []string{"googlecloud/google"},
 			},
 			want: `metrics/system:
       receivers:  [hostmetrics/hostmetrics]
@@ -112,7 +126,7 @@ func TestSection(t *testing.T) {
 					t.Errorf("got error: %v, want no error", err)
 					return
 				}
-				if diff := diff.Diff(tc.want, got); diff != "" {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
 					t.Errorf("service.renderConfig() returned unexpected diff (-want +got):\n%s", diff)
 				}
 			} else {
@@ -126,50 +140,53 @@ func TestSection(t *testing.T) {
 
 func TestGenerateOtelConfig(t *testing.T) {
 	tests := []struct {
-		name            string
-		hostMetricsList []*HostMetrics
-		mssqlList       []*MSSQL
-		iisList         []*IIS
-		stackdriverList []*Stackdriver
-		serviceList     []*Service
-		want            string
+		name         string
+		receiverList []Receiver
+		exporterList []Exporter
+		serviceList  []*Service
+		want         string
 	}{
 		{
 			name: "default system metrics config",
-			hostMetricsList: []*HostMetrics{{
-				HostMetricsID:      "hostmetrics",
-				CollectionInterval: "60s",
-			}},
-			mssqlList: []*MSSQL{{
-				MSSQLID:            "mssql",
-				CollectionInterval: "60s",
-			}},
-			iisList: []*IIS{{
-				IISID:              "iis",
-				CollectionInterval: "60s",
-			}},
-			stackdriverList: []*Stackdriver{{
-				StackdriverID: "google",
-				UserAgent:     "$IGNORED_VALUE",
-				Prefix:        "agent.googleapis.com/",
-			}},
+			receiverList: []Receiver{
+				&HostMetrics{
+					HostMetricsID:      "hostmetrics/hostmetrics",
+					CollectionInterval: "60s",
+				},
+				&MSSQL{
+					MSSQLID:            "windowsperfcounters/mssql_mssql",
+					CollectionInterval: "60s",
+				},
+				&IIS{
+					IISID:              "windowsperfcounters/iis_iis",
+					CollectionInterval: "60s",
+				},
+			},
+			exporterList: []Exporter{
+				&Stackdriver{
+					StackdriverID: "googlecloud/google",
+					UserAgent:     "$IGNORED_VALUE",
+					Prefix:        "agent.googleapis.com/",
+				},
+			},
 			serviceList: []*Service{
 				{
 					ID:         "system",
-					Receivers:  "[hostmetrics/hostmetrics]",
-					Processors: "[agentmetrics/system,filter/system,metricstransform/system,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+					Receivers:  []string{"hostmetrics/hostmetrics"},
+					Processors: []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
 				{
 					ID:         "mssql",
-					Receivers:  "[windowsperfcounters/mssql_mssql]",
-					Processors: "[metricstransform/mssql,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+					Receivers:  []string{"windowsperfcounters/mssql_mssql"},
+					Processors: []string{"metricstransform/mssql", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
-				{ID: "iis",
-					Receivers:  "[windowsperfcounters/iis_iis]",
-					Processors: "[metricstransform/iis,resourcedetection]",
-					Exporters:  "[googlecloud/google]",
+				{
+					ID:         "iis",
+					Receivers:  []string{"windowsperfcounters/iis_iis"},
+					Processors: []string{"metricstransform/iis", "resourcedetection"},
+					Exporters:  []string{"googlecloud/google"},
 				},
 			},
 			want: `receivers:
@@ -700,11 +717,9 @@ service:
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := Config{
-				HostMetrics: tc.hostMetricsList,
-				MSSQL:       tc.mssqlList,
-				IIS:         tc.iisList,
-				Stackdriver: tc.stackdriverList,
-				Service:     tc.serviceList,
+				Receivers: tc.receiverList,
+				Exporters: tc.exporterList,
+				Service:   tc.serviceList,
 
 				UserAgent: "Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)",
 				Version:   "google-cloud-ops-agent-metrics/latest-build_distro",
@@ -714,8 +729,8 @@ service:
 				t.Errorf("got error: %v, want no error", err)
 				return
 			}
-			if diff := diff.Diff(got, tc.want); diff != "" {
-				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-got +want):\n%s", tc.name, diff)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("test %q: ran GenerateOtelConfig returned unexpected diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
 	}

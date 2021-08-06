@@ -8,8 +8,7 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        receivers:
-        - syslog
+        receivers: [syslog]
 metrics:
   receivers:
     hostmetrics:
@@ -22,7 +21,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers:
-        - hostmetrics
-        processors:
-        - metrics_filter
+        receivers: [hostmetrics]
+        processors: [metrics_filter]

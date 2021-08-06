@@ -16,6 +16,7 @@
 package otel
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -23,23 +24,17 @@ import (
 var confTemplate = template.Must(template.New("conf").Parse(
 	`receivers:
   {{template "agentreceiver" .}}
-{{- range .HostMetrics}}
-  {{template "hostmetrics" .}}
-{{- end}}
-{{- range .MSSQL}}
-  {{template "mssql" .}}
-{{- end}}
-{{- range .IIS}}
-  {{template "iis" .}}
-{{- end}}
+{{- range .Receivers}}
+  {{.Generate -}}
+{{end}}
 processors:
   {{template "defaultprocessor" .}}
-{{- range .ExcludeMetrics}}
-  {{template "excludemetrics" .}}
+{{- range .Processors}}
+  {{.Generate -}}
 {{- end}}
 exporters:
-{{- range .Stackdriver}}
-  {{template "stackdriver" .}}
+{{- range .Exporters}}
+  {{.Generate -}}
 {{- end}}
 extensions:
 service:
@@ -49,7 +44,7 @@ service:
     {{template "service" .}}
 {{- end}}
 {{define "hostmetrics" -}}
-  hostmetrics/{{.HostMetricsID}}:
+  {{.HostMetricsID}}:
     collection_interval: {{.CollectionInterval}}
     scrapers:
       cpu:
@@ -75,7 +70,7 @@ service:
 {{- end -}}
 
 {{define "iis" -}}
-windowsperfcounters/iis_{{.IISID}}:
+{{.IISID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: Web Service
@@ -95,7 +90,7 @@ windowsperfcounters/iis_{{.IISID}}:
 {{- end -}}
 
 {{define "mssql" -}}
-windowsperfcounters/mssql_{{.MSSQLID}}:
+{{.MSSQLID}}:
     collection_interval: {{.CollectionInterval}}
     perfcounters:
       - object: SQLServer:General Statistics
@@ -110,7 +105,7 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
 {{- end -}}
 
 {{define "stackdriver" -}}
-  googlecloud/{{.StackdriverID}}:
+  {{.StackdriverID}}:
     user_agent: {{.UserAgent}}
     metric:
       prefix: {{.Prefix}}
@@ -141,9 +136,9 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
 
 {{define "service" -}}
     metrics/{{.ID}}:
-      receivers:  {{.Receivers}}
-      processors: {{.Processors}}
-      exporters: {{.Exporters}}
+      receivers:  {{.Join .Receivers}}
+      processors: {{.Join .Processors}}
+      exporters: {{.Join .Exporters}}
 {{- end -}}
 
 {{define "defaultprocessor" -}}
@@ -587,14 +582,11 @@ windowsperfcounters/mssql_{{.MSSQLID}}:
           - action: toggle_scalar_data_type
 {{- end -}}`))
 
-type MSSQL struct {
-	MSSQLID            string
-	CollectionInterval string
-}
-
-type IIS struct {
-	IISID              string
-	CollectionInterval string
+type Receiver interface {
+	Generate() (string, error)
+	GetID() string
+	DefaultPipelineID() string
+	DefaultProcessors() []string
 }
 
 type HostMetrics struct {
@@ -602,16 +594,101 @@ type HostMetrics struct {
 	CollectionInterval string
 }
 
+func (r *HostMetrics) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "hostmetrics", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *HostMetrics) GetID() string {
+	return r.HostMetricsID
+}
+
+func (r *HostMetrics) DefaultProcessors() []string {
+	return []string{"agentmetrics/system", "filter/system", "metricstransform/system", "resourcedetection"}
+}
+
+func (r *HostMetrics) DefaultPipelineID() string {
+	return "system"
+}
+
+type IIS struct {
+	IISID              string
+	CollectionInterval string
+}
+
+func (r *IIS) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "iis", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *IIS) GetID() string {
+	return r.IISID
+}
+
+func (r *IIS) DefaultProcessors() []string {
+	return []string{"metricstransform/iis", "resourcedetection"}
+}
+
+func (r *IIS) DefaultPipelineID() string {
+	return "iis"
+}
+
+type MSSQL struct {
+	MSSQLID            string
+	CollectionInterval string
+}
+
+func (r *MSSQL) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "mssql", r); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (r *MSSQL) GetID() string {
+	return r.MSSQLID
+}
+
+func (r *MSSQL) DefaultProcessors() []string {
+	return []string{"metricstransform/mssql", "resourcedetection"}
+}
+
+func (r *MSSQL) DefaultPipelineID() string {
+	return "mssql"
+}
+
+type Processor interface {
+	Generate() (string, error)
+	GetID() string
+}
+
 type ExcludeMetrics struct {
 	ExcludeMetricsID string
 	MetricNames      []string
 }
 
-type Service struct {
-	ID         string
-	Processors string
-	Receivers  string
-	Exporters  string
+func (p *ExcludeMetrics) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "excludemetrics", p); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (p *ExcludeMetrics) GetID() string {
+	return p.ExcludeMetricsID
+}
+
+type Exporter interface {
+	Generate() (string, error)
+	GetID() string
 }
 
 type Stackdriver struct {
@@ -620,26 +697,48 @@ type Stackdriver struct {
 	Prefix        string
 }
 
+func (e *Stackdriver) Generate() (string, error) {
+	var builder strings.Builder
+	if err := confTemplate.ExecuteTemplate(&builder, "stackdriver", e); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
+
+func (e *Stackdriver) GetID() string {
+	return e.StackdriverID
+}
+
+type Service struct {
+	ID         string
+	Processors []string
+	Receivers  []string
+	Exporters  []string
+}
+
+func (s Service) Join(l []string) string {
+	return fmt.Sprintf("[%s]", strings.Join(l, ","))
+}
+
 type Config struct {
-	HostMetrics    []*HostMetrics
-	MSSQL          []*MSSQL
-	IIS            []*IIS
-	Stackdriver    []*Stackdriver
-	Service        []*Service
-	ExcludeMetrics []*ExcludeMetrics
-	UserAgent      string
-	Version        string
-	Windows        bool
+	Receivers  []Receiver
+	Processors []Processor
+	Exporters  []Exporter
+	Service    []*Service
+	UserAgent  string
+	Version    string
+	Windows    bool
 }
 
 func (c Config) Generate() (string, error) {
-	c.Stackdriver = append(c.Stackdriver, &Stackdriver{
-		StackdriverID: "agent",
+	c.Exporters = append(c.Exporters, &Stackdriver{
+		StackdriverID: "googlecloud/agent",
 		Prefix:        "agent.googleapis.com/",
 		UserAgent:     c.UserAgent,
 	})
 
-	for _, s := range c.Stackdriver {
+	for _, s := range c.Exporters {
+		s := s.(*Stackdriver)
 		s.UserAgent = c.UserAgent
 	}
 

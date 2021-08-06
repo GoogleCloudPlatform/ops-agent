@@ -1,9 +1,9 @@
-logging:
+metrics:
   receivers:
     receiver_1:
-      type: files
-      include_paths: ""
+      type: mssql
+      collection_interval: 60s
   service:
     pipelines:
-      test_pipeline:
+      custom_pipeline:
         receivers: [receiver_1]
