@@ -202,15 +202,15 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 	actual = strings.ReplaceAll(actual, "\r\n", "\n")
 	goldenPath := fmt.Sprintf(path, goos, testName)
-	if diff := cmp.Diff(actual, expected); diff != "" {
+	if diff := cmp.Diff(expected, actual); diff != "" {
 		if *updateGolden {
 			// Update the expected to match the actual.
-			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
+			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, cmp.Diff(actual, expected))
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 			}
 		} else {
-			t.Errorf("test %q: golden file at %s mismatch (-got +want):\n%s", testName, goldenPath, diff)
+			t.Errorf("test %q: golden file at %s mismatch (-want +got):\n%s", testName, goldenPath, diff)
 		}
 	}
 }
