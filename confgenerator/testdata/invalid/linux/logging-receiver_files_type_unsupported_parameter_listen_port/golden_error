@@ -1,2 +1,2 @@
-the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
+the agent config file is not valid. detailed error: yaml: unmarshal errors:
   line 8: parameter "listen_port" in "files" type logging receiver "???" is not supported. Supported parameters: [include_paths, exclude_paths].
