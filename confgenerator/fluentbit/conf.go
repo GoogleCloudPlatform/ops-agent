@@ -49,36 +49,40 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
     # we don't want them to all be loaded into the memory.
     storage.max_chunks_up      128
 
-{{range .TailConfigSections -}}
-{{.}}
+{{range .Tails -}}
+{{template "tail" .}}
 
 {{end}}
-{{- range .SyslogConfigSections -}}
-{{.}}
+{{- range .Syslogs -}}
+{{template "syslog" .}}
 
 {{end}}
-{{- range .WineventlogConfigSections -}}
-{{.}}
+{{- range .Wineventlogs -}}
+{{template "wineventlog" .}}
 
 {{end}}
-{{- range .FilterParserConfigSections -}}
-{{.}}
+{{- range .FilterParserGroups -}}
+{{- range . -}}
+{{template "filter_parser" .}}
+
+{{end -}}
 
 {{end}}
-{{- range .FilterModifyAddLogNameConfigSections -}}
-{{.}}
+
+{{- range .FilterModifyAddLogNames -}}
+{{template "filter_modify_add_log_name" .}}
 
 {{end}}
-{{- range .FilterRewriteTagSections -}}
-{{.}}
+{{- range .FilterRewriteTags -}}
+{{template "filter_rewrite_tag" .}}
 
 {{end}}
-{{- range .FilterModifyRemoveLogNameConfigSections -}}
-{{.}}
+{{- range .FilterModifyRemoveLogNames -}}
+{{template "filter_modify_remove_log_name" .}}
 
 {{end}}
-{{- range .StackdriverConfigSections -}}
-{{.}}
+{{- range .Stackdrivers -}}
+{{template "stackdriver" .}}
 
 {{end}}
 {{- define "filter_modify_add_log_name" -}}
@@ -247,12 +251,12 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
     Time_Key    time
     Time_Format %b %d %H:%M:%S
 
-{{range .JSONParserConfigSections -}}
-{{.}}
+{{range .JsonParsers -}}
+{{template "parserJSON" .}}
 
 {{end}}
-{{- range .RegexParserConfigSections -}}
-{{.}}
+{{- range .RegexParsers -}}
+{{template "parserRegex" .}}
 
 {{end}}
 {{- define "parserJSON" -}}
@@ -280,22 +284,6 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
 {{- end -}}
 `))
 
-type mainConfigSections struct {
-	TailConfigSections                      []string
-	SyslogConfigSections                    []string
-	WineventlogConfigSections               []string
-	FilterParserConfigSections              []string
-	FilterModifyAddLogNameConfigSections    []string
-	FilterRewriteTagSections                []string
-	FilterModifyRemoveLogNameConfigSections []string
-	StackdriverConfigSections               []string
-}
-
-type parserConfigSections struct {
-	JSONParserConfigSections  []string
-	RegexParserConfigSections []string
-}
-
 type Config struct {
 	Tails                      []*Tail
 	Syslogs                    []*Syslog
@@ -311,120 +299,20 @@ type Config struct {
 }
 
 func (c Config) generateMain() (string, error) {
-	tailConfigSections := []string{}
-	syslogConfigSections := []string{}
-	wineventlogConfigSections := []string{}
-	filterParserConfigSections := []string{}
-	filterModifyAddLogNameConfigSections := []string{}
-	filterRewriteTagSections := []string{}
-	filterModifyRemoveLogNameConfigSections := []string{}
-	stackdriverConfigSections := []string{}
-	for _, t := range c.Tails {
-		configSection, err := t.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		tailConfigSections = append(tailConfigSections, configSection)
-	}
-	for _, s := range c.Syslogs {
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		syslogConfigSections = append(syslogConfigSections, configSection)
-	}
-	for _, w := range c.Wineventlogs {
-		configSection, err := w.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		wineventlogConfigSections = append(wineventlogConfigSections, configSection)
-	}
-	for _, filterParsers := range c.FilterParserGroups {
-		var filters []string
-		for _, f := range filterParsers {
-			configSection, err := f.renderConfig()
-			if err != nil {
-				return "", err
-			}
-			filters = append(filters, configSection)
-		}
-		filterParserConfigSections = append(filterParserConfigSections, strings.Join(filters, "\n\n"))
-	}
-	for _, f := range c.FilterModifyAddLogNames {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterModifyAddLogNameConfigSections = append(filterModifyAddLogNameConfigSections, configSection)
-	}
-	for _, f := range c.FilterRewriteTags {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterRewriteTagSections = append(filterRewriteTagSections, configSection)
-	}
-	for _, f := range c.FilterModifyRemoveLogNames {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterModifyRemoveLogNameConfigSections = append(filterModifyRemoveLogNameConfigSections, configSection)
-	}
 	for _, s := range c.Stackdrivers {
 		s.UserAgent = c.UserAgent
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		stackdriverConfigSections = append(stackdriverConfigSections, configSection)
-	}
-
-	configSections := mainConfigSections{
-		TailConfigSections:                      tailConfigSections,
-		SyslogConfigSections:                    syslogConfigSections,
-		WineventlogConfigSections:               wineventlogConfigSections,
-		FilterParserConfigSections:              filterParserConfigSections,
-		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
-		FilterRewriteTagSections:                filterRewriteTagSections,
-		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
-		StackdriverConfigSections:               stackdriverConfigSections,
 	}
 
 	var mainConfigBuilder strings.Builder
-	if err := mainConfTemplate.Execute(&mainConfigBuilder, configSections); err != nil {
+	if err := mainConfTemplate.Execute(&mainConfigBuilder, c); err != nil {
 		return "", err
 	}
 	return mainConfigBuilder.String(), nil
 }
 
 func (c Config) generateParser() (string, error) {
-	jsonParserConfigSections := []string{}
-	for _, j := range c.JsonParsers {
-		configSection, err := j.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		jsonParserConfigSections = append(jsonParserConfigSections, configSection)
-	}
-
-	regexParserConfigSections := []string{}
-	for _, r := range c.RegexParsers {
-		configSection, err := r.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		regexParserConfigSections = append(regexParserConfigSections, configSection)
-	}
-
-	parsers := parserConfigSections{
-		JSONParserConfigSections:  jsonParserConfigSections,
-		RegexParserConfigSections: regexParserConfigSections,
-	}
-
 	var parserConfigBuilder strings.Builder
-	if err := parserConfTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
+	if err := parserConfTemplate.Execute(&parserConfigBuilder, c); err != nil {
 		return "", err
 	}
 	return parserConfigBuilder.String(), nil
