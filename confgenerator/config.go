@@ -385,10 +385,7 @@ func collectYamlFields(s interface{}) []yamlField {
 				// Expand inline structs.
 				parameters = append(parameters, recurse(v)...)
 			} else if f.PkgPath == "" { // skip private non-struct fields
-				t, e := f.Tag.Lookup("validate")
-				if !e {
-					t = ""
-				}
+				t, _ := f.Tag.Lookup("validate")
 				validation := strings.Split(t, ",")
 				parameters = append(parameters, yamlField{
 					Name:     n,
