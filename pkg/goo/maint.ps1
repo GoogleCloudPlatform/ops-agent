@@ -31,7 +31,8 @@ $configFilePath = "$InstallDir\config\config.yaml"
 if ($Action -eq "install") {
     if (-not(Test-Path -Path $configFilePath -PathType Leaf)) {
          try {
-             Copy-Item -Path "$InstallDir\config\default-config.yaml" -Destination $configFilePath
+             Get-Location
+             Copy-Item -Path "confgenerator\default-config.yaml" -Destination $configFilePath
              Write-Host "The file [$configFilePath] has been created."
          }
          catch {
