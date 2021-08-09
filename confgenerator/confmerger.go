@@ -135,7 +135,7 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 	}
 
 	// Read the built-in config file.
-	original, err := builtInStruct.DeepCopy()
+	original, err := builtInStruct.DeepCopy(platform)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 			return fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
 		}
 	} else {
-		overrides, err := ReadUnifiedConfigFromFile(userConfPath)
+		overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
 		if err != nil {
 			return err
 		}

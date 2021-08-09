@@ -1,1 +1,9 @@
-parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
+the agent config file is not valid. detailed error: [3:15] Key: 'LoggingReceiverFiles.IncludePaths' Error:Field validation for 'IncludePaths' failed on the 'required' tag
+   1 | logging:
+   2 |   receivers:
+>  3 |     receiver_1:
+                     ^
+   4 |       type: files
+   5 |     syslog:
+   6 |       type: files
+   7 |       

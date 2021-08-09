@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"reflect"
@@ -23,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 )
 
@@ -40,12 +42,12 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
+func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
 		return UnifiedConfig{}, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
-	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml)
+	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
 	if err != nil {
 		return UnifiedConfig{}, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
@@ -53,16 +55,34 @@ func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
 	return fromYaml, nil
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
+type validatorContext struct {
+	ctx context.Context
+	v   *validator.Validate
+}
+
+func (v *validatorContext) Struct(s interface{}) error {
+	return v.v.StructCtx(v.ctx, s)
+}
+
+type platformKeyType struct{}
+
+var platformKey = platformKeyType{}
+
+func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
+	ctx := context.WithValue(context.TODO(), platformKey, platform)
 	config := UnifiedConfig{}
-	if err := yaml.UnmarshalWithOptions(input, &config, yaml.Strict()); err != nil {
+	v := &validatorContext{
+		ctx: ctx,
+		v:   validator.New(),
+	}
+	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
 	return config, nil
 }
 
 func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig, error) {
-	config, err := UnmarshalYamlToUnifiedConfig(input)
+	config, err := UnmarshalYamlToUnifiedConfig(input, platform)
 	if err != nil {
 		return UnifiedConfig{}, err
 	}

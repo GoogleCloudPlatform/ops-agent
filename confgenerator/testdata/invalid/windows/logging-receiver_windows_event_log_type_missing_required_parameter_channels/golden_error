@@ -1,1 +1,8 @@
-parameter "channels" in "windows_event_log" type logging receiver "receiver_1" is required.
+the agent config file is not valid. detailed error: [3:15] Key: 'LoggingReceiverWinevtlog.Channels' Error:Field validation for 'Channels' failed on the 'required' tag
+   1 | logging:
+   2 |   receivers:
+>  3 |     receiver_1:
+                     ^
+   4 |       type: windows_event_log
+   5 |   service:
+   6 |     pipelines:
