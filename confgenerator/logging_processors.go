@@ -23,10 +23,6 @@ func (r LoggingProcessorParseJson) Type() string {
 	return "parse_json"
 }
 
-func (p *LoggingProcessorParseJson) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type())
-}
-
 func init() {
 	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
 }
@@ -40,10 +36,6 @@ type LoggingProcessorParseRegex struct {
 
 func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
-}
-
-func (p *LoggingProcessorParseRegex) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type())
 }
 
 func init() {

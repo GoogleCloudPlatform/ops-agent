@@ -24,10 +24,6 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r *MetricsReceiverIis) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
 func init() {
 	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} })
 }

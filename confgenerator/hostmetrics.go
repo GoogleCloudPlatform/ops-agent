@@ -24,10 +24,6 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r *MetricsReceiverHostmetrics) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
 func init() {
 	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverHostmetrics{} })
 }

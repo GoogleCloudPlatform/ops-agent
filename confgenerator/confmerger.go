@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	yaml "github.com/goccy/go-yaml"
 )
 
 var (

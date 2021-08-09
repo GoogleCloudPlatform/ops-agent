@@ -14,40 +14,14 @@
 
 package confgenerator
 
-import (
-	"fmt"
-	"strings"
-)
-
 type MetricsProcessorExcludeMetrics struct {
 	ConfigComponent `yaml:",inline"`
 
-	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
+	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"dive,endswith=/*,startswith=agent.googleapis.com/"`
 }
 
 func (r MetricsProcessorExcludeMetrics) Type() string {
 	return "exclude_metrics"
-}
-
-func (p *MetricsProcessorExcludeMetrics) ValidateParameters(subagent string, kind string, id string) error {
-	if err := validateParameters(*p, subagent, kind, id, p.Type()); err != nil {
-		return err
-	}
-	var errors []string
-	for _, prefix := range p.MetricsPattern {
-		if !strings.HasSuffix(prefix, "/*") {
-			errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
-		}
-		// TODO: Relax the prefix check when we support metrics with other prefixes.
-		if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
-			errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
-		}
-	}
-	if len(errors) > 0 {
-		err := fmt.Errorf(strings.Join(errors, " | "))
-		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, p.Type(), "metrics_pattern"), p.MetricsPattern, err)
-	}
-	return nil
 }
 
 func init() {

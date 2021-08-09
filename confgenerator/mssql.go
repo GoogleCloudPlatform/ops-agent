@@ -24,10 +24,6 @@ func (r MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (r *MetricsReceiverMssql) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
 func init() {
 	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} })
 }

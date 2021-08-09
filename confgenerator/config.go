@@ -68,12 +68,31 @@ type platformKeyType struct{}
 
 var platformKey = platformKeyType{}
 
+func newValidator() *validator.Validate {
+	v := validator.New()
+	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
+		t, err := time.ParseDuration(fl.Field().String())
+		if err != nil {
+			return false
+		}
+		tmin, err := time.ParseDuration(fl.Param())
+		if err != nil {
+			panic(err)
+		}
+		return t >= tmin
+	})
+	return v
+}
+
 func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
 	ctx := context.WithValue(context.TODO(), platformKey, platform)
 	config := UnifiedConfig{}
 	v := &validatorContext{
 		ctx: ctx,
-		v:   validator.New(),
+		v:   newValidator(),
+	}
+	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Validator(v)); err != nil {
+		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
@@ -95,7 +114,7 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 type component interface {
 	Type() string
 	ValidateType(subagent string, component string, id string, platform string) error
-	ValidateParameters(subagent string, component string, id string) error
+	//ValidateParameters(subagent string, component string, id string) error
 	//Validate() error
 }
 
@@ -281,15 +300,10 @@ type Metrics struct {
 
 type MetricsReceiver interface {
 	component
-	GetCollectionInterval() string
 }
 
 type MetricsReceiverShared struct {
-	CollectionInterval string `yaml:"collection_interval" validate:"required"` // time.Duration format
-}
-
-func (r *MetricsReceiverShared) GetCollectionInterval() string {
-	return r.CollectionInterval
+	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
 }
 
 var metricsReceiverTypes = &componentTypeRegistry{
@@ -429,16 +443,6 @@ func (l *Logging) Validate(platform string) error {
 			return err
 		}
 	}
-	for id, r := range l.Receivers {
-		if err := r.ValidateParameters(subagent, "receiver", id); err != nil {
-			return err
-		}
-	}
-	for id, p := range l.Processors {
-		if err := p.ValidateParameters(subagent, "processor", id); err != nil {
-			return err
-		}
-	}
 	if l.Service == nil {
 		return nil
 	}
@@ -494,16 +498,6 @@ func (m *Metrics) Validate(platform string) error {
 			return err
 		}
 	}
-	for id, p := range m.Processors {
-		if err := p.ValidateParameters(subagent, "processor", id); err != nil {
-			return err
-		}
-	}
-	for id, r := range m.Receivers {
-		if err := r.ValidateParameters(subagent, "receiver", id); err != nil {
-			return err
-		}
-	}
 	if m.Service == nil {
 		return nil
 	}
@@ -547,30 +541,6 @@ func (c *ConfigComponent) ValidateType(subagent string, kind string, id string, 
 		// Supported metrics receiver types: [hostmetrics, iis, mssql].
 		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
 			subagent, kind, id, c.Type(), subagent, kind, strings.Join(supportedTypes, ", "))
-	}
-	return nil
-}
-
-func validateSharedParameters(r MetricsReceiver, subagent string, kind string, id string) error {
-	if err := validateParameters(r, subagent, kind, id, r.Type()); err != nil {
-		return err
-	}
-
-	validateCollectionInterval := func(collectionInterval string) error {
-		t, err := time.ParseDuration(collectionInterval)
-		if err != nil {
-			return fmt.Errorf(`not an interval (e.g. "60s"). Detailed error: %s`, err)
-		}
-		interval := t.Seconds()
-		if interval < 10 {
-			return fmt.Errorf(`below the minimum threshold of "10s".`)
-		}
-		return nil
-	}
-
-	collectionInterval := r.GetCollectionInterval()
-	if err := validateCollectionInterval(collectionInterval); err != nil {
-		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "collection_interval"), collectionInterval, err)
 	}
 	return nil
 }
