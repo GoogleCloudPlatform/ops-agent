@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [5:20] Key: 'LoggingReceiverSyslog.ListenHost' Error:Field validation for 'ListenHost' failed on the 'required' tag
+the agent config file is not valid. detailed error: [5:20] Key: 'LoggingReceiverSyslog.listen_host' Error:Field validation for 'listen_host' failed on the 'required' tag
    2 |   receivers:
    3 |     receiver_1:
    4 |       type: syslog

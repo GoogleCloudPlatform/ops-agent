@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [6:7] Key: 'MetricsProcessorExcludeMetrics.MetricsPattern[0]' Error:Field validation for 'MetricsPattern[0]' failed on the 'endswith' tag,Key: 'MetricsProcessorExcludeMetrics.MetricsPattern[1]' Error:Field validation for 'MetricsPattern[1]' failed on the 'startswith' tag
+the agent config file is not valid. detailed error: [6:7] Key: 'MetricsProcessorExcludeMetrics.metrics_pattern[0]' Error:Field validation for 'metrics_pattern[0]' failed on the 'endswith' tag,Key: 'MetricsProcessorExcludeMetrics.metrics_pattern[1]' Error:Field validation for 'metrics_pattern[1]' failed on the 'startswith' tag
    3 |     metrics_filter:
    4 |       type: exclude_metrics
    5 |       metrics_pattern:
