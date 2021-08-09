@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"fmt"
 	"log"
-	"net"
 	"reflect"
 	"regexp"
 	"sort"
@@ -153,51 +152,6 @@ type LoggingReceiver interface {
 	component
 }
 
-type LoggingReceiverFiles struct {
-	configComponent `yaml:",inline"`
-
-	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
-}
-
-func (r LoggingReceiverFiles) Type() string {
-	return "files"
-}
-
-func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
-}
-
-type LoggingReceiverSyslog struct {
-	configComponent `yaml:",inline"`
-
-	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
-	ListenHost        string `yaml:"listen_host,omitempty" validate:"required"`
-	ListenPort        uint16 `yaml:"listen_port,omitempty" validate:"required"`
-}
-
-func (r LoggingReceiverSyslog) Type() string {
-	return "syslog"
-}
-
-func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
-}
-
-type LoggingReceiverWinevtlog struct {
-	configComponent `yaml:",inline"`
-
-	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
-}
-
-func (r LoggingReceiverWinevtlog) Type() string {
-	return "windows_event_log"
-}
-
-func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} })
-}
-
 var loggingReceiverTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "receiver",
 	TypeMap: map[string]func() component{},
@@ -241,34 +195,6 @@ func (p loggingProcessorParseShared) GetField() string {
 	return p.Field
 }
 
-type LoggingProcessorParseJson struct {
-	configComponent             `yaml:",inline"`
-	loggingProcessorParseShared `yaml:",inline"`
-}
-
-func (r LoggingProcessorParseJson) Type() string {
-	return "parse_json"
-}
-
-func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
-}
-
-type LoggingProcessorParseRegex struct {
-	configComponent             `yaml:",inline"`
-	loggingProcessorParseShared `yaml:",inline"`
-
-	Regex string `yaml:"regex,omitempty" validate:"required"`
-}
-
-func (r LoggingProcessorParseRegex) Type() string {
-	return "parse_regex"
-}
-
-func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseRegex{} })
-}
-
 var loggingProcessorTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "processor",
 	TypeMap: map[string]func() component{},
@@ -299,18 +225,6 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 
 type LoggingExporter interface {
 	component
-}
-
-type LoggingExporterGoogleCloudLogging struct {
-	configComponent `yaml:",inline"`
-}
-
-func (r LoggingExporterGoogleCloudLogging) Type() string {
-	return "google_cloud_logging"
-}
-
-func init() {
-	loggingExporterTypes.registerType(func() component { return &LoggingExporterGoogleCloudLogging{} })
 }
 
 var loggingExporterTypes = &componentTypeRegistry{
@@ -375,48 +289,6 @@ func (r *metricsReceiverShared) GetCollectionInterval() string {
 	return r.CollectionInterval
 }
 
-type MetricsReceiverHostmetrics struct {
-	configComponent `yaml:",inline"`
-
-	metricsReceiverShared `yaml:",inline"`
-}
-
-func (r MetricsReceiverHostmetrics) Type() string {
-	return "hostmetrics"
-}
-
-func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverHostmetrics{} })
-}
-
-type MetricsReceiverIis struct {
-	configComponent `yaml:",inline"`
-
-	metricsReceiverShared `yaml:",inline"`
-}
-
-func (r MetricsReceiverIis) Type() string {
-	return "iis"
-}
-
-func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} })
-}
-
-type MetricsReceiverMssql struct {
-	configComponent `yaml:",inline"`
-
-	metricsReceiverShared `yaml:",inline"`
-}
-
-func (r MetricsReceiverMssql) Type() string {
-	return "mssql"
-}
-
-func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} })
-}
-
 var metricsReceiverTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "receiver",
 	TypeMap: map[string]func() component{},
@@ -449,20 +321,6 @@ type MetricsProcessor interface {
 	component
 }
 
-type MetricsProcessorExcludeMetrics struct {
-	configComponent `yaml:",inline"`
-
-	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
-}
-
-func (r MetricsProcessorExcludeMetrics) Type() string {
-	return "exclude_metrics"
-}
-
-func init() {
-	metricsProcessorTypes.registerType(func() component { return &MetricsProcessorExcludeMetrics{} })
-}
-
 var metricsProcessorTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "processor",
 	TypeMap: map[string]func() component{},
@@ -493,18 +351,6 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 
 type MetricsExporter interface {
 	component
-}
-
-type MetricsExporterGoogleCloudMonitoring struct {
-	configComponent `yaml:",inline"`
-}
-
-func (r MetricsExporterGoogleCloudMonitoring) Type() string {
-	return "google_cloud_monitoring"
-}
-
-func init() {
-	metricsExporterTypes.registerType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
 }
 
 var metricsExporterTypes = &componentTypeRegistry{
@@ -702,42 +548,6 @@ func (c *configComponent) ValidateType(subagent string, kind string, id string, 
 	return nil
 }
 
-func (r *LoggingReceiverFiles) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type())
-}
-
-func (r *LoggingReceiverSyslog) ValidateParameters(subagent string, kind string, id string) error {
-	if err := validateParameters(*r, subagent, kind, id, r.Type()); err != nil {
-		return err
-	}
-	validProtocolValues := []string{"tcp", "udp"}
-	if !sliceContains(validProtocolValues, r.TransportProtocol) {
-		err := fmt.Errorf(`must be one of [%s].`, strings.Join(validProtocolValues, ", "))
-		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "transport_protocol"), r.TransportProtocol, err)
-	}
-	if net.ParseIP(r.ListenHost) == nil {
-		err := fmt.Errorf(`must be a valid IP.`)
-		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "listen_host"), r.ListenHost, err)
-	}
-	return nil
-}
-
-func (r *LoggingReceiverWinevtlog) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*r, subagent, kind, id, r.Type())
-}
-
-func (p *LoggingProcessorParseJson) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type())
-}
-
-func (p *LoggingProcessorParseRegex) ValidateParameters(subagent string, kind string, id string) error {
-	return validateParameters(*p, subagent, kind, id, p.Type())
-}
-
-func (r *LoggingExporterGoogleCloudLogging) ValidateParameters(subagent string, kind string, id string) error {
-	panic("Should never be called")
-}
-
 func validateSharedParameters(r MetricsReceiver, subagent string, kind string, id string) error {
 	if err := validateParameters(r, subagent, kind, id, r.Type()); err != nil {
 		return err
@@ -760,43 +570,6 @@ func validateSharedParameters(r MetricsReceiver, subagent string, kind string, i
 		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "collection_interval"), collectionInterval, err)
 	}
 	return nil
-}
-
-func (r *MetricsReceiverHostmetrics) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
-func (r *MetricsReceiverIis) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
-func (r *MetricsReceiverMssql) ValidateParameters(subagent string, kind string, id string) error {
-	return validateSharedParameters(r, subagent, kind, id)
-}
-
-func (p *MetricsProcessorExcludeMetrics) ValidateParameters(subagent string, kind string, id string) error {
-	if err := validateParameters(*p, subagent, kind, id, p.Type()); err != nil {
-		return err
-	}
-	var errors []string
-	for _, prefix := range p.MetricsPattern {
-		if !strings.HasSuffix(prefix, "/*") {
-			errors = append(errors, fmt.Sprintf(`%q must end with "/*"`, prefix))
-		}
-		// TODO: Relax the prefix check when we support metrics with other prefixes.
-		if !strings.HasPrefix(prefix, "agent.googleapis.com/") {
-			errors = append(errors, fmt.Sprintf(`%q must start with "agent.googleapis.com/"`, prefix))
-		}
-	}
-	if len(errors) > 0 {
-		err := fmt.Errorf(strings.Join(errors, " | "))
-		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, p.Type(), "metrics_pattern"), p.MetricsPattern, err)
-	}
-	return nil
-}
-
-func (r *MetricsExporterGoogleCloudMonitoring) ValidateParameters(subagent string, kind string, id string) error {
-	panic("Should never be called")
 }
 
 type yamlField struct {
