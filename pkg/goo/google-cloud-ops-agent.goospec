@@ -18,7 +18,7 @@
     "out\\bin\\fluent-bit.exe": "{{$INSTALL_DIR}}/bin/fluent-bit.exe",
     "out\\bin\\fluent-bit.dll": "{{$INSTALL_DIR}}/bin/fluent-bit.dll",
     "out\\bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
-    "out\\bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe",
+    "out\\bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe"
   },
   "install": {
     "path": "pkg/goo/maint.ps1",
