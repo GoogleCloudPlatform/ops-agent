@@ -15,7 +15,7 @@
 package confgenerator
 
 type MetricsReceiverMssql struct {
-	ConfigComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline" validate:"platform=windows"`
 
 	MetricsReceiverShared `yaml:",inline"`
 }

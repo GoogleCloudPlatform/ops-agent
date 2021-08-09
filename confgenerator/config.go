@@ -107,6 +107,9 @@ func newValidator() *validator.Validate {
 		}
 		return name
 	})
+	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
+		return ctx.Value(platformKey) == fl.Param()
+	})
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
@@ -201,8 +204,8 @@ type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
 type loggingExporterMap map[string]LoggingExporter
 type Logging struct {
-	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty"`
-	Processors loggingProcessorMap `yaml:"processors,omitempty"`
+	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
+	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	Exporters  loggingExporterMap  `yaml:"exporters,omitempty"`
 	Service    *LoggingService     `yaml:"service"`
 }
@@ -315,7 +318,7 @@ func (m *loggingExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 }
 
 type LoggingService struct {
-	Pipelines map[string]*LoggingPipeline
+	Pipelines map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type LoggingPipeline struct {
@@ -329,8 +332,8 @@ type metricsReceiverMap map[string]MetricsReceiver
 type metricsProcessorMap map[string]MetricsProcessor
 type metricsExporterMap map[string]MetricsExporter
 type Metrics struct {
-	Receivers  metricsReceiverMap  `yaml:"receivers"`
-	Processors metricsProcessorMap `yaml:"processors"`
+	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"`
+	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"`
 	Exporters  metricsExporterMap  `yaml:"exporters,omitempty"`
 	Service    *MetricsService     `yaml:"service"`
 }
@@ -436,7 +439,7 @@ func (m *metricsExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 }
 
 type MetricsService struct {
-	Pipelines map[string]*MetricsPipeline `yaml:"pipelines"`
+	Pipelines map[string]*MetricsPipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type MetricsPipeline struct {
@@ -461,12 +464,6 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 
 func (l *Logging) Validate(platform string) error {
 	subagent := "logging"
-	if err := validateComponentIds(l.Receivers, subagent, "receiver"); err != nil {
-		return err
-	}
-	if err := validateComponentIds(l.Processors, subagent, "processor"); err != nil {
-		return err
-	}
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
 	}
@@ -482,9 +479,6 @@ func (l *Logging) Validate(platform string) error {
 	}
 	if l.Service == nil {
 		return nil
-	}
-	if err := validateComponentIds(l.Service.Pipelines, subagent, "pipeline"); err != nil {
-		return err
 	}
 	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
@@ -516,12 +510,6 @@ func (l *Logging) Validate(platform string) error {
 
 func (m *Metrics) Validate(platform string) error {
 	subagent := "metrics"
-	if err := validateComponentIds(m.Receivers, subagent, "receiver"); err != nil {
-		return err
-	}
-	if err := validateComponentIds(m.Processors, subagent, "processor"); err != nil {
-		return err
-	}
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
 	}
@@ -537,9 +525,6 @@ func (m *Metrics) Validate(platform string) error {
 	}
 	if m.Service == nil {
 		return nil
-	}
-	if err := validateComponentIds(m.Service.Pipelines, subagent, "pipeline"); err != nil {
-		return err
 	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
@@ -699,17 +684,6 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 		}
 	}
 	return invalid
-}
-
-func validateComponentIds(components interface{}, subagent string, kind string) error {
-	for _, id := range sortedKeys(components) {
-		if strings.HasPrefix(id, "lib:") {
-			// e.g. logging receiver id "lib:abc" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
-			return fmt.Errorf(`%s %s id %q is not allowed because prefix 'lib:' is reserved for pre-defined %ss.`,
-				subagent, kind, id, kind)
-		}
-	}
-	return nil
 }
 
 func validateComponentKeys(components interface{}, refs []string, subagent string, kind string, pipeline string) error {

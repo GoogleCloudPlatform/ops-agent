@@ -1,1 +1,7 @@
-logging pipeline id "lib:pipeline_1" is not allowed because prefix 'lib:' is reserved for pre-defined pipelines.
+the agent config file is not valid. detailed error: [10:21] Key: 'LoggingService.Pipelines[lib:pipeline_1]' Error:Field validation for 'Pipelines[lib:pipeline_1]' failed on the 'startsnotwith' tag
+   7 |       - /var/log/syslog
+   8 |   service:
+   9 |     pipelines:
+> 10 |       lib:pipeline_1:
+                           ^
+  11 |         receivers: [syslog]

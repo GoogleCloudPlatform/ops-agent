@@ -1,1 +1,9 @@
-logging receiver id "lib:receiver_1" is not allowed because prefix 'lib:' is reserved for pre-defined receivers.
+the agent config file is not valid. detailed error: [3:19] Key: 'Logging.receivers[lib:receiver_1]' Error:Field validation for 'receivers[lib:receiver_1]' failed on the 'startsnotwith' tag
+   1 | logging:
+   2 |   receivers:
+>  3 |     lib:receiver_1:
+                         ^
+   4 |       type: files
+   5 |       include_paths:
+   6 |       - /var/log/user-log
+   7 |   
