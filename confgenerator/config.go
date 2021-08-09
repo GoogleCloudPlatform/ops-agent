@@ -137,24 +137,7 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(inner *interface{}, unmar
 	}
 	o := f()
 	*inner = o
-	if err := unmarshal(*inner); err != nil {
-		m := parameterErrRe.FindStringSubmatchIndex(err.Error())
-		if m == nil {
-			return err
-		}
-		t := o.Type()
-		fields := collectYamlFields(o)
-		supportedParameters := []string{}
-		for _, f := range fields[1:] { // The first field is always "type".
-			supportedParameters = append(supportedParameters, f.Name)
-		}
-		n := err.Error()[m[2]:m[3]]
-		return fmt.Errorf(
-			`%s%s is not supported. Supported parameters: [%s].`, err.Error()[:m[0]],
-			parameterErrorPrefix(r.Subagent, r.Kind, "???", t, n),
-			strings.Join(supportedParameters, ", "))
-	}
-	return nil
+	return unmarshal(*inner)
 }
 
 // Ops Agent logging config.
@@ -588,72 +571,6 @@ func validateSharedParameters(r MetricsReceiver, subagent string, kind string, i
 	collectionInterval := r.GetCollectionInterval()
 	if err := validateCollectionInterval(collectionInterval); err != nil {
 		return fmt.Errorf(`%s has invalid value %q: %s`, parameterErrorPrefix(subagent, kind, id, r.Type(), "collection_interval"), collectionInterval, err)
-	}
-	return nil
-}
-
-type yamlField struct {
-	Name     string
-	Required bool
-	Value    interface{}
-	IsZero   bool
-}
-
-// collectYamlFields takes a struct object, and extracts all fields annotated by yaml tags.
-// Fields from embedded structs with the "inline" annotation are flattened.
-// For each field, it collects the yaml name, the value, and whether the value is unset/zero.
-// Fields with the "omitempty" annotation are marked as optional.
-func collectYamlFields(s interface{}) []yamlField {
-	var recurse func(reflect.Value) []yamlField
-	recurse = func(sm reflect.Value) []yamlField {
-		var parameters []yamlField
-		tm := sm.Type()
-		if tm.NumField() != sm.NumField() {
-			panic(fmt.Sprintf("expected the number of fields in %v and %v to match", sm, tm))
-		}
-		for i := 0; i < tm.NumField(); i++ {
-			f := tm.Field(i)
-			t, _ := f.Tag.Lookup("yaml")
-			split := strings.Split(t, ",")
-			n := split[0]
-			annotations := split[1:]
-			if n == "-" {
-				continue
-			} else if n == "" {
-				n = strings.ToLower(f.Name)
-			}
-			v := sm.Field(i)
-			if sliceContains(annotations, "inline") {
-				// Expand inline structs.
-				parameters = append(parameters, recurse(v)...)
-			} else if f.PkgPath == "" { // skip private non-struct fields
-				t, _ := f.Tag.Lookup("validate")
-				validation := strings.Split(t, ",")
-				parameters = append(parameters, yamlField{
-					Name:     n,
-					Required: sliceContains(validation, "required"),
-					Value:    v.Interface(),
-					IsZero:   v.IsZero(),
-				})
-			}
-		}
-		return parameters
-	}
-	v := reflect.ValueOf(s)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return recurse(v)
-}
-
-func validateParameters(s interface{}, subagent string, kind string, id string, componentType string) error {
-	// Check for required parameters.
-	parameters := collectYamlFields(s)
-	for _, p := range parameters {
-		if p.IsZero && p.Required {
-			// e.g. parameter "include_paths" in "files" type logging receiver "receiver_1" is required.
-			return fmt.Errorf(`%s is required.`, parameterErrorPrefix(subagent, kind, id, componentType, p.Name))
-		}
 	}
 	return nil
 }
