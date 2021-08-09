@@ -1,2 +1,9 @@
-the agent config file is not valid. detailed error: yaml: unmarshal errors:
-  line 8: parameter "include_paths" in "syslog" type logging receiver "???" is not supported. Supported parameters: [transport_protocol, listen_host, listen_port].
+the agent config file is not valid. detailed error: [8:7] unknown field "include_paths"
+   5 |       listen_host: 1.1.1.1
+   6 |       listen_port: 1111
+   7 |       transport_protocol: tcp
+>  8 |       include_paths: [/var/log/user-log]
+             ^
+   9 |   service:
+  10 |     pipelines:
+  11 |       default_pipeline:

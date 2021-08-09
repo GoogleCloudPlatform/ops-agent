@@ -15,7 +15,7 @@
 package confgenerator
 
 type MetricsExporterGoogleCloudMonitoring struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 }
 
 func (r MetricsExporterGoogleCloudMonitoring) Type() string {
@@ -31,7 +31,7 @@ func init() {
 }
 
 type LoggingExporterGoogleCloudLogging struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 }
 
 func (r LoggingExporterGoogleCloudLogging) Type() string {

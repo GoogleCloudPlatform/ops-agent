@@ -30,7 +30,7 @@ var (
 			Logging: &Logging{
 				Receivers: map[string]LoggingReceiver{
 					"syslog": &LoggingReceiverFiles{
-						configComponent: configComponent{ComponentType: "files"},
+						ConfigComponent: ConfigComponent{ComponentType: "files"},
 						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
 					},
 				},
@@ -46,13 +46,13 @@ var (
 			Metrics: &Metrics{
 				Receivers: map[string]MetricsReceiver{
 					"hostmetrics": &MetricsReceiverHostmetrics{
-						configComponent:       configComponent{ComponentType: "hostmetrics"},
-						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
+						ConfigComponent:       ConfigComponent{ComponentType: "hostmetrics"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
 				Processors: map[string]MetricsProcessor{
 					"metrics_filter": &MetricsProcessorExcludeMetrics{
-						configComponent: configComponent{ComponentType: "exclude_metrics"},
+						ConfigComponent: ConfigComponent{ComponentType: "exclude_metrics"},
 					},
 				},
 				Service: &MetricsService{
@@ -69,7 +69,7 @@ var (
 			Logging: &Logging{
 				Receivers: map[string]LoggingReceiver{
 					"windows_event_log": &LoggingReceiverWinevtlog{
-						configComponent: configComponent{ComponentType: "windows_event_log"},
+						ConfigComponent: ConfigComponent{ComponentType: "windows_event_log"},
 						Channels:        []string{"System", "Application", "Security"},
 					},
 				},
@@ -85,21 +85,21 @@ var (
 			Metrics: &Metrics{
 				Receivers: map[string]MetricsReceiver{
 					"hostmetrics": &MetricsReceiverHostmetrics{
-						configComponent:       configComponent{ComponentType: "hostmetrics"},
-						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
+						ConfigComponent:       ConfigComponent{ComponentType: "hostmetrics"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 					"iis": &MetricsReceiverIis{
-						configComponent:       configComponent{ComponentType: "iis"},
-						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
+						ConfigComponent:       ConfigComponent{ComponentType: "iis"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 					"mssql": &MetricsReceiverMssql{
-						configComponent:       configComponent{ComponentType: "mssql"},
-						metricsReceiverShared: metricsReceiverShared{CollectionInterval: "60s"},
+						ConfigComponent:       ConfigComponent{ComponentType: "mssql"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
 				Processors: map[string]MetricsProcessor{
 					"metrics_filter": &MetricsProcessorExcludeMetrics{
-						configComponent: configComponent{ComponentType: "exclude_metrics"},
+						ConfigComponent: ConfigComponent{ComponentType: "exclude_metrics"},
 					},
 				},
 				Service: &MetricsService{

@@ -20,7 +20,7 @@ import (
 )
 
 type MetricsProcessorExcludeMetrics struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 
 	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"required"`
 }

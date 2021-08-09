@@ -21,7 +21,7 @@ import (
 )
 
 type LoggingReceiverFiles struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 
 	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
@@ -40,7 +40,7 @@ func init() {
 }
 
 type LoggingReceiverSyslog struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 
 	TransportProtocol string `yaml:"transport_protocol,omitempty"` // one of "tcp" or "udp"
 	ListenHost        string `yaml:"listen_host,omitempty" validate:"required"`
@@ -72,7 +72,7 @@ func init() {
 }
 
 type LoggingReceiverWinevtlog struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 
 	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
 }

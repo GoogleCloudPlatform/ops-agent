@@ -1,2 +1,9 @@
-the agent config file is not valid. detailed error: yaml: unmarshal errors:
-  line 5: cannot unmarshal !!str `` into []string
+the agent config file is not valid. detailed error: [5:22] string was used where sequence is expected
+   2 |   receivers:
+   3 |     receiver_1:
+   4 |       type: files
+>  5 |       include_paths: ""
+                            ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       test_pipeline:

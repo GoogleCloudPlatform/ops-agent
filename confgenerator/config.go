@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "github.com/goccy/go-yaml"
 )
 
 // Ops Agent config.
@@ -55,7 +55,7 @@ func (uc *UnifiedConfig) DeepCopy() (UnifiedConfig, error) {
 
 func UnmarshalYamlToUnifiedConfig(input []byte) (UnifiedConfig, error) {
 	config := UnifiedConfig{}
-	if err := yaml.UnmarshalStrict(input, &config); err != nil {
+	if err := yaml.UnmarshalWithOptions(input, &config, yaml.Strict()); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
 	return config, nil
@@ -79,11 +79,11 @@ type component interface {
 	//Validate() error
 }
 
-type configComponent struct {
+type ConfigComponent struct {
 	ComponentType string `yaml:"type" validate:"required"`
 }
 
-func (c *configComponent) Type() string {
+func (c *ConfigComponent) Type() string {
 	return c.ComponentType
 }
 
@@ -105,7 +105,7 @@ func (r *componentTypeRegistry) registerType(constructor func() component) error
 var parameterErrRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
 
 func (r *componentTypeRegistry) unmarshalComponentYaml(inner *interface{}, unmarshal func(interface{}) error) error {
-	c := configComponent{}
+	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	f := r.TypeMap[c.Type()]
 	if f == nil {
@@ -185,13 +185,13 @@ type LoggingProcessor interface {
 	GetField() string
 }
 
-type loggingProcessorParseShared struct {
+type LoggingProcessorParseShared struct {
 	Field      string `yaml:"field,omitempty"`       // default to "message"
 	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
 }
 
-func (p loggingProcessorParseShared) GetField() string {
+func (p LoggingProcessorParseShared) GetField() string {
 	return p.Field
 }
 
@@ -281,11 +281,11 @@ type MetricsReceiver interface {
 	GetCollectionInterval() string
 }
 
-type metricsReceiverShared struct {
+type MetricsReceiverShared struct {
 	CollectionInterval string `yaml:"collection_interval" validate:"required"` // time.Duration format
 }
 
-func (r *metricsReceiverShared) GetCollectionInterval() string {
+func (r *MetricsReceiverShared) GetCollectionInterval() string {
 	return r.CollectionInterval
 }
 
@@ -537,7 +537,7 @@ func sliceContains(slice []string, value string) bool {
 	return false
 }
 
-func (c *configComponent) ValidateType(subagent string, kind string, id string, platform string) error {
+func (c *ConfigComponent) ValidateType(subagent string, kind string, id string, platform string) error {
 	supportedTypes := supportedComponentTypes[platform+"_"+subagent+"_"+kind]
 	if !sliceContains(supportedTypes, c.Type()) {
 		// e.g. metrics receiver "receiver_1" with type "unsupported_type" is not supported.

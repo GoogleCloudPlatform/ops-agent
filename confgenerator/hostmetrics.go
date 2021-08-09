@@ -15,9 +15,9 @@
 package confgenerator
 
 type MetricsReceiverHostmetrics struct {
-	configComponent `yaml:",inline"`
+	ConfigComponent `yaml:",inline"`
 
-	metricsReceiverShared `yaml:",inline"`
+	MetricsReceiverShared `yaml:",inline"`
 }
 
 func (r MetricsReceiverHostmetrics) Type() string {

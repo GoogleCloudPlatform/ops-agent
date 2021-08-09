@@ -1,2 +1,1 @@
-the agent config file is not valid. detailed error: yaml: unmarshal errors:
-  line 6: cannot unmarshal !!str `abc` into uint16
+the agent config file is not valid. detailed error: cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16

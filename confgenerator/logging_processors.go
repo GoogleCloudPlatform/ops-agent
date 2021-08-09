@@ -15,8 +15,8 @@
 package confgenerator
 
 type LoggingProcessorParseJson struct {
-	configComponent             `yaml:",inline"`
-	loggingProcessorParseShared `yaml:",inline"`
+	ConfigComponent             `yaml:",inline"`
+	LoggingProcessorParseShared `yaml:",inline"`
 }
 
 func (r LoggingProcessorParseJson) Type() string {
@@ -32,8 +32,8 @@ func init() {
 }
 
 type LoggingProcessorParseRegex struct {
-	configComponent             `yaml:",inline"`
-	loggingProcessorParseShared `yaml:",inline"`
+	ConfigComponent             `yaml:",inline"`
+	LoggingProcessorParseShared `yaml:",inline"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
