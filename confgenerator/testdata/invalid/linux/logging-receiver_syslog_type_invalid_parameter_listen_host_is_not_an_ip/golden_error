@@ -1,1 +1,9 @@
-parameter "listen_host" in "syslog" type logging receiver "receiver_1" has invalid value "abc": must be a valid IP.
+the agent config file is not valid. detailed error: [5:20] Key: 'LoggingReceiverSyslog.ListenHost' Error:Field validation for 'ListenHost' failed on the 'ip' tag
+   2 |   receivers:
+   3 |     receiver_1:
+   4 |       type: syslog
+>  5 |       listen_host: abc
+                          ^
+   6 |       listen_port: 1111
+   7 |       transport_protocol: tcp
+   8 |   service:

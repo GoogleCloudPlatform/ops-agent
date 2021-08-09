@@ -60,8 +60,38 @@ type validatorContext struct {
 	v   *validator.Validate
 }
 
+type validationErrors []validationError
+
+func (ve validationErrors) Error() string {
+	var out []string
+	for _, err := range ve {
+		out = append(out, err.Error())
+	}
+	return strings.Join(out, ",")
+}
+
+type validationError struct {
+	validator.FieldError
+}
+
+func (ve validationError) StructField() string {
+	// TODO: yaml library doesn't handle when this contains "Field[1]"
+	parts := strings.Split(ve.FieldError.StructField(), "[")
+	return parts[0]
+}
+
 func (v *validatorContext) Struct(s interface{}) error {
-	return v.v.StructCtx(v.ctx, s)
+	err := v.v.StructCtx(v.ctx, s)
+	errors, ok := err.(validator.ValidationErrors)
+	if !ok {
+		// Including nil
+		return err
+	}
+	var out validationErrors
+	for _, err := range errors {
+		out = append(out, validationError{err})
+	}
+	return out
 }
 
 type platformKeyType struct{}
