@@ -15,15 +15,15 @@
 package confgenerator
 
 type MetricsReceiverMssql struct {
-	ConfigComponent `yaml:",inline" validate:"platform=windows"`
+	ConfigComponent `yaml:",inline"`
 
 	MetricsReceiverShared `yaml:",inline"`
 }
 
-func (r MetricsReceiverMssql) Type() string {
+func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} }, "windows")
 }

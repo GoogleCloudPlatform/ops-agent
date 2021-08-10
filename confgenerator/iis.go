@@ -15,7 +15,7 @@
 package confgenerator
 
 type MetricsReceiverIis struct {
-	ConfigComponent `yaml:",inline" validate:"platform=windows"`
+	ConfigComponent `yaml:",inline"`
 
 	MetricsReceiverShared `yaml:",inline"`
 }
@@ -25,5 +25,5 @@ func (r MetricsReceiverIis) Type() string {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} }, "windows")
 }

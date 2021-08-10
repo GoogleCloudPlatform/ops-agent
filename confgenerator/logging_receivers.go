@@ -56,5 +56,5 @@ func (r LoggingReceiverWinevtlog) Type() string {
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} })
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} }, "windows")
 }
