@@ -131,9 +131,6 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 		ctx: ctx,
 		v:   newValidator(),
 	}
-	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
-	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
 		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
 	}
@@ -209,7 +206,6 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 		o = ct.constructor()
 	}
 	if o == nil {
-		// TODO: propagate platform into the validation code and use the supported types per platform.
 		var supportedTypes []string
 		for k, ct := range r.TypeMap {
 			if ct.supportsPlatform(ctx) {

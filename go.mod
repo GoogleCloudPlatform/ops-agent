@@ -7,7 +7,7 @@ require (
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/goccy/go-yaml v1.9.2
+	github.com/goccy/go-yaml v1.9.3-0.20210811043341-441d134d8b0e
 	github.com/google/go-cmp v0.5.1
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
