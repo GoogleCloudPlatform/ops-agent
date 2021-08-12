@@ -149,12 +149,12 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 }
 
 type component interface {
+	// Type returns the component type string as used in the configuration file (e.g. "hostmetrics")
 	Type() string
-	//ValidateType(subagent string, component string, id string, platform string) error
-	//ValidateParameters(subagent string, component string, id string) error
-	//Validate() error
 }
 
+// ConfigComponent holds the shared fields that all components have.
+// It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
 	ComponentType string `yaml:"type" validate:"required"`
 }
@@ -180,8 +180,10 @@ func (ct componentType) supportsPlatform(ctx context.Context) bool {
 
 type componentTypeRegistry struct {
 	Subagent string
-	Kind     string
-	TypeMap  map[string]*componentType
+	// Kind is "receiver", "processor", or "exporter"
+	Kind string
+	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
+	TypeMap map[string]*componentType
 }
 
 func (r *componentTypeRegistry) registerType(constructor func() component, platforms ...string) error {
@@ -198,6 +200,8 @@ func (r *componentTypeRegistry) registerType(constructor func() component, platf
 
 var parameterErrRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
 
+// unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
+// It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
 func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inner *interface{}, unmarshal func(interface{}) error) error {
 	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
@@ -228,8 +232,9 @@ type loggingExporterMap map[string]LoggingExporter
 type Logging struct {
 	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"`
-	Exporters  loggingExporterMap  `yaml:"exporters,omitempty"`
-	Service    *LoggingService     `yaml:"service"`
+	// Exporters are deprecated and ignored, so do not have any validation.
+	Exporters loggingExporterMap `yaml:"exporters,omitempty"`
+	Service   *LoggingService    `yaml:"service"`
 }
 
 type LoggingReceiver interface {
@@ -353,8 +358,9 @@ type metricsExporterMap map[string]MetricsExporter
 type Metrics struct {
 	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"`
 	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"`
-	Exporters  metricsExporterMap  `yaml:"exporters,omitempty"`
-	Service    *MetricsService     `yaml:"service"`
+	// Exporters are deprecated and ignored, so do not have any validation.
+	Exporters metricsExporterMap `yaml:"exporters,omitempty"`
+	Service   *MetricsService    `yaml:"service"`
 }
 
 type MetricsReceiver interface {
