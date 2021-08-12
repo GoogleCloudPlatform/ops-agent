@@ -156,11 +156,7 @@ type component interface {
 // ConfigComponent holds the shared fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
-	ComponentType string `yaml:"type" validate:"required"`
-}
-
-func (c *ConfigComponent) Type() string {
-	return c.ComponentType
+	Type string `yaml:"type" validate:"required"`
 }
 
 type componentType struct {
@@ -206,7 +202,7 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	var o interface{}
-	if ct := r.TypeMap[c.Type()]; ct != nil && ct.supportsPlatform(ctx) {
+	if ct := r.TypeMap[c.Type]; ct != nil && ct.supportsPlatform(ctx) {
 		o = ct.constructor()
 	}
 	if o == nil {
@@ -218,7 +214,7 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 		}
 		sort.Strings(supportedTypes)
 		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-			r.Subagent, r.Kind, "???", c.Type(),
+			r.Subagent, r.Kind, "???", c.Type,
 			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
 	*inner = o

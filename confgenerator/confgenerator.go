@@ -54,7 +54,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		// TODO: Refactor remaining code to not consult these fields
 		metrics.Exporters = map[string]MetricsExporter{
 			"google": &MetricsExporterGoogleCloudMonitoring{
-				ConfigComponent: ConfigComponent{ComponentType: "google_cloud_monitoring"},
+				ConfigComponent: ConfigComponent{Type: "google_cloud_monitoring"},
 			},
 		}
 		for _, p := range metrics.Service.Pipelines {
@@ -230,7 +230,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 		// TODO: Refactor remaining code to not consult these fields
 		logging.Exporters = map[string]LoggingExporter{
 			"google": &LoggingExporterGoogleCloudLogging{
-				ConfigComponent: ConfigComponent{ComponentType: "google_cloud_logging"},
+				ConfigComponent: ConfigComponent{Type: "google_cloud_logging"},
 			},
 		}
 		for _, p := range logging.Service.Pipelines {
