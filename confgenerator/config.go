@@ -562,21 +562,6 @@ var (
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
 		"lib:nginx", "lib:syslog-rfc3164", "lib:syslog-rfc5424"}
 
-	supportedComponentTypes = map[string][]string{
-		"linux_logging_receiver":    []string{"files", "syslog"},
-		"linux_logging_processor":   []string{"parse_json", "parse_regex"},
-		"linux_logging_exporter":    []string{"google_cloud_logging"},
-		"linux_metrics_receiver":    []string{"hostmetrics"},
-		"linux_metrics_processor":   []string{"exclude_metrics"},
-		"linux_metrics_exporter":    []string{"google_cloud_monitoring"},
-		"windows_logging_receiver":  []string{"files", "syslog", "windows_event_log"},
-		"windows_logging_processor": []string{"parse_json", "parse_regex"},
-		"windows_logging_exporter":  []string{"google_cloud_logging"},
-		"windows_metrics_receiver":  []string{"hostmetrics", "iis", "mssql"},
-		"windows_metrics_processor": []string{"exclude_metrics"},
-		"windows_metrics_exporter":  []string{"google_cloud_monitoring"},
-	}
-
 	componentTypeLimits = map[string]int{
 		"google_cloud_monitoring": 1,
 		"hostmetrics":             1,
