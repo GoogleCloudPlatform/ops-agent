@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -193,8 +192,6 @@ func (r *componentTypeRegistry) registerType(constructor func() component, platf
 	r.TypeMap[name] = &componentType{constructor, platforms}
 	return nil
 }
-
-var parameterErrRe = regexp.MustCompile(`field (\S+) not found in type \S+`)
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
