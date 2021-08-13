@@ -74,10 +74,13 @@ type validationError struct {
 }
 
 func (ve validationError) StructField() string {
-	// TODO: yaml library doesn't handle when this contains "Field[1]"
+	// TODO: Fix yaml library so that this is unnecessary.
+	// Remove subscript on field name so go-yaml can associate this with a line number.
 	parts := strings.Split(ve.FieldError.StructField(), "[")
 	return parts[0]
 }
+
+// TODO: Implement validationError.Error() for better error messages.
 
 func (v *validatorContext) Struct(s interface{}) error {
 	err := v.v.StructCtx(v.ctx, s)
@@ -95,6 +98,7 @@ func (v *validatorContext) Struct(s interface{}) error {
 
 type platformKeyType struct{}
 
+// platformKey is a singleton that is used as a Context key for retrieving the current platform from the context.Context.
 var platformKey = platformKeyType{}
 
 func newValidator() *validator.Validate {
@@ -106,9 +110,11 @@ func newValidator() *validator.Validate {
 		}
 		return name
 	})
+	// platform validates that the current platform is equal to the parameter
 	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return ctx.Value(platformKey) == fl.Param()
 	})
+	// duration validates that the value is a valid durationa and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
@@ -162,7 +168,8 @@ type ConfigComponent struct {
 type componentFactory struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() component
-	platforms   []string
+	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
+	platforms []string
 }
 
 func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
@@ -176,8 +183,9 @@ func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
 }
 
 type componentTypeRegistry struct {
+	// Subagent is "logging" or "metric" (only used for error messages)
 	Subagent string
-	// Kind is "receiver", "processor", or "exporter"
+	// Kind is "receiver", "processor", or "exporter" (only used for error messages)
 	Kind string
 	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
 	TypeMap map[string]*componentFactory

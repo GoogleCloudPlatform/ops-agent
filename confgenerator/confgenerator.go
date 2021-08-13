@@ -306,19 +306,16 @@ func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[str
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
-		switch r.Type() {
-		case "hostmetrics":
-			r := r.(*MetricsReceiverHostmetrics)
+		switch r := r.(type) {
+		case *MetricsReceiverHostmetrics:
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
-		case "mssql":
-			r := r.(*MetricsReceiverMssql)
+		case *MetricsReceiverMssql:
 			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
-		case "iis":
-			r := r.(*MetricsReceiverIis)
+		case *MetricsReceiverIis:
 			iisReceiverFactories[n] = &iisReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
