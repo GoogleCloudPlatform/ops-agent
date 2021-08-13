@@ -152,18 +152,20 @@ type component interface {
 	Type() string
 }
 
-// ConfigComponent holds the shared fields that all components have.
+// ConfigComponent holds the shared configuration fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
 	Type string `yaml:"type" validate:"required"`
 }
 
-type componentType struct {
+// componentFactory is the value type for the componentTypeRegistry map.
+type componentFactory struct {
+	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() component
 	platforms   []string
 }
 
-func (ct componentType) supportsPlatform(ctx context.Context) bool {
+func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
 	platform := ctx.Value(platformKey).(string)
 	for _, v := range ct.platforms {
 		if v == platform {
@@ -178,7 +180,7 @@ type componentTypeRegistry struct {
 	// Kind is "receiver", "processor", or "exporter"
 	Kind string
 	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
-	TypeMap map[string]*componentType
+	TypeMap map[string]*componentFactory
 }
 
 func (r *componentTypeRegistry) registerType(constructor func() component, platforms ...string) error {
@@ -187,9 +189,9 @@ func (r *componentTypeRegistry) registerType(constructor func() component, platf
 		return fmt.Errorf("Duplicate %s %s type: %q", r.Subagent, r.Kind, name)
 	}
 	if r.TypeMap == nil {
-		r.TypeMap = make(map[string]*componentType)
+		r.TypeMap = make(map[string]*componentFactory)
 	}
-	r.TypeMap[name] = &componentType{constructor, platforms}
+	r.TypeMap[name] = &componentFactory{constructor, platforms}
 	return nil
 }
 
@@ -627,7 +629,7 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*componentType:
+	case map[string]*componentFactory:
 		for k := range m {
 			keys[k] = true
 		}
