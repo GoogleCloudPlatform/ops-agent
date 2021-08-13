@@ -211,8 +211,8 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 			}
 		}
 		sort.Strings(supportedTypes)
-		return fmt.Errorf(`%s %s %q with type %q is not supported. Supported %s %s types: [%s].`,
-			r.Subagent, r.Kind, "???", c.Type,
+		return fmt.Errorf(`%s %s with type %q is not supported. Supported %s %s types: [%s].`,
+			r.Subagent, r.Kind, c.Type,
 			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
 	*inner = o
