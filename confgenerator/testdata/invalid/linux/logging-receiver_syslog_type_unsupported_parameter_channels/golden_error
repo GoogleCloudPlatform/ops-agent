@@ -1,1 +1,9 @@
-parameter "channels" in "syslog" type logging receiver "receiver_1" is not supported. Supported parameters: [transport_protocol, listen_host, listen_port].
+the agent config file is not valid. detailed error: [8:7] unknown field "channels"
+   5 |       listen_host: 1.1.1.1
+   6 |       listen_port: 1111
+   7 |       transport_protocol: tcp
+>  8 |       channels: [Application]
+             ^
+   9 |   service:
+  10 |     pipelines:
+  11 |       default_pipeline:

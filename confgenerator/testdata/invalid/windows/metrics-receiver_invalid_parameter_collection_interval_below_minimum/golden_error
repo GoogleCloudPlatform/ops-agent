@@ -1,1 +1,9 @@
-parameter "collection_interval" in "hostmetrics" type metrics receiver "receiver_1" has invalid value "2s": below the minimum threshold of "10s".
+the agent config file is not valid. detailed error: [5:28] Key: 'MetricsReceiverShared.collection_interval' Error:Field validation for 'collection_interval' failed on the 'duration' tag
+   2 |   receivers:
+   3 |     receiver_1:
+   4 |       type: hostmetrics
+>  5 |       collection_interval: 2s
+                                  ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:

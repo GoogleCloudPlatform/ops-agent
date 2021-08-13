@@ -1,1 +1,4 @@
-the agent config file is not valid YAML. detailed error: yaml: line 1: did not find expected key
+the agent config file is not valid. detailed error: [1:1] unknown field "logs"
+>  1 | logs:
+       ^
+   2 |   files: "b"c

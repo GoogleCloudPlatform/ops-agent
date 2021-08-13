@@ -1,2 +1,3 @@
-the agent config file is not valid YAML. detailed error: yaml: unmarshal errors:
-  line 1: cannot unmarshal !!str `sdfd` into confgenerator.UnifiedConfig
+the agent config file is not valid. detailed error: [1:1] string was used where mapping is expected
+>  1 | sdfd
+       ^

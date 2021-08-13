@@ -138,6 +138,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			if err != nil {
 				t.Fatalf("ReadFile(%q) got: %v", userSpecifiedConfPath, err)
 			}
+			t.Logf("merged config:\n%s", data)
 			uc, err := ParseUnifiedConfigAndValidate(data, platform.OS)
 			if err != nil {
 				t.Fatalf("ParseUnifiedConfigAndValidate got: %v", err)

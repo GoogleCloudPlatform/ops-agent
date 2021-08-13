@@ -1,1 +1,1 @@
-metrics receiver "receiver_1" with type "iis" is not supported. Supported metrics receiver types: [hostmetrics].
+the agent config file is not valid. detailed error: metrics receiver with type "iis" is not supported. Supported metrics receiver types: [hostmetrics].
