@@ -183,16 +183,15 @@ type componentTypeRegistry struct {
 	TypeMap map[string]*componentFactory
 }
 
-func (r *componentTypeRegistry) registerType(constructor func() component, platforms ...string) error {
-	name := constructor().(component).Type()
+func (r *componentTypeRegistry) registerType(constructor func() component, platforms ...string) {
+	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
-		return fmt.Errorf("Duplicate %s %s type: %q", r.Subagent, r.Kind, name)
+		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
 	}
 	if r.TypeMap == nil {
 		r.TypeMap = make(map[string]*componentFactory)
 	}
 	r.TypeMap[name] = &componentFactory{constructor, platforms}
-	return nil
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
@@ -389,7 +388,7 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 	*m = metricsReceiverMap{}
 	for k, r := range tm {
 		if r.inner == nil {
-			return fmt.Errorf("unknown type for receiver %q", k) // FIXME
+			return fmt.Errorf("unknown type for receiver %q", k) // TODO: better error
 		}
 		(*m)[k] = r.inner.(MetricsReceiver)
 	}
