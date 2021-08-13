@@ -94,9 +94,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 }
 
 func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]otel.Receiver, map[string]otel.Receiver, error) {
-	hostMetricsList := []otel.Receiver{}
-	mssqlList := []otel.Receiver{}
-	iisList := []otel.Receiver{}
+	var receiverList []otel.Receiver
 	receiverMap := make(map[string]otel.Receiver)
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -111,30 +109,26 @@ func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[s
 						HostMetricsID:      "hostmetrics/" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
-					hostMetricsList = append(hostMetricsList, &hostMetrics)
+					receiverList = append(receiverList, &hostMetrics)
 					receiverMap[rID] = &hostMetrics
 				case *MetricsReceiverMssql:
 					mssql := otel.MSSQL{
 						MSSQLID:            "windowsperfcounters/mssql_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
-					mssqlList = append(mssqlList, &mssql)
+					receiverList = append(receiverList, &mssql)
 					receiverMap[rID] = &mssql
 				case *MetricsReceiverIis:
 					iis := otel.IIS{
 						IISID:              "windowsperfcounters/iis_" + rID,
 						CollectionInterval: r.CollectionInterval,
 					}
-					iisList = append(iisList, &iis)
+					receiverList = append(receiverList, &iis)
 					receiverMap[rID] = &iis
 				}
 			}
 		}
 	}
-	receiverList := []otel.Receiver{}
-	receiverList = append(receiverList, hostMetricsList...)
-	receiverList = append(receiverList, mssqlList...)
-	receiverList = append(receiverList, iisList...)
 	return receiverList, receiverMap, nil
 }
 
