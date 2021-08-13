@@ -36,14 +36,14 @@ func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
 	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
 }
 
-func ReadUnifiedConfigFromFile(path string) (UnifiedConfig, error) {
+func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
 	uc := UnifiedConfig{}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return uc, err
 	}
-	uc, err = UnmarshalYamlToUnifiedConfig(data)
+	uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
 	if err != nil {
 		return uc, err
 	}

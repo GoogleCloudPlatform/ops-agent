@@ -1,1 +1,9 @@
-parameter "transport_protocol" in "files" type logging receiver "receiver_1" is not supported. Supported parameters: [include_paths, exclude_paths].
+the agent config file is not valid. detailed error: [8:7] unknown field "transport_protocol"
+   5 |       include_paths:
+   6 |       - /var/log/messages
+   7 |       - /var/log/syslog
+>  8 |       transport_protocol: value_1
+             ^
+   9 |   service:
+  10 |     pipelines:
+  11 |       default_pipeline:

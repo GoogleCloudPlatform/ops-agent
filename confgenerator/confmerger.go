@@ -21,22 +21,20 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	yaml "github.com/goccy/go-yaml"
 )
 
 var (
 	builtInConfStructs = map[string]*UnifiedConfig{
 		"linux": &UnifiedConfig{
 			Logging: &Logging{
-				Receivers: map[string]*LoggingReceiver{
-					"syslog": &LoggingReceiver{
-						configComponent: configComponent{Type: "files"},
-						LoggingReceiverFiles: LoggingReceiverFiles{
-							IncludePaths: []string{"/var/log/messages", "/var/log/syslog"},
-						},
+				Receivers: map[string]LoggingReceiver{
+					"syslog": &LoggingReceiverFiles{
+						ConfigComponent: ConfigComponent{Type: "files"},
+						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
 					},
 				},
-				Processors: map[string]*LoggingProcessor{},
+				Processors: map[string]LoggingProcessor{},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
@@ -46,15 +44,15 @@ var (
 				},
 			},
 			Metrics: &Metrics{
-				Receivers: map[string]*MetricsReceiver{
-					"hostmetrics": &MetricsReceiver{
-						configComponent:    configComponent{Type: "hostmetrics"},
-						CollectionInterval: "60s",
+				Receivers: map[string]MetricsReceiver{
+					"hostmetrics": &MetricsReceiverHostmetrics{
+						ConfigComponent:       ConfigComponent{Type: "hostmetrics"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
-				Processors: map[string]*MetricsProcessor{
-					"metrics_filter": &MetricsProcessor{
-						configComponent: configComponent{Type: "exclude_metrics"},
+				Processors: map[string]MetricsProcessor{
+					"metrics_filter": &MetricsProcessorExcludeMetrics{
+						ConfigComponent: ConfigComponent{Type: "exclude_metrics"},
 					},
 				},
 				Service: &MetricsService{
@@ -69,15 +67,13 @@ var (
 		},
 		"windows": &UnifiedConfig{
 			Logging: &Logging{
-				Receivers: map[string]*LoggingReceiver{
-					"windows_event_log": &LoggingReceiver{
-						configComponent: configComponent{Type: "windows_event_log"},
-						LoggingReceiverWinevtlog: LoggingReceiverWinevtlog{
-							Channels: []string{"System", "Application", "Security"},
-						},
+				Receivers: map[string]LoggingReceiver{
+					"windows_event_log": &LoggingReceiverWinevtlog{
+						ConfigComponent: ConfigComponent{Type: "windows_event_log"},
+						Channels:        []string{"System", "Application", "Security"},
 					},
 				},
-				Processors: map[string]*LoggingProcessor{},
+				Processors: map[string]LoggingProcessor{},
 				Service: &LoggingService{
 					Pipelines: map[string]*LoggingPipeline{
 						"default_pipeline": &LoggingPipeline{
@@ -87,23 +83,23 @@ var (
 				},
 			},
 			Metrics: &Metrics{
-				Receivers: map[string]*MetricsReceiver{
-					"hostmetrics": &MetricsReceiver{
-						configComponent:    configComponent{Type: "hostmetrics"},
-						CollectionInterval: "60s",
+				Receivers: map[string]MetricsReceiver{
+					"hostmetrics": &MetricsReceiverHostmetrics{
+						ConfigComponent:       ConfigComponent{Type: "hostmetrics"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
-					"iis": &MetricsReceiver{
-						configComponent:    configComponent{Type: "iis"},
-						CollectionInterval: "60s",
+					"iis": &MetricsReceiverIis{
+						ConfigComponent:       ConfigComponent{Type: "iis"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
-					"mssql": &MetricsReceiver{
-						configComponent:    configComponent{Type: "mssql"},
-						CollectionInterval: "60s",
+					"mssql": &MetricsReceiverMssql{
+						ConfigComponent:       ConfigComponent{Type: "mssql"},
+						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 				},
-				Processors: map[string]*MetricsProcessor{
-					"metrics_filter": &MetricsProcessor{
-						configComponent: configComponent{Type: "exclude_metrics"},
+				Processors: map[string]MetricsProcessor{
+					"metrics_filter": &MetricsProcessorExcludeMetrics{
+						ConfigComponent: ConfigComponent{Type: "exclude_metrics"},
 					},
 				},
 				Service: &MetricsService{
@@ -139,7 +135,7 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 	}
 
 	// Read the built-in config file.
-	original, err := builtInStruct.DeepCopy()
+	original, err := builtInStruct.DeepCopy(platform)
 	if err != nil {
 		return err
 	}
@@ -152,7 +148,7 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 			return fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
 		}
 	} else {
-		overrides, err := ReadUnifiedConfigFromFile(userConfPath)
+		overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
 		if err != nil {
 			return err
 		}
@@ -188,7 +184,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides logging.processors.
-		original.Logging.Processors = map[string]*LoggingProcessor{}
+		original.Logging.Processors = map[string]LoggingProcessor{}
 		for k, v := range overrides.Logging.Processors {
 			original.Logging.Processors[k] = v
 		}
@@ -227,7 +223,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		}
 
 		// Overrides metrics.exporters.
-		original.Metrics.Exporters = map[string]*MetricsExporter{}
+		original.Metrics.Exporters = map[string]MetricsExporter{}
 		for k, v := range overrides.Metrics.Exporters {
 			original.Metrics.Exporters[k] = v
 		}

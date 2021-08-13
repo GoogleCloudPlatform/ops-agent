@@ -52,9 +52,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	if metrics != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
-		metrics.Exporters = map[string]*MetricsExporter{
-			"google": &MetricsExporter{
-				configComponent: configComponent{Type: "google_cloud_monitoring"},
+		metrics.Exporters = map[string]MetricsExporter{
+			"google": &MetricsExporterGoogleCloudMonitoring{
+				ConfigComponent: ConfigComponent{Type: "google_cloud_monitoring"},
 			},
 		}
 		for _, p := range metrics.Service.Pipelines {
@@ -228,9 +228,9 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	if logging != nil && logging.Service != nil {
 		// Override any user-specified exporters
 		// TODO: Refactor remaining code to not consult these fields
-		logging.Exporters = map[string]*LoggingExporter{
-			"google": &LoggingExporter{
-				configComponent: configComponent{Type: "google_cloud_logging"},
+		logging.Exporters = map[string]LoggingExporter{
+			"google": &LoggingExporterGoogleCloudLogging{
+				ConfigComponent: ConfigComponent{Type: "google_cloud_logging"},
 			},
 		}
 		for _, p := range logging.Service.Pipelines {
@@ -301,21 +301,21 @@ type excludemetricsProcessorFactory struct {
 	MetricsPattern []string
 }
 
-func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
+func extractOtelReceiverFactories(receivers map[string]MetricsReceiver) (map[string]*hostmetricsReceiverFactory, map[string]*mssqlReceiverFactory, map[string]*iisReceiverFactory, error) {
 	hostmetricsReceiverFactories := map[string]*hostmetricsReceiverFactory{}
 	mssqlReceiverFactories := map[string]*mssqlReceiverFactory{}
 	iisReceiverFactories := map[string]*iisReceiverFactory{}
 	for n, r := range receivers {
-		switch r.Type {
-		case "hostmetrics":
+		switch r := r.(type) {
+		case *MetricsReceiverHostmetrics:
 			hostmetricsReceiverFactories[n] = &hostmetricsReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
-		case "mssql":
+		case *MetricsReceiverMssql:
 			mssqlReceiverFactories[n] = &mssqlReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
-		case "iis":
+		case *MetricsReceiverIis:
 			iisReceiverFactories[n] = &iisReceiverFactory{
 				CollectionInterval: r.CollectionInterval,
 			}
@@ -324,11 +324,12 @@ func extractOtelReceiverFactories(receivers map[string]*MetricsReceiver) (map[st
 	return hostmetricsReceiverFactories, mssqlReceiverFactories, iisReceiverFactories, nil
 }
 
-func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
+func extractOtelProcessorFactories(processors map[string]MetricsProcessor) (map[string]*excludemetricsProcessorFactory, error) {
 	excludemetricsProcessorFactories := map[string]*excludemetricsProcessorFactory{}
 	for n, p := range processors {
-		switch p.Type {
+		switch p.Type() {
 		case "exclude_metrics":
+			p := p.(*MetricsProcessorExcludeMetrics)
 			excludemetricsProcessorFactories[n] = &excludemetricsProcessorFactory{
 				MetricsPattern: p.MetricsPattern,
 			}
@@ -337,24 +338,27 @@ func extractOtelProcessorFactories(processors map[string]*MetricsProcessor) (map
 	return excludemetricsProcessorFactories, nil
 }
 
-func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
+func extractReceiverFactories(receivers map[string]LoggingReceiver) (map[string]*fileReceiverFactory, map[string]*syslogReceiverFactory, map[string]*wineventlogReceiverFactory, error) {
 	fileReceiverFactories := map[string]*fileReceiverFactory{}
 	syslogReceiverFactories := map[string]*syslogReceiverFactory{}
 	wineventlogReceiverFactories := map[string]*wineventlogReceiverFactory{}
 	for rID, r := range receivers {
-		switch r.Type {
+		switch r.Type() {
 		case "files":
+			r := r.(*LoggingReceiverFiles)
 			fileReceiverFactories[rID] = &fileReceiverFactory{
 				IncludePaths: r.IncludePaths,
 				ExcludePaths: r.ExcludePaths,
 			}
 		case "syslog":
+			r := r.(*LoggingReceiverSyslog)
 			syslogReceiverFactories[rID] = &syslogReceiverFactory{
 				TransportProtocol: r.TransportProtocol,
 				ListenHost:        r.ListenHost,
 				ListenPort:        r.ListenPort,
 			}
 		case "windows_event_log":
+			r := r.(*LoggingReceiverWinevtlog)
 			wineventlogReceiverFactories[rID] = &wineventlogReceiverFactory{
 				Channels: r.Channels,
 			}
@@ -363,7 +367,7 @@ func extractReceiverFactories(receivers map[string]*LoggingReceiver) (map[string
 	return fileReceiverFactories, syslogReceiverFactories, wineventlogReceiverFactories, nil
 }
 
-func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
+func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]*otel.HostMetrics, []*otel.MSSQL, []*otel.IIS, map[string]string, error) {
 	hostMetricsList := []*otel.HostMetrics{}
 	mssqlList := []*otel.MSSQL{}
 	iisList := []*otel.IIS{}
@@ -405,7 +409,7 @@ func generateOtelReceivers(receivers map[string]*MetricsReceiver, pipelines map[
 	return hostMetricsList, mssqlList, iisList, receiverNameMap, nil
 }
 
-func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
+func generateOtelExporters(exporters map[string]MetricsExporter, pipelines map[string]*MetricsPipeline) ([]*otel.Stackdriver, map[string]string, error) {
 	stackdriverList := []*otel.Stackdriver{}
 	exportNameMap := make(map[string]string)
 	for _, pID := range sortedKeys(pipelines) {
@@ -415,7 +419,7 @@ func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[
 			if !ok {
 				continue
 			}
-			switch exporter.Type {
+			switch exporter.Type() {
 			case "google_cloud_monitoring":
 				if _, ok := exportNameMap[eID]; !ok {
 					stackdriver := otel.Stackdriver{
@@ -431,7 +435,7 @@ func generateOtelExporters(exporters map[string]*MetricsExporter, pipelines map[
 	return stackdriverList, exportNameMap, nil
 }
 
-func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
+func generateOtelProcessors(processors map[string]MetricsProcessor, pipelines map[string]*MetricsPipeline) ([]*otel.ExcludeMetrics, map[string]string, error) {
 	excludeMetricsList := []*otel.ExcludeMetrics{}
 	processorNameMap := make(map[string]string)
 	excludemetricsProcessorFactories, err := extractOtelProcessorFactories(processors)
@@ -468,7 +472,7 @@ func generateOtelProcessors(processors map[string]*MetricsProcessor, pipelines m
 	return excludeMetricsList, processorNameMap, nil
 }
 
-func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
+func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
 	fbTails := []*fluentbit.Tail{}
 	fbSyslogs := []*fluentbit.Syslog{}
 	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
@@ -516,7 +520,7 @@ func generateFluentBitInputs(receivers map[string]*LoggingReceiver, pipelines ma
 	return fbTails, fbSyslogs, fbWinEventlogs, nil
 }
 
-func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]fluentbit.FilterParserGroup, error) {
+func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]fluentbit.FilterParserGroup, error) {
 	// Note: Keep each pipeline's filters in a separate group, because
 	// the order within that group is important, even though the order
 	// of the groups themselves does not matter.
@@ -531,8 +535,8 @@ func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines
 				Parser:  processorID,
 				KeyName: "message",
 			}
-			if ok && p.Field != "" {
-				fbFilterParser.KeyName = p.Field
+			if ok && p.GetField() != "" {
+				fbFilterParser.KeyName = p.GetField()
 			}
 			fbFilterParsers = append(fbFilterParsers, &fbFilterParser)
 		}
@@ -543,7 +547,7 @@ func generateFluentBitFilters(processors map[string]*LoggingProcessor, pipelines
 	return groups, nil
 }
 
-func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
+func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
 	[]*fluentbit.FilterModifyAddLogName, []*fluentbit.FilterRewriteTag, []*fluentbit.FilterModifyRemoveLogName, []*fluentbit.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*fluentbit.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
@@ -579,13 +583,14 @@ func extractExporterPlugins(exporters map[string]*LoggingExporter, pipelines map
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
 }
 
-func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*fluentbit.ParserJSON, []*fluentbit.ParserRegex, error) {
+func extractFluentBitParsers(processors map[string]LoggingProcessor) ([]*fluentbit.ParserJSON, []*fluentbit.ParserRegex, error) {
 	fbJSONParsers := []*fluentbit.ParserJSON{}
 	fbRegexParsers := []*fluentbit.ParserRegex{}
 	for _, name := range sortedKeys(processors) {
 		p := processors[name]
-		switch t := p.Type; t {
+		switch t := p.Type(); t {
 		case "parse_json":
+			p := p.(*LoggingProcessorParseJson)
 			fbJSONParser := fluentbit.ParserJSON{
 				Name:       name,
 				TimeKey:    p.TimeKey,
@@ -593,6 +598,7 @@ func extractFluentBitParsers(processors map[string]*LoggingProcessor) ([]*fluent
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
 		case "parse_regex":
+			p := p.(*LoggingProcessorParseRegex)
 			fbRegexParser := fluentbit.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,

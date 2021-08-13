@@ -1,1 +1,9 @@
-parameter "regex" in "parse_regex" type logging processor "processor_1" is required.
+the agent config file is not valid. detailed error: [9:16] Key: 'LoggingProcessorParseRegex.regex' Error:Field validation for 'regex' failed on the 'required' tag
+   6 |       - /var/log/messages
+   7 |       - /var/log/syslog
+   8 |   processors:
+>  9 |     processor_1:
+                      ^
+  10 |       type: parse_regex
+  11 |       field: field_1
+  12 |   service:

@@ -1,1 +1,9 @@
-parameter "listen_port" in "files" type logging receiver "receiver_1" is not supported. Supported parameters: [include_paths, exclude_paths].
+the agent config file is not valid. detailed error: [8:7] unknown field "listen_port"
+   5 |       include_paths:
+   6 |       - /var/log/messages
+   7 |       - /var/log/syslog
+>  8 |       listen_port: 520
+             ^
+   9 |   service:
+  10 |     pipelines:
+  11 |       default_pipeline:
