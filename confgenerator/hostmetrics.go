@@ -14,6 +14,8 @@
 
 package confgenerator
 
+import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
 type MetricsReceiverHostmetrics struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -22,6 +24,34 @@ type MetricsReceiverHostmetrics struct {
 
 func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
+}
+
+func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "hostmetrics",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"scrapers": map[string]interface{}{
+					"cpu":        struct{}{},
+					"load":       struct{}{},
+					"memory":     struct{}{},
+					"disk":       struct{}{},
+					"filesystem": struct{}{},
+					"network":    struct{}{},
+					"paging":     struct{}{},
+					"process":    struct{}{},
+					"processes":  struct{}{},
+				},
+			},
+		},
+		Processors: []otel.Component{
+			// TODO: Fill in
+			{Type: "agentmetrics", Config: nil},
+			{Type: "filter", Config: nil},
+			{Type: "metricstransform", Config: nil},
+		},
+	}}
 }
 
 func init() {

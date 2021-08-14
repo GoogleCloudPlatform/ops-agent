@@ -37,60 +37,63 @@ func defaultFilepathJoin(_ string, elem ...string) string {
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
-	metrics := uc.Metrics
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
-	receiverList := []otel.Receiver{}
-	exporterList := []otel.Exporter{}
-	serviceList := []*otel.Service{}
-	processorList := []otel.Processor{}
-	receiverMap := make(map[string]otel.Receiver)
-	exporterMap := make(map[string]otel.Exporter)
-	processorMap := make(map[string]otel.Processor)
-	if metrics != nil {
-		// Override any user-specified exporters
-		// TODO: Refactor remaining code to not consult these fields
-		metrics.Exporters = map[string]MetricsExporter{
-			"google": &MetricsExporterGoogleCloudMonitoring{
-				ConfigComponent: ConfigComponent{Type: "google_cloud_monitoring"},
-			},
-		}
-		for _, p := range metrics.Service.Pipelines {
-			p.ExporterIDs = []string{"google"}
-		}
-
+	pipelines := make(map[string]otel.Pipeline)
+	if uc.Metrics != nil {
 		var err error
-		receiverList, receiverMap, err = generateOtelReceivers(metrics.Receivers, metrics.Service.Pipelines)
-		if err != nil {
-			return "", err
-		}
-		exporterList, exporterMap, err = generateOtelExporters(metrics.Exporters, metrics.Service.Pipelines)
-		if err != nil {
-			return "", err
-		}
-		processorList, processorMap, err = generateOtelProcessors(metrics.Processors, metrics.Service.Pipelines)
-		if err != nil {
-			return "", err
-		}
-		serviceList, err = generateOtelServices(receiverMap, exporterMap, processorMap, metrics.Service.Pipelines)
+		pipelines, err = uc.Metrics.generateOtelPipelines()
 		if err != nil {
 			return "", err
 		}
 	}
-	otelConfig, err := otel.Config{
-		Receivers:  receiverList,
-		Processors: processorList,
-		Exporters:  exporterList,
-		Service:    serviceList,
 
-		UserAgent: userAgent,
-		Version:   versionLabel,
-		Windows:   hostInfo.OS == "windows",
+	// TODO: Add agent pipeline, using versionLabel
+	_ = versionLabel
+
+	otelConfig, err := otel.ModularConfig{
+		Pipelines: pipelines,
+		Exporter: otel.Component{
+			Type: "googlecloud",
+			Config: map[string]interface{}{
+				"user_agent": userAgent,
+				"metric": map[string]interface{}{
+					"prefix": "agent.googleapis.com/",
+				},
+			},
+		},
 	}.Generate()
 	if err != nil {
 		return "", err
 	}
 	return otelConfig, nil
+}
+
+func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
+	out := make(map[string]otel.Pipeline)
+	for pID, p := range m.Service.Pipelines {
+		for _, rID := range p.ReceiverIDs {
+			receiver, ok := m.Receivers[rID]
+			if !ok {
+				return nil, fmt.Errorf("receiver %q not found", rID)
+			}
+			for i, receiverPipeline := range receiver.Pipelines() {
+				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
+				if i > 0 {
+					prefix = fmt.Sprintf("%s_%d", prefix, i)
+				}
+				for _, pID := range p.ProcessorIDs {
+					processor, ok := m.Processors[pID]
+					if !ok {
+						return nil, fmt.Errorf("processor %q not found", pID)
+					}
+					receiverPipeline.Processors = append(receiverPipeline.Processors, processor.Processors()...)
+				}
+				out[prefix] = receiverPipeline
+			}
+		}
+	}
+	return out, nil
 }
 
 func generateOtelReceivers(receivers map[string]MetricsReceiver, pipelines map[string]*MetricsPipeline) ([]otel.Receiver, map[string]otel.Receiver, error) {

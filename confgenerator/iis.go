@@ -14,6 +14,8 @@
 
 package confgenerator
 
+import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
 type MetricsReceiverIis struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -22,6 +24,67 @@ type MetricsReceiverIis struct {
 
 func (r MetricsReceiverIis) Type() string {
 	return "iis"
+}
+
+func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "windowsperfcounters",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"perfcounters": []map[string]interface{}{
+					{
+						"object":    "Web Service",
+						"instances": []string{"_Total"},
+						"counters": []string{
+							"Current Connections",
+							"Total Bytes Received",
+							"Total Bytes Sent",
+							"Total Connection Attempts (all instances)",
+							"Total Delete Requests",
+							"Total Get Requests",
+							"Total Head Requests",
+							"Total Options Requests",
+							"Total Post Requests",
+							"Total Put Requests",
+							"Total Trace Requests",
+						},
+					},
+				},
+			},
+		},
+		Processors: []otel.Component{{
+			Type: "metricstransform",
+			Config: map[string]interface{}{
+				"transforms": []map[string]interface{}{
+					{
+						"include":  `\Web Service(_Total)\Current Connections`,
+						"action":   "update",
+						"new_name": "iis/current_connections",
+					},
+					{
+						"include":       `^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
+						"match_type":    "regexp",
+						"action":        "combine",
+						"new_name":      "iis/network/transferred_bytes_count",
+						"submatch_case": "lower",
+					},
+					{
+						"include":  `\Web Service(_Total)\Total Connection Attempts (all instances)`,
+						"action":   "update",
+						"new_name": "iis/new_connection_count",
+					},
+					{
+						"include":       `^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
+						"match_type":    "regexp",
+						"action":        "combine",
+						"new_name":      "iis/request_count",
+						"submatch_case": "lower",
+					},
+				},
+			},
+		}},
+	}}
 }
 
 func init() {

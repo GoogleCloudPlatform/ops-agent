@@ -14,14 +14,46 @@
 
 package confgenerator
 
+import (
+	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+)
+
 type MetricsProcessorExcludeMetrics struct {
 	ConfigComponent `yaml:",inline"`
 
 	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"dive,endswith=/*,startswith=agent.googleapis.com/"`
 }
 
-func (r MetricsProcessorExcludeMetrics) Type() string {
+func (p MetricsProcessorExcludeMetrics) Type() string {
 	return "exclude_metrics"
+}
+
+func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
+	var metricNames []string
+	for _, glob := range p.MetricsPattern {
+		// TODO: Remove TrimPrefix when we support metrics with other prefixes.
+		glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
+		// TODO: Move this glob to regexp into a template function inside otel/conf.go.
+		var literals []string
+		for _, g := range strings.Split(glob, "*") {
+			literals = append(literals, regexp.QuoteMeta(g))
+		}
+		metricNames = append(metricNames, fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`)))
+	}
+	return []otel.Component{{
+		Type: "filter",
+		Config: map[string]interface{}{
+			"metrics": map[string]interface{}{
+				"exclude": map[string]interface{}{
+					"metric_names": metricNames,
+				},
+			},
+		},
+	}}
 }
 
 func init() {

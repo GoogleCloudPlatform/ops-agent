@@ -14,6 +14,10 @@
 
 package confgenerator
 
+import (
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+)
+
 type MetricsReceiverMssql struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -22,6 +26,54 @@ type MetricsReceiverMssql struct {
 
 func (MetricsReceiverMssql) Type() string {
 	return "mssql"
+}
+
+func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "windowsperfcounters",
+			Config: map[string]interface{}{
+				"collection_interval": m.CollectionIntervalString(),
+				"perfcounters": []map[string]interface{}{
+					{
+						"object":    "SQLServer:General Statistics",
+						"instances": []string{"_Total"},
+						"counters":  []string{"User Connections"},
+					},
+					{
+						"object":    "SQLServer:Databases",
+						"instances": []string{"_Total"},
+						"counters": []string{
+							"Transactions/sec",
+							"Write Transactions/sec",
+						},
+					},
+				},
+			},
+		},
+		Processors: []otel.Component{{
+			Type: "metricstransform",
+			Config: map[string]interface{}{
+				"transforms": []map[string]interface{}{
+					{
+						"include":  `\SQLServer:General Statistics(_Total)\User Connections`,
+						"action":   "update",
+						"new_name": "mssql/connections/user",
+					},
+					{
+						"include":  `\SQLServer:Databases(_Total)\Transactions/sec`,
+						"action":   "update",
+						"new_name": "mssql/connections/transaction_rate",
+					},
+					{
+						"include":  `\SQLServer:Databases(_Total)\Write Transactions/sec`,
+						"action":   "update",
+						"new_name": "mssql/connections/write_transaction_rate",
+					},
+				},
+			},
+		}},
+	}}
 }
 
 func init() {

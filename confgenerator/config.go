@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 )
@@ -367,10 +368,18 @@ type Metrics struct {
 
 type MetricsReceiver interface {
 	component
+	otel.ModularReceiver
 }
 
 type MetricsReceiverShared struct {
 	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
+}
+
+func (m MetricsReceiverShared) CollectionIntervalString() string {
+	if m.CollectionInterval != "" {
+		return m.CollectionInterval
+	}
+	return "60s"
 }
 
 var metricsReceiverTypes = &componentTypeRegistry{
@@ -405,6 +414,7 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type MetricsProcessor interface {
 	component
+	otel.ModularProcessor
 }
 
 var metricsProcessorTypes = &componentTypeRegistry{
