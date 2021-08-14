@@ -1,0 +1,137 @@
+// Copyright 2021 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package confgenerator
+
+import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
+// MetricsReceiverAgent provides the agent.googleapis.com/agent/ metrics.
+// It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
+// Therefore, it does not need to implement any interfaces.
+type MetricsReceiverAgent struct {
+	Version string
+}
+
+func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
+	return otel.Pipeline{
+		Receiver: otel.Component{
+			Type: "prometheus",
+			Config: map[string]interface{}{
+				"config": map[string]interface{}{
+					"scrape_configs": []map[string]interface{}{{
+						"job_name":        "otel-collector",
+						"scrape_interval": "1m",
+						"static_configs": []map[string]interface{}{{
+							"targets": []string{"0.0.0.0:8888"},
+						}},
+					}},
+				},
+			},
+		},
+		Processors: []otel.Component{
+			{
+				Type: "filter", Config: map[string]interface{}{
+					"metrics": map[string]interface{}{
+						"include": map[string]interface{}{
+							"match_type": "strict",
+							"metric_names": []string{
+								"otelcol_process_uptime",
+								"otelcol_process_memory_rss",
+								"otelcol_grpc_io_client_completed_rpcs",
+								"otelcol_googlecloudmonitoring_point_count",
+							},
+						},
+					},
+				},
+			},
+			metricsTransform(
+				// otelcol_process_uptime -> agent/uptime
+				renameMetric("otelcol_process_uptime", "agent/uptime",
+					// change data type from double -> int64
+					toggleScalarDataType,
+					// add version label
+					addLabel("version", r.Version),
+				),
+				// otelcol_process_memory_rss -> agent/memory_usage
+				renameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
+				// otelcol_grpc_io_client_completed_rpcs -> agent/api_request_count
+				renameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
+					// change data type from double -> int64
+					toggleScalarDataType,
+					// TODO: below is proposed new configuration for the metrics transform processor
+					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
+					// - action: select_label_values
+					//   label: grpc_client_method
+					//   value_regexp: ^google\.monitoring
+					// change label grpc_client_status -> state
+					renameLabel("grpc_client_status", "state"),
+					// delete grpc_client_method dimension, retaining only state
+					aggregateLabels("sum", "state"),
+				),
+				// otelcol_googlecloudmonitoring_point_count -> agent/monitoring/point_count
+				renameMetric("metricotelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
+					// change data type from double -> int64
+					toggleScalarDataType,
+				),
+			),
+		},
+	}
+}
+
+// Helper methods to easily build up metricstransformprocessor configs.
+func renameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		"metric_name": old,
+		"action":      "update",
+		"new_name":    new,
+		"operations":  operations,
+	}
+}
+
+var toggleScalarDataType = map[string]interface{}{"action": "toggle_scalar_data_type"}
+
+func addLabel(key, value string) map[string]interface{} {
+	return map[string]interface{}{
+		"action":    "add_label",
+		"label":     key,
+		"new_label": value,
+	}
+}
+
+func renameLabel(old, new string) map[string]interface{} {
+	return map[string]interface{}{
+		"action":    "update_label",
+		"label":     old,
+		"new_label": new,
+	}
+}
+
+func aggregateLabels(aggregationType string, labels ...string) map[string]interface{} {
+	return map[string]interface{}{
+		"action":           "aggregate_labels",
+		"label_set":        labels,
+		"aggregation_type": aggregationType,
+	}
+}
+
+func metricsTransform(metrics ...map[string]interface{}) otel.Component {
+	return otel.Component{
+		Type: "metricstransform",
+		Config: map[string]interface{}{
+			"transforms": metrics,
+		},
+	}
+}
+
+// intentionally not registered as a component

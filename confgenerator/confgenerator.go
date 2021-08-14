@@ -48,8 +48,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 	}
 
-	// TODO: Add agent pipeline, using versionLabel
-	_ = versionLabel
+	pipelines["agent"] = MetricsReceiverAgent{
+		Version: versionLabel,
+	}.Pipeline()
+	// TODO: Add resourcedetection processor to every pipeline
 
 	otelConfig, err := otel.ModularConfig{
 		Pipelines: pipelines,
