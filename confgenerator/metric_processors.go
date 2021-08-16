@@ -17,6 +17,7 @@ package confgenerator
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -145,6 +146,9 @@ func renameLabelValues(label string, transforms map[string]string) map[string]in
 			"new_value": new,
 		})
 	}
+	sort.Slice(actions, func(i, j int) bool {
+		return actions[i]["value"] < actions[j]["value"]
+	})
 	return map[string]interface{}{
 		"action":        "update_label",
 		"label":         label,

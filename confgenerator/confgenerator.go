@@ -51,10 +51,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	pipelines["agent"] = MetricsReceiverAgent{
 		Version: versionLabel,
 	}.Pipeline()
-	// TODO: Add resourcedetection processor to every pipeline
 
 	otelConfig, err := otel.ModularConfig{
 		Pipelines: pipelines,
+		GlobalProcessors: []otel.Component{{
+			Type: "resourcedetection",
+			Config: map[string]interface{}{
+				"detectors": []string{"gce"},
+			},
+		}},
 		Exporter: otel.Component{
 			Type: "googlecloud",
 			Config: map[string]interface{}{

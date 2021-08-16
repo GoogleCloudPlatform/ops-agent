@@ -62,7 +62,10 @@ type ModularProcessor interface {
 
 type ModularConfig struct {
 	Pipelines map[string]Pipeline
-	Exporter  Component
+	// GlobalProcessors and Exporter are added at the end of every pipeline.
+	// Only one instance of each will be created regardless of how many pipelines are defined.
+	GlobalProcessors []Component
+	Exporter         Component
 }
 
 func (c ModularConfig) Generate() (string, error) {
@@ -82,6 +85,13 @@ func (c ModularConfig) Generate() (string, error) {
 	exporterName := c.Exporter.name("")
 	exporters[exporterName] = c.Exporter.Config
 
+	var globalProcessorNames []string
+	for i, processor := range c.GlobalProcessors {
+		name := processor.name(fmt.Sprintf("_global_%d", i))
+		globalProcessorNames = append(globalProcessorNames, name)
+		processors[name] = processor.Config
+	}
+
 	for prefix, pipeline := range c.Pipelines {
 		receiverName := pipeline.Receiver.name(prefix)
 		receivers[receiverName] = pipeline.Receiver.Config
@@ -91,6 +101,7 @@ func (c ModularConfig) Generate() (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
+		processorNames = append(processorNames, globalProcessorNames...)
 		pipelines[prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
