@@ -51,28 +51,22 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{{
-			Type: "metricstransform",
-			Config: map[string]interface{}{
-				"transforms": []map[string]interface{}{
-					{
-						"include":  `\SQLServer:General Statistics(_Total)\User Connections`,
-						"action":   "update",
-						"new_name": "mssql/connections/user",
-					},
-					{
-						"include":  `\SQLServer:Databases(_Total)\Transactions/sec`,
-						"action":   "update",
-						"new_name": "mssql/connections/transaction_rate",
-					},
-					{
-						"include":  `\SQLServer:Databases(_Total)\Write Transactions/sec`,
-						"action":   "update",
-						"new_name": "mssql/connections/write_transaction_rate",
-					},
-				},
-			},
-		}},
+		Processors: []otel.Component{
+			metricsTransform(
+				renameMetric(
+					`\SQLServer:General Statistics(_Total)\User Connections`,
+					"mssql/connections/user",
+				),
+				renameMetric(
+					`\SQLServer:Databases(_Total)\Transactions/sec`,
+					"mssql/connections/transaction_rate",
+				),
+				renameMetric(
+					`\SQLServer:Databases(_Total)\Write Transactions/sec`,
+					"mssql/connections/write_transaction_rate",
+				),
+			),
+		},
 	}}
 }
 

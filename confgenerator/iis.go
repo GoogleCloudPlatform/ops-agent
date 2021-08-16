@@ -53,37 +53,26 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{{
-			Type: "metricstransform",
-			Config: map[string]interface{}{
-				"transforms": []map[string]interface{}{
-					{
-						"include":  `\Web Service(_Total)\Current Connections`,
-						"action":   "update",
-						"new_name": "iis/current_connections",
-					},
-					{
-						"include":       `^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
-						"match_type":    "regexp",
-						"action":        "combine",
-						"new_name":      "iis/network/transferred_bytes_count",
-						"submatch_case": "lower",
-					},
-					{
-						"include":  `\Web Service(_Total)\Total Connection Attempts (all instances)`,
-						"action":   "update",
-						"new_name": "iis/new_connection_count",
-					},
-					{
-						"include":       `^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
-						"match_type":    "regexp",
-						"action":        "combine",
-						"new_name":      "iis/request_count",
-						"submatch_case": "lower",
-					},
-				},
-			},
-		}},
+		Processors: []otel.Component{
+			metricsTransform(
+				renameMetric(
+					`\Web Service(_Total)\Current Connections`,
+					"iis/current_connections",
+				),
+				combineMetrics(
+					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
+					"iis/network/transferred_bytes_count",
+				),
+				renameMetric(
+					`\Web Service(_Total)\Total Connection Attempts (all instances)`,
+					"iis/new_connection_count",
+				),
+				combineMetrics(
+					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
+					"iis/request_count",
+				),
+			),
+		},
 	}}
 }
 

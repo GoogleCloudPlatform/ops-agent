@@ -40,21 +40,14 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			{
-				Type: "filter", Config: map[string]interface{}{
-					"metrics": map[string]interface{}{
-						"include": map[string]interface{}{
-							"match_type": "strict",
-							"metric_names": []string{
-								"otelcol_process_uptime",
-								"otelcol_process_memory_rss",
-								"otelcol_grpc_io_client_completed_rpcs",
-								"otelcol_googlecloudmonitoring_point_count",
-							},
-						},
-					},
-				},
-			},
+			metricsFilter(
+				"include",
+				"strict",
+				"otelcol_process_uptime",
+				"otelcol_process_memory_rss",
+				"otelcol_grpc_io_client_completed_rpcs",
+				"otelcol_googlecloudmonitoring_point_count",
+			),
 			metricsTransform(
 				// otelcol_process_uptime -> agent/uptime
 				renameMetric("otelcol_process_uptime", "agent/uptime",
@@ -85,51 +78,6 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					toggleScalarDataType,
 				),
 			),
-		},
-	}
-}
-
-// Helper methods to easily build up metricstransformprocessor configs.
-func renameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{
-		"metric_name": old,
-		"action":      "update",
-		"new_name":    new,
-		"operations":  operations,
-	}
-}
-
-var toggleScalarDataType = map[string]interface{}{"action": "toggle_scalar_data_type"}
-
-func addLabel(key, value string) map[string]interface{} {
-	return map[string]interface{}{
-		"action":    "add_label",
-		"label":     key,
-		"new_label": value,
-	}
-}
-
-func renameLabel(old, new string) map[string]interface{} {
-	return map[string]interface{}{
-		"action":    "update_label",
-		"label":     old,
-		"new_label": new,
-	}
-}
-
-func aggregateLabels(aggregationType string, labels ...string) map[string]interface{} {
-	return map[string]interface{}{
-		"action":           "aggregate_labels",
-		"label_set":        labels,
-		"aggregation_type": aggregationType,
-	}
-}
-
-func metricsTransform(metrics ...map[string]interface{}) otel.Component {
-	return otel.Component{
-		Type: "metricstransform",
-		Config: map[string]interface{}{
-			"transforms": metrics,
 		},
 	}
 }
