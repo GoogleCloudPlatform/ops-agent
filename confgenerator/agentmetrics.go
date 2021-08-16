@@ -49,16 +49,12 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 				"otelcol_googlecloudmonitoring_point_count",
 			),
 			metricsTransform(
-				// otelcol_process_uptime -> agent/uptime
 				renameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
 					toggleScalarDataType,
-					// add version label
 					addLabel("version", r.Version),
 				),
-				// otelcol_process_memory_rss -> agent/memory_usage
 				renameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
-				// otelcol_grpc_io_client_completed_rpcs -> agent/api_request_count
 				renameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
 					// change data type from double -> int64
 					toggleScalarDataType,
@@ -67,13 +63,11 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					// - action: select_label_values
 					//   label: grpc_client_method
 					//   value_regexp: ^google\.monitoring
-					// change label grpc_client_status -> state
 					renameLabel("grpc_client_status", "state"),
 					// delete grpc_client_method dimension, retaining only state
 					aggregateLabels("sum", "state"),
 				),
-				// otelcol_googlecloudmonitoring_point_count -> agent/monitoring/point_count
-				renameMetric("metricotelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
+				renameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 					// change data type from double -> int64
 					toggleScalarDataType,
 				),
