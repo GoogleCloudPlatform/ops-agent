@@ -102,7 +102,7 @@ func (c ModularConfig) Generate() (string, error) {
 			processors[name] = processor.Config
 		}
 		processorNames = append(processorNames, globalProcessorNames...)
-		pipelines[prefix] = map[string]interface{}{
+		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
 			"exporters":  exporterName,

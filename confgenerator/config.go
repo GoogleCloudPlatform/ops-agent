@@ -375,6 +375,7 @@ type MetricsReceiverShared struct {
 }
 
 func (m MetricsReceiverShared) CollectionIntervalString() string {
+	// TODO: Remove when https://github.com/goccy/go-yaml/pull/246 is merged
 	if m.CollectionInterval != "" {
 		return m.CollectionInterval
 	}

@@ -65,7 +65,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				"system.filesystem.inodes.usage",
 				"system.paging.faults",
 				"system.disk.operation_time",
-				"system.processes_count",
+				"system.processes.count",
 			),
 			metricsTransform(
 				renameMetric(

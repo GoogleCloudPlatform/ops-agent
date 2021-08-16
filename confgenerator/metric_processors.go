@@ -123,8 +123,8 @@ var toggleScalarDataType = map[string]interface{}{"action": "toggle_scalar_data_
 func addLabel(key, value string) map[string]interface{} {
 	return map[string]interface{}{
 		"action":    "add_label",
-		"label":     key,
-		"new_label": value,
+		"new_label": key,
+		"new_value": value,
 	}
 }
 
@@ -167,9 +167,10 @@ func deleteLabelValue(label, value string) map[string]interface{} {
 
 // scaleValue multiplies the value by factor
 func scaleValue(factor float64) map[string]interface{} {
+	// TODO: Remove sprintf after https://github.com/goccy/go-yaml/pull/247 is merged.
 	return map[string]interface{}{
 		"action":             "experimental_scale_value",
-		"experimental_scale": factor,
+		"experimental_scale": fmt.Sprintf("%f", factor), // OT doesn't recognize "1e+06"
 	}
 }
 
