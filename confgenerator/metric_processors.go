@@ -45,7 +45,7 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 	}
 	return []otel.Component{metricsFilter(
 		"exclude",
-		"strict",
+		"regexp",
 		metricNames...,
 	)}
 }
@@ -58,7 +58,8 @@ func metricsFilter(polarity, matchType string, metricNames ...string) otel.Compo
 		Type: "filter",
 		Config: map[string]interface{}{
 			"metrics": map[string]interface{}{
-				"exclude": map[string]interface{}{
+				polarity: map[string]interface{}{
+					"match_type":   matchType,
 					"metric_names": metricNames,
 				},
 			},
