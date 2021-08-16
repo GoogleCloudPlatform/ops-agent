@@ -14,22 +14,6 @@
 
 package confgenerator
 
-type MetricsExporterGoogleCloudMonitoring struct {
-	ConfigComponent `yaml:",inline"`
-}
-
-func (r MetricsExporterGoogleCloudMonitoring) Type() string {
-	return "google_cloud_monitoring"
-}
-
-func (r *MetricsExporterGoogleCloudMonitoring) ValidateParameters(subagent string, kind string, id string) error {
-	panic("Should never be called")
-}
-
-func init() {
-	metricsExporterTypes.registerType(func() component { return &MetricsExporterGoogleCloudMonitoring{} })
-}
-
 type LoggingExporterGoogleCloudLogging struct {
 	ConfigComponent `yaml:",inline"`
 }
