@@ -367,7 +367,7 @@ type Metrics struct {
 
 type MetricsReceiver interface {
 	component
-	otel.ModularReceiver
+	Pipelines() []otel.Pipeline
 }
 
 type MetricsReceiverShared struct {
@@ -414,7 +414,7 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type MetricsProcessor interface {
 	component
-	otel.ModularProcessor
+	Processors() []otel.Component
 }
 
 var metricsProcessorTypes = &componentTypeRegistry{

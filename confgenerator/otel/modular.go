@@ -52,14 +52,6 @@ func configToYaml(config interface{}) ([]byte, error) {
 	return yaml.Marshal(outMap)
 }
 
-type ModularReceiver interface {
-	Pipelines() []Pipeline
-}
-
-type ModularProcessor interface {
-	Processors() []Component
-}
-
 type ModularConfig struct {
 	Pipelines map[string]Pipeline
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
