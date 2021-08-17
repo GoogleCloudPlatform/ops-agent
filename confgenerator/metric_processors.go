@@ -52,8 +52,8 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 }
 
 // metricsFilter returns an otel.Component that filters metrics.
-// polarity should be "include" or "exclude.
-// matchType should be "strict" or "regexp"
+// polarity should be "include" or "exclude".
+// matchType should be "strict" or "regexp".
 func metricsFilter(polarity, matchType string, metricNames ...string) otel.Component {
 	return otel.Component{
 		Type: "filter",
@@ -74,7 +74,7 @@ func init() {
 
 // Helper methods to easily build up metricstransformprocessor configs.
 
-// metricsTransform returns an otel.Component that performs tha transformations specified as arguments.
+// metricsTransform returns an otel.Component that performs the transformations specified as arguments.
 func metricsTransform(metrics ...map[string]interface{}) otel.Component {
 	return otel.Component{
 		Type: "metricstransform",

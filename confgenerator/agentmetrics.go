@@ -33,6 +33,7 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 						"job_name":        "otel-collector",
 						"scrape_interval": "1m",
 						"static_configs": []map[string]interface{}{{
+							// TODO(b/196990135): Customization for the port number
 							"targets": []string{"0.0.0.0:8888"},
 						}},
 					}},
@@ -76,4 +77,4 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 	}
 }
 
-// intentionally not registered as a component
+// intentionally not registered as a component because this is not created by users
