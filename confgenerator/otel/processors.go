@@ -15,7 +15,6 @@
 package otel
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -140,10 +139,9 @@ func DeleteLabelValue(label, value string) map[string]interface{} {
 
 // ScaleValue multiplies the value by factor
 func ScaleValue(factor float64) map[string]interface{} {
-	// TODO: Remove sprintf after https://github.com/goccy/go-yaml/pull/247 is merged.
 	return map[string]interface{}{
 		"action":             "experimental_scale_value",
-		"experimental_scale": fmt.Sprintf("%f", factor), // OT doesn't recognize "1e+06"
+		"experimental_scale": factor,
 	}
 }
 
