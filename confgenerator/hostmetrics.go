@@ -56,7 +56,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					},
 				},
 			},
-			metricsFilter(
+			otel.MetricsFilter(
 				"exclude",
 				"strict",
 				// Temporarily exclude system.cpu.time (cpu/usage_time)
@@ -67,222 +67,222 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				"system.disk.operation_time",
 				"system.processes.count",
 			),
-			metricsTransform(
-				renameMetric(
+			otel.MetricsTransform(
+				otel.RenameMetric(
 					"system.cpu.time",
 					"cpu/usage_time",
 					// change data type from double -> int64
-					toggleScalarDataType,
-					renameLabel("cpu", "cpu_number"),
-					renameLabel("state", "cpu_state"),
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("cpu", "cpu_number"),
+					otel.RenameLabel("state", "cpu_state"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.cpu.utilization",
 					"cpu/utilization",
 					// take avg over cpu dimension, retaining only state label
-					aggregateLabels(
+					otel.AggregateLabels(
 						"mean",
 						"state",
 						"blank",
 					),
 					// add blank cpu_number label
-					renameLabel("blank", "cpu_number"),
+					otel.RenameLabel("blank", "cpu_number"),
 					// change label state -> cpu_state
-					renameLabel("state", "cpu_state"),
+					otel.RenameLabel("state", "cpu_state"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.cpu.load_average.1m",
 					"cpu/load_1m",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.cpu.load_average.5m",
 					"cpu/load_5m",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.cpu.load_average.15m",
 					"cpu/load_15m",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.read_io", // as named after custom split logic
 					"disk/read_bytes_count",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.write_io", // as named after custom split logic
 					"disk/write_bytes_count",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.operations",
 					"disk/operation_count",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.io_time",
 					"disk/io_time",
 					// convert s to ms
-					scaleValue(1000),
+					otel.ScaleValue(1000),
 					// change data type from double -> int64
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.weighted_io_time",
 					"disk/weighted_io_time",
 					// convert s to ms
-					scaleValue(1000),
+					otel.ScaleValue(1000),
 					// change data type from double -> int64
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.average_operation_time",
 					"disk/operation_time",
 					// convert s to ms
-					scaleValue(1000),
+					otel.ScaleValue(1000),
 					// change data type from double -> int64
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.pending_operations",
 					"disk/pending_operations",
 					// change data type from int64 -> double
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.disk.merged",
 					"disk/merged_operations",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.filesystem.usage",
 					"disk/bytes_used",
 					// change data type from int64 -> double
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 					// take sum over mode, mountpoint & type dimensions, retaining only device & state
-					aggregateLabels("sum", "device", "state"),
+					otel.AggregateLabels("sum", "device", "state"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.filesystem.utilization",
 					"disk/percent_used",
-					aggregateLabels("sum", "device", "state"),
+					otel.AggregateLabels("sum", "device", "state"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.memory.usage",
 					"memory/bytes_used",
 					// change data type from int64 -> double
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 					// aggregate state label values: slab_reclaimable & slab_unreclaimable -> slab (note this is not currently supported)
-					aggregateLabelValues("sum", "state", "slab", "slab_reclaimable", "slab_unreclaimable"),
+					otel.AggregateLabelValues("sum", "state", "slab", "slab_reclaimable", "slab_unreclaimable"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.memory.utilization",
 					"memory/percent_used",
 					// sum state label values: slab = slab_reclaimable + slab_unreclaimable
-					aggregateLabelValues("sum", "state", "slab", "slab_reclaimable", "slab_unreclaimable"),
+					otel.AggregateLabelValues("sum", "state", "slab", "slab_reclaimable", "slab_unreclaimable"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.network.io",
 					"interface/traffic",
-					renameLabel("interface", "device"),
-					renameLabelValues("direction", map[string]string{
+					otel.RenameLabel("interface", "device"),
+					otel.RenameLabelValues("direction", map[string]string{
 						"receive":  "rx",
 						"transmit": "tx",
 					}),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.network.errors",
 					"interface/errors",
-					renameLabel("interface", "device"),
-					renameLabelValues("direction", map[string]string{
+					otel.RenameLabel("interface", "device"),
+					otel.RenameLabelValues("direction", map[string]string{
 						"receive":  "rx",
 						"transmit": "tx",
 					}),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.network.packets",
 					"interface/packets",
-					renameLabel("interface", "device"),
-					renameLabelValues("direction", map[string]string{
+					otel.RenameLabel("interface", "device"),
+					otel.RenameLabelValues("direction", map[string]string{
 						"receive":  "rx",
 						"transmit": "tx",
 					}),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.network.connections",
 					"network/tcp_connections",
 					// change data type from int64 -> double
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 					// remove udp data
-					deleteLabelValue("protocol", "udp"),
-					renameLabel("state", "tcp_state"),
+					otel.DeleteLabelValue("protocol", "udp"),
+					otel.RenameLabel("state", "tcp_state"),
 					// remove protocol label
-					aggregateLabels("sum", "tcp_state"),
-					addLabel("port", "all"),
+					otel.AggregateLabels("sum", "tcp_state"),
+					otel.AddLabel("port", "all"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.processes.created",
 					"processes/fork_count",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.paging.usage",
 					"swap/bytes_used",
 					// change data type from int64 -> double
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.paging.utilization",
 					"swap/percent_used",
 				),
 				// duplicate swap/percent_used -> pagefile/percent_used
-				duplicateMetric(
+				otel.DuplicateMetric(
 					"swap/percent_used",
 					"pagefile/percent_used",
 					// take sum over device dimension, retaining only state
-					aggregateLabels("sum", "state"),
+					otel.AggregateLabels("sum", "state"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"system.paging.operations",
 					"swap/io",
 					// delete single-valued type dimension, retaining only direction
-					aggregateLabels("sum", "direction"),
-					renameLabelValues("direction", map[string]string{
+					otel.AggregateLabels("sum", "direction"),
+					otel.RenameLabelValues("direction", map[string]string{
 						"page_in":  "in",
 						"page_out": "out",
 					}),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"process.cpu.time",
 					"processes/cpu_time",
 					// scale from seconds to microseconds
-					scaleValue(1000000),
+					otel.ScaleValue(1000000),
 					// change data type from double -> int64
-					toggleScalarDataType,
-					addLabel("process", "all"),
+					otel.ToggleScalarDataType,
+					otel.AddLabel("process", "all"),
 					// retain only user and syst state label values
-					deleteLabelValue("state", "wait"),
-					renameLabel("state", "user_or_syst"),
-					renameLabelValues("user_or_syst", map[string]string{
+					otel.DeleteLabelValue("state", "wait"),
+					otel.RenameLabel("state", "user_or_syst"),
+					otel.RenameLabelValues("user_or_syst", map[string]string{
 						"system": "syst",
 					}),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"process.disk.read_io", // as named after custom split logic
 					"processes/disk/read_bytes_count",
-					addLabel("process", "all"),
+					otel.AddLabel("process", "all"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"process.disk.write_io", // as named after custom split logic
 					"processes/disk/write_bytes_count",
-					addLabel("process", "all"),
+					otel.AddLabel("process", "all"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"process.memory.physical_usage",
 					"processes/rss_usage",
 					// change data type from int64 -> double
-					toggleScalarDataType,
-					addLabel("process", "all"),
+					otel.ToggleScalarDataType,
+					otel.AddLabel("process", "all"),
 				),
-				renameMetric(
+				otel.RenameMetric(
 					"process.memory.virtual_usage",
 					"processes/vm_usage",
 					// change data type from int64 -> double
-					toggleScalarDataType,
-					addLabel("process", "all"),
+					otel.ToggleScalarDataType,
+					otel.AddLabel("process", "all"),
 				),
 			),
 		},

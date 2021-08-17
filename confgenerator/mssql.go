@@ -52,16 +52,16 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			metricsTransform(
-				renameMetric(
+			otel.MetricsTransform(
+				otel.RenameMetric(
 					`\SQLServer:General Statistics(_Total)\User Connections`,
 					"mssql/connections/user",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					`\SQLServer:Databases(_Total)\Transactions/sec`,
 					"mssql/connections/transaction_rate",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					`\SQLServer:Databases(_Total)\Write Transactions/sec`,
 					"mssql/connections/write_transaction_rate",
 				),

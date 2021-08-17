@@ -41,7 +41,7 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			metricsFilter(
+			otel.MetricsFilter(
 				"include",
 				"strict",
 				"otelcol_process_uptime",
@@ -49,28 +49,28 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 				"otelcol_grpc_io_client_completed_rpcs",
 				"otelcol_googlecloudmonitoring_point_count",
 			),
-			metricsTransform(
-				renameMetric("otelcol_process_uptime", "agent/uptime",
+			otel.MetricsTransform(
+				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
-					toggleScalarDataType,
-					addLabel("version", r.Version),
+					otel.ToggleScalarDataType,
+					otel.AddLabel("version", r.Version),
 				),
-				renameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
-				renameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
+				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
+				otel.RenameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
 					// change data type from double -> int64
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 					// TODO: below is proposed new configuration for the metrics transform processor
 					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
 					// - action: select_label_values
 					//   label: grpc_client_method
 					//   value_regexp: ^google\.monitoring
-					renameLabel("grpc_client_status", "state"),
+					otel.RenameLabel("grpc_client_status", "state"),
 					// delete grpc_client_method dimension, retaining only state
-					aggregateLabels("sum", "state"),
+					otel.AggregateLabels("sum", "state"),
 				),
-				renameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
+				otel.RenameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 					// change data type from double -> int64
-					toggleScalarDataType,
+					otel.ToggleScalarDataType,
 				),
 			),
 		},

@@ -54,20 +54,20 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			metricsTransform(
-				renameMetric(
+			otel.MetricsTransform(
+				otel.RenameMetric(
 					`\Web Service(_Total)\Current Connections`,
 					"iis/current_connections",
 				),
-				combineMetrics(
+				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
 					"iis/network/transferred_bytes_count",
 				),
-				renameMetric(
+				otel.RenameMetric(
 					`\Web Service(_Total)\Total Connection Attempts (all instances)`,
 					"iis/new_connection_count",
 				),
-				combineMetrics(
+				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
 					"iis/request_count",
 				),
