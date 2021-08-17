@@ -50,34 +50,43 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"metric_name": old,
 		"action":      "update",
 		"new_name":    new,
-		"operations":  operations,
 	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
 }
 
 // DuplicateMetric returns a config snippet that copies old to new, applying zero or more transformations.
 func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"metric_name": old,
 		"action":      "insert",
 		"new_name":    new,
-		"operations":  operations,
 	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
 }
 
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
 func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"include":       old,
 		"match_type":    "regexp",
 		"action":        "combine",
 		"new_name":      new,
 		"submatch_case": "lower",
-		"operations":    operations,
 	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
 }
 
 // ToggleScalarDataType transforms int -> double and double -> int.

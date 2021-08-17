@@ -108,7 +108,7 @@ func (c ModularConfig) Generate() (string, error) {
 		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  exporterName,
+			"exporters":  []string{exporterName},
 		}
 	}
 
