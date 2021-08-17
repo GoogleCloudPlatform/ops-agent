@@ -44,7 +44,7 @@ func (c Component) name(suffix string) string {
 	return c.Type
 }
 
-// configToYaml converts a tree of structss into a YAML file.
+// configToYaml converts a tree of structs into a YAML file.
 // To match OT's built-in config parsing, we use mapstructure to convert the tree of structs into a tree of maps.
 // This allows the direct use of OT's config types at any level of the hierarchy.
 func configToYaml(config interface{}) ([]byte, error) {
