@@ -59,11 +59,11 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				),
 				otel.RenameMetric(
 					`\SQLServer:Databases(_Total)\Transactions/sec`,
-					"mssql/connections/transaction_rate",
+					"mssql/transaction_rate",
 				),
 				otel.RenameMetric(
 					`\SQLServer:Databases(_Total)\Write Transactions/sec`,
-					"mssql/connections/write_transaction_rate",
+					"mssql/write_transaction_rate",
 				),
 			),
 		},

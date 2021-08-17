@@ -50,9 +50,9 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"metric_name": old,
-		"action":      "update",
-		"new_name":    new,
+		"include":  old,
+		"action":   "update",
+		"new_name": new,
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
@@ -63,9 +63,9 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 // DuplicateMetric returns a config snippet that copies old to new, applying zero or more transformations.
 func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"metric_name": old,
-		"action":      "insert",
-		"new_name":    new,
+		"include":  old,
+		"action":   "insert",
+		"new_name": new,
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
