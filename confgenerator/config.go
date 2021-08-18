@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 )
@@ -356,21 +357,29 @@ type LoggingPipeline struct {
 // Ops Agent metrics config.
 type metricsReceiverMap map[string]MetricsReceiver
 type metricsProcessorMap map[string]MetricsProcessor
-type metricsExporterMap map[string]MetricsExporter
 type Metrics struct {
 	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"`
 	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"`
 	// Exporters are deprecated and ignored, so do not have any validation.
-	Exporters metricsExporterMap `yaml:"exporters,omitempty"`
-	Service   *MetricsService    `yaml:"service"`
+	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
+	Service   *MetricsService        `yaml:"service"`
 }
 
 type MetricsReceiver interface {
 	component
+	Pipelines() []otel.Pipeline
 }
 
 type MetricsReceiverShared struct {
 	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
+}
+
+func (m MetricsReceiverShared) CollectionIntervalString() string {
+	// TODO: Remove when https://github.com/goccy/go-yaml/pull/246 is merged
+	if m.CollectionInterval != "" {
+		return m.CollectionInterval
+	}
+	return "60s"
 }
 
 var metricsReceiverTypes = &componentTypeRegistry{
@@ -405,6 +414,7 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type MetricsProcessor interface {
 	component
+	Processors() []otel.Component
 }
 
 var metricsProcessorTypes = &componentTypeRegistry{
@@ -434,37 +444,6 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 	return nil
 }
 
-type MetricsExporter interface {
-	component
-}
-
-var metricsExporterTypes = &componentTypeRegistry{
-	Subagent: "metrics", Kind: "exporter",
-}
-
-// Wrapper type to store the unmarshaled YAML value.
-type metricsExporterWrapper struct {
-	inner interface{}
-}
-
-func (l *metricsExporterWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return metricsExporterTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *metricsExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]metricsExporterWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = metricsExporterMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(MetricsExporter)
-	}
-	return nil
-}
-
 type MetricsService struct {
 	Pipelines map[string]*MetricsPipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
@@ -472,7 +451,8 @@ type MetricsService struct {
 type MetricsPipeline struct {
 	ReceiverIDs  []string `yaml:"receivers,flow"`
 	ProcessorIDs []string `yaml:"processors,flow"`
-	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
+	// ExporterIDs is deprecated and ignored.
+	ExporterIDs []string `yaml:"exporters,omitempty,flow"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -621,14 +601,6 @@ func mapKeys(m interface{}) map[string]bool {
 			keys[k] = true
 		}
 	case metricsProcessorMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]MetricsExporter:
-		for k := range m {
-			keys[k] = true
-		}
-	case metricsExporterMap:
 		for k := range m {
 			keys[k] = true
 		}

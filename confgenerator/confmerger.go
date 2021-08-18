@@ -222,12 +222,6 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 			original.Metrics.Processors[k] = v
 		}
 
-		// Overrides metrics.exporters.
-		original.Metrics.Exporters = map[string]MetricsExporter{}
-		for k, v := range overrides.Metrics.Exporters {
-			original.Metrics.Exporters[k] = v
-		}
-
 		if overrides.Metrics.Service != nil {
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
 				// skips metrics.service.pipelines.*.exporters
