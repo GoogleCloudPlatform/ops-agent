@@ -64,7 +64,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 			Config: map[string]interface{}{
 				"user_agent": userAgent,
 				"metric": map[string]interface{}{
-					"prefix": "agent.googleapis.com/",
+					// Receivers are responsible for sending fully-qualified metric names.
+					// NB: If a receiver fails to send a full URL, OT will add the prefix `custom.googleapis.com/opencensus/`."
+					"prefix": "",
 				},
 			},
 		},

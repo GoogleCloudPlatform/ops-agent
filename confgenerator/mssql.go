@@ -65,6 +65,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					`\SQLServer:Databases(_Total)\Write Transactions/sec`,
 					"mssql/write_transaction_rate",
 				),
+				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
 	}}
