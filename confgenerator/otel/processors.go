@@ -15,6 +15,7 @@
 package otel
 
 import (
+	"path"
 	"sort"
 )
 
@@ -44,6 +45,18 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 		Config: map[string]interface{}{
 			"transforms": metrics,
 		},
+	}
+}
+
+// AddPrefix returns a config snippet that adds a prefix to all metrics.
+func AddPrefix(prefix string) map[string]interface{} {
+	// $ needs to be escaped because reasons.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+	return map[string]interface{}{
+		"include":    `^(.*)$$`,
+		"match_type": "regexp",
+		"action":     "update",
+		"new_name":   path.Join(prefix, `$${1}`),
 	}
 }
 

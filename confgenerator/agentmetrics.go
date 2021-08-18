@@ -72,6 +72,7 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 				),
+				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
 	}
