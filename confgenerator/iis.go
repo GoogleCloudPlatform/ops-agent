@@ -14,6 +14,8 @@
 
 package confgenerator
 
+import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
 type MetricsReceiverIis struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -22,6 +24,56 @@ type MetricsReceiverIis struct {
 
 func (r MetricsReceiverIis) Type() string {
 	return "iis"
+}
+
+func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "windowsperfcounters",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"perfcounters": []map[string]interface{}{
+					{
+						"object":    "Web Service",
+						"instances": []string{"_Total"},
+						"counters": []string{
+							"Current Connections",
+							"Total Bytes Received",
+							"Total Bytes Sent",
+							"Total Connection Attempts (all instances)",
+							"Total Delete Requests",
+							"Total Get Requests",
+							"Total Head Requests",
+							"Total Options Requests",
+							"Total Post Requests",
+							"Total Put Requests",
+							"Total Trace Requests",
+						},
+					},
+				},
+			},
+		},
+		Processors: []otel.Component{
+			otel.MetricsTransform(
+				otel.RenameMetric(
+					`\Web Service(_Total)\Current Connections`,
+					"iis/current_connections",
+				),
+				otel.CombineMetrics(
+					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
+					"iis/network/transferred_bytes_count",
+				),
+				otel.RenameMetric(
+					`\Web Service(_Total)\Total Connection Attempts (all instances)`,
+					"iis/new_connection_count",
+				),
+				otel.CombineMetrics(
+					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
+					"iis/request_count",
+				),
+			),
+		},
+	}}
 }
 
 func init() {
