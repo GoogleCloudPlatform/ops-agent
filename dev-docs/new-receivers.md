@@ -85,6 +85,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
 					"iis/request_count",
 				),
+				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
 	}}
