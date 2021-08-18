@@ -284,6 +284,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					otel.ToggleScalarDataType,
 					otel.AddLabel("process", "all"),
 				),
+				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
 	}}
