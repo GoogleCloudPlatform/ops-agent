@@ -65,7 +65,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 				"user_agent": userAgent,
 				"metric": map[string]interface{}{
 					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `custom.googleapis.com/opencensus/`."
+					// NB: If a receiver fails to send a full URL, OT will add the prefix `custom.googleapis.com/opencensus/`.
 					// TODO(b/197129428): Write a test to make sure this doesn't happen.
 					"prefix": "",
 				},
