@@ -130,25 +130,25 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
 {{end -}}
 {{define "parserJSON" -}}
 [PARSER]
-    Name        {{.Name}}
     Format      json
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
+    Name        {{.Name}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
+{{- end}}
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
 {{- end}}
 {{- end -}}
 {{- define "parserRegex" -}}
 [PARSER]
-    Name        {{.Name}}
     Format      regex
+    Name        {{.Name}}
     Regex       {{.Regex}}
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
 {{- if (ne .TimeFormat "")}}
     Time_Format {{.TimeFormat}}
+{{- end}}
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
 {{- end}}
 {{- end -}}
 `))
