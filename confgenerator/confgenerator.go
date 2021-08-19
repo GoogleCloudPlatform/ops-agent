@@ -292,9 +292,8 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			if r, ok := receivers[rID]; ok {
-				switch r.Type() {
-				case "files":
-					r := r.(*LoggingReceiverFiles)
+				switch r := r.(type) {
+				case *LoggingReceiverFiles:
 					fbTail := fluentbit.Tail{
 						Tag:  fmt.Sprintf("%s.%s", pID, rID),
 						DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
@@ -304,8 +303,7 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 						fbTail.ExcludePath = strings.Join(r.ExcludePaths, ",")
 					}
 					fbTails = append(fbTails, &fbTail)
-				case "syslog":
-					r := r.(*LoggingReceiverSyslog)
+				case *LoggingReceiverSyslog:
 					fbSyslog := fluentbit.Syslog{
 						Tag:    fmt.Sprintf("%s.%s", pID, rID),
 						Listen: r.ListenHost,
@@ -313,8 +311,7 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 						Port:   r.ListenPort,
 					}
 					fbSyslogs = append(fbSyslogs, &fbSyslog)
-				case "windows_event_log":
-					r := r.(*LoggingReceiverWinevtlog)
+				case *LoggingReceiverWinevtlog:
 					fbWinlog := fluentbit.WindowsEventlog{
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
 						Channels:     strings.Join(r.Channels, ","),
@@ -396,17 +393,15 @@ func extractFluentBitParsers(processors map[string]LoggingProcessor) ([]*fluentb
 	fbRegexParsers := []*fluentbit.ParserRegex{}
 	for _, name := range sortedKeys(processors) {
 		p := processors[name]
-		switch t := p.Type(); t {
-		case "parse_json":
-			p := p.(*LoggingProcessorParseJson)
+		switch p := p.(type) {
+		case *LoggingProcessorParseJson:
 			fbJSONParser := fluentbit.ParserJSON{
 				Name:       name,
 				TimeKey:    p.TimeKey,
 				TimeFormat: p.TimeFormat,
 			}
 			fbJSONParsers = append(fbJSONParsers, &fbJSONParser)
-		case "parse_regex":
-			p := p.(*LoggingProcessorParseRegex)
+		case *LoggingProcessorParseRegex:
 			fbRegexParser := fluentbit.ParserRegex{
 				Name:       name,
 				Regex:      p.Regex,
