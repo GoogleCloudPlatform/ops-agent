@@ -1,0 +1,27 @@
+set -e
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "${SUSE_VERSION}" == 12 ]]; then
+  sudo zypper addrepo -G -t yum -c 'http://nginx.org/packages/sles/12' nginx
+  curl -O http://nginx.org/keys/nginx_signing.key
+  sudo rpm --import nginx_signing.key
+fi
+
+if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
+  if [[ "${VERSION_ID}" == 15.0 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-Cloud-Tools
+  elif [[ "${VERSION_ID}" == 15.1 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-devel-languages-python-aws
+  fi
+fi
+sudo zypper -n refresh
+
+sudo zypper -n install nginx
+# Our public instructions assume that the service has already been started.
+sudo service nginx start
+
+# The following lines are from our public instructions.
+(cd /etc/nginx/conf.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/nginx/conf.d/status.conf)
+sudo service nginx reload

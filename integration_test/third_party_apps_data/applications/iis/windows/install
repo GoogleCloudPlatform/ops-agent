@@ -1,0 +1,2 @@
+$ProgressPreference = 'SilentlyContinue'
+Install-WindowsFeature -name Web-Server

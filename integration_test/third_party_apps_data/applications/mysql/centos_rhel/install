@@ -1,0 +1,22 @@
+set -e
+
+source /etc/os-release
+VERSION_ID=${VERSION_ID%%.*}
+
+sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
+
+if [ ${VERSION_ID} == 8 ]; then
+  sudo yum -y module disable mysql
+fi
+sudo yum -y install mysql-community-server
+sudo service mysqld start
+
+password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysqld.log)
+
+cat <<EOF > config-user
+[client]
+user=root
+password='$password'
+EOF
+
+mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'" --connect-expired-password
