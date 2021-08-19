@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"reflect"
 	"sort"
 	"strings"
@@ -126,6 +127,17 @@ func newValidator() *validator.Validate {
 			panic(err)
 		}
 		return t >= tmin
+	})
+	// url validates that the value is a valid url
+	v.RegisterValidation("url", func(fl validator.FieldLevel) bool {
+		u, err := url.Parse(fl.Field().String())
+		if err != nil {
+			return false
+		}
+		if u.Port() == "" {
+			return false
+		}
+		return true
 	})
 	return v
 }

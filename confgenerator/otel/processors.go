@@ -48,6 +48,14 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 	}
 }
 
+// NormalizeSums returns a Component that performs counter normalization.
+func NormalizeSums() Component {
+	return Component{
+		Type:   "normalizesums",
+		Config: map[string]interface{}{},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a prefix to all metrics.
 func AddPrefix(prefix string) map[string]interface{} {
 	// $ needs to be escaped because reasons.

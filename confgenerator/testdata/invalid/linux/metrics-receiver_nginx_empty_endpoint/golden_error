@@ -1,0 +1,6 @@
+the agent config file is not valid. detailed error: [19:16] Key: 'MetricsReceiverNginx.endpoint' Error:Field validation for 'endpoint' failed on the 'required' tag
+> 19 | null
+                      ^
+  20 |       collection_interval: 30s
+  21 |   service:
+  22 |     pipelines:
