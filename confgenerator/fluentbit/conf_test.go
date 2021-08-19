@@ -796,9 +796,9 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
-    Name   lib:apache_error
-    Format regex
-    Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
+    Name        lib:apache_error
+    Format      regex
+    Regex       ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
 
 [PARSER]
     Name        lib:mongodb
@@ -870,9 +870,9 @@ func TestGenerateFluentBitParserConfig(t *testing.T) {
     Time_Format %d/%b/%Y:%H:%M:%S %z
 
 [PARSER]
-    Name   lib:apache_error
-    Format regex
-    Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
+    Name        lib:apache_error
+    Format      regex
+    Regex       ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
 
 [PARSER]
     Name        lib:mongodb
