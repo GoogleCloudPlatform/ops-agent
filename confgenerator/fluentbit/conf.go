@@ -426,10 +426,10 @@ func (t Tail) Generate() (string, error) {
 
 // A Syslog represents the configuration data for fluentBit's syslog input plugin.
 type Syslog struct {
+	Tag    string
 	Mode   string
 	Listen string
 	Port   uint16
-	Tag    string
 }
 
 func (s Syslog) Generate() (string, error) {

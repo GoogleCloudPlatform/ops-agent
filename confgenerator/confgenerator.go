@@ -106,16 +106,35 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
+type sortKey struct {
+	n   int
+	tag string
+}
+
+func sortKeyLess(a, b sortKey) bool {
+	return a.n < b.n || (a.n == b.n && a.tag < b.tag)
+}
+
+func inputSortKey(i fluentbit.Input) sortKey {
+	switch r := i.(type) {
+	case *fluentbit.Tail:
+		return sortKey{n: 1, tag: r.Tag}
+	case *fluentbit.Syslog:
+		return sortKey{n: 2, tag: r.Tag}
+	case *fluentbit.WindowsEventlog:
+		return sortKey{n: 3, tag: r.Tag}
+	}
+	panic(fmt.Sprintf("unknown type: %T", i))
+}
+
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
 // does not exist as a top-level field in the input yaml format.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	logging := uc.Logging
-	fbTails := defaultTails(logsDir, stateDir, hostInfo)
+	inputs := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	fbStackdrivers := defaultStackdriverOutputs()
-	fbSyslogs := []*fluentbit.Syslog{}
-	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
 	fbFilterParserGroups := []fluentbit.FilterParserGroup{}
 	fbFilterAddLogNames := []*fluentbit.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
@@ -135,13 +154,12 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			p.ExporterIDs = []string{"google"}
 		}
 
-		extractedTails := []*fluentbit.Tail{}
 		var err error
-		extractedTails, fbSyslogs, fbWinEventlogs, err = generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
+		extractedInputs, err := generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
 		if err != nil {
 			return "", "", err
 		}
-		fbTails = append(fbTails, extractedTails...)
+		inputs = append(inputs, extractedInputs...)
 		fbFilterParserGroups, err = generateFluentBitFilters(logging.Processors, logging.Service.Pipelines)
 		if err != nil {
 			return "", "", err
@@ -159,25 +177,12 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	}
 
 	// make sure all collections are sorted so that generated configs are consistently generated
-	sort.Slice(fbTails, func(i, j int) bool { return fbTails[i].Tag < fbTails[j].Tag })
-	sort.Slice(fbSyslogs, func(i, j int) bool { return fbSyslogs[i].Tag < fbSyslogs[j].Tag })
-	sort.Slice(fbWinEventlogs, func(i, j int) bool { return fbWinEventlogs[i].Tag < fbWinEventlogs[j].Tag })
+	sort.Slice(inputs, func(i, j int) bool { return sortKeyLess(inputSortKey(inputs[i]), inputSortKey(inputs[j])) })
 	sort.Slice(fbFilterParserGroups, func(i, j int) bool { return fbFilterParserGroups[i][0].Match < fbFilterParserGroups[j][0].Match })
 	sort.Slice(fbFilterAddLogNames, func(i, j int) bool { return fbFilterAddLogNames[i].Match < fbFilterAddLogNames[j].Match })
 	sort.Slice(fbFilterRemoveLogNames, func(i, j int) bool { return fbFilterRemoveLogNames[i].Match < fbFilterRemoveLogNames[j].Match })
 	sort.Slice(fbFilterRewriteTags, func(i, j int) bool { return fbFilterRewriteTags[i].Match < fbFilterRewriteTags[j].Match })
 	sort.Slice(fbStackdrivers, func(i, j int) bool { return fbStackdrivers[i].Match < fbStackdrivers[j].Match })
-
-	inputs := []fluentbit.Input{}
-	for _, i := range fbTails {
-		inputs = append(inputs, i)
-	}
-	for _, i := range fbSyslogs {
-		inputs = append(inputs, i)
-	}
-	for _, i := range fbWinEventlogs {
-		inputs = append(inputs, i)
-	}
 
 	filters := []fluentbit.Filter{}
 	for _, f := range fbFilterParserGroups {
@@ -222,8 +227,8 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
-func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tails []*fluentbit.Tail) {
-	tails = []*fluentbit.Tail{}
+func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tails []fluentbit.Input) {
+	tails = []fluentbit.Input{}
 	tailFluentbit := fluentbit.Tail{
 		Tag:  "ops-agent-fluent-bit",
 		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
@@ -284,10 +289,8 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
-func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
-	fbTails := []*fluentbit.Tail{}
-	fbSyslogs := []*fluentbit.Syslog{}
-	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
+func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]fluentbit.Input, error) {
+	inputs := []fluentbit.Input{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
@@ -302,28 +305,26 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 					if len(r.ExcludePaths) != 0 {
 						fbTail.ExcludePath = strings.Join(r.ExcludePaths, ",")
 					}
-					fbTails = append(fbTails, &fbTail)
+					inputs = append(inputs, &fbTail)
 				case *LoggingReceiverSyslog:
-					fbSyslog := fluentbit.Syslog{
+					inputs = append(inputs, &fluentbit.Syslog{
 						Tag:    fmt.Sprintf("%s.%s", pID, rID),
 						Listen: r.ListenHost,
 						Mode:   r.TransportProtocol,
 						Port:   r.ListenPort,
-					}
-					fbSyslogs = append(fbSyslogs, &fbSyslog)
+					})
 				case *LoggingReceiverWinevtlog:
-					fbWinlog := fluentbit.WindowsEventlog{
+					inputs = append(inputs, &fluentbit.WindowsEventlog{
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
 						Channels:     strings.Join(r.Channels, ","),
 						Interval_Sec: "1",
 						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
-					}
-					fbWinEventlogs = append(fbWinEventlogs, &fbWinlog)
+					})
 				}
 			}
 		}
 	}
-	return fbTails, fbSyslogs, fbWinEventlogs, nil
+	return inputs, nil
 }
 
 func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines map[string]*LoggingPipeline) ([]fluentbit.FilterParserGroup, error) {
