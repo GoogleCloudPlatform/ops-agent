@@ -16,7 +16,7 @@ metrics:
   receivers:
     nginxmetrics:
       type: nginx
-      endpoint: localhost
+      stub_status_url: localhost
       collection_interval: 30s
   service:
     pipelines:

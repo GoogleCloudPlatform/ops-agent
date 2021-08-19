@@ -21,25 +21,25 @@ type MetricsReceiverNginx struct {
 
 	MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	StubStatusURL string `yaml:"stub_status_url" validate:"omitempty,url"`
 }
 
-const defaultEndpoint = "http://localhost/status"
+const defaultStubStatusURL = "http://localhost/status"
 
 func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
 func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultEndpoint
+	if r.StubStatusURL == "" {
+		r.StubStatusURL = defaultStubStatusURL
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
-				"endpoint":            r.Endpoint,
+				"endpoint":            r.StubStatusURL,
 			},
 		},
 		Processors: []otel.Component{

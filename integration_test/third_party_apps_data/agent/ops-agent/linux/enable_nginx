@@ -21,7 +21,7 @@ metrics:
   receivers:
     nginxmetrics:
       type: nginx
-      endpoint: http://local-stackdriver-agent.stackdriver.com:80/nginx_status
+      stub_status_url: http://local-stackdriver-agent.stackdriver.com:80/nginx_status
       collection_interval: 30s
   service:
     pipelines:
