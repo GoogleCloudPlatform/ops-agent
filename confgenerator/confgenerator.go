@@ -253,7 +253,8 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 func defaultStackdriverOutputs() (stackdrivers []fluentbit.Output) {
 	return []fluentbit.Output{
 		&fluentbit.Stackdriver{
-			Match: "ops-agent-fluent-bit|ops-agent-collectd",
+			Match:   "ops-agent-fluent-bit|ops-agent-collectd",
+			Workers: 8,
 		},
 	}
 }
@@ -383,7 +384,8 @@ func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[
 	}
 	for _, tags := range stackdriverExporters {
 		outputs = append(outputs, &fluentbit.Stackdriver{
-			Match: strings.Join(tags, "|"),
+			Match:   strings.Join(tags, "|"),
+			Workers: 8,
 		})
 	}
 	return filters, outputs, nil

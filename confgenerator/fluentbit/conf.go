@@ -21,33 +21,17 @@ import (
 )
 
 var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[SERVICE]
-    # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
-    # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
-    Flush      1
-    # We use systemd to manage Fluent Bit instead.
-    Daemon     off
-    # Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
-    Log_Level  info
-
-    # https://docs.fluentbit.io/manual/administration/monitoring
-    # Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
-    HTTP_Server  On
-    HTTP_Listen  0.0.0.0
-    HTTP_PORT    2020
-
-    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
-    # storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
-    storage.sync               normal
-    # Enable the data integrity check when writing and reading data from the filesystem.
-    storage.checksum           on
-    # The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
-    storage.backlog.mem_limit  50M
-    # Enable storage metrics in the built-in HTTP server.
-    storage.metrics            on
-    # This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
-    # Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
-    # we don't want them to all be loaded into the memory.
-    storage.max_chunks_up      128
+    Daemon                    off
+    Flush                     1
+    HTTP_Listen               0.0.0.0
+    HTTP_PORT                 2020
+    HTTP_Server               On
+    Log_Level                 info
+    storage.backlog.mem_limit 50M
+    storage.checksum          on
+    storage.max_chunks_up     128
+    storage.metrics           on
+    storage.sync              normal
 
 {{- range .Inputs}}
 
@@ -63,113 +47,80 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 {{- end}}
 {{- define "filter_modify_add_log_name" -}}
 [FILTER]
-    Name  modify
-    Match {{.Match}}
     Add   logName {{.LogName}}
+    Match {{.Match}}
+    Name  modify
 {{- end -}}
 {{- define "filter_modify_remove_log_name" -}}
 [FILTER]
-    Name   modify
     Match  {{.Match}}
+    Name   modify
     Remove logName
 {{- end -}}
 {{- define "filter_parser" -}}
 [FILTER]
-    Name     parser
-    Match    {{.Match}}
     Key_Name {{.KeyName}}
+    Match    {{.Match}}
+    Name     parser
     Parser   {{.Parser}}
 {{- end -}}
 {{- define "filter_rewrite_tag" -}}
 [FILTER]
-    Name                  rewrite_tag
-    Match                 {{.Match}}
-    Rule                  $logName .* $logName false
-    Emitter_Storage.type  filesystem
     Emitter_Mem_Buf_Limit 10M
+    Emitter_Storage.type  filesystem
+    Match                 {{.Match}}
+    Name                  rewrite_tag
+    Rule                  $logName .* $logName false
 {{- end -}}
 {{- define "tail" -}}
 [INPUT]
-    # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
-    Name               tail
-    Tag                {{.Tag}}
-    Path               {{.Path}}
-    DB                 {{.DB}}
-    Read_from_Head     True
-    # Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
-    Buffer_Chunk_Size  512k
-    # Set the max size a bit larger to accommodate for long log lines.
-    Buffer_Max_Size    5M
-    # When a message is unstructured (no parser applied), append it under a key named "message".
-    Key                message
-    # Increase this to 30 seconds so log rotations are handled more gracefully.
-    Rotate_Wait        30
-    # Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
-    Skip_Long_Lines    On
+    Buffer_Chunk_Size 512k
+    Buffer_Max_Size   5M
+    DB                {{.DB}}
 {{- if (ne .ExcludePath "")}}
-    # Exclude files matching this criteria.
-    Exclude_Path       {{.ExcludePath}}
+    Exclude_Path      {{.ExcludePath}}
 {{- end}}
-
-    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-    # Buffer in disk to improve reliability.
-    storage.type       filesystem
-
-    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit      10M
+    Key               message
+    Mem_Buf_Limit     10M
+    Name              tail
+    Path              {{.Path}}
+    Read_from_Head    True
+    Rotate_Wait       30
+    Skip_Long_Lines   On
+    Tag               {{.Tag}}
+    storage.type      filesystem
 {{- end -}}
 {{- define "syslog" -}}
 [INPUT]
-    # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
-    Name           syslog
-    Tag            {{.Tag}}
-    Mode           {{.Mode}}
-    Listen         {{.Listen}}
-    Port           {{.Port}}
-    Parser         lib:default_message_parser
-
-    # https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-    # Buffer in disk to improve reliability.
-    storage.type   filesystem
-
-    # https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-    # This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-    # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-    # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-    # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit  10M
+    Listen        {{.Listen}}
+    Mem_Buf_Limit 10M
+    Mode          {{.Mode}}
+    Name          syslog
+    Parser        lib:default_message_parser
+    Port          {{.Port}}
+    Tag           {{.Tag}}
+    storage.type  filesystem
 {{- end -}}
 {{- define "wineventlog" -}}
 [INPUT]
-    # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-    Name           winlog
-    Tag            {{.Tag}}
-    Channels       {{.Channels}}
-    Interval_Sec   1
-    DB             {{.DB}}
+    Channels     {{.Channels}}
+    DB           {{.DB}}
+    Interval_Sec 1
+    Name         winlog
+    Tag          {{.Tag}}
 {{- end -}}
 {{- define "stackdriver" -}}
 [OUTPUT]
-    # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-    Name              stackdriver
     Match_Regex       ^({{.Match}})$
+    Name              stackdriver
+    Retry_Limit       3
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
-    workers           8
-
-    # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
-    # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
-    Retry_Limit  3
-
-    # https://docs.fluentbit.io/manual/administration/security
-    # Enable TLS support.
-    tls         On
-    # Do not force certificate validation.
-    tls.verify  Off
+    tls               On
+    tls.verify        Off
+    {{- if .Workers}}
+    workers           {{.Workers}}
+    {{- end}}
 {{- end -}}
 `))
 
@@ -440,8 +391,8 @@ func (s Syslog) Generate() (string, error) {
 // A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
 type WindowsEventlog struct {
 	Tag          string
-	Channels     string
-	Interval_Sec string
+	Channels     string // XXX: proper type
+	Interval_Sec string // XXX: stop ignoring?
 	DB           string
 }
 
@@ -461,6 +412,7 @@ type Output interface {
 type Stackdriver struct {
 	Match     string
 	UserAgent string
+	Workers   int
 }
 
 func (s Stackdriver) Generate() (string, error) {
