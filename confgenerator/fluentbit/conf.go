@@ -173,63 +173,10 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
 {{- end -}}
 `))
 
-var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse(`[PARSER]
-    Name        lib:default_message_parser
-    Format      regex
-    Regex       ^(?<message>.*)$
-
-[PARSER]
-    Name        lib:apache
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:apache2
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:apache_error
-    Format      regex
-    Regex       ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
-
-[PARSER]
-    Name        lib:mongodb
-    Format      regex
-    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L
-
-[PARSER]
-    Name        lib:nginx
-    Format      regex
-    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:syslog-rfc5424
-    Format      regex
-    Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
-
-[PARSER]
-    Name        lib:syslog-rfc3164
-    Format      regex
-    Regex       /^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
-    Time_Key    time
-    Time_Format %b %d %H:%M:%S
-
-{{- range .Parsers}}
-
+var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse(`{{- range .Parsers -}}
 {{.Generate}}
-{{- end}}
 
+{{end -}}
 {{define "parserJSON" -}}
 [PARSER]
     Name        {{.Name}}
@@ -255,6 +202,53 @@ var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse
 {{- end -}}
 `))
 
+var DefaultParsers = []Parser{
+	&ParserRegex{
+		Name:  "lib:default_message_parser",
+		Regex: `^(?<message>.*)$`,
+	},
+	&ParserRegex{
+		Name:       "lib:apache",
+		Regex:      `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:       "lib:apache2",
+		Regex:      `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:  "lib:apache_error",
+		Regex: `^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
+	},
+	&ParserRegex{
+		Name:       "lib:mongodb",
+		Regex:      `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
+		TimeKey:    "time",
+		TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+	},
+	&ParserRegex{
+		Name:       "lib:nginx",
+		Regex:      `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:       "lib:syslog-rfc5424",
+		Regex:      `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
+		TimeKey:    "time",
+		TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
+	},
+	&ParserRegex{
+		Name:       "lib:syslog-rfc3164",
+		Regex:      `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
+		TimeKey:    "time",
+		TimeFormat: "%b %d %H:%M:%S",
+	},
+}
+
 type Config struct {
 	Inputs    []Input
 	Filters   []Filter
@@ -272,8 +266,11 @@ func (c Config) generateMain() (string, error) {
 }
 
 func (c Config) generateParser() (string, error) {
+	parsers := Config{
+		Parsers: append(DefaultParsers, c.Parsers...),
+	}
 	var parserConfigBuilder strings.Builder
-	if err := parserConfTemplate.Execute(&parserConfigBuilder, c); err != nil {
+	if err := parserConfTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
 		return "", err
 	}
 	return parserConfigBuilder.String(), nil
