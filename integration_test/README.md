@@ -25,7 +25,8 @@ the test will:
     `applications/<application>/<platform>/post` on the VM
 1.  Configure the the Ops Agent to look for the application's metrics by
     running
-    `agent/ops-agent/<platform>/enable_<application>` on the VM
+    `agent/ops-agent/<platform>/enable_<application>` on the VM. This might
+    be a no-op for some applications.
 1.  Wait up to 7 minutes for the metric from
     `applications/<application>/metric_name.txt` to appear in the Google Cloud
     Monitoring backend.
