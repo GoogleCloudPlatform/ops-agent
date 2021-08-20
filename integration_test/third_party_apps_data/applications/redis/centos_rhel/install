@@ -1,0 +1,15 @@
+set -e
+
+source /etc/os-release
+VERSION_ID="${VERSION_ID%%.*}"
+if [ "${VERSION_ID}" == 6 ]; then
+  sudo yum -y install https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-el6-x86_64/Packages/c3d277e9b5af36becc944498dab7d41f9d16180dfbf22a3df957af256f5a5d26-hiredis-0.10.1-3.el6.x86_64.rpm
+elif [[ "${VERSION_ID}" == 8 && "${ID}" == rhel ]]; then
+  sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  sudo yum --enablerepo="epel" -y install hiredis
+else
+  sudo yum -y install epel-release
+  sudo yum --enablerepo="epel" -y install hiredis
+fi
+
+sudo yum -y install redis
