@@ -47,6 +47,22 @@ NOTE: Currently there are various directories that are included in
     currently being used to test agents besides the Ops Agent, and
 1.  to be a starting point so that nobody has to rewrite our logic for
     installing, e.g. redis on CentOS 7.
+    
+# Adding a new third-party application
+
+You will need to add a few files, and possibly change what's there currently,
+since much of it is there only as a starting point and example.
+
+For now, the test only runs on debian-10, so the list of files to edit can be
+simplified to:
+
+1.  `agent/ops-agent/linux/supported_applications.txt`
+1.  `applications/<application>/debian_ubuntu/install` (may already exist) to
+    install the application,
+1.  `applications/<application>/debian_ubuntu/post` (may already exist) to
+    configure the application to expose metrics somewhere.
+1.  `agent/ops-agent/linux/enable_<application>` to configure the Ops Agent to
+    read the application's metrics exposed in the previous step.
 
 # Seeing Test Logs
 
