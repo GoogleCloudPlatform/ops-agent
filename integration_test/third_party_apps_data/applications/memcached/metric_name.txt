@@ -1,0 +1,1 @@
+agent.googleapis.com/memcached/command_count

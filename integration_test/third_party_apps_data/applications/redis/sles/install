@@ -1,0 +1,24 @@
+set -e
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "${SUSE_VERSION}" == 12 ]]; then
+  sudo zypper -n addrepo --no-gpgcheck https://download.opensuse.org/repositories/openSUSE:/Backports:/SLE-12/standard/openSUSE:Backports:SLE-12.repo
+  sudo zypper -n addrepo --no-gpgcheck https://download.opensuse.org/repositories/server:/monitoring/SLE_12/server:monitoring.repo
+elif [[ "${SUSE_VERSION}" == 15 ]]; then
+  sudo zypper -n addrepo --no-gpgcheck https://download.opensuse.org/repositories/server:database/SLE_15/server:database.repo
+fi
+
+if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
+  if [[ "${VERSION_ID}" == 15.0 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-Cloud-Tools
+  elif [[ "${VERSION_ID}" == 15.1 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-devel-languages-python-aws
+  fi
+fi
+sudo zypper -n refresh
+
+sudo zypper -n --no-gpg-checks install redis libhiredis0_13
+sudo systemctl enable redis@default
+sudo cp -p /etc/redis/default.conf.example /etc/redis/default.conf
