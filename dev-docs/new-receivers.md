@@ -6,7 +6,7 @@
 
 Figure out the following details for the application to facilitate the config design later.
 
-- How many versions of the application are dominating in the industry, and whether we need to support more than one versions.
+- How many versions of the application are dominating in the industry, and whether we need to support more than one version.
 - For each of the version we need to support, figure out:
   - Logging
     - What logs: Once installed, what type of logs the application writes by default (e.g. Apache access logs and Apache
@@ -20,7 +20,7 @@ Figure out the following details for the application to facilitate the config de
     - How to expose metrics. If the application does not expose metrics by default (e.g. Apache does not), what
       application settings users need to specify to enable it.
     - Required user configurations (e.g. username) for the Ops Agent to talk to the application to get the metrics
-      (e.g. username, password, database name, port etc.)
+      (e.g. username, password, database name, port, etc.)
 
 Take Apache for example
 
@@ -65,7 +65,7 @@ Ops Agent config design. Below are some conventions we are trying to follow:
   enable log and metrics ingestion for an application (We will provide copy-pastable instructions).
 - A `type` field is required for each receiver.
 - Logging specific
-  - The receiver, without customization, scrapes this application's logs from common log file paths and parse them with
+  - The receiver, without customization, scrapes this application's logs from common log file paths and parses them with
     the common regex.
   - If the application allows users to customize the log file paths, the logging receiver(s) should have a corresponding
     `included_paths` parameter for custom log paths.
@@ -98,28 +98,25 @@ logging:
   service:
     pipelines:
       apache:
-        receivers:
-        - apache_access
-        - apache_error
+        receivers: [apache_access, apache_error]
 metrics:
   receivers:
     apache:
       type: apache
-      endpoint: #  Optional
+      endpoint: # Optional
       username: # Optional
       password: # Optional
   service:
     pipelines:
       apache:
-        receivers:
-        - apache
+        receivers: [apache]
 ```
 
 #### 2.3 Validations against invalid configurations for the receiver(s)
 
 Sample validation cases are like:
-- A required parameter is not set for the given receiver (s)
-- An unknown parameter is set for the receiver (s)
+- A required parameter is not set for the given receiver(s)
+- An unknown parameter is set for the receiver(s)
 - A combination of parameters is not supported for the receiver(s). E.g. parameter A should be required when parameter B
   is present.
 - The value of a certain parameter doesn't pass smell test (e.g. invalid url)
@@ -179,18 +176,18 @@ For each application, the documentation needs to cover the following:
     might be no-op for many applications.
   - How users customize the Ops Agent config file to enable scraping and ingesting telemetry for this application. This
     contains details about the new receiver type(s). For example:
-  - The default log file paths the logging receiver(s) expect logs to be at
-  - The default log formats the logging receiver(s) expect the logs to be in
-  - The default metrics endpoint / port the metrics receiver expect metrics to be exposed at
-  - Available parameters of the receiver(s) to control additional behaviors
+    - The default log file paths the logging receiver(s) expect logs to be at
+    - The default log formats the logging receiver(s) expect the logs to be in
+    - The default metrics endpoint / port the metrics receiver expect metrics to be exposed at
+    - Available parameters of the receiver(s) to control additional behaviors
   - Sample pipeline and receiver configuration snippets
 - How to query logs and metrics for this application once ingested
   - When it comes to querying the logs and metrics data points, which log name, log labels, metrics namespace, metrics
     names, metrics labels to filter by.
   - Which dashboards contain these metrics by default.
-- Common failure cases specific to this application and how to troubleshoot them
+- Common failure cases specific to this application and how to troubleshoot them.
   For each of the failure cases, document how users could detect that failure condition (e.g. via errors in the Ops
-  Agent log, via Ops Agent’s own health metrics), and how to fix it. Sample failure condition includes:
+  Agent log, via Ops Agent’s own health metrics), and how to fix it. Sample failure conditions include:
   - Failed to talk to the application because the endpoint that exposes metrics is down.
   - Failed to connect to a database because the username and password combo is invalid
 
@@ -212,7 +209,7 @@ integration-specific business logic. These files are defined inside https://gith
 - One file per application integration, defining receiver and processor struct(s) as needed for that application including both logging and metrics
 - Validation is performed with struct tags on each config struct (~zero per-type validation code)
 - Config structs have a method to generate OT and fluentbit config from the config struct. See details in the Pipelines() method below
-- Each application register its own receiver by specifying the receiver in the init() function of its own file. Adding support for a new application only needs to touch this one new file, unless it needs to add common utils.
+- Each application registers its own receiver by specifying the receiver in the init() function of its own file. Adding support for a new application only needs to touch this one new file, unless it needs to add common utils.
 
 Example code for IIS application
 
@@ -224,10 +221,12 @@ import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 type MetricsReceiverIis struct {
 	ConfigComponent `yaml:",inline"`
 
+	// This is a convenience struct with common fields like CollectionInterval.
 	MetricsReceiverShared `yaml:",inline"`
 }
 
 func (r MetricsReceiverIis) Type() string {
+	// This is the string that will identify this receiver in user configs.
 	return "iis"
 }
 
