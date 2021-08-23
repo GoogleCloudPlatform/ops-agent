@@ -37,10 +37,12 @@ func (c Component) generateSection() string {
 		}
 	}
 	for k, v := range c.Config {
-		lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v))
+		if v != "" {
+			lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v))
+		}
 	}
 	sort.Strings(lines)
-	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))
+	return fmt.Sprintf("[%s]\n%s", c.Kind, strings.Join(lines, "\n"))
 }
 
 type Pipeline struct {
@@ -50,7 +52,31 @@ type Pipeline struct {
 }
 
 type ModularConfig struct {
-	Pipelines      []Pipeline
-	InternalOutput Component
-	Output         Component
+	Components []Component
+	StateDir   string
+	LogsDir    string
+}
+
+// Generate the FluentBit main and parser config files for c.
+func (c ModularConfig) Generate() (mainConfig string, parserConfig string, err error) {
+	parserComponents := []Component{}
+	for _, p := range DefaultParsers {
+		parserComponents = append(parserComponents, p.Component())
+	}
+	components := append(parserComponents, c.Components...)
+	mainConfigSections := []string{
+		fmt.Sprintf(`@SET buffers_dir=%s/buffers
+@SET logs_dir=%s`, c.StateDir, c.LogsDir),
+	}
+	parserConfigSections := []string{}
+	for _, o := range components {
+		s := o.generateSection()
+		if o.Kind == "PARSER" {
+			parserConfigSections = append(parserConfigSections, s)
+		} else {
+			mainConfigSections = append(mainConfigSections, s)
+		}
+	}
+	parserConfigSections = append(parserConfigSections, "")
+	return strings.Join(mainConfigSections, "\n\n"), strings.Join(parserConfigSections, "\n\n"), nil
 }

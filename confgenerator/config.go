@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
@@ -242,6 +243,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	component
+	Components(tag string) []fluentbit.Component
 }
 
 var loggingReceiverTypes = &componentTypeRegistry{
@@ -274,6 +276,7 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 type LoggingProcessor interface {
 	component
 	GetField() string
+	Components(tag string, id string) []fluentbit.Component
 }
 
 type LoggingProcessorParseShared struct {

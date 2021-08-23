@@ -80,6 +80,16 @@ func (r LoggingReceiverWinevtlog) Type() string {
 	return "windows_event_log"
 }
 
+func (r LoggingReceiverWinevtlog) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{
+		fluentbit.WindowsEventlog{
+			Tag:          tag,
+			Channels:     r.Channels,
+			Interval_Sec: "1",
+		}.Component(),
+	}
+}
+
 func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} }, "windows")
 }

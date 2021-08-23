@@ -97,6 +97,78 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
+	components := []fluentbit.Component{}
+	if uc.Logging != nil {
+		generatedComponents, err := uc.Logging.generateFluentBitComponents(hostInfo)
+		if err != nil {
+			return "", "", err
+		}
+		components = append(components, generatedComponents...)
+	}
+	components = append(components, LoggingReceiverAgent{
+		UserAgent: userAgent,
+		OS:        hostInfo.OS,
+	}.Components("ops-agent")...)
+
+	mainConfig, parserConfig, err := fluentbit.ModularConfig{
+		Components: components,
+		StateDir:   stateDir,
+		LogsDir:    logsDir,
+	}.Generate()
+	if err != nil {
+		return "", "", err
+	}
+	return mainConfig, parserConfig, nil
+}
+
+func (l *Logging) generateFluentBitComponents(hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
+	out := []fluentbit.Component{
+		fluentbit.Service{}.Component(),
+	}
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
+	for pID, p := range l.Service.Pipelines {
+		for _, rID := range p.ReceiverIDs {
+			receiver, ok := l.Receivers[rID]
+			if !ok {
+				return nil, fmt.Errorf("receiver %q not found", rID)
+			}
+			tag := fmt.Sprintf("%s.%s", pID, rID)
+			out = append(out, receiver.Components(tag)...)
+			for _, processorID := range p.ProcessorIDs {
+				processor, ok := l.Processors[processorID]
+				if ok {
+					out = append(out, processor.Components(tag, processorID)...)
+				} else {
+					out = append(out, fluentbit.FilterParser{
+						Match:   tag,
+						KeyName: "message",
+						Parser:  processorID,
+					}.Component())
+				}
+			}
+			out = append(out, fluentbit.FilterModifyAddLogName{
+				Match:   tag,
+				LogName: rID,
+			}.Component())
+			out = append(out, fluentbit.FilterRewriteTag{
+				Match: tag,
+			}.Component())
+			out = append(out, fluentbit.FilterModifyRemoveLogName{
+				Match: rID,
+			}.Component())
+			exporterTags := []string{rID}
+			out = append(out, fluentbit.Stackdriver{
+				Match:     strings.Join(exporterTags, "|"),
+				Workers:   8,
+				UserAgent: userAgent,
+			}.Component())
+		}
+	}
+	return out, nil
+}
+
 type sortKey struct {
 	n   int
 	tag string
@@ -143,7 +215,7 @@ func outputSortKey(o fluentbit.Output) sortKey {
 // GenerateFluentBitConfigs generates FluentBit configuration from unified agents configuration
 // in yaml. GenerateFluentBitConfigs returns empty configurations without an error if `logging`
 // does not exist as a top-level field in the input yaml format.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func (uc *UnifiedConfig) GenerateFluentBitConfigs1(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	logging := uc.Logging
 	inputs := defaultTails(logsDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
@@ -331,8 +403,8 @@ func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines 
 			p, ok := processors[processorID]
 			fbFilterParser := fluentbit.FilterParser{
 				Match:   fmt.Sprintf("%s.*", pID),
-				Parser:  processorID,
 				KeyName: "message",
+				Parser:  processorID,
 			}
 			if ok && p.GetField() != "" {
 				fbFilterParser.KeyName = p.GetField()

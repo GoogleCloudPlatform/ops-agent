@@ -14,13 +14,38 @@
 
 package confgenerator
 
+import (
+	"fmt"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+)
+
 type LoggingProcessorParseJson struct {
 	ConfigComponent             `yaml:",inline"`
 	LoggingProcessorParseShared `yaml:",inline"`
 }
 
-func (r LoggingProcessorParseJson) Type() string {
+func (p LoggingProcessorParseJson) Type() string {
 	return "parse_json"
+}
+
+func (p LoggingProcessorParseJson) Components(tag string, id string) []fluentbit.Component {
+	parser := fmt.Sprintf("%s.%s", tag, id)
+	keyName := "message"
+	if p.Field != "" {
+		keyName = p.Field
+	}
+	return []fluentbit.Component{
+		fluentbit.FilterParser{
+			Match:   tag,
+			KeyName: keyName,
+			Parser:  parser,
+		}.Component(),
+		fluentbit.ParserJSON{
+			Name:       parser,
+			TimeKey:    p.TimeKey,
+			TimeFormat: p.TimeFormat,
+		}.Component(),
+	}
 }
 
 func init() {
@@ -34,8 +59,29 @@ type LoggingProcessorParseRegex struct {
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
 
-func (r LoggingProcessorParseRegex) Type() string {
+func (p LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
+}
+
+func (p LoggingProcessorParseRegex) Components(tag string, id string) []fluentbit.Component {
+	parser := fmt.Sprintf("%s.%s", tag, id)
+	keyName := "message"
+	if p.Field != "" {
+		keyName = p.Field
+	}
+	return []fluentbit.Component{
+		fluentbit.FilterParser{
+			Match:   tag,
+			KeyName: keyName,
+			Parser:  parser,
+		}.Component(),
+		fluentbit.ParserRegex{
+			Name:       parser,
+			Regex:      p.Regex,
+			TimeKey:    p.TimeKey,
+			TimeFormat: p.TimeFormat,
+		}.Component(),
+	}
 }
 
 func init() {

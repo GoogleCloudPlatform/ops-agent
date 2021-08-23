@@ -330,6 +330,7 @@ func (f FilterRewriteTag) Generate() (string, error) {
 
 type Parser interface {
 	Generate() (string, error)
+	Component() Component
 }
 
 // A ParserJSON represents the configuration data for fluentBit's JSON parser.
