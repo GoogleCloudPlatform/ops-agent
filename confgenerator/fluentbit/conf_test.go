@@ -327,6 +327,7 @@ func TestStackdriver(t *testing.T) {
 	s := Stackdriver{
 		Match:     "test_match",
 		UserAgent: "user_agent",
+		Workers:   8,
 	}
 	want := `[OUTPUT]
     Match_Regex       ^(test_match)$
