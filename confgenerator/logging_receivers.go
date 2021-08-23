@@ -15,10 +15,7 @@
 package confgenerator
 
 import (
-	"strings"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/shirou/gopsutil/host"
 )
 
 type LoggingReceiverFiles struct {
@@ -33,11 +30,9 @@ func (r LoggingReceiverFiles) Type() string {
 }
 
 func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
-	hostInfo, _ := host.Info() // XXX: from context
 	return []fluentbit.Component{
 		fluentbit.Tail{
 			Tag:          tag,
-			DB:           filepathJoin(hostInfo.OS, "${stateDir}", "buffers", strings.ReplaceAll(tag, ".", "_")),
 			IncludePaths: r.IncludePaths,
 			ExcludePaths: r.ExcludePaths,
 		}.Component(),

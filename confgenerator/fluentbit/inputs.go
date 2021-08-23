@@ -16,10 +16,18 @@ package fluentbit
 
 import (
 	"fmt"
+	"path"
 	"strings"
 )
 
 // TODO: Move structs out of conf.go
+
+// DBPath returns the database path for the given log tag
+func DBPath(tag string) string {
+	// TODO: More sanitization?
+	dir := strings.ReplaceAll(strings.ReplaceAll(tag, ".", "_"), "/", "_")
+	return path.Join("${stateDir}", "buffers", dir)
+}
 
 func (i Tail) Component() Component {
 	config := map[string]string{
@@ -28,7 +36,7 @@ func (i Tail) Component() Component {
 		"Tag":  i.Tag,
 		// TODO: Escaping?
 		"Path":           strings.Join(i.IncludePaths, ","),
-		"DB":             i.DB,
+		"DB":             DBPath(i.Tag),
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
@@ -96,7 +104,7 @@ func (i WindowsEventlog) Component() Component {
 			"Tag":          i.Tag,
 			"Channels":     i.Channels,
 			"Interval_Sec": "1",
-			"DB":           i.DB,
+			"DB":           DBPath(i.Tag),
 		},
 	}
 }

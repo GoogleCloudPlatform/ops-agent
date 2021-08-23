@@ -215,10 +215,11 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	}
 
 	mainConfig, parserConfig, err := fluentbit.Config{
-		Inputs:  inputs,
-		Outputs: outputs,
-		Filters: filters,
-		Parsers: parsers,
+		StateDir: stateDir,
+		Inputs:   inputs,
+		Outputs:  outputs,
+		Filters:  filters,
+		Parsers:  parsers,
 
 		UserAgent: userAgent,
 	}.Generate()
@@ -233,12 +234,10 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 	tails = []fluentbit.Input{}
 	tailFluentbit := fluentbit.Tail{
 		Tag:          "ops-agent-fluent-bit",
-		DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
 		IncludePaths: []string{filepathJoin(hostInfo.OS, logsDir, "logging-module.log")},
 	}
 	tailCollectd := fluentbit.Tail{
 		Tag:          "ops-agent-collectd",
-		DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-collectd"),
 		IncludePaths: []string{filepathJoin(hostInfo.OS, logsDir, "metrics-module.log")},
 	}
 	tails = append(tails, &tailFluentbit)
@@ -302,7 +301,6 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 				case *LoggingReceiverFiles:
 					fbTail := fluentbit.Tail{
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
-						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
 						IncludePaths: r.IncludePaths,
 					}
 					if len(r.ExcludePaths) != 0 {
@@ -321,7 +319,6 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
 						Channels:     strings.Join(r.Channels, ","),
 						Interval_Sec: "1",
-						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
 					})
 				}
 			}

@@ -22,8 +22,12 @@ import (
 
 var mainConfTemplate = template.Must(
 	template.New("fluentBitMainConf").
-		Funcs(template.FuncMap{"join": strings.Join}).
-		Parse(`[SERVICE]
+		Funcs(template.FuncMap{
+			"join":   strings.Join,
+			"dbpath": DBPath,
+		}).
+		Parse(`@SET stateDir {{.StateDir}}
+[SERVICE]
     Daemon                    off
     Flush                     1
     HTTP_Listen               0.0.0.0
@@ -79,7 +83,7 @@ var mainConfTemplate = template.Must(
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                {{.DB}}
+    DB                {{dbpath .Tag}}
 {{- with .ExcludePaths}}
     Exclude_Path      {{join . ","}}
 {{- end}}
@@ -107,7 +111,7 @@ var mainConfTemplate = template.Must(
 {{- define "wineventlog" -}}
 [INPUT]
     Channels     {{.Channels}}
-    DB           {{.DB}}
+    DB           {{dbpath .Tag}}
     Interval_Sec 1
     Name         winlog
     Tag          {{.Tag}}
@@ -204,6 +208,7 @@ var DefaultParsers = []Parser{
 }
 
 type Config struct {
+	StateDir  string
 	Inputs    []Input
 	Filters   []Filter
 	Outputs   []Output
@@ -364,7 +369,6 @@ type Tail struct {
 	Tag          string
 	IncludePaths []string
 	ExcludePaths []string
-	DB           string
 }
 
 func (t Tail) Generate() (string, error) {
@@ -396,7 +400,6 @@ type WindowsEventlog struct {
 	Tag          string
 	Channels     string // XXX: proper type
 	Interval_Sec string // XXX: stop ignoring?
-	DB           string
 }
 
 func (w WindowsEventlog) Generate() (string, error) {

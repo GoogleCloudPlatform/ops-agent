@@ -186,13 +186,12 @@ func TestTail(t *testing.T) {
 		{
 			tail: Tail{
 				Tag:          "test_tag",
-				DB:           "test_db",
 				IncludePaths: []string{"test_path", "test_path_2"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db
+    DB                ${stateDir}/buffers/test_tag
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -206,14 +205,13 @@ func TestTail(t *testing.T) {
 		{
 			tail: Tail{
 				Tag:          "test_tag",
-				DB:           "test_db",
 				IncludePaths: []string{"test_path"},
 				ExcludePaths: []string{"test_exclude_path"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db
+    DB                ${stateDir}/buffers/test_tag
     Exclude_Path      test_exclude_path
     Key               message
     Mem_Buf_Limit     10M
@@ -228,14 +226,13 @@ func TestTail(t *testing.T) {
 		{
 			tail: Tail{
 				Tag:          "test_tag",
-				DB:           "test_db",
 				IncludePaths: []string{"test_path"},
 				ExcludePaths: []string{"test_exclude_path/file1", "test_exclude_path/file2"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db
+    DB                ${stateDir}/buffers/test_tag
     Exclude_Path      test_exclude_path/file1,test_exclude_path/file2
     Key               message
     Mem_Buf_Limit     10M
@@ -305,11 +302,10 @@ func TestWinlog(t *testing.T) {
 				Tag:          "windows_event_log",
 				Channels:     "System,Application,Security",
 				Interval_Sec: "1",
-				DB:           "test_DB",
 			},
 			expectedWinlogConfig: `[INPUT]
     Channels     System,Application,Security
-    DB           test_DB
+    DB           ${stateDir}/buffers/windows_event_log
     Interval_Sec 1
     Name         winlog
     Tag          windows_event_log`,
@@ -377,11 +373,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 			inputs: []Input{
 				&Tail{
 					Tag:          "test_tag1",
-					DB:           "test_db1",
 					IncludePaths: []string{"test_path1"},
 				}, &Tail{
 					Tag:          "test_tag2",
-					DB:           "test_db2",
 					IncludePaths: []string{"test_path2"},
 				},
 				&Syslog{
@@ -412,7 +406,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db1
+    DB                ${stateDir}/buffers/test_tag1
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -426,7 +420,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db2
+    DB                ${stateDir}/buffers/test_tag2
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -485,23 +479,19 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 			inputs: []Input{
 				&Tail{
 					Tag:          "test_tag1",
-					DB:           "test_db1",
 					IncludePaths: []string{"test_path1"},
 				}, &Tail{
 					Tag:          "test_tag2",
-					DB:           "test_db2",
 					IncludePaths: []string{"test_path2"},
 				},
 				&WindowsEventlog{
 					Tag:          "win_tag1",
 					Channels:     "chl1",
 					Interval_Sec: "1",
-					DB:           "test_DB1",
 				}, &WindowsEventlog{
 					Tag:          "win_tag2",
 					Channels:     "chl2",
 					Interval_Sec: "1",
-					DB:           "test_DB2",
 				},
 			},
 			want: `[SERVICE]
@@ -520,7 +510,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db1
+    DB                ${stateDir}/buffers/test_tag1
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -534,7 +524,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                test_db2
+    DB                ${stateDir}/buffers/test_tag2
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -547,14 +537,14 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     Channels     chl1
-    DB           test_DB1
+    DB           ${stateDir}/buffers/win_tag1
     Interval_Sec 1
     Name         winlog
     Tag          win_tag1
 
 [INPUT]
     Channels     chl2
-    DB           test_DB2
+    DB           ${stateDir}/buffers/win_tag2
     Interval_Sec 1
     Name         winlog
     Tag          win_tag2`,
