@@ -1,0 +1,16 @@
+set -e
+
+sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel
+
+# TODO(sophieyfang): Below file is the same across all distros.
+# Have a single source file to be copied across all distros.
+cat <<EOF > hello.java
+class HelloWorld {
+  public static void main(String args[]) throws InterruptedException {
+    while (true) {
+      Thread.sleep(1000);
+    }
+  }
+}
+EOF
+javac hello.java

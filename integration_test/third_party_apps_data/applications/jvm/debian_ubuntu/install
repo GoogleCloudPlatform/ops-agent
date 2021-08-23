@@ -1,0 +1,17 @@
+set -e
+
+sudo apt update
+sudo apt install -y default-jdk
+
+# TODO(sophieyfang): Below file is the same across all distros.
+# Have a single source file to be copied across all distros.
+cat <<EOF > hello.java
+class HelloWorld {
+  public static void main(String args[]) throws InterruptedException {
+    while (true) {
+      Thread.sleep(1000);
+    }
+  }
+}
+EOF
+javac hello.java
