@@ -14,16 +14,20 @@
 
 package fluentbit
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // TODO: Move structs out of conf.go
 
 func (i Tail) Component() Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
-		"Name":           "tail",
-		"Tag":            i.Tag,
-		"Path":           i.Path,
+		"Name": "tail",
+		"Tag":  i.Tag,
+		// TODO: Escaping?
+		"Path":           strings.Join(i.IncludePaths, ","),
 		"DB":             i.DB,
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
@@ -48,8 +52,9 @@ func (i Tail) Component() Component {
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 		"Mem_Buf_Limit": "10M",
 	}
-	if i.ExcludePath != "" {
-		config["Exclude_Path"] = i.ExcludePath
+	if len(i.ExcludePaths) > 0 {
+		// TODO: Escaping?
+		config["Exclude_Path"] = strings.Join(i.ExcludePaths, ",")
 	}
 	return Component{
 		Kind:   "INPUT",

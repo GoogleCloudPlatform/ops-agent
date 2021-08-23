@@ -14,6 +14,13 @@
 
 package confgenerator
 
+import (
+	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/shirou/gopsutil/host"
+)
+
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -23,6 +30,18 @@ type LoggingReceiverFiles struct {
 
 func (r LoggingReceiverFiles) Type() string {
 	return "files"
+}
+
+func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
+	hostInfo, _ := host.Info() // XXX: from context
+	return []fluentbit.Component{
+		fluentbit.Tail{
+			Tag:          tag,
+			DB:           filepathJoin(hostInfo.OS, "${stateDir}", "buffers", strings.ReplaceAll(tag, ".", "_")),
+			IncludePaths: r.IncludePaths,
+			ExcludePaths: r.ExcludePaths,
+		}.Component(),
+	}
 }
 
 func init() {
@@ -39,6 +58,17 @@ type LoggingReceiverSyslog struct {
 
 func (r LoggingReceiverSyslog) Type() string {
 	return "syslog"
+}
+
+func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{
+		fluentbit.Syslog{
+			Tag:    tag,
+			Listen: r.ListenHost,
+			Mode:   r.TransportProtocol,
+			Port:   r.ListenPort,
+		}.Component(),
+	}
 }
 
 func init() {

@@ -185,9 +185,9 @@ func TestTail(t *testing.T) {
 	}{
 		{
 			tail: Tail{
-				Tag:  "test_tag",
-				DB:   "test_db",
-				Path: "test_path",
+				Tag:          "test_tag",
+				DB:           "test_db",
+				IncludePaths: []string{"test_path", "test_path_2"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
@@ -196,7 +196,7 @@ func TestTail(t *testing.T) {
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
-    Path              test_path
+    Path              test_path,test_path_2
     Read_from_Head    True
     Rotate_Wait       30
     Skip_Long_Lines   On
@@ -205,10 +205,10 @@ func TestTail(t *testing.T) {
 		},
 		{
 			tail: Tail{
-				Tag:         "test_tag",
-				DB:          "test_db",
-				Path:        "test_path",
-				ExcludePath: "test_exclude_path",
+				Tag:          "test_tag",
+				DB:           "test_db",
+				IncludePaths: []string{"test_path"},
+				ExcludePaths: []string{"test_exclude_path"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
@@ -227,16 +227,16 @@ func TestTail(t *testing.T) {
 		},
 		{
 			tail: Tail{
-				Tag:         "test_tag",
-				DB:          "test_db",
-				Path:        "test_path",
-				ExcludePath: "test_exclude_path/file1,test_excloud_path/file2",
+				Tag:          "test_tag",
+				DB:           "test_db",
+				IncludePaths: []string{"test_path"},
+				ExcludePaths: []string{"test_exclude_path/file1", "test_exclude_path/file2"},
 			},
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
     DB                test_db
-    Exclude_Path      test_exclude_path/file1,test_excloud_path/file2
+    Exclude_Path      test_exclude_path/file1,test_exclude_path/file2
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -376,13 +376,13 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 			name: "multiple tail and syslog plugins",
 			inputs: []Input{
 				&Tail{
-					Tag:  "test_tag1",
-					DB:   "test_db1",
-					Path: "test_path1",
+					Tag:          "test_tag1",
+					DB:           "test_db1",
+					IncludePaths: []string{"test_path1"},
 				}, &Tail{
-					Tag:  "test_tag2",
-					DB:   "test_db2",
-					Path: "test_path2",
+					Tag:          "test_tag2",
+					DB:           "test_db2",
+					IncludePaths: []string{"test_path2"},
 				},
 				&Syslog{
 					Mode:   "tcp",
@@ -484,13 +484,13 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 			name: "multiple tail and winlog plugins",
 			inputs: []Input{
 				&Tail{
-					Tag:  "test_tag1",
-					DB:   "test_db1",
-					Path: "test_path1",
+					Tag:          "test_tag1",
+					DB:           "test_db1",
+					IncludePaths: []string{"test_path1"},
 				}, &Tail{
-					Tag:  "test_tag2",
-					DB:   "test_db2",
-					Path: "test_path2",
+					Tag:          "test_tag2",
+					DB:           "test_db2",
+					IncludePaths: []string{"test_path2"},
 				},
 				&WindowsEventlog{
 					Tag:          "win_tag1",

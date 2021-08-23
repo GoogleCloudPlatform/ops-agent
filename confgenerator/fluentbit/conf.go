@@ -20,7 +20,10 @@ import (
 	"text/template"
 )
 
-var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[SERVICE]
+var mainConfTemplate = template.Must(
+	template.New("fluentBitMainConf").
+		Funcs(template.FuncMap{"join": strings.Join}).
+		Parse(`[SERVICE]
     Daemon                    off
     Flush                     1
     HTTP_Listen               0.0.0.0
@@ -77,13 +80,13 @@ var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[S
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
     DB                {{.DB}}
-{{- if (ne .ExcludePath "")}}
-    Exclude_Path      {{.ExcludePath}}
+{{- with .ExcludePaths}}
+    Exclude_Path      {{join . ","}}
 {{- end}}
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
-    Path              {{.Path}}
+    Path              {{join .IncludePaths ","}}
     Read_from_Head    True
     Rotate_Wait       30
     Skip_Long_Lines   On
@@ -358,10 +361,10 @@ type Input interface {
 
 // A Tail represents the configuration data for fluentBit's tail input plugin.
 type Tail struct {
-	Tag         string
-	Path        string
-	ExcludePath string
-	DB          string
+	Tag          string
+	IncludePaths []string
+	ExcludePaths []string
+	DB           string
 }
 
 func (t Tail) Generate() (string, error) {

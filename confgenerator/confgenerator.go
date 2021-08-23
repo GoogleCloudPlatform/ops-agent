@@ -232,14 +232,14 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tails []fluentbit.Input) {
 	tails = []fluentbit.Input{}
 	tailFluentbit := fluentbit.Tail{
-		Tag:  "ops-agent-fluent-bit",
-		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
-		Path: filepathJoin(hostInfo.OS, logsDir, "logging-module.log"),
+		Tag:          "ops-agent-fluent-bit",
+		DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
+		IncludePaths: []string{filepathJoin(hostInfo.OS, logsDir, "logging-module.log")},
 	}
 	tailCollectd := fluentbit.Tail{
-		Tag:  "ops-agent-collectd",
-		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-collectd"),
-		Path: filepathJoin(hostInfo.OS, logsDir, "metrics-module.log"),
+		Tag:          "ops-agent-collectd",
+		DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-collectd"),
+		IncludePaths: []string{filepathJoin(hostInfo.OS, logsDir, "metrics-module.log")},
 	}
 	tails = append(tails, &tailFluentbit)
 	if hostInfo.OS != "windows" {
@@ -301,12 +301,12 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 				switch r := r.(type) {
 				case *LoggingReceiverFiles:
 					fbTail := fluentbit.Tail{
-						Tag:  fmt.Sprintf("%s.%s", pID, rID),
-						DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
-						Path: strings.Join(r.IncludePaths, ","),
+						Tag:          fmt.Sprintf("%s.%s", pID, rID),
+						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
+						IncludePaths: r.IncludePaths,
 					}
 					if len(r.ExcludePaths) != 0 {
-						fbTail.ExcludePath = strings.Join(r.ExcludePaths, ",")
+						fbTail.ExcludePaths = r.ExcludePaths
 					}
 					inputs = append(inputs, &fbTail)
 				case *LoggingReceiverSyslog:
