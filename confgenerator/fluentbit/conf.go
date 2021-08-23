@@ -258,9 +258,7 @@ const (
     Match_Regex       ^({{.Match}})$
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
-    {{- if .Workers}}
-    workers           {{.Workers}}
-    {{- end}}
+    workers           8
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -743,7 +741,6 @@ func (w WindowsEventlog) renderConfig() (string, error) {
 type Stackdriver struct {
 	Match     string
 	UserAgent string
-	Workers   int
 }
 
 var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))

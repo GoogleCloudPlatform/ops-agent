@@ -112,7 +112,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	logging := uc.Logging
 	fbTails := defaultTails(logsDir, stateDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	fbStackdrivers := defaultStackdriverOutputs(hostInfo)
+	fbStackdrivers := defaultStackdriverOutputs()
 	fbSyslogs := []*fluentbit.Syslog{}
 	fbWinEventlogs := []*fluentbit.WindowsEventlog{}
 	fbFilterParserGroups := []fluentbit.FilterParserGroup{}
@@ -146,7 +146,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 			return "", "", err
 		}
 		extractedStackdrivers := []*fluentbit.Stackdriver{}
-		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines, hostInfo)
+		fbFilterAddLogNames, fbFilterRewriteTags, fbFilterRemoveLogNames, extractedStackdrivers, err = extractExporterPlugins(logging.Exporters, logging.Service.Pipelines)
 		if err != nil {
 			return "", "", err
 		}
@@ -189,11 +189,10 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 }
 
 // defaultStackdriverOutputs returns the default Stackdriver sections for the agents' own logs.
-func defaultStackdriverOutputs(hostInfo *host.InfoStat) (stackdrivers []*fluentbit.Stackdriver) {
+func defaultStackdriverOutputs() (stackdrivers []*fluentbit.Stackdriver) {
 	return []*fluentbit.Stackdriver{
 		{
-			Match:   "ops-agent-fluent-bit|ops-agent-collectd",
-			Workers: getWorkers(hostInfo),
+			Match: "ops-agent-fluent-bit|ops-agent-collectd",
 		},
 	}
 }
@@ -229,14 +228,6 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
-}
-
-func getWorkers(hostInfo *host.InfoStat) int {
-	if hostInfo.OS == "linux" {
-		return 8
-	} else {
-		return 0
-	}
 }
 
 func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]*fluentbit.Tail, []*fluentbit.Syslog, []*fluentbit.WindowsEventlog, error) {
@@ -311,7 +302,7 @@ func generateFluentBitFilters(processors map[string]LoggingProcessor, pipelines 
 	return groups, nil
 }
 
-func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) (
+func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[string]*LoggingPipeline) (
 	[]*fluentbit.FilterModifyAddLogName, []*fluentbit.FilterRewriteTag, []*fluentbit.FilterModifyRemoveLogName, []*fluentbit.Stackdriver, error) {
 	fbFilterModifyAddLogNames := []*fluentbit.FilterModifyAddLogName{}
 	fbFilterRewriteTags := []*fluentbit.FilterRewriteTag{}
@@ -340,8 +331,7 @@ func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[
 	}
 	for _, tags := range stackdriverExporters {
 		fbStackdrivers = append(fbStackdrivers, &fluentbit.Stackdriver{
-			Match:   strings.Join(tags, "|"),
-			Workers: getWorkers(hostInfo),
+			Match: strings.Join(tags, "|"),
 		})
 	}
 	return fbFilterModifyAddLogNames, fbFilterRewriteTags, fbFilterModifyRemoveLogNames, fbStackdrivers, nil
