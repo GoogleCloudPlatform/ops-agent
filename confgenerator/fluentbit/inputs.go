@@ -26,7 +26,7 @@ import (
 func DBPath(tag string) string {
 	// TODO: More sanitization?
 	dir := strings.ReplaceAll(strings.ReplaceAll(tag, ".", "_"), "/", "_")
-	return path.Join("${stateDir}", "buffers", dir)
+	return path.Join("${buffers_dir}", dir)
 }
 
 func (i Tail) Component() Component {

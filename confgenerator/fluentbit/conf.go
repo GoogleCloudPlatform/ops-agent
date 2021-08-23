@@ -26,7 +26,9 @@ var mainConfTemplate = template.Must(
 			"join":   strings.Join,
 			"dbpath": DBPath,
 		}).
-		Parse(`@SET stateDir {{.StateDir}}
+		Parse(`@SET buffers_dir {{.StateDir}}/buffers
+@SET logs_dir {{.LogsDir}}
+
 [SERVICE]
     Daemon                    off
     Flush                     1
@@ -209,6 +211,7 @@ var DefaultParsers = []Parser{
 
 type Config struct {
 	StateDir  string
+	LogsDir   string
 	Inputs    []Input
 	Filters   []Filter
 	Outputs   []Output

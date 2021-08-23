@@ -191,7 +191,7 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag
+    DB                ${buffers_dir}/test_tag
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -211,7 +211,7 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag
+    DB                ${buffers_dir}/test_tag
     Exclude_Path      test_exclude_path
     Key               message
     Mem_Buf_Limit     10M
@@ -232,7 +232,7 @@ func TestTail(t *testing.T) {
 			expectedTailConfig: `[INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag
+    DB                ${buffers_dir}/test_tag
     Exclude_Path      test_exclude_path/file1,test_exclude_path/file2
     Key               message
     Mem_Buf_Limit     10M
@@ -305,7 +305,7 @@ func TestWinlog(t *testing.T) {
 			},
 			expectedWinlogConfig: `[INPUT]
     Channels     System,Application,Security
-    DB           ${stateDir}/buffers/windows_event_log
+    DB           ${buffers_dir}/windows_event_log
     Interval_Sec 1
     Name         winlog
     Tag          windows_event_log`,
@@ -355,7 +355,10 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 	}{
 		{
 			name: "zero plugins",
-			want: `[SERVICE]
+			want: `@SET buffers_dir /state/buffers
+@SET logs_dir /logs
+
+[SERVICE]
     Daemon                    off
     Flush                     1
     HTTP_Listen               0.0.0.0
@@ -390,7 +393,10 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 					Tag:    "test_tag2",
 				},
 			},
-			want: `[SERVICE]
+			want: `@SET buffers_dir /state/buffers
+@SET logs_dir /logs
+
+[SERVICE]
     Daemon                    off
     Flush                     1
     HTTP_Listen               0.0.0.0
@@ -406,7 +412,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag1
+    DB                ${buffers_dir}/test_tag1
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -420,7 +426,7 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag2
+    DB                ${buffers_dir}/test_tag2
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -456,7 +462,9 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			got, _, err := Config{
-				Inputs: tc.inputs,
+				StateDir: "/state",
+				LogsDir:  "/logs",
+				Inputs:   tc.inputs,
 			}.Generate()
 			if err != nil {
 				t.Errorf("got error: %v, want no error", err)
@@ -494,7 +502,10 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 					Interval_Sec: "1",
 				},
 			},
-			want: `[SERVICE]
+			want: `@SET buffers_dir /state/buffers
+@SET logs_dir /logs
+
+[SERVICE]
     Daemon                    off
     Flush                     1
     HTTP_Listen               0.0.0.0
@@ -510,7 +521,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag1
+    DB                ${buffers_dir}/test_tag1
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -524,7 +535,7 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 [INPUT]
     Buffer_Chunk_Size 512k
     Buffer_Max_Size   5M
-    DB                ${stateDir}/buffers/test_tag2
+    DB                ${buffers_dir}/test_tag2
     Key               message
     Mem_Buf_Limit     10M
     Name              tail
@@ -537,14 +548,14 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 
 [INPUT]
     Channels     chl1
-    DB           ${stateDir}/buffers/win_tag1
+    DB           ${buffers_dir}/win_tag1
     Interval_Sec 1
     Name         winlog
     Tag          win_tag1
 
 [INPUT]
     Channels     chl2
-    DB           ${stateDir}/buffers/win_tag2
+    DB           ${buffers_dir}/win_tag2
     Interval_Sec 1
     Name         winlog
     Tag          win_tag2`,
@@ -554,7 +565,9 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			got, _, err := Config{
-				Inputs: tc.inputs,
+				StateDir: "/state",
+				LogsDir:  "/logs",
+				Inputs:   tc.inputs,
 			}.Generate()
 			if err != nil {
 				t.Errorf("got error: %v, want no error", err)
