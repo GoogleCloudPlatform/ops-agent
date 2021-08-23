@@ -26,8 +26,8 @@ var mainConfTemplate = template.Must(
 			"join":   strings.Join,
 			"dbpath": DBPath,
 		}).
-		Parse(`@SET buffers_dir {{.StateDir}}/buffers
-@SET logs_dir {{.LogsDir}}
+		Parse(`@SET buffers_dir={{.StateDir}}/buffers
+@SET logs_dir={{.LogsDir}}
 
 [SERVICE]
     Daemon                    off

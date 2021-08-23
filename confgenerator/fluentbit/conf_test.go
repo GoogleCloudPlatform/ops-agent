@@ -355,8 +355,8 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 	}{
 		{
 			name: "zero plugins",
-			want: `@SET buffers_dir /state/buffers
-@SET logs_dir /logs
+			want: `@SET buffers_dir=/state/buffers
+@SET logs_dir=/logs
 
 [SERVICE]
     Daemon                    off
@@ -393,8 +393,8 @@ func TestGenerateFluentBitMainConfig(t *testing.T) {
 					Tag:    "test_tag2",
 				},
 			},
-			want: `@SET buffers_dir /state/buffers
-@SET logs_dir /logs
+			want: `@SET buffers_dir=/state/buffers
+@SET logs_dir=/logs
 
 [SERVICE]
     Daemon                    off
@@ -502,8 +502,8 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 					Interval_Sec: "1",
 				},
 			},
-			want: `@SET buffers_dir /state/buffers
-@SET logs_dir /logs
+			want: `@SET buffers_dir=/state/buffers
+@SET logs_dir=/logs
 
 [SERVICE]
     Daemon                    off
