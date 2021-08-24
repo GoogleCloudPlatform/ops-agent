@@ -56,14 +56,12 @@ func (r LoggingReceiverSyslog) Type() string {
 }
 
 func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{
-		fluentbit.Syslog{
-			Tag:    tag,
-			Listen: r.ListenHost,
-			Mode:   r.TransportProtocol,
-			Port:   r.ListenPort,
-		}.Component(),
-	}
+	return fluentbit.Syslog{
+		Tag:    tag,
+		Listen: r.ListenHost,
+		Mode:   r.TransportProtocol,
+		Port:   r.ListenPort,
+	}.Components()
 }
 
 func init() {

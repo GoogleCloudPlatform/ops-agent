@@ -70,8 +70,8 @@ func (i Tail) Component() Component {
 	}
 }
 
-func (i Syslog) Component() Component {
-	return Component{
+func (i Syslog) Components() []Component {
+	return []Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/syslog
@@ -80,7 +80,7 @@ func (i Syslog) Component() Component {
 			"Mode":   i.Mode,
 			"Listen": i.Listen,
 			"Port":   fmt.Sprintf("%d", i.Port),
-			"Parser": "lib:default_message_parser",
+			"Parser": i.Tag,
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
 			"storage.type": "filesystem",
@@ -92,7 +92,15 @@ func (i Syslog) Component() Component {
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 			"Mem_Buf_Limit": "10M",
 		},
-	}
+	}, {
+		// FIXME: This is not new, but we shouldn't be disabling syslog protocol parsing by passing a custom Parser - Fluentbit includes builtin syslog protocol support, and we should enable/expose that.
+		Kind: "PARSER",
+		Config: map[string]string{
+			"Name":   i.Tag,
+			"Format": "regex",
+			"Regex":  `^(?<message>.*)$`,
+		},
+	}}
 }
 
 func (i WindowsEventlog) Component() Component {
