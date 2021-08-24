@@ -1,1 +1,1 @@
-the agent config file is not valid. detailed error: metrics receiver with type "mssql" is not supported. Supported metrics receiver types: [hostmetrics].
+the agent config file is not valid. detailed error: metrics receiver with type "mssql" is not supported. Supported metrics receiver types: [hostmetrics, nginx].
