@@ -120,7 +120,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 			expectedParserConfig := readFileContent(t, testName, platform.OS, goldenParserPath, true)
 
 			// Generate the actual conf files.
-			mainConf, parserConf, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
+			mainConf, parserConf, err := uc.GenerateFluentBitConfigsModular(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
 			if err != nil {
 				t.Fatalf("GenerateFluentBitConfigs got: %v", err)
 			}
@@ -245,7 +245,7 @@ func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
 		return err
 	}
 
-	if _, _, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
+	if _, _, err := uc.GenerateFluentBitConfigsModular(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat); err != nil {
 		return err
 	}
 
