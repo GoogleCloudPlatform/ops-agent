@@ -309,7 +309,7 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 				case *LoggingReceiverWinevtlog:
 					inputs = append(inputs, &fluentbit.WindowsEventlog{
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
-						Channels:     strings.Join(r.Channels, ","),
+						Channels:     r.Channels,
 						Interval_Sec: "1",
 					})
 				}

@@ -112,7 +112,7 @@ var mainConfTemplate = template.Must(
 {{- end -}}
 {{- define "wineventlog" -}}
 [INPUT]
-    Channels     {{.Channels}}
+    Channels     {{join .Channels ","}}
     DB           {{dbpath .Tag}}
     Interval_Sec 1
     Name         winlog
@@ -401,7 +401,7 @@ func (s Syslog) Generate() (string, error) {
 // A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
 type WindowsEventlog struct {
 	Tag          string
-	Channels     string // XXX: proper type
+	Channels     []string
 	Interval_Sec string // XXX: stop ignoring?
 }
 

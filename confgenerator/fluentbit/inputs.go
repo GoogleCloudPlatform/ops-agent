@@ -102,7 +102,7 @@ func (i WindowsEventlog) Component() Component {
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
 			"Name":         "winlog",
 			"Tag":          i.Tag,
-			"Channels":     i.Channels,
+			"Channels":     strings.Join(i.Channels, ","),
 			"Interval_Sec": "1",
 			"DB":           DBPath(i.Tag),
 		},

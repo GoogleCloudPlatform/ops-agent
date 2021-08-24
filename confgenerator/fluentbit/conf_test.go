@@ -300,7 +300,7 @@ func TestWinlog(t *testing.T) {
 		{
 			wineventlog: WindowsEventlog{
 				Tag:          "windows_event_log",
-				Channels:     "System,Application,Security",
+				Channels:     []string{"System", "Application", "Security"},
 				Interval_Sec: "1",
 			},
 			expectedWinlogConfig: `[INPUT]
@@ -495,11 +495,11 @@ func TestGenerateFluentBitMainConfigWindows(t *testing.T) {
 				},
 				&WindowsEventlog{
 					Tag:          "win_tag1",
-					Channels:     "chl1",
+					Channels:     []string{"chl1"},
 					Interval_Sec: "1",
 				}, &WindowsEventlog{
 					Tag:          "win_tag2",
-					Channels:     "chl2",
+					Channels:     []string{"chl2"},
 					Interval_Sec: "1",
 				},
 			},
