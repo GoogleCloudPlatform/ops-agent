@@ -16,7 +16,7 @@ metrics:
   receivers:
     nginxmetrics:
       type: nginx
-      endpoint: http://localhost:8080/status
+      endpoint: http://localhost/status
       collection_interval: 30s
   service:
     pipelines:

@@ -16,15 +16,11 @@
 package fluentbit
 
 import (
-	"fmt"
-	"net"
-	"sort"
 	"strings"
 	"text/template"
 )
 
-const (
-	mainConfTemplate = `[SERVICE]
+var mainConfTemplate = template.Must(template.New("fluentBitMainConf").Parse(`[SERVICE]
     # https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
     # Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
     Flush      1
@@ -53,145 +49,47 @@ const (
     # we don't want them to all be loaded into the memory.
     storage.max_chunks_up      128
 
-{{range .TailConfigSections -}}
-{{.}}
+{{- range .Inputs}}
 
-{{end}}
-{{- range .SyslogConfigSections -}}
-{{.}}
+{{.Generate}}
+{{- end}}
+{{- range .Filters}}
 
-{{end}}
-{{- range .WineventlogConfigSections -}}
-{{.}}
+{{.Generate}}
+{{- end}}
+{{- range .Outputs}}
 
-{{end}}
-{{- range .FilterParserConfigSections -}}
-{{.}}
-
-{{end}}
-{{- range .FilterModifyAddLogNameConfigSections -}}
-{{.}}
-
-{{end}}
-{{- range .FilterRewriteTagSections -}}
-{{.}}
-
-{{end}}
-{{- range .FilterModifyRemoveLogNameConfigSections -}}
-{{.}}
-
-{{end}}
-{{- range .StackdriverConfigSections -}}
-{{.}}
-
-{{end}}`
-
-	parserConfTemplate = `[PARSER]
-    Name        lib:default_message_parser
-    Format      regex
-    Regex       ^(?<message>.*)$
-
-[PARSER]
-    Name        lib:apache
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:apache2
-    Format      regex
-    Regex       ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name   lib:apache_error
-    Format regex
-    Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
-
-[PARSER]
-    Name        lib:mongodb
-    Format      regex
-    Regex       ^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L
-
-[PARSER]
-    Name        lib:nginx
-    Format      regex
-    Regex       ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")
-    Time_Key    time
-    Time_Format %d/%b/%Y:%H:%M:%S %z
-
-[PARSER]
-    Name        lib:syslog-rfc5424
-    Format      regex
-    Regex       ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$
-    Time_Key    time
-    Time_Format %Y-%m-%dT%H:%M:%S.%L%Z
-
-[PARSER]
-    Name        lib:syslog-rfc3164
-    Format      regex
-    Regex       /^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/
-    Time_Key    time
-    Time_Format %b %d %H:%M:%S
-
-{{range .JSONParserConfigSections -}}
-{{.}}
-
-{{end}}
-{{- range .RegexParserConfigSections -}}
-{{.}}
-
-{{end}}`
-
-	filterModifyAddLogNameConf = `[FILTER]
+{{.Generate}}
+{{- end}}
+{{- define "filter_modify_add_log_name" -}}
+[FILTER]
     Name  modify
     Match {{.Match}}
-    Add   logName {{.LogName}}`
-
-	filterModifyRemoveLogNameConf = `[FILTER]
+    Add   logName {{.LogName}}
+{{- end -}}
+{{- define "filter_modify_remove_log_name" -}}
+[FILTER]
     Name   modify
     Match  {{.Match}}
-    Remove logName`
-
-	filterParserConf = `[FILTER]
+    Remove logName
+{{- end -}}
+{{- define "filter_parser" -}}
+[FILTER]
     Name     parser
     Match    {{.Match}}
     Key_Name {{.KeyName}}
-    Parser   {{.Parser}}`
-
-	filterRewriteTagConf = `[FILTER]
+    Parser   {{.Parser}}
+{{- end -}}
+{{- define "filter_rewrite_tag" -}}
+[FILTER]
     Name                  rewrite_tag
     Match                 {{.Match}}
     Rule                  $logName .* $logName false
     Emitter_Storage.type  filesystem
-    Emitter_Mem_Buf_Limit 10M`
-
-	parserJSONConf = `[PARSER]
-    Name        {{.Name}}
-    Format      json
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
-{{- if (ne .TimeFormat "")}}
-    Time_Format {{.TimeFormat}}
-{{- end}}`
-
-	parserRegexConf = `[PARSER]
-    Name        {{.Name}}
-    Format      regex
-    Regex       {{.Regex}}
-{{- if (ne .TimeKey "")}}
-    Time_Key    {{.TimeKey}}
-{{- end}}
-{{- if (ne .TimeFormat "")}}
-    Time_Format {{.TimeFormat}}
-{{- end}}`
-
-	tailConf = `[INPUT]
+    Emitter_Mem_Buf_Limit 10M
+{{- end -}}
+{{- define "tail" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
     Name               tail
     Tag                {{.Tag}}
@@ -222,9 +120,10 @@ const (
     # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
     # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit      10M`
-
-	syslogConf = `[INPUT]
+    Mem_Buf_Limit      10M
+{{- end -}}
+{{- define "syslog" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/syslog
     Name           syslog
     Tag            {{.Tag}}
@@ -242,25 +141,25 @@ const (
     # This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
     # When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
     # as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-    Mem_Buf_Limit  10M`
-
-	wineventlogConf = `[INPUT]
+    Mem_Buf_Limit  10M
+{{- end -}}
+{{- define "wineventlog" -}}
+[INPUT]
     # https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
     Name           winlog
     Tag            {{.Tag}}
     Channels       {{.Channels}}
     Interval_Sec   1
-    DB             {{.DB}}`
-
-	stackdriverConf = `[OUTPUT]
+    DB             {{.DB}}
+{{- end -}}
+{{- define "stackdriver" -}}
+[OUTPUT]
     # https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
     Name              stackdriver
     Match_Regex       ^({{.Match}})$
     resource          gce_instance
     stackdriver_agent {{.UserAgent}}
-    {{- if .Workers}}
-    workers           {{.Workers}}
-    {{- end}}
+    workers           8
 
     # https://docs.fluentbit.io/manual/administration/scheduling-and-retries
     # After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -270,179 +169,145 @@ const (
     # Enable TLS support.
     tls         On
     # Do not force certificate validation.
-    tls.verify  Off`
-)
+    tls.verify  Off
+{{- end -}}
+`))
 
-type mainConfigSections struct {
-	TailConfigSections                      []string
-	SyslogConfigSections                    []string
-	WineventlogConfigSections               []string
-	FilterParserConfigSections              []string
-	FilterModifyAddLogNameConfigSections    []string
-	FilterRewriteTagSections                []string
-	FilterModifyRemoveLogNameConfigSections []string
-	StackdriverConfigSections               []string
+var parserConfTemplate = template.Must(template.New("fluentBitParserConf").Parse(`{{- range .Parsers -}}
+{{.Generate}}
+
+{{end -}}
+{{define "parserJSON" -}}
+[PARSER]
+    Name        {{.Name}}
+    Format      json
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
+{{- end}}
+{{- if (ne .TimeFormat "")}}
+    Time_Format {{.TimeFormat}}
+{{- end}}
+{{- end -}}
+{{- define "parserRegex" -}}
+[PARSER]
+    Name        {{.Name}}
+    Format      regex
+    Regex       {{.Regex}}
+{{- if (ne .TimeKey "")}}
+    Time_Key    {{.TimeKey}}
+{{- end}}
+{{- if (ne .TimeFormat "")}}
+    Time_Format {{.TimeFormat}}
+{{- end}}
+{{- end -}}
+`))
+
+var DefaultParsers = []Parser{
+	&ParserRegex{
+		Name:  "lib:default_message_parser",
+		Regex: `^(?<message>.*)$`,
+	},
+	&ParserRegex{
+		Name:       "lib:apache",
+		Regex:      `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:       "lib:apache2",
+		Regex:      `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:  "lib:apache_error",
+		Regex: `^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
+	},
+	&ParserRegex{
+		Name:       "lib:mongodb",
+		Regex:      `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
+		TimeKey:    "time",
+		TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+	},
+	&ParserRegex{
+		Name:       "lib:nginx",
+		Regex:      `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
+		TimeKey:    "time",
+		TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+	},
+	&ParserRegex{
+		Name:       "lib:syslog-rfc5424",
+		Regex:      `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
+		TimeKey:    "time",
+		TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
+	},
+	&ParserRegex{
+		Name:       "lib:syslog-rfc3164",
+		Regex:      `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
+		TimeKey:    "time",
+		TimeFormat: "%b %d %H:%M:%S",
+	},
 }
 
-type parserConfigSections struct {
-	JSONParserConfigSections  []string
-	RegexParserConfigSections []string
+type Config struct {
+	Inputs    []Input
+	Filters   []Filter
+	Outputs   []Output
+	Parsers   []Parser
+	UserAgent string
 }
 
-// GenerateFluentBitMainConfig generates a FluentBit main configuration.
-func GenerateFluentBitMainConfig(tails []*Tail, syslogs []*Syslog, wineventlogs []*WindowsEventlog, filterParserGroups []FilterParserGroup,
-	filterModifyAddLogNames []*FilterModifyAddLogName,
-	filterRewriteTags []*FilterRewriteTag,
-	filterModifyRemoveLogNames []*FilterModifyRemoveLogName,
-	stackdrivers []*Stackdriver, userAgent string) (string, error) {
-	tailConfigSections := []string{}
-	syslogConfigSections := []string{}
-	wineventlogConfigSections := []string{}
-	filterParserConfigSections := []string{}
-	filterModifyAddLogNameConfigSections := []string{}
-	filterRewriteTagSections := []string{}
-	filterModifyRemoveLogNameConfigSections := []string{}
-	stackdriverConfigSections := []string{}
-	for _, t := range tails {
-		configSection, err := t.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		tailConfigSections = append(tailConfigSections, configSection)
-	}
-	for _, s := range syslogs {
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		syslogConfigSections = append(syslogConfigSections, configSection)
-	}
-	for _, w := range wineventlogs {
-		configSection, err := w.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		wineventlogConfigSections = append(wineventlogConfigSections, configSection)
-	}
-	for _, filterParsers := range filterParserGroups {
-		var filters []string
-		for _, f := range filterParsers {
-			configSection, err := f.renderConfig()
-			if err != nil {
-				return "", err
-			}
-			filters = append(filters, configSection)
-		}
-		filterParserConfigSections = append(filterParserConfigSections, strings.Join(filters, "\n\n"))
-	}
-	for _, f := range filterModifyAddLogNames {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterModifyAddLogNameConfigSections = append(filterModifyAddLogNameConfigSections, configSection)
-	}
-	for _, f := range filterRewriteTags {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterRewriteTagSections = append(filterRewriteTagSections, configSection)
-	}
-	for _, f := range filterModifyRemoveLogNames {
-		configSection, err := f.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		filterModifyRemoveLogNameConfigSections = append(filterModifyRemoveLogNameConfigSections, configSection)
-	}
-	for _, s := range stackdrivers {
-		s.UserAgent = userAgent
-		configSection, err := s.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		stackdriverConfigSections = append(stackdriverConfigSections, configSection)
-	}
-
-	// make sure all collections are sorted so that generated configs are consistently generated
-	sort.Strings(tailConfigSections)
-	sort.Strings(syslogConfigSections)
-	sort.Strings(wineventlogConfigSections)
-	sort.Strings(filterParserConfigSections)
-	sort.Strings(filterModifyAddLogNameConfigSections)
-	sort.Strings(filterRewriteTagSections)
-	sort.Strings(filterModifyRemoveLogNameConfigSections)
-	sort.Strings(stackdriverConfigSections)
-
-	configSections := mainConfigSections{
-		TailConfigSections:                      tailConfigSections,
-		SyslogConfigSections:                    syslogConfigSections,
-		WineventlogConfigSections:               wineventlogConfigSections,
-		FilterParserConfigSections:              filterParserConfigSections,
-		FilterModifyAddLogNameConfigSections:    filterModifyAddLogNameConfigSections,
-		FilterRewriteTagSections:                filterRewriteTagSections,
-		FilterModifyRemoveLogNameConfigSections: filterModifyRemoveLogNameConfigSections,
-		StackdriverConfigSections:               stackdriverConfigSections,
-	}
-	mt, err := template.New("fluentBitMainConf").Parse(mainConfTemplate)
-	if err != nil {
-		return "", err
-	}
-
+func (c Config) generateMain() (string, error) {
 	var mainConfigBuilder strings.Builder
-	if err := mt.Execute(&mainConfigBuilder, configSections); err != nil {
+	if err := mainConfTemplate.Execute(&mainConfigBuilder, c); err != nil {
 		return "", err
 	}
 	return mainConfigBuilder.String(), nil
 }
 
-// GenerateFluentBitParserConfig generates a FluentBit parser configuration.
-func GenerateFluentBitParserConfig(jsonParsers []*ParserJSON, regexParsers []*ParserRegex) (string, error) {
-	jsonParserConfigSections := []string{}
-	for _, j := range jsonParsers {
-		configSection, err := j.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		jsonParserConfigSections = append(jsonParserConfigSections, configSection)
+func (c Config) generateParser() (string, error) {
+	parsers := Config{
+		Parsers: append(DefaultParsers, c.Parsers...),
 	}
-
-	regexParserConfigSections := []string{}
-	for _, r := range regexParsers {
-		configSection, err := r.renderConfig()
-		if err != nil {
-			return "", err
-		}
-		regexParserConfigSections = append(regexParserConfigSections, configSection)
-	}
-
 	var parserConfigBuilder strings.Builder
-	parserTemplate, err := template.New("fluentBitParserConf").Parse(parserConfTemplate)
-	if err != nil {
-		return "", err
-	}
-	parsers := parserConfigSections{
-		JSONParserConfigSections:  jsonParserConfigSections,
-		RegexParserConfigSections: regexParserConfigSections,
-	}
-	if err := parserTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
+	if err := parserConfTemplate.Execute(&parserConfigBuilder, parsers); err != nil {
 		return "", err
 	}
 	return parserConfigBuilder.String(), nil
 }
 
-type emptyFieldErr struct {
-	plugin string
-	field  string
+func (c Config) Generate() (mainConfig string, parserConfig string, err error) {
+	mainConfig, err = c.generateMain()
+	if err != nil {
+		return "", "", err
+	}
+
+	parserConfig, err = c.generateParser()
+	if err != nil {
+		return "", "", err
+	}
+
+	return mainConfig, parserConfig, nil
 }
 
-func (e emptyFieldErr) Error() string {
-	return fmt.Sprintf("%q plugin should not have empty field: %q", e.plugin, e.field)
+type Filter interface {
+	Generate() (string, error)
 }
 
 // A FilterParserGroup represents a list of filters to be applied in order.
 type FilterParserGroup []*FilterParser
+
+func (g FilterParserGroup) Generate() (string, error) {
+	var filters []string
+	for _, f := range g {
+		configSection, err := f.Generate()
+		if err != nil {
+			return "", err
+		}
+		filters = append(filters, configSection)
+	}
+	return strings.Join(filters, "\n\n"), nil
+}
 
 // A FilterParser represents the configuration data for fluentBit's filter parser plugin.
 type FilterParser struct {
@@ -451,29 +316,9 @@ type FilterParser struct {
 	Parser  string
 }
 
-var filterParserTemplate = template.Must(template.New("filter_parser").Parse(filterParserConf))
-
-func (f FilterParser) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Match",
-		}
-	}
-	if f.KeyName == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "KeyName",
-		}
-	}
-	if f.Parser == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Parser",
-		}
-	}
+func (f FilterParser) Generate() (string, error) {
 	var renderedFilterParserConfig strings.Builder
-	if err := filterParserTemplate.Execute(&renderedFilterParserConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterParserConfig, "filter_parser", f); err != nil {
 		return "", err
 	}
 	return renderedFilterParserConfig.String(), nil
@@ -486,23 +331,9 @@ type FilterModifyAddLogName struct {
 	LogName string
 }
 
-var filterModifyAddLogNameTemplate = template.Must(template.New("filter_modify_add_log_name").Parse(filterModifyAddLogNameConf))
-
-func (f FilterModifyAddLogName) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - add logName",
-			field:  "Match",
-		}
-	}
-	if f.LogName == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - add logName",
-			field:  "LogName",
-		}
-	}
+func (f FilterModifyAddLogName) Generate() (string, error) {
 	var renderedFilterModifyAddLogNameConfig strings.Builder
-	if err := filterModifyAddLogNameTemplate.Execute(&renderedFilterModifyAddLogNameConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyAddLogNameConfig, "filter_modify_add_log_name", f); err != nil {
 		return "", err
 	}
 	return renderedFilterModifyAddLogNameConfig.String(), nil
@@ -514,17 +345,9 @@ type FilterModifyRemoveLogName struct {
 	Match string
 }
 
-var filterModifyRemoveLogNameTemplate = template.Must(template.New("filter_modify_remove_log_name").Parse(filterModifyRemoveLogNameConf))
-
-func (f FilterModifyRemoveLogName) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter modify - remove logName",
-			field:  "Match",
-		}
-	}
+func (f FilterModifyRemoveLogName) Generate() (string, error) {
 	var renderedFilterModifyRemoveLogNameConfig strings.Builder
-	if err := filterModifyRemoveLogNameTemplate.Execute(&renderedFilterModifyRemoveLogNameConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterModifyRemoveLogNameConfig, "filter_modify_remove_log_name", f); err != nil {
 		return "", err
 	}
 	return renderedFilterModifyRemoveLogNameConfig.String(), nil
@@ -535,20 +358,16 @@ type FilterRewriteTag struct {
 	Match string
 }
 
-var filterRewriteTagTemplate = template.Must(template.New("filter_rewrite_tag").Parse(filterRewriteTagConf))
-
-func (f FilterRewriteTag) renderConfig() (string, error) {
-	if f.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "filter parser",
-			field:  "Match",
-		}
-	}
+func (f FilterRewriteTag) Generate() (string, error) {
 	var renderedFilterRewriteTagConfig strings.Builder
-	if err := filterRewriteTagTemplate.Execute(&renderedFilterRewriteTagConfig, f); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedFilterRewriteTagConfig, "filter_rewrite_tag", f); err != nil {
 		return "", err
 	}
 	return renderedFilterRewriteTagConfig.String(), nil
+}
+
+type Parser interface {
+	Generate() (string, error)
 }
 
 // A ParserJSON represents the configuration data for fluentBit's JSON parser.
@@ -558,18 +377,9 @@ type ParserJSON struct {
 	TimeFormat string
 }
 
-var parserJSONTemplate = template.Must(template.New("parserJSON").Parse(parserJSONConf))
-
-// renderConfig generates a section for configure fluentBit JSON parser.
-func (p ParserJSON) renderConfig() (string, error) {
-	if p.Name == "" {
-		return "", emptyFieldErr{
-			plugin: "json parser",
-			field:  "name",
-		}
-	}
+func (p ParserJSON) Generate() (string, error) {
 	var b strings.Builder
-	if err := parserJSONTemplate.Execute(&b, p); err != nil {
+	if err := parserConfTemplate.ExecuteTemplate(&b, "parserJSON", p); err != nil {
 		return "", err
 	}
 	return b.String(), nil
@@ -583,27 +393,16 @@ type ParserRegex struct {
 	TimeFormat string
 }
 
-var parserRegexTemplate = template.Must(template.New("parserRegex").Parse(parserRegexConf))
-
-// renderConfig generates a section for configure fluentBit Regex parser.
-func (p ParserRegex) renderConfig() (string, error) {
-	if p.Name == "" {
-		return "", emptyFieldErr{
-			plugin: "regex parser",
-			field:  "name",
-		}
-	}
-	if p.Regex == "" {
-		return "", emptyFieldErr{
-			plugin: "regex parser",
-			field:  "regex",
-		}
-	}
+func (p ParserRegex) Generate() (string, error) {
 	var b strings.Builder
-	if err := parserRegexTemplate.Execute(&b, p); err != nil {
+	if err := parserConfTemplate.ExecuteTemplate(&b, "parserRegex", p); err != nil {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+type Input interface {
+	Generate() (string, error)
 }
 
 // A Tail represents the configuration data for fluentBit's tail input plugin.
@@ -614,92 +413,25 @@ type Tail struct {
 	DB          string
 }
 
-// renderConfig generates a section for configure fluentBit tail parser.
-func (t Tail) renderConfig() (string, error) {
-	if t.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "Tag",
-		}
-	}
-	//TODO: Add check that Path is a comma separated list.
-	if t.Path == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "Path",
-		}
-	}
-	if t.DB == "" {
-		return "", emptyFieldErr{
-			plugin: "tail",
-			field:  "DB",
-		}
-	}
+func (t Tail) Generate() (string, error) {
 	var renderedTailConfig strings.Builder
-	if err := tailTemplate.Execute(&renderedTailConfig, t); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedTailConfig, "tail", t); err != nil {
 		return "", err
 	}
 	return renderedTailConfig.String(), nil
 }
 
-var tailTemplate = template.Must(template.New("tail").Parse(tailConf))
-
-type invalidValueErr struct {
-	plugin                string
-	field                 string
-	validValueExplanation string
-}
-
-func (e invalidValueErr) Error() string {
-	return fmt.Sprintf("got invalid value for %q plugin's field %q, should be %s", e.plugin, e.field, e.validValueExplanation)
-}
-
 // A Syslog represents the configuration data for fluentBit's syslog input plugin.
 type Syslog struct {
+	Tag    string
 	Mode   string
 	Listen string
 	Port   uint16
-	Tag    string
 }
 
-var syslogTemplate = template.Must(template.New("syslog").Parse(syslogConf))
-
-// renderConfig generates a section for configure fluentBit syslog input plugin.
-func (s Syslog) renderConfig() (string, error) {
-	switch m := s.Mode; m {
-	case "tcp", "udp":
-		if net.ParseIP(s.Listen) == nil {
-			return "", invalidValueErr{
-				plugin:                "syslog",
-				field:                 "Listen",
-				validValueExplanation: "a valid IP",
-			}
-		}
-		if s.Port == 0 {
-			return "", emptyFieldErr{
-				plugin: "syslog",
-				field:  "Port",
-			}
-		}
-	case "unix_tcp", "unix_udp":
-		// TODO: pending decision on setting up unix_tcp, unix_udp
-		fallthrough
-	default:
-		return "", invalidValueErr{
-			plugin:                "syslog",
-			field:                 "Mode",
-			validValueExplanation: "one of \"tcp\", \"udp\"",
-		}
-	}
-	if s.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "syslog",
-			field:  "Tag",
-		}
-	}
-
+func (s Syslog) Generate() (string, error) {
 	var renderedSyslogConfig strings.Builder
-	if err := syslogTemplate.Execute(&renderedSyslogConfig, s); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedSyslogConfig, "syslog", s); err != nil {
 		return "", err
 	}
 	return renderedSyslogConfig.String(), nil
@@ -713,58 +445,27 @@ type WindowsEventlog struct {
 	DB           string
 }
 
-var wineventlogTemplate = template.Must(template.New("wineventlog").Parse(wineventlogConf))
-
-// renderConfig generates a section for configure fluentBit wineventlog input plugin.
-func (w WindowsEventlog) renderConfig() (string, error) {
-	//TODO: Add check that Channels is a comma separated list.
-	if w.Channels == "" {
-		return "", emptyFieldErr{
-			plugin: "windows_event_log",
-			field:  "Channels",
-		}
-	}
-
-	if w.Tag == "" {
-		return "", emptyFieldErr{
-			plugin: "windows_event_log",
-			field:  "Tag",
-		}
-	}
-
+func (w WindowsEventlog) Generate() (string, error) {
 	var renderedWineventlogConfig strings.Builder
-	if err := wineventlogTemplate.Execute(&renderedWineventlogConfig, w); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedWineventlogConfig, "wineventlog", w); err != nil {
 		return "", err
 	}
 	return renderedWineventlogConfig.String(), nil
+}
+
+type Output interface {
+	Generate() (string, error)
 }
 
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
 	Match     string
 	UserAgent string
-	Workers   int
 }
 
-var stackdriverTemplate = template.Must(template.New("stackdriver").Parse(stackdriverConf))
-
-// renderConfig generates a section for configure fluentBit stackdriver output plugin.
-func (s Stackdriver) renderConfig() (string, error) {
-	if s.Match == "" {
-		return "", emptyFieldErr{
-			plugin: "stackdriver",
-			field:  "Match",
-		}
-	}
-	if s.UserAgent == "" {
-		return "", emptyFieldErr{
-			plugin: "stackdriver",
-			field:  "stackdriver_agent",
-		}
-	}
-
+func (s Stackdriver) Generate() (string, error) {
 	var renderedStackdriverConfig strings.Builder
-	if err := stackdriverTemplate.Execute(&renderedStackdriverConfig, s); err != nil {
+	if err := mainConfTemplate.ExecuteTemplate(&renderedStackdriverConfig, "stackdriver", s); err != nil {
 		return "", err
 	}
 	return renderedStackdriverConfig.String(), nil
