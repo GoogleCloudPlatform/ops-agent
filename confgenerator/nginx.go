@@ -45,7 +45,7 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
-				otel.AddPrefix("custom.googleapis.com"),
+				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
 	}}
