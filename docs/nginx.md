@@ -64,7 +64,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      nginxpipeline:
+      nginx_pipeline:
         receivers:
           - nginx_metrics
 ```

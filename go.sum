@@ -19,8 +19,6 @@ github.com/go-playground/universal-translator v0.18.0/go.mod h1:UvRDBj+xPUEGrFYl
 github.com/go-playground/validator/v10 v10.4.1/go.mod h1:nlOn6nFhuKACm19sB/8EGNn9GlaMV7XkbRSipzJ0Ii4=
 github.com/go-playground/validator/v10 v10.9.0 h1:NgTtmN58D0m8+UuxtYmGztBJB7VnPgjj221I1QHci2A=
 github.com/go-playground/validator/v10 v10.9.0/go.mod h1:74x4gJWsvQexRdW8Pn3dXSGrTK4nAUsbPlLADvpJkos=
-github.com/goccy/go-yaml v1.9.3-0.20210811043341-441d134d8b0e h1:X3epwr3SpdeKDu3oCGj6VjYSRXQM4GBS01jkGJHLzCY=
-github.com/goccy/go-yaml v1.9.3-0.20210811043341-441d134d8b0e/go.mod h1:U/jl18uSupI5rdI2jmuCswEA2htH9eXfferR3KfscvA=
 github.com/goccy/go-yaml v1.9.3-0.20210817022459-e2008a9296a0 h1:e82xLf84cojfl6paauKIl7bLsvx6qzIrvzErSgGAMLI=
 github.com/goccy/go-yaml v1.9.3-0.20210817022459-e2008a9296a0/go.mod h1:U/jl18uSupI5rdI2jmuCswEA2htH9eXfferR3KfscvA=
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
