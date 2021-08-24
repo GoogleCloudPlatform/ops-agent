@@ -14,6 +14,8 @@
 
 package confgenerator
 
+import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+
 type LoggingProcessorParseJson struct {
 	ConfigComponent             `yaml:",inline"`
 	LoggingProcessorParseShared `yaml:",inline"`
@@ -21,6 +23,15 @@ type LoggingProcessorParseJson struct {
 
 func (r LoggingProcessorParseJson) Type() string {
 	return "parse_json"
+}
+
+func (p LoggingProcessorParseJson) Components(tag string, i int) []fluentbit.Component {
+	filter, parser := p.LoggingProcessorParseShared.Components(tag, i)
+	parser.Config["Format"] = "json"
+	return []fluentbit.Component{
+		filter,
+		parser,
+	}
 }
 
 func init() {
@@ -36,6 +47,16 @@ type LoggingProcessorParseRegex struct {
 
 func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
+}
+
+func (p LoggingProcessorParseRegex) Components(tag string, i int) []fluentbit.Component {
+	filter, parser := p.LoggingProcessorParseShared.Components(tag, i)
+	parser.Config["Format"] = "regex"
+	parser.Config["Regex"] = p.Regex
+	return []fluentbit.Component{
+		filter,
+		parser,
+	}
 }
 
 func init() {

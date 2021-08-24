@@ -43,14 +43,27 @@ func (c Component) generateSection() string {
 	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))
 }
 
-type Pipeline struct {
+type ModularConfig struct {
+	Variables  map[string]string
 	Components []Component
-	LogName    string
-	Internal   bool
 }
 
-type ModularConfig struct {
-	Pipelines      []Pipeline
-	InternalOutput Component
-	Output         Component
+func (c ModularConfig) Generate() (string, string, error) {
+	var parts []string
+	for k, v := range c.Variables {
+		parts = append(parts, fmt.Sprintf("@SET %s=%s", k, v))
+	}
+	sort.Strings(parts)
+
+	var parserParts []string
+
+	for _, c := range c.Components {
+		out := c.generateSection()
+		if c.Kind == "PARSER" {
+			parserParts = append(parserParts, out)
+		} else {
+			parts = append(parts, out)
+		}
+	}
+	return strings.Join(parts, "\n"), strings.Join(parserParts, "\n"), nil
 }

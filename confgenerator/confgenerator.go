@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 	"text/template"
@@ -95,6 +96,121 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 		}
 	}
 	return out, nil
+}
+
+func (uc *UnifiedConfig) GenerateFluentBitConfigsModular(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
+	components, err := uc.Logging.generateFluentbitComponents(userAgent)
+	if err != nil {
+		return "", "", err
+	}
+
+	c := fluentbit.ModularConfig{
+		Variables: map[string]string{
+			"buffers_dir": path.Join(stateDir, "buffers"),
+			"logs_dir":    logsDir,
+		},
+		Components: components,
+	}
+	return c.Generate()
+}
+
+type fbSource struct {
+	tag        string
+	components []fluentbit.Component
+}
+
+func (l *Logging) generateFluentbitComponents(userAgent string) ([]fluentbit.Component, error) {
+	var out []fluentbit.Component
+	if l != nil && l.Service != nil {
+		var sources []fbSource
+		for pID, p := range l.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := l.Receivers[rID]
+				if !ok {
+					return nil, fmt.Errorf("receiver %q not found", rID)
+				}
+				tag := fmt.Sprintf("%s.%s", pID, rID)
+				components := receiver.Components(tag)
+				for i, pID := range p.ProcessorIDs {
+					processor, ok := l.Processors[pID]
+					if !ok {
+						return nil, fmt.Errorf("processor %q not found", pID)
+					}
+					components = append(components, processor.Components(tag, i)...)
+				}
+				components = append(components, setLogNameComponents(tag, rID)...)
+				sources = append(sources, fbSource{tag, components})
+			}
+		}
+		sort.Slice(sources, func(i, j int) bool { return sources[i].tag < sources[j].tag })
+
+		// TODO: Add output
+
+		for _, s := range sources {
+			out = append(out, s.components...)
+		}
+	}
+	// TODO: Add internal log files
+	return out, nil
+}
+
+func setLogNameComponents(tag, logName string) []fluentbit.Component {
+	// TODO: Can we just set log_name_key in the output plugin and avoid this mess?
+	return []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match": tag,
+				"Add":   fmt.Sprintf("logName %s", logName),
+				"Name":  "modify",
+			},
+		},
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Emitter_Mem_Buf_Limit": "10M",
+				"Emitter_Storage.type":  "filesystem",
+				"Match":                 tag,
+				"Name":                  "rewrite_tag",
+				"Rule":                  "$logName .* $logName false",
+			},
+		},
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match":  logName,
+				"Name":   "modify",
+				"Remove": "logName",
+			},
+		},
+	}
+}
+
+func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Component, fluentbit.Component) {
+	parserName := fmt.Sprintf("%s.%d", tag, i)
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Match":    tag,
+			"Name":     "parser",
+			"Key_Name": p.Field,
+			"Parser":   parserName,
+		},
+	}
+	parser := fluentbit.Component{
+		Kind: "PARSER",
+		Config: map[string]string{
+			"Name": parserName,
+		},
+	}
+	if p.TimeFormat != "" {
+		parser.Config["Time_Format"] = p.TimeFormat
+	}
+	if p.TimeKey != "" {
+		parser.Config["Time_Key"] = p.TimeKey
+	}
+	return filter, parser
 }
 
 type sortKey struct {
