@@ -77,35 +77,6 @@ var platforms = []platformConfig{
 	},
 }
 
-func init() {
-	// filepathJoin is overriden for tests in order to
-	// impersonate the behavior of an alternate OS.
-	filepathJoin = func(goos string, elem ...string) string {
-		separator := "/"
-		if goos == "windows" {
-			separator = `\`
-		}
-		return strings.Join(elem, separator)
-	}
-}
-
-func TestDefaultFilepathJoin(t *testing.T) {
-	t.Parallel()
-
-	// Test that the default filepathJoin function does not
-	// generate paths that are dependent on the specified OS.
-	abc := filepath.Join("a", "b", "c")
-	linuxAbc := defaultFilepathJoin("linux", "a", "b", "c")
-	windowsAbc := defaultFilepathJoin("windows", "a", "b", "c")
-
-	if abc != linuxAbc {
-		t.Errorf(`defaultFilepathJoin("linux") does not match filepath.Join: %q`, linuxAbc)
-	}
-	if abc != windowsAbc {
-		t.Errorf(`defaultFilepathJoin("windows") does not match filepath.Join: %q`, windowsAbc)
-	}
-}
-
 func TestGenerateConfsWithValidInput(t *testing.T) {
 	t.Parallel()
 	for _, platform := range platforms {

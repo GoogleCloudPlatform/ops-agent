@@ -17,7 +17,6 @@ package confgenerator
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -27,14 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/shirou/gopsutil/host"
 )
-
-// filepathJoin uses the real filepath.Join in actual executable
-// but can be overriden in tests to impersonate an alternate OS.
-var filepathJoin = defaultFilepathJoin
-
-func defaultFilepathJoin(_ string, elem ...string) string {
-	return filepath.Join(elem...)
-}
 
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
@@ -154,7 +145,7 @@ func outputSortKey(o fluentbit.Output) sortKey {
 // does not exist as a top-level field in the input yaml format.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	logging := uc.Logging
-	inputs := defaultTails(logsDir, stateDir, hostInfo)
+	inputs := defaultTails(logsDir, hostInfo)
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	outputs := defaultStackdriverOutputs()
 	filters := []fluentbit.Filter{}
@@ -174,7 +165,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 		}
 
 		var err error
-		extractedInputs, err := generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, stateDir, hostInfo)
+		extractedInputs, err := generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines)
 		if err != nil {
 			return "", "", err
 		}
@@ -215,10 +206,12 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	}
 
 	mainConfig, parserConfig, err := fluentbit.Config{
-		Inputs:  inputs,
-		Outputs: outputs,
-		Filters: filters,
-		Parsers: parsers,
+		StateDir: stateDir,
+		LogsDir:  logsDir,
+		Inputs:   inputs,
+		Outputs:  outputs,
+		Filters:  filters,
+		Parsers:  parsers,
 
 		UserAgent: userAgent,
 	}.Generate()
@@ -229,17 +222,15 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 }
 
 // defaultTails returns the default Tail sections for the agents' own logs.
-func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tails []fluentbit.Input) {
+func defaultTails(logsDir string, hostInfo *host.InfoStat) (tails []fluentbit.Input) {
 	tails = []fluentbit.Input{}
 	tailFluentbit := fluentbit.Tail{
-		Tag:  "ops-agent-fluent-bit",
-		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-fluent-bit"),
-		Path: filepathJoin(hostInfo.OS, logsDir, "logging-module.log"),
+		Tag:          "ops-agent-fluent-bit",
+		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}
 	tailCollectd := fluentbit.Tail{
-		Tag:  "ops-agent-collectd",
-		DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", "ops-agent-collectd"),
-		Path: filepathJoin(hostInfo.OS, logsDir, "metrics-module.log"),
+		Tag:          "ops-agent-collectd",
+		IncludePaths: []string{"${logs_dir}/metrics-module.log"},
 	}
 	tails = append(tails, &tailFluentbit)
 	if hostInfo.OS != "windows" {
@@ -253,7 +244,8 @@ func defaultTails(logsDir string, stateDir string, hostInfo *host.InfoStat) (tai
 func defaultStackdriverOutputs() (stackdrivers []fluentbit.Output) {
 	return []fluentbit.Output{
 		&fluentbit.Stackdriver{
-			Match: "ops-agent-fluent-bit|ops-agent-collectd",
+			Match:   "ops-agent-fluent-bit|ops-agent-collectd",
+			Workers: 8,
 		},
 	}
 }
@@ -291,7 +283,7 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
-func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, stateDir string, hostInfo *host.InfoStat) ([]fluentbit.Input, error) {
+func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline) ([]fluentbit.Input, error) {
 	inputs := []fluentbit.Input{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
@@ -300,12 +292,11 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 				switch r := r.(type) {
 				case *LoggingReceiverFiles:
 					fbTail := fluentbit.Tail{
-						Tag:  fmt.Sprintf("%s.%s", pID, rID),
-						DB:   filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
-						Path: strings.Join(r.IncludePaths, ","),
+						Tag:          fmt.Sprintf("%s.%s", pID, rID),
+						IncludePaths: r.IncludePaths,
 					}
 					if len(r.ExcludePaths) != 0 {
-						fbTail.ExcludePath = strings.Join(r.ExcludePaths, ",")
+						fbTail.ExcludePaths = r.ExcludePaths
 					}
 					inputs = append(inputs, &fbTail)
 				case *LoggingReceiverSyslog:
@@ -318,9 +309,8 @@ func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map
 				case *LoggingReceiverWinevtlog:
 					inputs = append(inputs, &fluentbit.WindowsEventlog{
 						Tag:          fmt.Sprintf("%s.%s", pID, rID),
-						Channels:     strings.Join(r.Channels, ","),
+						Channels:     r.Channels,
 						Interval_Sec: "1",
-						DB:           filepathJoin(hostInfo.OS, stateDir, "buffers", pID+"_"+rID),
 					})
 				}
 			}
@@ -383,7 +373,8 @@ func extractExporterPlugins(exporters map[string]LoggingExporter, pipelines map[
 	}
 	for _, tags := range stackdriverExporters {
 		outputs = append(outputs, &fluentbit.Stackdriver{
-			Match: strings.Join(tags, "|"),
+			Match:   strings.Join(tags, "|"),
+			Workers: 8,
 		})
 	}
 	return filters, outputs, nil
