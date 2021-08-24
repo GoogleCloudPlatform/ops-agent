@@ -152,15 +152,18 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			}
 		}
 		sort.Slice(sources, func(i, j int) bool { return sources[i].tag < sources[j].tag })
+		sort.Strings(logNames)
 
 		for _, s := range sources {
 			out = append(out, s.components...)
 		}
-		out = append(out, fluentbit.Stackdriver{
-			Match:     strings.Join(logNames, "|"),
-			Workers:   8,
-			UserAgent: userAgent,
-		}.Component())
+		if len(logNames) > 0 {
+			out = append(out, fluentbit.Stackdriver{
+				Match:     strings.Join(logNames, "|"),
+				Workers:   8,
+				UserAgent: userAgent,
+			}.Component())
+		}
 	}
 	// TODO: Use receivers instead of generating Tail objects directly.
 	if hostInfo.OS != "windows" {
@@ -219,11 +222,13 @@ func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Co
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Match":    tag,
-			"Name":     "parser",
-			"Key_Name": p.Field,
-			"Parser":   parserName,
+			"Match":  tag,
+			"Name":   "parser",
+			"Parser": parserName,
 		},
+	}
+	if p.Field != "" {
+		filter.Config["Key_Name"] = p.Field
 	}
 	parser := fluentbit.Component{
 		Kind: "PARSER",
