@@ -64,6 +64,7 @@ Ops Agent config design. Below are some conventions we are trying to follow:
   configuration does not contain 3rd party application specific configuration. Users need to define the pipeline(s) to
   enable log and metrics ingestion for an application (We will provide copy-pastable instructions).
 - A `type` field is required for each receiver.
+- The convention for receiver / processor ID is to use underscore as word delimiter. e.g. `apache_access`.
 - Logging specific
   - The receiver, without customization, scrapes this application's logs from common log file paths and parses them with
     the common regex.
@@ -76,6 +77,7 @@ Ops Agent config design. Below are some conventions we are trying to follow:
     default log file paths / formats might change based on the value of the `version` parameter.
 - Metrics specific
   - The application specific metrics receiver(s) scrape the metrics data points from the application, and convert them into Google Cloud Monitoring data model formats.
+  - A `collection_interval` parameter is highly recommended for each metrics receiver.
   - If there are required user settings (e.g. username, password) for the Ops Agent to talk to the application, the metrics receiver(s) should have corresponding parameter.
   - If we need to support more than one versions of the application, and the metrics setup vary significantly across versions, the metrics receivers should have a corresponding `version` parameter. And the way this receiver works might change based on the value of the `version` parameter.
 
