@@ -19,7 +19,7 @@ type Service struct {
 
 func (s Service) Component() Component {
 	return Component{
-		Kind: "SYSTEM",
+		Kind: "SERVICE",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
 			// Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
