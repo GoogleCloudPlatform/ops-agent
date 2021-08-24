@@ -64,19 +64,19 @@ func (c ModularConfig) Generate() (mainConfig string, parserConfig string, err e
 		parserComponents = append(parserComponents, p.Component())
 	}
 	components := append(parserComponents, c.Components...)
+	sectionMap := map[string][]string{}
+	for _, o := range components {
+		s := o.generateSection()
+		sectionMap[o.Kind] = append(sectionMap[o.Kind], s)
+	}
 	mainConfigSections := []string{
 		fmt.Sprintf(`@SET buffers_dir=%s/buffers
 @SET logs_dir=%s`, c.StateDir, c.LogsDir),
 	}
-	parserConfigSections := []string{}
-	for _, o := range components {
-		s := o.generateSection()
-		if o.Kind == "PARSER" {
-			parserConfigSections = append(parserConfigSections, s)
-		} else {
-			mainConfigSections = append(mainConfigSections, s)
-		}
-	}
-	parserConfigSections = append(parserConfigSections, "")
+	mainConfigSections = append(mainConfigSections, sectionMap["SERVICE"]...)
+	mainConfigSections = append(mainConfigSections, sectionMap["INPUT"]...)
+	mainConfigSections = append(mainConfigSections, sectionMap["FILTER"]...)
+	mainConfigSections = append(mainConfigSections, sectionMap["OUTPUT"]...)
+	parserConfigSections := append(sectionMap["PARSER"], "")
 	return strings.Join(mainConfigSections, "\n\n"), strings.Join(parserConfigSections, "\n\n"), nil
 }
