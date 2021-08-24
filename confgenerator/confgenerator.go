@@ -123,6 +123,8 @@ type fbSource struct {
 
 func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
 	var out []fluentbit.Component
+	out = append(out, fluentbit.Service{}.Component())
+
 	if l != nil && l.Service != nil {
 		var sources []fbSource
 		var logNames []string

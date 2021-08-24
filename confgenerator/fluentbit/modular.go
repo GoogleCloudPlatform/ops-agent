@@ -54,6 +54,8 @@ func (c ModularConfig) Generate() (string, string, error) {
 		parts = append(parts, fmt.Sprintf("@SET %s=%s", k, v))
 	}
 	sort.Strings(parts)
+	// Blank line
+	parts = append(parts, "")
 
 	var parserParts []string
 
