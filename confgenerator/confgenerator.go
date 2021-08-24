@@ -139,6 +139,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
 					if !ok {
+						processor, ok = LegacyBuiltinProcessors[pID]
+					}
+					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
 					components = append(components, processor.Components(tag, i)...)

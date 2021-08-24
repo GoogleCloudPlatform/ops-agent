@@ -62,3 +62,54 @@ func (p LoggingProcessorParseRegex) Components(tag string, i int) []fluentbit.Co
 func init() {
 	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseRegex{} })
 }
+
+var LegacyBuiltinProcessors = map[string]LoggingProcessor{
+	"lib:default_message_parser": &LoggingProcessorParseRegex{
+		Regex: `^(?<message>.*)$`,
+	},
+	"lib:apache": &LoggingProcessorParseRegex{
+		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+		},
+	},
+	"lib:apache2": &LoggingProcessorParseRegex{
+		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+		},
+	},
+	"lib:apache_error": &LoggingProcessorParseRegex{
+		Regex: `^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
+	},
+	"lib:mongodb": &LoggingProcessorParseRegex{
+		Regex: `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+		},
+	},
+	"lib:nginx": &LoggingProcessorParseRegex{
+		Regex: `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+		},
+	},
+	"lib:syslog-rfc5424": &LoggingProcessorParseRegex{
+		Regex: `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
+		},
+	},
+	"lib:syslog-rfc3164": &LoggingProcessorParseRegex{
+		Regex: `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
+		LoggingProcessorParseShared: LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%b %d %H:%M:%S",
+		},
+	},
+}
