@@ -20,7 +20,7 @@ func (o Stackdriver) Component() Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
-		"Match_Regex":       fmt.Sprintf("^(%s)$", o.Match), // FIXME: properly escape, join from list
+		"Match_Regex":       fmt.Sprintf("^(%s)$", o.Match),
 		"resource":          "gce_instance",
 		"stackdriver_agent": o.UserAgent,
 

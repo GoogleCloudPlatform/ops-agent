@@ -18,6 +18,7 @@ package confgenerator
 import (
 	"fmt"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -124,6 +125,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string) ([]fluentbit.Com
 	var out []fluentbit.Component
 	if l != nil && l.Service != nil {
 		var sources []fbSource
+		var logNames []string
 		for pID, p := range l.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := l.Receivers[rID]
@@ -140,16 +142,20 @@ func (l *Logging) generateFluentbitComponents(userAgent string) ([]fluentbit.Com
 					components = append(components, processor.Components(tag, i)...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
+				logNames = append(logNames, regexp.QuoteMeta(rID))
 				sources = append(sources, fbSource{tag, components})
 			}
 		}
 		sort.Slice(sources, func(i, j int) bool { return sources[i].tag < sources[j].tag })
 
-		// TODO: Add output
-
 		for _, s := range sources {
 			out = append(out, s.components...)
 		}
+		out = append(out, fluentbit.Stackdriver{
+			Match:     strings.Join(logNames, "|"),
+			Workers:   8,
+			UserAgent: userAgent,
+		}.Component())
 	}
 	// TODO: Add internal log files
 	return out, nil
