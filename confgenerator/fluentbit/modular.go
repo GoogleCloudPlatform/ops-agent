@@ -57,15 +57,20 @@ func (c ModularConfig) Generate() (string, string, error) {
 	// Blank line
 	parts = append(parts, "")
 
-	var parserParts []string
-
+	// TODO: Consider removing this sorting and just outputting the components in native order.
+	sectionsByKind := map[string][]string{}
 	for _, c := range c.Components {
 		out := c.generateSection()
-		if c.Kind == "PARSER" {
-			parserParts = append(parserParts, out)
-		} else {
-			parts = append(parts, out)
-		}
+		sectionsByKind[c.Kind] = append(sectionsByKind[c.Kind], out)
+	}
+	parserParts := sectionsByKind["PARSER"]
+	delete(sectionsByKind, "PARSER")
+	for _, k := range []string{"SERVICE", "INPUT", "FILTER", "OUTPUT"} {
+		parts = append(parts, sectionsByKind[k]...)
+		delete(sectionsByKind, k)
+	}
+	if len(sectionsByKind) > 0 {
+		return "", "", fmt.Errorf("unknown fluentbit config sections %+v", sectionsByKind)
 	}
 	return strings.Join(parts, "\n"), strings.Join(parserParts, "\n"), nil
 }

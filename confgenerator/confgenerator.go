@@ -160,16 +160,16 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		}.Component())
 	}
 	// TODO: Use receivers instead of generating Tail objects directly.
-	out = append(out, fluentbit.Tail{
-		Tag:          "ops-agent-fluent-bit",
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
-	}.Component())
 	if hostInfo.OS != "windows" {
 		out = append(out, fluentbit.Tail{
 			Tag:          "ops-agent-collectd",
 			IncludePaths: []string{"${logs_dir}/metrics-module.log"},
 		}.Component())
 	}
+	out = append(out, fluentbit.Tail{
+		Tag:          "ops-agent-fluent-bit",
+		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+	}.Component())
 	out = append(out, fluentbit.Stackdriver{
 		Match:     "ops-agent-fluent-bit|ops-agent-collectd",
 		Workers:   8,
