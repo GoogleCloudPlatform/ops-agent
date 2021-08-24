@@ -64,7 +64,7 @@ metrics:
 
 | Metric                                           | Data Type | Unit        | Labels | Description |
 | ---                                              | ---       | ---         | ---    | ---         | 
-| custom.googleapis.com/nginx.requests             | sum       | requests    |        | Total number of requests made to the server. |
-| custom.googleapis.com/nginx.connections_accepted | sum       | connections |        | Total number of accepted client connections. |
-| custom.googleapis.com/nginx.connections_handled  | sum       | connections |        | Total number of handled connections. |
-| custom.googleapis.com/nginx.connections_current  | gauge     | connections | state  | Current number of connections. |
+| workload.googleapis.com/nginx.requests             | sum       | requests    |        | Total number of requests made to the server. |
+| workload.googleapis.com/nginx.connections_accepted | sum       | connections |        | Total number of accepted client connections. |
+| workload.googleapis.com/nginx.connections_handled  | sum       | connections |        | Total number of handled connections. |
+| workload.googleapis.com/nginx.connections_current  | gauge     | connections | state  | Current number of connections. |
