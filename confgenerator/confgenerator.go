@@ -101,7 +101,7 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 
 func (uc *UnifiedConfig) GenerateFluentBitConfigsModular(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	components, err := uc.Logging.generateFluentbitComponents(userAgent)
+	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {
 		return "", "", err
 	}
@@ -121,7 +121,7 @@ type fbSource struct {
 	components []fluentbit.Component
 }
 
-func (l *Logging) generateFluentbitComponents(userAgent string) ([]fluentbit.Component, error) {
+func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
 	var out []fluentbit.Component
 	if l != nil && l.Service != nil {
 		var sources []fbSource
@@ -157,7 +157,23 @@ func (l *Logging) generateFluentbitComponents(userAgent string) ([]fluentbit.Com
 			UserAgent: userAgent,
 		}.Component())
 	}
-	// TODO: Add internal log files
+	// TODO: Use receivers instead of generating Tail objects directly.
+	out = append(out, fluentbit.Tail{
+		Tag:          "ops-agent-fluent-bit",
+		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+	}.Component())
+	if hostInfo.OS != "windows" {
+		out = append(out, fluentbit.Tail{
+			Tag:          "ops-agent-collectd",
+			IncludePaths: []string{"${logs_dir}/metrics-module.log"},
+		}.Component())
+	}
+	out = append(out, fluentbit.Stackdriver{
+		Match:     "ops-agent-fluent-bit|ops-agent-collectd",
+		Workers:   8,
+		UserAgent: userAgent,
+	}.Component())
+
 	return out, nil
 }
 
