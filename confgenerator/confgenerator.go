@@ -165,7 +165,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 		}
 
 		var err error
-		extractedInputs, err := generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines, hostInfo)
+		extractedInputs, err := generateFluentBitInputs(logging.Receivers, logging.Service.Pipelines)
 		if err != nil {
 			return "", "", err
 		}
@@ -283,7 +283,7 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
 }
 
-func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline, hostInfo *host.InfoStat) ([]fluentbit.Input, error) {
+func generateFluentBitInputs(receivers map[string]LoggingReceiver, pipelines map[string]*LoggingPipeline) ([]fluentbit.Input, error) {
 	inputs := []fluentbit.Input{}
 	for _, pID := range sortedKeys(pipelines) {
 		p := pipelines[pID]
