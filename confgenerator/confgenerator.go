@@ -100,7 +100,7 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 }
 
 // GenerateFluentBitConfigs generates a main and parser configuration file for Fluent Bit.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (main string, parser string, err error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {
