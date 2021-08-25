@@ -95,8 +95,7 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── otel.yaml
 |       ├── VM_initialization.log
 |       ├── fluent_bit_main.conf
-|       ├── fluent_bit_parser.conf
-|       └── collectd_debug_files.txt
+|       └── fluent_bit_parser.conf
 └── agent_packages
     └── ops-agent
         ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
@@ -125,7 +124,6 @@ Let's go through each of these files and discuss what they are.
     fresh VM properly.
 *   `fluent_bit_main.conf`, `fluent_bit_parser.conf`: Fluent-Bit config files,
     irrelevant for now.
-*   `collectd_debug_files.txt`: Useless and we should get rid of it.
 
 The `agent_packages` directory contains the package files built from the PR
 and installed on the VM for testing. For now this just holds debian 10 `.deb`
