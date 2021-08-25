@@ -1,0 +1,9 @@
+the agent config file is not valid. detailed error: [19:24] Key: 'MetricsReceiverNginx.stub_status_url' Error:Field validation for 'stub_status_url' failed on the 'url' tag
+  16 |   receivers:
+  17 |     nginxmetrics:
+  18 |       type: nginx
+> 19 |       stub_status_url: localhost
+                              ^
+  20 |       collection_interval: 30s
+  21 |   service:
+  22 |     pipelines:
