@@ -104,9 +104,9 @@ a hop. The following is sorted roughly in descending order of usefulness.
 
 Let's go through each of these files and discuss what they are.
 
-*   `build_and_test.log`: Not uploaded currently, but when it is, it will be
-    the top-level log that holds the stdout/stderr for the Kokoro job. Near
-    the bottom will be a summary of which tests passed and which ones failed.
+*   `build_and_test.log`: The top-level log that holds the stdout/stderr for
+    the Kokoro job. Near the bottom is a summary of which tests passed and
+    which ones failed.
 *   `sponge_log.xml`: Not very useful. Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
