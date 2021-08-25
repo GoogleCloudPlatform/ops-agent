@@ -275,17 +275,12 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 type LoggingProcessor interface {
 	component
 	Components(tag string, i int) []fluentbit.Component
-	GetField() string
 }
 
 type LoggingProcessorParseShared struct {
 	Field      string `yaml:"field,omitempty"`       // default to "message"
 	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
-}
-
-func (p LoggingProcessorParseShared) GetField() string {
-	return p.Field
 }
 
 var loggingProcessorTypes = &componentTypeRegistry{
@@ -506,15 +501,6 @@ func (m *Metrics) Validate(platform string) error {
 	return nil
 }
 
-func sliceContains(slice []string, value string) bool {
-	for _, e := range slice {
-		if e == value {
-			return true
-		}
-	}
-	return false
-}
-
 var (
 	defaultProcessors = []string{
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
@@ -532,10 +518,6 @@ var (
 func mapKeys(m interface{}) map[string]bool {
 	keys := map[string]bool{}
 	switch m := m.(type) {
-	case map[string]LoggingReceiver:
-		for k := range m {
-			keys[k] = true
-		}
 	case loggingReceiverMap:
 		for k := range m {
 			keys[k] = true
@@ -544,23 +526,11 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case loggingProcessorMap:
-		for k := range m {
-			keys[k] = true
-		}
 	case map[string]*LoggingPipeline:
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]MetricsReceiver:
-		for k := range m {
-			keys[k] = true
-		}
 	case metricsReceiverMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]MetricsProcessor:
 		for k := range m {
 			keys[k] = true
 		}
@@ -569,10 +539,6 @@ func mapKeys(m interface{}) map[string]bool {
 			keys[k] = true
 		}
 	case map[string]*MetricsPipeline:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]*componentFactory:
 		for k := range m {
 			keys[k] = true
 		}
