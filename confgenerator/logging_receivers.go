@@ -15,6 +15,8 @@
 package confgenerator
 
 import (
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
@@ -68,25 +70,29 @@ func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
 }
 
-type LoggingReceiverWinevtlog struct {
+type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 
 	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
 }
 
-func (r LoggingReceiverWinevtlog) Type() string {
+func (r LoggingReceiverWindowsEventLog) Type() string {
 	return "windows_event_log"
 }
 
-func (r LoggingReceiverWinevtlog) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{
-		fluentbit.WindowsEventlog{
-			Tag:          tag,
-			Channels:     r.Channels,
-			Interval_Sec: "1",
-		}.Component(),
-	}
+func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+			"Name":         "winlog",
+			"Tag":          tag,
+			"Channels":     strings.Join(r.Channels, ","),
+			"Interval_Sec": "1",
+			"DB":           fluentbit.DBPath(tag),
+		},
+	}}
 }
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWinevtlog{} }, "windows")
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWindowsEventLog{} }, "windows")
 }

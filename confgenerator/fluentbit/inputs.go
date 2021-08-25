@@ -102,17 +102,3 @@ func (i Syslog) Components() []Component {
 		},
 	}}
 }
-
-func (i WindowsEventlog) Component() Component {
-	return Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-			"Name":         "winlog",
-			"Tag":          i.Tag,
-			"Channels":     strings.Join(i.Channels, ","),
-			"Interval_Sec": "1",
-			"DB":           DBPath(i.Tag),
-		},
-	}
-}

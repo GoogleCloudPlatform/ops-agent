@@ -30,13 +30,6 @@ type Syslog struct {
 	Port   uint16
 }
 
-// A WindowsEventlog represents the configuration data for fluentbit's winlog input plugin
-type WindowsEventlog struct {
-	Tag          string
-	Channels     []string
-	Interval_Sec string // XXX: stop ignoring?
-}
-
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
 	Match     string
