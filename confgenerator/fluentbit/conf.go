@@ -15,13 +15,6 @@
 // Package fluentbit provides data structures to represent and generate fluentBit configuration.
 package fluentbit
 
-// A Tail represents the configuration data for fluentBit's tail input plugin.
-type Tail struct {
-	Tag          string
-	IncludePaths []string
-	ExcludePaths []string
-}
-
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
 	Match     string

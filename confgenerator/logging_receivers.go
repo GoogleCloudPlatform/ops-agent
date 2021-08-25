@@ -33,13 +33,44 @@ func (r LoggingReceiverFiles) Type() string {
 }
 
 func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{
-		fluentbit.Tail{
-			Tag:          tag,
-			IncludePaths: r.IncludePaths,
-			ExcludePaths: r.ExcludePaths,
-		}.Component(),
+	config := map[string]string{
+		// https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+		"Name": "tail",
+		"Tag":  tag,
+		// TODO: Escaping?
+		"Path":           strings.Join(r.IncludePaths, ","),
+		"DB":             fluentbit.DBPath(tag),
+		"Read_from_Head": "True",
+		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
+		"Buffer_Chunk_Size": "512k",
+		// Set the max size a bit larger to accommodate for long log lines.
+		"Buffer_Max_Size": "5M",
+		// When a message is unstructured (no parser applied), append it under a key named "message".
+		"Key": "message",
+		// Increase this to 30 seconds so log rotations are handled more gracefully.
+		"Rotate_Wait": "30",
+		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+		"Skip_Long_Lines": "On",
+
+		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+		// Buffer in disk to improve reliability.
+		"storage.type": "filesystem",
+
+		// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+		// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+		// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+		"Mem_Buf_Limit": "10M",
 	}
+	if len(r.ExcludePaths) > 0 {
+		// TODO: Escaping?
+		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
+	}
+	return []fluentbit.Component{{
+		Kind:   "INPUT",
+		Config: config,
+	}}
 }
 
 func init() {
