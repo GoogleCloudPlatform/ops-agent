@@ -16,10 +16,18 @@ package confgenerator
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
+
+// DBPath returns the database path for the given log tag
+func DBPath(tag string) string {
+	// TODO: More sanitization?
+	dir := strings.ReplaceAll(strings.ReplaceAll(tag, ".", "_"), "/", "_")
+	return path.Join("${buffers_dir}", dir)
+}
 
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
@@ -39,7 +47,7 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 		"Tag":  tag,
 		// TODO: Escaping?
 		"Path":           strings.Join(r.IncludePaths, ","),
-		"DB":             fluentbit.DBPath(tag),
+		"DB":             DBPath(tag),
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
@@ -145,7 +153,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"Tag":          tag,
 			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
-			"DB":           fluentbit.DBPath(tag),
+			"DB":           DBPath(tag),
 		},
 	}}
 }
