@@ -50,7 +50,7 @@ To configure a receiver for your nginx metrics, specify the following fields:
 | Field                 | Default                   | Description |
 | ---                   | ---                       | ---         |
 | `type`                | required                  | Must be `nginx`. |
-| `endpoint`            | `http://localhost/status` | The url exposed by the nginx stats module. |
+| `stub_status_url`     | `http://localhost/status` | The url exposed by the nginx stats module. |
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 
 Example Configuration:
@@ -60,7 +60,7 @@ metrics:
   receivers:
     nginx_metrics:
       type: nginx
-      endpoint: http://localhost:80/status
+      stub_status_url: http://localhost:80/status
       collection_interval: 30s
   service:
     pipelines:
