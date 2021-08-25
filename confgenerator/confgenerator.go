@@ -99,7 +99,7 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
-func (uc *UnifiedConfig) GenerateFluentBitConfigsModular(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (string, string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {

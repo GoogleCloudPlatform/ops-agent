@@ -56,7 +56,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":
-		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigsModular(logsDir, stateDir, hostInfo)
+		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
