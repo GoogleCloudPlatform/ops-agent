@@ -29,6 +29,7 @@ func DBPath(tag string) string {
 	return path.Join("${buffers_dir}", dir)
 }
 
+// A LoggingReceiverFiles represents the user configuration for a file receiver (fluentbit's tail plugin).
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -85,6 +86,7 @@ func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
 }
 
+// A LoggingReceiverSyslog represents the configuration for a syslog protocol receiver.
 type LoggingReceiverSyslog struct {
 	ConfigComponent `yaml:",inline"`
 
@@ -134,6 +136,7 @@ func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
 }
 
+// A LoggingReceiverWindowsEventLog represents the user configuration for a Windows event log receiver.
 type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 

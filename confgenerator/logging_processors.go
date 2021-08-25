@@ -16,6 +16,7 @@ package confgenerator
 
 import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 
+// A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
 	ConfigComponent             `yaml:",inline"`
 	LoggingProcessorParseShared `yaml:",inline"`
@@ -38,6 +39,7 @@ func init() {
 	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
 }
 
+// A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
 type LoggingProcessorParseRegex struct {
 	ConfigComponent             `yaml:",inline"`
 	LoggingProcessorParseShared `yaml:",inline"`
