@@ -187,7 +187,7 @@ func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
 type componentTypeRegistry struct {
 	// Subagent is "logging" or "metric" (only used for error messages)
 	Subagent string
-	// Kind is "receiver", "processor", or "exporter" (only used for error messages)
+	// Kind is "receiver" or "processor" (only used for error messages)
 	Kind string
 	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
 	TypeMap map[string]*componentFactory
@@ -232,13 +232,12 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
-type loggingExporterMap map[string]LoggingExporter
 type Logging struct {
 	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	// Exporters are deprecated and ignored, so do not have any validation.
-	Exporters loggingExporterMap `yaml:"exporters,omitempty"`
-	Service   *LoggingService    `yaml:"service"`
+	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
+	Service   *LoggingService        `yaml:"service"`
 }
 
 type LoggingReceiver interface {
@@ -316,37 +315,6 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 	return nil
 }
 
-type LoggingExporter interface {
-	component
-}
-
-var loggingExporterTypes = &componentTypeRegistry{
-	Subagent: "logging", Kind: "exporter",
-}
-
-// Wrapper type to store the unmarshaled YAML value.
-type loggingExporterWrapper struct {
-	inner interface{}
-}
-
-func (l *loggingExporterWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return loggingExporterTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *loggingExporterMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]loggingExporterWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = loggingExporterMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(LoggingExporter)
-	}
-	return nil
-}
-
 type LoggingService struct {
 	Pipelines map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
@@ -354,7 +322,8 @@ type LoggingService struct {
 type LoggingPipeline struct {
 	ReceiverIDs  []string `yaml:"receivers,omitempty,flow"`
 	ProcessorIDs []string `yaml:"processors,omitempty,flow"`
-	ExporterIDs  []string `yaml:"exporters,omitempty,flow"`
+	// ExporterIDs is deprecated and ignored.
+	ExporterIDs []string `yaml:"exporters,omitempty,flow"`
 }
 
 // Ops Agent metrics config.
@@ -579,14 +548,6 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]LoggingExporter:
-		for k := range m {
-			keys[k] = true
-		}
-	case loggingExporterMap:
-		for k := range m {
-			keys[k] = true
-		}
 	case map[string]*LoggingPipeline:
 		for k := range m {
 			keys[k] = true
@@ -676,7 +637,7 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 
 // parameterErrorPrefix returns the common parameter error prefix.
 // id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver, processor, or exporter, e.g., "hostmetrics".
+// componentType is the type of the receiver or processor, e.g. "hostmetrics".
 // parameter is name of the parameter.
 func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
 	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
