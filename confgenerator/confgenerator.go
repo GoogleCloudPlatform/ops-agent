@@ -158,21 +158,13 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, s.components...)
 		}
 		if len(logNames) > 0 {
-			out = append(out, fluentbit.Stackdriver{
-				Match:     strings.Join(logNames, "|"),
-				Workers:   8,
-				UserAgent: userAgent,
-			}.Component())
+			out = append(out, stackdriverOutputComponent(strings.Join(logNames, "|"), userAgent))
 		}
 	}
 	out = append(out, LoggingReceiverFiles{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
-	out = append(out, fluentbit.Stackdriver{
-		Match:     "ops-agent-fluent-bit",
-		Workers:   8,
-		UserAgent: userAgent,
-	}.Component())
+	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 
 	return out, nil
 }
@@ -205,6 +197,31 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 				"Name":   "modify",
 				"Remove": "logName",
 			},
+		},
+	}
+}
+
+func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
+	return fluentbit.Component{
+		Kind: "OUTPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
+			"Name":              "stackdriver",
+			"Match_Regex":       fmt.Sprintf("^(%s)$", match),
+			"resource":          "gce_instance",
+			"stackdriver_agent": userAgent,
+
+			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
+			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
+			"Retry_Limit": "3",
+
+			// https://docs.fluentbit.io/manual/administration/security
+			// Enable TLS support.
+			"tls": "On",
+			// Do not force certificate validation.
+			"tls.verify": "Off",
+
+			"workers": "8",
 		},
 	}
 }
