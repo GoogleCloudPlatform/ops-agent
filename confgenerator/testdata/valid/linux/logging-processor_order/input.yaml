@@ -24,7 +24,8 @@ logging:
     alpha:
       type: parse_json
     beta:
-      type: parse_json
+      type: parse_regex
+      regex: beta
   exporters:
     google:
       type: google_cloud_logging
