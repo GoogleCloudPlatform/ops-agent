@@ -1,47 +1,56 @@
-# Nginx Receiver
+# nginx Receiver
 
-The `nginx` receiver can fetch stats from a Nginx instance using the mod_status endpoint.
+The nginx receiver can retrieve stats from your nginx instance using the `mod_status` endpoint.
 
 
 ## Prerequisites
 
-The receiver requires that you enable the [status module](http://nginx.org/en/docs/http/ngx_http_stub_status_module.html) on your Nginx instance.
+The receiver requires that you enable the [status module](http://nginx.org/en/docs/http/ngx_http_stub_status_module.html) on your nginx instance.
 
-You can enable the status module by adding the following to your Nginx configuration:
+To enable the status module, complete the following steps:
 
-```
-location /status {
-    stub_status on;
-}
-```
+1. Edit the `status.conf` file. You can find this file in the nginx configuration directory, typically found at `/etc/nginx/conf.d`.
+2. Add the following lines to your configuration file:
 
-This can be done by including the above in a `status.conf` file in the Nginx configuration directory (normally `/etc/nginx/conf.d`).
+   ```
+   location /status {
+       stub_status on;
+   }
+   ```
 
-Alternately, you can append to your `nginx.conf`, normally located in one of the following directories: `/etc/nginx`, `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
+    1. Alternately, you can append these lines to your `nginx.conf` file, which is typically located in one of the following directories: `/etc/nginx`, `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
 
-In the context of other configuration setting, this addition might look something like the following:
-```
-server {
-    listen 80;
-    server_name mynginx.domain.com;
-    location /status {
-        stub_status on;
-    }
-    location / {
-        root /dev/null;
-    }
-}
-```
+   Your configuration file might look like the following example:
+   ```
+   server {
+       listen 80;
+       server_name mynginx.domain.com; 
+       location /status {
+           stub_status on;
+       }
+       location / {
+           root /dev/null;  
+       }
+   }
+   ```
 
-Reload the Nginx configuration by running: `sudo service nginx reload`
+3. Reload the nginx configuration:
+
+   ```
+   sudo service nginx reload
+   ```
 
 
 ## Configuration
 
+Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your nginx configuration.
+
+To configure a receiver for your nginx metrics, specify the following fields:
+
 | Field                 | Default                   | Description |
 | ---                   | ---                       | ---         |
 | `type`                | required                  | Must be `nginx`. |
-| `endpoint`            | `http://localhost/status` | The url exposed by the Nginx stats module. |
+| `endpoint`            | `http://localhost/status` | The url exposed by the nginx stats module. |
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 
 Example Configuration:
@@ -61,6 +70,8 @@ metrics:
 ```
 
 ## Metrics
+
+The Ops Agent collects the following metrics from your nginx instances.
 
 | Metric                                           | Data Type | Unit        | Labels | Description |
 | ---                                              | ---       | ---         | ---    | ---         | 
