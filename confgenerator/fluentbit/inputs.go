@@ -15,7 +15,6 @@
 package fluentbit
 
 import (
-	"fmt"
 	"path"
 	"strings"
 )
@@ -68,37 +67,4 @@ func (i Tail) Component() Component {
 		Kind:   "INPUT",
 		Config: config,
 	}
-}
-
-func (i Syslog) Components() []Component {
-	return []Component{{
-		Kind: "INPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/syslog
-			"Name":   "syslog",
-			"Tag":    i.Tag,
-			"Mode":   i.Mode,
-			"Listen": i.Listen,
-			"Port":   fmt.Sprintf("%d", i.Port),
-			"Parser": i.Tag,
-			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-			// Buffer in disk to improve reliability.
-			"storage.type": "filesystem",
-
-			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
-			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
-			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
-			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
-			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-			"Mem_Buf_Limit": "10M",
-		},
-	}, {
-		// FIXME: This is not new, but we shouldn't be disabling syslog protocol parsing by passing a custom Parser - Fluentbit includes builtin syslog protocol support, and we should enable/expose that.
-		Kind: "PARSER",
-		Config: map[string]string{
-			"Name":   i.Tag,
-			"Format": "regex",
-			"Regex":  `^(?<message>.*)$`,
-		},
-	}}
 }

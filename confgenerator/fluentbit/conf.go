@@ -22,14 +22,6 @@ type Tail struct {
 	ExcludePaths []string
 }
 
-// A Syslog represents the configuration data for fluentBit's syslog input plugin.
-type Syslog struct {
-	Tag    string
-	Mode   string
-	Listen string
-	Port   uint16
-}
-
 // A Stackdriver represents the configurable data for fluentBit's stackdriver output plugin.
 type Stackdriver struct {
 	Match     string
