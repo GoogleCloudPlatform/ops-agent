@@ -79,6 +79,13 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 	}
 }
 
+// LoggingProcessorParseShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
+type LoggingProcessorParseShared struct {
+	Field      string `yaml:"field,omitempty"`       // default to "message"
+	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
+}
+
 // Components returns a filter and parser component for this parse processor.
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
 func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Component, fluentbit.Component) {

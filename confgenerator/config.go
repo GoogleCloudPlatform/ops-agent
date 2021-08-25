@@ -274,13 +274,9 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type LoggingProcessor interface {
 	component
+	// Components returns fluentbit components that implement this procesor.
+	// tag is the log tag that should be matched by those components, and i is the index of the processor in the pipeline and should be used when needed to generate unique names.
 	Components(tag string, i int) []fluentbit.Component
-}
-
-type LoggingProcessorParseShared struct {
-	Field      string `yaml:"field,omitempty"`       // default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
 }
 
 var loggingProcessorTypes = &componentTypeRegistry{
