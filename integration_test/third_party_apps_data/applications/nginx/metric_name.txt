@@ -1,1 +1,1 @@
-agent.googleapis.com/nginx/request_count
+workload.googleapis.com/nginx.requests
