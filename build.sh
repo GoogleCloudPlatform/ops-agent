@@ -51,9 +51,7 @@ function build_otel() {
 function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  # TODO: remove the spotlessApply once the repository passes spotless on master
-  ./gradlew :aws-xray:spotlessApply -Pgit.root="../../.git/modules/submodules/opentelemetry-java-contrib/"
-  ./gradlew jmx-metrics:build -Pgit.root="../../.git/modules/submodules/opentelemetry-java-contrib/"
+  ./gradlew --no-daemon :jmx-metrics:build -Pgit.root="../../.git/modules/submodules/opentelemetry-java-contrib/"
   cp "jmx-metrics/build/libs/opentelemetry-jmx-metrics-1.5.0-SNAPSHOT.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-jmx-metrics.jar"
 }
 
