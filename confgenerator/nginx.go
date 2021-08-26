@@ -67,7 +67,6 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	// FIXME: Treat code and size as integers?
 	return LoggingProcessorParseRegex{
 		// Sample line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
 		// FIXME: legacy OA parser did not have http_x_forwarded_for, fluentd did
@@ -76,6 +75,10 @@ func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluent
 		LoggingProcessorParseShared: LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+			Types: map[string]string{
+				"code": "integer",
+				"size": "integer",
+			},
 		},
 	}.Components(tag, uid)
 }
@@ -89,7 +92,6 @@ func (LoggingProcessorNginxError) Type() string {
 }
 
 func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
-	// FIXME: Treat pid, tid, and cid as integers?
 	return LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
@@ -99,6 +101,11 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 		LoggingProcessorParseShared: LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			Types: map[string]string{
+				"pid":        "integer",
+				"tid":        "integer",
+				"connection": "integer",
+			},
 		},
 	}.Components(tag, uid)
 }
