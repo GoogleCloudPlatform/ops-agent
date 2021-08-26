@@ -88,8 +88,8 @@ type LoggingProcessorParseShared struct {
 
 // Components returns a filter and parser component for this parse processor.
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
-func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Component, fluentbit.Component) {
-	parserName := fmt.Sprintf("%s.%d", tag, i)
+func (p LoggingProcessorParseShared) Components(tag, uid string) (fluentbit.Component, fluentbit.Component) {
+	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
