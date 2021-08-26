@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [8:21] Key: 'MetricsService.pipelines[lib:pipeline_1]' Error:Field validation for 'pipelines[lib:pipeline_1]' failed on the 'startsnotwith' tag
+the agent config file is not valid. detailed error: [8:21] pipeline name must not start with "lib:"
    5 |       collection_interval: 60s
    6 |   service:
    7 |     pipelines:

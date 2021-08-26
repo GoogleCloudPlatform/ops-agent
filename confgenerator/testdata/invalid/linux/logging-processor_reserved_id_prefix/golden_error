@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [9:20] Key: 'Logging.processors[lib:processor_1]' Error:Field validation for 'processors[lib:processor_1]' failed on the 'startsnotwith' tag
+the agent config file is not valid. detailed error: [9:20] processor name must not start with "lib:"
    6 |       - /var/log/messages
    7 |       - /var/log/syslog
    8 |   processors:

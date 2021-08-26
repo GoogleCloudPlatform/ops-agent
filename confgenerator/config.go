@@ -82,7 +82,37 @@ func (ve validationError) StructField() string {
 	return parts[0]
 }
 
-// TODO: Implement validationError.Error() for better error messages.
+func (ve validationError) Error() string {
+	e := ve.FieldError
+
+	switch e.Tag() {
+	case "duration":
+		return fmt.Sprintf("%s must be a duration of at least %s", e.Field(), e.Param())
+	case "endswith":
+		return fmt.Sprintf("%s must end with %q", e.Field(), e.Param())
+	case "ip":
+		return fmt.Sprintf("%s must be an IP address", e.Field())
+	case "oneof":
+		return fmt.Sprintf("%s must be one of [%s]", e.Field(), e.Param())
+	case "required":
+		return fmt.Sprintf("%s is a required field", e.Field())
+	case "startsnotwith":
+		switch {
+		case strings.HasPrefix(e.StructField(), "Pipelines"):
+			return fmt.Sprintf("pipeline name must not start with %q", e.Param())
+		case strings.HasPrefix(e.StructField(), "Processors"):
+			return fmt.Sprintf("processor name must not start with %q", e.Param())
+		case strings.HasPrefix(e.StructField(), "Receivers"):
+			return fmt.Sprintf("receiver name must not start with %q", e.Param())
+		}
+	case "startswith":
+		return fmt.Sprintf("%s must start with %q", e.Field(), e.Param())
+	case "url":
+		return fmt.Sprintf("%s must be a URL", e.Field())
+	}
+
+	return ve.FieldError.Error()
+}
 
 func (v *validatorContext) Struct(s interface{}) error {
 	err := v.v.StructCtx(v.ctx, s)

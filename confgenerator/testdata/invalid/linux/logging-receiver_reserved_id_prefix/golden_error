@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [3:19] Key: 'Logging.receivers[lib:receiver_1]' Error:Field validation for 'receivers[lib:receiver_1]' failed on the 'startsnotwith' tag
+the agent config file is not valid. detailed error: [3:19] receiver name must not start with "lib:"
    1 | logging:
    2 |   receivers:
 >  3 |     lib:receiver_1:
