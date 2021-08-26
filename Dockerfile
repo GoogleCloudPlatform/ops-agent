@@ -15,23 +15,23 @@
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
 # Generated tarball(s) will end up in /tmp/out
 
-FROM debian:buster AS buster
+# FROM debian:buster AS buster
 
-# TODO: Factor out the common code without rerunning apt-get on every build.
+# # TODO: Factor out the common code without rerunning apt-get on every build.
 
-RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config default-jdk
+# RUN set -x; apt-get update && \
+#     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+#     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+#     build-essential cmake bison flex file libsystemd-dev \
+#     devscripts cdbs pkg-config default-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+# ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+# RUN set -xe; \
+#     tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
-COPY . /work
-WORKDIR /work
-RUN ./pkg/deb/build.sh
+# COPY . /work
+# WORKDIR /work
+# RUN ./pkg/deb/build.sh
 
 FROM debian:stretch AS stretch
 
@@ -181,8 +181,8 @@ RUN ./pkg/rpm/build.sh
 # RUN ./pkg/rpm/build.sh
 
 FROM scratch
-COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
-COPY --from=buster /google-cloud-ops-agent*.deb /
+# COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
+# COPY --from=buster /google-cloud-ops-agent*.deb /
 
 COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
 COPY --from=stretch /google-cloud-ops-agent*.deb /
