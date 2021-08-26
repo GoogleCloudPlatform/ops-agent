@@ -119,8 +119,7 @@ COPY .git/modules/submodules/opentelemetry-java-contrib /work/submodules/opentel
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-RUN ./gradlew :aws-xray:spotlessApply '-Pgit.root="./gitroot"'
-RUN ./gradlew :jmx-metrics:build '-Pgit.root="./gitroot"'
+RUN ./gradlew --no-daemon :aws-xray:spotlessApply :jmx-metrics:build '-Pgit.root="./gitroot"'
 RUN Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-1.5.0-SNAPSHOT.jar -Destination /work/out/bin/;
 
 ###############################################################################
