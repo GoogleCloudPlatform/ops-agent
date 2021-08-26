@@ -102,24 +102,24 @@ WORKDIR /work
 
 RUN ./pkg/deb/build.sh
 
-FROM centos:7 AS centos7
+# FROM centos:7 AS centos7
 
-RUN set -x; yum -y update && \
-    yum -y install git systemd \
-    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-1.8.0-openjdk-devel \
-    expect rpm-sign && \
-    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum install -y cmake3 && \
-    ln -fs cmake3 /usr/bin/cmake
+# RUN set -x; yum -y update && \
+#     yum -y install git systemd \
+#     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+#     gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-1.8.0-openjdk-devel \
+#     expect rpm-sign && \
+#     yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+#     yum install -y cmake3 && \
+#     ln -fs cmake3 /usr/bin/cmake
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+# ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+# RUN set -xe; \
+#     tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
-COPY . /work
-WORKDIR /work
-RUN ./pkg/rpm/build.sh
+# COPY . /work
+# WORKDIR /work
+# RUN ./pkg/rpm/build.sh
 
 FROM centos:8 AS centos8
 
@@ -139,46 +139,46 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-# Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
-FROM opensuse/leap:42.3 as sles12
+# # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
+# FROM opensuse/leap:42.3 as sles12
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
-# Add home:Ledest:devel repo to install >3.4 bison
-&& zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
-&& zypper -n --gpg-auto-import-keys refresh \
-&& zypper -n update \
-# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
-# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-&& zypper -n install bison>3.4 \
-# Allow fluent-bit to find systemd
-&& ln -fs /usr/lib/systemd /lib/systemd
+# RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
+# # Add home:Ledest:devel repo to install >3.4 bison
+# && zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
+# && zypper -n --gpg-auto-import-keys refresh \
+# && zypper -n update \
+# # zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
+# # If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
+# && zypper -n install bison>3.4 \
+# # Allow fluent-bit to find systemd
+# && ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+# ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+# RUN set -xe; \
+#     tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
-COPY . /work
-WORKDIR /work
-RUN ./pkg/rpm/build.sh
+# COPY . /work
+# WORKDIR /work
+# RUN ./pkg/rpm/build.sh
 
-FROM opensuse/leap:15.1 as sles15
+# FROM opensuse/leap:15.1 as sles15
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
-# Add home:ptrommler:formal repo to install >3.4 bison
-&& zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
-&& zypper -n --gpg-auto-import-keys refresh \
-&& zypper -n update \
-&& zypper -n install bison>3.4 \
-# Allow fluent-bit to find systemd
-&& ln -fs /usr/lib/systemd /lib/systemd
+# RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
+# # Add home:ptrommler:formal repo to install >3.4 bison
+# && zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
+# && zypper -n --gpg-auto-import-keys refresh \
+# && zypper -n update \
+# && zypper -n install bison>3.4 \
+# # Allow fluent-bit to find systemd
+# && ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+# ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+# RUN set -xe; \
+#     tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
 
-COPY . /work
-WORKDIR /work
-RUN ./pkg/rpm/build.sh
+# COPY . /work
+# WORKDIR /work
+# RUN ./pkg/rpm/build.sh
 
 FROM scratch
 COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
@@ -196,14 +196,14 @@ COPY --from=bionic /google-cloud-ops-agent*.deb /
 COPY --from=xenial /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
 COPY --from=xenial /google-cloud-ops-agent*.deb /
 
-COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
-COPY --from=centos7 /google-cloud-ops-agent*.rpm /
+# COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
+# COPY --from=centos7 /google-cloud-ops-agent*.rpm /
 
 COPY --from=centos8 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8 /google-cloud-ops-agent*.rpm /
 
-COPY --from=sles12 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
-COPY --from=sles12 /google-cloud-ops-agent*.rpm /
+# COPY --from=sles12 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
+# COPY --from=sles12 /google-cloud-ops-agent*.rpm /
 
-COPY --from=sles15 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
-COPY --from=sles15 /google-cloud-ops-agent*.rpm /
+# COPY --from=sles15 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
+# COPY --from=sles15 /google-cloud-ops-agent*.rpm /
