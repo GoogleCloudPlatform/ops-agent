@@ -19,6 +19,8 @@ FROM debian:buster AS buster
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
+RUN exit 1
+
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
