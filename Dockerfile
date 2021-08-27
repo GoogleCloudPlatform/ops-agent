@@ -52,6 +52,23 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
+FROM ubuntu:hirsute AS hirsute
+
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y -t hirsute-backports install debhelper && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs pkg-config
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/deb/build.sh
+
 FROM ubuntu:focal AS focal
 
 RUN set -x; apt-get update && \
@@ -88,23 +105,6 @@ FROM ubuntu:xenial AS xenial
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config
-
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
-
-COPY . /work
-WORKDIR /work
-RUN ./pkg/deb/build.sh
-
-FROM ubuntu:hirsute AS hirsute
-
-RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t hirsute-backports install debhelper && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
@@ -203,6 +203,9 @@ COPY --from=buster /google-cloud-ops-agent*.deb /
 COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
 COPY --from=stretch /google-cloud-ops-agent*.deb /
 
+COPY --from=hirsute /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
+COPY --from=hirsute /google-cloud-ops-agent*.deb /
+
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
 
@@ -211,9 +214,6 @@ COPY --from=bionic /google-cloud-ops-agent*.deb /
 
 COPY --from=xenial /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
 COPY --from=xenial /google-cloud-ops-agent*.deb /
-
-COPY --from=hirsute /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
-COPY --from=hirsute /google-cloud-ops-agent*.deb /
 
 COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7 /google-cloud-ops-agent*.rpm /
