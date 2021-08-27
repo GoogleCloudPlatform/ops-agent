@@ -51,8 +51,8 @@ function build_otel() {
 function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  ./gradlew --no-daemon :jmx-metrics:build -Pgit.root="../../.git/modules/submodules/opentelemetry-java-contrib/"
-  cp "jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/"
+  ./gradlew --no-daemon :jmx-metrics:build
+  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/"
 }
 
 function build_fluentbit() {

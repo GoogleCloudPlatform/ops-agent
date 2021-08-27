@@ -115,12 +115,11 @@ ADD https://javadl.oracle.com/webapps/download/AutoDL?BundleId=242044_3d5a2bb8f8
 RUN powershell start-process -filepath C:\local\jdk-8u251-windows-x64.exe -passthru -wait -argumentlist '/s,INSTALLDIR=C:\Java,/L,install64.log'
 
 COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY .git/modules/submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib/gitroot
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-RUN ./gradlew --no-daemon :jmx-metrics:build '-Pgit.root="./gitroot"'
-RUN Copy-Item -Path jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/;
+RUN ./gradlew --no-daemon :jmx-metrics:build
+RUN Copy-Item -Path contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching
