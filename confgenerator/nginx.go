@@ -15,6 +15,8 @@
 package confgenerator
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -92,7 +94,7 @@ func (LoggingProcessorNginxError) Type() string {
 }
 
 func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
-	return LoggingProcessorParseRegex{
+	c := LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
 		// Request fields: https://github.com/nginx/nginx/blob/7bcb50c0610a18bf43bef0062b2d2dc550823b53/src/http/ngx_http_request.c#L3836
@@ -108,6 +110,27 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 			},
 		},
 	}.Components(tag, uid)
+	for _, l := range []struct{ level, severity string }{
+		{"emerg", "EMERGENCY"},
+		{"alert", "ALERT"},
+		{"crit", "CRITICAL"},
+		{"error", "ERROR"},
+		{"warn", "WARNING"},
+		{"notice", "NOTICE"},
+		{"info", "INFO"},
+		{"debug", "DEBUG"},
+	} {
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
+				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+			},
+		})
+	}
+	return c
 }
 
 type LoggingReceiverNginxAccess struct {
