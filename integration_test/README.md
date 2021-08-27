@@ -88,7 +88,6 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |   └── TestThirdPartyApps_ops-agent_debian-10_nginx
 |       ├── main_log.txt
 |       ├── syslog
-|       ├── metrics-module.log
 |       ├── logging-module.log
 |       ├── journalctl_output.txt
 |       ├── systemctl_status_for_ops_agent.txt
@@ -116,8 +115,7 @@ Let's go through each of these files and discuss what they are.
 The rest of these files are only uploaded if the test fails.
 
 *   `syslog`: The system's `/var/log/{syslog,messages}`. Highly useful.
-*   `metrics-module.log`: Empty currently, but it is supposed to contain the
-    OTel collector's logs. We should fix this.
+    OTel collector logs can be found here by searching for `otelopscol`.
 *   `logging-module.log`: The Fluent-Bit log file. Not useful right now.
 *   `journalctl_output.txt`: The output of running `journalctl -xe`. Useful
     when the Ops Agent can't start/restart properly, often due to malformed
