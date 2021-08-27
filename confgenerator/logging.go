@@ -88,6 +88,7 @@ type LoggingProcessorParseShared struct {
 	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
+	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
 	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
 }
 
