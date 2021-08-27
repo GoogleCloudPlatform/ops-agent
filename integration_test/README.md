@@ -110,7 +110,7 @@ Let's go through each of these files and discuss what they are.
 *   `sponge_log.xml`: Not very useful. Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
-    `TestThirdPartyApps_ops-agent_debian-10_nginx` that ran. This is the place
+    `TestThirdPartyApps_ops-agent_debian-10_nginx`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
 
 The rest of these files are only uploaded if the test fails.
