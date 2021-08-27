@@ -120,7 +120,7 @@ COPY .git/modules/submodules/opentelemetry-java-contrib /work/submodules/opentel
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
 RUN ./gradlew --no-daemon :jmx-metrics:build '-Pgit.root="./gitroot"'
-RUN Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-1.5.0-SNAPSHOT.jar -Destination /work/out/bin/;
+RUN Copy-Item -Path jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching

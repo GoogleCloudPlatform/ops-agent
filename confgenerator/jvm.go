@@ -16,11 +16,12 @@ package confgenerator
 
 import (
 	"fmt"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/kardianos/osext"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/kardianos/osext"
 )
 
 type MetricsReceiverJVM struct {
@@ -67,7 +68,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 }
 
 func findJarPath() (string, error) {
-	jarName := "opentelemetry-jmx-metrics.jar"
+	jarName := "opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar"
 
 	// TODO(djaglowski) differentiate behavior via build tags
 	if runtime.GOOS != "windows" {
