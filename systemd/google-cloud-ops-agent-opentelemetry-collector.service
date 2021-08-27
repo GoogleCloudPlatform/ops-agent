@@ -22,7 +22,7 @@ After=network.target
 RuntimeDirectory=google-cloud-ops-agent-opentelemetry-collector
 StateDirectory=google-cloud-ops-agent/opentelemetry-collector
 LogsDirectory=google-cloud-ops-agent/subagents
-ENVIRONMENT=BIN_DIRECTORY=google-cloud-ops-agent/subagents/opentelemetry-collector
+Environment=BIN_DIRECTORY=google-cloud-ops-agent/subagents/opentelemetry-collector
 Type=simple
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -service=otel -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs ${LOGS_DIRECTORY}
 # TODO - Remove the log-level=DEBUG before merging this PR
