@@ -147,6 +147,8 @@ and the config conversion from Ops Agent receiver(s) to the underlying subagent 
 - Logging side: Requires conversion from the Ops Agent receiver(s) to Fluent Bit tail input plugin configs and parser
   filter plugin configs (e.g. parse regex, multi line parsing etc. depending on the application)
 
+Tip: https://regex101.com/ is your friend in case you need to debug Regex expressions.
+
 This also includes [unit tests](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator/testdata) for
 the config validation and conversion logic.
 

@@ -43,14 +43,34 @@ func (c Component) generateSection() string {
 	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))
 }
 
-type Pipeline struct {
+type ModularConfig struct {
+	Variables  map[string]string
 	Components []Component
-	LogName    string
-	Internal   bool
 }
 
-type ModularConfig struct {
-	Pipelines      []Pipeline
-	InternalOutput Component
-	Output         Component
+func (c ModularConfig) Generate() (string, string, error) {
+	var parts []string
+	for k, v := range c.Variables {
+		parts = append(parts, fmt.Sprintf("@SET %s=%s", k, v))
+	}
+	sort.Strings(parts)
+	// Blank line
+	parts = append(parts, "")
+
+	// TODO: Consider removing this sorting and just outputting the components in native order.
+	sectionsByKind := map[string][]string{}
+	for _, c := range c.Components {
+		out := c.generateSection()
+		sectionsByKind[c.Kind] = append(sectionsByKind[c.Kind], out)
+	}
+	parserParts := sectionsByKind["PARSER"]
+	delete(sectionsByKind, "PARSER")
+	for _, k := range []string{"SERVICE", "INPUT", "FILTER", "OUTPUT"} {
+		parts = append(parts, sectionsByKind[k]...)
+		delete(sectionsByKind, k)
+	}
+	if len(sectionsByKind) > 0 {
+		return "", "", fmt.Errorf("unknown fluentbit config sections %+v", sectionsByKind)
+	}
+	return strings.Join(parts, "\n"), strings.Join(parserParts, "\n"), nil
 }

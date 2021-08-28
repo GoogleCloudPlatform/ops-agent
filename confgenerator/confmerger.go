@@ -68,7 +68,7 @@ var (
 		"windows": &UnifiedConfig{
 			Logging: &Logging{
 				Receivers: map[string]LoggingReceiver{
-					"windows_event_log": &LoggingReceiverWinevtlog{
+					"windows_event_log": &LoggingReceiverWindowsEventLog{
 						ConfigComponent: ConfigComponent{Type: "windows_event_log"},
 						Channels:        []string{"System", "Application", "Security"},
 					},
