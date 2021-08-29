@@ -119,6 +119,7 @@ COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-c
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
 RUN ./gradlew --no-daemon :jmx-metrics:build
+# TODO: Parameterize this jar name once we can control the release artifact
 RUN Copy-Item -Path contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/;
 
 ###############################################################################
