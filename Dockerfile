@@ -55,7 +55,6 @@ RUN ./pkg/deb/build.sh
 FROM ubuntu:hirsute AS hirsute
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t hirsute-backports install debhelper && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
