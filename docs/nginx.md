@@ -137,7 +137,7 @@ Access logs contain the [`httpRequest` field](https://cloud.google.com/logging/d
 
 Any fields that are blank or missing will not be present in the log entry.
 
-Error logs contain the following fields:
+Error logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):
 
 | Field | Type | Description |
 | ---   | ---- | ----------- |
