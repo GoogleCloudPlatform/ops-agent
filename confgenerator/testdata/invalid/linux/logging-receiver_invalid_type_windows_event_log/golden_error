@@ -1,1 +1,1 @@
-the agent config file is not valid. detailed error: logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [files, syslog].
+the agent config file is not valid. detailed error: logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [files, nginx_access, nginx_error, syslog].

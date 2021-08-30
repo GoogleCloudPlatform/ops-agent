@@ -32,7 +32,7 @@ func DBPath(tag string) string {
 // A LoggingReceiverFiles represents the user configuration for a file receiver (fluentbit's tail plugin).
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
-
+	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
 	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
 }
@@ -42,6 +42,22 @@ func (r LoggingReceiverFiles) Type() string {
 }
 
 func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
+	return LoggingReceiverFilesMixin{
+		IncludePaths: r.IncludePaths,
+		ExcludePaths: r.ExcludePaths,
+	}.Components(tag)
+}
+
+type LoggingReceiverFilesMixin struct {
+	IncludePaths []string `yaml:"include_paths,omitempty"`
+	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+}
+
+func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		// No files -> no input.
+		return nil
+	}
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
 		"Name": "tail",
