@@ -1,1 +1,7 @@
-
+log_entries:
+- log_name: "nginx_access"
+  field_matchers:
+    jsonPayload.message: "abcd"
+- log_name: "nginx_error"
+  field_matchers:
+    jsonPayload.message: "qwerty"
