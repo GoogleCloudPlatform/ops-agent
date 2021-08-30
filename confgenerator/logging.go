@@ -93,9 +93,10 @@ func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Co
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Match":  tag,
-			"Name":   "parser",
-			"Parser": parserName,
+			"Match":    tag,
+			"Name":     "parser",
+			"Parser":   parserName,
+			"Key_Name": "message", // Required
 		},
 	}
 	if p.Field != "" {
