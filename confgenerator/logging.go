@@ -89,6 +89,7 @@ type LoggingProcessorParseShared struct {
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
 	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
+	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
 	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
 }
 

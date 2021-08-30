@@ -79,8 +79,8 @@ func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluent
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 			Types: map[string]string{
 				"http_request_status": "integer",
-				// N.B. "requestSize" is a string containing an integer.
-				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest
+				// N.B. "http_request_responseSize" is a string containing an integer.
+				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 			},
 		},
 	}.Components(tag, uid)
