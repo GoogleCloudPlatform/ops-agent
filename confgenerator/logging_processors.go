@@ -26,8 +26,8 @@ func (r LoggingProcessorParseJson) Type() string {
 	return "parse_json"
 }
 
-func (p LoggingProcessorParseJson) Components(tag string, i int) []fluentbit.Component {
-	filter, parser := p.LoggingProcessorParseShared.Components(tag, i)
+func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Component {
+	filter, parser := p.LoggingProcessorParseShared.Components(tag, uid)
 	parser.Config["Format"] = "json"
 	return []fluentbit.Component{
 		filter,
@@ -51,8 +51,8 @@ func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
 }
 
-func (p LoggingProcessorParseRegex) Components(tag string, i int) []fluentbit.Component {
-	filter, parser := p.LoggingProcessorParseShared.Components(tag, i)
+func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
+	filter, parser := p.LoggingProcessorParseShared.Components(tag, uid)
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = p.Regex
 	return []fluentbit.Component{

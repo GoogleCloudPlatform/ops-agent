@@ -1,1 +1,1 @@
-the agent config file is not valid. detailed error: logging processor with type "unsupported_type" is not supported. Supported logging processor types: [parse_json, parse_regex].
+the agent config file is not valid. detailed error: logging processor with type "unsupported_type" is not supported. Supported logging processor types: [nginx_access, nginx_error, parse_json, parse_regex].
