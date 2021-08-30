@@ -52,6 +52,18 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
+FROM ubuntu:hirsute AS hirsute
+
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs pkg-config golang-go
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/deb/build.sh
+
 FROM ubuntu:focal AS focal
 
 RUN set -x; apt-get update && \
@@ -99,7 +111,6 @@ RUN set -xe; \
 
 COPY . /work
 WORKDIR /work
-
 RUN ./pkg/deb/build.sh
 
 FROM centos:7 AS centos7
@@ -186,6 +197,9 @@ COPY --from=buster /google-cloud-ops-agent*.deb /
 
 COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
 COPY --from=stretch /google-cloud-ops-agent*.deb /
+
+COPY --from=hirsute /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
+COPY --from=hirsute /google-cloud-ops-agent*.deb /
 
 COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal /google-cloud-ops-agent*.deb /
