@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [6:20] listen_port is a required field
+the agent config file is not valid. detailed error: [6:20] "listen_port" is a required field
    3 |     receiver_1:
    4 |       type: syslog
    5 |       listen_host: "1.1.1.1"

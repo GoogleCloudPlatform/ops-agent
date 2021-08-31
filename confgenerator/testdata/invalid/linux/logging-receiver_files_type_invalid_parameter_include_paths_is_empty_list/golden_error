@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [3:15] include_paths is a required field
+the agent config file is not valid. detailed error: [3:15] "include_paths" is a required field
    1 | logging:
    2 |   receivers:
 >  3 |     receiver_1:

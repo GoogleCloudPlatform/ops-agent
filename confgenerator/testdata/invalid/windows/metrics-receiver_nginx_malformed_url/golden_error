@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [19:24] stub_status_url must be a URL
+the agent config file is not valid. detailed error: [19:24] "stub_status_url" must be a URL
   16 |   receivers:
   17 |     nginxmetrics:
   18 |       type: nginx

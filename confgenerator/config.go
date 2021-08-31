@@ -83,32 +83,30 @@ func (ve validationError) StructField() string {
 }
 
 func (ve validationError) Error() string {
-	e := ve.FieldError
-
-	switch e.Tag() {
+	switch ve.Tag() {
 	case "duration":
-		return fmt.Sprintf("%s must be a duration of at least %s", e.Field(), e.Param())
+		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
 	case "endswith":
-		return fmt.Sprintf("%s must end with %q", e.Field(), e.Param())
+		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
-		return fmt.Sprintf("%s must be an IP address", e.Field())
+		return fmt.Sprintf("%q must be an IP address", ve.Field())
 	case "oneof":
-		return fmt.Sprintf("%s must be one of [%s]", e.Field(), e.Param())
+		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
-		return fmt.Sprintf("%s is a required field", e.Field())
+		return fmt.Sprintf("%q is a required field", ve.Field())
 	case "startsnotwith":
 		switch {
-		case strings.HasPrefix(e.StructField(), "Pipelines"):
-			return fmt.Sprintf("pipeline name must not start with %q", e.Param())
-		case strings.HasPrefix(e.StructField(), "Processors"):
-			return fmt.Sprintf("processor name must not start with %q", e.Param())
-		case strings.HasPrefix(e.StructField(), "Receivers"):
-			return fmt.Sprintf("receiver name must not start with %q", e.Param())
+		case strings.HasPrefix(ve.StructField(), "Pipelines"):
+			return fmt.Sprintf("pipeline name must not start with %q", ve.Param())
+		case strings.HasPrefix(ve.StructField(), "Processors"):
+			return fmt.Sprintf("processor name must not start with %q", ve.Param())
+		case strings.HasPrefix(ve.StructField(), "Receivers"):
+			return fmt.Sprintf("receiver name must not start with %q", ve.Param())
 		}
 	case "startswith":
-		return fmt.Sprintf("%s must start with %q", e.Field(), e.Param())
+		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
-		return fmt.Sprintf("%s must be a URL", e.Field())
+		return fmt.Sprintf("%q must be a URL", ve.Field())
 	}
 
 	return ve.FieldError.Error()
