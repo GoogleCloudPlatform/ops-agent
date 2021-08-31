@@ -1,7 +1,11 @@
 log_entries:
 - log_name: "nginx_access"
   field_matchers:
-    jsonPayload.message: "abcd"
+    httpRequest.remoteIp: "::1"
+    httpRequest.requestUrl: "/forbidden.html"
 - log_name: "nginx_error"
   field_matchers:
-    jsonPayload.message: "qwerty"
+    jsonPayload.client: "::1"
+    jsonPayload.level: "error"
+    jsonPayload.message: '.*Permission denied.*'
+    jsonPayload.request: "GET /forbidden.html.*"
