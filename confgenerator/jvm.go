@@ -30,6 +30,8 @@ type MetricsReceiverJVM struct {
 	MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 const defaultJVMEndpoint = "localhost:9999"
@@ -48,15 +50,25 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 		_ = err // TODO(djaglowski) return nil, fmt.Errorf("create jvmreceiver: %v, err)
 	}
 
+	config := map[string]interface{}{
+		"target_system":       "jvm",
+		"collection_interval": r.CollectionIntervalString(),
+		"endpoint":            r.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	// Only set the username & password fields if provided
+	if r.Username != "" {
+		config["username"] = r.Username
+		if r.Password != "" {
+			config["password"] = r.Password
+		}
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "jmx",
-			Config: map[string]interface{}{
-				"target_system":       "jvm",
-				"collection_interval": r.CollectionIntervalString(),
-				"endpoint":            r.Endpoint,
-				"jar_path":            jarPath,
-			},
+			Type:   "jmx",
+			Config: config,
 		},
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
