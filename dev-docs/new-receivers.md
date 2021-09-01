@@ -170,9 +170,7 @@ to be ready:
 
 - Public documentation: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent.
 - Configuration specific page: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration.
-
-TODO: Create a designated page / section for 3rd party applications in the cloud.google.com site above and link it to
-application specific instructions inside this GitHub repo.
+- Each application has a specific page like: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx
 
 For each application, the documentation needs to cover the following:
 - How to enable logs / metrics ingestion for this application
@@ -190,8 +188,9 @@ For each application, the documentation needs to cover the following:
     names, metrics labels to filter by.
   - Which dashboards contain these metrics by default.
 - Common failure cases specific to this application and how to troubleshoot them.
-  For each of the failure cases, document how users could detect that failure condition (e.g. via errors in the Ops
-  Agent log, via Ops Agent’s own health metrics), and how to fix it. Sample failure conditions include:
+  For each of the failure cases, document how users could detect that failure condition (e.g. via `nginx -V` to figure out whether the
+  `stub status` module is included; via errors in the Ops Agent log, via Ops Agent’s own health metrics), and how to fix it.
+  Sample failure conditions include:
   - Failed to talk to the application because the endpoint that exposes metrics is down.
   - Failed to connect to a database because the username and password combo is invalid
 
