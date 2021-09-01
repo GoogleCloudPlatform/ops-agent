@@ -275,8 +275,8 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 type LoggingProcessor interface {
 	component
 	// Components returns fluentbit components that implement this procesor.
-	// tag is the log tag that should be matched by those components, and i is the index of the processor in the pipeline and should be used when needed to generate unique names.
-	Components(tag string, i int) []fluentbit.Component
+	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
+	Components(tag string, uid string) []fluentbit.Component
 }
 
 var loggingProcessorTypes = &componentTypeRegistry{

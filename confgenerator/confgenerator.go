@@ -20,6 +20,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -146,7 +147,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					components = append(components, processor.Components(tag, i)...)
+					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
 				logNames = append(logNames, regexp.QuoteMeta(rID))
@@ -163,7 +164,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, stackdriverOutputComponent(strings.Join(logNames, "|"), userAgent))
 		}
 	}
-	out = append(out, LoggingReceiverFiles{
+	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
