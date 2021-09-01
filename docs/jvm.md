@@ -7,7 +7,7 @@ The `jvm` receiver can fetch stats from a Jave Virtual Machine via [JMX](https:/
 
 The receiver requires that you enable the [status module](http://jvm.org/en/docs/http/ngx_http_stub_status_module.html) on your JVM instance.
 
-In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port system property`. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. Java system properties can be set via command line args by prepending the property name with `-D` . For example: `-Dcom.sun.management.jmxremote.port`
+In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. Java system properties can be set via command line args by prepending the property name with `-D` . For example: `-Dcom.sun.management.jmxremote.port`
 
 ## Configuration
 
