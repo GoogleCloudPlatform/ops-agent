@@ -1,6 +1,6 @@
 # New 3rd Party Application Support How-To
 
-## Steps
+## Steps to add new support
 
 ### 1. Research what telemetry the application generates
 
@@ -170,9 +170,7 @@ to be ready:
 
 - Public documentation: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent.
 - Configuration specific page: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration.
-
-TODO: Create a designated page / section for 3rd party applications in the cloud.google.com site above and link it to
-application specific instructions inside this GitHub repo.
+- Each application has a specific page like: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx
 
 For each application, the documentation needs to cover the following:
 - How to enable logs / metrics ingestion for this application
@@ -190,8 +188,9 @@ For each application, the documentation needs to cover the following:
     names, metrics labels to filter by.
   - Which dashboards contain these metrics by default.
 - Common failure cases specific to this application and how to troubleshoot them.
-  For each of the failure cases, document how users could detect that failure condition (e.g. via errors in the Ops
-  Agent log, via Ops Agent’s own health metrics), and how to fix it. Sample failure conditions include:
+  For each of the failure cases, document how users could detect that failure condition (e.g. via `nginx -V` to figure out whether the
+  `stub status` module is included; via errors in the Ops Agent log, via Ops Agent’s own health metrics), and how to fix it.
+  Sample failure conditions include:
   - Failed to talk to the application because the endpoint that exposes metrics is down.
   - Failed to connect to a database because the username and password combo is invalid
 
@@ -288,4 +287,126 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 func init() {
 	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} }, "windows")
 }
+```
+
+## Test an application manually
+
+### 1. Create a VM and SSH into it
+
+```
+gcloud compute instances create --zone us-central1-a --image-project debian-cloud --image-family debian-10 test-app
+gcloud compute ssh test-app
+```
+
+### 2. Install Ops Agent
+
+The following commands are from https://cloud.devsite.corp.google.com/monitoring/agent/ops-agent/installation#agent-install-latest-linux
+
+```
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+```
+
+### 3. Install the application
+
+The commands should be available at `https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/{{APPLICATION_NAME}}/{{DISTRO_NAME}}/install` (e.g. https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/nginx/debian_ubuntu/install)
+
+Take Nginx for example:
+```
+sudo apt update
+sudo apt install -y nginx
+```
+
+### 4. Configure the application to expose metrics
+
+This step might be a no-op for some applications.
+
+The commands should be available at `https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/{{APPLICATION_NAME}}/{{DISTRO_NAME}}/post` (e.g. https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/nginx/debian_ubuntu/post). The last step is typically just to verify that the metrics are exposed successfully.
+
+Take Nginx for example:
+```
+sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
+server {
+    listen 80;
+    server_name 127.0.0.1;
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+    location / {
+        root /dev/null;
+    }
+}
+EOF
+sudo service nginx reload
+curl http://127.0.0.1:80/nginx_status
+```
+
+output
+```
+Active connections: 1
+server accepts handled requests
+ 9 9 9
+Reading: 0 Writing: 1 Waiting: 0
+```
+
+### 5. Configure and restart Ops Agent
+
+The commands should be available at `https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/agent/ops-agent/linux/enable_{{APPLICATION_NAME}}` (e.g. https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/agent/ops-agent/linux/enable_nginx).
+
+Take Nginx for example:
+```
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+logging:
+  receivers:
+    nginx_default_access:
+      type: nginx_access
+    nginx_default_error:
+      type: nginx_error
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx_default_access
+          - nginx_default_error
+metrics:
+  receivers:
+    nginx_metrics:
+      type: nginx
+      stub_status_url: http://127.0.0.1:80/nginx_status
+      collection_interval: 30s
+  service:
+    pipelines:
+      nginx_pipeline:
+        receivers:
+          - nginx_metrics
+EOF
+sudo service google-cloud-ops-agent restart
+```
+
+### 6. Verify metrics
+
+Take Nginx for example:
+
+Go to [Metrics Explorer](https://console.cloud.google.com/monitoring/metrics-explorer) and use the following query in the `MQL` tab:
+
+```
+fetch gce_instance
+| metric 'workload.googleapis.com/nginx.requests'
+| align rate(1m)
+| every 1m
+```
+
+### 7. Verify logs
+
+Take Nginx for example:
+
+Go to the [Log Viewer](https://console.cloud.google.com/logs/viewer) and use the
+following query to query for the Nginx logs:
+
+```
+resource.type="gce_instance"
+logName=("projects/{PROJECT_ID}/logs/nginx_default_error" OR "projects/{PROJECT_ID}/logs/nginx_default_access")
 ```
