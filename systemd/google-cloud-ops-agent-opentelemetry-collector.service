@@ -22,7 +22,6 @@ After=network.target
 RuntimeDirectory=google-cloud-ops-agent-opentelemetry-collector
 StateDirectory=google-cloud-ops-agent/opentelemetry-collector
 LogsDirectory=google-cloud-ops-agent/subagents
-Environment=BIN_DIRECTORY=@PREFIX@/subagents/opentelemetry-collector
 Type=simple
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -service=otel -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs ${LOGS_DIRECTORY}
 ExecStart=@PREFIX@/subagents/opentelemetry-collector/otelopscol --add-instance-id=false --config=${RUNTIME_DIRECTORY}/otel.yaml

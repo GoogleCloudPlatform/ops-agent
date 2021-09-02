@@ -16,7 +16,6 @@ package confgenerator
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 
@@ -82,16 +81,16 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 func findJarPath() (string, error) {
 	jarName := "opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar"
 
-	// TODO(djaglowski) differentiate behavior via build tags
-	if runtime.GOOS != "windows" {
-		return filepath.Join(os.Getenv("BIN_DIRECTORY"), jarName), nil
-	}
-
-	jarDir, err := osext.ExecutableFolder()
+	executableDir, err := osext.ExecutableFolder()
 	if err != nil {
 		return jarName, fmt.Errorf("could not determine binary path: %w", err)
 	}
-	return filepath.Join(jarDir, jarName), nil
+
+	// TODO(djaglowski) differentiate behavior via build tags
+	if runtime.GOOS != "windows" {
+		return filepath.Join(executableDir, "../subagents/opentelemetry-collector/", jarName), nil
+	}
+	return filepath.Join(executableDir, jarName), nil
 }
 
 func init() {
