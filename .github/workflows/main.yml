@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v2
     - if: ${{ startsWith(runner.os, 'ubuntu-') }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
-    - run: go test -mod=mod ./...
+    - run: go test -mod=mod -coverprofile=coverage/lcov.info ./...
     - uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.github_token }}
