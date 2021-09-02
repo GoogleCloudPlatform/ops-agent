@@ -18,4 +18,6 @@ jobs:
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
     - run: go test -mod=mod ./...
     - uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
 
