@@ -12,11 +12,12 @@ jobs:
       with:
         go-version: 1.x
     - run: |
+        echo "Runner: '${{ runner.os }}' Matrix: '${{ matrix.os }}'"
         go get golang.org/x/tools/cmd/goimports
         go install github.com/mattn/goveralls@latest
     - run: git config --global core.symlinks true
     - uses: actions/checkout@v2
-    - if: ${{ startsWith(runner.os, 'ubuntu-') }}
+    - if: ${{ startsWith(matrix.os, 'ubuntu-') }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
     - run: go test -mod=mod -coverprofile=covprofile ./...
     - env:
