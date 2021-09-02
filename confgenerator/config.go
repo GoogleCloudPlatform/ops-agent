@@ -95,14 +95,7 @@ func (ve validationError) Error() string {
 	case "required":
 		return fmt.Sprintf("%q is a required field", ve.Field())
 	case "startsnotwith":
-		switch {
-		case strings.HasPrefix(ve.StructField(), "Pipelines"):
-			return fmt.Sprintf("pipeline name must not start with %q", ve.Param())
-		case strings.HasPrefix(ve.StructField(), "Processors"):
-			return fmt.Sprintf("processor name must not start with %q", ve.Param())
-		case strings.HasPrefix(ve.StructField(), "Receivers"):
-			return fmt.Sprintf("receiver name must not start with %q", ve.Param())
-		}
+		return fmt.Sprintf("%q must not start with %q", ve.Field(), ve.Param())
 	case "startswith":
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
@@ -167,7 +160,7 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 		v:   newValidator(),
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
+		return UnifiedConfig{}, err
 	}
 	return config, nil
 }

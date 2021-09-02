@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [8:21] pipeline name must not start with "lib:"
+[8:21] "pipelines[lib:pipeline_1]" must not start with "lib:"
    5 |       collection_interval: 60s
    6 |   service:
    7 |     pipelines:

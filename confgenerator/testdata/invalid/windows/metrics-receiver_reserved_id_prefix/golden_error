@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [3:19] receiver name must not start with "lib:"
+[3:19] "receivers[lib:receiver_1]" must not start with "lib:"
    1 | metrics:
    2 |   receivers:
 >  3 |     lib:receiver_1:

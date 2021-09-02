@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [9:20] processor name must not start with "lib:"
+[9:20] "processors[lib:processor_1]" must not start with "lib:"
    6 |       - /var/log/messages
    7 |       - /var/log/syslog
    8 |   processors:

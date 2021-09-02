@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [5:20] "listen_host" is a required field
+[5:20] "listen_host" is a required field
    2 |   receivers:
    3 |     receiver_1:
    4 |       type: syslog

@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [10:21] pipeline name must not start with "lib:"
+[10:21] "Pipelines[lib:pipeline_1]" must not start with "lib:"
    7 |       - /var/log/syslog
    8 |   service:
    9 |     pipelines:
