@@ -53,7 +53,7 @@ function build_otel_jmx() {
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
   ./gradlew --no-daemon :jmx-metrics:build
   # TODO: Parameterize this jar name once we can control the release artifact
-  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/"
+  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
 }
 
 function build_fluentbit() {

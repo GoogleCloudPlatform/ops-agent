@@ -78,10 +78,14 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 	}}
 }
 
-func findJarPath() (string, error) {
-	jarName := "opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar"
+var getExecutableFolder = func() (string, error) {
+	return osext.ExecutableFolder()
+}
 
-	executableDir, err := osext.ExecutableFolder()
+func findJarPath() (string, error) {
+	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
+
+	executableDir, err := getExecutableFolder()
 	if err != nil {
 		return jarName, fmt.Errorf("could not determine binary path: %w", err)
 	}

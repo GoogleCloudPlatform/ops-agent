@@ -120,7 +120,7 @@ WORKDIR /work/submodules/opentelemetry-java-contrib
 
 RUN ./gradlew --no-daemon :jmx-metrics:build
 # TODO: Parameterize this jar name once we can control the release artifact
-RUN Copy-Item -Path contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/;
+RUN Copy-Item -Path contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching

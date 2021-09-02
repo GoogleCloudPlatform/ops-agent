@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -89,6 +90,14 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 }
 
 func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
+	getExecutableFolder = func() (string, error) {
+		if runtime.GOOS != "windows" {
+			return "/opt/google-cloud-ops-agent/libexec", nil
+		} else {
+			return "C:\\Program Files\\Google\\Ops Agent\\", nil
+		}
+	}
+
 	dirPath := filepath.Join(validTestdataDir, platform.OS)
 	dirs, err := ioutil.ReadDir(dirPath)
 	if err != nil {
