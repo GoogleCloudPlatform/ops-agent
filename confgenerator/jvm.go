@@ -60,9 +60,9 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 	// Only set the username & password fields if provided
 	if r.Username != "" {
 		config["username"] = r.Username
-		if r.Password != "" {
-			config["password"] = r.Password
-		}
+	}
+	if r.Password != "" {
+		config["password"] = r.Password
 	}
 
 	return []otel.Pipeline{{
