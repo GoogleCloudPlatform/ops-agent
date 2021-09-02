@@ -14,7 +14,11 @@ jobs:
     - run: |
         go get golang.org/x/tools/cmd/goimports
         go install github.com/mattn/goveralls@latest
-    - run: git config --global core.symlinks true
+    - run: |
+        git config --global core.symlinks true
+        # https://github.com/actions/checkout/issues/135
+        git config --global core.autocrlf false
+        git config --global core.eol lf
     - uses: actions/checkout@v2
     - if: ${{ runner.os == 'Linux' }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
