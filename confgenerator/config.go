@@ -82,7 +82,28 @@ func (ve validationError) StructField() string {
 	return parts[0]
 }
 
-// TODO: Implement validationError.Error() for better error messages.
+func (ve validationError) Error() string {
+	switch ve.Tag() {
+	case "duration":
+		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
+	case "endswith":
+		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
+	case "ip":
+		return fmt.Sprintf("%q must be an IP address", ve.Field())
+	case "oneof":
+		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
+	case "required":
+		return fmt.Sprintf("%q is a required field", ve.Field())
+	case "startsnotwith":
+		return fmt.Sprintf("%q must not start with %q", ve.Field(), ve.Param())
+	case "startswith":
+		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
+	case "url":
+		return fmt.Sprintf("%q must be a URL", ve.Field())
+	}
+
+	return ve.FieldError.Error()
+}
 
 func (v *validatorContext) Struct(s interface{}) error {
 	err := v.v.StructCtx(v.ctx, s)
@@ -139,7 +160,7 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 		v:   newValidator(),
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, fmt.Errorf("the agent config file is not valid. detailed error: %s", err)
+		return UnifiedConfig{}, err
 	}
 	return config, nil
 }

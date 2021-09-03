@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [5:28] Key: 'MetricsReceiverShared.collection_interval' Error:Field validation for 'collection_interval' failed on the 'duration' tag
+[5:28] "collection_interval" must be a duration of at least 10s
    2 |   receivers:
    3 |     receiver_1:
    4 |       type: hostmetrics
