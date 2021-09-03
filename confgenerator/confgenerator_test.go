@@ -89,8 +89,8 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 }
 
 func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
-	getExecutableFolder = func() (string, error) {
-		return "/path/to/executables/", nil
+	findJarPath = func() (string, error) {
+		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
 
 	dirPath := filepath.Join(validTestdataDir, platform.OS)
