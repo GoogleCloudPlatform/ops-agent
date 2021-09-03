@@ -16,6 +16,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"runtime"
 
@@ -46,7 +47,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 
 	jarPath, err := findJarPath()
 	if err != nil {
-		_ = err // TODO(djaglowski) return nil, fmt.Errorf("create jvmreceiver: %v, err)
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
 	}
 
 	config := map[string]interface{}{
@@ -87,7 +88,7 @@ func findJarPath() (string, error) {
 
 	executableDir, err := getExecutableFolder()
 	if err != nil {
-		return jarName, fmt.Errorf("could not determine binary path: %w", err)
+		return jarName, fmt.Errorf("could not determine binary path for jvm receiver: %w", err)
 	}
 
 	// TODO(djaglowski) differentiate behavior via build tags
