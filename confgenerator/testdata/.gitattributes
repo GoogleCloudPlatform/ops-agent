@@ -1,0 +1,2 @@
+# Golden error messages expect inputs to have Unix line endings.
+input.yaml text eol=lf
