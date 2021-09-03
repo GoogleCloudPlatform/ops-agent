@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [8:7] unknown field "transport_protocol"
+[8:7] unknown field "transport_protocol"
    5 |       include_paths:
    6 |       - /var/log/messages
    7 |       - /var/log/syslog

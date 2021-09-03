@@ -1,1 +1,1 @@
-the agent config file is not valid. detailed error: cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16
+cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16

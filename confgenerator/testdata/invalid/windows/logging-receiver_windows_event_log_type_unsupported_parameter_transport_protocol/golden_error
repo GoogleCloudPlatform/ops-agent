@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [6:7] unknown field "transport_protocol"
+[6:7] unknown field "transport_protocol"
    3 |     receiver_1:
    4 |       type: windows_event_log
    5 |       channels: [System,Application,Security]

@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [5:22] string was used where sequence is expected
+[5:22] string was used where sequence is expected
    2 |   receivers:
    3 |     receiver_1:
    4 |       type: files
