@@ -1,6 +1,6 @@
-set -e
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
 
-curl http://local-stackdriver-agent.stackdriver.com:80/nginx_status
+set -e
 
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # Copyright 2020 Google LLC
@@ -19,15 +19,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    nginxmetrics:
+    nginx_metrics:
       type: nginx
-      stub_status_url: http://local-stackdriver-agent.stackdriver.com:80/nginx_status
+      stub_status_url: http://127.0.0.1:80/nginx_status
       collection_interval: 30s
   service:
     pipelines:
       nginxpipeline:
         receivers:
-          - nginxmetrics
+          - nginx_metrics
 EOF
 
-sudo systemctl restart google-cloud-ops-agent.service
+sudo service google-cloud-ops-agent restart

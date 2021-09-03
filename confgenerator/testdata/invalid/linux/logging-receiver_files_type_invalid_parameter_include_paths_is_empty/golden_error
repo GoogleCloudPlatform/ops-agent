@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [5:21] Key: 'LoggingReceiverFiles.include_paths' Error:Field validation for 'include_paths' failed on the 'required' tag
+[5:21] "include_paths" is a required field
 >  5 | null
                            ^
    6 |   service:

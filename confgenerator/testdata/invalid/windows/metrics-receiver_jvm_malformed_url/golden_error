@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [19:17] Key: 'MetricsReceiverJVM.endpoint' Error:Field validation for 'endpoint' failed on the 'url' tag
+[19:17] "endpoint" must be a URL
   16 |   receivers:
   17 |     jvmmetrics:
   18 |       type: jvm

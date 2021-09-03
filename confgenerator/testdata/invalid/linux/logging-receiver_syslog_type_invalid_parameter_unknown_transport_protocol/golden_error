@@ -1,4 +1,4 @@
-the agent config file is not valid. detailed error: [7:27] Key: 'LoggingReceiverSyslog.transport_protocol' Error:Field validation for 'transport_protocol' failed on the 'oneof' tag
+[7:27] "transport_protocol" must be one of [tcp udp]
    4 |       type: syslog
    5 |       listen_host: "1.1.1.1"
    6 |       listen_port: 1111
