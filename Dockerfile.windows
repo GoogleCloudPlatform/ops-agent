@@ -104,15 +104,14 @@ RUN cmake --build . --config Release; `
 
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
-
 ###############################################################################
 # Build JMX Project
 ###############################################################################
 
 FROM base as javacontrib
 
-ADD https://javadl.oracle.com/webapps/download/AutoDL?BundleId=242044_3d5a2bb8f8d4428bbe94aed7ec7ae784 /local/jdk-8u251-windows-x64.exe
-RUN powershell start-process -filepath C:\local\jdk-8u251-windows-x64.exe -passthru -wait -argumentlist '/s,INSTALLDIR=C:\Java,/L,install64.log'
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
+RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-11-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
 
 COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
 
