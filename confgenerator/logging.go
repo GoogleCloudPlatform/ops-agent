@@ -16,6 +16,8 @@ package confgenerator
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -84,18 +86,24 @@ type LoggingProcessorParseShared struct {
 	Field      string `yaml:"field,omitempty"`       // default to "message"
 	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
+	// Types allows parsing the extracted fields.
+	// Not exposed to users for now, but can be used by app receivers.
+	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
+	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
+	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
 }
 
 // Components returns a filter and parser component for this parse processor.
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
-func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Component, fluentbit.Component) {
-	parserName := fmt.Sprintf("%s.%d", tag, i)
+func (p LoggingProcessorParseShared) Components(tag, uid string) (fluentbit.Component, fluentbit.Component) {
+	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Match":  tag,
-			"Name":   "parser",
-			"Parser": parserName,
+			"Match":    tag,
+			"Name":     "parser",
+			"Parser":   parserName,
+			"Key_Name": "message", // Required
 		},
 	}
 	if p.Field != "" {
@@ -112,6 +120,14 @@ func (p LoggingProcessorParseShared) Components(tag string, i int) (fluentbit.Co
 	}
 	if p.TimeKey != "" {
 		parser.Config["Time_Key"] = p.TimeKey
+	}
+	if len(p.Types) > 0 {
+		var types []string
+		for k, v := range p.Types {
+			types = append(types, fmt.Sprintf("%s:%s", k, v))
+		}
+		sort.Strings(types)
+		parser.Config["Types"] = strings.Join(types, " ")
 	}
 	return filter, parser
 }
