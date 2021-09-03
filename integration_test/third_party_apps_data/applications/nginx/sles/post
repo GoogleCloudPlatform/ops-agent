@@ -19,7 +19,7 @@ server {
 }
 EOF
 
-sudo service nginx reload
+sudo service nginx start
 
 # Verify the metrics is exposed successfully. Sample output:
 # Active connections: 1
