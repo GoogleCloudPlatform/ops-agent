@@ -26,7 +26,8 @@ the test will:
     be a no-op for some applications.
 1.  Configure the the Ops Agent to look for the application's logs/metrics by
     running `agent/ops-agent/<platform>/enable_<application>` on the VM.
-1.  run `exercise` script
+1.  Run `applications/<application>/exercise` script to send some load to
+    the application, so that we can get it to generate some logs/metrics
 1.  Wait for up to 7 minutes for logs matching the expectations in 
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
@@ -68,11 +69,9 @@ simplified to:
     no-op for some applications. If so, just leave the file empty.
 1.  `agent/ops-agent/linux/enable_<application>` to configure the Ops Agent to
     read the application's metrics exposed in the previous step.
-1.  (if necessary) `applications/<application>/exercise` to send some load to
-    the application, so that we can get it to generate some logs/metrics.
-
-If you want to test logging, you must also add an
-`applications/<application>/expected_logs.yaml` file.
+1.  (if necessary) `applications/<application>/exercise`. This is only needed
+    sometimes, e.g. to get the application to log to a particular file.
+1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
 
 # Test Logs
 
