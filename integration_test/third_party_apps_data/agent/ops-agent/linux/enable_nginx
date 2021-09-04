@@ -28,6 +28,18 @@ metrics:
       nginxpipeline:
         receivers:
           - nginx_metrics
+logging:
+  receivers:
+    nginx_access:
+      type: nginx_access
+    nginx_error:
+      type: nginx_error
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx_access
+          - nginx_error
 EOF
 
 sudo service google-cloud-ops-agent restart
