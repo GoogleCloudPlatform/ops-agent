@@ -48,6 +48,14 @@ function build_otel() {
   go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" ./cmd/otelopscol
 }
 
+function build_otel_jmx() {
+  cd submodules/opentelemetry-java-contrib
+  mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
+  ./gradlew --no-daemon :jmx-metrics:build
+  # TODO: Parameterize this jar name once we can control the release artifact
+  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+}
+
 function build_fluentbit() {
   cd submodules/fluent-bit
   mkdir -p build
@@ -97,6 +105,7 @@ function build_systemd() {
 }
 
 (build_otel)
+(build_otel_jmx)
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)
