@@ -1,1 +1,1 @@
-agent.googleapis.com/jvm/memory/usage
+workload.googleapis.com/jvm.memory.heap.used
