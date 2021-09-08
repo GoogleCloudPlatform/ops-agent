@@ -17,6 +17,8 @@ jobs:
     - run: |
         git config --global core.symlinks true
     - uses: actions/checkout@v2
+      with:
+        submodules: true
     - if: ${{ runner.os == 'Linux' }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
     - run: go test -mod=mod -coverprofile=covprofile ./...
