@@ -70,17 +70,19 @@ func (LoggingProcessorNginxAccess) Type() string {
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
 	c := LoggingProcessorParseRegex{
-		// Sample line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
+		// Sample line (default config): ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
+		// Sample line (with latency in seconds): ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0" 1.002s
 		// TODO: fluentd's default parser appends (?:\s+(?<http_x_forwarded_for>[^ ]+))? but this is not part of Nginx's log format. Consider adding it or other support for extra fields?
-		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
+		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")? ?(?<http_request_latency>[^ ]*)$`,
 		LoggingProcessorParseShared: LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
-			Types: map[string]string{
-				"http_request_status": "integer",
-				// N.B. "http_request_responseSize" is a string containing an integer.
-				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
-			},
+			// The `http_request_status` field is an integer, however the FluentBit
+			// "Key_Value_Matches" condition only works on strings, so it is
+			// intentionally left as a string type, though it is correctly
+      // interpreted as an integer when it is exported to Cloud Logging.
+			// N.B. "http_request_responseSize" is a string containing an integer.
+			// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 		},
 	}.Components(tag, uid)
 	// nginx logs "-" when a field does not have a value. Remove the field entirely when this happens.
@@ -96,6 +98,25 @@ func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluent
 				"Match":     tag,
 				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
 				"Remove":    field,
+			},
+		})
+	}
+	// Assign severity based on HTTP status code class (enables use of system
+	// provided logs based metrics for charts/alerts of requests by status class).
+	for _, l := range []struct{ statusFirstDigit, severity string }{
+		{"5", "ERROR"},
+		{"4", "WARNING"},
+		{"3", "NOTICE"},
+		{"2", "INFO"},
+		{"1", "DEBUG"},
+	} {
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Matches http_request_status %s\\d\\d", l.statusFirstDigit),
+				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
 			},
 		})
 	}
