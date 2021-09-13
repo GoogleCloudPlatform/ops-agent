@@ -167,92 +167,6 @@ $ tree $CONFIG_OUT
     [golden otel conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_otel.conf)
     at `$CONFIG_OUT/otel.conf`.
 
-## Build and test automatically on GCE VMs
-
-### Testing changes from a GitHub dev branch
-
-1.  Check out the scripts.
-
-    Note: This will clean up your local `/tmp/google-cloud-ops-agent/` repo.
-
-    Note: Here we use GitHub instead of Git-on-borg because the sync between the
-    two can take > 10 minutes and cause delay for development.
-
-    ```shell
-    # Enter your dev branch name or the commit hash here, if it's not the `master` branch.
-    $ export GIT_BRANCH=
-
-    # Adjust the GitHub repo owner if you are testing from a fork.
-    $ export GITHUB_REPO_OWNER=GoogleCloudPlatform
-
-    $ rm -rf /tmp/google-cloud-ops-agent/
-    $ DATETIME=$(date +'%Y%m%d-%H%M%S')
-    $ g4d -f ${USER}-release-ops-agent-$DATETIME
-    $ cd cloud/monitoring/agents/release_scripts/ops_agent
-    $ export USE_GITHUB=1
-    $ export GITHUB_REPO_NAME=ops-agent
-    ```
-
-1.  Trigger the build and test jobs.
-
-    To build and test for all platforms, use:
-
-    ```shell
-    $ ./build_and_test_all.sh $GIT_BRANCH
-    ```
-
-    To build and test a single distro, set `$DISTRO` to one of the following values:
-
-    - `sles12`
-    - `sles15`
-    - `stretch`
-    - `buster`
-    - `xenial`
-    - `bionic`
-    - `focal`
-    - `centos7`
-    - `centos8`
-    - `windows`
-
-    Then run:
-
-    ```shell
-    ./build_and_test.sh $DISTRO $GIT_BRANCH
-    ```
-
-    You can check the status (pass/fail) of all distros by running:
-
-    ```bash
-    ./status.sh
-    ```
-
-    <details>
-    <summary>Retry and troubleshooting:</summary>
-
-    If certain distros failed the build, and you suspect it's a flake, rerun
-    that distro by:
-
-    ```bash
-    ./build.sh $DISTRO
-    ```
-
-    If certain distros failed, and you suspect it's a flake, rerun that distro
-    by
-
-    ```bash
-    ./test.sh $DISTRO
-    ```
-
-    or rerun all tests with the built packages:
-
-    ```bash
-    ./test_all.sh
-    ```
-
-    then check with `./status.sh` again.
-
-    </details>
-
 ## Build and test manually on GCE VMs
 
 ### Linux
@@ -963,8 +877,6 @@ fetch gce_instance
     ops-agent$ git checkout -b ${USER}-update-$SUBMODULE_NAME
     ops-agent$ git push origin ${USER}-update-$SUBMODULE_NAME
     ```
-
-1.  To test your changes, see [Testing changes from a GitHub dev branch](#testing-changes-from-a-github-dev-branch).
 
 ## License and Copyright
 
