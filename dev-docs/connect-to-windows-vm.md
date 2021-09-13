@@ -111,6 +111,9 @@ googlecloudsdk.api_lib.compute.iap_tunnel_websocket.ConnectionCreationError: Err
 1.  Go to the GCE VM page at
     https://console.cloud.google.com/compute/instances?project=$VM_PROJECT_ID,
     find the target VM and click `RDP`.
+    
+    ![image](https://user-images.githubusercontent.com/5287526/133006249-97aa3501-dad0-4af3-936e-983ebac70bc2.png)
+
 
 1.  In the popped-up Chrome RDP plugin window there should be a prompt for you
     to enter credentials. Put in the password retrieved from the previous
