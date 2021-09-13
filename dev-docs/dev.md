@@ -711,6 +711,9 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     Operations\Ops Agent\run\buffers` folder. `C:\ProgramData` is by default
     hidden, you need to show it.
 
+    ![image](https://user-images.githubusercontent.com/5287526/133006710-2ab21ef6-22e7-43ff-826d-15e82a2d3e08.png)
+
+
     ```
     C:\Users\{{USERNAME}}\tmp\out\bin\fluent-bit.exe --config="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf" --parser="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf" --storage_path="C:\ProgramData\Google\Cloud Operations\Ops Agent\run\buffers"
     ```
