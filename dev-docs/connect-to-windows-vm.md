@@ -20,6 +20,7 @@ non-trivial interactions with Windows VMs.
 *   Install `Microsoft Remote Desktop for Mac`
 *   Create a PC in `Microsoft Remote Desktop for Mac` that connects to
     `localhost:13000`.
+    ![image](https://user-images.githubusercontent.com/5287526/133005613-eab25386-fcda-4554-a156-6628803390c0.png)
 
 *   Set up [IAP](https://cloud.google.com/iap/docs/using-tcp-forwarding)
     permission by running the following command:
@@ -59,8 +60,12 @@ proceeding.
     ```
 
 1.  Open Microsoft Remote Desktop app, double click on the `localhost:13000` PC
-    to connect to it. Use the password you recorded in the previous step when
+    to connect to it. Use the password you recorded in the previous
+    `gcloud compute reset-windows-password` step when
     prompted to do so.
+    
+   ![image](https://user-images.githubusercontent.com/5287526/133006175-a1f2b019-1a75-4f62-9c3c-18759f951d90.png)
+
 
 <details>
 <summary>Troubleshooting</summary>
@@ -108,7 +113,9 @@ googlecloudsdk.api_lib.compute.iap_tunnel_websocket.ConnectionCreationError: Err
     find the target VM and click `RDP`.
 
 1.  In the popped-up Chrome RDP plugin window there should be a prompt for you
-    to enter credentials. Put in the password retrieved from the previous step
-    and hit OK.
+    to enter credentials. Put in the password retrieved from the previous
+    `gcloud compute reset-windows-password` step and hit OK.
+    
+    ![image](https://user-images.githubusercontent.com/5287526/133006296-04c4a372-e93b-4aac-b578-02a2e2d540ad.png)
 
 </details>
