@@ -107,12 +107,11 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			expectedFiles := readFileContents(t, testName, platform.OS, dir)
 
 			var got map[string]string
+			var mergedConfBytes, builtInConfBytes []byte
 
 			confDebugFolder := filepath.Join(dirPath, testName)
 			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
-			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
-			if err := confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
+			if builtInConfBytes, mergedConfBytes, err = confgenerator.MergeConfFiles(userSpecifiedConfPath, platform.OS, apps.BuiltInConfStructs); err != nil {
 				// TODO: Move this inside generateConfigs when we can do MergeConfFiles in-memory
 				if _, ok := expectedFiles["error"]; ok || *updateGolden {
 					// Config generation failed, but that might be expected.
@@ -120,38 +119,22 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 						"error": err.Error(),
 					}
 				} else {
-					t.Fatalf("MergeConfFiles(%q, %q) got: %v", userSpecifiedConfPath, confDebugFolder, err)
+					t.Fatalf("MergeConfFiles(%q) got: %v", userSpecifiedConfPath, err)
 				}
 			}
 
-			defer func() {
-				// Ignore ENOENT errors because we don't know if MergeConfFiles successfully generated these files.
-				os.Remove(builtInConfPath)
-				os.Remove(mergedConfPath)
-			}()
-
 			if got == nil {
-				data, err := ioutil.ReadFile(mergedConfPath)
-				if err != nil {
-					t.Fatalf("ReadFile(%q) got: %v", userSpecifiedConfPath, err)
-				}
-				t.Logf("merged config:\n%s", data)
+				t.Logf("merged config:\n%s", mergedConfBytes)
 
 				// Generate the actual conf files.
-				got, err = generateConfigs(data, platform)
+				got, err = generateConfigs(mergedConfBytes, platform)
 
 				if err != nil {
 					t.Logf("config generation returned %v", err)
 				}
 
 				if testName == builtInConfTestName {
-					// TODO: Fetch this without writing to disk first.
-					generatedBuiltInConfig, err := ioutil.ReadFile(builtInConfPath)
-					if err != nil {
-						t.Errorf("test %q: error reading %s: %v", testName, builtInConfPath, err)
-					} else {
-						got["built-in-config.yaml"] = string(generatedBuiltInConfig)
-					}
+					got["built-in-config.yaml"] = string(builtInConfBytes)
 				}
 			}
 

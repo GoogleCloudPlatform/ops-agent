@@ -18,10 +18,10 @@ import (
 	"flag"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/shirou/gopsutil/host"
 )
 
 var (
@@ -40,9 +40,21 @@ func main() {
 }
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	confDebugFolder := filepath.Join(os.Getenv("RUNTIME_DIRECTORY"), "conf", "debug")
-	if err := confgenerator.MergeConfFiles(*input, confDebugFolder, "linux", apps.BuiltInConfStructs); err != nil {
+	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	if err != nil {
 		return err
 	}
-	return confgenerator.GenerateFiles(filepath.Join(confDebugFolder, "merged-config.yaml"), *service, *logsDir, *stateDir, *outDir)
+
+	// Log the built-in and merged config files to STDOUT. These are then written
+	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
+	// running.
+	log.Printf("Built-in config:\n%s", builtInConfig)
+	log.Printf("Merged config:\n%s", mergedConfig)
+
+	hostInfo, _ := host.Info()
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
+	if err != nil {
+		return err
+	}
+	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
 }
