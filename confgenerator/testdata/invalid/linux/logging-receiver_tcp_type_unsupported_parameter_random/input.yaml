@@ -1,0 +1,11 @@
+logging:
+  receivers:
+    receiver_1:
+      type: tcp
+      listen_host: 1.1.1.1
+      listen_port: 1111
+      unsupported_parameter: value_1
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [receiver_1]

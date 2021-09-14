@@ -152,6 +152,53 @@ func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
 }
 
+// A LoggingReceiverTCP represents the configuration for a TCP receiver.
+type LoggingReceiverTCP struct {
+	ConfigComponent `yaml:",inline"`
+
+	ListenHost string `yaml:"listen_host,omitempty" validate:"omitempty,ip"`
+	ListenPort uint16 `yaml:"listen_port,omitempty"`
+}
+
+func (r LoggingReceiverTCP) Type() string {
+	return "tcp"
+}
+
+func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
+	if r.ListenHost == "" {
+		r.ListenHost = "0.0.0.0"
+	}
+	if r.ListenPort == 0 {
+		r.ListenPort = 5170
+	}
+
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/tcp
+			"Name":   "tcp",
+			"Tag":    tag,
+			"Listen": r.ListenHost,
+			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Format": "json",
+			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+			// Buffer in disk to improve reliability.
+			"storage.type": "filesystem",
+
+			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+			"Mem_Buf_Limit": "10M",
+		},
+	}}
+}
+
+func init() {
+	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverTCP{} })
+}
+
 // A LoggingReceiverWindowsEventLog represents the user configuration for a Windows event log receiver.
 type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
@@ -176,6 +223,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}}
 }
+
 func init() {
 	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWindowsEventLog{} }, "windows")
 }

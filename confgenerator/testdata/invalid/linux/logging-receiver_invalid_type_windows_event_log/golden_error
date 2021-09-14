@@ -1,1 +1,1 @@
-logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [files, nginx_access, nginx_error, syslog].
+logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [files, nginx_access, nginx_error, syslog, tcp].
