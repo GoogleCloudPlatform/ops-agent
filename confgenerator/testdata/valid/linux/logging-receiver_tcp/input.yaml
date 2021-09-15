@@ -14,11 +14,11 @@
 
 logging:
   receivers:
-    test_tcp_log_source_id:
+    tcp_logs:
       type: tcp
-      listen_host: 1.1.1.1
-      listen_port: 1111
+      listen_host: 1.2.3.4
+      listen_port: 5678
   service:
     pipelines:
-      default_pipeline:
-        receivers: [test_tcp_log_source_id]
+      tcp_pipeline:
+        receivers: [tcp_logs]

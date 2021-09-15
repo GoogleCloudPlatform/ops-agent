@@ -1,6 +1,6 @@
 [5:20] "listen_host" must be an IP address
    2 |   receivers:
-   3 |     receiver_1:
+   3 |     tcp_logs:
    4 |       type: tcp
 >  5 |       listen_host: abc
                           ^

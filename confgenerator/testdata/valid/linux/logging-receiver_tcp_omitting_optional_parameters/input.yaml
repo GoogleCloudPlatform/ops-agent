@@ -14,9 +14,9 @@
 
 logging:
   receivers:
-    test_tcp_log_source_id:
+    tcp_logs:
       type: tcp
   service:
     pipelines:
-      default_pipeline:
-        receivers: [test_tcp_log_source_id]
+      tcp_pipeline:
+        receivers: [tcp_logs]

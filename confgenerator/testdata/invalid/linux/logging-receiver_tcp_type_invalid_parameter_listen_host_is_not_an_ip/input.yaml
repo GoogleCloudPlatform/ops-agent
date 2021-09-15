@@ -1,10 +1,10 @@
 logging:
   receivers:
-    receiver_1:
+    tcp_logs:
       type: tcp
       listen_host: abc
       listen_port: 1111
   service:
     pipelines:
-      default_pipeline:
-        receivers: [receiver_1]
+      tcp_pipeline:
+        receivers: [tcp_logs]
