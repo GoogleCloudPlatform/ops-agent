@@ -16,9 +16,6 @@ logging:
   receivers:
     tcp_logs:
       type: tcp
-      format: json
-      listen_host: 1.2.3.4
-      listen_port: 5678
   service:
     pipelines:
       tcp_pipeline:

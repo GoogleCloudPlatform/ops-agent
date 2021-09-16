@@ -1,0 +1,8 @@
+[17:13] "format" must be one of [json]
+  15 | logging:
+  16 |   receivers:
+> 17 |     tcp_logs:
+                   ^
+  18 |       type: tcp
+  19 |   service:
+  20 |     pipelines:

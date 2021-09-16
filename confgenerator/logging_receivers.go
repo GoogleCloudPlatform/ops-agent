@@ -158,6 +158,7 @@ type LoggingReceiverTCP struct {
 
 	ListenHost string `yaml:"listen_host,omitempty" validate:"omitempty,ip"`
 	ListenPort uint16 `yaml:"listen_port,omitempty"`
+	Format     string `yaml:"format" validate:"oneof=json"`
 }
 
 func (r LoggingReceiverTCP) Type() string {
