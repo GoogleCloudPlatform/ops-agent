@@ -2,6 +2,7 @@ logging:
   receivers:
     tcp_logs:
       type: tcp
+      format: json
       listen_host: "1.1.1.1"
       listen_port: abc
   service:

@@ -2,9 +2,7 @@ logging:
   receivers:
     tcp_logs:
       type: tcp
-      format: json
-      listen_host: abc
-      listen_port: 1111
+      format: not_json
   service:
     pipelines:
       tcp_pipeline:

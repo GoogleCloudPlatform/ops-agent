@@ -156,6 +156,7 @@ func init() {
 type LoggingReceiverTCP struct {
 	ConfigComponent `yaml:",inline"`
 
+	Format     string `yaml:"format,omitempty" validate:"required,oneof=json"`
 	ListenHost string `yaml:"listen_host,omitempty" validate:"omitempty,ip"`
 	ListenPort uint16 `yaml:"listen_port,omitempty"`
 }
@@ -180,7 +181,7 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 			"Tag":    tag,
 			"Listen": r.ListenHost,
 			"Port":   fmt.Sprintf("%d", r.ListenPort),
-			"Format": "json",
+			"Format": r.Format,
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
 			"storage.type": "filesystem",
