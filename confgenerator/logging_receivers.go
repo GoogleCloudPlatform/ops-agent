@@ -166,7 +166,7 @@ func (r LoggingReceiverTCP) Type() string {
 
 func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
-		r.ListenHost = "0.0.0.0"
+		r.ListenHost = "127.0.0.1"
 	}
 	if r.ListenPort == 0 {
 		r.ListenPort = 5170
