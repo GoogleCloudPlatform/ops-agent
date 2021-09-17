@@ -1,0 +1,8 @@
+[3:13] "format" is a required field
+   1 | logging:
+   2 |   receivers:
+>  3 |     tcp_logs:
+                   ^
+   4 |       type: tcp
+   5 |   service:
+   6 |     pipelines:

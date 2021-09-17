@@ -16,6 +16,7 @@ logging:
   receivers:
     tcp_logs:
       type: tcp
+      format: json
   service:
     pipelines:
       tcp_pipeline:

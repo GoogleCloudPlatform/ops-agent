@@ -1,0 +1,9 @@
+[5:15] "format" must be one of [json]
+   2 |   receivers:
+   3 |     tcp_logs:
+   4 |       type: tcp
+>  5 |       format: not_json
+                     ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       tcp_pipeline:
