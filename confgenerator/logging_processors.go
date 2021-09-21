@@ -36,7 +36,7 @@ func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Compo
 }
 
 func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseJson{} })
+	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseJson{} })
 }
 
 // A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
@@ -62,7 +62,7 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 }
 
 func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorParseRegex{} })
+	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
 }
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{

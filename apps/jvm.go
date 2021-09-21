@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
 	"fmt"
@@ -20,14 +20,15 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/kardianos/osext"
 )
 
 type MetricsReceiverJVM struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
-	MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
 	Username string `yaml:"username"`
@@ -95,5 +96,5 @@ var findJarPath = func() (string, error) {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverJVM{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJVM{} })
 }
