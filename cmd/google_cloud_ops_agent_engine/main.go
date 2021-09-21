@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
@@ -40,7 +41,7 @@ func main() {
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	confDebugFolder := filepath.Join(os.Getenv("RUNTIME_DIRECTORY"), "conf", "debug")
-	if err := confgenerator.MergeConfFiles(*input, confDebugFolder, "linux"); err != nil {
+	if err := confgenerator.MergeUserConfFile(*input, confDebugFolder, "linux", apps.BuiltInConfStructs); err != nil {
 		return err
 	}
 	return confgenerator.GenerateFiles(filepath.Join(confDebugFolder, "merged-config.yaml"), *service, *logsDir, *stateDir, *outDir)

@@ -46,7 +46,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultJVMEndpoint
 	}
 
-	jarPath, err := findJarPath()
+	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
 	}
@@ -80,7 +80,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 	}}
 }
 
-var findJarPath = func() (string, error) {
+var FindJarPath = func() (string, error) {
 	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
 
 	executableDir, err := osext.ExecutableFolder()
