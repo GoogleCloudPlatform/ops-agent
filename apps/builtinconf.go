@@ -16,7 +16,6 @@ package apps
 
 import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 
-
 var (
 	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
 		"linux": &cg.UnifiedConfig{
