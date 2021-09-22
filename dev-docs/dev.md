@@ -804,7 +804,7 @@ logs. The log name should map to `log_source_id` in the configuration.
 ### Metrics
 
 Go to
-[Metrics Explorer](https://console.cloud.google.com/monitoring/metrics-explorer?project=$VM_PROJECT_ID)
+[Metrics Explorer](https://console.cloud.google.com/monitoring/metrics-explorer)
 and use the following query in the Query Editor to figure out whether the agent
 is up running and ingesting metrics:
 
