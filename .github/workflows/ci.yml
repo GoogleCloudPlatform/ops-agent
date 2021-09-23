@@ -21,7 +21,7 @@ jobs:
         submodules: true
     - if: ${{ runner.os == 'Linux' }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
-    - run: go test -mod=mod -coverprofile=covprofile ./...
+    - run: go test -mod=mod -coverpkg="./apps,./confgenerator" -coverprofile=covprofile ./...
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github
