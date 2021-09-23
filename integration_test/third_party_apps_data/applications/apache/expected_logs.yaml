@@ -9,4 +9,4 @@ log_entries:
     jsonPayload.level: "error"
     jsonPayload.module: "core"
     jsonPayload.message: '.*file permissions deny server access.*'
-    jsonPayload.error_code: '.*Permission denied.*'
+    jsonPayload.errorCode: '.*Permission denied.*'
