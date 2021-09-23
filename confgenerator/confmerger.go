@@ -24,13 +24,13 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
-func MergeUserConfFile(userConfPath, confDebugFolder, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
+func MergeConfFiles(userConfPath, confDebugFolder, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
 	builtInConfPath := filepath.Join(confDebugFolder, "built-in-config.yaml")
 	mergedConfPath := filepath.Join(confDebugFolder, "merged-config.yaml")
-	return MergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform, builtInConfStructs)
+	return mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform, builtInConfStructs)
 }
 
-func MergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
+func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
 	builtInStruct := builtInConfStructs[platform]
 	builtInYaml, err := yaml.Marshal(builtInStruct)
 	if err != nil {

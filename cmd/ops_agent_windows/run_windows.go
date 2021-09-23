@@ -113,7 +113,7 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	confDebugFolder := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "conf", "debug")
-	if err := confgenerator.MergeUserConfFile(s.userConf, confDebugFolder, "windows", apps.BuiltInConfStructs); err != nil {
+	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows", apps.BuiltInConfStructs); err != nil {
 		return err
 	}
 	data, err := ioutil.ReadFile(filepath.Join(confDebugFolder, "merged-config.yaml"))

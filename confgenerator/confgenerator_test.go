@@ -104,11 +104,13 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
-			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
-			if err = confgenerator.MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS, apps.BuiltInConfStructs); err != nil {
-				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
+			confDebugFolder := filepath.Join(dirPath, testName)
+			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
+			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
+
+			if err = confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
+				t.Fatalf("MergeConfFiles(%q, %q) got: %v", userSpecifiedConfPath, confDebugFolder, err)
 			}
 
 			data, err := ioutil.ReadFile(mergedConfPath)
@@ -214,14 +216,16 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
-			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
+			confDebugFolder := filepath.Join(dirPath, testName)
+			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
+			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
 
 			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
 			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
 
-			actualError := confgenerator.MergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS, apps.BuiltInConfStructs)
+			actualError := confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs)
+
 			if actualError == nil {
 				mergedInput := readFileContent(t, testName, platform.OS, mergedInputPath, false)
 				actualError = generateConfigs(mergedInput, platform)
