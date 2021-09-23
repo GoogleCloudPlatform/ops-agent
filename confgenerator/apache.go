@@ -38,7 +38,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "apache",
+			Type: "httpd",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.ServerStatusURL,
