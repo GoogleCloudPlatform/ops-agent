@@ -207,7 +207,7 @@ Generic code is shared across applications:
 - One set of code to generate fluentbit configs from a config struct
 
 And then one file per 3rd party application integration should contain the config struct(s) for that integration and any
-integration-specific business logic. These files are defined inside https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator
+integration-specific business logic. These files are defined inside https://github.com/GoogleCloudPlatform/ops-agent/tree/master/apps
 
 - One file per application integration, defining receiver and processor struct(s) as needed for that application including both logging and metrics
 - Validation is performed with struct tags on each config struct (~zero per-type validation code)
@@ -217,15 +217,18 @@ integration-specific business logic. These files are defined inside https://gith
 Example code for IIS application
 
 ```go
-package confgenerator
+package apps
 
-import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+import (
+        "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+        "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+)
 
 type MetricsReceiverIis struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
 	// This is a convenience struct with common fields like CollectionInterval.
-	MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
 }
 
 func (r MetricsReceiverIis) Type() string {
@@ -285,7 +288,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverIis{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
 }
 ```
 
