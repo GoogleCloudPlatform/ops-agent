@@ -16,9 +16,26 @@
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
-FROM debian:buster AS buster-build
+FROM debian:bullseye AS bullseye-build
 
-# TODO: Factor out the common code without rerunning apt-get on every build.
+# TODO: Factor out the common code without rerunning apt-get on every debian and
+# ubuntu build.
+
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs pkg-config default-jdk
+
+ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/deb/build.sh
+
+FROM debian:buster AS buster-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -35,8 +52,6 @@ WORKDIR /work
 RUN ./pkg/deb/build.sh
 
 FROM debian:stretch AS stretch-build
-
-# TODO: Factor out the common code without rerunning apt-get on every build.
 
 RUN set -x; \
     apt-get update && \
@@ -194,6 +209,10 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
+FROM scratch AS bullseye
+COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
+COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
+
 FROM scratch AS buster
 COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
@@ -235,6 +254,7 @@ COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 
 FROM scratch
+COPY --from=bullseye /* /
 COPY --from=buster /* /
 COPY --from=stretch /* /
 COPY --from=hirsute /* /
