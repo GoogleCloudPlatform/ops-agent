@@ -13,9 +13,10 @@
 # limitations under the License.
 
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
+# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
-FROM debian:buster AS buster
+FROM debian:buster AS buster-build
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
@@ -33,7 +34,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM debian:stretch AS stretch
+FROM debian:stretch AS stretch-build
 
 # TODO: Factor out the common code without rerunning apt-get on every build.
 
@@ -52,7 +53,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:hirsute AS hirsute
+FROM ubuntu:hirsute AS hirsute-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -64,7 +65,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:focal AS focal
+FROM ubuntu:focal AS focal-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -80,7 +81,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:bionic AS bionic
+FROM ubuntu:bionic AS bionic-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -96,7 +97,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:xenial AS xenial
+FROM ubuntu:xenial AS xenial-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
@@ -113,7 +114,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM centos:7 AS centos7
+FROM centos:7 AS centos7-build
 
 RUN set -x; yum -y update && \
     yum -y install git systemd \
@@ -134,7 +135,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM centos:8 AS centos8
+FROM centos:8 AS centos8-build
 
 RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
@@ -153,7 +154,7 @@ WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
-FROM opensuse/leap:42.3 as sles12
+FROM opensuse/leap:42.3 AS sles12-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
 # Add home:Ledest:devel repo to install >3.4 bison
@@ -174,7 +175,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM opensuse/leap:15.1 as sles15
+FROM opensuse/leap:15.1 AS sles15-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
 # Add home:ptrommler:formal repo to install >3.4 bison
@@ -193,33 +194,54 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
+FROM scratch AS buster
+COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
+COPY --from=buster-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS stretch
+COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
+COPY --from=stretch-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS hirsute
+COPY --from=hirsute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
+COPY --from=hirsute-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS focal
+COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
+COPY --from=focal-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS bionic
+COPY --from=bionic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
+COPY --from=bionic-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS xenial
+COPY --from=xenial-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
+COPY --from=xenial-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS centos7
+COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
+COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
+
+FROM scratch AS centos8
+COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
+COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
+
+FROM scratch AS sles12
+COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
+COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
+
+FROM scratch AS sles15
+COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
+COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
+
 FROM scratch
-COPY --from=buster /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
-COPY --from=buster /google-cloud-ops-agent*.deb /
-
-COPY --from=stretch /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
-COPY --from=stretch /google-cloud-ops-agent*.deb /
-
-COPY --from=hirsute /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
-COPY --from=hirsute /google-cloud-ops-agent*.deb /
-
-COPY --from=focal /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
-COPY --from=focal /google-cloud-ops-agent*.deb /
-
-COPY --from=bionic /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
-COPY --from=bionic /google-cloud-ops-agent*.deb /
-
-COPY --from=xenial /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
-COPY --from=xenial /google-cloud-ops-agent*.deb /
-
-COPY --from=centos7 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
-COPY --from=centos7 /google-cloud-ops-agent*.rpm /
-
-COPY --from=centos8 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
-COPY --from=centos8 /google-cloud-ops-agent*.rpm /
-
-COPY --from=sles12 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
-COPY --from=sles12 /google-cloud-ops-agent*.rpm /
-
-COPY --from=sles15 /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
-COPY --from=sles15 /google-cloud-ops-agent*.rpm /
+COPY --from=buster /* /
+COPY --from=stretch /* /
+COPY --from=hirsute /* /
+COPY --from=focal /* /
+COPY --from=bionic /* /
+COPY --from=xenial /* /
+COPY --from=centos7 /* /
+COPY --from=centos8 /* /
+COPY --from=sles12 /* /
+COPY --from=sles15 /* /
