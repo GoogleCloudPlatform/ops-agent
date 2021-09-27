@@ -1,1 +1,1 @@
-metrics receiver with type "mssql" is not supported. Supported metrics receiver types: [hostmetrics, jvm, nginx].
+metrics receiver with type "mssql" is not supported. Supported metrics receiver types: [hostmetrics, jvm, mysql, nginx].

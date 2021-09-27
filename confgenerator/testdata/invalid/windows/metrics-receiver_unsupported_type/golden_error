@@ -1,1 +1,1 @@
-metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, jvm, mssql, nginx].
+metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [hostmetrics, iis, jvm, mssql, mysql, nginx].
