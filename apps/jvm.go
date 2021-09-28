@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
 	"fmt"
@@ -20,14 +20,15 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/kardianos/osext"
 )
 
 type MetricsReceiverJVM struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
-	MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
 	Username string `yaml:"username"`
@@ -45,7 +46,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultJVMEndpoint
 	}
 
-	jarPath, err := findJarPath()
+	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
 	}
@@ -79,7 +80,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 	}}
 }
 
-var findJarPath = func() (string, error) {
+var FindJarPath = func() (string, error) {
 	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
 
 	executableDir, err := osext.ExecutableFolder()
@@ -95,5 +96,5 @@ var findJarPath = func() (string, error) {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverJVM{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJVM{} })
 }

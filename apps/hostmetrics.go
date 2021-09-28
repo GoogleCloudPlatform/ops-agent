@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
-import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+import (
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+)
 
 type MetricsReceiverHostmetrics struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
-	MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
 }
 
 func (r MetricsReceiverHostmetrics) Type() string {
@@ -291,5 +294,5 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverHostmetrics{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverHostmetrics{} })
 }

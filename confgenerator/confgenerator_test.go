@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package confgenerator_test
 
 import (
 	"flag"
@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 )
@@ -89,7 +91,7 @@ func TestGenerateConfsWithValidInput(t *testing.T) {
 }
 
 func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
-	findJarPath = func() (string, error) {
+	apps.FindJarPath = func() (string, error) {
 		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
 
@@ -102,11 +104,12 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
-			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
-			if err = mergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS); err != nil {
-				t.Fatalf("MergeConfFiles(%q, %q, %q) got: %v", builtInConfPath, userSpecifiedConfPath, mergedConfPath, err)
+			confDebugFolder := filepath.Join(dirPath, testName)
+			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
+			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
+			if err = confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
+				t.Fatalf("MergeConfFiles(%q, %q) got: %v", userSpecifiedConfPath, confDebugFolder, err)
 			}
 
 			data, err := ioutil.ReadFile(mergedConfPath)
@@ -114,7 +117,7 @@ func testGenerateConfsWithValidInput(t *testing.T, platform platformConfig) {
 				t.Fatalf("ReadFile(%q) got: %v", userSpecifiedConfPath, err)
 			}
 			t.Logf("merged config:\n%s", data)
-			uc, err := ParseUnifiedConfigAndValidate(data, platform.OS)
+			uc, err := confgenerator.ParseUnifiedConfigAndValidate(data, platform.OS)
 			if err != nil {
 				t.Fatalf("ParseUnifiedConfigAndValidate got: %v", err)
 			}
@@ -212,14 +215,15 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 		testName := d.Name()
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			userSpecifiedConfPath := filepath.Join(dirPath, testName, "/input.yaml")
-			builtInConfPath := filepath.Join(dirPath, testName, "/built-in-config.yaml")
-			mergedConfPath := filepath.Join(dirPath, testName, "/merged-config.yaml")
+			confDebugFolder := filepath.Join(dirPath, testName)
+			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
+			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
+			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
 
 			invalidInput := readFileContent(t, testName, platform.OS, invalidInputPath, false)
 			expectedError := readFileContent(t, testName, platform.OS, goldenErrorPath, true)
 
-			actualError := mergeConfFiles(builtInConfPath, userSpecifiedConfPath, mergedConfPath, platform.OS)
+			actualError := confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs)
 			if actualError == nil {
 				mergedInput := readFileContent(t, testName, platform.OS, mergedInputPath, false)
 				actualError = generateConfigs(mergedInput, platform)
@@ -244,7 +248,7 @@ func testGenerateConfigsWithInvalidInput(t *testing.T, platform platformConfig) 
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
 func generateConfigs(invalidInput []byte, platform platformConfig) (err error) {
-	uc, err := ParseUnifiedConfigAndValidate(invalidInput, platform.OS)
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(invalidInput, platform.OS)
 	if err != nil {
 		return err
 	}

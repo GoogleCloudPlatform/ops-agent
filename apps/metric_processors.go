@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type MetricsProcessorExcludeMetrics struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
 	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"dive,endswith=/*,startswith=agent.googleapis.com/"`
 }
@@ -51,5 +52,5 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 }
 
 func init() {
-	metricsProcessorTypes.registerType(func() component { return &MetricsProcessorExcludeMetrics{} })
+	confgenerator.MetricsProcessorTypes.RegisterType(func() confgenerator.Component { return &MetricsProcessorExcludeMetrics{} })
 }
