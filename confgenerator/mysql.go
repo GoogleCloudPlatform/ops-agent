@@ -18,7 +18,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
-type MetricsReceiverApache struct {
+type MetricsReceiverMySQL struct {
 	ConfigComponent `yaml:",inline"`
 
 	MetricsReceiverShared `yaml:",inline"`
@@ -32,17 +32,17 @@ type MetricsReceiverApache struct {
 
 const defaultEndpoint = "localhost:3306"
 
-func (r MetricsReceiverApache) Type() string {
+func (r MetricsReceiverMySQL) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySQL) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultEndpoint
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "httpd",
+			Type: "mysql",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
@@ -60,5 +60,5 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverApache{} })
+	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMySQL{} })
 }
