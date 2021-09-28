@@ -37,7 +37,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 		Regex: `^(?<time>\d{4}-\d{2}-\d{2}(?:T|\s)\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:\d{2})?)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?(?:\s+\[(?<error_code>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
 		LoggingProcessorParseShared: LoggingProcessorParseShared{
 			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%s%z",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			Types: map[string]string{
 				"tid": "integer",
 			},
