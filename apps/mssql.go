@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type MetricsReceiverMssql struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 
-	MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
 }
 
 func (MetricsReceiverMssql) Type() string {
@@ -72,5 +73,5 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	metricsReceiverTypes.registerType(func() component { return &MetricsReceiverMssql{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMssql{} }, "windows")
 }
