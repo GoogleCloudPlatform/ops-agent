@@ -34,7 +34,7 @@ func (r MetricsReceiverApache) Type() string {
 
 func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 	if r.ServerStatusURL == "" {
-		r.ServerStatusURL = defaultStubStatusURL
+		r.ServerStatusURL = defaultServerStatusURL
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{

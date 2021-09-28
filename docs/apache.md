@@ -12,7 +12,7 @@ The receiver requires that you enable the [mod_status module](https://httpd.apac
 ```
 <Location "/server-status">
     SetHandler server-status
-    Require host example.com
+    Require host localhost
 </Location>
 ```
 
