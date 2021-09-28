@@ -24,104 +24,13 @@ import (
 	yaml "github.com/goccy/go-yaml"
 )
 
-var (
-	builtInConfStructs = map[string]*UnifiedConfig{
-		"linux": &UnifiedConfig{
-			Logging: &Logging{
-				Receivers: map[string]LoggingReceiver{
-					"syslog": &LoggingReceiverFiles{
-						ConfigComponent: ConfigComponent{Type: "files"},
-						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
-					},
-				},
-				Processors: map[string]LoggingProcessor{},
-				Service: &LoggingService{
-					Pipelines: map[string]*LoggingPipeline{
-						"default_pipeline": &LoggingPipeline{
-							ReceiverIDs: []string{"syslog"},
-						},
-					},
-				},
-			},
-			Metrics: &Metrics{
-				Receivers: map[string]MetricsReceiver{
-					"hostmetrics": &MetricsReceiverHostmetrics{
-						ConfigComponent:       ConfigComponent{Type: "hostmetrics"},
-						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-				},
-				Processors: map[string]MetricsProcessor{
-					"metrics_filter": &MetricsProcessorExcludeMetrics{
-						ConfigComponent: ConfigComponent{Type: "exclude_metrics"},
-					},
-				},
-				Service: &MetricsService{
-					Pipelines: map[string]*MetricsPipeline{
-						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs:  []string{"hostmetrics"},
-							ProcessorIDs: []string{"metrics_filter"},
-						},
-					},
-				},
-			},
-		},
-		"windows": &UnifiedConfig{
-			Logging: &Logging{
-				Receivers: map[string]LoggingReceiver{
-					"windows_event_log": &LoggingReceiverWindowsEventLog{
-						ConfigComponent: ConfigComponent{Type: "windows_event_log"},
-						Channels:        []string{"System", "Application", "Security"},
-					},
-				},
-				Processors: map[string]LoggingProcessor{},
-				Service: &LoggingService{
-					Pipelines: map[string]*LoggingPipeline{
-						"default_pipeline": &LoggingPipeline{
-							ReceiverIDs: []string{"windows_event_log"},
-						},
-					},
-				},
-			},
-			Metrics: &Metrics{
-				Receivers: map[string]MetricsReceiver{
-					"hostmetrics": &MetricsReceiverHostmetrics{
-						ConfigComponent:       ConfigComponent{Type: "hostmetrics"},
-						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-					"iis": &MetricsReceiverIis{
-						ConfigComponent:       ConfigComponent{Type: "iis"},
-						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-					"mssql": &MetricsReceiverMssql{
-						ConfigComponent:       ConfigComponent{Type: "mssql"},
-						MetricsReceiverShared: MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-				},
-				Processors: map[string]MetricsProcessor{
-					"metrics_filter": &MetricsProcessorExcludeMetrics{
-						ConfigComponent: ConfigComponent{Type: "exclude_metrics"},
-					},
-				},
-				Service: &MetricsService{
-					Pipelines: map[string]*MetricsPipeline{
-						"default_pipeline": &MetricsPipeline{
-							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
-							ProcessorIDs: []string{"metrics_filter"},
-						},
-					},
-				},
-			},
-		},
-	}
-)
-
-func MergeConfFiles(userConfPath, confDebugFolder, platform string) error {
+func MergeConfFiles(userConfPath, confDebugFolder, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
 	builtInConfPath := filepath.Join(confDebugFolder, "built-in-config.yaml")
 	mergedConfPath := filepath.Join(confDebugFolder, "merged-config.yaml")
-	return mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform)
+	return mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform, builtInConfStructs)
 }
 
-func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string) error {
+func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
 	builtInStruct := builtInConfStructs[platform]
 	builtInYaml, err := yaml.Marshal(builtInStruct)
 	if err != nil {

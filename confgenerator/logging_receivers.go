@@ -99,7 +99,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverFiles{} })
 }
 
 // A LoggingReceiverSyslog represents the configuration for a syslog protocol receiver.
@@ -149,7 +149,7 @@ func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSyslog{} })
 }
 
 // A LoggingReceiverTCP represents the configuration for a TCP receiver.
@@ -197,7 +197,7 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverTCP{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverTCP{} })
 }
 
 // A LoggingReceiverWindowsEventLog represents the user configuration for a Windows event log receiver.
@@ -226,5 +226,5 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWindowsEventLog{} }, "windows")
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverWindowsEventLog{} }, "windows")
 }
