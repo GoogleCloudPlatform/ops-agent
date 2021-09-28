@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
 	"fmt"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
 type LoggingProcessorApacheAccess struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
 func (LoggingProcessorApacheAccess) Type() string {
@@ -29,12 +30,12 @@ func (LoggingProcessorApacheAccess) Type() string {
 }
 
 func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := LoggingProcessorParseRegex{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#accesslog
 		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
 		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
 		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		LoggingProcessorParseShared: LoggingProcessorParseShared{
+		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 			Types: map[string]string{
@@ -76,7 +77,7 @@ func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluen
 }
 
 type LoggingProcessorApacheError struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
 func (LoggingProcessorApacheError) Type() string {
@@ -84,14 +85,14 @@ func (LoggingProcessorApacheError) Type() string {
 }
 
 func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluentbit.Component {
-	c := LoggingProcessorParseRegex{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
 		// Sample line 2.4: [Fri Sep 09 10:42:29.902022 2011] [core:error] [pid 35708:tid 4328636416] (13)Permission denied [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
 		// Sample line 2.2: [Fri Sep 09 10:42:29.902022 2011] [error] [pid 35708:tid 4328636416] [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
 		// TODO - Support time parsing for version 2.0 where smallest resolution is seconds
 		// Sample line 2.0: [Wed Oct 11 14:32:52 2000] [error] [client 127.0.0.1] client denied by server configuration: /export/home/live/ap/htdocs/test
 		Regex: `^\[(?<time>[^\]]+)\] \[(?:(?<module>\w+):)?(?<level>[\w\d]+)\](?: \[pid (?<pid>\d+)(?::tid (?<tid>[0-9]+))?\])?(?: (?<errorCode>[^\[]*))?(?: \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
-		LoggingProcessorParseShared: LoggingProcessorParseShared{
+		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%a %b %d %H:%M:%S.%L %Y",
 			Types: map[string]string{
@@ -132,8 +133,8 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 }
 
 type LoggingReceiverApacheAccess struct {
-	LoggingProcessorApacheAccess `yaml:",inline"`
-	LoggingReceiverFilesMixin    `yaml:",inline" validate:"structonly"`
+	LoggingProcessorApacheAccess            `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Component {
@@ -146,8 +147,8 @@ func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Componen
 }
 
 type LoggingReceiverApacheError struct {
-	LoggingProcessorApacheError `yaml:",inline"`
-	LoggingReceiverFilesMixin   `yaml:",inline" validate:"structonly"`
+	LoggingProcessorApacheError             `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component {
@@ -160,8 +161,8 @@ func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component
 }
 
 func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorApacheAccess{} })
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorApacheError{} })
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverApacheAccess{} })
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverApacheError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheError{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheError{} })
 }
