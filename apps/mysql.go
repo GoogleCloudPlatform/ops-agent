@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package apps
 
 import (
 	"fmt"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
 type LoggingProcessorMysqlError struct {
-	ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
 func (LoggingProcessorMysqlError) Type() string {
@@ -29,13 +30,13 @@ func (LoggingProcessorMysqlError) Type() string {
 }
 
 func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentbit.Component {
-	c := LoggingProcessorParseRegex{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Format documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
 		// Older versions of mysql should have the same general format, but may not have tid, error_code, subsystem.
 		// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 		// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
 		Regex: `^(?<time>\d{4}-\d{2}-\d{2}(?:T|\s)\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:\d{2})?)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?(?:\s+\[(?<error_code>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
-		LoggingProcessorParseShared: LoggingProcessorParseShared{
+		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			Types: map[string]string{
@@ -67,8 +68,8 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 }
 
 type LoggingReceiverMysqlError struct {
-	LoggingProcessorMysqlError `yaml:",inline"`
-	LoggingReceiverFilesMixin  `yaml:",inline" validate:"structonly"`
+	LoggingProcessorMysqlError              `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component {
@@ -81,6 +82,6 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	loggingProcessorTypes.registerType(func() component { return &LoggingProcessorMysqlError{} })
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverMysqlError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlError{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlError{} })
 }
