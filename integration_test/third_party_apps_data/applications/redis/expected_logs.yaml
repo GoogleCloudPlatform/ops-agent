@@ -1,0 +1,7 @@
+- log_name: "redis"
+  field_matchers:
+    jsonPayload.level: "*"
+    jsonPayload.message: '.*DB loaded from disk.*'
+    logging.googleapis.com/severity: "NOTICE"
+    roleChar: "M"
+    role: "master"
