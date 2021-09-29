@@ -65,7 +65,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 	for _, l := range []struct{ roleChar, role string }{
 		// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
 		{"X", "sentinel"},
-		{"C", "RDB/AOF writing child"},
+		{"C", "RDB/AOF\\swriting\\schild"},
 		{"S", "slave"},
 		{"M", "master"},
 	} {
@@ -89,7 +89,7 @@ type LoggingReceiverRedis struct {
 
 func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/redis/redis.log*"}
+		r.IncludePaths = []string{"/var/log/redis/redis-server.log*", "/var/log/redis_*", "/var/log/redis/redis_*.log*"}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis")...)
