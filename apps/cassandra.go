@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -29,6 +30,8 @@ type MetricsReceiverCassandra struct {
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+
+	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
 
 const defaultCassandraEndpoint = "localhost:9999"
@@ -47,8 +50,13 @@ func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
 	}
 
+	targetSystem := "cassandra"
+	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
 	config := map[string]interface{}{
-		"target_system":       "cassandra,jvm",
+		"target_system":       targetSystem,
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"jar_path":            jarPath,
