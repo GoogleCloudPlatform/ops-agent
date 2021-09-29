@@ -65,7 +65,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 	for _, l := range []struct{ roleChar, role string }{
 		// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
 		{"X", "sentinel"},
-		{"C", "RDB/AOF\\swriting\\schild"},
+		{"C", "RDB/AOF_writing_child"},
 		{"S", "slave"},
 		{"M", "master"},
 	} {
