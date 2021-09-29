@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    redismetrics:
+    redis_metrics:
       type: redis
       endpoint: localhost
       collection_interval: 30s
   service:
     pipelines:
-      redispipeline:
+      redis_pipeline:
         receivers:
-          - redismetrics
+          - redis_metrics

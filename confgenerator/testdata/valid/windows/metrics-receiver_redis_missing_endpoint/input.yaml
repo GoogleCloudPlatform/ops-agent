@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    redismetrics:
+    redis_metrics:
       type: redis
       collection_interval: 30s
       password: pwd
   service:
     pipelines:
-      redispipeline:
+      redis_pipeline:
         receivers:
-          - redismetrics
+          - redis_metrics

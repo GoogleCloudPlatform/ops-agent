@@ -25,7 +25,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      redispipeline:
+      redis_pipeline:
         receivers:
           - redis_metrics
 EOF

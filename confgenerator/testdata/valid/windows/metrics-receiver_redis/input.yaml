@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    redismetrics:
+    redis_metrics:
       type: redis
       endpoint: localhost:6379
       collection_interval: 30s
       password: pwd
   service:
     pipelines:
-      redispipeline:
+      redis_pipeline:
         receivers:
-          - redismetrics
+          - redis_metrics
