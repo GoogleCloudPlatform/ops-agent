@@ -16,7 +16,9 @@ metrics:
   receivers:
     cassandrametrics:
       type: cassandra
-      endpoint: localhost:7199
+      # exercising default endpoint
+      username: otelu
+      password: otelp
       collection_interval: 30s
   service:
     pipelines:

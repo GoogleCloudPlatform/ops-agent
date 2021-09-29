@@ -34,7 +34,7 @@ type MetricsReceiverCassandra struct {
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
 
-const defaultCassandraEndpoint = "localhost:9999"
+const defaultCassandraEndpoint = "localhost:7199"
 
 func (r MetricsReceiverCassandra) Type() string {
 	return "cassandra"
