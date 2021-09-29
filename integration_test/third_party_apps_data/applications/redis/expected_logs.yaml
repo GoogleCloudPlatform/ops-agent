@@ -1,3 +1,4 @@
+log_entries:
 - log_name: "redis"
   field_matchers:
     jsonPayload.level: "*"
