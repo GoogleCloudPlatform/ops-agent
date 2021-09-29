@@ -1,7 +1,7 @@
 log_entries:
 - log_name: "redis"
   field_matchers:
-    jsonPayload.level: "*"
+    jsonPayload.level: "\*"
     jsonPayload.message: 'Ready to accept connections'
     jsonPayload.roleChar: "M"
     jsonPayload.role: "master"
