@@ -5,7 +5,7 @@ The `cassandra` receiver can fetch stats from a Cassandra node's Java Virtual Ma
 
 ## Prerequisites
 
-In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. Java system properties can be set via command line args by prepending the property name with `-D` . For example: `-Dcom.sun.management.jmxremote.port`. By default, these are set in a Cassandra deployment's cassandra-env.sh file, and the default has no authentication, exposed locally on 127.0.0.1:7199.
+In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. By default, these properties are set in a Cassandra deployment's cassandra-env.sh file and the default Cassandra installation requires no JMX authentication with JMX exposed locally on 127.0.0.1:7199.
 
 ## Configuration
 
