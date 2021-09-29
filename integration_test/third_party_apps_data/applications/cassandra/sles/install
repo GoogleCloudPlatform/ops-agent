@@ -14,5 +14,8 @@ sudo zypper -n refresh
 
 sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
 
+# There is no official or even semi-official zypper package for cassandra
+curl -OL https://dlcdn.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+# TODO - compare to curl -L https://downloads.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz.sha256
 
-# ????
+tar xzvf apache-cassandra-4.0.1-bin.tar.gz
