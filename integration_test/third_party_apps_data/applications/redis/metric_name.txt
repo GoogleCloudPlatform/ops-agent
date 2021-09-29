@@ -1,1 +1,1 @@
-agent.googleapis.com/redis/commands_processed
+workload.googleapis.com/redis/uptime
