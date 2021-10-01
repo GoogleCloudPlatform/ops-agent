@@ -142,7 +142,7 @@ type LoggingReceiverApacheAccess struct {
 
 func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/apache2/access.log", "/var/log/httpd/access_log"}
+		r.IncludePaths = []string{"/var/log/apache2/access.log", "/var/log/apache2/access_log", "/var/log/httpd/access_log"}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
@@ -156,7 +156,7 @@ type LoggingReceiverApacheError struct {
 
 func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/apache2/error.log", "/var/log/httpd/error_log"}
+		r.IncludePaths = []string{"/var/log/apache2/error.log", "/var/log/apache2/error_log", "/var/log/httpd/error_log"}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorApacheError.Components(tag, "apache_error")...)
