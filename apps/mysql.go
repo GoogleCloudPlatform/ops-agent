@@ -21,6 +21,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
+// TODO - Add support for Slow Query log & General Query log once multiline confgenerator support is implemented
+
 type LoggingProcessorMysqlError struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
@@ -32,10 +34,10 @@ func (LoggingProcessorMysqlError) Type() string {
 func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Format documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
-		// Older versions of mysql should have the same general format, but may not have tid, error_code, subsystem.
+		// Older versions of mysql should have the same general format, but may not have tid, errorCode, subsystem.
 		// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 		// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
-		Regex: `^(?<time>\d{4}-\d{2}-\d{2}(?:T|\s)\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:\d{2})?)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?(?:\s+\[(?<error_code>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
+		Regex: `^(?<time>\d{4}-\d{2}-\d{2}(?:T|\s)\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:\d{2})?)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?(?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
 		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
