@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 )
@@ -77,6 +78,48 @@ var platforms = []platformConfig{
 			PlatformVersion: "win_platform_version",
 		},
 	},
+}
+
+func TestGenerateMultilineFluentBitOutput(t *testing.T) {
+	multilineConfig := confgenerator.LoggingProcessorParseMultiline{
+		Regex: `testRegex.*`,
+		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+		},
+		Rules: []confgenerator.MultilineRule{
+			confgenerator.MultilineRule{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `\d{4}`,
+			},
+			confgenerator.MultilineRule{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `\s*at.*`,
+			},
+		},
+	}
+
+	c := fluentbit.ModularConfig{
+		Variables:  map[string]string{},
+		Components: multilineConfig.Components("pipe.receiver", "123"),
+	}
+
+	main, parsers, err := c.Generate()
+	if err != nil {
+		t.Fatalf("Error with generate multiline %v", err)
+	}
+
+	testData, err := ioutil.ReadFile(filepath.Join("testdata/multiline_fluent_bit.conf"))
+	if err != nil {
+		t.Fatalf("Error reading multiline test data %v", err)
+	}
+
+	generatedOutput := fmt.Sprintf("%s\n%s", main, parsers)
+	if generatedOutput != string(testData) {
+		t.Fatalf("Multiline Test Got:\n%s\nExpected:\n%s", generatedOutput, string(testData))
+	}
 }
 
 func TestGenerateConfsWithValidInput(t *testing.T) {

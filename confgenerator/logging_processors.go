@@ -14,7 +14,11 @@
 
 package confgenerator
 
-import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+import (
+	"fmt"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+)
 
 // A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
@@ -59,6 +63,75 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 		filter,
 		parser,
 	}
+}
+
+type MultilineRule struct {
+	StateName string `yaml:"state_name" validate:"required"`
+	Regex     string `yaml:"regex,omitempty" validate:"required"`
+	NextState string `yaml:"next_state" validate:"required"`
+}
+
+func (r MultilineRule) AsString() string {
+	return fmt.Sprintf(`rule    "%s"    "%s"    "%s"`, r.StateName, r.Regex, r.NextState)
+}
+
+// A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
+//     #
+//     # Regex rules for multiline parsing
+//     # ---------------------------------
+//     #
+//     # configuration hints:
+//     #
+//     #  - first state always has the name: start_state
+//     #  - every field in the rule must be inside double quotes
+//     #
+//     # rules |   state name  | regex pattern                  | next state
+//     # ------|---------------|--------------------------------------------
+//     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
+//     rule      "cont"          "/^\s+at.*/"                     "cont"
+type LoggingProcessorParseMultiline struct {
+	ConfigComponent             `yaml:",inline"`
+	LoggingProcessorParseShared `yaml:",inline"`
+
+	Rules []MultilineRule `yaml:"rules" validate:"required"`
+	Regex string          `yaml:"regex,omitempty" validate:"required"`
+}
+
+func (r LoggingProcessorParseMultiline) Type() string {
+	return "parse_regex"
+}
+
+func (p LoggingProcessorParseMultiline) Components(tag, uid string) []fluentbit.Component {
+	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
+	rulesText := []string{}
+	for _, rule := range p.Rules {
+		rulesText = append(rulesText, rule.AsString())
+	}
+
+	multilineComponents := []fluentbit.Component{
+		fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":                  "multiline",
+				"Match":                 tag,
+				"Multiline.Key_Content": "message",
+				"Multiline.Parser":      multilineParserName,
+			},
+		},
+		fluentbit.Component{
+			Kind: "MULTILINE_PARSER",
+			Config: map[string]string{
+				"Name": multilineParserName,
+				"Type": "regex",
+			},
+			AdditionalConfig: rulesText,
+		},
+	}
+
+	filter, parser := p.LoggingProcessorParseShared.Components(tag, uid)
+	parser.Config["Format"] = "regex"
+	parser.Config["Regex"] = p.Regex
+	return append(multilineComponents, filter, parser)
 }
 
 func init() {
