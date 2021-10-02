@@ -70,11 +70,11 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+	c := confgenerator.LoggingProcessorParseRegexSimple{
 		// Sample line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
 		// TODO: fluentd's default parser appends (?:\s+(?<http_x_forwarded_for>[^ ]+))? but this is not part of Nginx's log format. Consider adding it or other support for extra fields?
 		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
+		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 			Types: map[string]string{
@@ -124,13 +124,13 @@ func (LoggingProcessorNginxError) Type() string {
 }
 
 func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+	c := confgenerator.LoggingProcessorParseRegexSimple{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
 		// Request fields: https://github.com/nginx/nginx/blob/7bcb50c0610a18bf43bef0062b2d2dc550823b53/src/http/ngx_http_request.c#L3836
 		// Sample line: 2021/08/26 16:50:17 [error] 29060#29060: *2191 open() "/var/www/html/forbidden.html" failed (13: Permission denied), client: ::1, server: _, request: "GET /forbidden.html HTTP/1.1", host: "localhost:8080"
 		Regex: `^(?<time>[0-9]+[./-][0-9]+[./-][0-9]+[- ][0-9]+:[0-9]+:[0-9]+) \[(?<level>[^\]]*)\] (?<pid>[0-9]+)#(?<tid>[0-9]+):(?: \*(?<connection>[0-9]+))? (?<message>.*?)(?:, client: (?<client>[^,]+))?(?:, server: (?<server>[^,]+))?(?:, request: "(?<request>[^"]*)")?(?:, subrequest: \"(?<subrequest>[^\"]*)\")?(?:, upstream: \"(?<upstream>[^"]*)\")?(?:, host: \"(?<host>[^\"]*)\")?(?:, referrer: \"(?<referer>[^"]*)\")?$`,
-		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
+		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y/%m/%d %H:%M:%S",
 			Types: map[string]string{
@@ -164,8 +164,8 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 }
 
 type LoggingReceiverNginxAccess struct {
-	LoggingProcessorNginxAccess `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin   `yaml:",inline" validate:"structonly"`
+	LoggingProcessorNginxAccess             `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverNginxAccess) Components(tag string) []fluentbit.Component {
@@ -178,8 +178,8 @@ func (r LoggingReceiverNginxAccess) Components(tag string) []fluentbit.Component
 }
 
 type LoggingReceiverNginxError struct {
-	LoggingProcessorNginxError `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin  `yaml:",inline" validate:"structonly"`
+	LoggingProcessorNginxError              `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverNginxError) Components(tag string) []fluentbit.Component {

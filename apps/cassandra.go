@@ -30,14 +30,20 @@ func (LoggingProcessorCassandraSystem) Type() string {
 }
 
 func (p LoggingProcessorCassandraSystem) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultiline{
-		// Sample line: DEBUG [main] 2021-10-01 20:15:36,385 InternalLoggerFactory.java:63 - Using SLF4J as the default logging framework
-		Regex: `(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)`,
-		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-			Types: map[string]string{
-				"lineNumber": "integer",
+	c := confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegex: confgenerator.LoggingProcessorParseRegex{
+			Parsers: []confgenerator.RegexParser{
+				confgenerator.RegexParser{
+					// Sample line: DEBUG [main] 2021-10-01 20:15:36,385 InternalLoggerFactory.java:63 - Using SLF4J as the default logging framework
+					Regex: `(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)`,
+					Parser: fluentbit.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+						Types: map[string]string{
+							"lineNumber": "integer",
+						},
+					},
+				},
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
