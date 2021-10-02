@@ -23,7 +23,20 @@ logging:
         regex: "[A-Z]+\s+\[[^\]]+\] \d+"
       - state_name: "cont"
         next_state: "cont"
-        regex: "^(?![A-Z]+\s+\[[^\]]+\] \d+)"  
+        regex: "^(?![A-Z]+\s+\[[^\]]+\] \d+)"
+      parsers:
+      - regex: "(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)"
+        time_key: time
+        time_format: "%Y-%m-%d %H:%M:%S,%L"
+    parse_regex_multiline_two:
+      type: parse_regex_multiline
+      rules:
+      - state_name: "start_state"
+        next_state: "cont"
+        regex: "\d{4}"
+      - state_name: "cont"
+        next_state: "cont"
+        regex: "^(\d{4}"
       parsers:
       - regex: "(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)"
         time_key: time
@@ -31,4 +44,4 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        processors: [parse_regex_multiline_one]
+        processors: [parse_regex_multiline_one, parse_regex_multiline_two]
