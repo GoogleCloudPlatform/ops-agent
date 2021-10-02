@@ -143,29 +143,32 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 		rules = append(rules, rule.AsString())
 	}
 
-	multilineComponents := []fluentbit.Component{
-		fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":                  "multiline",
-				"Match":                 tag,
-				"Multiline.Key_Content": p.Field,
-				"Multiline.Parser":      multilineParserName,
-			},
-		},
-		fluentbit.Component{
-			Kind: "MULTILINE_PARSER",
-			Config: map[string]string{
-				"Name": multilineParserName,
-				"Type": "regex",
-			},
-			RepeatedConfig: map[string][]string{
-				"rule": rules,
-			},
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":                  "multiline",
+			"Match":                 tag,
+			"Multiline.Key_Content": "message",
+			"Multiline.Parser":      multilineParserName,
 		},
 	}
 
-	return append(multilineComponents, p.LoggingProcessorParseRegex.Components(tag, uid)...)
+	if p.Field != "" {
+		filter.Config["Multiline.Key_Content"] = p.Field
+	}
+
+	multilineParser := fluentbit.Component{
+		Kind: "MULTILINE_PARSER",
+		Config: map[string]string{
+			"Name": multilineParserName,
+			"Type": "regex",
+		},
+		RepeatedConfig: map[string][]string{
+			"rule": rules,
+		},
+	}
+
+	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegex.Components(tag, uid)...)
 }
 
 func init() {
