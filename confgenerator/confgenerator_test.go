@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 )
@@ -78,52 +77,6 @@ var platforms = []platformConfig{
 			PlatformVersion: "win_platform_version",
 		},
 	},
-}
-
-func TestGenerateMultilineFluentBitOutput(t *testing.T) {
-	multilineConfig := confgenerator.LoggingProcessorParseMultiline{
-		Regex: `(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)`,
-		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-			Types: map[string]string{
-				"lineNumber": "integer",
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			confgenerator.MultilineRule{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
-			},
-			confgenerator.MultilineRule{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
-			},
-		},
-	}
-
-	c := fluentbit.ModularConfig{
-		Variables:  map[string]string{},
-		Components: multilineConfig.Components("cassandra.cassandra_system", "123"),
-	}
-
-	main, parsers, err := c.Generate()
-	if err != nil {
-		t.Fatalf("Error with generate multiline %v", err)
-	}
-
-	testData, err := ioutil.ReadFile(filepath.Join("testdata/multiline_fluent_bit.conf"))
-	if err != nil {
-		t.Fatalf("Error reading multiline test data %v", err)
-	}
-
-	testOutput := strings.ReplaceAll(strings.TrimSpace(string(testData)), "\r\n", "\n")
-	generatedOutput := strings.ReplaceAll(strings.TrimSpace(fmt.Sprintf("%s\n%s", main, parsers)), "\r\n", "\n")
-	if diff := cmp.Diff(testOutput, generatedOutput); diff != "" {
-		t.Errorf("Multiline test mismatch (-want +got):\n%s", diff)
-	}
 }
 
 func TestGenerateConfsWithValidInput(t *testing.T) {
