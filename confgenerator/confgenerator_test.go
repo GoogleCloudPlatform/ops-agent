@@ -121,8 +121,8 @@ func TestGenerateMultilineFluentBitOutput(t *testing.T) {
 
 	testOutput := strings.TrimSpace(string(testData))
 	generatedOutput := strings.TrimSpace(fmt.Sprintf("%s\n%s", main, parsers))
-	if generatedOutput != testOutput {
-		t.Fatalf("Multiline Test Got:\n%s\nExpected:\n%s", generatedOutput, testOutput)
+	if diff := cmp.Diff(testOutput, generatedOutput); diff != "" {
+		t.Errorf("Multiline test mismatch (-want +got):\n%s", diff)
 	}
 }
 
