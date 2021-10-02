@@ -82,28 +82,31 @@ var platforms = []platformConfig{
 
 func TestGenerateMultilineFluentBitOutput(t *testing.T) {
 	multilineConfig := confgenerator.LoggingProcessorParseMultiline{
-		Regex: `testRegex.*`,
+		Regex: `(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)`,
 		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
-			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+			Types: map[string]string{
+				"lineNumber": "integer",
+			},
 		},
 		Rules: []confgenerator.MultilineRule{
 			confgenerator.MultilineRule{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}`,
+				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
 			},
 			confgenerator.MultilineRule{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `\s*at.*`,
+				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
 			},
 		},
 	}
 
 	c := fluentbit.ModularConfig{
 		Variables:  map[string]string{},
-		Components: multilineConfig.Components("pipe.receiver", "123"),
+		Components: multilineConfig.Components("cassandra.cassandra_system", "123"),
 	}
 
 	main, parsers, err := c.Generate()
