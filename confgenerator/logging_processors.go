@@ -149,7 +149,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 			Config: map[string]string{
 				"Name":                  "multiline",
 				"Match":                 tag,
-				"Multiline.Key_Content": "message",
+				"Multiline.Key_Content": p.Field,
 				"Multiline.Parser":      multilineParserName,
 			},
 		},
