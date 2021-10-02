@@ -45,7 +45,7 @@ func init() {
 }
 
 // A LoggingProcessorParseRegexSimple applies a regex to the specified field, storing the named capture groups as keys in the log record.
-// This was maintained in addition to the parse_regex_multiple_formats to ensure backward compatibility with any existing configurations
+// This was maintained in addition to the parse_regex_complex to ensure backward compatibility with any existing configurations
 type LoggingProcessorParseRegexSimple struct {
 	ConfigComponent        `yaml:",inline"`
 	fluentbit.ParserShared `yaml:",inline"`
@@ -83,7 +83,7 @@ type LoggingProcessorParseRegex struct {
 }
 
 func (r LoggingProcessorParseRegex) Type() string {
-	return "parse_regex_multiple_formats"
+	return "parse_regex_complex"
 }
 
 func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
@@ -133,7 +133,7 @@ type LoggingProcessorParseMultilineRegex struct {
 }
 
 func (r LoggingProcessorParseMultilineRegex) Type() string {
-	return "parse_multiline_regex"
+	return "parse_regex_multiline"
 }
 
 func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluentbit.Component {

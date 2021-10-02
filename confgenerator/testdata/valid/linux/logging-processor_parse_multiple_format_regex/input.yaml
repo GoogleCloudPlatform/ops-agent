@@ -15,7 +15,7 @@
 logging:
   processors:
     parse_multiple_regex_one:
-      type: parse_regex_multiple_formats
+      type: parse_regex_complex
       field: key_1 
       parsers:
       - regex: regex_1

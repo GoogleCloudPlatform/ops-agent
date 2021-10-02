@@ -14,8 +14,8 @@
 
 logging:
   processors:
-    parse_multiline_regex_one:
-      type: parse_multiline_regex
+    parse_regex_multiline_one:
+      type: parse_regex_multiline
       field: key_1
       rules:
       - state_name: "start_state"
@@ -31,4 +31,4 @@ logging:
   service:
     pipelines:
       default_pipeline:
-        processors: [parse_multiline_regex_one]
+        processors: [parse_regex_multiline_one]
