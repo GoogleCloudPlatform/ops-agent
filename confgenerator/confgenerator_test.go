@@ -119,9 +119,10 @@ func TestGenerateMultilineFluentBitOutput(t *testing.T) {
 		t.Fatalf("Error reading multiline test data %v", err)
 	}
 
-	generatedOutput := fmt.Sprintf("%s\n%s", main, parsers)
-	if generatedOutput != string(testData) {
-		t.Fatalf("Multiline Test Got:\n%s\nExpected:\n%s", generatedOutput, string(testData))
+	testOutput := strings.TrimSpace(string(testData))
+	generatedOutput := strings.TrimSpace(fmt.Sprintf("%s\n%s", main, parsers))
+	if generatedOutput != testOutput {
+		t.Fatalf("Multiline Test Got:\n%s\nExpected:\n%s", generatedOutput, testOutput)
 	}
 }
 
