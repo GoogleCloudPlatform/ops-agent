@@ -8,7 +8,7 @@ To configure a receiver for your apache access logs, specify the following field
 | ---                   | ---                           | ---         |
 | `type`                | required                      | Must be `apache_access`. |
 | `include_paths`       | `[/var/log/apache2/access.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                          | Log files to exclude (if `include_paths` contains a glob or directory). |
+| `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 
 To configure a receiver for your apache error logs, specify the following fields:
 
