@@ -173,7 +173,6 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 
 func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegexSimple{} })
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseMultilineRegex{} })
 }
 
