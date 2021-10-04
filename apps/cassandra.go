@@ -115,7 +115,7 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 					Regex: `(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<extendedMessage>(?<message>.*)[\s\S]+)`,
 					Parser: fluentbit.ParserShared{
 						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 						Types: map[string]string{
 							"uptime": "float",
 						},
@@ -168,7 +168,7 @@ func (r LoggingReceiverCassandraDebug) Components(tag string) []fluentbit.Compon
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCassandraDebug.Components(tag, "cassandra_system")...)
+	c = append(c, r.LoggingProcessorCassandraDebug.Components(tag, "cassandra_debug")...)
 	return c
 }
 
