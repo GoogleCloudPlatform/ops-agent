@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -44,41 +42,30 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 		},
 	}.Components(tag, uid)
 
-	for _, l := range []struct{ level, severity string }{
-		// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
-		{".", "DEBUG"},
-		{"-", "INFO"},
-		{"*", "NOTICE"},
-		{"#", "WARNING"},
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
-				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
+	c = append(c,
+		TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+			[]struct{ srcVal, destVal string }{
+				{".", "DEBUG"},
+				{"-", "INFO"},
+				{"*", "NOTICE"},
+				{"#", "WARNING"},
 			},
-		})
-	}
+		)...,
+	)
 
-	for _, l := range []struct{ roleChar, role string }{
-		// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
-		{"X", "sentinel"},
-		{"C", "RDB/AOF_writing_child"},
-		{"S", "slave"},
-		{"M", "master"},
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals roleChar %s", l.roleChar),
-				"Add":       fmt.Sprintf("role %s", l.role),
+	// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
+	c = append(c,
+		TranslationComponents(tag, "roleChar", "role",
+			[]struct{ srcVal, destVal string }{
+				{"X", "sentinel"},
+				{"C", "RDB/AOF_writing_child"},
+				{"S", "slave"},
+				{"M", "master"},
 			},
-		})
-	}
+		)...,
+	)
+
 	return c
 }
 
@@ -89,7 +76,18 @@ type LoggingReceiverRedis struct {
 
 func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/redis/redis-server.log*", "/var/log/redis_*", "/var/log/redis/redis_*.log*"}
+		r.IncludePaths = []string{
+			// Default log path on Ubuntu/RHEL
+			"/var/log/redis/redis-server.log",
+			// Default log path built from src
+			"/var/log/redis_6379.log",
+			// Default log path on centos
+			"/var/log/redis/redis.log",
+			// Default log path on sles
+			"/var/log/redis/default.log",
+			// Default log path from one click installer
+			"/var/log/redis/redis_6379.log",
+		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis")...)
