@@ -1,0 +1,15 @@
+log_entries:
+- log_name: "apache_access"
+  field_matchers:
+    httpRequest.remoteIp: "::1"
+    httpRequest.requestUrl: "/forbidden.html"
+    httpRequest.protocol: "HTTP/1.1"
+    httpRequest.requestMethod: "GET"
+    httpRequest.userAgent: "curl/7.64.0"
+- log_name: "apache_error"
+  field_matchers:
+    jsonPayload.client: "::1"
+    jsonPayload.level: "error"
+    jsonPayload.module: "core"
+    jsonPayload.message: '.*file permissions deny server access.*'
+    jsonPayload.errorCode: '.*Permission denied.*'
