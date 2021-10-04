@@ -76,7 +76,14 @@ type LoggingReceiverMysqlError struct {
 
 func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/mysql/mysqld.log", "/var/log/mysql/error.log"}
+		r.IncludePaths = []string{
+			// Default log path for CentOS / RHEL
+			"/var/log/mysqld.log",
+			// Default log path for SLES
+			"/var/log/mysql/mysqld.log",
+			// Default log path for Debian / Ubuntu
+			"/var/log/mysql/error.log",
+		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorMysqlError.Components(tag, "mysql_error")...)
