@@ -180,7 +180,7 @@ type LoggingReceiverCassandraGC struct {
 func (r LoggingReceiverCassandraGC) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			"/var/log/cassandra/gc*.log.current",
+			"/var/log/cassandra/gc.log.*.current",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
