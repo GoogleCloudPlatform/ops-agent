@@ -1,1 +1,1 @@
-logging receiver with type "unsupported_type" is not supported. Supported logging receiver types: [apache_access, apache_error, files, nginx_access, nginx_error, syslog, systemd, tcp].
+logging receiver with type "unsupported_type" is not supported. Supported logging receiver types: [apache_access, apache_error, files, nginx_access, nginx_error, syslog, systemd_journald, tcp].

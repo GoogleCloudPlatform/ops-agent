@@ -15,7 +15,7 @@
 logging:
   receivers:
     systemd_logs:
-      type: systemd
+      type: systemd_journald
   service:
     pipelines:
       systemd_pipeline:

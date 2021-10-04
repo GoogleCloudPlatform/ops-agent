@@ -1,1 +1,1 @@
-logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [apache_access, apache_error, files, nginx_access, nginx_error, syslog, systemd, tcp].
+logging receiver with type "windows_event_log" is not supported. Supported logging receiver types: [apache_access, apache_error, files, nginx_access, nginx_error, syslog, systemd_journald, tcp].
