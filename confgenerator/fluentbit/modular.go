@@ -25,7 +25,9 @@ type Component struct {
 	// Kind is "INPUT", "FILTER", "PARSER", etc.
 	Kind string
 	// Config is a set of key-value configuration pairs
-	Config         map[string]string
+	Config map[string]string
+	// RepeatedConfig is used for configuration pairs where the
+	// key can appear in the output fluent bit config multiple times
 	RepeatedConfig map[string][]string
 }
 
@@ -68,7 +70,7 @@ func (p ParserShared) Component(tag string, uid string) (Component, string) {
 	return parser, parserName
 }
 
-func FilterComponent(tag string, field string, parserNames []string) Component {
+func ParserFilterComponent(tag string, field string, parserNames []string) Component {
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
