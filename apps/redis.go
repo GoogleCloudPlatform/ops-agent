@@ -77,13 +77,13 @@ type LoggingReceiverRedis struct {
 func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path on Ubuntu/RHEL
+			// Default log path on Ubuntu / Debian
 			"/var/log/redis/redis-server.log",
 			// Default log path built from src
 			"/var/log/redis_6379.log",
-			// Default log path on centos
+			// Default log path on CentOS / RHEL
 			"/var/log/redis/redis.log",
-			// Default log path on sles
+			// Default log path on SLES
 			"/var/log/redis/default.log",
 			// Default log path from one click installer
 			"/var/log/redis/redis_6379.log",
