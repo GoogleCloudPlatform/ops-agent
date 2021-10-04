@@ -235,7 +235,7 @@ type LoggingReceiverSystemd struct {
 }
 
 func (r LoggingReceiverSystemd) Type() string {
-	return "systemd"
+	return "systemd_journald"
 }
 
 func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
