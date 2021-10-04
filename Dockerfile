@@ -172,6 +172,9 @@ RUN ./pkg/rpm/build.sh
 FROM opensuse/leap:42.3 AS sles12-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+    # Remove expired root certificate.
+    mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
+    update-ca-certificates && \
     # Add home:Ledest:devel repo to install >3.4 bison
     zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
