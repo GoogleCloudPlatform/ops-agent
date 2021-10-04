@@ -91,7 +91,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 		// Sample line 2.2: [Fri Sep 09 10:42:29.902022 2011] [error] [pid 35708:tid 4328636416] [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
 		// TODO - Support time parsing for version 2.0 where smallest resolution is seconds
 		// Sample line 2.0: [Wed Oct 11 14:32:52 2000] [error] [client 127.0.0.1] client denied by server configuration: /export/home/live/ap/htdocs/test
-		Regex: `^\[(?<time>[^\]]+)\] \[(?:(?<module>\w+):)?(?<level>[\w\d]+)\](?: \[pid (?<pid>\d+)(?::tid (?<tid>[0-9]+))?\])?(?: (?<errorCode>[^\[]*))?(?: \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
+		Regex: `^\[(?<time>[^\]]+)\] \[(?:(?<module>\w+):)?(?<level>[\w\d]+)\](?: \[pid (?<pid>\d+)(?::tid (?<tid>[0-9]+))?\])?(?: (?<errorCode>[^\[:]*):?)?(?: \[client (?<client>[^\]]*)\])? (?<message>.*)$		`,
 		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
 			TimeKey:    "time",
 			TimeFormat: "%a %b %d %H:%M:%S.%L %Y",
@@ -142,7 +142,14 @@ type LoggingReceiverApacheAccess struct {
 
 func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/apache2/access.log", "/var/log/apache2/access_log", "/var/log/httpd/access_log"}
+		r.IncludePaths = []string{
+			// Default log file path on Debian / Ubuntu
+			"/var/log/apache2/access.log",
+			// Default log file path RHEL / CentOS
+			"/var/log/apache2/access_log",
+			// Default log file path SLES
+			"/var/log/httpd/access_log",
+		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
@@ -156,7 +163,14 @@ type LoggingReceiverApacheError struct {
 
 func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/apache2/error.log", "/var/log/apache2/error_log", "/var/log/httpd/error_log"}
+		r.IncludePaths = []string{
+			// Default log file path on Debian / Ubuntu
+			"/var/log/apache2/error.log",
+			// Default log file path RHEL / CentOS
+			"/var/log/apache2/error_log",
+			// Default log file path SLES
+			"/var/log/httpd/error_log",
+		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorApacheError.Components(tag, "apache_error")...)
