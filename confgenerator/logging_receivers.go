@@ -242,7 +242,7 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
 			"Name": "systemd",
 			"Tag":  tag,
 			"DB":   DBPath(tag),
