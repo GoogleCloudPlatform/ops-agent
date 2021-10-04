@@ -251,5 +251,5 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSystemd{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSystemd{} }, "linux")
 }
