@@ -1,3 +1,4 @@
-nginx
+apache
 jvm
+nginx
 redis
