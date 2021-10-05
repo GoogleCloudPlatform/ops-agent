@@ -115,14 +115,19 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 		LoggingProcessorParseRegex: confgenerator.LoggingProcessorParseRegex{
 			Parsers: []confgenerator.RegexParser{
 				confgenerator.RegexParser{
+					// Vast majority of lines look like the first, with time stopped & time stopping
 					// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
+					// Sample line: 2021-10-05T01:20:52.695+0000: 4.434: [GC (CMS Initial Mark) [1 CMS-initial-mark: 0K(3686400K)] 36082K(4055040K), 0.0130057 secs] [Times: user=0.04 sys=0.00, real=0.01 secs]
+					// Sample line: 2021-10-05T01:20:52.741+0000: 4.481: [CMS-concurrent-preclean-start]
 					// Lines may also contain more detailed GC Heap information in the following lines
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>[\s\S]+)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>(?:.*(?:stopped: (?<timeStopped>\d+\.\d+)).*(?:took: (?<timeStopping>\d+\.\d+)[\s\S]*)|[\s\S]+))`,
 					Parser: fluentbit.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 						Types: map[string]string{
-							"uptime": "float",
+							"uptime":       "float",
+							"timeStopped":  "float",
+							"timeStopping": "float",
 						},
 					},
 				},
