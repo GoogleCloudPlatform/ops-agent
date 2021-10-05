@@ -70,7 +70,7 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexSimple{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Sample line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
 		// TODO: fluentd's default parser appends (?:\s+(?<http_x_forwarded_for>[^ ]+))? but this is not part of Nginx's log format. Consider adding it or other support for extra fields?
 		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
@@ -124,7 +124,7 @@ func (LoggingProcessorNginxError) Type() string {
 }
 
 func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexSimple{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
 		// Request fields: https://github.com/nginx/nginx/blob/7bcb50c0610a18bf43bef0062b2d2dc550823b53/src/http/ngx_http_request.c#L3836

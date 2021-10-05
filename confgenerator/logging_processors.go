@@ -44,9 +44,9 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseJson{} })
 }
 
-// A LoggingProcessorParseRegexSimple applies a regex to the specified field, storing the named capture groups as keys in the log record.
+// A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
 // This was maintained in addition to the parse_regex_complex to ensure backward compatibility with any existing configurations
-type LoggingProcessorParseRegexSimple struct {
+type LoggingProcessorParseRegex struct {
 	ConfigComponent        `yaml:",inline"`
 	fluentbit.ParserShared `yaml:",inline"`
 	Field                  string `yaml:"field,omitempty"`
@@ -54,11 +54,11 @@ type LoggingProcessorParseRegexSimple struct {
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
 
-func (r LoggingProcessorParseRegexSimple) Type() string {
+func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
 }
 
-func (p LoggingProcessorParseRegexSimple) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = p.Regex
@@ -74,19 +74,19 @@ type RegexParser struct {
 	Parser fluentbit.ParserShared `yaml:",inline"`
 }
 
-// A LoggingProcessorParseRegex applies a set of regexes to the specified field, storing the named capture groups as keys in the log record.
-type LoggingProcessorParseRegex struct {
+// A LoggingProcessorParseRegexComplex applies a set of regexes to the specified field, storing the named capture groups as keys in the log record.
+type LoggingProcessorParseRegexComplex struct {
 	ConfigComponent `yaml:",inline"`
 	Field           string `yaml:"field,omitempty"`
 
 	Parsers []RegexParser `yaml:"parsers,omitempty" validate:"required"`
 }
 
-func (r LoggingProcessorParseRegex) Type() string {
+func (r LoggingProcessorParseRegexComplex) Type() string {
 	return "parse_regex_complex"
 }
 
-func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentbit.Component {
 	components := []fluentbit.Component{}
 	parserNames := []string{}
 
@@ -127,7 +127,7 @@ func (r MultilineRule) AsString() string {
 //     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
 //     rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
-	LoggingProcessorParseRegex `yaml:",inline"`
+	LoggingProcessorParseRegexComplex `yaml:",inline"`
 
 	Rules []MultilineRule `yaml:"rules" validate:"required"`
 }
@@ -168,56 +168,56 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 		},
 	}
 
-	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegex.Components(tag, uid)...)
+	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(tag, uid)...)
 }
 
 func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegexSimple{} })
+	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
 }
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
-	"lib:default_message_parser": &LoggingProcessorParseRegexSimple{
+	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
 	},
-	"lib:apache": &LoggingProcessorParseRegexSimple{
+	"lib:apache": &LoggingProcessorParseRegex{
 		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
-	"lib:apache2": &LoggingProcessorParseRegexSimple{
+	"lib:apache2": &LoggingProcessorParseRegex{
 		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
-	"lib:apache_error": &LoggingProcessorParseRegexSimple{
+	"lib:apache_error": &LoggingProcessorParseRegex{
 		Regex: `^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
 	},
-	"lib:mongodb": &LoggingProcessorParseRegexSimple{
+	"lib:mongodb": &LoggingProcessorParseRegex{
 		Regex: `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
 		},
 	},
-	"lib:nginx": &LoggingProcessorParseRegexSimple{
+	"lib:nginx": &LoggingProcessorParseRegex{
 		Regex: `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
-	"lib:syslog-rfc5424": &LoggingProcessorParseRegexSimple{
+	"lib:syslog-rfc5424": &LoggingProcessorParseRegex{
 		Regex: `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
 		},
 	},
-	"lib:syslog-rfc3164": &LoggingProcessorParseRegexSimple{
+	"lib:syslog-rfc3164": &LoggingProcessorParseRegex{
 		Regex: `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
 		ParserShared: fluentbit.ParserShared{
 			TimeKey:    "time",

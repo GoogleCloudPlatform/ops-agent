@@ -30,7 +30,7 @@ func (LoggingProcessorApacheAccess) Type() string {
 }
 
 func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexSimple{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#accesslog
 		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
 		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
@@ -85,7 +85,7 @@ func (LoggingProcessorApacheError) Type() string {
 }
 
 func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexSimple{
+	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
 		// Sample line 2.4: [Fri Sep 09 10:42:29.902022 2011] [core:error] [pid 35708:tid 4328636416] (13)Permission denied [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
 		// 					[Thu Sep 30 03:18:29.239182 2021] [ssl:error] [pid 2451:tid 140169666050176] AH02217: ssl_stapling_init_cert: Can't retrieve issuer certificate!
