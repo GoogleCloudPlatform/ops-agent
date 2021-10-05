@@ -50,8 +50,13 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 		LoggingProcessorParseRegex: confgenerator.LoggingProcessorParseRegex{
 			Parsers: []confgenerator.RegexParser{
 				confgenerator.RegexParser{
-					// Sample line: DEBUG [main] 2021-10-01 20:15:36,385 InternalLoggerFactory.java:63 - Using SLF4J as the default logging framework
-					Regex: `(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<extendedMessage>(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?.+)[\S\s]+)`,
+					// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
+					// 				org.apache.cassandra.io.FSReadError: java.io.IOException: Invalid folder descriptor trying to create log replica /folder/views-9786ac1cdd583201a7cdad556410c985
+					// 					at org.apache.cassandra.db.lifecycle.LogReplica.create(LogReplica.java:59)
+					// 					at org.apache.cassandra.db.lifecycle.LogReplicaSet.maybeCreateReplica(LogReplicaSet.java:87)
+					// 					at org.apache.cassandra.db.lifecycle.LogFile.makeAddRecord(LogFile.java:336)
+					// 					at org.apache.cassandra.db.lifecycle.LogFile.add(LogFile.java:310)
+					Regex: `^(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
 					Parser: fluentbit.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
@@ -112,7 +117,7 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 				confgenerator.RegexParser{
 					// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
 					// Lines may also contain more detailed GC Heap information in the following lines
-					Regex: `(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<extendedMessage>(?<message>.*)[\s\S]+)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>[\s\S]+)`,
 					Parser: fluentbit.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
