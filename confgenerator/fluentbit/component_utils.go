@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apps
+package fluentbit
 
 import (
 	"fmt"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-func TranslationComponents(tag, src, dest string, translations []struct{ srcVal, destVal string }) []fluentbit.Component {
-	c := []fluentbit.Component{}
+func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
+	c := []Component{}
 	for _, t := range translations {
-		c = append(c, fluentbit.Component{
+		c = append(c, Component{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":      "modify",
 				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.srcVal),
-				"Add":       fmt.Sprintf("%s %s", dest, t.destVal),
+				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
+				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
 			},
 		})
 	}
