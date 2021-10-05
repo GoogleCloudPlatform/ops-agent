@@ -1,1 +1,1 @@
-logging processor with type "unsupported_type" is not supported. Supported logging processor types: [nginx_access, nginx_error, parse_json, parse_regex].
+logging processor with type "unsupported_type" is not supported. Supported logging processor types: [apache_access, apache_error, nginx_access, nginx_error, parse_json, parse_regex].
