@@ -19,3 +19,4 @@ curl -OL https://dlcdn.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar
 # TODO - compare to curl -L https://downloads.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz.sha256
 
 tar xzvf apache-cassandra-4.0.1-bin.tar.gz
+mv apache-cassandra-4.0.1 apache-cassandra

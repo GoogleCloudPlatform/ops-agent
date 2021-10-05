@@ -158,7 +158,9 @@ type LoggingReceiverCassandraSystem struct {
 func (r LoggingReceiverCassandraSystem) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
+			// Default log file path on Debian / Ubuntu / RHEL / CentOS
 			"/var/log/cassandra/system*.log",
+			// No default install position / log path for SLES
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
@@ -174,7 +176,9 @@ type LoggingReceiverCassandraDebug struct {
 func (r LoggingReceiverCassandraDebug) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
+			// Default log file path on Debian / Ubuntu / RHEL / CentOS
 			"/var/log/cassandra/debug*.log",
+			// No default install position / log path for SLES
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
@@ -190,7 +194,9 @@ type LoggingReceiverCassandraGC struct {
 func (r LoggingReceiverCassandraGC) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
+			// Default log file path on Debian / Ubuntu / RHEL / CentOS
 			"/var/log/cassandra/gc.log.*.current",
+			// No default install position / log path for SLES
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)

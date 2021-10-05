@@ -7,7 +7,7 @@ To configure a receiver for your cassandra system logs, specify the following fi
 | Field                 | Default                       | Description |
 | ---                   | ---                           | ---         |
 | `type`                | required                      | Must be `cassandra_system`. |
-| `include_paths`       | `[/var/log/apache2/access.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
+| `include_paths`       | `[/var/log/cassandra/system*.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
 | `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 
 To configure a receiver for your cassandra debug logs, specify the following fields:
@@ -15,7 +15,7 @@ To configure a receiver for your cassandra debug logs, specify the following fie
 | Field                 | Default                      | Description |
 | ---                   | ---                          | ---         |
 | `type`                | required                     | Must be `cassandra_debug`. |
-| `include_paths`       | `[/var/log/apache2/error.log]` | The log files to read. |
+| `include_paths`       | `[/var/log/cassandra/debug*.log]` | The log files to read. |
 | `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
 
 To configure a receiver for your cassandra gc logs, specify the following fields:
@@ -23,7 +23,7 @@ To configure a receiver for your cassandra gc logs, specify the following fields
 | Field                 | Default                      | Description |
 | ---                   | ---                          | ---         |
 | `type`                | required                     | Must be `cassandra_gc`. |
-| `include_paths`       | `[/var/log/apache2/error.log]` | The log files to read. |
+| `include_paths`       | `[/var/log/cassandra/gc.log.*.current]` | The log files to read. |
 | `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
 
 Example Configuration:
