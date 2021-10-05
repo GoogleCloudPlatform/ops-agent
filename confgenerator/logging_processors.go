@@ -16,6 +16,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -105,7 +106,8 @@ type MultilineRule struct {
 }
 
 func (r MultilineRule) AsString() string {
-	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, r.Regex, r.NextState)
+	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
+	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
 }
 
 // A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
