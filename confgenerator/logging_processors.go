@@ -70,20 +70,16 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 }
 
 type RegexParser struct {
-	Regex  string                 `yaml:"regex,omitempty" validate:"required"`
-	Parser fluentbit.ParserShared `yaml:",inline"`
+	Regex  string
+	Parser fluentbit.ParserShared
 }
 
 // A LoggingProcessorParseRegexComplex applies a set of regexes to the specified field, storing the named capture groups as keys in the log record.
 type LoggingProcessorParseRegexComplex struct {
-	ConfigComponent `yaml:",inline"`
-	Field           string `yaml:"field,omitempty"`
+	ConfigComponent
+	Field string
 
-	Parsers []RegexParser `yaml:"parsers,omitempty" validate:"required"`
-}
-
-func (r LoggingProcessorParseRegexComplex) Type() string {
-	return "parse_regex_complex"
+	Parsers []RegexParser
 }
 
 func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentbit.Component {
@@ -103,9 +99,9 @@ func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentb
 }
 
 type MultilineRule struct {
-	StateName string `yaml:"state_name" validate:"required"`
-	Regex     string `yaml:"regex,omitempty" validate:"required"`
-	NextState string `yaml:"next_state" validate:"required"`
+	StateName string
+	Regex     string
+	NextState string
 }
 
 func (r MultilineRule) AsString() string {
@@ -127,13 +123,9 @@ func (r MultilineRule) AsString() string {
 //     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
 //     rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
-	LoggingProcessorParseRegexComplex `yaml:",inline"`
+	LoggingProcessorParseRegexComplex
 
-	Rules []MultilineRule `yaml:"rules" validate:"required"`
-}
-
-func (r LoggingProcessorParseMultilineRegex) Type() string {
-	return "parse_regex_multiline"
+	Rules []MultilineRule
 }
 
 func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluentbit.Component {
