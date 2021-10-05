@@ -1,0 +1,21 @@
+set -e
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
+  if [[ "${VERSION_ID}" == 15.0 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-Cloud-Tools
+  elif [[ "${VERSION_ID}" == 15.1 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-devel-languages-python-aws
+  fi
+fi
+sudo zypper -n refresh
+
+sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
+
+# There is no official or even semi-official zypper package for cassandra
+curl -OL https://dlcdn.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+# TODO - compare to curl -L https://downloads.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz.sha256
+
+tar xzvf apache-cassandra-4.0.1-bin.tar.gz

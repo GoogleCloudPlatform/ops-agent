@@ -21,11 +21,17 @@ logging:
   receivers:
     cassandra_system:
       type: cassandra_system
+    cassandra_debug:
+      type: cassandra_debug
+    cassandra_gc:
+      type: cassandra_gc
   service:
     pipelines:
       cassandra:
         receivers:
           - cassandra_system
+          - cassandra_debug
+          - cassandra_gc
 EOF
 
 sudo service google-cloud-ops-agent restart

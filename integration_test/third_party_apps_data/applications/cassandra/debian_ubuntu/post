@@ -1,0 +1,2 @@
+# service is auto-started on install
+# sudo service cassandra start

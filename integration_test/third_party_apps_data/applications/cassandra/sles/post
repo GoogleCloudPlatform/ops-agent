@@ -1,0 +1,2 @@
+cd apache-cassandra-4.0.1/ && bin/cassandra -f &
+ps -f -p $!
