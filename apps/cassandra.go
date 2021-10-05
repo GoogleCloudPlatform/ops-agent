@@ -56,7 +56,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 					// 					at org.apache.cassandra.db.lifecycle.LogReplicaSet.maybeCreateReplica(LogReplicaSet.java:87)
 					// 					at org.apache.cassandra.db.lifecycle.LogFile.makeAddRecord(LogFile.java:336)
 					// 					at org.apache.cassandra.db.lifecycle.LogFile.add(LogFile.java:310)
-					Regex: `^(?<level>[A-Z]+)\s+\[(?<type>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
+					Regex: `^(?<level>[A-Z]+)\s+\[(?<module>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
 					Parser: fluentbit.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
