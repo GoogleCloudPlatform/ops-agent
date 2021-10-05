@@ -171,16 +171,19 @@ RUN ./pkg/rpm/build.sh
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/leap:42.3 AS sles12-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
-# Add home:Ledest:devel repo to install >3.4 bison
-&& zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo \
-&& zypper -n --gpg-auto-import-keys refresh \
-&& zypper -n update \
-# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
-# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-&& zypper -n install bison>3.4 \
-# Allow fluent-bit to find systemd
-&& ln -fs /usr/lib/systemd /lib/systemd
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+    # Remove expired root certificate.
+    mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
+    update-ca-certificates && \
+    # Add home:Ledest:devel repo to install >3.4 bison
+    zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo && \
+    zypper -n --gpg-auto-import-keys refresh && \
+    zypper -n update && \
+    # zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
+    # If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
+    zypper -n install bison>3.4 && \
+    # Allow fluent-bit to find systemd
+    ln -fs /usr/lib/systemd /lib/systemd
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
@@ -192,14 +195,14 @@ RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel \
-# Add home:ptrommler:formal repo to install >3.4 bison
-&& zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo \
-&& zypper -n --gpg-auto-import-keys refresh \
-&& zypper -n update \
-&& zypper -n install bison>3.4 \
-# Allow fluent-bit to find systemd
-&& ln -fs /usr/lib/systemd /lib/systemd
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+    # Add home:ptrommler:formal repo to install >3.4 bison
+    zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
+    zypper -n --gpg-auto-import-keys refresh && \
+    zypper -n update && \
+    zypper -n install bison>3.4 && \
+    # Allow fluent-bit to find systemd
+    ln -fs /usr/lib/systemd /lib/systemd
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \

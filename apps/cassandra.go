@@ -47,7 +47,7 @@ func (p LoggingProcessorCassandraDebug) Components(tag string, uid string) []flu
 
 func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegex: confgenerator.LoggingProcessorParseRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				confgenerator.RegexParser{
 					// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
@@ -112,7 +112,7 @@ func (LoggingProcessorCassandraGC) Type() string {
 
 func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegex: confgenerator.LoggingProcessorParseRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				confgenerator.RegexParser{
 					// Vast majority of lines look like the first, with time stopped & time stopping

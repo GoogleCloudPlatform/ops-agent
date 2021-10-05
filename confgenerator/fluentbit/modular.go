@@ -102,8 +102,11 @@ func (c Component) generateSection() string {
 			maxLen = len(k)
 		}
 	}
+
+	addLine := func(k, v string) { lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v)) }
+
 	for k, v := range c.Config {
-		lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v))
+		addLine(k, v)
 	}
 	sort.Strings(lines)
 
@@ -112,7 +115,7 @@ func (c Component) generateSection() string {
 	// are provided to one parser filter
 	for k, list := range c.RepeatedConfig {
 		for _, v := range list {
-			lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v))
+			addLine(k, v)
 		}
 	}
 
