@@ -1,1 +1,1 @@
-logging receiver with type "systemd" is not supported. Supported logging receiver types: [apache_access, apache_error, files, nginx_access, nginx_error, syslog, tcp, windows_event_log].
+logging receiver with type "systemd" is not supported. Supported logging receiver types: [apache_access, apache_error, files, mysql_error, nginx_access, nginx_error, syslog, tcp, windows_event_log].

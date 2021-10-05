@@ -1,0 +1,6 @@
+log_entries:
+- log_name: "mysql_error"
+  field_matchers:
+    jsonPayload.level: "System"
+    jsonPayload.message: '.*InnoDB initialization has started.*'
+    jsonPayload.subsystem: "InnoDB"

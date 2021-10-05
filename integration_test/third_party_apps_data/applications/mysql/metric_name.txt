@@ -1,1 +1,0 @@
-agent.googleapis.com/mysql/command_count

@@ -1,3 +1,4 @@
-nginx
-jvm
 apache
+jvm
+mysql
+nginx
