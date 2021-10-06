@@ -1,3 +1,4 @@
-nginx
-jvm
 apache
+jvm
+nginx
+redis
