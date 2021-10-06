@@ -26,28 +26,28 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 	return []fluentbit.Component{
 		{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Match": tag,
-				"Add":   fmt.Sprintf("logName %s", logName),
-				"Name":  "modify",
+			Config: [][2]string{
+				{"Add", fmt.Sprintf("logName %s", logName)},
+				{"Match", tag},
+				{"Name", "modify"},
 			},
 		},
 		{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Emitter_Mem_Buf_Limit": "10M",
-				"Emitter_Storage.type":  "filesystem",
-				"Match":                 tag,
-				"Name":                  "rewrite_tag",
-				"Rule":                  "$logName .* $logName false",
+			Config: [][2]string{
+				{"Emitter_Mem_Buf_Limit", "10M"},
+				{"Emitter_Storage.type", "filesystem"},
+				{"Match", tag},
+				{"Name", "rewrite_tag"},
+				{"Rule", "$logName .* $logName false"},
 			},
 		},
 		{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  logName,
-				"Name":   "modify",
-				"Remove": "logName",
+			Config: [][2]string{
+				{"Match", logName},
+				{"Name", "modify"},
+				{"Remove", "logName"},
 			},
 		},
 	}
@@ -57,24 +57,24 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 	return fluentbit.Component{
 		Kind: "OUTPUT",
-		Config: map[string]string{
+		Config: [][2]string{
 			// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-			"Name":              "stackdriver",
-			"Match_Regex":       fmt.Sprintf("^(%s)$", match),
-			"resource":          "gce_instance",
-			"stackdriver_agent": userAgent,
+			{"Match_Regex", fmt.Sprintf("^(%s)$", match)},
+			{"Name", "stackdriver"},
 
 			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
 			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
-			"Retry_Limit": "3",
+			{"Retry_Limit", "3"},
+			{"resource", "gce_instance"},
+			{"stackdriver_agent", userAgent},
 
 			// https://docs.fluentbit.io/manual/administration/security
 			// Enable TLS support.
-			"tls": "On",
+			{"tls", "On"},
 			// Do not force certificate validation.
-			"tls.verify": "Off",
+			{"tls.verify", "Off"},
 
-			"workers": "8",
+			{"workers", "8"},
 		},
 	}
 }

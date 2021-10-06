@@ -53,24 +53,24 @@ func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluen
 	} {
 		c = append(c, fluentbit.Component{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
+			Config: [][2]string{
+				{"Condition", fmt.Sprintf("Key_Value_Equals %s -", field)},
+				{"Match", tag},
+				{"Name", "modify"},
+				{"Remove", field},
 			},
 		})
 	}
 	// Generate the httpRequest structure.
 	c = append(c, fluentbit.Component{
 		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
-			"Remove_prefix": "http_request_",
+		Config: [][2]string{
+			{"Match", tag},
+			{"Name", "nest"},
+			{"Nest_under", "logging.googleapis.com/http_request"},
+			{"Operation", "nest"},
+			{"Remove_prefix", "http_request_"},
+			{"Wildcard", "http_request_*"},
 		},
 	})
 	return c
@@ -125,11 +125,11 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 	} {
 		c = append(c, fluentbit.Component{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
-				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+			Config: [][2]string{
+				{"Add", fmt.Sprintf("logging.googleapis.com/severity %s", l.severity)},
+				{"Condition", fmt.Sprintf("Key_Value_Equals level %s", l.level)},
+				{"Match", tag},
+				{"Name", "modify"},
 			},
 		})
 	}

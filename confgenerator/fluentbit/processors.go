@@ -37,16 +37,16 @@ func (p ParserShared) Component(tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	parser := Component{
 		Kind: "PARSER",
-		Config: map[string]string{
-			"Name": parserName,
+		Config: [][2]string{
+			{"Name", parserName},
 		},
 	}
 
 	if p.TimeFormat != "" {
-		parser.Config["Time_Format"] = p.TimeFormat
+		parser.Config = append(parser.Config, [2]string{"Time_Format", p.TimeFormat})
 	}
 	if p.TimeKey != "" {
-		parser.Config["Time_Key"] = p.TimeKey
+		parser.Config = append(parser.Config, [2]string{"Time_Key", p.TimeKey})
 	}
 	if len(p.Types) > 0 {
 		var types []string
@@ -54,7 +54,7 @@ func (p ParserShared) Component(tag string, uid string) (Component, string) {
 			types = append(types, fmt.Sprintf("%s:%s", k, v))
 		}
 		sort.Strings(types)
-		parser.Config["Types"] = strings.Join(types, " ")
+		parser.Config = append(parser.Config, [2]string{"Types", strings.Join(types, " ")})
 	}
 
 	return parser, parserName
@@ -63,17 +63,20 @@ func (p ParserShared) Component(tag string, uid string) (Component, string) {
 func ParserFilterComponent(tag string, field string, parserNames []string) Component {
 	filter := Component{
 		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":    tag,
-			"Name":     "parser",
-			"Key_Name": "message", // Required
-		},
-		RepeatedConfig: map[string][]string{
-			"Parser": parserNames,
+		Config: [][2]string{
+			{"Name", "parser"},
+			{"Match", tag},
 		},
 	}
+
 	if field != "" {
-		filter.Config["Key_Name"] = field
+		filter.Config = append(filter.Config, [2]string{"Key_Name", field})
+	} else {
+		filter.Config = append(filter.Config, [2]string{"Key_Name", "message"})
+	}
+
+	for _, parser := range parserNames {
+		filter.Config = append(filter.Config, [2]string{"Parser", parser})
 	}
 
 	return filter
