@@ -25,7 +25,7 @@ logging:
     pipelines:
       redis:
         receivers:
-          - redis
+        - redis
 EOF
 
 sudo service google-cloud-ops-agent restart
