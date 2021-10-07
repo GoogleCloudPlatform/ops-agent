@@ -22,7 +22,7 @@ logging:
     pipelines:
       apache:
         receivers:
-          - redis
+        - redis
 ```
 
 ## Logs
