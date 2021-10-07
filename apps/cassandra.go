@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -81,23 +79,17 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 		},
 	}.Components(tag, uid)
 
-	for _, l := range []struct{ level, severity string }{
-		{"TRACE", "TRACE"},
-		{"DEBUG", "DEBUG"},
-		{"INFO", "INFO"},
-		{"ERROR", "ERROR"},
-		{"WARN", "WARNING"},
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
-				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+			[]struct{ SrcVal, DestVal string }{
+				{"TRACE", "TRACE"},
+				{"DEBUG", "DEBUG"},
+				{"INFO", "INFO"},
+				{"ERROR", "ERROR"},
+				{"WARN", "WARNING"},
 			},
-		})
-	}
+		)...,
+	)
 
 	return c
 }
