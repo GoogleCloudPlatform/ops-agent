@@ -35,7 +35,7 @@ func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluen
 		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
 		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
 		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 			Types: map[string]string{
@@ -93,7 +93,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 		// TODO - Support time parsing for version 2.0 where smallest resolution is seconds
 		// Sample line 2.0: [Wed Oct 11 14:32:52 2000] [error] [client 127.0.0.1] client denied by server configuration: /export/home/live/ap/htdocs/test
 		Regex: `^\[(?<time>[^\]]+)\] \[(?:(?<module>\w+):)?(?<level>[\w\d]+)\](?: \[pid (?<pid>\d+)(?::tid (?<tid>[0-9]+))?\])?(?: (?<errorCode>[^\[:]*):?)?(?: \[client (?<client>[^\]]*)\])? (?<message>.*)$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%a %b %d %H:%M:%S.%L %Y",
 			Types: map[string]string{
