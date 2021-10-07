@@ -33,7 +33,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 		// Sample line (Redis 3+): 534:M 28 Apr 2020 11:30:29.988 * DB loaded from disk: 0.002 seconds
 		// Sample line (Redis <3): [4018] 14 Nov 07:01:22.119 * Background saving terminated with success
 		Regex: `^\[?(?<pid>\d+):?(?<roleChar>[A-Z])?\]?\s+(?<time>\d{2}\s+\w+(?:\s+\d{4})?\s+\d{2}:\d{2}:\d{2}.\d{3})\s+(?<level>(\*|#|-|\.))\s+(?<message>.*)$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d %b %Y %H:%M:%S.%L",
 			Types: map[string]string{

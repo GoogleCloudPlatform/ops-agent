@@ -21,19 +21,25 @@ import (
 	"strings"
 )
 
-// ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
-type ParserShared struct {
-	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
-	// Types allows parsing the extracted fields.
-	// Not exposed to users for now, but can be used by app receivers.
-	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
-	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
-	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
+func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
+	c := []Component{}
+	for _, t := range translations {
+		c = append(c, Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
+				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
+			},
+		})
+	}
+
+	return c
 }
 
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
-func (p ParserShared) Component(tag string, uid string) (Component, string) {
+func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]string, tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	parser := Component{
 		Kind: "PARSER",
@@ -42,15 +48,15 @@ func (p ParserShared) Component(tag string, uid string) (Component, string) {
 		},
 	}
 
-	if p.TimeFormat != "" {
-		parser.Config["Time_Format"] = p.TimeFormat
+	if TimeFormat != "" {
+		parser.Config["Time_Format"] = TimeFormat
 	}
-	if p.TimeKey != "" {
-		parser.Config["Time_Key"] = p.TimeKey
+	if TimeKey != "" {
+		parser.Config["Time_Key"] = TimeKey
 	}
-	if len(p.Types) > 0 {
+	if len(Types) > 0 {
 		var types []string
-		for k, v := range p.Types {
+		for k, v := range Types {
 			types = append(types, fmt.Sprintf("%s:%s", k, v))
 		}
 		sort.Strings(types)
