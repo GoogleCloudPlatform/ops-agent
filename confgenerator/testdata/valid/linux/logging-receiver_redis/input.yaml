@@ -1,9 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,26 +12,31 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    redis_metrics:
-      type: redis
-      endpoint: localhost:6379
-      collection_interval: 30s
-  service:
-    pipelines:
-      redis_pipeline:
-        receivers:
-        - redis_metrics
 logging:
   receivers:
-    redis:
+    redis_default:
+      type: redis
+    redis_custom:
+      type: redis
+      include_paths:
+        - /usr/log/redis/custom.log*
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    redis_syslog:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+  processors:
+    redis_syslog:
       type: redis
   service:
     pipelines:
-      redis:
+      redis_default:
         receivers:
-        - redis
-EOF
-
-sudo service google-cloud-ops-agent restart
+          - redis_default
+      redis_custom:
+        receivers:
+          - redis_custom
+      redis_syslog:
+        receivers: [redis_syslog]
+        processors: [redis_syslog]

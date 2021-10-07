@@ -17,26 +17,18 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    redis_metrics:
-      type: redis
-      endpoint: localhost:6379
-      collection_interval: 30s
-  service:
-    pipelines:
-      redis_pipeline:
-        receivers:
-        - redis_metrics
 logging:
   receivers:
-    redis:
-      type: redis
+    apache_access:
+      type: apache_access
+    apache_error:
+      type: apache_error
   service:
     pipelines:
-      redis:
+      nginx:
         receivers:
-        - redis
+          - apache_access
+          - apache_error
 EOF
 
 sudo service google-cloud-ops-agent restart

@@ -1,0 +1,9 @@
+set -e
+
+# Create a file that apache can't read.
+touch /var/www/html/forbidden.html
+chmod o-r /var/www/html/forbidden.html
+
+# Then request that file through apache. This is meant to generate an entry in
+# the access log and the error log.
+curl http://localhost:80/forbidden.html
