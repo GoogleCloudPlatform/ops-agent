@@ -16,15 +16,31 @@ package confgenerator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
+// ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
+type ParserShared struct {
+	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
+	// Types allows parsing the extracted fields.
+	// Not exposed to users for now, but can be used by app receivers.
+	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
+	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
+	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
+}
+
+func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
+	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
+}
+
 // A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
-	ConfigComponent        `yaml:",inline"`
-	fluentbit.ParserShared `yaml:",inline"`
-	Field                  string `yaml:"field,omitempty"`
+	ConfigComponent `yaml:",inline"`
+	ParserShared    `yaml:",inline"`
+	Field           string `yaml:"field,omitempty"`
 }
 
 func (r LoggingProcessorParseJson) Type() string {
@@ -47,9 +63,9 @@ func init() {
 // A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
 // This was maintained in addition to the parse_regex_complex to ensure backward compatibility with any existing configurations
 type LoggingProcessorParseRegex struct {
-	ConfigComponent        `yaml:",inline"`
-	fluentbit.ParserShared `yaml:",inline"`
-	Field                  string `yaml:"field,omitempty"`
+	ConfigComponent `yaml:",inline"`
+	ParserShared    `yaml:",inline"`
+	Field           string `yaml:"field,omitempty"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
@@ -71,14 +87,12 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 
 type RegexParser struct {
 	Regex  string
-	Parser fluentbit.ParserShared
+	Parser ParserShared
 }
 
 // A LoggingProcessorParseRegexComplex applies a set of regexes to the specified field, storing the named capture groups as keys in the log record.
 type LoggingProcessorParseRegexComplex struct {
-	ConfigComponent
-	Field string
-
+	Field   string
 	Parsers []RegexParser
 }
 
@@ -105,7 +119,8 @@ type MultilineRule struct {
 }
 
 func (r MultilineRule) AsString() string {
-	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, r.Regex, r.NextState)
+	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
+	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
 }
 
 // A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
@@ -124,7 +139,6 @@ func (r MultilineRule) AsString() string {
 //     rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
 	LoggingProcessorParseRegexComplex
-
 	Rules []MultilineRule
 }
 
@@ -173,14 +187,14 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	},
 	"lib:apache": &LoggingProcessorParseRegex{
 		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
 	"lib:apache2": &LoggingProcessorParseRegex{
 		Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>.*)")?$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
@@ -190,28 +204,28 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	},
 	"lib:mongodb": &LoggingProcessorParseRegex{
 		Regex: `^(?<time>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
 		},
 	},
 	"lib:nginx": &LoggingProcessorParseRegex{
 		Regex: `^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	},
 	"lib:syslog-rfc5424": &LoggingProcessorParseRegex{
 		Regex: `^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[-0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|-)) (?<message>.+)$`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
 		},
 	},
 	"lib:syslog-rfc3164": &LoggingProcessorParseRegex{
 		Regex: `/^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$/`,
-		ParserShared: fluentbit.ParserShared{
+		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%b %d %H:%M:%S",
 		},

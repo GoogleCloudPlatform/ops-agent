@@ -57,7 +57,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 					// 					at org.apache.cassandra.db.lifecycle.LogFile.makeAddRecord(LogFile.java:336)
 					// 					at org.apache.cassandra.db.lifecycle.LogFile.add(LogFile.java:310)
 					Regex: `^(?<level>[A-Z]+)\s+\[(?<module>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
-					Parser: fluentbit.ParserShared{
+					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
 						Types: map[string]string{
@@ -121,7 +121,7 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 					// Sample line: 2021-10-05T01:20:52.741+0000: 4.481: [CMS-concurrent-preclean-start]
 					// Lines may also contain more detailed GC Heap information in the following lines
 					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>(?:.*(?:stopped: (?<timeStopped>\d+\.\d+)).*(?:took: (?<timeStopping>\d+\.\d+)[\s\S]*)|[\s\S]+))`,
-					Parser: fluentbit.ParserShared{
+					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 						Types: map[string]string{
