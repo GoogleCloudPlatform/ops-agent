@@ -43,9 +43,9 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
-			Config: [][2]string{
-				{"collection_interval", r.CollectionIntervalString()},
-				{"endpoint", r.StubStatusURL},
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.StubStatusURL,
 			},
 		},
 		Processors: []otel.Component{
