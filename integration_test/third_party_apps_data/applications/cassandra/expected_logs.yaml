@@ -7,10 +7,10 @@ log_entries:
     jsonPayload.javaClass: "CassandraDaemon.java"
 - log_name: "cassandra_debug"
   field_matchers:
-    jsonPayload.message: ".*Completed submission of build tasks.*"
+    jsonPayload.message: ".*Loading settings from file.*"
     jsonPayload.level: "DEBUG"
-    jsonPayload.module: "OptionalTasks:1"
-    jsonPayload.javaClass: "CassandraDaemon.java"
+    jsonPayload.module: "main"
+    jsonPayload.javaClass: "YamlConfigurationLoader.java"
 - log_name: "cassandra_gc"
   field_matchers:
     jsonPayload.message: '.*Total time for which application threads were stopped.*'
