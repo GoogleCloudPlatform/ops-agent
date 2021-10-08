@@ -39,7 +39,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 				// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
 				Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:?\d{2})?)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
-				Parser: fluentbit.ParserShared{
+				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
 					TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 					Types: map[string]string{
@@ -52,7 +52,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				// Sample Line: 160615 16:53:08 [Note] InnoDB: The InnoDB memory heap is disabled
 				// TODO - time is in system time, not UTC, is there a way to resolve this in fluent bit?
 				Regex: `^(?<time>\d{6} \d{2}:\d{2}:\d{2})\s+\[(?<level>[^\]]+)]\s+(?<message>.*)$`,
-				Parser: fluentbit.ParserShared{
+				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
 					TimeFormat: "%y%m%d %H:%M:%S",
 				},
@@ -61,7 +61,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				// MariaDB >=10.1.5, documented: https://mariadb.com/kb/en/error-log/#format
 				// Sample Line: 2016-06-15 16:53:33 139651251140544 [Note] InnoDB: The InnoDB memory heap is disabled
 				Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?\s+(?<message>.*)$`,
-				Parser: fluentbit.ParserShared{
+				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
 					TimeFormat: "%Y-%m-%d %H:%M:%S",
 				},
