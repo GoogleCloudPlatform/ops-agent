@@ -36,7 +36,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 		// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 		// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
 		Regex: `^(?<time>\d{4}-\d{2}-\d{2}(?:T|\s)\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:\d{2})?)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?(?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
-		LoggingProcessorParseShared: confgenerator.LoggingProcessorParseShared{
+		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			Types: map[string]string{
