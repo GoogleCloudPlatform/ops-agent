@@ -16,8 +16,6 @@ package confgenerator
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -79,55 +77,4 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"workers": "8",
 		},
 	}
-}
-
-// LoggingProcessorParseShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
-type LoggingProcessorParseShared struct {
-	Field      string `yaml:"field,omitempty"`       // default to "message"
-	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
-	// Types allows parsing the extracted fields.
-	// Not exposed to users for now, but can be used by app receivers.
-	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
-	// According to docs, this is only supported with `ltsv`, `logfmt`, and `regex` parsers.
-	Types map[string]string `yaml:"-" validate:"dive,oneof=string integer bool float hex"`
-}
-
-// Components returns a filter and parser component for this parse processor.
-// The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
-func (p LoggingProcessorParseShared) Components(tag, uid string) (fluentbit.Component, fluentbit.Component) {
-	parserName := fmt.Sprintf("%s.%s", tag, uid)
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":    tag,
-			"Name":     "parser",
-			"Parser":   parserName,
-			"Key_Name": "message", // Required
-		},
-	}
-	if p.Field != "" {
-		filter.Config["Key_Name"] = p.Field
-	}
-	parser := fluentbit.Component{
-		Kind: "PARSER",
-		Config: map[string]string{
-			"Name": parserName,
-		},
-	}
-	if p.TimeFormat != "" {
-		parser.Config["Time_Format"] = p.TimeFormat
-	}
-	if p.TimeKey != "" {
-		parser.Config["Time_Key"] = p.TimeKey
-	}
-	if len(p.Types) > 0 {
-		var types []string
-		for k, v := range p.Types {
-			types = append(types, fmt.Sprintf("%s:%s", k, v))
-		}
-		sort.Strings(types)
-		parser.Config["Types"] = strings.Join(types, " ")
-	}
-	return filter, parser
 }

@@ -26,6 +26,9 @@ type Component struct {
 	Kind string
 	// Config is a set of key-value configuration pairs
 	Config map[string]string
+	// RepeatedConfig is used for configuration pairs where the
+	// key can appear in the output fluent bit config multiple times
+	RepeatedConfig map[string][]string
 }
 
 func (c Component) generateSection() string {
@@ -36,10 +39,28 @@ func (c Component) generateSection() string {
 			maxLen = len(k)
 		}
 	}
+	for k := range c.RepeatedConfig {
+		if len(k) > maxLen {
+			maxLen = len(k)
+		}
+	}
+
+	addLine := func(k, v string) { lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v)) }
+
 	for k, v := range c.Config {
-		lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v))
+		addLine(k, v)
 	}
 	sort.Strings(lines)
+
+	// Used for Multiline config where several "rule" lines
+	// must be placed at the end of a parser config, and when multiple "Parser"
+	// are provided to one parser filter
+	for k, list := range c.RepeatedConfig {
+		for _, v := range list {
+			addLine(k, v)
+		}
+	}
+
 	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))
 }
 
@@ -63,8 +84,9 @@ func (c ModularConfig) Generate() (string, string, error) {
 		out := c.generateSection()
 		sectionsByKind[c.Kind] = append(sectionsByKind[c.Kind], out)
 	}
-	parserParts := sectionsByKind["PARSER"]
+	parserParts := append(sectionsByKind["PARSER"], sectionsByKind["MULTILINE_PARSER"]...)
 	delete(sectionsByKind, "PARSER")
+	delete(sectionsByKind, "MULTILINE_PARSER")
 	for _, k := range []string{"SERVICE", "INPUT", "FILTER", "OUTPUT"} {
 		parts = append(parts, sectionsByKind[k]...)
 		delete(sectionsByKind, k)
