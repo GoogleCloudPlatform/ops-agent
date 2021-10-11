@@ -1,9 +1,0 @@
-[19:17] "endpoint" must be a URL
-  16 |   receivers:
-  17 |     redis_metrics:
-  18 |       type: redis
-> 19 |       endpoint: localhost
-                       ^
-  20 |       collection_interval: 30s
-  21 |   service:
-  22 |     pipelines:
