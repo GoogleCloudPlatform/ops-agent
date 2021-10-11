@@ -23,16 +23,19 @@ logging:
       type: cassandra_system
       include_paths:
       - /var/log/cassandra/system*.log
+      # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/system*.log
     cassandra_debug:
       type: cassandra_debug
       include_paths:
       - /var/log/cassandra/debug*.log
+      # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/debug*.log
     cassandra_gc:
       type: cassandra_gc
       include_paths:
       - /var/log/cassandra/gc.log.*.current
+      # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/gc.log.*.current
   service:
     pipelines:
