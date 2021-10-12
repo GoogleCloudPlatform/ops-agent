@@ -19,31 +19,37 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 logging:
   receivers:
-    cassandra_system:
+    cassandra_default_system:
+      type: cassandra_system
+    cassandra_default_debug:
+      type: cassandra_debug
+    cassandra_default_gc:
+      type: cassandra_gc
+    cassandra_sles_system:
       type: cassandra_system
       include_paths:
-      - /var/log/cassandra/system*.log
       # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/system*.log
-    cassandra_debug:
+    cassandra_sles_debug:
       type: cassandra_debug
       include_paths:
-      - /var/log/cassandra/debug*.log
       # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/debug*.log
-    cassandra_gc:
+    cassandra_sles_gc:
       type: cassandra_gc
       include_paths:
-      - /var/log/cassandra/gc.log.*.current
       # This path is specific to SLES integration tests manual install
       - /home/test_user/apache-cassandra/logs/gc.log.*.current
   service:
     pipelines:
       cassandra:
         receivers:
-          - cassandra_system
-          - cassandra_debug
-          - cassandra_gc
+          - cassandra_default_system
+          - cassandra_default_debug
+          - cassandra_default_gc
+          - cassandra_sles_system
+          - cassandra_sles_debug
+          - cassandra_sles_gc
 EOF
 
 sudo service google-cloud-ops-agent restart
