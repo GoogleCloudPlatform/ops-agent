@@ -11,4 +11,4 @@ mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
 
-mysql --defaults-extra-file=config-user -Bse "select * from information_schema.tables"
+mysql --defaults-extra-file=config-user -Bse "select table_catalog, table_schema, table_name from information_schema.tables"
