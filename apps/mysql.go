@@ -192,7 +192,7 @@ func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbi
 			confgenerator.MultilineRule{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+				Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 			},
 		},
 	}.Components(tag, uid)
