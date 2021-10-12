@@ -1,0 +1,14 @@
+set -e
+
+cat <<EOF > config-user
+[client]
+user=root
+password='Ss123%321'
+EOF
+
+mysql --defaults-extra-file=config-user -Bse "SET GLOBAL log_slow_extra = 'ON'"
+mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
+mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
+mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
+
+mysql --defaults-extra-file=config-user -Bse "select * from information_schema.tables"
