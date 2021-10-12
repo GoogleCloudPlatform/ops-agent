@@ -1,0 +1,14 @@
+set -e
+
+cat <<EOF > /etc/yum.repos.d/cassandra.repo
+[cassandra]
+name=Apache Cassandra
+baseurl=https://www.apache.org/dist/cassandra/redhat/40x/
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://www.apache.org/dist/cassandra/KEYS
+EOF
+
+sudo yum update
+
+sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra

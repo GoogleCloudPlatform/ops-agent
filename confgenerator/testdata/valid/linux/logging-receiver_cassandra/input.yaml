@@ -1,0 +1,72 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    cassandra_default_system:
+      type: cassandra_system
+    cassandra_default_debug:
+      type: cassandra_debug
+    cassandra_default_gc:
+      type: cassandra_gc
+    cassandra_custom_system:
+      type: cassandra_system
+      include_paths:
+        - /var/log/cassandra/mysystem.log
+    cassandra_custom_debug:
+      type: cassandra_debug
+      include_paths:
+        - /var/log/cassandra/mydebug.log
+    cassandra_custom_gc:
+      type: cassandra_gc
+      include_paths:
+        - /var/log/cassandra/mygc.log
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    cassandra_syslog_system:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+    cassandra_syslog_debug:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+    cassandra_syslog_gc:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+  processors:
+    cassandra_syslog_system:
+      type: cassandra_system
+    cassandra_syslog_debug:
+      type: cassandra_debug
+    cassandra_syslog_gc:
+      type: cassandra_gc
+  service:
+    pipelines:
+      cassandra_default:
+        receivers:
+          - cassandra_default_system
+          - cassandra_default_debug
+          - cassandra_default_gc
+      cassandra_custom:
+        receivers:
+          - cassandra_custom_system
+          - cassandra_custom_debug
+          - cassandra_custom_gc
+      cassandra_syslog_system:
+        receivers: [cassandra_syslog_system, cassandra_syslog_debug, cassandra_syslog_gc]
+        processors: [cassandra_syslog_system, cassandra_syslog_debug, cassandra_syslog_gc]
