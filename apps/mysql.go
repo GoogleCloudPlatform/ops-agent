@@ -60,6 +60,9 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
 					TimeFormat: "%Y-%m-%d %H:%M:%S",
+					Types: map[string]string{
+						"tid": "integer",
+					},
 				},
 			},
 		},
@@ -98,7 +101,7 @@ func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluen
 					// Limited documentation: https://dev.mysql.com/doc/refman/8.0/en/query-log.html
 					// Sample line: 2021-10-12T01:12:37.732966Z        14 Connect   root@localhost on  using Socket
 					// Sample line: 2021-10-12T01:12:37.733135Z        14 Query     select @@version_comment limit 1
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)\s+(?<tid>\d+)\s+(?<command>\w+)(\s*?(?<message>[\s|\S]*))?`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",

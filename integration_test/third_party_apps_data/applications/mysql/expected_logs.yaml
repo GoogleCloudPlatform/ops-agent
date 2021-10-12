@@ -6,11 +6,11 @@ log_entries:
     jsonPayload.subsystem: "InnoDB"
 - log_name: "mysql_general"
   field_matchers:
-    jsonPayload.message: '.*select * from information_schema.tables.*'
+    jsonPayload.message: '.*select \* from information_schema.tables.*'
     jsonPayload.command: "Query"
 - log_name: "mysql_slow"
   field_matchers:
-    jsonPayload.message: '.*select * from information_schema.tables.*'
+    jsonPayload.message: '.*select \* from information_schema.tables.*'
     jsonPayload.user: "root"
     jsonPayload.database: "root"
     jsonPayload.host: "localhost"
