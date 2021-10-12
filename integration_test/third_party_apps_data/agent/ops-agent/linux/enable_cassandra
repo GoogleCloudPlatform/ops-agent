@@ -1,3 +1,5 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
 set -e
 
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
@@ -26,6 +28,39 @@ metrics:
       cassandra_pipeline:
         receivers:
           - cassandra_metrics
+logging:
+  receivers:
+    cassandra_default_system:
+      type: cassandra_system
+    cassandra_default_debug:
+      type: cassandra_debug
+    cassandra_default_gc:
+      type: cassandra_gc
+    cassandra_sles_system:
+      type: cassandra_system
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/system*.log
+    cassandra_sles_debug:
+      type: cassandra_debug
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/debug*.log
+    cassandra_sles_gc:
+      type: cassandra_gc
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/gc.log.*.current
+  service:
+    pipelines:
+      cassandra:
+        receivers:
+          - cassandra_default_system
+          - cassandra_default_debug
+          - cassandra_default_gc
+          - cassandra_sles_system
+          - cassandra_sles_debug
+          - cassandra_sles_gc
 EOF
 
-sudo systemctl restart google-cloud-ops-agent.service
+sudo service google-cloud-ops-agent restart
