@@ -51,9 +51,11 @@ function build_otel() {
 function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  ./gradlew --no-daemon :jmx-metrics:build
+  # Build & test systems do not always check out git history for submodules, so the properties assigned
+  # here allow the nebula release process to function properly in that state
+  ./gradlew --no-daemon -Pgit.root="$(pwd)/../../.git/" -Prelease.version=1.6.0 -Prelease.disableGitChecks=true :jmx-metrics:build 
   # TODO: Parameterize this jar name once we can control the release artifact
-  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+  cp "jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.6.0-SNAPSHOT.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
 }
 
 function build_fluentbit() {
