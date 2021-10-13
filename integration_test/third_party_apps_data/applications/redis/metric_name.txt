@@ -1,1 +1,1 @@
-workload.googleapis.com/redis/clients/max_input_buffer
+agent.googleapis.com/cpu/utilization
