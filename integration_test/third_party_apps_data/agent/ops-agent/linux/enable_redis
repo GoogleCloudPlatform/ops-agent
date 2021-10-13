@@ -22,7 +22,7 @@ metrics:
     redis_metrics:
       type: redis
       endpoint: localhost:6379
-      collection_interval: 30s
+      collection_interval: 10s
   service:
     pipelines:
       redis_pipeline:
@@ -40,3 +40,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 30
