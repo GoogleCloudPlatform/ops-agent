@@ -81,6 +81,8 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 		},
 	}.Components(tag, uid)
 
+	// Best documentation found for log levels:
+	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
 	c = append(c,
 		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
 			[]struct{ SrcVal, DestVal string }{

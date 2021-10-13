@@ -140,26 +140,22 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 			},
 		},
 	}.Components(tag, uid)
-	for _, l := range []struct{ level, severity string }{
-		{"emerg", "EMERGENCY"},
-		{"alert", "ALERT"},
-		{"crit", "CRITICAL"},
-		{"error", "ERROR"},
-		{"warn", "WARNING"},
-		{"notice", "NOTICE"},
-		{"info", "INFO"},
-		{"debug", "DEBUG"},
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
-				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+
+	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+			[]struct{ SrcVal, DestVal string }{
+				{"emerg", "EMERGENCY"},
+				{"alert", "ALERT"},
+				{"crit", "CRITICAL"},
+				{"error", "ERROR"},
+				{"warn", "WARNING"},
+				{"notice", "NOTICE"},
+				{"info", "INFO"},
+				{"debug", "DEBUG"},
 			},
-		})
-	}
+		)...,
+	)
 	return c
 }
 

@@ -40,8 +40,8 @@ metrics:
 | Metric                                             | Data Type | Unit        | Labels | Description |
 | ---                                                | ---       | ---         | ---    | ---         | 
 | workload.googleapis.com/jvm.classes.loade          | gauge     | 1           |        | Current number of loaded classes |
-| workload.googleapis.com/jvm.gc.collections.count   | sum       | 1           | name   | Total number of garbage collections |
-| workload.googleapis.com/jvm.gc.collections.elapsed | sum       | ms          | name   | Time spent garbage collecting |
+| workload.googleapis.com/jvm.gc.collections.count   | cumulative       | 1           | name   | Total number of garbage collections |
+| workload.googleapis.com/jvm.gc.collections.elapsed | cumulative       | ms          | name   | Time spent garbage collecting |
 | workload.googleapis.com/jvm.memory.heap            | gauge     | by          |        | Current heap usage |
 | workload.googleapis.com/jvm.memory.nonheap         | gauge     | by          |        | Current non-heap usage |
 | workload.googleapis.com/jvm.memory.jvm.memory.pool | gauge     | by          | name   | Current memory pool usage |
