@@ -24,7 +24,8 @@ RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /work/out/bin; `
     New-Item -Type Directory -Path /work/out/config;
 
-RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" };
+COPY VERSION /work/
+RUN Get-Content /work/VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" };
 
 ###############################################################################
 # Install build prerequisites
