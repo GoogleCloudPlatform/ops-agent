@@ -1,6 +1,3 @@
-
-Viewed
-@@ -0,0 +1,67 @@
 # `redis` Metrics Receiver
 
 The redis receiver can retrieve stats from your redis server through the [INFO](https://redis.io/commands/info) command. 
