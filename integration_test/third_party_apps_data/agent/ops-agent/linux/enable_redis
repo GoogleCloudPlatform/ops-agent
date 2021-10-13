@@ -21,7 +21,7 @@ metrics:
   receivers:
     redis_metrics:
       type: redis
-      endpoint: localhost:6379
+      endpoint: redis://127.0.0.1:6379
       collection_interval: 30s
   service:
     pipelines:
