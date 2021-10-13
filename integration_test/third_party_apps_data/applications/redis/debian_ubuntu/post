@@ -1,1 +1,2 @@
 sudo service redis start
+sleep 30

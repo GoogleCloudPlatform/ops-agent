@@ -25,7 +25,7 @@ type MetricsReceiverRedis struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
 	Password string `yaml:"password" validate:"omitempty"`
 }
 
