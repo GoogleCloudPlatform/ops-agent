@@ -1,2 +1,2 @@
 sudo service redis start
-redis-cli -h localhost:6379 ping
+redis-cli -h localhost ping
