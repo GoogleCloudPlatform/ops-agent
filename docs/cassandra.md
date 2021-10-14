@@ -60,9 +60,9 @@ In addition to Cassandra specific metrics, by default Cassandra will also report
 | workload.googleapis.com/cassandra.client.request.range_slice.unavailable.count  | cumulative       | 1           |        | Number of token range read request unavailable exceptions encountered |
 | workload.googleapis.com/cassandra.compaction.tasks.completed                    | cumulative       | 1           |        | Number of completed compactions since server start |
 | workload.googleapis.com/cassandra.compaction.tasks.pending                      | gauge     | 1           |        | Estimated number of compactions remaining to perform |
-| workload.googleapis.com/cassandra.storage.load.count                            | cumulative       | bytes       |        | Size of the on disk data size this node manages |
+| workload.googleapis.com/cassandra.storage.load.count                            | gauge       | bytes       |        | Size of the on disk data size this node manages |
 | workload.googleapis.com/cassandra.storage.total_hints.count                     | cumulative       | 1           |        | Number of hint messages written to this node since start |
-| workload.googleapis.com/cassandra.storage.total_hints.in_progress.count         | cumulative       | 1           |        | Number of hints attempting to be sent currently |
+| workload.googleapis.com/cassandra.storage.total_hints.in_progress.count         | gauge       | 1           |        | Number of hints attempting to be sent currently |
 
 
 # `cassandra_system`, `cassandra_debug` and `cassandra_gc` Logging Receivers
