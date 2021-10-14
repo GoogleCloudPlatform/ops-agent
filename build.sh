@@ -23,6 +23,7 @@ systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 
 . VERSION
+. BUILD_CONFIG
 if [ -z "$BUILD_DISTRO" ]; then
   release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for centos
   BUILD_DISTRO=$(lsb_release -is | tr A-Z a-z)${release_version%%.}
