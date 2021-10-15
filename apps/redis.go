@@ -45,6 +45,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
+				"password":            r.Password,
 			},
 		},
 		Processors: []otel.Component{
