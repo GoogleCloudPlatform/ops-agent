@@ -8,12 +8,11 @@ Debian 10) and attempts to verify, for each application in
 VM and that a single representative metric is successfully uploaded to Google Cloud
 Monitoring.
 
-Currently the only supported app is called `noop` and all of its
-install/configure scripts are empty.
-
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
-it reads `agent/ops-agent/<platform>/supported_applications.txt` to determine
+it reads `test_config.yaml` and uses that to set some testing options. See the
+"test_config.yaml" section below. Then it reads
+`agent/ops-agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -72,6 +71,29 @@ simplified to:
 1.  (if necessary) `applications/<application>/exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
 1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
+
+# test_config.yaml
+
+This file sets some options that alter how the test runs. An example is:
+
+```
+platforms_override:
+  - centos-7
+  - sles-12
+retries: 0
+```
+
+`platforms_override` is a list of strings (default is just debian-10 for now),
+and that will tell the test to run on those platforms (which are really image
+families). Note: the way the Kokoro build is set up, it will *build* all Linux
+distros no matter what, but it only run the *test* on the platforms in
+`platforms_override`.
+
+`retries` configures the number of retries to do for certain errors. These
+retries only apply to errors running the per-application `install` or `post`
+scripts. Note that a value of 0 means to attempt the test once, but to skip
+retrying the failures. This is a very useful thing to do when debugging new
+scripts.
 
 # Test Logs
 
