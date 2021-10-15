@@ -37,35 +37,34 @@ metrics:
 
 The Ops Agent collects the following metrics from your redis servers.
 
-| Metric                                                              | Data Type          | Unit    | Labels  | Description    |
-| ---                                                                 | ---                | ---     | ---     | ---            | 
-| workload.googleapis.com/redis/uptime	                              | sum	               | s		   |         | Number of seconds since Redis server start |
-| workload.googleapis.com/redis/cpu/time	                            | sum	               | s	     | state:  | System CPU consumed by the Redis server in seconds since server start |
-| workload.googleapis.com/redis/clients/connected	                    | sum	non-monotonic  | 1		   |         | Number of client connections (excluding connections from replicas) |
-| workload.googleapis.com/redis/clients/max_input_buffer	            | gauge	             | 1		   |         | Biggest input buffer among current client connections |
-| workload.googleapis.com/redis/clients/max_output_buffer	            | gauge	             | 1		   |         | Longest output list among current client connections |
-| workload.googleapis.com/redis/clients/blocked	                      | sum	non-monotonic  | 1		   |         | Number of clients pending on a blocking call |
-| workload.googleapis.com/redis/keys/expired	                        | sum	               | 1		   |         | Total number of key expiration events |
-| workload.googleapis.com/redis/keys/evicted	                        | sum	               | 1		   |         | Number of evicted keys due to maxmemory limit |
-| workload.googleapis.com/redis/connections/received	                | sum	               | 1		   |         | Total number of connections accepted by the server |
-| workload.googleapis.com/redis/connections/rejected	                | sum	               | 1		   |         | Number of connections rejected because of maxclients limit |
-| workload.googleapis.com/redis/memory/used	                          | gauge	             | by	     |         | Total number of bytes allocated by Redis using its allocator |
-| workload.googleapis.com/redis/memory/peak	                          | gauge	             | by	     |         | Peak memory consumed by Redis (in bytes) |
-| workload.googleapis.com/redis/memory/rss	                          | gauge	             | by	     |         | Number of bytes that Redis allocated as seen by the operating system |
-| workload.googleapis.com/redis/memory/lua	                          | gauge	             | by	     |         | Number of bytes used by the Lua engine |
-| workload.googleapis.com/redis/memory/fragmentation_ratio	          | gauge	             | 1		   |         | Ratio between used_memory_rss and used_memory |
-| workload.googleapis.com/redis/rdb/changes_since_last_save	          | sum	non-monotonic  | 1		   |         | Number of changes since the last dump |
-| workload.googleapis.com/redis/commands	                            | gauge	             | {ops}/s |         | Number of commands processed per second |
-| workload.googleapis.com/redis/commands/processed	                  | sum	               | 1		   |         | Total number of commands processed by the server |
-| workload.googleapis.com/redis/net/input	                            | sum	               | by	     |         | The total number of bytes read from the network |
-| workload.googleapis.com/redis/net/output	                          | sum	               | by	     |         | The total number of bytes written to the network |
-| workload.googleapis.com/redis/keyspace/hits	                        | sum	               | 1		   |         | Number of successful lookup of keys in the main dictionary |
-| workload.googleapis.com/redis/keyspace/misses	                      | sum	               | 1	     |         | Number of failed lookup of keys in the main dictionary |
-| workload.googleapis.com/redis/latest_fork	                          | guage	             | us	     |         | Duration of the latest fork operation in microseconds |
-| workload.googleapis.com/redis/slaves/connected	                    | sum	non-monotonic  | 1		   |         | Number of connected replicas |
-| workload.googleapis.com/redis/replication/backlog_first_byte_offset	| gauge	             | 1		   |         | The master offset of the replication backlog buffer |
-| workload.googleapis.com/redis/replication/offset	                  | gauge	             | 1		   |         | The server's current replication offset |
-				
+| Metric                                                              | Data Type | Unit    | Labels  | Description    |
+| ---                                                                 | ---    | ---     | ---     | ---            | 
+| workload.googleapis.com/redis/uptime	                              | sum	   | s		   |         | Number of seconds since Redis server start |
+| workload.googleapis.com/redis/cpu/time	                            | sum	   | s	     | state:  | System CPU consumed by the Redis server in seconds since server start |
+| workload.googleapis.com/redis/clients/connected	                    | gauge  | 1		   |         | Number of client connections (excluding connections from replicas) |
+| workload.googleapis.com/redis/clients/max_input_buffer	            | gauge	 | 1		   |         | Biggest input buffer among current client connections |
+| workload.googleapis.com/redis/clients/max_output_buffer	            | gauge	 | 1		   |         | Longest output list among current client connections |
+| workload.googleapis.com/redis/clients/blocked	                      | gauge  | 1		   |         | Number of clients pending on a blocking call |
+| workload.googleapis.com/redis/keys/expired	                        | sum	   | 1		   |         | Total number of key expiration events |
+| workload.googleapis.com/redis/keys/evicted	                        | sum	   | 1		   |         | Number of evicted keys due to maxmemory limit |
+| workload.googleapis.com/redis/connections/received	                | sum	   | 1		   |         | Total number of connections accepted by the server |
+| workload.googleapis.com/redis/connections/rejected	                | sum	   | 1		   |         | Number of connections rejected because of maxclients limit |
+| workload.googleapis.com/redis/memory/used	                          | gauge	 | by	     |         | Total number of bytes allocated by Redis using its allocator |
+| workload.googleapis.com/redis/memory/peak	                          | gauge	 | by	     |         | Peak memory consumed by Redis (in bytes) |
+| workload.googleapis.com/redis/memory/rss	                          | gauge	 | by	     |         | Number of bytes that Redis allocated as seen by the operating system |
+| workload.googleapis.com/redis/memory/lua	                          | gauge	 | by	     |         | Number of bytes used by the Lua engine |
+| workload.googleapis.com/redis/memory/fragmentation_ratio	          | gauge	 | 1		   |         | Ratio between used_memory_rss and used_memory |
+| workload.googleapis.com/redis/rdb/changes_since_last_save	          | gauge  | 1		   |         | Number of changes since the last dump |
+| workload.googleapis.com/redis/commands	                            | gauge	 | {ops}/s |         | Number of commands processed per second |
+| workload.googleapis.com/redis/commands/processed	                  | sum	   | 1		   |         | Total number of commands processed by the server |
+| workload.googleapis.com/redis/net/input	                            | sum	   | by	     |         | The total number of bytes read from the network |
+| workload.googleapis.com/redis/net/output	                          | sum	   | by	     |         | The total number of bytes written to the network |
+| workload.googleapis.com/redis/keyspace/hits	                        | sum	   | 1		   |         | Number of successful lookup of keys in the main dictionary |
+| workload.googleapis.com/redis/keyspace/misses	                      | sum	   | 1	     |         | Number of failed lookup of keys in the main dictionary |
+| workload.googleapis.com/redis/latest_fork	                          | guage	 | us	     |         | Duration of the latest fork operation in microseconds |
+| workload.googleapis.com/redis/slaves/connected	                    | gauge  | 1		   |         | Number of connected replicas |
+| workload.googleapis.com/redis/replication/backlog_first_byte_offset	| gauge	 | 1		   |         | The master offset of the replication backlog buffer |
+| workload.googleapis.com/redis/replication/offset	                  | gauge	 | 1		   |         | The server's current replication o
         
 # `redis` Logging Receiver
 
