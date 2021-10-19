@@ -28,6 +28,7 @@ type Component struct {
 	Config map[string]string
 	// OrderedConfig is used for configuration pairs where the
 	// key can appear in the output fluent bit config multiple times
+	// and/or the order of the configuration provided is important
 	OrderedConfig [][2]string
 }
 
