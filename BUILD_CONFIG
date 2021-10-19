@@ -1,0 +1,1 @@
+JMX_METRICS_JAR_VERSION="1.6.0" #This is used in build wiring but does not actually specify the version of the submodule

@@ -110,6 +110,10 @@ RUN cmake --build . --config Release; `
 
 FROM base as javacontrib
 
+# Both of these are necessary for the nebula release plugin's options
+COPY BUILD_CONFIG /work/BUILD_CONFIG
+COPY .git /work/.git
+
 ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
 RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-11-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
 
@@ -117,9 +121,11 @@ COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-c
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-RUN ./gradlew --no-daemon :jmx-metrics:build
-# TODO: Parameterize this jar name once we can control the release artifact
-RUN Copy-Item -Path contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+# Build & test systems do not always check out git history for submodules, so the properties assigned
+# here allow the nebula release process to function properly in that state
+RUN Get-Content /work/BUILD_CONFIG | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
+    ./gradlew --no-daemon :jmx-metrics:build \"-Pgit.root=$pwd/../../.git\" \"-Prelease.version=$env:JMX_METRICS_JAR_VERSION\" \"-Prelease.disableGitChecks=true\"; `
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-$env:JMX_METRICS_JAR_VERSION.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching
