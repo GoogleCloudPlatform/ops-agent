@@ -104,8 +104,6 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 	}.Components(tag, uid)
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
-	// Could separate traceN out into a Key_Value_Matches modify condition but left it in
-	// the group for simplicity and clarity of the translations.
 	c = append(c,
 		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
 			[]struct{ SrcVal, DestVal string }{

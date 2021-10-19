@@ -30,7 +30,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      jvm_pipeline:
+      jvm:
         receivers:
           - jvm_metrics
 ```
