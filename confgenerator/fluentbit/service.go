@@ -20,35 +20,34 @@ type Service struct {
 func (s Service) Component() Component {
 	return Component{
 		Kind: "SERVICE",
-		Config: [][2]string{
-			// We use systemd to manage Fluent Bit instead.
-			{"Daemon", "off"},
+		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file#config_section
 			// Flush logs every 1 second, even if the buffer is not full to minimize log entry arrival delay.
-			{"Flush", "1"},
+			"Flush": "1",
+			// We use systemd to manage Fluent Bit instead.
+			"Daemon": "off",
+			// Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
+			"Log_Level": "info",
 
 			// https://docs.fluentbit.io/manual/administration/monitoring
 			// Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
-			{"HTTP_Listen", "0.0.0.0"},
-			{"HTTP_PORT", "2020"},
-			{"HTTP_Server", "On"},
-
-			// Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
-			{"Log_Level", "info"},
+			"HTTP_Server": "On",
+			"HTTP_Listen": "0.0.0.0",
+			"HTTP_PORT":   "2020",
 
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
-			// The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
-			{"storage.backlog.mem_limit", "50M"},
+			"storage.sync": "normal",
 			// Enable the data integrity check when writing and reading data from the filesystem.
-			{"storage.checksum", "on"},
+			"storage.checksum": "on",
+			// The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
+			"storage.backlog.mem_limit": "50M",
+			// Enable storage metrics in the built-in HTTP server.
+			"storage.metrics": "on",
 			// This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
 			// Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
 			// we don't want them to all be loaded into the memory.
-			{"storage.max_chunks_up", "128"},
-			// Enable storage metrics in the built-in HTTP server.
-			{"storage.metrics", "on"},
-			{"storage.sync", "normal"},
+			"storage.max_chunks_up": "128",
 		},
 	}
 }

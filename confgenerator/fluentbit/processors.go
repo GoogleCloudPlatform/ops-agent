@@ -26,11 +26,11 @@ func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal,
 	for _, t := range translations {
 		c = append(c, Component{
 			Kind: "FILTER",
-			Config: [][2]string{
-				{"Add", fmt.Sprintf("%s %s", dest, t.DestVal)},
-				{"Condition", fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal)},
-				{"Match", tag},
-				{"Name", "modify"},
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
+				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
 			},
 		})
 	}
@@ -43,16 +43,16 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	parser := Component{
 		Kind: "PARSER",
-		Config: [][2]string{
-			{"Name", parserName},
+		Config: map[string]string{
+			"Name": parserName,
 		},
 	}
 
 	if TimeFormat != "" {
-		parser.Config = append(parser.Config, [2]string{"Time_Format", TimeFormat})
+		parser.Config["Time_Format"] = TimeFormat
 	}
 	if TimeKey != "" {
-		parser.Config = append(parser.Config, [2]string{"Time_Key", TimeKey})
+		parser.Config["Time_Key"] = TimeKey
 	}
 	if len(Types) > 0 {
 		var types []string
@@ -60,7 +60,7 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 			types = append(types, fmt.Sprintf("%s:%s", k, v))
 		}
 		sort.Strings(types)
-		parser.Config = append(parser.Config, [2]string{"Types", strings.Join(types, " ")})
+		parser.Config["Types"] = strings.Join(types, " ")
 	}
 
 	return parser, parserName
@@ -69,20 +69,17 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 func ParserFilterComponent(tag string, field string, parserNames []string) Component {
 	filter := Component{
 		Kind: "FILTER",
-		Config: [][2]string{
-			{"Name", "parser"},
-			{"Match", tag},
+		Config: map[string]string{
+			"Match":    tag,
+			"Name":     "parser",
+			"Key_Name": "message", // Required
+		},
+		RepeatedConfig: map[string][]string{
+			"Parser": parserNames,
 		},
 	}
-
 	if field != "" {
-		filter.Config = append(filter.Config, [2]string{"Key_Name", field})
-	} else {
-		filter.Config = append(filter.Config, [2]string{"Key_Name", "message"})
-	}
-
-	for _, parser := range parserNames {
-		filter.Config = append(filter.Config, [2]string{"Parser", parser})
+		filter.Config["Key_Name"] = field
 	}
 
 	return filter

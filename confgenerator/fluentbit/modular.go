@@ -24,22 +24,41 @@ import (
 type Component struct {
 	// Kind is "INPUT", "FILTER", "PARSER", etc.
 	Kind string
-	// Config is a slice of slices containing key & value
-	// This allows duplicate keys and specified order
-	Config [][2]string
+	// Config is a set of key-value configuration pairs
+	Config map[string]string
+	// RepeatedConfig is used for configuration pairs where the
+	// key can appear in the output fluent bit config multiple times
+	RepeatedConfig map[string][]string
 }
 
 func (c Component) generateSection() string {
 	var lines []string
 	var maxLen int
-	for _, line := range c.Config {
-		if len(line[0]) > maxLen {
-			maxLen = len(line[0])
+	for k := range c.Config {
+		if len(k) > maxLen {
+			maxLen = len(k)
+		}
+	}
+	for k := range c.RepeatedConfig {
+		if len(k) > maxLen {
+			maxLen = len(k)
 		}
 	}
 
-	for _, line := range c.Config {
-		lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, line[0], line[1]))
+	addLine := func(k, v string) { lines = append(lines, fmt.Sprintf("    %-*s %s", maxLen, k, v)) }
+
+	for k, v := range c.Config {
+		addLine(k, v)
+	}
+	sort.Strings(lines)
+
+	// Used for Multiline config where several "rule" lines
+	// must be placed at the end of a parser config, and when multiple "Parser"
+	// are provided to one parser filter
+	for k, list := range c.RepeatedConfig {
+		for _, v := range list {
+			addLine(k, v)
+		}
 	}
 
 	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))

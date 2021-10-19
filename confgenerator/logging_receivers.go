@@ -58,38 +58,39 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		// No files -> no input.
 		return nil
 	}
-	config := [][2]string{
+	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/inputs/tail#config
+		"Name": "tail",
+		"Tag":  tag,
+		// TODO: Escaping?
+		"Path":           strings.Join(r.IncludePaths, ","),
+		"DB":             DBPath(tag),
+		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
-		{"Buffer_Chunk_Size", "512k"},
+		"Buffer_Chunk_Size": "512k",
 		// Set the max size a bit larger to accommodate for long log lines.
-		{"Buffer_Max_Size", "5M"},
-		{"DB", DBPath(tag)},
+		"Buffer_Max_Size": "5M",
 		// When a message is unstructured (no parser applied), append it under a key named "message".
-		{"Key", "message"},
+		"Key": "message",
+		// Increase this to 30 seconds so log rotations are handled more gracefully.
+		"Rotate_Wait": "30",
+		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
+		"Skip_Long_Lines": "On",
+
+		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+		// Buffer in disk to improve reliability.
+		"storage.type": "filesystem",
+
 		// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
 		// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
 		// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-		{"Mem_Buf_Limit", "10M"},
-		{"Name", "tail"},
-		// TODO: Escaping?
-		{"Path", strings.Join(r.IncludePaths, ",")},
-		{"Read_from_Head", "True"},
-		// Increase this to 30 seconds so log rotations are handled more gracefully.
-		{"Rotate_Wait", "30"},
-		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
-		{"Skip_Long_Lines", "On"},
-		{"Tag", tag},
-
-		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-		// Buffer in disk to improve reliability.
-		{"storage.type", "filesystem"},
+		"Mem_Buf_Limit": "10M",
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
-		config = append(config, [2]string{"Exclude_Path", strings.Join(r.ExcludePaths, ",")})
+		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
 	}
 	return []fluentbit.Component{{
 		Kind:   "INPUT",
@@ -117,31 +118,32 @@ func (r LoggingReceiverSyslog) Type() string {
 func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
-		Config: [][2]string{
+		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/syslog
-			{"Listen", r.ListenHost},
+			"Name":   "syslog",
+			"Tag":    tag,
+			"Mode":   r.TransportProtocol,
+			"Listen": r.ListenHost,
+			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Parser": tag,
+			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+			// Buffer in disk to improve reliability.
+			"storage.type": "filesystem",
+
 			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
 			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
 			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
 			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-			{"Mem_Buf_Limit", "10M"},
-			{"Mode", r.TransportProtocol},
-			{"Name", "syslog"},
-			{"Parser", tag},
-			{"Port", fmt.Sprintf("%d", r.ListenPort)},
-			{"Tag", tag},
-			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-			// Buffer in disk to improve reliability.
-			{"storage.type", "filesystem"},
+			"Mem_Buf_Limit": "10M",
 		},
 	}, {
 		// FIXME: This is not new, but we shouldn't be disabling syslog protocol parsing by passing a custom Parser - Fluentbit includes builtin syslog protocol support, and we should enable/expose that.
 		Kind: "PARSER",
-		Config: [][2]string{
-			{"Format", "regex"},
-			{"Name", tag},
-			{"Regex", `^(?<message>.*)$`},
+		Config: map[string]string{
+			"Name":   tag,
+			"Format": "regex",
+			"Regex":  `^(?<message>.*)$`,
 		},
 	}}
 }
@@ -173,23 +175,23 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 
 	return []fluentbit.Component{{
 		Kind: "INPUT",
-		Config: [][2]string{
+		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/tcp
-			{"Format", r.Format},
-			{"Listen", r.ListenHost},
+			"Name":   "tcp",
+			"Tag":    tag,
+			"Listen": r.ListenHost,
+			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Format": r.Format,
+			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+			// Buffer in disk to improve reliability.
+			"storage.type": "filesystem",
 
 			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
 			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
 			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
 			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-			{"Mem_Buf_Limit", "10M"},
-			{"Name", "tcp"},
-			{"Port", fmt.Sprintf("%d", r.ListenPort)},
-			{"Tag", tag},
-			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
-			// Buffer in disk to improve reliability.
-			{"storage.type", "filesystem"},
+			"Mem_Buf_Limit": "10M",
 		},
 	}}
 }
@@ -212,13 +214,13 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
-		Config: [][2]string{
+		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-			{"Channels", strings.Join(r.Channels, ",")},
-			{"DB", DBPath(tag)},
-			{"Interval_Sec", "1"},
-			{"Name", "winlog"},
-			{"Tag", tag},
+			"Name":         "winlog",
+			"Tag":          tag,
+			"Channels":     strings.Join(r.Channels, ","),
+			"Interval_Sec": "1",
+			"DB":           DBPath(tag),
 		},
 	}}
 }
@@ -239,11 +241,11 @@ func (r LoggingReceiverSystemd) Type() string {
 func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
-		Config: [][2]string{
+		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
-			{"DB", DBPath(tag)},
-			{"Name", "systemd"},
-			{"Tag", tag},
+			"Name": "systemd",
+			"Tag":  tag,
+			"DB":   DBPath(tag),
 		},
 	}}
 }
