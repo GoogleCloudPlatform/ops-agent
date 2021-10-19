@@ -26,9 +26,9 @@ type Component struct {
 	Kind string
 	// Config is a set of key-value configuration pairs
 	Config map[string]string
-	// RepeatedConfig is used for configuration pairs where the
+	// OrderedConfig is used for configuration pairs where the
 	// key can appear in the output fluent bit config multiple times
-	RepeatedConfig map[string][]string
+	OrderedConfig [][2]string
 }
 
 func (c Component) generateSection() string {
@@ -39,9 +39,9 @@ func (c Component) generateSection() string {
 			maxLen = len(k)
 		}
 	}
-	for k := range c.RepeatedConfig {
-		if len(k) > maxLen {
-			maxLen = len(k)
+	for _, line := range c.OrderedConfig {
+		if len(line[0]) > maxLen {
+			maxLen = len(line[0])
 		}
 	}
 
@@ -55,10 +55,8 @@ func (c Component) generateSection() string {
 	// Used for Multiline config where several "rule" lines
 	// must be placed at the end of a parser config, and when multiple "Parser"
 	// are provided to one parser filter
-	for k, list := range c.RepeatedConfig {
-		for _, v := range list {
-			addLine(k, v)
-		}
+	for _, line := range c.OrderedConfig {
+		addLine(line[0], line[1])
 	}
 
 	return fmt.Sprintf("[%s]\n%s\n", c.Kind, strings.Join(lines, "\n"))
