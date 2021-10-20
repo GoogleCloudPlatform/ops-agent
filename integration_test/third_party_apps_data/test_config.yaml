@@ -1,0 +1,43 @@
+# Ignore the list of platforms stored in the kokoro config
+# in google3. Let's test on the following platforms.
+platforms_override:
+  - debian-9
+  - debian-10
+  - centos-7
+  - centos-8
+  - rhel-7
+  - rhel-8
+  - sles-12
+  - sles-15
+  - ubuntu-1604-lts
+  - ubuntu-minimal-1604-lts
+  - ubuntu-2004-lts
+  - ubuntu-minimal-2004-lt
+per_application_overrides:
+  apache:
+    # Skip all platforms listed above except debian-10 for now.
+    # New applications should use platforms_to_skip sparingly
+    # if at all.
+    # TODO: reenable application+distro pairs incrementally.
+    platforms_to_skip: &common_skips
+      - debian-9
+      - centos-7
+      - centos-8
+      - rhel-7
+      - rhel-8
+      - sles-12
+      - sles-15
+      - ubuntu-1604-lts
+      - ubuntu-minimal-1604-lts
+      - ubuntu-2004-lts
+      - ubuntu-minimal-2004-lts
+  cassandra:
+    platforms_to_skip: *common_skips
+  jvm:
+    platforms_to_skip: *common_skips
+  mysql:
+    platforms_to_skip: *common_skips
+  nginx:
+    platforms_to_skip: *common_skips
+  redis:
+    platforms_to_skip: *common_skips
