@@ -39,7 +39,7 @@ logging:
       type: cassandra_gc
   service:
     pipelines:
-      apache:
+      cassandra:
         receivers:
           - cassandra_default_system
           - cassandra_default_debug
