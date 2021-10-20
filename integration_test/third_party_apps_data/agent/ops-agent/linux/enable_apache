@@ -25,7 +25,7 @@ logging:
       type: apache_error
   service:
     pipelines:
-      nginx:
+      apache:
         receivers:
           - apache_access
           - apache_error
