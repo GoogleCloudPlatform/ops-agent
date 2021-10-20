@@ -67,6 +67,10 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 }
 
 func ParserFilterComponent(tag string, field string, parserNames []string) Component {
+	parsers := [][2]string{}
+	for _, name := range parserNames {
+		parsers = append(parsers, [2]string{"Parser", name})
+	}
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -74,9 +78,7 @@ func ParserFilterComponent(tag string, field string, parserNames []string) Compo
 			"Name":     "parser",
 			"Key_Name": "message", // Required
 		},
-		RepeatedConfig: map[string][]string{
-			"Parser": parserNames,
-		},
+		OrderedConfig: parsers,
 	}
 	if field != "" {
 		filter.Config["Key_Name"] = field
