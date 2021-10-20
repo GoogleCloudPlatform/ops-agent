@@ -25,7 +25,8 @@ type MetricsReceiverRedis struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	// TODO: Add support for ACL Authentication
+	Address  string `yaml:"address" validate:"omitempty,hostname_port"`
 	Password string `yaml:"password" validate:"omitempty"`
 }
 
@@ -36,15 +37,15 @@ func (r MetricsReceiverRedis) Type() string {
 }
 
 func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultRedisEndpoint
+	if r.Address == "" {
+		r.Address = defaultRedisEndpoint
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
-				"endpoint":            r.Endpoint,
+				"endpoint":            r.Address,
 				"password":            r.Password,
 			},
 		},
