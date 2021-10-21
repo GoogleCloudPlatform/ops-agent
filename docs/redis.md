@@ -12,7 +12,7 @@ To configure a receiver for your redis metrics, specify the following fields:
 | Field                 | Default                   | Description |
 | ---                   | ---                       | ---         |
 | `type`                | required                  | Must be `redis`. |
-| `endpoint`            | `localhost:6379`          | The url exposed by redis |
+| `address`            | `localhost:6379`          | The url exposed by redis |
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `password`            |                           | The password used to connect to the server. |
 
@@ -23,7 +23,7 @@ metrics:
   receivers:
     redis_metrics:
       type: redis
-      endpoint: localhost:6379
+      address: localhost:6379
       collection_interval: 30s
       password: pwd
   service:
