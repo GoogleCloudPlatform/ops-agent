@@ -46,7 +46,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Version: versionLabel,
 	}.Pipeline()
 
+	if uc.Metrics.Service.LogLevel == "" {
+		uc.Metrics.Service.LogLevel = "info"
+	}
 	otelConfig, err := otel.ModularConfig{
+		LogLevel:  uc.Metrics.Service.LogLevel,
 		Pipelines: pipelines,
 		GlobalProcessors: []otel.Component{{
 			Type: "resourcedetection",

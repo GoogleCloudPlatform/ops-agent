@@ -430,6 +430,7 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type MetricsService struct {
+	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
 	Pipelines map[string]*MetricsPipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
