@@ -12,7 +12,7 @@ platforms_override:
   - ubuntu-1604-lts
   - ubuntu-minimal-1604-lts
   - ubuntu-2004-lts
-  - ubuntu-minimal-2004-lt
+  - ubuntu-minimal-2004-lts
 per_application_overrides:
   apache:
     # Skip all platforms listed above except debian-10 for now.
