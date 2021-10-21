@@ -100,6 +100,9 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 		// Skip deprecated logging.exporters.
 		// Override logging.service.pipelines
 		if overrides.Logging.Service != nil {
+			if overrides.Logging.Service.LogLevel != "info" {
+				original.Logging.Service.LogLevel = overrides.Logging.Service.LogLevel
+			}
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
 				// skips logging.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil

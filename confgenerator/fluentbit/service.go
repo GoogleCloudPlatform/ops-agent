@@ -15,6 +15,8 @@
 package fluentbit
 
 type Service struct {
+	// Allowed log levels are: error, warn, info, debug and trace.
+	LogLevel string
 }
 
 func (s Service) Component() Component {
@@ -27,7 +29,7 @@ func (s Service) Component() Component {
 			// We use systemd to manage Fluent Bit instead.
 			"Daemon": "off",
 			// Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
-			"Log_Level": "info",
+			"Log_Level": s.LogLevel,
 
 			// https://docs.fluentbit.io/manual/administration/monitoring
 			// Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
