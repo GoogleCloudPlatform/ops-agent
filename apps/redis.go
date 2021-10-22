@@ -50,6 +50,11 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"redis.commands",
+			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
