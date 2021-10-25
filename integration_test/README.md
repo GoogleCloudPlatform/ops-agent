@@ -8,12 +8,11 @@ Debian 10) and attempts to verify, for each application in
 VM and that a single representative metric is successfully uploaded to Google Cloud
 Monitoring.
 
-Currently the only supported app is called `noop` and all of its
-install/configure scripts are empty.
-
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
-it reads `agent/ops-agent/<platform>/supported_applications.txt` to determine
+it reads `test_config.yaml` and uses that to set some testing options. See the
+"test_config.yaml" section below. Then it reads
+`agent/ops-agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -73,6 +72,29 @@ simplified to:
     sometimes, e.g. to get the application to log to a particular file.
 1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
 
+# test_config.yaml
+
+This file sets some options that alter how the test runs. An example is:
+
+```
+platforms_override:
+  - centos-7
+  - sles-12
+retries: 0
+```
+
+`platforms_override` is a list of strings (default is just debian-10 for now),
+and that will tell the test to run on those platforms (which are really image
+families). Note: the way the Kokoro build is set up, it will *build* all Linux
+distros no matter what, but it only run the *test* on the platforms in
+`platforms_override`.
+
+`retries` configures the number of retries to do for certain errors. These
+retries only apply to errors running the per-application `install` or `post`
+scripts. Note that a value of 0 means to attempt the test once, but to skip
+retrying the failures. This is a very useful thing to do when debugging new
+scripts.
+
 # Test Logs
 
 The Kokoro presubmit will have a "Details" link next to it. Clicking there
@@ -80,9 +102,8 @@ will take you to a publicly-visible GCS bucket that contains various log files.
 It's a little tricky to figure out which one(s) to look at first, so here's a
 guide for that.
 
-TLDR: start in `TestThirdPartyApps_ops-agent_debian-10_nginx/main_log.txt` for
-now. In the future when we have more tests, look in `build_and_test.log` to see
-what failed, then drill down to the corresponding `main_log.txt` from there.
+TLDR: start in `build_and_test.txt` to see what failed, then drill down to
+the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
 The "Details" link takes you directly to the "logs" subdirectory to save you
@@ -90,18 +111,18 @@ a hop. The following is sorted roughly in descending order of usefulness.
 
 ```
 ├── logs
-|   ├── build_and_test.log
+|   ├── build_and_test.txt
 |   ├── sponge_log.xml
 |   └── TestThirdPartyApps_ops-agent_debian-10_nginx
 |       ├── main_log.txt
-|       ├── syslog
-|       ├── logging-module.log
+|       ├── syslog.txt
+|       ├── logging-module.log.txt
 |       ├── journalctl_output.txt
 |       ├── systemctl_status_for_ops_agent.txt
-|       ├── otel.yaml
-|       ├── VM_initialization.log
-|       ├── fluent_bit_main.conf
-|       └── fluent_bit_parser.conf
+|       ├── otel.yaml.txt
+|       ├── VM_initialization.txt
+|       ├── fluent_bit_main.conf.txt
+|       └── fluent_bit_parser.conf.txt
 └── agent_packages
     └── ops-agent
         ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
@@ -110,10 +131,10 @@ a hop. The following is sorted roughly in descending order of usefulness.
 
 Let's go through each of these files and discuss what they are.
 
-*   `build_and_test.log`: The top-level log that holds the stdout/stderr for
+*   `build_and_test.txt`: The top-level log that holds the stdout/stderr for
     the Kokoro job. Near the bottom is a summary of which tests passed and
     which ones failed.
-*   `sponge_log.xml`: Not very useful. Structured data about which tests
+*   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
     `TestThirdPartyApps_ops-agent_debian-10_nginx`) that ran. This is the place
@@ -121,19 +142,18 @@ Let's go through each of these files and discuss what they are.
 
 The rest of these files are only uploaded if the test fails.
 
-*   `syslog`: The system's `/var/log/{syslog,messages}`. Highly useful.
+*   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.
-*   `logging-module.log`: The Fluent-Bit log file. Not useful right now.
+*   `logging-module.log.txt`: The Fluent-Bit log file. Not useful right now.
 *   `journalctl_output.txt`: The output of running `journalctl -xe`. Useful
     when the Ops Agent can't start/restart properly, often due to malformed
     config files.
-*   `otel.yaml`: The generated config file used to start the OTel collector.
-*   `VM_initialization.log`: Only useful to look at when we can't bring up a
+*   `otel.yaml.txt`: The generated config file used to start the OTel collector.
+*   `VM_initialization.txt`: Only useful to look at when we can't bring up a
     fresh VM properly.
-*   `fluent_bit_main.conf`, `fluent_bit_parser.conf`: Fluent-Bit config files,
-    irrelevant for now.
+*   `fluent_bit_main.conf.txt`, `fluent_bit_parser.conf.txt`: Fluent-Bit config
+    files.
 
 The `agent_packages` directory contains the package files built from the PR
-and installed on the VM for testing. For now this just holds debian 10 `.deb`
-files.
+and installed on the VM for testing.
     

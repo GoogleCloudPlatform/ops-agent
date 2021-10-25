@@ -144,9 +144,9 @@ type LoggingProcessorParseMultilineRegex struct {
 
 func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluentbit.Component {
 	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
-	rules := []string{}
+	rules := [][2]string{}
 	for _, rule := range p.Rules {
-		rules = append(rules, rule.AsString())
+		rules = append(rules, [2]string{"rule", rule.AsString()})
 	}
 
 	filter := fluentbit.Component{
@@ -169,9 +169,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 			"Name": multilineParserName,
 			"Type": "regex",
 		},
-		RepeatedConfig: map[string][]string{
-			"rule": rules,
-		},
+		OrderedConfig: rules,
 	}
 
 	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(tag, uid)...)

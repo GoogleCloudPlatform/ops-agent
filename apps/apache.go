@@ -102,37 +102,31 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 			},
 		},
 	}.Components(tag, uid)
-	for _, l := range []struct{ level, severity string }{
-		// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
-		// Could separate traceN out into a Key_Value_Matches modify condition but left it in
-		// the group for simplicity and clarity of the translations.
-		{"emerg", "EMERGENCY"},
-		{"alert", "ALERT"},
-		{"crit", "CRITICAL"},
-		{"error", "ERROR"},
-		{"warn", "WARNING"},
-		{"notice", "NOTICE"},
-		{"info", "INFO"},
-		{"debug", "DEBUG"},
-		{"trace1", "DEBUG"},
-		{"trace2", "DEBUG"},
-		{"trace3", "DEBUG"},
-		{"trace4", "DEBUG"},
-		{"trace5", "DEBUG"},
-		{"trace6", "DEBUG"},
-		{"trace7", "DEBUG"},
-		{"trace8", "DEBUG"},
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals level %s", l.level),
-				"Add":       fmt.Sprintf("logging.googleapis.com/severity %s", l.severity),
+
+	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+			[]struct{ SrcVal, DestVal string }{
+				{"emerg", "EMERGENCY"},
+				{"alert", "ALERT"},
+				{"crit", "CRITICAL"},
+				{"error", "ERROR"},
+				{"warn", "WARNING"},
+				{"notice", "NOTICE"},
+				{"info", "INFO"},
+				{"debug", "DEBUG"},
+				{"trace1", "DEBUG"},
+				{"trace2", "DEBUG"},
+				{"trace3", "DEBUG"},
+				{"trace4", "DEBUG"},
+				{"trace5", "DEBUG"},
+				{"trace6", "DEBUG"},
+				{"trace7", "DEBUG"},
+				{"trace8", "DEBUG"},
 			},
-		})
-	}
+		)...,
+	)
+
 	return c
 }
 

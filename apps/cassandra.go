@@ -117,7 +117,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
-				confgenerator.RegexParser{
+				{
 					// Sample line: INFO [IndexSummaryManager:1] 2021-10-07 12:57:05,003 IndexSummaryRedistribution.java:83 - Redistributing index summaries
 					// Sample line: WARN [main] 2021-10-07 11:57:01,602 StartupChecks.java:329 - Maximum number of memory map areas per process (vm.max_map_count) 65530 is too low, recommended value: 1048575, you can change it with sysctl.
 					// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
@@ -138,12 +138,12 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
-			confgenerator.MultilineRule{
+			{
 				StateName: "start_state",
 				NextState: "cont",
 				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
 			},
-			confgenerator.MultilineRule{
+			{
 				StateName: "cont",
 				NextState: "cont",
 				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
@@ -151,6 +151,8 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 		},
 	}.Components(tag, uid)
 
+	// Best documentation found for log levels:
+	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
 	c = append(c,
 		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
 			[]struct{ SrcVal, DestVal string }{
@@ -178,7 +180,7 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
-				confgenerator.RegexParser{
+				{
 					// Vast majority of lines look like the first, with time stopped & time stopping
 					// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
 					// Sample line: 2021-10-05T01:20:52.695+0000: 4.434: [GC (CMS Initial Mark) [1 CMS-initial-mark: 0K(3686400K)] 36082K(4055040K), 0.0130057 secs] [Times: user=0.04 sys=0.00, real=0.01 secs]
@@ -198,12 +200,12 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
-			confgenerator.MultilineRule{
+			{
 				StateName: "start_state",
 				NextState: "cont",
 				Regex:     `^\d{4}-\d{2}-\d{2}`,
 			},
-			confgenerator.MultilineRule{
+			{
 				StateName: "cont",
 				NextState: "cont",
 				Regex:     `^(?!\d{4}-\d{2}-\d{2})`,
