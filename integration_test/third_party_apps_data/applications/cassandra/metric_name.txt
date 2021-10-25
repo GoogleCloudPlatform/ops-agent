@@ -1,1 +1,1 @@
-workload.googleapis.com/cassandra.compaction.tasks.completed
+workload.googleapis.com/cassandra.client.request.count
