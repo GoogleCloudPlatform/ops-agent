@@ -40,24 +40,17 @@ In addition to Cassandra specific metrics, by default Cassandra will also report
 
 | Metric                                                                          | Data Type | Unit        | Labels | Description |
 | ---                                                                             | ---       | ---         | ---    | ---         | 
+| workload.googleapis.com/cassandra.client.request.count                          | cumulative | µs          | operation | Number of requests by operation |
+| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | µs          | operation, status | Number of request errors by operation |
 | workload.googleapis.com/cassandra.client.request.read.latency.50p               | gauge     | µs          |        | Standard read request latency - 50th percentile |
 | workload.googleapis.com/cassandra.client.request.read.latency.99p               | gauge     | µs          |        | Standard read request latency - 99th percentile |
-| workload.googleapis.com/cassandra.client.request.read.latency.count             | cumulative       | µs          |        | Number of read requests |
 | workload.googleapis.com/cassandra.client.request.read.latency.max               | gauge     | µs          |        | Maximum standard read request latency |
-| workload.googleapis.com/cassandra.client.request.read.timeout.count             | cumulative       | 1           |        | Number of standard read request timeouts encountered |
-| workload.googleapis.com/cassandra.client.request.read.unavailable.count         | cumulative       | 1           |        | Number of standard read request unavailable exceptions encountered |
 | workload.googleapis.com/cassandra.client.request.write.latency.50p              | gauge     | µs          |        | Standard write request latency - 50th percentile |
 | workload.googleapis.com/cassandra.client.request.write.latency.99p              | gauge     | µs          |        | Standard write request latency - 99th percentile |
-| workload.googleapis.com/cassandra.client.request.write.latency.count            | cumulative       | µs          |        | Number of write requests |
 | workload.googleapis.com/cassandra.client.request.write.latency.max              | gauge     | µs          |        | Maximum standard write request latency |
-| workload.googleapis.com/cassandra.client.request.write.timeout.count            | cumulative       | 1           |        | Number of standard write request timeouts encountered |
-| workload.googleapis.com/cassandra.client.request.write.unavailable.count        | cumulative       | 1           |        | Number of standard write request unavailable exceptions encountered |
 | workload.googleapis.com/cassandra.client.request.range_slice.latency.50p        | gauge     | µs          |        | Token range read request latency - 50th percentile |
 | workload.googleapis.com/cassandra.client.request.range_slice.latency.99p        | gauge     | µs          |        | Token range read request latency - 99th percentile |
-| workload.googleapis.com/cassandra.client.request.range_slice.latency.count      | cumulative       | µs          |        | Number of token range read requests |
 | workload.googleapis.com/cassandra.client.request.range_slice.latency.max        | gauge     | µs          |        | Maximum token range read request latency |
-| workload.googleapis.com/cassandra.client.request.range_slice.timeout.count      | cumulative       | 1           |        | Number of token range read request timeouts encountered |
-| workload.googleapis.com/cassandra.client.request.range_slice.unavailable.count  | cumulative       | 1           |        | Number of token range read request unavailable exceptions encountered |
 | workload.googleapis.com/cassandra.compaction.tasks.completed                    | cumulative       | 1           |        | Number of completed compactions since server start |
 | workload.googleapis.com/cassandra.compaction.tasks.pending                      | gauge     | 1           |        | Estimated number of compactions remaining to perform |
 | workload.googleapis.com/cassandra.storage.load.count                            | gauge       | bytes       |        | Size of the on disk data size this node manages |
