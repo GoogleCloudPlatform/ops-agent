@@ -53,6 +53,20 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 	}
 }
 
+// windowsSeverityTranslationComponent generates a component that translates the windows event_type
+// to the LogEntry.severity field.
+func windowsSeverityTranslationComponent(tag string) []fluentbit.Component {
+	return  fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity",
+		[]struct{ SrcVal, DestVal string }{
+			{"Error", "ERROR"},
+			{"Information", "INFO"},
+			{"Warning", "WARNING"},
+			{"SuccessAudit", "NOTICE"},
+			{"FailureAudit", "NOTICE"},
+		},
+	)
+}
+
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
 func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 	return fluentbit.Component{
