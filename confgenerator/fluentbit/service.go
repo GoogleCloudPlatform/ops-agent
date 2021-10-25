@@ -15,7 +15,7 @@
 package fluentbit
 
 type Service struct {
-	// Allowed log levels are: error, warn, info, debug and trace.
+	// Allowed log levels are: error, warn, info, debug, and trace.
 	LogLevel string
 }
 
