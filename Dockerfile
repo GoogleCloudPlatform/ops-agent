@@ -86,7 +86,7 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
@@ -102,7 +102,7 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
@@ -115,11 +115,18 @@ RUN ./pkg/deb/build.sh
 FROM ubuntu:xenial AS xenial-build
 
 RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
+    add-apt-repository ppa:openjdk-r/ppa && \
+    apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+# This repairs an issue with java9+ certificates
+RUN /usr/bin/printf '\xfe\xed\xfe\xed\x00\x00\x00\x02\x00\x00\x00\x00\xe2\x68\x6e\x45\xfb\x43\xdf\xa4\xd9\x92\xdd\x41\xce\xb6\xb2\x1c\x63\x30\xd7\x92' > /etc/ssl/certs/java/cacerts&& \
+    /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
@@ -134,13 +141,13 @@ FROM centos:7 AS centos7-build
 RUN set -x; yum -y update && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-1.8.0-openjdk java-1.8.0-openjdk-devel \
+    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
     expect rpm-sign && \
     yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum install -y cmake3 && \
     ln -fs cmake3 /usr/bin/cmake
 
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk/
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
@@ -157,7 +164,7 @@ RUN set -x; yum -y update && \
     yum config-manager --set-enabled powertools && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-1.8.0-openjdk-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
@@ -195,7 +202,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel && \
     # Add home:ptrommler:formal repo to install >3.4 bison
     zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
