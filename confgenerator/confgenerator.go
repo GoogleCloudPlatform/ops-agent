@@ -149,9 +149,6 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					}
 					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
-				if hostInfo.OS == "windows" && receiver.Type() == "windows_event_log" {
-					components = append(components, windowsSeverityTranslationComponent(tag)...)
-				}
 				components = append(components, setLogNameComponents(tag, rID)...)
 				logNames = append(logNames, regexp.QuoteMeta(rID))
 				sources = append(sources, fbSource{tag, components})
