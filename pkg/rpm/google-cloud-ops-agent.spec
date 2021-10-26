@@ -29,6 +29,7 @@ The Google Cloud Ops Agent collects metrics and logs from the system.
 %define _prefix /opt/%{name}
 %define _confdir /etc/%{name}
 %define _subagentdir %{_prefix}/subagents
+%define _logrotatedir /etc/logrotate.d
 
 %prep
 
@@ -46,6 +47,7 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 %{_prefix}/libexec/google_cloud_ops_agent_engine
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
+%{_logrotatedir}/google-cloud-ops-agent
 
 %post
 %systemd_post google-cloud-ops-agent.service
