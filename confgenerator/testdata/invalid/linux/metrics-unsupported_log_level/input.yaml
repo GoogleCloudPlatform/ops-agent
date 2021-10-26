@@ -1,0 +1,3 @@
+metrics:
+  service:
+    log_level: haha
