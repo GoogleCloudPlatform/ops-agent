@@ -1,8 +1,10 @@
 dot : '.' ;
 has : ':' ;
-or  : 'O' 'R' ;
-and : 'A' 'N' 'D' ;
+_or  : 'O' 'R' ;
+_and : 'A' 'N' 'D' ;
 not : 'N' 'O' 'T' ;
+or : _or ;
+and : _and ;
 
 lparen : '(' ;
 rparen : ')' ;
@@ -20,6 +22,9 @@ plus : '+' ;
 tilde : '~' ;
 _quote : '"' ;
 backslash : '\\' ;
+
+orOp : {_ws_character} _or {_ws_character} ;
+andOp : {_ws_character} _and {_ws_character} ;
 
 ws : _ws_character {_ws_character} ;
 
@@ -123,37 +128,37 @@ import (
 >>
 
 Filter
-: Expression
-| ws Expression << $1, nil >>
-| Expression ws
-| ws Expression ws << $1, nil >>
+: Expression << ast.Simplify($0) >>
+| ws Expression << ast.Simplify($1) >>
+| Expression ws << ast.Simplify($0) >>
+| ws Expression ws << ast.Simplify($1) >>
 ;
 
 Expression
-: AmbiguousSequence
-| Expression and AmbiguousSequence
+: AmbiguousSequence << ast.NewConjunction($0) >>
+| Expression andOp AmbiguousSequence << $0.(ast.Conjunction).Append($2) >>
 ;
 
 AmbiguousSequence
-: AmbiguousFactor
-| AmbiguousSequence ws AmbiguousFactor
+: AmbiguousFactor << ast.NewConjunction($0) >>
+| AmbiguousSequence ws AmbiguousFactor << $0.(ast.Conjunction).Append($2) >>
 ;
 
 AmbiguousFactor
-: Term
-| AmbiguousFactor or Term
+: Term << ast.NewDisjunction($0) >>
+| AmbiguousFactor orOp Term << $0.(ast.Disjunction).Append($2) >>
 ;
 
 Term
 : Primitive
-| not Primitive << &ast.Negation{$1}, nil >>
-| not ws Primitive << &ast.Negation{$2}, nil >>
-| minus Primitive << &ast.Negation{$1}, nil >>
+| not Primitive << &ast.Negation{$1.(ast.Expression)}, nil >>
+| not ws Primitive << &ast.Negation{$2.(ast.Expression)}, nil >>
+| minus Primitive << &ast.Negation{$1.(ast.Expression)}, nil >>
 ;
 
 Primitive
 : Restriction
-// | Composite
+ | Composite
 ;
 
 Restriction
@@ -169,6 +174,13 @@ Comparable
 Member
 : Item << ast.Member{$0.(string)}, nil >>
 | Member dot ItemKeyword << append($0.(ast.Member), $2.(string)), nil >>
+;
+
+Composite
+: lparen Expression rparen << $1, nil >>
+| lparen Expression ws rparen << $1, nil >>
+| lparen ws Expression rparen << $2, nil >>
+| lparen ws Expression ws rparen << $2, nil >>
 ;
 
 Arg

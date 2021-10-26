@@ -16,6 +16,9 @@ var validFilters = []string{
 	`a.b.c=~"b.*c"`,
 	`-a < 1`,
 	`NOT a > 3`,
+	`(foo.bar = "one" OR foo.bar = "two") foo.baz = "three"`,
+	`foo.one = 1 foo.two = 2 AND foo.three = 3`,
+	`int_field:0 OR int_field:0 AND int_field:0`,
 }
 
 func TestShouldLex(t *testing.T) {
