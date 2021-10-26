@@ -1,0 +1,222 @@
+dot : '.' ;
+has : ':' ;
+or  : 'O' 'R' ;
+and : 'A' 'N' 'D' ;
+not : 'N' 'O' 'T' ;
+
+lparen : '(' ;
+rparen : ')' ;
+comma : ',' ;
+less_than : '<' ;
+greater_than : '>' ;
+greater_equals : '>' '=' ;
+less_equals : '<' '=' ;
+not_equals : '!' '=' ;
+matches_regexp : '=' '~' ;
+not_matches_regexp : '!' '~' ;
+equals : '=' ;
+minus : '-' ;
+plus : '+' ;
+tilde : '~' ;
+_quote : '"' ;
+backslash : '\\' ;
+
+ws : _ws_character {_ws_character} ;
+
+_ws_character: ' ' | '\r' | '\t' | '\u000C' | '\u00A0' | '\n';
+
+_character
+  : _ws_character
+  | '!'
+  | '#' - '['  // Exclude '\'
+  | ']' - '~'
+  | _characters_from_u_00a1
+  | _text_esc
+  | '\\' ('a' | 'b' | 'f' | 'n' | 'r' | 't' | 'v')
+  | '\\'  /* A raw backslash (not followed by anything). Lower priority than escape sequences.*/
+;
+
+text
+  : (_start_char | _number_prefix | _text_esc) {_mid_char | _text_esc}
+  ;
+
+_number_prefix
+  : ['-'] _digit
+  ;
+
+_text_esc
+  : _escaped_char
+  | _unicode_esc
+  | _octal_esc
+  | _hex_esc
+  ;
+
+_characters_from_u_00a1 : '\u00a1' - '\ufffe' ;
+
+_unicode_esc
+    : '\\' 'u' _hex_digit _hex_digit _hex_digit _hex_digit
+    ;
+
+_octal_esc
+  : '\\' ('0'-'3') ('0'-'7') ('0'-'7')
+  | '\\' ('0'-'7') ('0'-'7')
+  | '\\' ('0'-'7')
+  ;
+
+_hex_esc
+  : '\\' 'x' _hex_digit _hex_digit
+  ;
+
+_digit
+  : '0' - '9'
+  ;
+
+_hex_digit
+  : (_digit | 'a'-'f' | 'A'-'F')
+  ;
+
+_exclamation : '!' ; // XXX
+
+_start_char
+  : _exclamation
+  | '#' - '\''
+  | '*'
+  | '/'
+  | ';'
+  | '?'
+  | '@'
+  | 'A' - 'Z'
+  | '['
+  | ']'
+  | '^' - '}'
+  | _characters_from_u_00a1
+  ;
+
+_mid_char
+  : _start_char
+  | _digit
+  | '+'
+  | '-'
+  ;
+
+_escaped_char
+  : '\\,'
+  | '\\:'
+  | '\\='
+  | '\\<'
+  | '\\>'
+  | '\\+'
+  | '\\~'
+  | '\\\"'
+  | '\\\\'
+  | '\\.'
+  | '\\*'
+  ;
+
+string : '"' {_character} '"' ;
+
+<<
+import (
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+)
+>>
+
+Filter
+: Expression
+| ws Expression << $1, nil >>
+| Expression ws
+| ws Expression ws << $1, nil >>
+;
+
+Expression
+: AmbiguousSequence
+| Expression and AmbiguousSequence
+;
+
+AmbiguousSequence
+: AmbiguousFactor
+| AmbiguousSequence ws AmbiguousFactor
+;
+
+AmbiguousFactor
+: Term
+| AmbiguousFactor or Term
+;
+
+Term
+: Primitive
+| not Primitive << &ast.Negation{$1}, nil >>
+| not ws Primitive << &ast.Negation{$2}, nil >>
+| minus Primitive << &ast.Negation{$1}, nil >>
+;
+
+Primitive
+: Restriction
+// | Composite
+;
+
+Restriction
+: Comparable << ast.NewRestriction($0, "GLOBAL", nil) >>
+| Comparable Comparator Arg << ast.NewRestriction($0, $1, $2) >>
+;
+
+Comparable
+: Member
+// | Function
+;
+
+Member
+: Item << ast.Member{$0.(string)}, nil >>
+| Member dot ItemKeyword << append($0.(ast.Member), $2.(string)), nil >>
+;
+
+Arg
+: Comparable
+// | Composite
+;
+
+Item
+: Value
+;
+
+Value
+: text << ast.ParseText($0) >>
+| Phrase
+;
+
+Phrase
+: string << ast.ParseString($0) >>
+;
+
+ItemKeyword
+: Item
+| Keyword << string($0.(*token.Token).Lit), nil >>
+;
+
+Keyword
+: or
+| and
+| not
+;
+
+Comparator
+: Comparison
+| ws Comparison << $1, nil >>
+| Comparison ws
+| ws Comparison ws << $1, nil >>
+;
+
+Comparison
+  : less_equals
+  | less_than
+  | greater_equals
+  | greater_than
+  | not_equals
+  | equals
+  | has
+  | matches_regexp
+  | not_matches_regexp
+  ;
+
+

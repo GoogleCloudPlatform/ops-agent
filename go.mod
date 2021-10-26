@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
+	github.com/alecthomas/participle/v2 v2.0.0-alpha7 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/goccy/go-yaml v1.9.3-0.20210817022459-e2008a9296a0
