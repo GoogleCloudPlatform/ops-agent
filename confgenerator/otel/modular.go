@@ -56,6 +56,7 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
+	LogLevel  string
 	Pipelines map[string]Pipeline
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
@@ -75,14 +76,22 @@ func (c ModularConfig) Generate() (string, error) {
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
 	pipelines := map[string]interface{}{}
+	service := map[string]interface{}{
+		"pipelines": pipelines,
+	}
+	if c.LogLevel != "info" {
+		service["telemetry"] = map[string]interface{}{
+			"logs": map[string]interface{}{
+				"level": c.LogLevel,
+			},
+		}
+	}
 
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
 		"exporters":  exporters,
-		"service": map[string]interface{}{
-			"pipelines": pipelines,
-		},
+		"service":    service,
 	}
 	exporterName := c.Exporter.name("")
 	exporters[exporterName] = c.Exporter.Config
