@@ -1,2 +1,6 @@
-nginx
+apache
+cassandra
 jvm
+mysql
+nginx
+redis

@@ -1,1 +1,0 @@
-agent.googleapis.com/redis/commands_processed

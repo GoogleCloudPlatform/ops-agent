@@ -23,6 +23,7 @@ systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 
 . VERSION
+. BUILD_CONFIG
 if [ -z "$BUILD_DISTRO" ]; then
   release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for centos
   BUILD_DISTRO=$(lsb_release -is | tr A-Z a-z)${release_version%%.}
@@ -51,9 +52,11 @@ function build_otel() {
 function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  ./gradlew --no-daemon :jmx-metrics:build
+  # Build & test systems do not always check out git history for submodules, so the properties assigned
+  # here allow the nebula release process to function properly in that state
+  ./gradlew --no-daemon -Pgit.root="$(pwd)/../../.git/" -Prelease.version=${JMX_METRICS_JAR_VERSION} -Prelease.disableGitChecks=true :jmx-metrics:build
   # TODO: Parameterize this jar name once we can control the release artifact
-  cp "contrib/jmx-metrics/build/libs/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+  cp "jmx-metrics/build/libs/opentelemetry-jmx-metrics-${JMX_METRICS_JAR_VERSION}.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
 }
 
 function build_fluentbit() {
@@ -65,7 +68,7 @@ function build_fluentbit() {
   # Additionally, -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so
   cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit \
     -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF
+    -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service or configuration, but there are no cmake

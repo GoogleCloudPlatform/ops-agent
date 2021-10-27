@@ -99,7 +99,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverFiles{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverFiles{} })
 }
 
 // A LoggingReceiverSyslog represents the configuration for a syslog protocol receiver.
@@ -149,7 +149,7 @@ func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverSyslog{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSyslog{} })
 }
 
 // A LoggingReceiverTCP represents the configuration for a TCP receiver.
@@ -197,7 +197,7 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverTCP{} })
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverTCP{} })
 }
 
 // A LoggingReceiverWindowsEventLog represents the user configuration for a Windows event log receiver.
@@ -212,7 +212,7 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 }
 
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{{
+	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
@@ -223,8 +223,43 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
+	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity",
+		[]struct{ SrcVal, DestVal string }{
+			{"Error", "ERROR"},
+			{"Information", "INFO"},
+			{"Warning", "WARNING"},
+			{"SuccessAudit", "NOTICE"},
+			{"FailureAudit", "NOTICE"},
+		})
+
+	return append(input, filters...)
 }
 
 func init() {
-	loggingReceiverTypes.registerType(func() component { return &LoggingReceiverWindowsEventLog{} }, "windows")
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverWindowsEventLog{} }, "windows")
+}
+
+// A LoggingReceiverSystemd represents the user configuration for a Systemd/journald receiver.
+type LoggingReceiverSystemd struct {
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingReceiverSystemd) Type() string {
+	return "systemd_journald"
+}
+
+func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
+			"Name": "systemd",
+			"Tag":  tag,
+			"DB":   DBPath(tag),
+		},
+	}}
+}
+
+func init() {
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSystemd{} }, "linux")
 }

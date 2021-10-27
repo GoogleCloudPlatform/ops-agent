@@ -64,7 +64,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      nginx_pipeline:
+      nginx:
         receivers:
           - nginx_metrics
 ```
@@ -75,9 +75,9 @@ The Ops Agent collects the following metrics from your nginx instances.
 
 | Metric                                           | Data Type | Unit        | Labels | Description |
 | ---                                              | ---       | ---         | ---    | ---         | 
-| workload.googleapis.com/nginx.requests             | sum       | requests    |        | Total number of requests made to the server. |
-| workload.googleapis.com/nginx.connections_accepted | sum       | connections |        | Total number of accepted client connections. |
-| workload.googleapis.com/nginx.connections_handled  | sum       | connections |        | Total number of handled connections. |
+| workload.googleapis.com/nginx.requests             | cumulative       | requests    |        | Total number of requests made to the server. |
+| workload.googleapis.com/nginx.connections_accepted | cumulative       | connections |        | Total number of accepted client connections. |
+| workload.googleapis.com/nginx.connections_handled  | cumulative       | connections |        | Total number of handled connections. |
 | workload.googleapis.com/nginx.connections_current  | gauge     | connections | state  | Current number of connections. |
 
 # `nginx_access` and `nginx_error` Logging Receivers

@@ -176,7 +176,7 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
-type component interface {
+type Component interface {
 	// Type returns the component type string as used in the configuration file (e.g. "hostmetrics")
 	Type() string
 }
@@ -190,7 +190,7 @@ type ConfigComponent struct {
 // componentFactory is the value type for the componentTypeRegistry map.
 type componentFactory struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
-	constructor func() component
+	constructor func() Component
 	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
 	platforms []string
 }
@@ -214,7 +214,7 @@ type componentTypeRegistry struct {
 	TypeMap map[string]*componentFactory
 }
 
-func (r *componentTypeRegistry) registerType(constructor func() component, platforms ...string) {
+func (r *componentTypeRegistry) RegisterType(constructor func() Component, platforms ...string) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
@@ -262,11 +262,11 @@ type Logging struct {
 }
 
 type LoggingReceiver interface {
-	component
+	Component
 	Components(tag string) []fluentbit.Component
 }
 
-var loggingReceiverTypes = &componentTypeRegistry{
+var LoggingReceiverTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "receiver",
 }
 
@@ -276,7 +276,7 @@ type loggingReceiverWrapper struct {
 }
 
 func (l *loggingReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return loggingReceiverTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
+	return LoggingReceiverTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
 }
 
 func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -294,13 +294,13 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 }
 
 type LoggingProcessor interface {
-	component
+	Component
 	// Components returns fluentbit components that implement this procesor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(tag string, uid string) []fluentbit.Component
 }
 
-var loggingProcessorTypes = &componentTypeRegistry{
+var LoggingProcessorTypes = &componentTypeRegistry{
 	Subagent: "logging", Kind: "processor",
 }
 
@@ -310,7 +310,7 @@ type loggingProcessorWrapper struct {
 }
 
 func (l *loggingProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return loggingProcessorTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
+	return LoggingProcessorTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
 }
 
 func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -328,6 +328,7 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type LoggingService struct {
+	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
 	Pipelines map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
 
@@ -350,7 +351,7 @@ type Metrics struct {
 }
 
 type MetricsReceiver interface {
-	component
+	Component
 	Pipelines() []otel.Pipeline
 }
 
@@ -366,7 +367,7 @@ func (m MetricsReceiverShared) CollectionIntervalString() string {
 	return "60s"
 }
 
-var metricsReceiverTypes = &componentTypeRegistry{
+var MetricsReceiverTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "receiver",
 }
 
@@ -376,7 +377,7 @@ type metricsReceiverWrapper struct {
 }
 
 func (m *metricsReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return metricsReceiverTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
+	return MetricsReceiverTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
 }
 
 func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -397,11 +398,11 @@ func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 }
 
 type MetricsProcessor interface {
-	component
+	Component
 	Processors() []otel.Component
 }
 
-var metricsProcessorTypes = &componentTypeRegistry{
+var MetricsProcessorTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "processor",
 }
 
@@ -411,7 +412,7 @@ type metricsProcessorWrapper struct {
 }
 
 func (m *metricsProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return metricsProcessorTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
+	return MetricsProcessorTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
 }
 
 func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -429,6 +430,7 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type MetricsService struct {
+	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
 	Pipelines map[string]*MetricsPipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
@@ -602,7 +604,7 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		if !v.IsValid() {
 			continue // Some reserved ids don't map to components.
 		}
-		t := v.Interface().(component).Type()
+		t := v.Interface().(Component).Type()
 		if _, ok := r[t]; ok {
 			r[t] += 1
 		} else {
