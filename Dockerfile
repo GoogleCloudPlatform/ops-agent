@@ -178,7 +178,7 @@ RUN ./pkg/rpm/build.sh
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/leap:42.3 AS sles12-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros && \
     # Remove expired root certificate.
     mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
     update-ca-certificates && \
@@ -191,6 +191,12 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     zypper -n install bison>3.4 && \
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
+
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local
+
+ENV JAVA_HOME /usr/local/jdk-11.0.13+8/
 
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
