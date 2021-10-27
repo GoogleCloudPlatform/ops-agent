@@ -24,8 +24,8 @@ To configure a receiver for your mysql metrics, specify the following fields:
 | `type`                | required                  | Must be `mysql`. |
 | `endpoint`     | `localhost:3306`          | The url exposed by mysql |
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`            |                           | The username used to connect to the server.
-| `password`            |                           | The password used to connect to the server.
+| `username`            |                           | The username used to connect to the server. |
+| `password`            |                           | The password used to connect to the server. |
 
 Example Configuration:
 
