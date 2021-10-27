@@ -28,7 +28,6 @@ To configure a receiver for your httpd metrics, specify the following fields:
 | `server_status_url`     | `http://localhost:8080/server-status?auto` | The url exposed by the `mod_status` module. |
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 
-
 Example Configuration:
 
 ```yaml

@@ -19,7 +19,47 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverApache struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	ServerStatusURL string `yaml:"server_status_url" validate:"omitempty,url"`
+}
+
+const defaultServerStatusURL = "http://localhost:8080/server-status?auto"
+
+func (r MetricsReceiverApache) Type() string {
+	return "apache"
+}
+
+func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+	if r.ServerStatusURL == "" {
+		r.ServerStatusURL = defaultServerStatusURL
+	}
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "httpd",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.ServerStatusURL,
+			},
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverApache{} })
+}
 
 type LoggingProcessorApacheAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
