@@ -64,6 +64,8 @@ ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13
 RUN set -xe; \
     tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local
 
+ENV JAVA_HOME /usr/local/jdk-11.0.13+8/
+
 ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
 RUN set -xe; \
     tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
