@@ -1,1 +1,1 @@
-logging receiver with type "unsupported_type" is not supported. Supported logging receiver types: [files, nginx_access, nginx_error, syslog, tcp].
+logging receiver with type "unsupported_type" is not supported. Supported logging receiver types: [apache_access, apache_error, cassandra_debug, cassandra_gc, cassandra_system, files, nginx_access, nginx_error, redis, syslog, systemd_journald, tcp].

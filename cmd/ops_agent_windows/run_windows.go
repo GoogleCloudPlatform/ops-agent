@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -112,7 +113,7 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	confDebugFolder := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "conf", "debug")
-	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows"); err != nil {
+	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows", apps.BuiltInConfStructs); err != nil {
 		return err
 	}
 	data, err := ioutil.ReadFile(filepath.Join(confDebugFolder, "merged-config.yaml"))
