@@ -212,7 +212,7 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 }
 
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{{
+	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
@@ -223,6 +223,16 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
+	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity",
+		[]struct{ SrcVal, DestVal string }{
+			{"Error", "ERROR"},
+			{"Information", "INFO"},
+			{"Warning", "WARNING"},
+			{"SuccessAudit", "NOTICE"},
+			{"FailureAudit", "NOTICE"},
+		})
+
+	return append(input, filters...)
 }
 
 func init() {

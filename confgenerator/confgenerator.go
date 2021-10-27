@@ -46,7 +46,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Version: versionLabel,
 	}.Pipeline()
 
+	if uc.Metrics.Service.LogLevel == "" {
+		uc.Metrics.Service.LogLevel = "info"
+	}
 	otelConfig, err := otel.ModularConfig{
+		LogLevel:  uc.Metrics.Service.LogLevel,
 		Pipelines: pipelines,
 		GlobalProcessors: []otel.Component{{
 			Type: "resourcedetection",
@@ -121,7 +125,10 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
 	var out []fluentbit.Component
-	out = append(out, fluentbit.Service{}.Component())
+	if l.Service.LogLevel == "" {
+		l.Service.LogLevel = "info"
+	}
+	out = append(out, fluentbit.Service{LogLevel: l.Service.LogLevel}.Component())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
