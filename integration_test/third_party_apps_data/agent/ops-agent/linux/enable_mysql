@@ -19,16 +19,19 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 logging:
   receivers:
-    apache_access:
-      type: apache_access
-    apache_error:
-      type: apache_error
+    mysql_error:
+      type: mysql_error
+    mysql_general:
+      type: mysql_general
+    mysql_slow:
+      type: mysql_slow
   service:
     pipelines:
-      apache:
+      mysql:
         receivers:
-          - apache_access
-          - apache_error
+          - mysql_error
+          - mysql_general
+          - mysql_slow
 EOF
 
 sudo service google-cloud-ops-agent restart
