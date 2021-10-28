@@ -478,10 +478,10 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if _, err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
+		if _, err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
@@ -507,12 +507,18 @@ func (m *Metrics) Validate(platform string) error {
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if receiverCounts, err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		} else {
+			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
+				return err
+			}
+		}
+
+		if _, err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
-			return err
-		}
+
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
@@ -596,7 +602,7 @@ func validateComponentKeys(components interface{}, refs []string, subagent strin
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) error {
+func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) (map[string]int, error) {
 	r := map[string]int{}
 	cm := reflect.ValueOf(components)
 	for _, id := range refs {
@@ -612,11 +618,25 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		}
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
-				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
+				return nil, fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
 			}
-			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
+			return nil, fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
 		}
 	}
+	return r, nil
+}
+
+func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
+	jvmReceivers := []string{"jvm", "cassandra"}
+	jvmReceiverCount := 0
+	for _, receiverType := range jvmReceivers {
+		jvmReceiverCount += typeCounts[receiverType]
+	}
+
+	if jvmReceiverCount > 1 {
+		return fmt.Errorf("at most one metrics receiver of JVM types [%s] is allowed: JVM based receivers currently conflict, and only one can be configured", strings.Join(jvmReceivers, ", "))
+	}
+
 	return nil
 }
 
