@@ -54,6 +54,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"exclude",
 				"strict",
 				"redis.commands",
+				"redis.uptime",
 			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
