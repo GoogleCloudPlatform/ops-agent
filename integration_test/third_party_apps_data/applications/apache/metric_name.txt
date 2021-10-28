@@ -1,1 +1,1 @@
-workload.googleapis.com/httpd.requests
+workload.googleapis.com/httpd.current_connections
