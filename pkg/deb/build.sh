@@ -11,4 +11,4 @@ dch --create -b --package google-cloud-ops-agent -M \
   "Automated build"
 
 # Build .debs
-debuild -us -uc -sa
+debuild --preserve-envvar JAVA_HOME -us -uc -sa
