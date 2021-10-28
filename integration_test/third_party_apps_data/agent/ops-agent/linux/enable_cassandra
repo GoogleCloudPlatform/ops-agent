@@ -17,6 +17,17 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+metrics:
+  receivers:
+    cassandra_metrics:
+      type: cassandra
+      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:7199/jmxrmi
+      collection_interval: 30s
+  service:
+    pipelines:
+      cassandra_pipeline:
+        receivers:
+          - cassandra_metrics
 logging:
   receivers:
     cassandra_default_system:

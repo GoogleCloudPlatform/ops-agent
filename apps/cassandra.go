@@ -15,9 +15,79 @@
 package apps
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverCassandra struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+}
+
+const defaultCassandraEndpoint = "localhost:7199"
+
+func (r MetricsReceiverCassandra) Type() string {
+	return "cassandra"
+}
+
+func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
+	if r.Endpoint == "" {
+		r.Endpoint = defaultCassandraEndpoint
+	}
+
+	jarPath, err := FindJarPath()
+	if err != nil {
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+	}
+
+	targetSystem := "cassandra"
+	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
+	config := map[string]interface{}{
+		"target_system":       targetSystem,
+		"collection_interval": r.CollectionIntervalString(),
+		"endpoint":            r.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	// Only set the username & password fields if provided
+	if r.Username != "" {
+		config["username"] = r.Username
+	}
+	if r.Password != "" {
+		config["password"] = r.Password
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "jmx",
+			Config: config,
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverCassandra{} })
+}
 
 type LoggingProcessorCassandraSystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
