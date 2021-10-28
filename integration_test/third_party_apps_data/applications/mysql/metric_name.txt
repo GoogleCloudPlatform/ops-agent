@@ -1,1 +1,1 @@
-workload.googleapis.com/mysql.commands
+workload.googleapis.com/mysql.threads
