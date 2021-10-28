@@ -1,0 +1,72 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    mysql_default_error:
+      type: mysql_error
+    mysql_custom_error:
+      type: mysql_error
+      include_paths:
+        - /srv/mysql/error.log
+    mysql_default_general:
+      type: mysql_general
+    mysql_custom_general:
+      type: mysql_general
+      include_paths:
+        - /srv/mysql/general.log
+    mysql_default_slow:
+      type: mysql_slow
+    mysql_custom_slow:
+      type: mysql_slow
+      include_paths:
+        - /srv/mysql/slow.log
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    mysql_syslog_error:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 2
+    mysql_syslog_general:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 2
+    mysql_syslog_slow:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 2
+  processors:
+    mysql_syslog_error:
+      type: mysql_error
+    mysql_syslog_general:
+      type: mysql_general
+    mysql_syslog_slow:
+      type: mysql_slow
+  service:
+    pipelines:
+      mysql_default:
+        receivers:
+          - mysql_default_error
+          - mysql_default_general
+          - mysql_default_slow
+      mysql_custom:
+        receivers:
+          - mysql_custom_error
+          - mysql_custom_general
+          - mysql_custom_slow
+      mysql_syslog_error:
+        receivers: [mysql_syslog_error,mysql_syslog_general,mysql_syslog_slow]
+        processors: [mysql_syslog_error,mysql_syslog_general,mysql_syslog_slow]

@@ -88,7 +88,7 @@ logging:
       type: redis
   service:
     pipelines:
-      apache:
+      redis:
         receivers:
         - redis_default
 ```

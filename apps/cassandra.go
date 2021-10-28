@@ -15,9 +15,79 @@
 package apps
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverCassandra struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+}
+
+const defaultCassandraEndpoint = "localhost:7199"
+
+func (r MetricsReceiverCassandra) Type() string {
+	return "cassandra"
+}
+
+func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
+	if r.Endpoint == "" {
+		r.Endpoint = defaultCassandraEndpoint
+	}
+
+	jarPath, err := FindJarPath()
+	if err != nil {
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+	}
+
+	targetSystem := "cassandra"
+	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
+	config := map[string]interface{}{
+		"target_system":       targetSystem,
+		"collection_interval": r.CollectionIntervalString(),
+		"endpoint":            r.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	// Only set the username & password fields if provided
+	if r.Username != "" {
+		config["username"] = r.Username
+	}
+	if r.Password != "" {
+		config["password"] = r.Password
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "jmx",
+			Config: config,
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverCassandra{} })
+}
 
 type LoggingProcessorCassandraSystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -47,7 +117,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
-				confgenerator.RegexParser{
+				{
 					// Sample line: INFO [IndexSummaryManager:1] 2021-10-07 12:57:05,003 IndexSummaryRedistribution.java:83 - Redistributing index summaries
 					// Sample line: WARN [main] 2021-10-07 11:57:01,602 StartupChecks.java:329 - Maximum number of memory map areas per process (vm.max_map_count) 65530 is too low, recommended value: 1048575, you can change it with sysctl.
 					// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
@@ -68,12 +138,12 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
-			confgenerator.MultilineRule{
+			{
 				StateName: "start_state",
 				NextState: "cont",
 				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
 			},
-			confgenerator.MultilineRule{
+			{
 				StateName: "cont",
 				NextState: "cont",
 				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
@@ -81,6 +151,8 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 		},
 	}.Components(tag, uid)
 
+	// Best documentation found for log levels:
+	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
 	c = append(c,
 		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
 			[]struct{ SrcVal, DestVal string }{
@@ -108,7 +180,7 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
-				confgenerator.RegexParser{
+				{
 					// Vast majority of lines look like the first, with time stopped & time stopping
 					// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
 					// Sample line: 2021-10-05T01:20:52.695+0000: 4.434: [GC (CMS Initial Mark) [1 CMS-initial-mark: 0K(3686400K)] 36082K(4055040K), 0.0130057 secs] [Times: user=0.04 sys=0.00, real=0.01 secs]
@@ -128,12 +200,12 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
-			confgenerator.MultilineRule{
+			{
 				StateName: "start_state",
 				NextState: "cont",
 				Regex:     `^\d{4}-\d{2}-\d{2}`,
 			},
-			confgenerator.MultilineRule{
+			{
 				StateName: "cont",
 				NextState: "cont",
 				Regex:     `^(?!\d{4}-\d{2}-\d{2})`,
