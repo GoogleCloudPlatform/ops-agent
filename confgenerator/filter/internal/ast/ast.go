@@ -91,6 +91,7 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
 	lhs := r.LHS.RecordAccessor()
 	rhs := r.RHS
+	lhsrhs := fmt.Sprintf(`%s %s`, lhs, rhs)
 	switch r.Operator {
 	case "GLOBAL":
 		// Key exists
@@ -100,22 +101,22 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	case ":":
 		// substring match
 		// FIXME: Escape the regex
-		c.Config["Key_value_matches"] = fmt.Sprintf(`.*%s.*`, rhs)
+		c.Config["Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, rhs)
 	case "=~":
 		// regex match
 		// FIXME: Escape
-		c.Config["Key_value_matches"] = rhs
+		c.Config["Key_value_matches"] = lhsrhs
 	case "!~":
 		// FIXME: Escape
-		c.Config["Key_value_does_not_match"] = rhs
+		c.Config["Key_value_does_not_match"] = lhsrhs
 	case "=":
 		// equality
 		// FIXME: Escape
 		// FIXME: Non-string values
-		c.Config["Key_value_equals"] = rhs
+		c.Config["Key_value_equals"] = lhsrhs
 	case "!=":
 		// FIXME
-		c.Config["Key_value_does_not_equal"] = rhs
+		c.Config["Key_value_does_not_equal"] = lhsrhs
 	}
 	return []fluentbit.Component{c}
 }
