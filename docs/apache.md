@@ -50,12 +50,11 @@ The Ops Agent collects the following metrics from your Apache web servers.
 
 | Metric                                            | Data Type | Unit        | Labels              | Description |
 | ---                                               | ---       | ---         | ---                 | ---         | 
-| workload.googleapis.com/httpd.current_connections | gauge     | connections |      server_name        | The number of active connections currently attached to the HTTP server.  |
-| workload.googleapis.com/httpd.uptime              | sum       | s           |     server_name     | The amount of time that the server has been running in seconds.  |
-| workload.googleapis.com/httpd.requests            | sum       | 1    |    server_name         | Total requests serviced by the HTTP server.  |
-| workload.googleapis.com/httpd.workers             | gauge     | connections | server_name, workers_state     | The number of workers currently attached to the HTTP server |
-| workload.googleapis.com/httpd.scoreboard          | gauge     | scoreboard  | server_name, scoreboard_state  | Apache HTTP server scoreboard values. |
-| workload.googleapis.com/httpd.traffic             | sum       | By |     server_name     | Total HTTP server traffic. |
+| workload.googleapis.com/apache.current_connections | gauge     | connections |      server_name        | The number of active connections currently attached to the HTTP server.  |
+| workload.googleapis.com/apache.requests            | sum       | 1    |    server_name         | Total requests serviced by the HTTP server.  |
+| workload.googleapis.com/apache.workers             | gauge     | connections | server_name, workers_state     | The number of workers currently attached to the HTTP server |
+| workload.googleapis.com/apache.scoreboard          | gauge     | scoreboard  | server_name, scoreboard_state  | Apache HTTP server scoreboard values. |
+| workload.googleapis.com/apache.traffic             | sum       | By |     server_name     | Total HTTP server traffic. |
 
 # `apache_access` and `apache_error` Logging Receivers
 

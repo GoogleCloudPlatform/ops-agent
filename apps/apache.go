@@ -49,8 +49,14 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"httpd.uptime",
+			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
+				otel.ChangePrefix("httpd", "apache"),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
