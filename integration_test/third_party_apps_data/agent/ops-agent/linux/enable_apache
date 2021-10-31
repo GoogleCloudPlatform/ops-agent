@@ -21,6 +21,7 @@ metrics:
   receivers:
     apache_metrics:
       type: apache
+      server_status_url: http://127.0.0.1:80/server-status?auto
       collection_interval: 30s
   service:
     pipelines:
