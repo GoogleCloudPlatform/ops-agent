@@ -47,7 +47,7 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 %{_prefix}/libexec/google_cloud_ops_agent_engine
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
-%{_logrotatedir}/google-cloud-ops-agent
+%config %{_logrotatedir}/google-cloud-ops-agent
 
 %post
 %systemd_post google-cloud-ops-agent.service
