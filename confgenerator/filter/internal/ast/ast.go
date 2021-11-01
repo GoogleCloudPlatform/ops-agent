@@ -32,7 +32,7 @@ func (m Member) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
 		// TODO: Confirm this is the right escape
-		s = s + fmt.Sprintf(`["%s"]`, strings.ReplaceAll(part, `"`, `\"`))
+		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
 	return s
 }
