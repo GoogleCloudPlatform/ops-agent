@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -100,7 +101,7 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 		panic("unimplemented")
 	case ":":
 		// substring match
-		c.Config["Condition Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, rhs)
+		c.Config["Condition Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, regexp.QuoteMeta(rhs))
 	case "=~":
 		// regex match
 		// FIXME: Escape
