@@ -95,28 +95,27 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	switch r.Operator {
 	case "GLOBAL":
 		// Key exists
-		c.Config["Key_exists"] = lhs
+		c.Config["Condition Key_exists"] = lhs
 	case "<", "<=", ">", ">=":
 		panic("unimplemented")
 	case ":":
 		// substring match
-		// FIXME: Escape the regex
-		c.Config["Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, rhs)
+		c.Config["Condition Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, rhs)
 	case "=~":
 		// regex match
 		// FIXME: Escape
-		c.Config["Key_value_matches"] = lhsrhs
+		c.Config["Condition Key_value_matches"] = lhsrhs
 	case "!~":
 		// FIXME: Escape
-		c.Config["Key_value_does_not_match"] = lhsrhs
+		c.Config["Condition Key_value_does_not_match"] = lhsrhs
 	case "=":
 		// equality
 		// FIXME: Escape
 		// FIXME: Non-string values
-		c.Config["Key_value_equals"] = lhsrhs
+		c.Config["Condition Key_value_equals"] = lhsrhs
 	case "!=":
 		// FIXME
-		c.Config["Key_value_does_not_equal"] = lhsrhs
+		c.Config["Condition Key_value_does_not_equal"] = lhsrhs
 	}
 	return []fluentbit.Component{c}
 }
@@ -178,7 +177,7 @@ func (c Conjunction) Components(tag, key string) []fluentbit.Component {
 		subkey := fmt.Sprintf("%s_%d", key, i)
 		components = append(components, e.Components(tag, subkey)...)
 		m.OrderedConfig = append(m.OrderedConfig, [2]string{
-			"Key_exists", subkey,
+			"Condition", fmt.Sprintf("Key_exists %s", subkey),
 		})
 	}
 	components = append(components, m)
@@ -223,7 +222,7 @@ func (d Disjunction) Components(tag, key string) []fluentbit.Component {
 	// NB: We can't just pass key to e.Components because nested expressions might collide.
 	for _, subkey := range subkeys {
 		m := modify(tag, key)
-		m.Config["Key_exists"] = subkey
+		m.Config["Condition Key_exists"] = subkey
 		components = append(components, m)
 	}
 	return components
