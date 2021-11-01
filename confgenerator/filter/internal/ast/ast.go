@@ -234,7 +234,7 @@ type Negation struct {
 }
 
 func (n Negation) Simplify() Expression {
-	return n
+	return Negation{n.Expression.Simplify()}
 }
 
 func (n Negation) Components(tag, key string) []fluentbit.Component {
