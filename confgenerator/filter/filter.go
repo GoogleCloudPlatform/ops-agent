@@ -67,7 +67,7 @@ func (f *Filter) Components(tag string) []fluentbit.Component {
 			Config: map[string]string{
 				"Name":            "modify",
 				"Match":           tag,
-				"Remove_wildcard": fmt.Sprintf("%s*", match),
+				"Remove_wildcard": match,
 			},
 		},
 		fluentbit.Component{
