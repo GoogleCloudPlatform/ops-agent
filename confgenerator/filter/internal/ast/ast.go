@@ -236,6 +236,15 @@ func (n Negation) Simplify() Expression {
 	return n
 }
 
+func (n Negation) Components(tag, key string) []fluentbit.Component {
+	subkey := fmt.Sprintf("%s_0", key)
+	components := n.Expression.Components(tag, subkey)
+	m := modify(tag, key)
+	m.Config["Condition Key_does_not_exist"] = subkey
+	components = append(components, m)
+	return components
+}
+
 func ParseText(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	// Add quotes
