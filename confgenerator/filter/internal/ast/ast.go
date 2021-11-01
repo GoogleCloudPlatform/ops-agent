@@ -88,35 +88,39 @@ func modify(tag, key string) fluentbit.Component {
 		},
 	}
 }
+
+func cond(ctype string, values ...string) string {
+	return fmt.Sprintf("%s %s", ctype, strings.Join(values, " "))
+}
+
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
 	lhs := r.LHS.RecordAccessor()
 	rhs := r.RHS
-	lhsrhs := fmt.Sprintf(`%s %s`, lhs, rhs)
 	switch r.Operator {
 	case "GLOBAL":
 		// Key exists
-		c.Config["Condition Key_exists"] = lhs
+		c.Config["Condition"] = cond("Key_exists", lhs)
 	case "<", "<=", ">", ">=":
 		panic("unimplemented")
 	case ":":
 		// substring match
-		c.Config["Condition Key_value_matches"] = fmt.Sprintf(`%s .*%s.*`, lhs, regexp.QuoteMeta(rhs))
+		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, regexp.QuoteMeta(rhs)))
 	case "=~":
 		// regex match
 		// FIXME: Escape
-		c.Config["Condition Key_value_matches"] = lhsrhs
+		c.Config["Condition"] = cond("Key_value_matches", lhs, rhs)
 	case "!~":
 		// FIXME: Escape
-		c.Config["Condition Key_value_does_not_match"] = lhsrhs
+		c.Config["Condition"] = cond("Key_value_does_not_match", lhs, rhs)
 	case "=":
 		// equality
 		// FIXME: Escape
 		// FIXME: Non-string values
-		c.Config["Condition Key_value_equals"] = lhsrhs
+		c.Config["Condition"] = cond("Key_value_equals", lhs, rhs)
 	case "!=":
 		// FIXME
-		c.Config["Condition Key_value_does_not_equal"] = lhsrhs
+		c.Config["Condition"] = cond("Key_value_does_not_equal", lhs, rhs)
 	}
 	return []fluentbit.Component{c}
 }
@@ -178,7 +182,7 @@ func (c Conjunction) Components(tag, key string) []fluentbit.Component {
 		subkey := fmt.Sprintf("%s_%d", key, i)
 		components = append(components, e.Components(tag, subkey)...)
 		m.OrderedConfig = append(m.OrderedConfig, [2]string{
-			"Condition", fmt.Sprintf("Key_exists %s", subkey),
+			"Condition", cond("Key_exists", subkey),
 		})
 	}
 	components = append(components, m)
@@ -223,7 +227,7 @@ func (d Disjunction) Components(tag, key string) []fluentbit.Component {
 	// NB: We can't just pass key to e.Components because nested expressions might collide.
 	for _, subkey := range subkeys {
 		m := modify(tag, key)
-		m.Config["Condition Key_exists"] = subkey
+		m.Config["Condition"] = cond("Key_exists", subkey)
 		components = append(components, m)
 	}
 	return components
@@ -241,7 +245,7 @@ func (n Negation) Components(tag, key string) []fluentbit.Component {
 	subkey := fmt.Sprintf("%s_0", key)
 	components := n.Expression.Components(tag, subkey)
 	m := modify(tag, key)
-	m.Config["Condition Key_does_not_exist"] = subkey
+	m.Config["Condition"] = cond("Key_does_not_exist", subkey)
 	components = append(components, m)
 	return components
 }
