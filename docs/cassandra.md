@@ -41,8 +41,8 @@ In addition to Cassandra specific metrics, by default Cassandra will also report
 
 | Metric                                                                          | Data Type | Unit        | Labels | Description |
 | ---                                                                             | ---       | ---         | ---    | ---         | 
-| workload.googleapis.com/cassandra.client.request.count                          | cumulative | µs          | operation | Number of requests by operation |
-| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | µs          | operation, status | Number of request errors by operation |
+| workload.googleapis.com/cassandra.client.request.count                          | cumulative | 1          | operation | Number of requests by operation |
+| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | 1          | operation, status | Number of request errors by operation |
 | workload.googleapis.com/cassandra.client.request.read.latency.50p               | gauge     | µs          |        | Standard read request latency - 50th percentile |
 | workload.googleapis.com/cassandra.client.request.read.latency.99p               | gauge     | µs          |        | Standard read request latency - 99th percentile |
 | workload.googleapis.com/cassandra.client.request.read.latency.max               | gauge     | µs          |        | Maximum standard read request latency |
