@@ -226,10 +226,12 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					"swap/bytes_used",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
+					otel.AggregateLabels("sum", "device", "state"),
 				),
 				otel.RenameMetric(
 					"system.paging.utilization",
 					"swap/percent_used",
+					otel.AggregateLabels("sum", "device", "state"),
 				),
 				// duplicate swap/percent_used -> pagefile/percent_used
 				otel.DuplicateMetric(
