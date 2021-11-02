@@ -181,6 +181,18 @@ ops-agent$ DOCKER_BUILDKIT=1 docker build -o $PACKAGES_OUT .
 $ ls $PACKAGES_OUT
 ```
 
+<details>
+<summary>You may need to update the submodules.</summary>
+
+```shell
+ops-agent$ git submodule update --init
+```
+
+Sometimes you can hit build failures if you forget to also update the submodules
+when new changes are needed. This command should update the local submodules and
+sync them with upstream.
+</details>
+
 This will leave you with a tarball and a package for each distro that contains
 `fluent-bit`, `open-telemetry-collector`, `generate_config`, and systemd units.
 Sample output:
