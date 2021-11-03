@@ -77,7 +77,7 @@ func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
 		"include":    fmt.Sprintf(`^%s(.*)$$`, oldPrefix),
 		"match_type": "regexp",
 		"action":     "update",
-		"new_name":   path.Join(newPrefix, `$${1}`),
+		"new_name":   fmt.Sprintf("%s%s", newPrefix, `$${1}`),
 	}
 }
 
