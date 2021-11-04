@@ -20,7 +20,7 @@ The receiver requires that you enable the [mod_status module](https://httpd.apac
 
 Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your Apache web server configuration.
 
-To configure a receiver for your httpd metrics, specify the following fields:
+To configure a receiver for your Apache web server metrics, specify the following fields:
 
 | Field                 | Default                   | Description |
 | ---                   | ---                       | ---         |
