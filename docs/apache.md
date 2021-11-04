@@ -1,6 +1,6 @@
 # `apache httpd` Metrics Receiver
 
-The httpd receiver can retrieve stats from your Apache web server using the `/server-status?auto` endpoint.
+The Apache httpd receiver can retrieve stats from your Apache web server using the `/server-status?auto` endpoint.
 
 
 ## Prerequisites
@@ -39,7 +39,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      httpd_pipeline:
+      apache_pipeline:
         receivers:
           - apache_metrics
 ```
