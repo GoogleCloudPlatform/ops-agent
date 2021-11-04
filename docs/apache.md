@@ -54,7 +54,7 @@ The Ops Agent collects the following metrics from your Apache web servers.
 | workload.googleapis.com/apache.requests            | sum       | 1    |    server_name         | Total requests serviced by the HTTP server.  |
 | workload.googleapis.com/apache.workers             | gauge     | connections | server_name, workers_state     | The number of workers currently attached to the HTTP server |
 | workload.googleapis.com/apache.scoreboard          | gauge     | scoreboard  | server_name, scoreboard_state  | Apache HTTP server scoreboard values. |
-| workload.googleapis.com/apache.traffic             | sum       | By |     server_name     | Total HTTP server traffic. |
+| workload.googleapis.com/apache.traffic             | sum       | byte |     server_name     | Total HTTP server traffic. |
 
 # `apache_access` and `apache_error` Logging Receivers
 
