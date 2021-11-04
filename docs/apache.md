@@ -33,7 +33,7 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    httpd_metrics:
+    apache_metrics:
       type: httpd
       server_status_url: http://localhost:8080/server-status?auto
       collection_interval: 30s
