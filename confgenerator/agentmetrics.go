@@ -41,10 +41,6 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			{
-				// perform custom transformations that aren't supported by the metricstransform processor
-				Type: "agentmetrics",
-			},
 			otel.MetricsFilter(
 				"include",
 				"strict",
