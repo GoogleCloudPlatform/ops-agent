@@ -41,7 +41,7 @@ metrics:
     pipelines:
       httpd_pipeline:
         receivers:
-          - httpd_metrics
+          - apache_metrics
 ```
 
 ## Metrics
