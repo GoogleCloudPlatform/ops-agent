@@ -34,7 +34,7 @@ Example Configuration:
 metrics:
   receivers:
     apache_metrics:
-      type: httpd
+      type: apache
       server_status_url: http://localhost:8080/server-status?auto
       collection_interval: 30s
   service:
