@@ -16,9 +16,9 @@ metrics:
   receivers:
     redis_metrics:
       type: redis
-      address: localhost:6379
       collection_interval: 30s
       password: pwd
+      key_file: asdf
   service:
     pipelines:
       redis_pipeline:

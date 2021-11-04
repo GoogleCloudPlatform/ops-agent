@@ -16,8 +16,11 @@ metrics:
   receivers:
     redis_metrics:
       type: redis
+      address: localhost:6379
       collection_interval: 30s
       password: pwd
+      cert_file: /otherplace/certFile.txt
+      key_file: /place/keyFile.txt
   service:
     pipelines:
       redis_pipeline:
