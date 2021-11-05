@@ -16,6 +16,7 @@ package filter
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/lexer"
@@ -57,7 +58,7 @@ func (f *Filter) Components(tag string, isExclusionFilter bool) []fluentbit.Comp
 			"Wildcard":   "*",
 		},
 	}}
-	match := fmt.Sprintf("__match_%s", tag)
+	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
 	c = append(c, f.expr.Components(tag, match)...)
 	c = append(c,
 		fluentbit.Component{
