@@ -28,7 +28,7 @@ type MetricsReceiverMySQL struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
 
 	Password string `yaml:"password" validate:"omitempty"`
 
