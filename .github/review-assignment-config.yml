@@ -1,0 +1,5 @@
+addReviewers: true
+addAssignees: false
+reviewers:
+  - GoogleCloudPlatform/stackdriver-reviewers
+numberOfReviewers: 1
