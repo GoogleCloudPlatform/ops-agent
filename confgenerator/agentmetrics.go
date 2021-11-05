@@ -41,10 +41,6 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			{
-				// perform custom transformations that aren't supported by the metricstransform processor
-				Type: "agentmetrics",
-			},
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -58,8 +54,13 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.AddLabel("version", r.Version),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
 				),
-				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
+				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage",
+					// remove service.version label
+					otel.AggregateLabels("sum"),
+				),
 				otel.RenameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
@@ -69,12 +70,14 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					//   label: grpc_client_method
 					//   value_regexp: ^google\.monitoring
 					otel.RenameLabel("grpc_client_status", "state"),
-					// delete grpc_client_method dimension, retaining only state
+					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
 				otel.RenameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
+					// Remove service.version label
+					otel.AggregateLabels("sum", "status"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
