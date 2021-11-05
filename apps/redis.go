@@ -17,7 +17,58 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverRedis struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	// TODO: Add support for ACL Authentication
+	Address  string `yaml:"address" validate:"omitempty,hostname_port"`
+	Password string `yaml:"password" validate:"omitempty"`
+}
+
+const defaultRedisEndpoint = "localhost:6379"
+
+func (r MetricsReceiverRedis) Type() string {
+	return "redis"
+}
+
+func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
+
+	if r.Address == "" {
+		r.Address = defaultRedisEndpoint
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "redis",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.Address,
+				"password":            r.Password,
+			},
+		},
+		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"redis.commands",
+				"redis.uptime",
+			),
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverRedis{} })
+}
 
 type LoggingProcessorRedis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
