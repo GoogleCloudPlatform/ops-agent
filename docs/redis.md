@@ -26,10 +26,6 @@ metrics:
       address: localhost:6379
       collection_interval: 30s
       password: pwd
-      insecure: false
-      cert_file: /path/to/cert
-      key_file: /path/to/key
-        
   service:
     pipelines:
       redis_pipeline:
