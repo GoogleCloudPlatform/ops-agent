@@ -250,15 +250,108 @@ func (n Negation) Components(tag, key string) []fluentbit.Component {
 	return components
 }
 
+func unquote(in string) string {
+	var buf strings.Builder
+	buf.Grow(3 * len(in) / 2)
+
+	r := strings.NewReader(in)
+	for {
+		c, _, err := r.ReadRune()
+		if err != nil {
+			// EOF is only possible error
+			break
+		}
+		if c != '\\' {
+			buf.WriteRune(c)
+			continue
+		}
+		c, _, err = r.ReadRune()
+		if err != nil {
+			buf.WriteRune('\\')
+			break
+		}
+		switch c {
+		case ',', ':', '=', '<', '>', '+', '~', '"', '\\', '.', '*':
+			// escaped_char
+			buf.WriteRune(c)
+		case 'u':
+			// unicode_esc
+			// [0-9a-f]{4}
+			digits := make([]byte, 4)
+			n, _ := r.Read(digits)
+			digits = digits[:n]
+			codepoint, err := strconv.ParseUint(string(digits), 16, 16)
+			if n < 4 || err != nil {
+				buf.WriteRune('\\')
+				buf.WriteRune('u')
+				buf.Write(digits)
+				break
+			}
+			buf.WriteRune(rune(codepoint))
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			// octal_esc
+			// [0-7]{1,2} or [0-3],[0-7]{2}
+			digits := []byte{byte(c)}
+			for len(digits) < 3 {
+				c, err := r.ReadByte()
+				if err != nil {
+					break
+				}
+				if c < '0' || c > '7' {
+					r.UnreadByte()
+					break
+				}
+				digits = append(digits, c)
+				if digits[0] > '3' && len(digits) == 2 {
+					break
+				}
+			}
+			codepoint, err := strconv.ParseUint(string(digits), 8, 8)
+			if err != nil {
+				buf.WriteRune('\\')
+				buf.Write(digits)
+				break
+			}
+			buf.WriteRune(rune(codepoint))
+		case 'x':
+			// hex_esc:
+			// 2*hex_digit
+			digits := make([]byte, 2)
+			n, _ := r.Read(digits)
+			digits = digits[:n]
+			codepoint, err := strconv.ParseUint(string(digits), 16, 8)
+			if n < 2 || err != nil {
+				buf.WriteRune('\\')
+				buf.WriteRune('x')
+				buf.Write(digits)
+				break
+			}
+			buf.WriteRune(rune(codepoint))
+		case 'a':
+			buf.WriteRune('\a')
+		case 'b':
+			buf.WriteRune('\b')
+		case 'f':
+			buf.WriteRune('\f')
+		case 'n':
+			buf.WriteRune('\n')
+		case 'r':
+			buf.WriteRune('\r')
+		case 't':
+			buf.WriteRune('\t')
+		case 'v':
+			buf.WriteRune('\v')
+		}
+	}
+	return buf.String()
+}
+
 func ParseText(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
-	// Add quotes
-	str = `"` + str + `"`
-	// TODO: Support all escape sequences
-	return strconv.Unquote(str)
+	return unquote(str), nil
 }
 func ParseString(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	// TODO: Support all escape sequences
-	return strconv.Unquote(str)
+	return unquote(str[1 : len(str)-1]), nil
 }
