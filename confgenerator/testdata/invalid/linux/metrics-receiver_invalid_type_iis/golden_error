@@ -1,1 +1,1 @@
-metrics receiver with type "iis" is not supported. Supported metrics receiver types: [cassandra, hostmetrics, jvm, nginx, redis].
+metrics receiver with type "iis" is not supported. Supported metrics receiver types: [apache, cassandra, hostmetrics, jvm, nginx, redis].

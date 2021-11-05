@@ -15,6 +15,7 @@
 package otel
 
 import (
+	"fmt"
 	"path"
 	"sort"
 )
@@ -65,6 +66,18 @@ func AddPrefix(prefix string) map[string]interface{} {
 		"match_type": "regexp",
 		"action":     "update",
 		"new_name":   path.Join(prefix, `$${1}`),
+	}
+}
+
+// ChangePrefix returns a config snippet that updates a prefix on all metrics.
+func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
+	// $ needs to be escaped because reasons.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+	return map[string]interface{}{
+		"include":    fmt.Sprintf(`^%s(.*)$$`, oldPrefix),
+		"match_type": "regexp",
+		"action":     "update",
+		"new_name":   fmt.Sprintf("%s%s", newPrefix, `$${1}`),
 	}
 }
 
