@@ -1,9 +1,0 @@
-[17:18] Key: 'MetricsReceiverRedis.cert_file' Error:Field validation for 'cert_file' failed on the 'required_with' tag
-  15 | metrics:
-  16 |   receivers:
-> 17 |     redis_metrics:
-                        ^
-  18 |       type: redis
-  19 |       collection_interval: 30s
-  20 |       password: pwd
-  21 |       
