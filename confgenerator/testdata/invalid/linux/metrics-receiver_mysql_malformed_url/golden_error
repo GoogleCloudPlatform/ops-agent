@@ -1,4 +1,4 @@
-[19:17] "endpoint" must be a URL
+[19:17] Key: 'MetricsReceiverMySQL.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port' tag
   16 |   receivers:
   17 |     mysqlmetrics:
   18 |       type: mysql
