@@ -26,8 +26,13 @@ type MetricsReceiverRedis struct {
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	// TODO: Add support for ACL Authentication
-	Address  string `yaml:"address" validate:"omitempty,hostname_port"`
-	Password string `yaml:"password" validate:"omitempty"`
+	Address      string `yaml:"address" validate:"omitempty,hostname_port"`
+	Password     string `yaml:"password" validate:"omitempty"`
+	Transport    string `yaml:"transport" validate:"omitempty"`
+	CaFilePath   string `yaml:"ca_file" validate:"omitempty"`
+	insecure     string `yaml:"insecure" validate:"omitempty"`
+	CertFilePath string `yaml:"cert_file" validate:"required_with=KeyFilePath,omitempty"`
+	KeyFilePath  string `yaml:"key_file" validate:"required_with=CertFilePath,omitempty"`
 }
 
 const defaultRedisEndpoint = "localhost:6379"
@@ -37,7 +42,6 @@ func (r MetricsReceiverRedis) Type() string {
 }
 
 func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
-
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -49,6 +53,13 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Address,
 				"password":            r.Password,
+				"transport":           r.Transport,
+				"tls": map[string]interface{}{
+					"ca_file":   r.CaFilePath,
+					"cert_file": r.CertFilePath,
+					"key_file":  r.KeyFilePath,
+					"insecure":  r.insecure,
+				},
 			},
 		},
 		Processors: []otel.Component{

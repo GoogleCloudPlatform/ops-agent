@@ -16,6 +16,15 @@ To configure a receiver for your redis metrics, specify the following fields:
 | `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `password`            |                           | The password used to connect to the server. |
 
+optional fields are: 
+| Field                 | Default                   | Description |
+| ---                   | ---                       | ---         |
+| `transport` | `tcp`| Defines the network to use for connecting to the server. |
+| `insecure` | `true` | whether to disable client transport security for the exporter's connection. |
+| `ca_file`  |        | path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false. |
+| `cert_file`|        | path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false. |
+| `key_file` |        | path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false. |=
+
 Example Configuration:
 
 ```yaml
@@ -76,6 +85,8 @@ To configure a receiver for your redis logs, specify the following fields:
 | `type`                | required                      | Must be `redis`. |
 | `include_paths`       | `[/var/log/redis/redis-server.log, /var/log/redis_6379.log, /var/log/redis/redis.log, /var/log/redis/default.log, /var/log/redis/redis_6379.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/redis/*.log`.
 | `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+
+
 
 
 Example Configuration:
