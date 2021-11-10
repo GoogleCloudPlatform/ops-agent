@@ -40,7 +40,13 @@ func NewFilter(f string) (*Filter, error) {
 	return nil, fmt.Errorf("not an expression: %+v", out)
 }
 
-func (f *Filter) Components(tag string) []fluentbit.Component {
+func (f *Filter) Components(tag string, isExclusionFilter bool) []fluentbit.Component {
+	var parity string
+	if isExclusionFilter {
+		parity = "Exclude"
+	} else {
+		parity = "Regex"
+	}
 	c := []fluentbit.Component{{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -57,9 +63,9 @@ func (f *Filter) Components(tag string) []fluentbit.Component {
 		fluentbit.Component{
 			Kind: "FILTER",
 			Config: map[string]string{
-				"Name": "grep",
-				// FIXME: Regex for include, Exclude for exclude
-				"Regex": fmt.Sprintf("%s 1", match),
+				"Name":  "grep",
+				"Match": tag,
+				parity:  fmt.Sprintf("%s 1", match),
 			},
 		},
 		fluentbit.Component{
