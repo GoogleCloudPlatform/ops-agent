@@ -23,17 +23,20 @@ import (
 )
 
 var validFilters = []string{
-	`"this is a simple quoted string"`,
-	`foo."bar"`,
-	`foo = "hello"`,
-	`foo."bar.baz" = "hello"`,
-	`a.b.c=~"b.*c"`,
-	`-a = 1`,
-	`NOT a = 3`,
-	`(foo.bar = "one" OR foo.bar = "two") foo.baz = "three"`,
-	`foo.one = 1 foo.two = 2 AND foo.three = 3`,
-	`int_field:0 OR int_field:0 AND int_field:0`,
-	`compound.string_field : wal\"rus`,
+	`"severity"`,
+	`jsonPayload."bar"`,
+	`severity = "hello"`,
+	`jsonPayload."bar.baz" = "hello"`,
+	`jsonPayload.b.c=~"b.*c"`,
+	`-severity = 1`,
+	`NOT severity = 3`,
+	`(jsonPayload.bar = "one" OR jsonPayload.bar = "two") jsonPayload.baz = "three"`,
+	`jsonPayload.one = 1 jsonPayload.two = 2 AND jsonPayload.three = 3`,
+	`jsonPayload.int_field:0 OR jsonPayload.int_field:0 AND jsonPayload.int_field:0`,
+	`jsonPayload.compound.string_field : wal\"rus`,
+	`severity =~ ERROR AND jsonPayload.message =~ foo AND httpRequest.requestMethod =~ GET`,
+	`severity = "AND"`,
+	`jsonPayload."ba\"r" = baz`,
 }
 
 func TestShouldLex(t *testing.T) {
