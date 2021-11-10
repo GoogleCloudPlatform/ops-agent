@@ -30,7 +30,6 @@ type MetricsReceiverRedis struct {
 	Password     string `yaml:"password" validate:"omitempty"`
 	Transport    string `yaml:"transport" validate:"omitempty"`
 	CaFilePath   string `yaml:"ca_file" validate:"omitempty"`
-	insecure     string `yaml:"insecure" validate:"omitempty"`
 	CertFilePath string `yaml:"cert_file" validate:"required_with=KeyFilePath,omitempty"`
 	KeyFilePath  string `yaml:"key_file" validate:"required_with=CertFilePath,omitempty"`
 }
@@ -46,6 +45,13 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 		r.Address = defaultRedisEndpoint
 	}
 
+	var insecure string
+	if r.CertFilePath != "" || r.KeyFilePath != "" || r.CaFilePath != "" {
+		insecure = "false"
+	} else {
+		insecure = "true"
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
@@ -58,7 +64,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 					"ca_file":   r.CaFilePath,
 					"cert_file": r.CertFilePath,
 					"key_file":  r.KeyFilePath,
-					"insecure":  r.insecure,
+					"insecure":  insecure,
 				},
 			},
 		},
