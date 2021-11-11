@@ -156,7 +156,7 @@ func cond(ctype string, values ...string) string {
 
 func escapeWhitespace(s string) string {
 	s = strings.ReplaceAll(s, "\a", `\a`)
-	s = strings.ReplaceAll(s, "\b", `\b`)
+	s = strings.ReplaceAll(s, "\b", `\u0008`)
 	s = strings.ReplaceAll(s, "\f", `\f`)
 	s = strings.ReplaceAll(s, "\n", `\n`)
 	s = strings.ReplaceAll(s, "\r", `\r`)
