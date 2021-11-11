@@ -43,8 +43,12 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 func (m Member) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
-		// TODO: Confirm this is the right escape
-		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
+		// Disallow line breaks, which cannot be encoded in a Record Accessor
+		unescaped := unquote(part)
+		if strings.ContainsAny(unescaped, "\f\n\r\v") {
+			panic(fmt.Errorf("path may not contain line breaks: %s", part))
+		}
+		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unescaped, `'`, `''`))
 	}
 	return s
 }
@@ -129,30 +133,39 @@ func cond(ctype string, values ...string) string {
 	return fmt.Sprintf("%s %s", ctype, strings.Join(values, " "))
 }
 
+func escapeWhitespace(s string) string {
+	s = strings.ReplaceAll(s, "\a", `\a`)
+	s = strings.ReplaceAll(s, "\b", `\b`)
+	s = strings.ReplaceAll(s, "\f", `\f`)
+	s = strings.ReplaceAll(s, "\n", `\n`)
+	s = strings.ReplaceAll(s, "\r", `\r`)
+	s = strings.ReplaceAll(s, "\t", `\t`)
+	s = strings.ReplaceAll(s, "\v", `\v`)
+	s = strings.ReplaceAll(s, " ", `\x20`)
+	return s
+}
+
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
 	lhsMember, _ := r.LHS.logEntryToFluentBit()
 	lhs := lhsMember.RecordAccessor()
 	rhs := r.RHS
+	rhsLiteral := escapeWhitespace(regexp.QuoteMeta(unquote(rhs)))
+	rhsRegex := escapeWhitespace(rhs)
 	switch r.Operator {
 	case ":":
 		// substring match
-		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, regexp.QuoteMeta(rhs)))
+		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, rhsLiteral))
 	case "=~":
 		// regex match
-		// FIXME: Escape
-		c.Config["Condition"] = cond("Key_value_matches", lhs, rhs)
+		c.Config["Condition"] = cond("Key_value_matches", lhs, rhsRegex)
 	case "!~":
-		// FIXME: Escape
-		c.Config["Condition"] = cond("Key_value_does_not_match", lhs, rhs)
+		c.Config["Condition"] = cond("Key_value_does_not_match", lhs, rhsRegex)
 	case "=":
 		// equality
-		// FIXME: Escape
-		// FIXME: Non-string values
-		c.Config["Condition"] = cond("Key_value_equals", lhs, rhs)
+		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))
 	case "!=":
-		// FIXME
-		c.Config["Condition"] = cond("Key_value_does_not_equal", lhs, rhs)
+		c.Config["Condition"] = cond("Key_value_does_not_match", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))
 	}
 	return []fluentbit.Component{c}
 }
@@ -380,10 +393,10 @@ func unquote(in string) string {
 
 func ParseText(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
-	return unquote(str), nil
+	return str, nil
 }
 func ParseString(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	// TODO: Support all escape sequences
-	return unquote(str[1 : len(str)-1]), nil
+	return str[1 : len(str)-1], nil
 }
