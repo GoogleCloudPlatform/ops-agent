@@ -157,7 +157,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
-				logNames = append(logNames, regexp.QuoteMeta(rID))
+				logNames = append(logNames, regexp.QuoteMeta(tag))
 				sources = append(sources, fbSource{tag, components})
 			}
 		}

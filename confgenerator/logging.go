@@ -22,32 +22,13 @@ import (
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
 func setLogNameComponents(tag, logName string) []fluentbit.Component {
-	// TODO: Can we just set log_name_key in the output plugin and avoid this mess?
 	return []fluentbit.Component{
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Match": tag,
-				"Add":   fmt.Sprintf("logName %s", logName),
+				"Add":   fmt.Sprintf("logging.googleapis.com/logName %s", logName),
 				"Name":  "modify",
-			},
-		},
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Emitter_Mem_Buf_Limit": "10M",
-				"Emitter_Storage.type":  "filesystem",
-				"Match":                 tag,
-				"Name":                  "rewrite_tag",
-				"Rule":                  "$logName .* $logName false",
-			},
-		},
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  logName,
-				"Name":   "modify",
-				"Remove": "logName",
 			},
 		},
 	}
