@@ -50,37 +50,20 @@ func (m Member) RecordAccessor() string {
 }
 
 // logEntryToFluentBit translates a Member from a LogEntry model to a FluentBit model
-func (m Member) logEntryToFluentBit() Member {
+func (m Member) logEntryToFluentBit() (Member, error) {
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
-			return Member{v}
+			return Member{v}, nil
 		}
 	} else if len(m) > 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[m[0]]; ok {
-			return prepend(v, m[1:])
+			return prepend(v, m[1:]), nil
 		} else if m[0] == "jsonPayload" {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
-			return m[1:]
+			return m[1:], nil
 		}
 	}
-	panic(fmt.Errorf("invalid member: %v", m))
-	// FIXME: handle timestamp? The FB model for timestamp differs in more than just
-	//        the paths: the whole schema is different. The user wouldn't be able
-	//        to filter on it anyway since the FB model for timestamp uses ints only.
-}
-
-// Validate checks whether a given Member is a legal LogEntry path
-func (m Member) Validate() error {
-	if len(m) == 1 {
-		if _, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
-			return nil
-		}
-	} else if len(m) > 1 {
-		if _, ok := logEntryRootStructMapToFluentBit[m[0]]; ok || m[0] == "jsonPayload" {
-			return nil
-		}
-	}
-	return fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
+	return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
 }
 
 func prepend(value string, slice []string) []string {
@@ -105,7 +88,7 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	}
 	switch lhs := lhs.(type) {
 	case Member:
-		err := lhs.Validate()
+		_, err := lhs.logEntryToFluentBit()
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +131,8 @@ func cond(ctype string, values ...string) string {
 
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
-	lhs := r.LHS.logEntryToFluentBit().RecordAccessor()
+	lhsMember, _ := r.LHS.logEntryToFluentBit()
+	lhs := lhsMember.RecordAccessor()
 	rhs := r.RHS
 	switch r.Operator {
 	case ":":
