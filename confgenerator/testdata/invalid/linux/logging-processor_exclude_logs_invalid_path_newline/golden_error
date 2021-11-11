@@ -1,0 +1,9 @@
+[5:16] "pattern": 1:25: error: path may not contain \n, commas, or double-quotes: a\nb
+   2 |   processors:
+   3 |     p1:
+   4 |       type: exclude_logs
+>  5 |       pattern: jsonPayload."a\nb" = foo
+                      ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:

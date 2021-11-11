@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
@@ -100,6 +101,9 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
+	case "filter":
+		_, err := filter.NewFilter(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	}
 
 	return ve.FieldError.Error()
@@ -137,7 +141,7 @@ func newValidator() *validator.Validate {
 	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return ctx.Value(platformKey) == fl.Param()
 	})
-	// duration validates that the value is a valid durationa and >= the parameter
+	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
@@ -148,6 +152,11 @@ func newValidator() *validator.Validate {
 			panic(err)
 		}
 		return t >= tmin
+	})
+	// filter validates that a Cloud Logging filter pattern is valid
+	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
+		_, err := filter.NewFilter(fl.Field().String())
+		return err == nil
 	})
 	return v
 }

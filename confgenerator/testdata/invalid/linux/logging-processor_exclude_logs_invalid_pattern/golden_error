@@ -1,0 +1,9 @@
+[5:16] "pattern": 1:5: error: expected one of not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "&"
+   2 |   processors:
+   3 |     processor_1:
+   4 |       type: exclude_logs
+>  5 |       pattern: foo & bar
+                      ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:

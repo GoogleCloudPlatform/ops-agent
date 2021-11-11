@@ -1,0 +1,82 @@
+logging:
+  receivers:
+    sample_logs:
+      type: files
+      include_paths: [/tmp/*.log]
+  processors:
+    simple:
+      type: exclude_logs
+      pattern: jsonPayload.message = bar
+    escaped_regex:
+      type: exclude_logs
+      pattern: 'jsonPayload.message =~ "a\\.b"'
+    regex_leading_spaces:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ " bar "
+    regex_slashes:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ "/bar/"
+    special_severity:
+      type: exclude_logs
+      pattern: severity =~ ERROR
+    special_jsonPayload:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ foo
+    special_httpRequest:
+      type: exclude_logs
+      pattern: httpRequest.method =~ GET
+    nested_spaces:
+      type: exclude_logs
+      pattern: jsonPayload."a b" = foo
+    nested_tabs:
+      type: exclude_logs
+      pattern: jsonPayload."aa	bb" = foo
+    nested_symbols:
+      type: exclude_logs
+      pattern: jsonPayload."a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:b" = foo
+    nested_escaped:
+      type: exclude_logs
+      pattern: 'jsonPayload."a\:\=\<\>\+\~\\\.\*\a\b\f\t\vb" = foo'
+    nested_newline:
+      type: exclude_logs
+      pattern: |-
+        jsonPayload.message =~ "foo
+        bar"
+    nested_unicode:
+      type: exclude_logs
+      pattern: jsonPayload.☃ = foo
+    nested_single_quotes:
+      type: exclude_logs
+      pattern: jsonPayload."a'b" = foo
+    combinations:
+      type: exclude_logs
+      pattern: '((jsonPayload.message = foo AND severity =~ "bar") OR NOT jsonPayload.log !~ "baz") jsonPayload.message : frob'
+    operators:
+      type: exclude_logs
+      pattern: 'jsonPayload.message = foo OR jsonPayload.message != bar OR jsonPayload.message : baz OR jsonPayload.message =~ "wal" OR jsonPayload.message !~ "rus"'
+    string_symbols:
+      type: exclude_logs
+      pattern: jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"
+  service:
+    pipelines:
+      p1:
+        receivers: [sample_logs]
+        processors:
+        - simple
+        - escaped_regex
+        - regex_leading_spaces
+        - regex_slashes
+        - special_severity
+        - special_jsonPayload
+        - special_httpRequest
+        - nested_spaces
+        - nested_tabs
+        - nested_symbols
+        - nested_escaped
+        - nested_newline
+        - nested_unicode
+        - nested_single_quotes
+        - combinations
+        - operators
+        - string_symbols
+        exporters: [google]

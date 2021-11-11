@@ -1,1 +1,1 @@
-logging processor with type "unsupported_type" is not supported. Supported logging processor types: [apache_access, apache_error, cassandra_debug, cassandra_gc, cassandra_system, mysql_error, mysql_general, mysql_slow, nginx_access, nginx_error, parse_json, parse_regex, redis].
+logging processor with type "unsupported_type" is not supported. Supported logging processor types: [apache_access, apache_error, cassandra_debug, cassandra_gc, cassandra_system, exclude_logs, mysql_error, mysql_general, mysql_slow, nginx_access, nginx_error, parse_json, parse_regex, redis].

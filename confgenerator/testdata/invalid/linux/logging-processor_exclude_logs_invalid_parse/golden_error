@@ -1,0 +1,9 @@
+[5:16] "pattern": 1:21: error: expected one of ws, dot, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "~"
+   2 |   processors:
+   3 |     p1:
+   4 |       type: exclude_logs
+>  5 |       pattern: jsonPayload.message!~foo
+                      ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:

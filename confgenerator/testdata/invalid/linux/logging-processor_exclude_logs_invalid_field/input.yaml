@@ -1,0 +1,10 @@
+logging:
+  processors:
+    processor_1:
+      type: exclude_logs
+      pattern: foo = bar
+      foo: bar
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]

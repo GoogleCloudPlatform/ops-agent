@@ -1,0 +1,9 @@
+[6:7] unknown field "foo"
+   3 |     processor_1:
+   4 |       type: exclude_logs
+   5 |       pattern: foo = bar
+>  6 |       foo: bar
+             ^
+   7 |   service:
+   8 |     pipelines:
+   9 |       default_pipeline:
