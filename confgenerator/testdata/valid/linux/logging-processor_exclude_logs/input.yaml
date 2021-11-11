@@ -57,6 +57,9 @@ logging:
     string_symbols:
       type: exclude_logs
       pattern: jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"
+    regex_symbols:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ "foo\[bar\]"
   service:
     pipelines:
       p1:
@@ -79,4 +82,5 @@ logging:
         - combinations
         - operators
         - string_symbols
+        - regex_symbols
         exporters: [google]

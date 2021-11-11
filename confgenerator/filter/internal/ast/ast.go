@@ -43,7 +43,8 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 func (m Member) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
-		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquote(part), `'`, `''`))
+		unquoted, _ := unquote(part)
+		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
 	}
 	return s
 }
@@ -67,10 +68,14 @@ func (m Member) logEntryToFluentBit() (Member, error) {
 		return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
 	}
 	for _, part := range fluentbit {
+		unquoted, err := unquote(part)
+		if err != nil {
+			return Member{}, err
+		}
 		// Disallowed characters because they cannot be encoded in a Record Accessor.
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
-		if strings.ContainsAny(unquote(part), "\n\",") {
+		if strings.ContainsAny(unquoted, "\n\",") {
 			return nil, fmt.Errorf(`path may not contain \n, commas, or double-quotes: %s`, part)
 		}
 	}
@@ -99,6 +104,7 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	}
 	switch lhs := lhs.(type) {
 	case Member:
+		// Eager validation
 		_, err := lhs.logEntryToFluentBit()
 		if err != nil {
 			return nil, err
@@ -113,6 +119,14 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 		// BNF parses values as Member, even if they are singular
 		if len(rhs) != 1 {
 			return nil, fmt.Errorf("unexpected rhs: %v", rhs)
+		}
+		// Eager validation
+		switch r.Operator {
+		case ":", "=", "!=":
+			_, err := unquote(rhs[0])
+			if err != nil {
+				return nil, err
+			}
 		}
 		r.RHS = rhs[0]
 	default:
@@ -157,7 +171,8 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	lhsMember, _ := r.LHS.logEntryToFluentBit()
 	lhs := lhsMember.RecordAccessor()
 	rhs := r.RHS
-	rhsLiteral := escapeWhitespace(regexp.QuoteMeta(unquote(rhs)))
+	rhsLiteral, _ := unquote(rhs)
+	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
 	rhsRegex := escapeWhitespace(rhs)
 	switch r.Operator {
 	case ":":
@@ -302,7 +317,7 @@ func (n Negation) Components(tag, key string) []fluentbit.Component {
 	return components
 }
 
-func unquote(in string) string {
+func unquote(in string) (string, error) {
 	var buf strings.Builder
 	buf.Grow(3 * len(in) / 2)
 
@@ -393,9 +408,11 @@ func unquote(in string) string {
 			buf.WriteRune('\t')
 		case 'v':
 			buf.WriteRune('\v')
+		default:
+			return "", fmt.Errorf(`invalid escape sequence: \%s`, string(c))
 		}
 	}
-	return buf.String()
+	return buf.String(), nil
 }
 
 func ParseText(a Attrib) (string, error) {

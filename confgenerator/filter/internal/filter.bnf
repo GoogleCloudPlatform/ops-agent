@@ -37,7 +37,7 @@ _character
   | ']' - '~'
   | _characters_from_u_00a1
   | _text_esc
-  | '\\' ('a' | 'b' | 'f' | 'n' | 'r' | 't' | 'v')
+  | '\\' .
   | '\\'  /* A raw backslash (not followed by anything). Lower priority than escape sequences.*/
 ;
 
