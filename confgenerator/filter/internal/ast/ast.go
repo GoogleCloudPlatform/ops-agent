@@ -43,31 +43,38 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 func (m Member) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
-		// Disallow line breaks, which cannot be encoded in a Record Accessor
-		unescaped := unquote(part)
-		if strings.ContainsAny(unescaped, "\f\n\r\v") {
-			panic(fmt.Errorf("path may not contain line breaks: %s", part))
-		}
-		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unescaped, `'`, `''`))
+		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquote(part), `'`, `''`))
 	}
 	return s
 }
 
 // logEntryToFluentBit translates a Member from a LogEntry model to a FluentBit model
 func (m Member) logEntryToFluentBit() (Member, error) {
+	var fluentbit Member
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
-			return Member{v}, nil
+			fluentbit = Member{v}
 		}
 	} else if len(m) > 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[m[0]]; ok {
-			return prepend(v, m[1:]), nil
+			fluentbit = prepend(v, m[1:])
 		} else if m[0] == "jsonPayload" {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
-			return m[1:], nil
+			fluentbit = m[1:]
 		}
 	}
-	return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
+	if fluentbit == nil {
+		return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
+	}
+	for _, part := range fluentbit {
+		// Disallowed characters because they cannot be encoded in a Record Accessor.
+		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
+		// (interestingly, \f and \v work fine...)
+		if strings.ContainsAny(unquote(part), "\n\",") {
+			return nil, fmt.Errorf(`path may not contain \n, commas, or double-quotes: %s`, part)
+		}
+	}
+	return fluentbit, nil
 }
 
 func prepend(value string, slice []string) []string {
