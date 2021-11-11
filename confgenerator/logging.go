@@ -20,6 +20,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
+const HttpRequestKey = "logging.googleapis.com/httpRequest"
+
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
 func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
@@ -49,7 +51,7 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"stackdriver_agent": userAgent,
 
 			// FIXME: Don't leave this here yet
-			"http_request_key": "logging.googleapis.com/httpRequest",
+			"http_request_key": HttpRequestKey,
 
 			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
 			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
