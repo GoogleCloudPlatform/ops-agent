@@ -23,8 +23,6 @@ import (
 )
 
 var validFilters = []string{
-	`"severity"`,
-	`jsonPayload."bar"`,
 	`severity = "hello"`,
 	`jsonPayload."bar.baz" = "hello"`,
 	`jsonPayload.b.c=~"b.*c"`,

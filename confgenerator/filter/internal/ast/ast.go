@@ -151,11 +151,6 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	lhs := r.LHS.logEntryToFluentBit().RecordAccessor()
 	rhs := r.RHS
 	switch r.Operator {
-	case "GLOBAL":
-		// Key exists
-		c.Config["Condition"] = cond("Key_exists", lhs)
-	case "<", "<=", ">", ">=":
-		panic("unimplemented")
 	case ":":
 		// substring match
 		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, regexp.QuoteMeta(rhs)))

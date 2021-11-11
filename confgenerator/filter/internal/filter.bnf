@@ -176,8 +176,7 @@ Primitive
 ;
 
 Restriction
-: Comparable << ast.NewRestriction($0, "GLOBAL", nil) >>
-| Comparable Comparator Arg << ast.NewRestriction($0, $1, $2) >>
+: Comparable Comparator Arg << ast.NewRestriction($0, $1, $2) >>
 ;
 
 Comparable
@@ -234,15 +233,9 @@ Comparator
 ;
 
 Comparison
-  : less_equals
-  | less_than
-  | greater_equals
-  | greater_than
-  | not_equals
+  : not_equals
   | equals
   | has
   | matches_regexp
   | not_matches_regexp
   ;
-
-
