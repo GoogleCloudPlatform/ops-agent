@@ -48,6 +48,9 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"resource":          "gce_instance",
 			"stackdriver_agent": userAgent,
 
+			// FIXME: Don't leave this here yet
+			"http_request_key": "logging.googleapis.com/httpRequest",
+
 			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
 			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
 			"Retry_Limit": "3",
