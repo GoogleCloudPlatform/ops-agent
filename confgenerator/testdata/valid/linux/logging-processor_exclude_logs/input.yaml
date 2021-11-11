@@ -57,6 +57,9 @@ logging:
     string_symbols:
       type: exclude_logs
       pattern: jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"
+    string_escapes:
+      type: exclude_logs
+      pattern: jsonPayload.message = "a\,\:\=\<\>\+\~\"\\\.\*\a\b\f\n\r\t\v\u0021\041\41\x21b"
     regex_symbols:
       type: exclude_logs
       pattern: jsonPayload.message =~ "foo\[bar\]"
@@ -82,5 +85,6 @@ logging:
         - combinations
         - operators
         - string_symbols
+        - string_escapes
         - regex_symbols
         exporters: [google]
