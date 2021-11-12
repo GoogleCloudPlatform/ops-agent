@@ -25,9 +25,6 @@ logging:
     special_httpRequest:
       type: exclude_logs
       pattern: httpRequest.method =~ GET
-    nested_spaces:
-      type: exclude_logs
-      pattern: jsonPayload."a b" = foo
     nested_tabs:
       type: exclude_logs
       pattern: jsonPayload."aa	bb" = foo
@@ -81,7 +78,6 @@ logging:
         - special_severity
         - special_jsonPayload
         - special_httpRequest
-        - nested_spaces
         - nested_tabs
         - nested_symbols
         - nested_escaped

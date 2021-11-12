@@ -75,8 +75,8 @@ func (m Member) logEntryToFluentBit() (Member, error) {
 		// Disallowed characters because they cannot be encoded in a Record Accessor.
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
-		if strings.ContainsAny(unquoted, "\n\",") {
-			return nil, fmt.Errorf(`path may not contain \n, commas, or double-quotes: %s`, part)
+		if strings.ContainsAny(unquoted, "\n\r\", ") {
+			return nil, fmt.Errorf(`path may not contain line breaks, spaces, commas, or double-quotes: %s`, part)
 		}
 	}
 	return fluentbit, nil

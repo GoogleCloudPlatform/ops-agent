@@ -1,4 +1,4 @@
-[5:16] "pattern": 1:25: error: path may not contain \n, commas, or double-quotes: a\nb
+[5:16] "pattern": 1:25: error: path may not contain line breaks, spaces, commas, or double-quotes: a\nb
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs

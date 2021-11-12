@@ -1,0 +1,9 @@
+logging:
+  processors:
+    p1:
+      type: exclude_logs
+      pattern: jsonPayload."a\rb" = foo
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [p1]
