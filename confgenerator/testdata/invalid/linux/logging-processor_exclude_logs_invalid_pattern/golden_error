@@ -1,4 +1,4 @@
-[5:16] "pattern": 1:5: error: expected one of not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "&"
+[5:16] "pattern": 1:5: error: expected one of less_equals, less_than, greater_equals, greater_than, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "&"
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs

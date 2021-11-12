@@ -175,6 +175,8 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
 	rhsRegex := escapeWhitespace(rhs)
 	switch r.Operator {
+	case "GLOBAL", "<", "<=", ">", ">=":
+		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
 	case ":":
 		// substring match
 		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, rhsLiteral))

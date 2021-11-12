@@ -1,4 +1,4 @@
-[5:16] "pattern": 1:21: error: expected one of ws, dot, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "~"
+[5:16] "pattern": 1:21: error: expected one of "$", ws, andOp, orOp, dot, less_equals, less_than, greater_equals, greater_than, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "~"
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs
