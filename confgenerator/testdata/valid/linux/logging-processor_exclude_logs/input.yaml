@@ -63,6 +63,12 @@ logging:
     regex_symbols:
       type: exclude_logs
       pattern: jsonPayload.message =~ "foo\[bar\]"
+    regex_unicode:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ "☃"
+    regex_unicode_escaped:
+      type: exclude_logs
+      pattern: jsonPayload.message =~ "\☃"
   service:
     pipelines:
       p1:
@@ -87,4 +93,6 @@ logging:
         - string_symbols
         - string_escapes
         - regex_symbols
+        - regex_unicode
+        - regex_unicode_escaped
         exporters: [google]
