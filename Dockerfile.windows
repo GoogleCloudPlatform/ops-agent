@@ -56,6 +56,15 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/out/bin/;
 
 #
+# Install OpenSSL
+#
+ADD https://slproweb.com/download/Win64OpenSSL-1_1_1L.msi /local/Win64OpenSSL-1_1_1L.msi
+
+RUN Start-Process msiexec.exe `
+    -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi ', '/quiet ', `
+    '/norestart ' -NoNewWindow -Wait;
+
+#
 # Install winflexbison
 #
 ADD https://github.com/lexxmark/winflexbison/releases/download/v2.5.22/win_flex_bison-2.5.22.zip /local/win_flex_bison.zip
