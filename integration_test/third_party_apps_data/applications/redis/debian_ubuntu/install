@@ -4,9 +4,8 @@ source /etc/os-release
 sudo apt update
 
 sudo apt install -y redis-server
-# Ubuntu 18.04 LTS and Debian 9 require below dependency.
-# Debian 10 and Ubuntu 19.10 install libhiredis0.14 with redis-server.
-if [[ ("${ID}" == debian && "${VERSION_ID}" == 9) || \
-     ("${ID}" == ubuntu && "${VERSION_ID}" == 18.04) ]]; then
-  sudo apt install -y libhiredis0.13
-fi
+# Newer Debian and Ubuntu versions install libhiredis with redis-server.
+case "${ID}-${VERSION_ID}" in
+debian-9 | ubuntu-18.04)
+    sudo apt install -y libhiredis0.13;;
+esac
