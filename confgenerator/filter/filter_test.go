@@ -34,7 +34,6 @@ var validFilters = []string{
 	`jsonPayload.compound.string_field : wal\"rus`,
 	`severity =~ ERROR AND jsonPayload.message =~ foo AND httpRequest.requestMethod =~ GET`,
 	`severity = "AND"`,
-	`jsonPayload."ba\"r" = baz`,
 }
 
 func TestShouldLex(t *testing.T) {

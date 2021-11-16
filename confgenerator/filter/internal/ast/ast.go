@@ -43,7 +43,7 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 func (m Member) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
-		unquoted, _ := unquote(part)
+		unquoted, _ := Unquote(part)
 		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
 	}
 	return s
@@ -68,7 +68,7 @@ func (m Member) logEntryToFluentBit() (Member, error) {
 		return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
 	}
 	for _, part := range fluentbit {
-		unquoted, err := unquote(part)
+		unquoted, err := Unquote(part)
 		if err != nil {
 			return Member{}, err
 		}
@@ -123,7 +123,7 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 		// Eager validation
 		switch r.Operator {
 		case ":", "=", "!=":
-			_, err := unquote(rhs[0])
+			_, err := Unquote(rhs[0])
 			if err != nil {
 				return nil, err
 			}
@@ -171,7 +171,7 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	lhsMember, _ := r.LHS.logEntryToFluentBit()
 	lhs := lhsMember.RecordAccessor()
 	rhs := r.RHS
-	rhsLiteral, _ := unquote(rhs)
+	rhsLiteral, _ := Unquote(rhs)
 	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
 	rhsRegex := escapeWhitespace(rhs)
 	switch r.Operator {
@@ -323,7 +323,7 @@ func (n Negation) Components(tag, key string) []fluentbit.Component {
 	return components
 }
 
-func unquote(in string) (string, error) {
+func Unquote(in string) (string, error) {
 	var buf strings.Builder
 	buf.Grow(3 * len(in) / 2)
 
