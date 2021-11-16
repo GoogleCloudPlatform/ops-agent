@@ -137,7 +137,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			components []fluentbit.Component
 		}
 		var sources []fbSource
-		var logNames []string
+		var tags []string
 		for pID, p := range l.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := l.Receivers[rID]
@@ -157,18 +157,18 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
-				logNames = append(logNames, regexp.QuoteMeta(tag))
+				tags = append(tags, regexp.QuoteMeta(tag))
 				sources = append(sources, fbSource{tag, components})
 			}
 		}
 		sort.Slice(sources, func(i, j int) bool { return sources[i].tag < sources[j].tag })
-		sort.Strings(logNames)
+		sort.Strings(tags)
 
 		for _, s := range sources {
 			out = append(out, s.components...)
 		}
-		if len(logNames) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(logNames, "|"), userAgent))
+		if len(tags) > 0 {
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
