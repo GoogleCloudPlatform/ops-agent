@@ -1,4 +1,4 @@
-[3:16] "pattern" is a required field
+[3:16] "condition" is a required field
    1 | logging:
    2 |   processors:
 >  3 |     processor_1:

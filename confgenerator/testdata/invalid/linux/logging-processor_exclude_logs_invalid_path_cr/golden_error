@@ -1,9 +1,9 @@
-[5:16] "pattern": 1:25: error: path may not contain line breaks, spaces, commas, or double-quotes: a\rb
+[5:18] "condition": 1:25: error: path may not contain line breaks, spaces, commas, or double-quotes: a\rb
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs
->  5 |       pattern: jsonPayload."a\rb" = foo
-                      ^
+>  5 |       condition: jsonPayload."a\rb" = foo
+                        ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:

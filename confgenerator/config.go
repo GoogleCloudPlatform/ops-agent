@@ -153,7 +153,7 @@ func newValidator() *validator.Validate {
 		}
 		return t >= tmin
 	})
-	// filter validates that a Cloud Logging filter pattern is valid
+	// filter validates that a Cloud Logging filter condition is valid
 	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewFilter(fl.Field().String())
 		return err == nil

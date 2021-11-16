@@ -6,66 +6,66 @@ logging:
   processors:
     simple:
       type: exclude_logs
-      pattern: jsonPayload.message = bar
+      condition: jsonPayload.message = bar
     escaped_regex:
       type: exclude_logs
-      pattern: 'jsonPayload.message =~ "a\\.b"'
+      condition: 'jsonPayload.message =~ "a\\.b"'
     regex_leading_spaces:
       type: exclude_logs
-      pattern: jsonPayload.message =~ " bar "
+      condition: jsonPayload.message =~ " bar "
     regex_slashes:
       type: exclude_logs
-      pattern: jsonPayload.message =~ "/bar/"
+      condition: jsonPayload.message =~ "/bar/"
     special_severity:
       type: exclude_logs
-      pattern: severity =~ ERROR
+      condition: severity =~ ERROR
     special_jsonPayload:
       type: exclude_logs
-      pattern: jsonPayload.message =~ foo
+      condition: jsonPayload.message =~ foo
     special_httpRequest:
       type: exclude_logs
-      pattern: httpRequest.method =~ GET
+      condition: httpRequest.method =~ GET
     nested_tabs:
       type: exclude_logs
-      pattern: jsonPayload."aa	bb" = foo
+      condition: jsonPayload."aa	bb" = foo
     nested_symbols:
       type: exclude_logs
-      pattern: jsonPayload."a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:b" = foo
+      condition: jsonPayload."a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:b" = foo
     nested_escaped:
       type: exclude_logs
-      pattern: 'jsonPayload."a\:\=\<\>\+\~\\\.\*\a\b\f\t\vb" = foo'
+      condition: 'jsonPayload."a\:\=\<\>\+\~\\\.\*\a\b\f\t\vb" = foo'
     nested_newline:
       type: exclude_logs
-      pattern: |-
+      condition: |-
         jsonPayload.message =~ "foo
         bar"
     nested_unicode:
       type: exclude_logs
-      pattern: jsonPayload.☃ = foo
+      condition: jsonPayload.☃ = foo
     nested_single_quotes:
       type: exclude_logs
-      pattern: jsonPayload."a'b" = foo
+      condition: jsonPayload."a'b" = foo
     combinations:
       type: exclude_logs
-      pattern: '((jsonPayload.message = foo AND severity =~ "bar") OR NOT jsonPayload.log !~ "baz") jsonPayload.message : frob'
+      condition: '((jsonPayload.message = foo AND severity =~ "bar") OR NOT jsonPayload.log !~ "baz") jsonPayload.message : frob'
     operators:
       type: exclude_logs
-      pattern: 'jsonPayload.message = foo OR jsonPayload.message != bar OR jsonPayload.message : baz OR jsonPayload.message =~ "wal" OR jsonPayload.message !~ "rus"'
+      condition: 'jsonPayload.message = foo OR jsonPayload.message != bar OR jsonPayload.message : baz OR jsonPayload.message =~ "wal" OR jsonPayload.message !~ "rus"'
     string_symbols:
       type: exclude_logs
-      pattern: jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"
+      condition: jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"
     string_escapes:
       type: exclude_logs
-      pattern: jsonPayload.message = "a\,\:\=\<\>\+\~\"\\\.\*\a\b\f\n\r\t\v\u0021\041\41\x21b"
+      condition: jsonPayload.message = "a\,\:\=\<\>\+\~\"\\\.\*\a\b\f\n\r\t\v\u0021\041\41\x21b"
     regex_symbols:
       type: exclude_logs
-      pattern: jsonPayload.message =~ "foo\[bar\]"
+      condition: jsonPayload.message =~ "foo\[bar\]"
     regex_unicode:
       type: exclude_logs
-      pattern: jsonPayload.message =~ "☃"
+      condition: jsonPayload.message =~ "☃"
     regex_unicode_escaped:
       type: exclude_logs
-      pattern: jsonPayload.message =~ "\☃"
+      condition: jsonPayload.message =~ "\☃"
   service:
     pipelines:
       p1:

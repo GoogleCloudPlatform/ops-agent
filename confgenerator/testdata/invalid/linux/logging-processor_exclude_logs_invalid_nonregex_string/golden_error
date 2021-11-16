@@ -1,9 +1,9 @@
-[5:16] "pattern": 1:35: error: invalid escape sequence: \[
+[5:18] "condition": 1:35: error: invalid escape sequence: \[
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs
->  5 |       pattern: jsonPayload.message = "foo\[bar\]"
-                      ^
+>  5 |       condition: jsonPayload.message = "foo\[bar\]"
+                        ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:
