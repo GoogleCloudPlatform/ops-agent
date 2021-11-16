@@ -24,5 +24,10 @@ jobs:
     - run: go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
-      run: goveralls -coverprofile=covprofile -service=github
-
+      run: >-
+        goveralls -coverprofile=covprofile -service=github -ignore="
+        confgenerator/filter/internal/errors/*,
+        confgenerator/filter/internal/lexer/*,
+        confgenerator/filter/internal/parser/*,
+        confgenerator/filter/internal/token/*,
+        confgenerator/filter/internal/util/*"
