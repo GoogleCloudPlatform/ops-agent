@@ -205,7 +205,6 @@ total 180116
 -rw-r--r-- 1 421646 89939  4924528 Oct  7 21:16 google-cloud-ops-agent-0.1.0-1.sles15.x86_64.rpm
 -rw-r--r-- 1 421646 89939  2915772 Oct  7 21:18 google-cloud-ops-agent_0.1.0~debian10_amd64.deb
 -rw-r--r-- 1 421646 89939  2919650 Oct  7 21:18 google-cloud-ops-agent_0.1.0~debian9.13_amd64.deb
--rw-r--r-- 1 421646 89939  2870002 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu16.04_amd64.deb
 -rw-r--r-- 1 421646 89939  2914160 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu18.04_amd64.deb
 -rw-r--r-- 1 421646 89939  2944116 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu20.04_amd64.deb
 -rw-r--r-- 1 421646 89939  7561251 Oct  7 21:16 google-cloud-ops-agent-centos-7.tgz
@@ -218,7 +217,6 @@ total 180116
 -rw-r--r-- 1 421646 89939  7718344 Oct  7 21:16 google-cloud-ops-agent-sles-15.tgz
 -rw-r--r-- 1 421646 89939 15550083 Oct  7 21:18 google-cloud-ops-agent-ubuntu-bionic.tgz
 -rw-r--r-- 1 421646 89939 17526671 Oct  7 21:18 google-cloud-ops-agent-ubuntu-focal.tgz
--rw-r--r-- 1 421646 89939 14791745 Oct  7 21:18 google-cloud-ops-agent-ubuntu-xenial.tgz
 ```
 
 Inspect the tarball to see if there is anything obviously wrong.
