@@ -119,30 +119,6 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:xenial AS xenial-build
-
-RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
-    add-apt-repository ppa:openjdk-r/ppa && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-11-jdk
-
-# This repairs an issue with java9+ certificates
-RUN /usr/bin/printf '\xfe\xed\xfe\xed\x00\x00\x00\x02\x00\x00\x00\x00\xe2\x68\x6e\x45\xfb\x43\xdf\xa4\xd9\x92\xdd\x41\xce\xb6\xb2\x1c\x63\x30\xd7\x92' > /etc/ssl/certs/java/cacerts&& \
-    /var/lib/dpkg/info/ca-certificates-java.postinst configure
-
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
-
-COPY . /work
-WORKDIR /work
-RUN ./pkg/deb/build.sh
-
 FROM centos:7 AS centos7-build
 
 RUN set -x; yum -y update && \
@@ -257,10 +233,6 @@ FROM scratch AS bionic
 COPY --from=bionic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
 COPY --from=bionic-build /google-cloud-ops-agent*.deb /
 
-FROM scratch AS xenial
-COPY --from=xenial-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
-COPY --from=xenial-build /google-cloud-ops-agent*.deb /
-
 FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
@@ -284,7 +256,6 @@ COPY --from=stretch /* /
 COPY --from=hirsute /* /
 COPY --from=focal /* /
 COPY --from=bionic /* /
-COPY --from=xenial /* /
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=sles12 /* /
