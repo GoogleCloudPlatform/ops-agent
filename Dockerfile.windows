@@ -68,8 +68,7 @@ RUN $ExpectedHash = \"1e62e6459835f61c418532a1544e295be5400498b3569aadfb6d0b5d7a
       throw \"OpenSSL hash mismatch. Expected: $ExpectedHash, Actual: $ActualHash\"`
     };
 
-RUN Start-Process msiexec.exe -Wait `
-    -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet /norestart';
+RUN Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet';
 
 #
 # Install winflexbison
