@@ -60,9 +60,8 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 ADD https://slproweb.com/download/Win64OpenSSL-1_1_1L.msi /local/Win64OpenSSL-1_1_1L.msi
 
-RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi ', '/quiet ', `
-    '/norestart ' -NoNewWindow -Wait;
+RUN Start-Process msiexec.exe -Wait `
+    -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet /norestart';
 
 #
 # Install winflexbison
@@ -183,4 +182,3 @@ COPY --from=gobuilder /work/out /work/out
 COPY --from=javacontrib /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
-
