@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"os"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -28,14 +30,15 @@ type MetricsReceiverMySQL struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|file"`
 
-	Password string `yaml:"password" validate:"omitempty"`
-
-	Username string `yaml:"username" validate:"omitempty"`
+	Password  string `yaml:"password" validate:"omitempty"`
+	Username  string `yaml:"username" validate:"omitempty"`
+	Transport string `yaml:"transport" validate:"omitempty"`
 }
 
-const defaultEndpoint = "localhost:3306"
+const defaultMySQLTCPEndpoint = "localhost:3306"
+const defaultMySQLUnixEndpoint = "/var/run/mysqld/mysql.sock"
 
 func (r MetricsReceiverMySQL) Type() string {
 	return "mysql"
@@ -43,8 +46,14 @@ func (r MetricsReceiverMySQL) Type() string {
 
 func (r MetricsReceiverMySQL) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
-		r.Endpoint = defaultEndpoint
+		if _, err := os.Stat(defaultMySQLUnixEndpoint); err != nil {
+			r.Transport = "unix"
+			r.Endpoint = defaultMySQLUnixEndpoint
+		} else {
+			r.Endpoint = defaultMySQLTCPEndpoint
+		}
 	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "mysql",
@@ -53,6 +62,7 @@ func (r MetricsReceiverMySQL) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 				"username":            r.Username,
 				"password":            r.Password,
+				"transport":           r.Transport,
 			},
 		},
 		Processors: []otel.Component{
