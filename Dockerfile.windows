@@ -61,14 +61,13 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 ADD https://slproweb.com/download/Win64OpenSSL-1_1_1L.msi /local/Win64OpenSSL-1_1_1L.msi
 
-# Hash copied from https://github.com/slproweb/opensslhashes
-RUN $ExpectedHash = \"1e62e6459835f61c418532a1544e295be5400498b3569aadfb6d0b5d7a1c1dbc\";`
+# Verify SHA256 hash using expected value from https://github.com/slproweb/opensslhashes
+RUN $ExpectedHash = '1e62e6459835f61c418532a1544e295be5400498b3569aadfb6d0b5d7a1c1dbc';`
     $ActualHash = $(Get-FileHash /local/Win64OpenSSL-1_1_1L.msi).Hash.ToLower();`
     if ($ActualHash -ne $ExpectedHash) {`
       throw \"OpenSSL hash mismatch. Expected: $ExpectedHash, Actual: $ActualHash\"`
-    };
-
-RUN Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet';
+    };`
+    Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet';
 
 #
 # Install winflexbison
