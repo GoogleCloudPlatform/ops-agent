@@ -62,8 +62,10 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 					`\Web Service(_Total)\Current Connections`,
 					"iis/current_connections",
 				),
+				// $ needs to be escaped because reasons.
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
 				otel.CombineMetrics(
-					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$`,
+					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$$`,
 					"iis/network/transferred_bytes_count",
 				),
 				otel.RenameMetric(
@@ -71,7 +73,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 					"iis/new_connection_count",
 				),
 				otel.CombineMetrics(
-					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$`,
+					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$$`,
 					"iis/request_count",
 				),
 				otel.AddPrefix("agent.googleapis.com"),

@@ -56,6 +56,20 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/out/bin/;
 
 #
+# Install OpenSSL
+# This must be done after installing Visual Studio
+#
+ADD https://slproweb.com/download/Win64OpenSSL-1_1_1L.msi /local/Win64OpenSSL-1_1_1L.msi
+
+# Verify SHA256 hash using expected value from https://github.com/slproweb/opensslhashes
+RUN $ExpectedHash = '1e62e6459835f61c418532a1544e295be5400498b3569aadfb6d0b5d7a1c1dbc';`
+    $ActualHash = $(Get-FileHash /local/Win64OpenSSL-1_1_1L.msi).Hash.ToLower();`
+    if ($ActualHash -ne $ExpectedHash) {`
+      throw \"OpenSSL hash mismatch. Expected: $ExpectedHash, Actual: $ActualHash\"`
+    };`
+    Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1L.msi /quiet';
+
+#
 # Install winflexbison
 #
 ADD https://github.com/lexxmark/winflexbison/releases/download/v2.5.22/win_flex_bison-2.5.22.zip /local/win_flex_bison.zip
@@ -174,4 +188,3 @@ COPY --from=gobuilder /work/out /work/out
 COPY --from=javacontrib /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
-

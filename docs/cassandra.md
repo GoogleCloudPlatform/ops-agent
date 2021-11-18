@@ -2,7 +2,6 @@
 
 The `cassandra` metrics receiver can fetch stats from a Cassandra node's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
 
-
 ## Prerequisites
 
 In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. By default, these properties are set in a Cassandra deployment's cassandra-env.sh file and the default Cassandra installation requires no JMX authentication with JMX exposed locally on 127.0.0.1:7199.
@@ -11,12 +10,14 @@ In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremot
 
 | Field                 | Default            | Description |
 | ---                   | ---                | ---         |
-| `type`                | required           | Must be `jvm`. |
+| `type`                | required           | Must be `cassandra`. |
 | `endpoint`            | `localhost:7199`   | The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`. |
 | `collect_jvm_metrics` | true               | Should the set of support [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics) also be collected |
 | `username`            | not set by default | The configured username if JMX is configured to require authentication. |
 | `password`            | not set by default | The configured password if JMX is configured to require authentication. |
 | `collection_interval` | `60s`              | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+
+
 # `cassandra_system`, `cassandra_debug` and `cassandra_gc` Logging Receivers
 
 Example Configuration:
@@ -40,8 +41,8 @@ In addition to Cassandra specific metrics, by default Cassandra will also report
 
 | Metric                                                                          | Data Type | Unit        | Labels | Description |
 | ---                                                                             | ---       | ---         | ---    | ---         | 
-| workload.googleapis.com/cassandra.client.request.count                          | cumulative | µs          | operation | Number of requests by operation |
-| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | µs          | operation, status | Number of request errors by operation |
+| workload.googleapis.com/cassandra.client.request.count                          | cumulative | 1          | operation | Number of requests by operation |
+| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | 1          | operation, status | Number of request errors by operation |
 | workload.googleapis.com/cassandra.client.request.read.latency.50p               | gauge     | µs          |        | Standard read request latency - 50th percentile |
 | workload.googleapis.com/cassandra.client.request.read.latency.99p               | gauge     | µs          |        | Standard read request latency - 99th percentile |
 | workload.googleapis.com/cassandra.client.request.read.latency.max               | gauge     | µs          |        | Maximum standard read request latency |
