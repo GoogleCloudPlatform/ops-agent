@@ -172,7 +172,7 @@ Term
 
 Primitive
 : Restriction
- | Composite
+| Composite
 ;
 
 Restriction
@@ -234,13 +234,13 @@ Comparator
 ;
 
 Comparison
-  : less_equals
-  | less_than
-  | greater_equals
-  | greater_than
-  | not_equals
-  | equals
-  | has
-  | matches_regexp
-  | not_matches_regexp
-  ;
+: less_equals
+| less_than
+| greater_equals
+| greater_than
+| not_equals
+| equals
+| has
+| matches_regexp
+| not_matches_regexp
+;
