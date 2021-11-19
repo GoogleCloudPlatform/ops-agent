@@ -1,0 +1,9 @@
+[7:7] unknown field "unsupported_parameter"
+   4 |       type: fluent_forward
+   5 |       listen_host: 1.1.1.1
+   6 |       listen_port: 1111
+>  7 |       unsupported_parameter: some_value
+             ^
+   8 |   service:
+   9 |     pipelines:
+  10 |       fluent_pipeline:
