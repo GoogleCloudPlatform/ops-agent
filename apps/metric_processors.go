@@ -36,8 +36,6 @@ func (p MetricsProcessorExcludeMetrics) Type() string {
 func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 	var metricNames []string
 	for _, glob := range p.MetricsPattern {
-		// TODO: Remove TrimPrefix when we support metrics with other prefixes.
-		glob = strings.TrimPrefix(glob, "agent.googleapis.com/")
 		var literals []string
 		for _, g := range strings.Split(glob, "*") {
 			literals = append(literals, regexp.QuoteMeta(g))
