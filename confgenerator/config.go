@@ -90,6 +90,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
+	case "min":
+		return fmt.Sprintf("%q must be a minimum of %s", ve.Field(), ve.Param())
 	case "oneof":
 		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
@@ -100,6 +102,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
+	case "whole_time_denomination":
+		return fmt.Sprintf("%q must be a whole %s", ve.Field(), ve.Param())
 	}
 
 	return ve.FieldError.Error()
@@ -137,7 +141,7 @@ func newValidator() *validator.Validate {
 	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return ctx.Value(platformKey) == fl.Param()
 	})
-	// duration validates that the value is a valid durationa and >= the parameter
+	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
@@ -148,6 +152,33 @@ func newValidator() *validator.Validate {
 			panic(err)
 		}
 		return t >= tmin
+	})
+	// time_denomination validates that the duration is whole to some time denomination
+	// eg. s, ms, m, h
+	v.RegisterValidation("whole_time_denomination", func(fl validator.FieldLevel) bool {
+		var t time.Duration
+		switch fl.Field().Interface().(type) {
+		case time.Duration:
+			t = fl.Field().Interface().(time.Duration)
+		case *time.Duration:
+			tPtr := fl.Field().Interface().(*time.Duration)
+			t = *tPtr
+		default:
+			panic(fmt.Sprintf("%s is not a valid time.Duration", fl.Field().String()))
+		}
+
+		var denomination time.Duration
+		switch fl.Param() {
+		case "second":
+			denomination = time.Second
+		default:
+			panic(fmt.Sprintf(
+				"whole_time_denomination tried to parse an unrecognized denomination: %s",
+				fl.Param(),
+			))
+		}
+
+		return t%denomination == 0
 	})
 	return v
 }

@@ -17,7 +17,9 @@ package confgenerator
 import (
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -33,8 +35,9 @@ func DBPath(tag string) string {
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
-	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
+	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,whole_time_denomination=second"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -43,14 +46,16 @@ func (r LoggingReceiverFiles) Type() string {
 
 func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 	return LoggingReceiverFilesMixin{
-		IncludePaths: r.IncludePaths,
-		ExcludePaths: r.ExcludePaths,
+		IncludePaths:            r.IncludePaths,
+		ExcludePaths:            r.ExcludePaths,
+		WildcardRefreshInterval: r.WildcardRefreshInterval,
 	}.Components(tag)
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+	IncludePaths            []string       `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,whole_time_denomination=second"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -91,6 +96,10 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
 		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
+	}
+	if r.WildcardRefreshInterval != nil {
+		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
+		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
 	}
 	return []fluentbit.Component{{
 		Kind:   "INPUT",

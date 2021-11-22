@@ -1,0 +1,9 @@
+[21:34] "wildcard_refresh_interval" must be a whole second
+  18 |       type: files
+  19 |       include_paths:
+  20 |       - /path/to/log/1/*
+> 21 |       wildcard_refresh_interval: 3500ms
+                                        ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       pipeline1:
