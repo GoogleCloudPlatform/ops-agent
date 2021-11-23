@@ -2,7 +2,7 @@ exporters:
   googlecloud:
     metric:
       prefix: ""
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/default__pipeline_hostmetrics_0:
     blank_label_metrics:
@@ -31,13 +31,34 @@ processors:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: []
+        metric_names:
+        - "^agent\\.googleapis\\.com/processes/.*$$"
+        - "^agent\\.googleapis\\.com/cpu/.*$$"
+  filter/default__pipeline_iis_1:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+        - "^agent\\.googleapis\\.com/processes/.*$$"
+        - "^agent\\.googleapis\\.com/cpu/.*$$"
+  filter/default__pipeline_mssql_1:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+<<<<<<< HEAD
+        - "^agent\\.googleapis\\.com/processes/.*$$"
+        - "^agent\\.googleapis\\.com/cpu/.*$$"
+=======
+        - ^processes/.*$
+        - ^cpu/.*$
   filter/fluentbit_0:
     metrics:
       include:
         match_type: strict
         metric_names:
         - fluentbit_uptime
+>>>>>>> 8551d5b (Ran command to adjust all golden references for the tests.)
   metricstransform/agent_1:
     transforms:
     - action: update
@@ -165,7 +186,7 @@ processors:
       operations:
       - action: toggle_scalar_data_type
       - action: aggregate_labels
-        aggregation_type: max
+        aggregation_type: sum
         label_set:
         - device
         - state
@@ -174,7 +195,7 @@ processors:
       new_name: disk/percent_used
       operations:
       - action: aggregate_labels
-        aggregation_type: max
+        aggregation_type: sum
         label_set:
         - device
         - state
@@ -350,6 +371,43 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/default__pipeline_iis_0:
+    transforms:
+    - action: update
+      include: "\\Web Service(_Total)\\Current Connections"
+      new_name: iis/current_connections
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total Bytes (?P<direction>.*)$$"
+      match_type: regexp
+      new_name: iis/network/transferred_bytes_count
+      submatch_case: lower
+    - action: update
+      include: "\\Web Service(_Total)\\Total Connection Attempts (all instances)"
+      new_name: iis/new_connection_count
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total (?P<http_method>.*) Requests$$"
+      match_type: regexp
+      new_name: iis/request_count
+      submatch_case: lower
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/default__pipeline_mssql_0:
+    transforms:
+    - action: update
+      include: "\\SQLServer:General Statistics(_Total)\\User Connections"
+      new_name: mssql/connections/user
+    - action: update
+      include: "\\SQLServer:Databases(_Total)\\Transactions/sec"
+      new_name: mssql/transaction_rate
+    - action: update
+      include: "\\SQLServer:Databases(_Total)\\Write Transactions/sec"
+      new_name: mssql/write_transaction_rate
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -368,13 +426,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/jvmpipeline_jvmmetrics_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/jvmpipeline_jvmmetrics_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -391,11 +442,6 @@ receivers:
       paging: {}
       process: {}
       processes: {}
-  jmx/jvmpipeline_jvmmetrics:
-    collection_interval: 30s
-    endpoint: localhost:9999
-    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
-    target_system: jvm
   prometheus/agent:
     config:
       scrape_configs:
@@ -413,6 +459,38 @@ receivers:
         static_configs:
         - targets:
           - 127.0.0.1:2020
+  windowsperfcounters/default__pipeline_iis:
+    collection_interval: 60s
+    perfcounters:
+    - counters:
+      - Current Connections
+      - Total Bytes Received
+      - Total Bytes Sent
+      - Total Connection Attempts (all instances)
+      - Total Delete Requests
+      - Total Get Requests
+      - Total Head Requests
+      - Total Options Requests
+      - Total Post Requests
+      - Total Put Requests
+      - Total Trace Requests
+      instances:
+      - _Total
+      object: Web Service
+  windowsperfcounters/default__pipeline_mssql:
+    collection_interval: 60s
+    perfcounters:
+    - counters:
+      - User Connections
+      instances:
+      - _Total
+      object: SQLServer:General Statistics
+    - counters:
+      - Transactions/sec
+      - Write Transactions/sec
+      instances:
+      - _Total
+      object: SQLServer:Databases
 service:
   pipelines:
     metrics/agent:
@@ -435,6 +513,24 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/default__pipeline_hostmetrics
+    metrics/default__pipeline_iis:
+      exporters:
+      - googlecloud
+      processors:
+      - metricstransform/default__pipeline_iis_0
+      - filter/default__pipeline_iis_1
+      - resourcedetection/_global_0
+      receivers:
+      - windowsperfcounters/default__pipeline_iis
+    metrics/default__pipeline_mssql:
+      exporters:
+      - googlecloud
+      processors:
+      - metricstransform/default__pipeline_mssql_0
+      - filter/default__pipeline_mssql_1
+      - resourcedetection/_global_0
+      receivers:
+      - windowsperfcounters/default__pipeline_mssql
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -444,12 +540,3 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/jvmpipeline_jvmmetrics:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/jvmpipeline_jvmmetrics_0
-      - metricstransform/jvmpipeline_jvmmetrics_1
-      - resourcedetection/_global_0
-      receivers:
-      - jmx/jvmpipeline_jvmmetrics

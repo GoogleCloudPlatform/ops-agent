@@ -31,13 +31,18 @@ processors:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: []
+        metric_names:
+<<<<<<< HEAD
+        - "^agent\\.googleapis\\.com/.*$$"
+=======
+        - ^.*$
   filter/fluentbit_0:
     metrics:
       include:
         match_type: strict
         metric_names:
         - fluentbit_uptime
+>>>>>>> 8551d5b (Ran command to adjust all golden references for the tests.)
   metricstransform/agent_1:
     transforms:
     - action: update
@@ -165,7 +170,7 @@ processors:
       operations:
       - action: toggle_scalar_data_type
       - action: aggregate_labels
-        aggregation_type: max
+        aggregation_type: sum
         label_set:
         - device
         - state
@@ -174,7 +179,7 @@ processors:
       new_name: disk/percent_used
       operations:
       - action: aggregate_labels
-        aggregation_type: max
+        aggregation_type: sum
         label_set:
         - device
         - state
@@ -368,13 +373,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/jvmpipeline_jvmmetrics_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/jvmpipeline_jvmmetrics_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -391,11 +389,6 @@ receivers:
       paging: {}
       process: {}
       processes: {}
-  jmx/jvmpipeline_jvmmetrics:
-    collection_interval: 30s
-    endpoint: localhost:9999
-    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
-    target_system: jvm
   prometheus/agent:
     config:
       scrape_configs:
@@ -444,12 +437,3 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/jvmpipeline_jvmmetrics:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/jvmpipeline_jvmmetrics_0
-      - metricstransform/jvmpipeline_jvmmetrics_1
-      - resourcedetection/_global_0
-      receivers:
-      - jmx/jvmpipeline_jvmmetrics
