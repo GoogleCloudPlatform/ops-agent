@@ -14,13 +14,30 @@
 
 logging:
   receivers:
-    log_source_id1:
-      type: files
-      include_paths:
-      - /path/to/log/1/*
+    redis_default:
+      type: redis
+    redis_custom:
+      type: redis
       wildcard_refresh_interval: 30s
+      include_paths:
+        - /usr/log/redis/custom.log*
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    redis_syslog:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+  processors:
+    redis_syslog:
+      type: redis
   service:
     pipelines:
-      pipeline1:
+      redis_default:
         receivers:
-        - log_source_id1
+          - redis_default
+      redis_custom:
+        receivers:
+          - redis_custom
+      redis_syslog:
+        receivers: [redis_syslog]
+        processors: [redis_syslog]
