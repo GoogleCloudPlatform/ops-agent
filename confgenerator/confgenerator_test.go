@@ -193,7 +193,7 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 		}
 	} else {
 		if *updateGolden {
-			// If the diff is empty and we need to update goldens, we check whether the diff is
+			// If the diff is empty and we need to update goldens, check whether the diff is
 			// empty because the file doesn't exist yet.
 			if _, err := os.Stat(goldenPath); err != nil {
 				t.Logf("Detected -update_golden flag. Creating %q golden file.", goldenPath)
