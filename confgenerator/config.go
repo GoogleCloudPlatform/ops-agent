@@ -156,15 +156,9 @@ func newValidator() *validator.Validate {
 	// time_denomination validates that the duration is whole to some time denomination
 	// eg. s, ms, m, h
 	v.RegisterValidation("whole_time_denomination", func(fl validator.FieldLevel) bool {
-		var t time.Duration
-		switch fl.Field().Interface().(type) {
-		case time.Duration:
-			t = fl.Field().Interface().(time.Duration)
-		case *time.Duration:
-			tPtr := fl.Field().Interface().(*time.Duration)
-			t = *tPtr
-		default:
-			panic(fmt.Sprintf("%s is not a valid time.Duration", fl.Field().String()))
+		t, ok := fl.Field().Interface().(time.Duration)
+		if !ok {
+			panic(fmt.Sprintf("whole_time_denomination: could not convert %s to time duration", fl.Field().String()))
 		}
 
 		var denomination time.Duration
@@ -172,10 +166,7 @@ func newValidator() *validator.Validate {
 		case "second":
 			denomination = time.Second
 		default:
-			panic(fmt.Sprintf(
-				"whole_time_denomination tried to parse an unrecognized denomination: %s",
-				fl.Param(),
-			))
+			panic(fmt.Sprintf("whole_time_denomination: unrecognized denomination %q", fl.Param()))
 		}
 
 		return t%denomination == 0
