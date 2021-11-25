@@ -15,6 +15,7 @@
 package confgenerator_test
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -166,7 +167,7 @@ func readFileContent(t *testing.T, testName string, goos string, filePathFormat 
 	filePath := fmt.Sprintf(filePathFormat, goos, testName)
 	rawExpectedConfig, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		if *updateGolden && respectGolden {
+		if *updateGolden && respectGolden && errors.Is(err, os.ErrNotExist) {
 			// Tolerate the file not found error because we will overwrite it later anyway.
 			return []byte("")
 		} else {
@@ -183,7 +184,7 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	goldenPath := fmt.Sprintf(path, goos, testName)
 	diff := cmp.Diff(expected, actual)
 	if *updateGolden {
-		if diff != "" || !fileExists(goldenPath) {
+		if diff != "" || !fileExists(t, testName, goldenPath) {
 			// Update the expected to match the actual.
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, cmp.Diff(actual, expected))
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
@@ -195,9 +196,15 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	}
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
+func fileExists(t *testing.T, testName, path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false
+		} else {
+			t.Fatalf("test %q: error reading the file from %s : %s", testName, path, err)
+		}
+	}
+	return true
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
