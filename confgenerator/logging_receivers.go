@@ -134,7 +134,7 @@ func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 			"Mode":   r.TransportProtocol,
 			"Listen": r.ListenHost,
 			"Port":   fmt.Sprintf("%d", r.ListenPort),
-			"Parser": tag,
+			"Parser": "syslog-rfc5424",
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
 			"storage.type": "filesystem",
@@ -145,14 +145,6 @@ func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 			"Mem_Buf_Limit": "10M",
-		},
-	}, {
-		// FIXME: This is not new, but we shouldn't be disabling syslog protocol parsing by passing a custom Parser - Fluentbit includes builtin syslog protocol support, and we should enable/expose that.
-		Kind: "PARSER",
-		Config: map[string]string{
-			"Name":   tag,
-			"Format": "regex",
-			"Regex":  `^(?<message>.*)$`,
 		},
 	}}
 }

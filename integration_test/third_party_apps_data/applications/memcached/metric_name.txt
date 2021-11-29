@@ -1,1 +1,1 @@
-agent.googleapis.com/memcached/command_count
+workload.googleapis.com/memcached.commands
