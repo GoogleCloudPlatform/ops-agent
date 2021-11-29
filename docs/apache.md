@@ -35,7 +35,7 @@ metrics:
   receivers:
     apache_metrics:
       type: apache
-      server_status_url: http://localhost:8080/server-status?auto
+      server_status_url: http://localhost:80/server-status?auto
       collection_interval: 30s
   service:
     pipelines:
