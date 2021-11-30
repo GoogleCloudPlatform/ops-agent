@@ -1,8 +1,6 @@
 package apps
 
 import (
-	"os"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -15,7 +13,7 @@ type MetricsReceiverMemcached struct {
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|file"`
 }
 
-const defaultMemcachedTCPEndpoint = "localhost:3306"
+const defaultMemcachedTCPEndpoint = "localhost:11211"
 const defaultMemcachedUnixEndpoint = "/var/run/memcached/memcached.sock"
 
 func (r MetricsReceiverMemcached) Type() string {
@@ -24,11 +22,7 @@ func (r MetricsReceiverMemcached) Type() string {
 
 func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
-		if _, err := os.Stat(defaultMemcachedUnixEndpoint); err != nil {
-			r.Endpoint = defaultMemcachedUnixEndpoint
-		} else {
-			r.Endpoint = defaultMemcachedTCPEndpoint
-		}
+		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
 
 	return []otel.Pipeline{{
