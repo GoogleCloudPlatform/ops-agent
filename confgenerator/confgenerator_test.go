@@ -184,7 +184,7 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	goldenPath := fmt.Sprintf(path, goos, testName)
 	diff := cmp.Diff(expected, actual)
 	if *updateGolden {
-		if diff != "" || !fileExists(t, testName, goldenPath) {
+		if diff != "" || actual == "" {
 			// Update the expected to match the actual.
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, cmp.Diff(actual, expected))
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
@@ -194,17 +194,6 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	} else if diff != "" {
 		t.Errorf("test %q: golden file at %s mismatch (-want +got):\n%s", testName, goldenPath, diff)
 	}
-}
-
-func fileExists(t *testing.T, testName, path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return false
-		} else {
-			t.Fatalf("test %q: error reading the file from %s : %s", testName, path, err)
-		}
-	}
-	return true
 }
 
 func TestGenerateConfigsWithInvalidInput(t *testing.T) {
