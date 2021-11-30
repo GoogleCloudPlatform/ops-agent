@@ -92,6 +92,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
 	case "min":
 		return fmt.Sprintf("%q must be a minimum of %s", ve.Field(), ve.Param())
+	case "multipleof_time":
+		return fmt.Sprintf("%q must be a multiple of %s", ve.Field(), ve.Param())
 	case "oneof":
 		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
@@ -102,8 +104,6 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
-	case "whole_time_denomination":
-		return fmt.Sprintf("%q must be a whole %s", ve.Field(), ve.Param())
 	}
 
 	return ve.FieldError.Error()
@@ -153,23 +153,17 @@ func newValidator() *validator.Validate {
 		}
 		return t >= tmin
 	})
-	// time_denomination validates that the duration is whole to some time denomination
-	// eg. s, ms, m, h
-	v.RegisterValidation("whole_time_denomination", func(fl validator.FieldLevel) bool {
+	// multipleof_time validates that the value duration is a multiple of the parameter
+	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
 		t, ok := fl.Field().Interface().(time.Duration)
 		if !ok {
-			panic(fmt.Sprintf("whole_time_denomination: could not convert %s to time duration", fl.Field().String()))
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Field().String()))
 		}
-
-		var denomination time.Duration
-		switch fl.Param() {
-		case "second":
-			denomination = time.Second
-		default:
-			panic(fmt.Sprintf("whole_time_denomination: unrecognized denomination %q", fl.Param()))
+		tfactor, err := time.ParseDuration(fl.Param())
+		if err != nil {
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Param()))
 		}
-
-		return t%denomination == 0
+		return t%tfactor == 0
 	})
 	return v
 }

@@ -1,4 +1,4 @@
-[21:34] "wildcard_refresh_interval" must be a whole second
+[21:34] "wildcard_refresh_interval" must be a multiple of 1s
   18 |       type: files
   19 |       include_paths:
   20 |       - /path/to/log/1/*

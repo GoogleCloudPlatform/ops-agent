@@ -37,7 +37,7 @@ type LoggingReceiverFiles struct {
 	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
 	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,whole_time_denomination=second"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -55,7 +55,7 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 type LoggingReceiverFilesMixin struct {
 	IncludePaths            []string       `yaml:"include_paths,omitempty"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,whole_time_denomination=second"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
