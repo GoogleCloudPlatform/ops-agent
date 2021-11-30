@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-type MetricsReceiverMySQL struct {
+type MetricsReceiverMySql struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
@@ -37,20 +37,20 @@ type MetricsReceiverMySQL struct {
 	Transport string `yaml:"transport" validate:"omitempty"`
 }
 
-const defaultMySQLTCPEndpoint = "localhost:3306"
-const defaultMySQLUnixEndpoint = "/var/run/mysqld/mysql.sock"
+const defaultMySqlTCPEndpoint = "localhost:3306"
+const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysql.sock"
 
-func (r MetricsReceiverMySQL) Type() string {
+func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySQL) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
-		if _, err := os.Stat(defaultMySQLUnixEndpoint); err != nil {
+		if _, err := os.Stat(defaultMySqlUnixEndpoint); err != nil {
 			r.Transport = "unix"
-			r.Endpoint = defaultMySQLUnixEndpoint
+			r.Endpoint = defaultMySqlUnixEndpoint
 		} else {
-			r.Endpoint = defaultMySQLTCPEndpoint
+			r.Endpoint = defaultMySqlTCPEndpoint
 		}
 	}
 
@@ -75,13 +75,7 @@ func (r MetricsReceiverMySQL) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMySQL{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlError{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlGeneral{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlSlow{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlGeneral{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlSlow{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMySql{} })
 }
 
 type LoggingProcessorMysqlError struct {
@@ -96,7 +90,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
-				// MySQL >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
+				// MySql >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
 				// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 				// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
 				Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:?\d{2})?)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
@@ -352,4 +346,13 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorMysqlError.Components(tag, "mysql_error")...)
 	return c
+}
+
+func init() {
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlGeneral{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlSlow{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlError{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlGeneral{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlSlow{} })
 }

@@ -2,6 +2,7 @@
 
 The mysql receiver can retrieve stats from your mysql instance by connecting as a monitoring user.
 
+The `mysql` receiver defaults to connecting to a local MySQL server using a Unix socket and Unix authentication as the `root` user.
 
 ## Prerequisites
 
