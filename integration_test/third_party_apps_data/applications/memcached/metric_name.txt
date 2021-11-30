@@ -1,1 +1,1 @@
-workload.googleapis.com/memcached.commands
+workload.googleapis.com/memcached.bytes
