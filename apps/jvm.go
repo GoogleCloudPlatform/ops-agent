@@ -53,7 +53,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 
 	config := map[string]interface{}{
 		"target_system":       "jvm",
-		"collection_interval": r.CollectionIntervalString(),
+		"collection_interval": r.CollectionInterval,
 		"endpoint":            r.Endpoint,
 		"jar_path":            jarPath,
 	}
