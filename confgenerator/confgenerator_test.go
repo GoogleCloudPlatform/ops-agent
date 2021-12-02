@@ -184,6 +184,8 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	goldenPath := fmt.Sprintf(path, goos, testName)
 	diff := cmp.Diff(expected, actual)
 	if *updateGolden {
+		// If there is a diff, or if the actual is empty (it may be due to the file
+		// not existing), write the golden file with the expected content.
 		if diff != "" || actual == "" {
 			// Update the expected to match the actual.
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, cmp.Diff(actual, expected))
