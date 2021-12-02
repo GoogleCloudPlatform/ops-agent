@@ -162,6 +162,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			}
 		}
 		sort.Slice(sources, func(i, j int) bool { return sources[i].tag < sources[j].tag })
+		tags = append(tags, "ops-agent-fluent-bit")
 		sort.Strings(tags)
 
 		for _, s := range sources {
@@ -174,7 +175,6 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 
 	return out, nil
 }
