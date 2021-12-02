@@ -84,8 +84,6 @@ func (ve validationError) StructField() string {
 
 func (ve validationError) Error() string {
 	switch ve.Tag() {
-	case "duration":
-		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
 	case "endswith":
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
