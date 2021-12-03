@@ -323,6 +323,13 @@ func (n Negation) Components(tag, key string) []fluentbit.Component {
 	return components
 }
 
+// Unquote replaces all escape sequences with their respective characters that they represent.
+//
+// Escape sequences are replaced if and only if they are defined in our grammar: confgenerator/filter/internal/filter.bnf.
+// An error is returned if an unrecognized escape sequence is encountered.
+//
+// This is a compatibility layer to maintain parity with Cloud Logging query strings. strconv.Unquote cannot be used here
+// because it follows escape rules for Go strings, and Cloud Logging strings are not Go strings.
 func Unquote(in string) (string, error) {
 	var buf strings.Builder
 	buf.Grow(3 * len(in) / 2)
