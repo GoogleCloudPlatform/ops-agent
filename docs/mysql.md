@@ -2,10 +2,9 @@
 
 The mysql receiver can retrieve stats from your mysql instance by connecting as a monitoring user.
 
-The `mysql` receiver defaults to connecting to a local MySQL server using a Unix socket and Unix authentication as the `root` user.
-
 ## Prerequisites
 
+The `mysql` receiver defaults to connecting to a local MySQL server using a Unix socket and Unix authentication as the `root` user.
 It is recommended that you create a dedicated monitoring user. The monitoring user must be granted the following permissions:
 
 ```
@@ -20,14 +19,14 @@ Following the guide for [Configuring the Ops Agent](https://cloud.google.com/sta
 
 To configure a receiver for your mysql metrics, specify the following fields:
 
-| Field                 | Default                   | Description |
-| ---                   | ---                       | ---         |
-| `type`                | required                  | Must be `mysql`. |
-| `endpoint`            | `localhost:3306`          | The hostname:port or socket path used by mysql |
-| `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`            |                           | The username used to connect to the server. |
-| `password`            |                           | The password used to connect to the server. |
-| `transport`           |                           | Defines the network to use for connecting to the server. |
+| Field                 | Default                         | Description |
+| ---                   | ---                             | ---         |
+| `type`                | required                        | Must be `mysql`. |
+| `endpoint`            | `/var/run/mysqld/mysqld.sock`   | The hostname:port or socket path used by mysql |
+| `collection_interval` | `60s`                           | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+| `username`            | `root`                          | The username used to connect to the server. |
+| `password`            |                                 | The password used to connect to the server. |
+| `transport`           | `unix`                          | Defines the network to use for connecting to the server. |
 
 
 Example Configuration:
@@ -37,6 +36,20 @@ metrics:
   receivers:
     mysql_metrics:
       type: mysql
+  service:
+    pipelines:
+      mysql_pipeline:
+        receivers:
+          - mysql_metrics
+```
+
+TCP connection with a username and password:
+
+```yaml
+metrics:
+  receivers:
+    mysql_metrics:
+      type: mysql 
       endpoint: localhost:3306
       collection_interval: 30s
       password: pwd

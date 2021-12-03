@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"os"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -37,8 +35,7 @@ type MetricsReceiverMySql struct {
 	Transport string `yaml:"transport" validate:"omitempty"`
 }
 
-const defaultMySqlTCPEndpoint = "localhost:3306"
-const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysql.sock"
+const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
 
 func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
@@ -46,12 +43,8 @@ func (r MetricsReceiverMySql) Type() string {
 
 func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
-		if _, err := os.Stat(defaultMySqlUnixEndpoint); err != nil {
-			r.Transport = "unix"
-			r.Endpoint = defaultMySqlUnixEndpoint
-		} else {
-			r.Endpoint = defaultMySqlTCPEndpoint
-		}
+		r.Transport = "unix"
+		r.Endpoint = defaultMySqlUnixEndpoint
 	}
 
 	return []otel.Pipeline{{
