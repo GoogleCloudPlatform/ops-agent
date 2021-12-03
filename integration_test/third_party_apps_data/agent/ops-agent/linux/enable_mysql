@@ -20,9 +20,6 @@ metrics:
   receivers:
     mysql_metrics:
       type: mysql
-      collection_interval: 10s
-      username: root
-      password: Ss123%321
   service:
     pipelines:
       mysql_pipeline:
