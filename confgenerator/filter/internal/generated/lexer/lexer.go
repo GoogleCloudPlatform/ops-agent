@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"unicode/utf8"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 )
 
 const (

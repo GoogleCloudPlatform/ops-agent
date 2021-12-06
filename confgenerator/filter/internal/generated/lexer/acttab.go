@@ -5,7 +5,7 @@ package lexer
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 )
 
 type ActionTable [NumStates]ActionRow

@@ -18,7 +18,7 @@ package parser
 
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 )
 
 type (

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	parseError "github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/errors"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	parseError "github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/errors"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 )
 
 const (

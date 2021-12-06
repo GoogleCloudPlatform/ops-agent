@@ -17,8 +17,8 @@ package filter
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/lexer"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 

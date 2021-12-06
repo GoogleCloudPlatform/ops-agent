@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/token"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 )
 
 type ErrorSymbol interface {

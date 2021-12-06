@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate gocc -a -o internal internal/filter.bnf
+//go:generate gocc -a -o internal/generated internal/filter.bnf
 // To install gocc: go get github.com/goccmack/gocc
 
 package filter
@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/lexer"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/parser"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/parser"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
