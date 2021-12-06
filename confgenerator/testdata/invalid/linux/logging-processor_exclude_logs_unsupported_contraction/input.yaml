@@ -1,0 +1,9 @@
+logging:
+  processors:
+    processor_1:
+      type: exclude_logs
+      condition: jsonPayload.message = ("first" OR "second")
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]

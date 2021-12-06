@@ -1,0 +1,9 @@
+[5:18] "condition": 1:27: error: expected one of "$", ws, andOp, orOp, or dot; got: "("
+   2 |   processors:
+   3 |     processor_1:
+   4 |       type: exclude_logs
+>  5 |       condition: jsonPayload.message = func("arg")
+                        ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:
