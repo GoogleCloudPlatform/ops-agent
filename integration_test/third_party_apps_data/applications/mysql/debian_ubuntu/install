@@ -7,17 +7,9 @@ wget https://dev.mysql.com/get/mysql-apt-config_0.8.14-1_all.deb
 # http://screen/g4PsZtaXjBX
 sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.14-1_all.deb
 sudo apt update
-sudo debconf-set-selections <<< 'mysql-community-server mysql-community-server/root-pass password Ss123%321'
-sudo debconf-set-selections <<< 'mysql-community-server mysql-community-server/re-root-pass password Ss123%321'
 sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
 
 source /etc/os-release
-
-if [[ "${ID}" == ubuntu && "${VERSION_ID}" == 19.10 ]]; then
-  # Ubuntu 19.10 does not pull in mysql-community-server when installing mysql-server.
-  sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password password Ss123%321'
-  sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password Ss123%321'
-fi
 
 sudo apt install -y mysql-server
 
