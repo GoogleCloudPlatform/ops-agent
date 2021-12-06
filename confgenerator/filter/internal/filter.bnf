@@ -1,3 +1,12 @@
+// This is a simplified implementation of the Cloud Logging query language [1].
+// The Logging query language is itself a more complex implementation of
+// AIP-160 ("Filtering") [2], which is defined by an EBNF grammar [3].
+// We do not implement every feature of either the Logging query language or
+// AIP-160, but rather we implement a subset of the former.
+//  [1] https://cloud.google.com/logging/docs/view/logging-query-language
+//  [2] https://google.aip.dev/160
+//  [3] https://google.aip.dev/assets/misc/ebnf-filtering.txt
+
 dot : '.' ;
 has : ':' ;
 _or  : 'O' 'R' ;
