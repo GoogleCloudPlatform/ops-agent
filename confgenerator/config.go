@@ -356,7 +356,7 @@ type MetricsReceiver interface {
 }
 
 type MetricsReceiverShared struct {
-	CollectionInterval string `yaml:"collection_interval"` // time.Duration format
+	CollectionInterval string `yaml:"collection_interval" validate:"duration=10s"` // time.Duration format
 }
 
 func (m MetricsReceiverShared) CollectionIntervalString() string {
