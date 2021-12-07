@@ -20,6 +20,7 @@ metrics:
   receivers:
     mysql_metrics:
       type: mysql
+      collection_interval: 30s
   service:
     pipelines:
       mysql_pipeline:
