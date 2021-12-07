@@ -11,7 +11,7 @@ sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-aut
 
 source /etc/os-release
 
-sudo apt install -y mysql-server
+ sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
 
 if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18
