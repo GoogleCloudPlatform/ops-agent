@@ -56,7 +56,7 @@ func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit
 func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
-	jsonParser := &confgenerator.LoggingProcessorParseJson{
+	jsonParser := &confgenerator.LoggingProcessorJsonParser{
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
