@@ -23,7 +23,6 @@ import (
 
 type LoggingProcessorMongodb struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
-	JSONFormat                    bool `yaml:"json_format"`
 }
 
 func (*LoggingProcessorMongodb) Type() string {
@@ -122,43 +121,52 @@ func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Co
 			"Rename": "s severity",
 		},
 	})
-	// severity documented: https://docs.mongodb.com/v4.4/reference/log-messages/#std-label-log-severity-levels
-	severityMap := map[string]string{
-		"D":  "DEBUG",
-		"D1": "DEBUG",
-		"D2": "DEBUG",
-		"D3": "DEBUG",
-		"D4": "DEBUG",
-		"D5": "DEBUG",
 
-		"I": "INFO",
-		"E": "ERROR",
-		"F": "FATAL",
-		"W": "WARNING",
-	}
-
-	modifications := []fluentbit.ModifyOptions{}
-	// ex: mapping severity from D1 -> DEBUG, etc.
-	for from, to := range severityMap {
-		condition := &fluentbit.ModifyCondition{
-			Name:  fluentbit.ModifyConditionKeyValueEquals,
-			Key:   "severity",
-			Value: from,
-		}
-		setOption := fluentbit.NewSetModifyOptions("severity", to, condition)
-		modifications = append(modifications, setOption)
-	}
-
-	severityComponents = append(severityComponents, fluentbit.MapModify(tag, modifications)...)
-
-	severityComponents = append(severityComponents, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Rename": fmt.Sprintf("severity %s", severityKey),
+	severityComponents = append(severityComponents, fluentbit.TranslationComponents(tag, "severity", severityKey, []struct {
+		SrcVal  string
+		DestVal string
+	}{
+		{
+			SrcVal:  "D",
+			DestVal: "DEBUG",
 		},
-	})
+		{
+			SrcVal:  "D1",
+			DestVal: "DEBUG",
+		},
+		{
+			SrcVal:  "D2",
+			DestVal: "DEBUG",
+		},
+		{
+			SrcVal:  "D3",
+			DestVal: "DEBUG",
+		},
+		{
+			SrcVal:  "D4",
+			DestVal: "DEBUG",
+		},
+		{
+			SrcVal:  "D5",
+			DestVal: "DEBUG",
+		},
+		{
+			SrcVal:  "I",
+			DestVal: "INFO",
+		},
+		{
+			SrcVal:  "E",
+			DestVal: "ERROR",
+		},
+		{
+			SrcVal:  "F",
+			DestVal: "FATAL",
+		},
+		{
+			SrcVal:  "W",
+			DestVal: "WARNING",
+		},
+	})...)
 
 	return severityComponents
 }
