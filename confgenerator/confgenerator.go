@@ -130,7 +130,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	out = append(out, fluentbit.Service{LogLevel: l.Service.LogLevel}.Component())
 
-	if l != nil && l.Service != nil {
+	if l.Service != nil {
 		// Type for sorting.
 		type fbSource struct {
 			tag        string
