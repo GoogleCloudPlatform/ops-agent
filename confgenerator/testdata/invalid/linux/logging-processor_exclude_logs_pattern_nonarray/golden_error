@@ -1,8 +1,8 @@
-[5:19] "conditions": 1:23: error: expected either text or string; got: "("
+[5:19] string was used where sequence is expected
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs
->  5 |       conditions: ['jsonPayload.message = ("first" OR "second")']
+>  5 |       conditions: jsonPayload.message = "message"
                          ^
    6 |   service:
    7 |     pipelines:

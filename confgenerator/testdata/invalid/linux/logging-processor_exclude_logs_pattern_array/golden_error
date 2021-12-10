@@ -1,1 +1,0 @@
-cannot unmarshal []interface {} into Go struct field UnifiedConfig.Logging of type string

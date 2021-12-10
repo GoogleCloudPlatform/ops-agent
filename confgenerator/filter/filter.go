@@ -44,7 +44,12 @@ func NewFilter(f string) (*Filter, error) {
 	return nil, fmt.Errorf("not an expression: %+v", out)
 }
 
-func (f *Filter) Components(tag string, isExclusionFilter bool) []fluentbit.Component {
+func (f *Filter) Components(tag string) []fluentbit.Component {
+	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
+	return f.expr.Components(tag, match)
+}
+
+func AllComponents(tag string, filters []Filter, isExclusionFilter bool) []fluentbit.Component {
 	var parity string
 	if isExclusionFilter {
 		parity = "Exclude"
@@ -62,7 +67,9 @@ func (f *Filter) Components(tag string, isExclusionFilter bool) []fluentbit.Comp
 		},
 	}}
 	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
-	c = append(c, f.expr.Components(tag, match)...)
+	for _, filter := range filters {
+		c = append(c, filter.Components(tag)...)
+	}
 	c = append(c,
 		fluentbit.Component{
 			Kind: "FILTER",

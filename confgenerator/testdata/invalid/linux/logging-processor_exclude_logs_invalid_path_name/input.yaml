@@ -2,7 +2,7 @@ logging:
   processors:
     p1:
       type: exclude_logs
-      condition: invalid.path = foo
+      conditions: ['invalid.path = foo']
   service:
     pipelines:
       default_pipeline:

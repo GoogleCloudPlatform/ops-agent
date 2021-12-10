@@ -2,7 +2,7 @@ logging:
   processors:
     processor_1:
       type: exclude_logs
-      condition: foo = bar
+      conditions: ['foo = bar']
       foo: bar
   service:
     pipelines:

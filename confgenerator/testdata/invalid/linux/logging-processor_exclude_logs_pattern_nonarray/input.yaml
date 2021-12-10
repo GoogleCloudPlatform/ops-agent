@@ -2,7 +2,7 @@ logging:
   processors:
     processor_1:
       type: exclude_logs
-      condition: ["foo = bar", "frob = baz"]
+      conditions: jsonPayload.message = "message"
   service:
     pipelines:
       default_pipeline:

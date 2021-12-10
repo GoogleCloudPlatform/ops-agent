@@ -1,9 +1,9 @@
-[5:18] "condition": 1:25: error: path may not contain line breaks, spaces, commas, or double-quotes: a\"b
+[5:19] "conditions": 1:25: error: path may not contain line breaks, spaces, commas, or double-quotes: a\"b
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs
->  5 |       condition: jsonPayload."a\"b" = foo
-                        ^
+>  5 |       conditions: ['jsonPayload."a\"b" = foo']
+                         ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:

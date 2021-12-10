@@ -2,7 +2,7 @@ logging:
   processors:
     processor_1:
       type: exclude_logs
-      condition: jsonPayload.message = func("arg")
+      conditions: ['jsonPayload.message = func("arg")']
   service:
     pipelines:
       default_pipeline:
