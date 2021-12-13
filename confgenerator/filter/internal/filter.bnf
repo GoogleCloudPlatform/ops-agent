@@ -190,13 +190,13 @@ Restriction
 ;
 
 Comparable
-: Member
+: FieldPath
 // | Function
 ;
 
-Member
-: Item << ast.Member{$0.(string)}, nil >>
-| Member dot ItemKeyword << append($0.(ast.Member), $2.(string)), nil >>
+FieldPath
+: Item << ast.FieldPath{$0.(string)}, nil >>
+| FieldPath dot ItemKeyword << append($0.(ast.FieldPath), $2.(string)), nil >>
 ;
 
 Composite

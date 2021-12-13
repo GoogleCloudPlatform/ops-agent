@@ -26,7 +26,7 @@ import (
 
 type Attrib interface{}
 
-type Member []string
+type FieldPath []string
 
 var logEntryRootValueMapToFluentBit = map[string]string{
 	"severity": "logging.googleapis.com/severity",
@@ -40,7 +40,7 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 }
 
 // RecordAccessor returns a string that can be used as a key in fluentbit config
-func (m Member) RecordAccessor() string {
+func (m FieldPath) RecordAccessor() string {
 	s := `$record`
 	for _, part := range m {
 		unquoted, _ := Unquote(part)
@@ -49,12 +49,12 @@ func (m Member) RecordAccessor() string {
 	return s
 }
 
-// logEntryToFluentBit translates a Member from a LogEntry model to a FluentBit model
-func (m Member) logEntryToFluentBit() (Member, error) {
-	var fluentbit Member
+// logEntryToFluentBit translates a FieldPath from a LogEntry model to a FluentBit model
+func (m FieldPath) logEntryToFluentBit() (FieldPath, error) {
+	var fluentbit FieldPath
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
-			fluentbit = Member{v}
+			fluentbit = FieldPath{v}
 		}
 	} else if len(m) > 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[m[0]]; ok {
@@ -70,7 +70,7 @@ func (m Member) logEntryToFluentBit() (Member, error) {
 	for _, part := range fluentbit {
 		unquoted, err := Unquote(part)
 		if err != nil {
-			return Member{}, err
+			return FieldPath{}, err
 		}
 		// Disallowed characters because they cannot be encoded in a Record Accessor.
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
@@ -88,7 +88,7 @@ func prepend(value string, slice []string) []string {
 
 type Restriction struct {
 	Operator string
-	LHS      Member
+	LHS      FieldPath
 	RHS      string
 }
 
@@ -103,7 +103,7 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 		return nil, fmt.Errorf("unknown operator: %v", operator)
 	}
 	switch lhs := lhs.(type) {
-	case Member:
+	case FieldPath:
 		// Eager validation
 		_, err := lhs.logEntryToFluentBit()
 		if err != nil {
@@ -115,8 +115,8 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	}
 	switch rhs := rhs.(type) {
 	case nil:
-	case Member:
-		// BNF parses values as Member, even if they are singular
+	case FieldPath:
+		// BNF parses values as FieldPath, even if they are singular
 		if len(rhs) != 1 {
 			return nil, fmt.Errorf("unexpected rhs: %v", rhs)
 		}
@@ -168,8 +168,8 @@ func escapeWhitespace(s string) string {
 
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
-	lhsMember, _ := r.LHS.logEntryToFluentBit()
-	lhs := lhsMember.RecordAccessor()
+	lhsPath, _ := r.LHS.logEntryToFluentBit()
+	lhs := lhsPath.RecordAccessor()
 	rhs := r.RHS
 	rhsLiteral, _ := Unquote(rhs)
 	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
