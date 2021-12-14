@@ -14,7 +14,6 @@ type MetricsReceiverMemcached struct {
 }
 
 const defaultMemcachedTCPEndpoint = "localhost:11211"
-const defaultMemcachedUnixEndpoint = "/var/run/memcached/memcached.sock"
 
 func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
@@ -34,6 +33,11 @@ func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"memcached.operation_hit_ratio",
+			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),

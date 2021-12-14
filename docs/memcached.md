@@ -43,7 +43,6 @@ The Ops Agent collects the following metrics from your memcached servers.
 | memcached.current_items | Number of items currently stored in the cache. | 1 | Gauge | <ul> </ul> |
 | memcached.evictions | Cache item evictions. | 1 | Sum | <ul> </ul> |
 | memcached.network | Bytes transferred over the network. | by | Sum | <ul> <li>direction</li> </ul> |
-| memcached.operation_hit_ratio | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge | <ul> <li>operation</li> </ul> |
 | memcached.operations | Operation counts. | 1 | Sum | <ul> <li>type</li> <li>operation</li> </ul> |
 | memcached.rusage | Accumulated user and system time. | 1 | Sum | <ul> <li>state</li> </ul> |
 | memcached.threads | Number of threads used by the memcached instance. | 1 | Gauge | <ul> </ul> |
