@@ -56,6 +56,9 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"tls.verify": "Off",
 
 			"workers": "8",
+
+			// Mute these errors before https://github.com/fluent/fluent-bit/issues/4473 is fixed.
+			"net.connect_timeout_log_error": "False",
 		},
 	}
 }
