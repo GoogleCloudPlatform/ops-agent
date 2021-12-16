@@ -37,6 +37,8 @@ func (s Service) Component() Component {
 			"HTTP_Listen": "0.0.0.0",
 			"HTTP_PORT":   "2020",
 
+			// Use the legacy DNS resolver mechanism to work around b/206549605 temporarily.
+			"dns.resolver": "legacy",
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
 			"storage.sync": "normal",
