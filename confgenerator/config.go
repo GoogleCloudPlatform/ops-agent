@@ -83,9 +83,9 @@ func (ve validationError) StructField() string {
 	return parts[0]
 }
 
-func newFilters(conditions []string) ([]filter.Filter, error) {
-	filters := make([]filter.Filter, 0, len(conditions))
-	for _, condition := range conditions {
+func newFilters(matchesAny []string) ([]filter.Filter, error) {
+	filters := make([]filter.Filter, 0, len(matchesAny))
+	for _, condition := range matchesAny {
 		filter, err := filter.NewFilter(condition)
 		if err != nil {
 			return nil, err

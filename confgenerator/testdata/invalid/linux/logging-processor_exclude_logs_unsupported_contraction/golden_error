@@ -1,9 +1,9 @@
-[5:19] "conditions": 1:23: error: expected either text or string; got: "("
+[5:20] "matches_any": 1:23: error: expected either text or string; got: "("
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs
->  5 |       conditions: ['jsonPayload.message = ("first" OR "second")']
-                         ^
+>  5 |       matches_any: ['jsonPayload.message = ("first" OR "second")']
+                          ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:

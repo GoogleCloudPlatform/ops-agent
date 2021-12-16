@@ -1,9 +1,9 @@
-[5:19] "conditions": 1:19: error: unrecognized LogEntry path: invalid.path
+[5:20] "matches_any": 1:19: error: unrecognized LogEntry path: invalid.path
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs
->  5 |       conditions: ['invalid.path = foo']
-                         ^
+>  5 |       matches_any: ['invalid.path = foo']
+                          ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:
