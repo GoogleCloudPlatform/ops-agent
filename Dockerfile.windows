@@ -59,18 +59,18 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 # Install OpenSSL
 # This must be done after installing Visual Studio
 #
-# TODO: Put "Win64OpenSSL_Light-1_1_1m.msi" into an ARG.
-ADD https://slproweb.com/download/Win64OpenSSL_Light-1_1_1m.msi /local/Win64OpenSSL_Light-1_1_1m.msi
+# TODO: Put "Win64OpenSSL-1_1_1m.msi" into an ARG.
+ADD https://slproweb.com/download/Win64OpenSSL-1_1_1m.msi /local/Win64OpenSSL-1_1_1m.msi
 
 # Verify SHA256 hash using expected value from the win32_openssl_hashes.json file in
 # https://github.com/slproweb/opensslhashes
 # DO NOT FORGET to change this hash when changing the MSI.
-RUN $ExpectedHash = '0aca5b89332da3cf76f5f18869be24d6fc62e904308b6d95e29552c2140d819d';`
-    $ActualHash = $(Get-FileHash /local/Win64OpenSSL_Light-1_1_1m.msi).Hash.ToLower();`
+RUN $ExpectedHash = 'c3c8543571d4d1af3be993602ae02f69ef8cc5366dc194cd037be946fea39985';`
+    $ActualHash = $(Get-FileHash /local/Win64OpenSSL-1_1_1m.msi).Hash.ToLower();`
     if ($ActualHash -ne $ExpectedHash) {`
       throw \"OpenSSL hash mismatch. Expected: $ExpectedHash, Actual: $ActualHash\"`
     };`
-    Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL_Light-1_1_1m.msi /quiet';
+    Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1m.msi /quiet';
 
 #
 # Install winflexbison
