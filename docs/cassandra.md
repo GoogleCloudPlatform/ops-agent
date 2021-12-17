@@ -18,8 +18,6 @@ In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremot
 | `collection_interval` | `60s`              | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 
 
-# `cassandra_system`, `cassandra_debug` and `cassandra_gc` Logging Receivers
-
 Example Configuration:
 
 ```yaml
