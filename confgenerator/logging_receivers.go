@@ -274,7 +274,7 @@ func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Compone
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/forward
 			"Name":   "forward",
-			"Tag":    tag,
+			"Tag_Prefix":    tag + ".",
 			"Listen": r.ListenHost,
 			"Port":   fmt.Sprintf("%d", r.ListenPort),
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration

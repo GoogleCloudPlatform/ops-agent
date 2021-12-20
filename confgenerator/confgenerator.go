@@ -154,6 +154,12 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				}
 				tag := fmt.Sprintf("%s.%s", pID, rID)
 				components := receiver.Components(tag)
+
+				// TODO(ridwanmsharif): Document this.
+				if receiver.Type() == "fluent_forward" {
+					tag = tag + ".*"
+				}
+
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
 					if !ok {
