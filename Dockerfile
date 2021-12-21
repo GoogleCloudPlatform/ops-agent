@@ -159,7 +159,7 @@ WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
-FROM opensuse/leap:42.3 AS sles12-build
+FROM opensuse/archive:42.3 AS sles12-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros && \
     # Remove expired root certificate.
