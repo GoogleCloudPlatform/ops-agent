@@ -15,6 +15,7 @@
 package confgenerator_test
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -166,7 +167,7 @@ func readFileContent(t *testing.T, testName string, goos string, filePathFormat 
 	filePath := fmt.Sprintf(filePathFormat, goos, testName)
 	rawExpectedConfig, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		if *updateGolden && respectGolden {
+		if *updateGolden && respectGolden && errors.Is(err, os.ErrNotExist) {
 			// Tolerate the file not found error because we will overwrite it later anyway.
 			return []byte("")
 		} else {
@@ -181,16 +182,19 @@ func updateOrCompareGolden(t *testing.T, testName string, goos string, expectedB
 	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 	actual = strings.ReplaceAll(actual, "\r\n", "\n")
 	goldenPath := fmt.Sprintf(path, goos, testName)
-	if diff := cmp.Diff(expected, actual); diff != "" {
-		if *updateGolden {
+	diff := cmp.Diff(expected, actual)
+	if *updateGolden {
+		// If there is a diff, or if the actual is empty (it may be due to the file
+		// not existing), write the golden file with the expected content.
+		if diff != "" || actual == "" {
 			// Update the expected to match the actual.
 			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, cmp.Diff(actual, expected))
 			if err := ioutil.WriteFile(goldenPath, []byte(actual), 0644); err != nil {
 				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 			}
-		} else {
-			t.Errorf("test %q: golden file at %s mismatch (-want +got):\n%s", testName, goldenPath, diff)
 		}
+	} else if diff != "" {
+		t.Errorf("test %q: golden file at %s mismatch (-want +got):\n%s", testName, goldenPath, diff)
 	}
 }
 
