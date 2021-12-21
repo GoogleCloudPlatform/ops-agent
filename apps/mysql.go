@@ -28,7 +28,7 @@ type MetricsReceiverMySql struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|file"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
 	Password  string `yaml:"password" validate:"omitempty"`
 	Username  string `yaml:"username" validate:"omitempty"`
@@ -45,6 +45,8 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Transport = "unix"
 		r.Endpoint = defaultMySqlUnixEndpoint
+	} else if strings.HasPrefix(r.Endpoint, "/") {
+		r.Transport = "unix"
 	}
 
 	return []otel.Pipeline{{
