@@ -16,6 +16,7 @@
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
+# TEST
 FROM debian:bullseye AS bullseye-build
 
 # TODO: Factor out the common code without rerunning apt-get on every debian and
