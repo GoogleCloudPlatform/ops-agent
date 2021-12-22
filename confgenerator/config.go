@@ -95,7 +95,7 @@ func (ve validationError) Error() string {
 	case "required":
 		return fmt.Sprintf("%q is a required field", ve.Field())
 	case "required_with":
-		return fmt.Sprintf("%q is a required to be set alongw with the '%s' field", ve.Field(), ve.Param())
+		return fmt.Sprintf("%q is required if %q is specified", ve.Field(), ve.Param())
 	case "startsnotwith":
 		return fmt.Sprintf("%q must not start with %q", ve.Field(), ve.Param())
 	case "startswith":
