@@ -269,7 +269,7 @@ func (r *LoggingReceiverMongodb) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// default logging location
-			"/var/log/mongodb/mongod*.log",
+			"/var/log/mongodb/mongod.log*",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
