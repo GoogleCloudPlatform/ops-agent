@@ -32,7 +32,7 @@ type MetricsReceiverMySql struct {
 
 	Password  string `yaml:"password" validate:"omitempty"`
 	Username  string `yaml:"username" validate:"omitempty"`
-	Transport string `yaml:"transport" validate:"omitempty"`
+	Transport string `yaml:"transport" validate:"omitempty,oneof=tcp udp unix"`
 }
 
 const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"

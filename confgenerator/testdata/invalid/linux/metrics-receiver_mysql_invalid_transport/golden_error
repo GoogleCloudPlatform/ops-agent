@@ -1,0 +1,9 @@
+[19:18] "transport" must be one of [tcp udp unix]
+  16 |   receivers:
+  17 |     mysqlmetrics:
+  18 |       type: mysql
+> 19 |       transport: Not A Transport
+                        ^
+  20 |       collection_interval: 30s
+  21 |   service:
+  22 |     pipelines:
