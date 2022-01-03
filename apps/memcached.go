@@ -10,7 +10,7 @@ type MetricsReceiverMemcached struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|file"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 }
 
 const defaultMemcachedTCPEndpoint = "localhost:11211"

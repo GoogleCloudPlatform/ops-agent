@@ -22,8 +22,7 @@ metrics:
   receivers:
     redis_metrics:
       type: memcached
-      address: localhost:3306
-      collection_interval: 30s
+      collection_interval: 60s
   service:
     pipelines:
       memcached_pipeline:

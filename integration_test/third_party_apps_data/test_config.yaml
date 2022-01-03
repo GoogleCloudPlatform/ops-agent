@@ -41,5 +41,3 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   redis:
     platforms_to_skip: *common_skips
-  memcached:
-    platforms_to_skip: *common_skips
