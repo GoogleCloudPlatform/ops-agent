@@ -1,4 +1,4 @@
-[19:17] Key: 'MetricsReceiverMemcached.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|file' tag
+[19:17] Key: 'MetricsReceiverMemcached.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=/' tag
   16 |   receivers:
   17 |     memcached_metrics:
   18 |       type: memcached
