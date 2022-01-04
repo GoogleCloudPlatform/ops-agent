@@ -190,13 +190,14 @@ Restriction
 ;
 
 Comparable
-: FieldPath
+: Target
 // | Function
 ;
 
-FieldPath
-: Item << ast.FieldPath{$0.(string)}, nil >>
-| FieldPath dot ItemKeyword << append($0.(ast.FieldPath), $2.(string)), nil >>
+// This represents member from the filter BNF, and represents either a value or a dotted field path.
+Target
+: Item << ast.Target{$0.(string)}, nil >>
+| Target dot ItemKeyword << append($0.(ast.Target), $2.(string)), nil >>
 ;
 
 Composite

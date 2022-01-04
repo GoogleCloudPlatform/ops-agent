@@ -227,7 +227,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparable : FieldPath	<<  >>`,
+		String: `Comparable : Target	<<  >>`,
 		Id:         "Comparable",
 		NTType:     8,
 		Index:      19,
@@ -237,23 +237,23 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `FieldPath : Item	<< ast.FieldPath{X[0].(string)}, nil >>`,
-		Id:         "FieldPath",
+		String: `Target : Item	<< ast.Target{X[0].(string)}, nil >>`,
+		Id:         "Target",
 		NTType:     9,
 		Index:      20,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return ast.FieldPath{X[0].(string)}, nil
+			return ast.Target{X[0].(string)}, nil
 		},
 	},
 	ProdTabEntry{
-		String: `FieldPath : FieldPath dot ItemKeyword	<< append(X[0].(ast.FieldPath), X[2].(string)), nil >>`,
-		Id:         "FieldPath",
+		String: `Target : Target dot ItemKeyword	<< append(X[0].(ast.Target), X[2].(string)), nil >>`,
+		Id:         "Target",
 		NTType:     9,
 		Index:      21,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return append(X[0].(ast.FieldPath), X[2].(string)), nil
+			return append(X[0].(ast.Target), X[2].(string)), nil
 		},
 	},
 	ProdTabEntry{

@@ -463,28 +463,28 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(20), // $, reduce: FieldPath
-			reduce(20), // ws, reduce: FieldPath
-			reduce(20), // andOp, reduce: FieldPath
-			reduce(20), // orOp, reduce: FieldPath
+			reduce(20), // $, reduce: Target
+			reduce(20), // ws, reduce: Target
+			reduce(20), // andOp, reduce: Target
+			reduce(20), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(20), // dot, reduce: FieldPath
+			reduce(20), // dot, reduce: Target
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(20), // less_equals, reduce: FieldPath
-			reduce(20), // less_than, reduce: FieldPath
-			reduce(20), // greater_equals, reduce: FieldPath
-			reduce(20), // greater_than, reduce: FieldPath
-			reduce(20), // not_equals, reduce: FieldPath
-			reduce(20), // equals, reduce: FieldPath
-			reduce(20), // has, reduce: FieldPath
-			reduce(20), // matches_regexp, reduce: FieldPath
-			reduce(20), // not_matches_regexp, reduce: FieldPath
+			reduce(20), // less_equals, reduce: Target
+			reduce(20), // less_than, reduce: Target
+			reduce(20), // greater_equals, reduce: Target
+			reduce(20), // greater_than, reduce: Target
+			reduce(20), // not_equals, reduce: Target
+			reduce(20), // equals, reduce: Target
+			reduce(20), // has, reduce: Target
+			reduce(20), // matches_regexp, reduce: Target
+			reduce(20), // not_matches_regexp, reduce: Target
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -1712,27 +1712,27 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(20), // ws, reduce: FieldPath
-			reduce(20), // andOp, reduce: FieldPath
-			reduce(20), // orOp, reduce: FieldPath
+			reduce(20), // ws, reduce: Target
+			reduce(20), // andOp, reduce: Target
+			reduce(20), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(20), // dot, reduce: FieldPath
+			reduce(20), // dot, reduce: Target
 			nil,        // lparen
-			reduce(20), // rparen, reduce: FieldPath
+			reduce(20), // rparen, reduce: Target
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(20), // less_equals, reduce: FieldPath
-			reduce(20), // less_than, reduce: FieldPath
-			reduce(20), // greater_equals, reduce: FieldPath
-			reduce(20), // greater_than, reduce: FieldPath
-			reduce(20), // not_equals, reduce: FieldPath
-			reduce(20), // equals, reduce: FieldPath
-			reduce(20), // has, reduce: FieldPath
-			reduce(20), // matches_regexp, reduce: FieldPath
-			reduce(20), // not_matches_regexp, reduce: FieldPath
+			reduce(20), // less_equals, reduce: Target
+			reduce(20), // less_than, reduce: Target
+			reduce(20), // greater_equals, reduce: Target
+			reduce(20), // greater_than, reduce: Target
+			reduce(20), // not_equals, reduce: Target
+			reduce(20), // equals, reduce: Target
+			reduce(20), // has, reduce: Target
+			reduce(20), // matches_regexp, reduce: Target
+			reduce(20), // not_matches_regexp, reduce: Target
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -2191,13 +2191,13 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(20), // $, reduce: FieldPath
-			reduce(20), // ws, reduce: FieldPath
-			reduce(20), // andOp, reduce: FieldPath
-			reduce(20), // orOp, reduce: FieldPath
+			reduce(20), // $, reduce: Target
+			reduce(20), // ws, reduce: Target
+			reduce(20), // andOp, reduce: Target
+			reduce(20), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(20), // dot, reduce: FieldPath
+			reduce(20), // dot, reduce: Target
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -2447,28 +2447,28 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(21), // $, reduce: FieldPath
-			reduce(21), // ws, reduce: FieldPath
-			reduce(21), // andOp, reduce: FieldPath
-			reduce(21), // orOp, reduce: FieldPath
+			reduce(21), // $, reduce: Target
+			reduce(21), // ws, reduce: Target
+			reduce(21), // andOp, reduce: Target
+			reduce(21), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(21), // dot, reduce: FieldPath
+			reduce(21), // dot, reduce: Target
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(21), // less_equals, reduce: FieldPath
-			reduce(21), // less_than, reduce: FieldPath
-			reduce(21), // greater_equals, reduce: FieldPath
-			reduce(21), // greater_than, reduce: FieldPath
-			reduce(21), // not_equals, reduce: FieldPath
-			reduce(21), // equals, reduce: FieldPath
-			reduce(21), // has, reduce: FieldPath
-			reduce(21), // matches_regexp, reduce: FieldPath
-			reduce(21), // not_matches_regexp, reduce: FieldPath
+			reduce(21), // less_equals, reduce: Target
+			reduce(21), // less_than, reduce: Target
+			reduce(21), // greater_equals, reduce: Target
+			reduce(21), // greater_than, reduce: Target
+			reduce(21), // not_equals, reduce: Target
+			reduce(21), // equals, reduce: Target
+			reduce(21), // has, reduce: Target
+			reduce(21), // matches_regexp, reduce: Target
+			reduce(21), // not_matches_regexp, reduce: Target
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -3376,14 +3376,14 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(20), // ws, reduce: FieldPath
-			reduce(20), // andOp, reduce: FieldPath
-			reduce(20), // orOp, reduce: FieldPath
+			reduce(20), // ws, reduce: Target
+			reduce(20), // andOp, reduce: Target
+			reduce(20), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(20), // dot, reduce: FieldPath
+			reduce(20), // dot, reduce: Target
 			nil,        // lparen
-			reduce(20), // rparen, reduce: FieldPath
+			reduce(20), // rparen, reduce: Target
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3600,27 +3600,27 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(21), // ws, reduce: FieldPath
-			reduce(21), // andOp, reduce: FieldPath
-			reduce(21), // orOp, reduce: FieldPath
+			reduce(21), // ws, reduce: Target
+			reduce(21), // andOp, reduce: Target
+			reduce(21), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(21), // dot, reduce: FieldPath
+			reduce(21), // dot, reduce: Target
 			nil,        // lparen
-			reduce(21), // rparen, reduce: FieldPath
+			reduce(21), // rparen, reduce: Target
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(21), // less_equals, reduce: FieldPath
-			reduce(21), // less_than, reduce: FieldPath
-			reduce(21), // greater_equals, reduce: FieldPath
-			reduce(21), // greater_than, reduce: FieldPath
-			reduce(21), // not_equals, reduce: FieldPath
-			reduce(21), // equals, reduce: FieldPath
-			reduce(21), // has, reduce: FieldPath
-			reduce(21), // matches_regexp, reduce: FieldPath
-			reduce(21), // not_matches_regexp, reduce: FieldPath
+			reduce(21), // less_equals, reduce: Target
+			reduce(21), // less_than, reduce: Target
+			reduce(21), // greater_equals, reduce: Target
+			reduce(21), // greater_than, reduce: Target
+			reduce(21), // not_equals, reduce: Target
+			reduce(21), // equals, reduce: Target
+			reduce(21), // has, reduce: Target
+			reduce(21), // matches_regexp, reduce: Target
+			reduce(21), // not_matches_regexp, reduce: Target
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -3887,13 +3887,13 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(21), // $, reduce: FieldPath
-			reduce(21), // ws, reduce: FieldPath
-			reduce(21), // andOp, reduce: FieldPath
-			reduce(21), // orOp, reduce: FieldPath
+			reduce(21), // $, reduce: Target
+			reduce(21), // ws, reduce: Target
+			reduce(21), // andOp, reduce: Target
+			reduce(21), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(21), // dot, reduce: FieldPath
+			reduce(21), // dot, reduce: Target
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -4240,14 +4240,14 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(21), // ws, reduce: FieldPath
-			reduce(21), // andOp, reduce: FieldPath
-			reduce(21), // orOp, reduce: FieldPath
+			reduce(21), // ws, reduce: Target
+			reduce(21), // andOp, reduce: Target
+			reduce(21), // orOp, reduce: Target
 			nil,        // not
 			nil,        // minus
-			reduce(21), // dot, reduce: FieldPath
+			reduce(21), // dot, reduce: Target
 			nil,        // lparen
-			reduce(21), // rparen, reduce: FieldPath
+			reduce(21), // rparen, reduce: Target
 			nil,        // text
 			nil,        // string
 			nil,        // or
