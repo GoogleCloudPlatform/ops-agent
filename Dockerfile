@@ -20,7 +20,6 @@ FROM debian:bullseye AS bullseye-build
 
 # TODO: Factor out the common code without rerunning apt-get on every debian and
 # ubuntu build.
-# test
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
