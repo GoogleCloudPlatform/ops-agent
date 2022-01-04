@@ -103,6 +103,10 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
+	case "min":
+		return fmt.Sprintf("%q must be a minimum of %s", ve.Field(), ve.Param())
+	case "multipleof_time":
+		return fmt.Sprintf("%q must be a multiple of %s", ve.Field(), ve.Param())
 	case "oneof":
 		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
@@ -169,6 +173,18 @@ func newValidator() *validator.Validate {
 	v.RegisterValidation("filter_list", func(fl validator.FieldLevel) bool {
 		_, err := newFilters(fl.Field().Interface().([]string))
 		return err == nil
+	})
+	// multipleof_time validates that the value duration is a multiple of the parameter
+	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
+		t, ok := fl.Field().Interface().(time.Duration)
+		if !ok {
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Field().String()))
+		}
+		tfactor, err := time.ParseDuration(fl.Param())
+		if err != nil {
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Param()))
+		}
+		return t%tfactor == 0
 	})
 	return v
 }
