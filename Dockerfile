@@ -27,9 +27,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -43,9 +43,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -107,9 +107,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -123,9 +123,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -144,9 +144,9 @@ RUN set -x; yum -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -162,9 +162,9 @@ RUN set -x; yum -y update && \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -194,9 +194,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -213,9 +213,9 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
