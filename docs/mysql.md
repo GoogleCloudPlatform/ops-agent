@@ -5,13 +5,6 @@ The mysql receiver can retrieve stats from your mysql instance by connecting as 
 ## Prerequisites
 
 The `mysql` receiver defaults to connecting to a local MySQL server using a Unix socket and Unix authentication as the `root` user.
-It is recommended that you create a dedicated monitoring user. The monitoring user must be granted the following permissions:
-
-```
-PROCESS ON *.*
-SELECT ON INFORMATION_SCHEMA.INNODB_METRICS
-```
-
 
 ## Configuration
 
