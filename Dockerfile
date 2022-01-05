@@ -81,7 +81,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config golang-go openjdk-11-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -93,7 +97,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config golang-go openjdk-11-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
