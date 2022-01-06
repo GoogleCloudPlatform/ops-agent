@@ -30,9 +30,8 @@ type MetricsReceiverMySql struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
-	Password  string `yaml:"password" validate:"omitempty"`
-	Username  string `yaml:"username" validate:"omitempty"`
-	Transport string `yaml:"transport" validate:"omitempty,oneof=tcp udp unix"`
+	Password string `yaml:"password" validate:"omitempty"`
+	Username string `yaml:"username" validate:"omitempty"`
 }
 
 const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
@@ -42,11 +41,12 @@ func (r MetricsReceiverMySql) Type() string {
 }
 
 func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+	transport := "tcp"
 	if r.Endpoint == "" {
-		r.Transport = "unix"
+		transport = "unix"
 		r.Endpoint = defaultMySqlUnixEndpoint
 	} else if strings.HasPrefix(r.Endpoint, "/") {
-		r.Transport = "unix"
+		transport = "unix"
 	}
 
 	if r.Username == "" {
@@ -61,7 +61,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 				"username":            r.Username,
 				"password":            r.Password,
-				"transport":           r.Transport,
+				"transport":           transport,
 			},
 		},
 		Processors: []otel.Component{

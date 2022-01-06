@@ -19,8 +19,6 @@ To configure a receiver for your mysql metrics, specify the following fields:
 | `collection_interval` | `60s`                           | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `username`            | `root`                          | The username used to connect to the server. |
 | `password`            |                                 | The password used to connect to the server. |
-| `transport`           | `unix`                          | Defines the network to use for connecting to the server. |
-
 
 Example Configuration:
 
