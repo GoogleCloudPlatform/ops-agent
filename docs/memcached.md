@@ -20,7 +20,7 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    redis_metrics:
+    memcached_metrics:
       type: memcached
       collection_interval: 60s
   service:
