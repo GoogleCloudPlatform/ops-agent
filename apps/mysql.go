@@ -49,6 +49,10 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		r.Transport = "unix"
 	}
 
+	if r.Username == "" {
+		r.Username = "root"
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "mysql",
