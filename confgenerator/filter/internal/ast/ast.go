@@ -185,15 +185,11 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 		c.Config["Condition"] = cond("Key_value_matches", lhs, rhsRegex)
 	case "!~":
 		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, rhsRegex)})
-		// TODO: Remove when https://github.com/fluent/fluent-bit/issues/4319 is resolved.
-		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_exists", lhs)})
 	case "=":
 		// equality
 		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))
 	case "!=":
 		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))})
-		// TODO: Remove when https://github.com/fluent/fluent-bit/issues/4319 is resolved.
-		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_exists", lhs)})
 	}
 	return []fluentbit.Component{c}
 }
