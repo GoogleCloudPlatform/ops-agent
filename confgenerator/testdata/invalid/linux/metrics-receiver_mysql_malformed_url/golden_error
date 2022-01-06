@@ -1,0 +1,9 @@
+[19:17] Key: 'MetricsReceiverMySql.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=/' tag
+  16 |   receivers:
+  17 |     mysqlmetrics:
+  18 |       type: mysql
+> 19 |       endpoint: localhost
+                       ^
+  20 |       collection_interval: 30s
+  21 |   service:
+  22 |     pipelines:
