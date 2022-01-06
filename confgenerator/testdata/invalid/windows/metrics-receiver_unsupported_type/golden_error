@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [apache, cassandra, hostmetrics, iis, jvm, mssql, mysql, nginx, redis].
+=======
+metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [apache, cassandra, hostmetrics, iis, jvm, memcached, mssql, nginx, redis].
+>>>>>>> master
