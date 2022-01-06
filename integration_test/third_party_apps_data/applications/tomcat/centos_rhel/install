@@ -1,0 +1,4 @@
+set -e
+
+yum install java-1.8.0
+sudo yum -y install tomcat
