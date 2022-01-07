@@ -1,1 +1,1 @@
-sudo service cassandra start
+sudo service tomcat9 start

@@ -1,11 +1,4 @@
 set -e
-
-# Required to install cassandra
-echo "deb http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-# Required to install java8 (JVM properties of cassandra are incompatible with >9)
-echo "deb http://security.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-
-curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
-
 sudo apt update
-sudo apt install -y openjdk-8-jdk cassandra
+sudo apt install default-jdk
+sudo apt install tomcat9 tomcat9-admin -y
