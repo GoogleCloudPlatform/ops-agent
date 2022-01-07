@@ -14,9 +14,15 @@
 
 package apps
 
-import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+import (
+	"time"
+
+	cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+)
 
 var (
+	defaultCollectionInterval = 60 * time.Second
+
 	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
 		"linux": &cg.UnifiedConfig{
 			Logging: &cg.Logging{
@@ -39,7 +45,7 @@ var (
 				Receivers: map[string]cg.MetricsReceiver{
 					"hostmetrics": &MetricsReceiverHostmetrics{
 						ConfigComponent:       cg.ConfigComponent{Type: "hostmetrics"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
+						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: defaultCollectionInterval},
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
@@ -78,15 +84,15 @@ var (
 				Receivers: map[string]cg.MetricsReceiver{
 					"hostmetrics": &MetricsReceiverHostmetrics{
 						ConfigComponent:       cg.ConfigComponent{Type: "hostmetrics"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
+						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: defaultCollectionInterval},
 					},
 					"iis": &MetricsReceiverIis{
 						ConfigComponent:       cg.ConfigComponent{Type: "iis"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
+						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: defaultCollectionInterval},
 					},
 					"mssql": &MetricsReceiverMssql{
 						ConfigComponent:       cg.ConfigComponent{Type: "mssql"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
+						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: defaultCollectionInterval},
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{

@@ -44,7 +44,7 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
+				"collection_interval": r.CollectionInterval,
 				"endpoint":            r.StubStatusURL,
 			},
 		},

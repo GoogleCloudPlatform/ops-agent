@@ -11,13 +11,13 @@ metrics:
   receivers:
     hostmetrics:
       type: hostmetrics
-      collection_interval: 60s
+      collection_interval: 1m0s
     iis:
       type: iis
-      collection_interval: 60s
+      collection_interval: 1m0s
     mssql:
       type: mssql
-      collection_interval: 60s
+      collection_interval: 1m0s
   processors:
     metrics_filter:
       type: exclude_metrics

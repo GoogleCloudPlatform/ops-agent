@@ -58,7 +58,7 @@ func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
 
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
+		"collection_interval": r.CollectionInterval,
 		"endpoint":            r.Endpoint,
 		"jar_path":            jarPath,
 	}

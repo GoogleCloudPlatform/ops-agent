@@ -34,7 +34,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
+				"collection_interval": r.CollectionInterval,
 				"perfcounters": []map[string]interface{}{
 					{
 						"object":    "Web Service",

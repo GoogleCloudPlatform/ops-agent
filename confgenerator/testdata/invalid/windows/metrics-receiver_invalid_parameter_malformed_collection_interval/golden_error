@@ -1,9 +1,1 @@
-[5:28] "collection_interval" must be a duration of at least 10s
-   2 |   receivers:
-   3 |     receiver_1:
-   4 |       type: hostmetrics
->  5 |       collection_interval: 24
-                                  ^
-   6 |   service:
-   7 |     pipelines:
-   8 |       default_pipeline:
+cannot unmarshal uint64 into Go struct field UnifiedConfig.Metrics of type time.Duration

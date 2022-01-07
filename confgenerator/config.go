@@ -84,8 +84,6 @@ func (ve validationError) StructField() string {
 
 func (ve validationError) Error() string {
 	switch ve.Tag() {
-	case "duration":
-		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
 	case "endswith":
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
@@ -140,18 +138,6 @@ func newValidator() *validator.Validate {
 	// platform validates that the current platform is equal to the parameter
 	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return ctx.Value(platformKey) == fl.Param()
-	})
-	// duration validates that the value is a valid duration and >= the parameter
-	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
-		t, err := time.ParseDuration(fl.Field().String())
-		if err != nil {
-			return false
-		}
-		tmin, err := time.ParseDuration(fl.Param())
-		if err != nil {
-			panic(err)
-		}
-		return t >= tmin
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
@@ -372,15 +358,7 @@ type MetricsReceiver interface {
 }
 
 type MetricsReceiverShared struct {
-	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
-}
-
-func (m MetricsReceiverShared) CollectionIntervalString() string {
-	// TODO: Remove when https://github.com/goccy/go-yaml/pull/246 is merged
-	if m.CollectionInterval != "" {
-		return m.CollectionInterval
-	}
-	return "60s"
+	CollectionInterval time.Duration `yaml:"collection_interval" validate:"required,min=10s"` // time.Duration format
 }
 
 var MetricsReceiverTypes = &componentTypeRegistry{

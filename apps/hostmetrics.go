@@ -34,7 +34,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 		Receiver: otel.Component{
 			Type: "hostmetrics",
 			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
+				"collection_interval": r.CollectionInterval,
 				"scrapers": map[string]interface{}{
 					"cpu":        struct{}{},
 					"load":       struct{}{},

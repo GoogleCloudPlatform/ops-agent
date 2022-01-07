@@ -34,7 +34,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
-				"collection_interval": m.CollectionIntervalString(),
+				"collection_interval": m.CollectionInterval,
 				"perfcounters": []map[string]interface{}{
 					{
 						"object":    "SQLServer:General Statistics",
