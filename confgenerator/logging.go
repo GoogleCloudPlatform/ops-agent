@@ -50,7 +50,6 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"resource":          "gce_instance",
 			"stackdriver_agent": userAgent,
 
-			// FIXME: Don't leave this here yet
 			"http_request_key": HttpRequestKey,
 
 			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
