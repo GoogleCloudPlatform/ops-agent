@@ -645,7 +645,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 -   Run Open Telemetry Metrics Agent individually:
 
     ```
-    C:\Users\{{USERNAME}}\tmp\out\bin\google-cloud-metrics-agent_windows_amd64.exe --add-instance-id=false "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
+    C:\Users\{{USERNAME}}\tmp\out\bin\google-cloud-metrics-agent_windows_amd64.exe "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
     ```
 
 #### Uninstall the agent
@@ -1059,7 +1059,7 @@ show it.
 ### Run Open Telemetry Metrics Agent individually on Windows
 
 ```
-'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' --add-instance-id=false "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
+'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
 ```
 
 ### Known issues
