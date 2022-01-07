@@ -32,10 +32,10 @@ func (r MetricsReceiverLogging) Pipeline() otel.Pipeline {
 					"scrape_configs": []map[string]interface{}{{
 						"job_name":        "logging-collector",
 						"scrape_interval": "1m",
-						"metrics_path":    "/api/v1/metrics/prometheus",
+						"metrics_path":    "/metrics",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{"127.0.0.1:2020"},
+							"targets": []string{"0.0.0.0:2021"},
 						}},
 					}},
 				},

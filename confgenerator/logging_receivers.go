@@ -272,3 +272,28 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 func init() {
 	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSystemd{} }, "linux")
 }
+
+// A LoggingReceiverMetric represents the user configuration for a fluentbit self-metric receiver.
+type LoggingReceiverMetric struct {
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingReceiverMetric) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
+			"Name":            "fluentbit_metrics",
+			"Scrape_On_Start": "True",
+			"Scrape_Interval": "30",
+		},
+	}}
+
+}
+
+func (r LoggingReceiverMetric) Type() string {
+	return "fluentbit_metrics"
+}
+func init() {
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverMetric{} })
+}
