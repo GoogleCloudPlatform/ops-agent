@@ -128,7 +128,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
 	}
-	out = append(out, fluentbit.Service{LogLevel: l.Service.LogLevel}.Component())
+	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
+	out = append(out, service.Component())
+	out = append(out, service.MetricsComponent())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
@@ -174,6 +176,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
+
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 
 	return out, nil

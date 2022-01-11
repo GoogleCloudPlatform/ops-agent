@@ -49,3 +49,15 @@ func (s Service) Component() Component {
 		},
 	}
 }
+
+func (s Service) MetricsComponent() Component {
+	return Component{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
+			"Name":            "fluentbit_metrics",
+			"Scrape_On_Start": "True",
+			"Scrape_Interval": "30",
+		},
+	}
+}
