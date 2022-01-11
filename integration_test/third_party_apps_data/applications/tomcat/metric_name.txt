@@ -1,1 +1,1 @@
-workload.googleapis.com/tomcat.sessions
+workload.googleapis.com/tomcat.threads
