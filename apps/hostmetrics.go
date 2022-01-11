@@ -68,7 +68,6 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				"system.filesystem.inodes.usage",
 				"system.paging.faults",
 				"system.disk.operation_time",
-				"system.processes.count",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -156,13 +155,14 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					"disk/bytes_used",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
-					// take sum over mode, mountpoint & type dimensions, retaining only device & state
-					otel.AggregateLabels("sum", "device", "state"),
+					// take max over mode, mountpoint & type dimensions, retaining only device & state
+					// there may be multiple mountpoints for the same device
+					otel.AggregateLabels("max", "device", "state"),
 				),
 				otel.RenameMetric(
 					"system.filesystem.utilization",
 					"disk/percent_used",
-					otel.AggregateLabels("sum", "device", "state"),
+					otel.AggregateLabels("max", "device", "state"),
 				),
 				otel.RenameMetric(
 					"system.memory.usage",
@@ -220,6 +220,13 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				otel.RenameMetric(
 					"system.processes.created",
 					"processes/fork_count",
+				),
+				otel.RenameMetric(
+					"system.processes.count",
+					"processes/count_by_state",
+					// change data type from int64 -> double
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("status", "state"),
 				),
 				otel.RenameMetric(
 					"system.paging.usage",

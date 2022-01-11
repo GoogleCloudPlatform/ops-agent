@@ -9,18 +9,18 @@ Note: Using `ssd` speeds up the build.
 
 ```shell
 # VM image family.
-$ export WIN_BUILD_VM_OS_IMAGE_FAMILY=windows-2019-for-containers
+export WIN_BUILD_VM_OS_IMAGE_FAMILY=windows-2019-for-containers
 
 # Your dev GCP project ID.
-$ export VM_PROJECT_ID = ${USER}-sandbox
+export VM_PROJECT_ID=${USER}-sandbox
 
 # The zone to create the VM in.
-$ export VM_ZONE=us-central1-a
+export VM_ZONE=us-central1-a
 
 # The VM name to use.
-$ export WIN_BUILD_VM_NAME=${USER}-win-build-vm
+export WIN_BUILD_VM_NAME=${USER}-win-build-vm
 
-$ gcloud compute instances create \
+gcloud compute instances create \
     --project $VM_PROJECT_ID \
     --zone $VM_ZONE \
     --image-project windows-cloud \
@@ -35,7 +35,7 @@ $ gcloud compute instances create \
 Once the VM is running, reset the password:
 
 ```shell
-$ gcloud compute reset-windows-password --quiet \
+gcloud compute reset-windows-password --quiet \
     --project $VM_PROJECT_ID \
     --zone $VM_ZONE \
     $WIN_BUILD_VM_NAME

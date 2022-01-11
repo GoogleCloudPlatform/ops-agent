@@ -42,7 +42,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "httpd",
+			Type: "apache",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.ServerStatusURL,
@@ -52,11 +52,10 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
-				"httpd.uptime",
+				"apache.uptime",
 			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
-				otel.ChangePrefix("httpd", "apache"),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
