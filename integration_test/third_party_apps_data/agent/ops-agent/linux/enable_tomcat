@@ -21,7 +21,7 @@ metrics:
   receivers:
     tomcat_metrics:
       type: tomcat
-      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:9010/jmxrmi
+      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:8050/jmxrmi
       collection_interval: 60s
   service:
     pipelines:
