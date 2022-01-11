@@ -27,14 +27,14 @@ type MetricsReceiverTomcat struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|url"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
 
-const defaultTomcatEndpoint = "localhost:9010"
+const defaultTomcatEndpoint = "localhost:8050"
 
 func (r MetricsReceiverTomcat) Type() string {
 	return "tomcat"

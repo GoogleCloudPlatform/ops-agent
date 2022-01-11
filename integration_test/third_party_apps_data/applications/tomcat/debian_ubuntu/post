@@ -1,1 +1,3 @@
-sudo service tomcat9 start
+set -e
+
+sudo systemctl restart tomcat

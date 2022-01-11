@@ -1,22 +1,36 @@
 set -e
 
-source /etc/os-release
-SUSE_VERSION="${VERSION_ID%%.*}"
+sudo zypper install -y curl java-11-openjdk
+sudo mkdir -p /opt/tomcat/stage
+sudo curl "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.56/bin/apache-tomcat-9.0.56.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
+sudo tar -xvzf /opt/tomcat/stage/tomcat.tgz -C /opt/tomcat --strip 1
 
-if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
-  if [[ "${VERSION_ID}" == 15.0 ]]; then
-    sudo zypper modifyrepo --disable openSUSE-Leap-Cloud-Tools
-  elif [[ "${VERSION_ID}" == 15.1 ]]; then
-    sudo zypper modifyrepo --disable openSUSE-Leap-devel-languages-python-aws
-  fi
-fi
-sudo zypper -n refresh
+cat << EOF > tomcat.service
+[Unit]
+Description=Tomcat Server
+After=syslog.target network.target
 
-sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
+[Service]
+Type=forking
+User=root
+Group=root
 
-# There is no official or even semi-official zypper package for cassandra
-curl -OL https://dlcdn.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
-# TODO - compare to curl -L https://downloads.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz.sha256
+Environment=JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
+Environment='JAVA_OPTS=-Djava.awt.headless=true'
+Environment=CATALINA_HOME=/opt/tomcat
+Environment=CATALINA_BASE=/opt/tomcat
+Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
+ExecStart=/opt/tomcat/bin/catalina.sh start
+ExecStop=/opt/tomcat/bin/catalina.sh stop
 
-tar xzvf apache-cassandra-4.0.1-bin.tar.gz
-mv apache-cassandra-4.0.1 apache-cassandra
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo mv tomcat.service /usr/lib/systemd/system/tomcat.service
+sudo chown root:root /usr/lib/systemd/system/tomcat.service
+sudo chmod 0644 /usr/lib/systemd/system/tomcat.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable tomcat

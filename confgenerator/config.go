@@ -643,7 +643,7 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 }
 
 func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
-	jvmReceivers := []string{"jvm", "cassandra"}
+	jvmReceivers := []string{"jvm", "cassandra", "tomcat"}
 	jvmReceiverCount := 0
 	for _, receiverType := range jvmReceivers {
 		jvmReceiverCount += typeCounts[receiverType]
