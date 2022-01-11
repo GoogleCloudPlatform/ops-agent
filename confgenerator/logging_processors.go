@@ -53,8 +53,8 @@ func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Compo
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "json"
 	return []fluentbit.Component{
-		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
 		parser,
+		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
 	}
 }
 

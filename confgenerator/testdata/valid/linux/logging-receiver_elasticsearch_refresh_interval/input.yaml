@@ -1,0 +1,27 @@
+
+logging:
+  receivers:
+    elasticsearch_json_default:
+      type: elasticsearch_json
+    elasticsearch_gc_default:
+      type: elasticsearch_gc
+    elasticsearch_json_custom:
+      type: elasticsearch_json
+      wildcard_refresh_interval: 55s
+      include_paths:
+        - /logs/es/example.json
+    elasticsearch_gc_custom:
+      type: elasticsearch_gc
+      wildcard_refresh_interval: 35s
+      include_paths:
+        - /logs/es/gc.log
+  service:
+    pipelines:
+      cassandra_default:
+        receivers:
+          - elasticsearch_json_default
+          - elasticsearch_gc_default
+      cassandra_custom:
+        receivers:
+          - elasticsearch_json_custom
+          - elasticsearch_gc_custom
