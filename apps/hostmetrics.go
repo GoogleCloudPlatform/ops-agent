@@ -68,7 +68,6 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				"system.filesystem.inodes.usage",
 				"system.paging.faults",
 				"system.disk.operation_time",
-				"system.processes.count",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -221,6 +220,13 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				otel.RenameMetric(
 					"system.processes.created",
 					"processes/fork_count",
+				),
+				otel.RenameMetric(
+					"system.processes.count",
+					"processes/count_by_state",
+					// change data type from int64 -> double
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("status", "state"),
 				),
 				otel.RenameMetric(
 					"system.paging.usage",
