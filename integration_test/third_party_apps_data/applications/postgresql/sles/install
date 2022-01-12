@@ -1,0 +1,5 @@
+set -e
+
+sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo
+sudo zypper --non-interactive --no-gpg-checks ref
+sudo zypper in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14

@@ -17,7 +17,97 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
+	"strings"
 )
+
+type MetricsReceiverPostgresql struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
+
+	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
+	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
+	CertFile           string `yaml:"cert_file" validate:"omitempty"`
+	KeyFile            string `yaml:"key_file" validate:"omitempty"`
+	CAFile             string `yaml:"ca_file" validate:"omitempty"`
+
+	Password  string   `yaml:"password" validate:"omitempty"`
+	Username  string   `yaml:"username" validate:"omitempty"`
+	Databases []string `yaml:"databases" validate:"omitempty"`
+}
+
+const defaultpostgresqlUnixEndpoint = "/var/run/postgresql/.s.PGSQL.5432"
+
+func (r MetricsReceiverPostgresql) Type() string {
+	return "postgresql"
+}
+
+func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+	transport := "tcp"
+	if r.Endpoint == "" {
+		transport = "unix"
+		r.Endpoint = defaultpostgresqlUnixEndpoint
+	} else if strings.HasPrefix(r.Endpoint, "/") {
+		transport = "unix"
+	}
+
+	if r.Username == "" {
+		r.Username = "postgres"
+	}
+
+	cfg := map[string]interface{}{
+		"collection_interval": r.CollectionIntervalString(),
+		"endpoint":            r.Endpoint,
+		"username":            r.Username,
+		"password":            r.Password,
+		"transport":           transport,
+	}
+
+	if transport == "tcp" && r.Insecure != nil && *r.Insecure == false {
+		skip_verify := true
+		if r.InsecureSkipVerify != nil && *r.InsecureSkipVerify == false {
+			skip_verify = false
+		}
+
+		tls := map[string]interface{}{
+			"insecure":             *r.Insecure,
+			"insecure_skip_verify": skip_verify,
+		}
+
+		if r.CertFile != "" {
+			tls["cert_file"] = r.CertFile
+		}
+		if r.CAFile != "" {
+			tls["ca_file"] = r.CAFile
+		}
+		if r.KeyFile != "" {
+			tls["key_file"] = r.KeyFile
+		}
+
+		cfg["tls"] = tls
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "postgresql",
+			Config: cfg,
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverPostgresql{} })
+}
 
 type LoggingProcessorPostgresql struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -32,13 +122,16 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
-					// Limited documentation: https://dev.postgresql.com/doc/refman/8.0/en/query-log.html
-					// Sample line: 2021-10-12T01:12:37.732966Z        14 Connect   root@localhost on  using Socket
-					// Sample line: 2021-10-12T01:12:37.733135Z        14 Query     select @@version_comment limit 1
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s+\[(?<tid>\d+)\](?:\s+(?<role>.*)@(?<user>.*))? (?<level>\w+):\s+(?<message>.*)$`,
+					// Limited logging documentation: https://www.postgresql.org/docs/10/runtime-config-logging.html
+					// Sample line: 2022-01-12 20:57:58.378 UTC [26241] LOG:  starting PostgreSQL 14.1 (Debian 14.1-1.pgdg100+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 8.3.0-6) 8.3.0, 64-bit
+					// Sample line: 2022-01-12 20:59:25.169 UTC [27445] postgres@postgres FATAL:  Peer authentication failed for user "postgres"
+					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
+					//    from pg_database
+					//    where 1=1;
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s+\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))? (?<level>\w+):\s+(?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
 						Types: map[string]string{
 							"tid": "integer",
 						},
@@ -50,12 +143,12 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
+				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)`,
 			},
 		},
 	}.Components(tag, uid)
@@ -71,8 +164,9 @@ type LoggingReceiverPostgresql struct {
 func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
-			"/var/lib/postgresql/${HOSTNAME}.log",
+			// Default log paths for CentOS / RHEL / SLES / Debain / Ubuntu
+			"/var/log/postgresql/${HOSTNAME}.log",
+			"/var/log/postgresql/postgresql*.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
