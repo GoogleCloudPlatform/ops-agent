@@ -1,4 +1,4 @@
-[5:20] "matches_any": 1:28: error: expected one of not, minus, lparen, text, or string; got: ")"
+[5:20] "matches_any[0]": 1:28: error: expected one of not, minus, lparen, text, or string; got: ")"
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs

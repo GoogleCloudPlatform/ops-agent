@@ -1,4 +1,4 @@
-[5:20] "matches_any": 1:19: error: unrecognized LogEntry path: invalid.path
+[5:20] "matches_any[0]": 1:19: error: unrecognized LogEntry path: invalid.path
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs

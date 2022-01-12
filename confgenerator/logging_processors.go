@@ -235,7 +235,7 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 // A LoggingProcessorExcludeLogs filters out logs according to a pattern.
 type LoggingProcessorExcludeLogs struct {
 	ConfigComponent `yaml:",inline"`
-	MatchesAny      []string `yaml:"matches_any" validate:"required,filter_list"`
+	MatchesAny      []string `yaml:"matches_any" validate:"required,dive,filter"`
 }
 
 func (r LoggingProcessorExcludeLogs) Type() string {
