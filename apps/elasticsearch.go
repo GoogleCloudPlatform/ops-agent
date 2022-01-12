@@ -1,6 +1,8 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -40,23 +42,10 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
-	nestClusterProcessor := &confgenerator.LoggingProcessorNestWildcard{
-		Wildcard:     "cluster.*",
-		NestUnder:    "cluster",
-		RemovePrefix: "cluster.",
-	}
-
-	nestNodeProcessor := &confgenerator.LoggingProcessorNestWildcard{
-		Wildcard:     "node.*",
-		NestUnder:    "node",
-		RemovePrefix: "node.",
-	}
-
 	c = append(c, multilineParser.Components(tag, uid)...)
 	c = append(c, jsonParser.Components(tag, uid)...)
 	c = append(c, p.severityParser(tag, uid)...)
-	c = append(c, nestClusterProcessor.Components(tag, uid)...)
-	c = append(c, nestNodeProcessor.Components(tag, uid)...)
+	c = append(c, p.nestingProcessors(tag, uid)...)
 
 	return c
 }
@@ -100,6 +89,40 @@ func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []flu
 			DestVal: "FATAL",
 		},
 	})
+}
+
+func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
+	// The majority of these prefixes come from here:
+	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
+	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
+	// https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
+	prefixes := []string{
+		"user.run_by",
+		"user.run_as",
+		"authentication.token",
+		"node",
+		"event",
+		"authentication",
+		"user",
+		"origin",
+		"request",
+		"url",
+		"host",
+		"apikey",
+		"cluster",
+	}
+
+	c := make([]fluentbit.Component, 0, len(prefixes))
+	for _, prefix := range prefixes {
+		nestProcessor := confgenerator.LoggingProcessorNestWildcard{
+			Wildcard:     fmt.Sprintf("%s.*", prefix),
+			NestUnder:    prefix,
+			RemovePrefix: fmt.Sprintf("%s.", prefix),
+		}
+		c = append(c, nestProcessor.Components(tag, uid)...)
+	}
+
+	return c
 }
 
 type LoggingProcessorElasticsearchGC struct {

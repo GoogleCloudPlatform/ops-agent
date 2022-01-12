@@ -17,11 +17,11 @@ logging:
         - /logs/es/gc.log
   service:
     pipelines:
-      cassandra_default:
+      elasticsearch_default:
         receivers:
           - elasticsearch_json_default
           - elasticsearch_gc_default
-      cassandra_custom:
+      elasticsearch_custom:
         receivers:
           - elasticsearch_json_custom
           - elasticsearch_gc_custom
