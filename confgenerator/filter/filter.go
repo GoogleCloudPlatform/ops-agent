@@ -44,12 +44,21 @@ func NewFilter(f string) (*Filter, error) {
 	return nil, fmt.Errorf("not an expression: %+v", out)
 }
 
-func (f *Filter) Components(tag string) []fluentbit.Component {
+// innerComponents returns only the logical modify filters that are intended to be
+// positioned between corresponding nest/grep/lift filters.
+func (f *Filter) innerComponents(tag string) []fluentbit.Component {
 	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
 	return f.expr.Components(tag, match)
 }
 
-func AllComponents(tag string, filters []Filter, isExclusionFilter bool) []fluentbit.Component {
+func (f *Filter) Components(tag string, isExclusionFilter bool) []fluentbit.Component {
+	return AllComponents(tag, []*Filter{f}, isExclusionFilter)
+}
+
+// AllComponents returns a list of FluentBit components for a list of filters.
+// As an optimization, only a single set of nest/grep/lift components is
+// emitted in total.
+func AllComponents(tag string, filters []*Filter, isExclusionFilter bool) []fluentbit.Component {
 	var parity string
 	if isExclusionFilter {
 		parity = "Exclude"
@@ -68,7 +77,7 @@ func AllComponents(tag string, filters []Filter, isExclusionFilter bool) []fluen
 	}}
 	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
 	for _, filter := range filters {
-		c = append(c, filter.Components(tag)...)
+		c = append(c, filter.innerComponents(tag)...)
 	}
 	c = append(c,
 		fluentbit.Component{

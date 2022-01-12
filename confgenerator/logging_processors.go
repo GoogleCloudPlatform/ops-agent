@@ -243,14 +243,14 @@ func (r LoggingProcessorExcludeLogs) Type() string {
 }
 
 func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Component {
-	filters := make([]filter.Filter, 0, len(p.MatchesAny))
+	filters := make([]*filter.Filter, 0, len(p.MatchesAny))
 	for _, condition := range p.MatchesAny {
 		filter, err := filter.NewFilter(condition)
 		if err != nil {
 			log.Printf("error parsing condition '%s': %v", condition, err)
 			return nil
 		}
-		filters = append(filters, *filter)
+		filters = append(filters, filter)
 	}
 	return filter.AllComponents(tag, filters, true)
 }
