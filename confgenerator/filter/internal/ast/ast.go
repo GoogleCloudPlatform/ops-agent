@@ -39,47 +39,39 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"httpRequest":    "logging.googleapis.com/http_request",
 }
 
-// RecordAccessor returns a string that can be used as a key in fluentbit config
-func (m Target) RecordAccessor() string {
-	s := `$record`
-	for _, part := range m {
-		unquoted, _ := Unquote(part)
-		s = s + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
-	}
-	return s
-}
-
-// logEntryToFluentBit translates a Target from a LogEntry model to a FluentBit model
-func (m Target) logEntryToFluentBit() (Target, error) {
-	var fluentbit Target
+// RecordAccessor returns a string that can be used as a key in a FluentBit config
+func (m Target) RecordAccessor() (string, error) {
+	var fluentBit []string
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
-			fluentbit = Target{v}
+			fluentBit = []string{v}
 		}
 	} else if len(m) > 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[m[0]]; ok {
-			fluentbit = prepend(v, m[1:])
+			fluentBit = prepend(v, m[1:])
 		} else if m[0] == "jsonPayload" {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
-			fluentbit = m[1:]
+			fluentBit = m[1:]
 		}
 	}
-	if fluentbit == nil {
-		return nil, fmt.Errorf("unrecognized LogEntry path: %v", strings.Join(m, "."))
+	if fluentBit == nil {
+		return "", fmt.Errorf("target not convertible to FluentBit: %v", strings.Join(m, "."))
 	}
-	for _, part := range fluentbit {
+	recordAccessor := `$record`
+	for _, part := range fluentBit {
 		unquoted, err := Unquote(part)
 		if err != nil {
-			return Target{}, err
+			return "", err
 		}
 		// Disallowed characters because they cannot be encoded in a Record Accessor.
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
 		if strings.ContainsAny(unquoted, "\n\r\", ") {
-			return nil, fmt.Errorf(`path may not contain line breaks, spaces, commas, or double-quotes: %s`, part)
+			return "", fmt.Errorf(`path may not contain line breaks, spaces, commas, or double-quotes: %s`, part)
 		}
+		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
 	}
-	return fluentbit, nil
+	return recordAccessor, nil
 }
 
 func prepend(value string, slice []string) []string {
@@ -105,7 +97,7 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	switch lhs := lhs.(type) {
 	case Target:
 		// Eager validation
-		_, err := lhs.logEntryToFluentBit()
+		_, err := lhs.RecordAccessor()
 		if err != nil {
 			return nil, err
 		}
@@ -168,8 +160,7 @@ func escapeWhitespace(s string) string {
 
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
-	lhsTarget, _ := r.LHS.logEntryToFluentBit()
-	lhs := lhsTarget.RecordAccessor()
+	lhs, _ := r.LHS.RecordAccessor()
 	rhs := r.RHS
 	rhsLiteral, _ := Unquote(rhs)
 	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
