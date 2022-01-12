@@ -16,6 +16,23 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
+	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+	// this parser handles that case.
+	multilineParser := &confgenerator.LoggingProcessorParseMultiline{
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^{.*`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^[^{].*[,}]$`,
+			},
+		},
+	}
+
 	jsonParser := &confgenerator.LoggingProcessorParseJson{
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
@@ -23,8 +40,23 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
+	nestClusterProcessor := &confgenerator.LoggingProcessorNestWildcard{
+		Wildcard:     "cluster.*",
+		NestUnder:    "cluster",
+		RemovePrefix: "cluster.",
+	}
+
+	nestNodeProcessor := &confgenerator.LoggingProcessorNestWildcard{
+		Wildcard:     "node.*",
+		NestUnder:    "node",
+		RemovePrefix: "node.",
+	}
+
+	c = append(c, multilineParser.Components(tag, uid)...)
 	c = append(c, jsonParser.Components(tag, uid)...)
 	c = append(c, p.severityParser(tag, uid)...)
+	c = append(c, nestClusterProcessor.Components(tag, uid)...)
+	c = append(c, nestNodeProcessor.Components(tag, uid)...)
 
 	return c
 }

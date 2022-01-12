@@ -125,6 +125,44 @@ func (r MultilineRule) AsString() string {
 	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
 }
 
+type LoggingProcessorParseMultiline struct {
+	Field string
+	Rules []MultilineRule
+}
+
+func (p LoggingProcessorParseMultiline) Components(tag, uid string) []fluentbit.Component {
+	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
+	rules := [][2]string{}
+	for _, rule := range p.Rules {
+		rules = append(rules, [2]string{"rule", rule.AsString()})
+	}
+
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":                  "multiline",
+			"Match":                 tag,
+			"Multiline.Key_Content": "message",
+			"Multiline.Parser":      multilineParserName,
+		},
+	}
+
+	if p.Field != "" {
+		filter.Config["Multiline.Key_Content"] = p.Field
+	}
+
+	multilineParser := fluentbit.Component{
+		Kind: "MULTILINE_PARSER",
+		Config: map[string]string{
+			"Name": multilineParserName,
+			"Type": "regex",
+		},
+		OrderedConfig: rules,
+	}
+
+	return []fluentbit.Component{filter, multilineParser}
+}
+
 // A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
 //     #
 //     # Regex rules for multiline parsing
@@ -179,6 +217,30 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 
 func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
+}
+
+type LoggingProcessorNestWildcard struct {
+	Wildcard     string
+	NestUnder    string
+	RemovePrefix string
+}
+
+func (p LoggingProcessorNestWildcard) Components(tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      p.Wildcard,
+			"Nest_under":    p.NestUnder,
+			"Remove_prefix": p.RemovePrefix,
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
 }
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
