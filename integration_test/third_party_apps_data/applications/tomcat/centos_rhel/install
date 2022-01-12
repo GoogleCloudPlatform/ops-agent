@@ -20,7 +20,7 @@ Environment='JAVA_OPTS=-Djava.awt.headless=true'
 Environment=CATALINA_HOME=/opt/tomcat
 Environment=CATALINA_BASE=/opt/tomcat
 Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
-Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
 ExecStart=/opt/tomcat/bin/catalina.sh start
 ExecStop=/opt/tomcat/bin/catalina.sh stop
 
