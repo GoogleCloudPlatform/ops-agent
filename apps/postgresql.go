@@ -128,7 +128,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
 					//    from pg_database
 					//    where 1=1;
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s+\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))? (?<level>\w+):\s+(?<message>[\s\S]*)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s+\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))? (?<type>\w+):\s+(?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
@@ -153,6 +153,28 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 		},
 	}.Components(tag, uid)
 
+	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+			[]struct{ SrcVal, DestVal string }{
+				{"DEBUG1", "DEBUG"},
+				{"DEBUG2", "DEBUG"},
+				{"DEBUG3", "DEBUG"},
+				{"DEBUG4", "DEBUG"},
+				{"DEBUG5", "DEBUG"},
+				{"DETAIL", "DEBUG"},
+				{"STATEMENT", "DEBUG"},
+				{"INFO", "INFO"},
+				{"LOG", "INFO"},
+				{"NOTICE", "INFO"},
+				{"ERROR", "ERROR"},
+				{"WARNING", "WARNING"},
+				{"FATAL", "CRITICAL"},
+				{"PANIC", "CRITICAL"},
+			},
+		)...,
+	)
+
 	return c
 }
 
@@ -165,7 +187,6 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log paths for CentOS / RHEL / SLES / Debain / Ubuntu
-			"/var/log/postgresql/${HOSTNAME}.log",
 			"/var/log/postgresql/postgresql*.log",
 		}
 	}

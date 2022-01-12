@@ -131,6 +131,9 @@ General Query logs contain the following fields in the [`LogEntry`](https://clou
 | Field | Type | Description |
 | ---   | ---- | ----------- |
 | `jsonPayload.tid` | number | Thread ID where the log originated |
-| `jsonPayload.command` | string | Type of database action being logged |
+| `jsonPayload.role` | string | Authenticated role for the action being logged when relevant |
+| `jsonPayload.user` | string | Authenticated user for the action being logged when relevant |
+| `jsonPayload.type` | string | Type of log - may be severity, or may be type of database interaction depending on log |
 | `jsonPayload.message` | string | Log of the database action |
+| `severity` | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)) | Log entry level (translated) |
 | `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the entry was logged |
