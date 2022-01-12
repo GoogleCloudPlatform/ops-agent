@@ -190,14 +190,13 @@ Restriction
 ;
 
 Comparable
-: Target
+: Member
 // | Function
 ;
 
-// This represents member from the filter BNF, and represents either a value or a dotted field path.
-Target
+Member
 : Item << ast.Target{$0.(string)}, nil >>
-| Target dot ItemKeyword << append($0.(ast.Target), $2.(string)), nil >>
+| Member dot ItemKeyword << append($0.(ast.Target), $2.(string)), nil >>
 ;
 
 Composite

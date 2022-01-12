@@ -26,6 +26,7 @@ import (
 
 type Attrib interface{}
 
+// Target represents member from the filter BNF, and represents either a value or a dotted field path.
 type Target []string
 
 var logEntryRootValueMapToFluentBit = map[string]string{

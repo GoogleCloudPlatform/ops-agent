@@ -227,7 +227,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparable : Target	<<  >>`,
+		String: `Comparable : Member	<<  >>`,
 		Id:         "Comparable",
 		NTType:     8,
 		Index:      19,
@@ -237,8 +237,8 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Target : Item	<< ast.Target{X[0].(string)}, nil >>`,
-		Id:         "Target",
+		String: `Member : Item	<< ast.Target{X[0].(string)}, nil >>`,
+		Id:         "Member",
 		NTType:     9,
 		Index:      20,
 		NumSymbols: 1,
@@ -247,8 +247,8 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Target : Target dot ItemKeyword	<< append(X[0].(ast.Target), X[2].(string)), nil >>`,
-		Id:         "Target",
+		String: `Member : Member dot ItemKeyword	<< append(X[0].(ast.Target), X[2].(string)), nil >>`,
+		Id:         "Member",
 		NTType:     9,
 		Index:      21,
 		NumSymbols: 3,
