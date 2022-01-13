@@ -131,7 +131,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
 					//    from pg_database
 					//    where 1=1;
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s+\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))? (?<type>\w+):\s+(?<message>[\s\S]*)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))?\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
