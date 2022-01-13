@@ -1,5 +1,13 @@
 set -e
 
-sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "${SUSE_VERSION}" == 12 ]]; then
+  sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-12-pg14.repo
+elif [[ "${SUSE_VERSION}" == 15 ]]; then
+  sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo
+fi
+
 sudo zypper --non-interactive --no-gpg-checks ref
-sudo zypper in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
+sudo zypper -n in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
