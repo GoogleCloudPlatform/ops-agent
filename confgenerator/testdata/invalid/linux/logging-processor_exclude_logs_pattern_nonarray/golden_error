@@ -1,9 +1,9 @@
-[5:20] string was used where sequence is expected
+[5:18] string was used where sequence is expected
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs
->  5 |       matches_any: jsonPayload.message = "message"
-                          ^
+>  5 |       match_any: jsonPayload.message = "message"
+                        ^
    6 |   service:
    7 |     pipelines:
    8 |       default_pipeline:

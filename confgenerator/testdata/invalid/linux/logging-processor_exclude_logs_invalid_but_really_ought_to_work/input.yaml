@@ -2,7 +2,7 @@ logging:
   processors:
     p1:
       type: exclude_logs
-      matches_any: ['jsonPayload.message!~foo']
+      match_any: ['jsonPayload.message!~foo']
   service:
     pipelines:
       default_pipeline:

@@ -235,7 +235,7 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 // A LoggingProcessorExcludeLogs filters out logs according to a pattern.
 type LoggingProcessorExcludeLogs struct {
 	ConfigComponent `yaml:",inline"`
-	MatchesAny      []string `yaml:"matches_any" validate:"required,dive,filter"`
+	MatchAny        []string `yaml:"match_any" validate:"required,dive,filter"`
 }
 
 func (r LoggingProcessorExcludeLogs) Type() string {
@@ -243,8 +243,8 @@ func (r LoggingProcessorExcludeLogs) Type() string {
 }
 
 func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Component {
-	filters := make([]*filter.Filter, 0, len(p.MatchesAny))
-	for _, condition := range p.MatchesAny {
+	filters := make([]*filter.Filter, 0, len(p.MatchAny))
+	for _, condition := range p.MatchAny {
 		filter, err := filter.NewFilter(condition)
 		if err != nil {
 			log.Printf("error parsing condition '%s': %v", condition, err)

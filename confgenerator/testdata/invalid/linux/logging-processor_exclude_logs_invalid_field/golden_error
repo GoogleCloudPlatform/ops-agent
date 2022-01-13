@@ -1,7 +1,7 @@
 [6:7] unknown field "foo"
    3 |     processor_1:
    4 |       type: exclude_logs
-   5 |       matches_any: ['foo = bar']
+   5 |       match_any: ['foo = bar']
 >  6 |       foo: bar
              ^
    7 |   service:

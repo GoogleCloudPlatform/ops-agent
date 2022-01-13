@@ -2,7 +2,7 @@ logging:
   processors:
     processor_1:
       type: exclude_logs
-      matches_any: ['jsonPayload.message = ("first" OR "second")']
+      match_any: ['jsonPayload.message = ("first" OR "second")']
   service:
     pipelines:
       default_pipeline:
