@@ -56,9 +56,9 @@ func (m Target) RecordAccessor() (string, error) {
 		}
 	}
 	if fluentBit == nil {
-		return "", fmt.Errorf("target not convertible to FluentBit: %v", strings.Join(m, "."))
+		return "", fmt.Errorf("invalid target: %v", strings.Join(m, "."))
 	}
-	recordAccessor := `$record`
+	recordAccessor := "$record"
 	for _, part := range fluentBit {
 		unquoted, err := Unquote(part)
 		if err != nil {
@@ -68,7 +68,7 @@ func (m Target) RecordAccessor() (string, error) {
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
 		if strings.ContainsAny(unquoted, "\n\r\", ") {
-			return "", fmt.Errorf(`path may not contain line breaks, spaces, commas, or double-quotes: %s`, part)
+			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %s", part)
 		}
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
 	}
