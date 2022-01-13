@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -64,61 +62,6 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverApache{} })
-}
-
-type LoggingProcessorApacheAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
-
-func (LoggingProcessorApacheAccess) Type() string {
-	return "apache_access"
-}
-
-func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Documentation: https://httpd.apache.org/docs/current/logs.html#accesslog
-		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
-		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
-		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
-			Types: map[string]string{
-				"http_request_status": "integer",
-				// N.B. "http_request_responseSize" is a string containing an integer.
-				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
-			},
-		},
-	}.Components(tag, uid)
-	// apache logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	for _, field := range []string{
-		"host",
-		"user",
-		"http_request_referer",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
-	}
-	// Generate the httpRequest structure.
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
-			"Remove_prefix": "http_request_",
-		},
-	})
-	return c
 }
 
 type LoggingProcessorApacheError struct {
@@ -176,7 +119,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 }
 
 type LoggingReceiverApacheAccess struct {
-	LoggingProcessorApacheAccess            `yaml:",inline"`
+	LoggingProcessorAccess                  `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
@@ -192,7 +135,7 @@ func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Componen
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
+	c = append(c, r.LoggingProcessorAccess.Components(tag, "apache_access")...)
 	return c
 }
 
@@ -218,7 +161,6 @@ func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheError{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheAccess{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheError{} })
