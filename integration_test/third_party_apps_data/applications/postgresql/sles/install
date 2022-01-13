@@ -10,4 +10,4 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
 fi
 
 sudo zypper --non-interactive --no-gpg-checks ref
-sudo zypper -n in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
+sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
