@@ -57,8 +57,7 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 
 			"workers": "8",
 
-			// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
-			"net.connect_timeout_log_error": "False",
+			"net.dns.prefer_ipv4": "on",
 		},
 	}
 }
