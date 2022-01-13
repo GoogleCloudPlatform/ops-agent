@@ -186,8 +186,17 @@ type LoggingReceiverPostgresql struct {
 func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log paths for CentOS / RHEL / SLES / Debain / Ubuntu
+			// Default log paths for Debain / Ubuntu
 			"/var/log/postgresql/postgresql*.log",
+			// Default log paths for SLES
+			"/var/lib/pgsql/data/log/postgresql*.log",
+			// Default log paths for CentOS / RHEL
+			"/var/lib/pgsql/*/data/log/postgresql*.log",
+			// "/var/lib/pgsql/14/data/log/postgresql*.log",
+			// "/var/lib/pgsql/13/data/log/postgresql*.log",
+			// "/var/lib/pgsql/12/data/log/postgresql*.log",
+			// "/var/lib/pgsql/11/data/log/postgresql*.log",
+			// "/var/lib/pgsql/10/data/log/postgresql*.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)

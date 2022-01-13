@@ -1,7 +1,7 @@
 log_entries:
 - log_name: "postgresql_general"
   field_matchers:
-    jsonPayload.message: '.*Connection matched pg_hba.conf.*'
-    jsonPayload.level: "DETAIL"
+    jsonPayload.message: '.*ALTER ROLE.*'
+    jsonPayload.level: "LOG"
     jsonPayload.user: "postgres"
     jsonPayload.role: "postgres"
