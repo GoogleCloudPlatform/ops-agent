@@ -344,8 +344,9 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type LoggingService struct {
-	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
-	Pipelines map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
+	LogLevel    string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
+	Credentials string                      `yaml:"google_service_credentials,omitempty" validate:"omitempty"`
+	Pipelines   map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type LoggingPipeline struct {

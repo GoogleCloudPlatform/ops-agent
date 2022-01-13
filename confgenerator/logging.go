@@ -35,8 +35,8 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
-	return fluentbit.Component{
+func stackdriverOutputComponent(match, userAgent, credentials string) fluentbit.Component {
+	exporter := fluentbit.Component{
 		Kind: "OUTPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
@@ -61,4 +61,10 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"net.connect_timeout_log_error": "False",
 		},
 	}
+
+	if credentials != "" {
+		exporter.Config["google_service_credentials"] = credentials
+	}
+
+	return exporter
 }
