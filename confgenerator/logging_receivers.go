@@ -288,7 +288,16 @@ func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Compone
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 			"Mem_Buf_Limit": "10M",
 		},
-	}}
+	},
+		{
+			Kind:          "FILTER",
+			Config:        map[string]string{
+				"Name":	"lua",
+				"Match": tag + ".*",
+				"script": "add_log_name.lua",
+				"call": "add_log_name",
+			},
+		}}
 }
 
 func init() {
