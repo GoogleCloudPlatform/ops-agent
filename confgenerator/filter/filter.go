@@ -65,6 +65,9 @@ func AllComponents(tag string, filters []*Filter, isExclusionFilter bool) []flue
 	} else {
 		parity = "Regex"
 	}
+	// TODO: Re-implement using Lua once regex is supported. Lua has been shown to perform better
+	// than the next/modify/grep/lift pattern used here, but we are unable to use Lua for now since
+	// it does not yet support regex.
 	c := []fluentbit.Component{{
 		Kind: "FILTER",
 		Config: map[string]string{
