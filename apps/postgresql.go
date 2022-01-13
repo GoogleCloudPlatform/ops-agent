@@ -41,8 +41,7 @@ type MetricsReceiverPostgresql struct {
 }
 
 // Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq expects it like this
-// TODO - do this magic in the postgres receiver
-const defaultpostgresqlUnixEndpoint = "/var/run/postgresql/:5432"
+const defaultpostgresqlUnixEndpoint = "var/run/postgresql/:5432"
 
 func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
@@ -55,11 +54,8 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultpostgresqlUnixEndpoint
 	} else if strings.HasPrefix(r.Endpoint, "/") {
 		transport = "unix"
-		// TODO - resolve this in the postgres receiver
-		// custom parsing to be processed properly by the pg receiver
-		// This turns /var/run/postgresql/.s.PGSQL.5432 into /var/run/postgresql/:5432
 		endpointParts := strings.Split(r.Endpoint, ".")
-		r.Endpoint = endpointParts[0] + ":" + endpointParts[len(endpointParts)-1]
+		r.Endpoint = strings.TrimLeft(endpointParts[0], "/") + ":" + endpointParts[len(endpointParts)-1]
 	}
 
 	if r.Username == "" {
