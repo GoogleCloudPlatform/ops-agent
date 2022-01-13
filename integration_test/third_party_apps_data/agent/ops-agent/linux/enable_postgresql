@@ -23,6 +23,7 @@ metrics:
       collection_interval: 30s
       username: postgres
       password: abc123
+      endpoint: localhost:5432
   service:
     pipelines:
       postgresql_pipeline:
