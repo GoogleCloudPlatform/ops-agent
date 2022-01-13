@@ -2,6 +2,6 @@ log_entries:
 - log_name: "postgresql_general"
   field_matchers:
     jsonPayload.message: '.*ALTER ROLE.*'
-    jsonPayload.level: "LOG"
+    jsonPayload.type: "LOG"
     jsonPayload.user: "postgres"
     jsonPayload.role: "postgres"
