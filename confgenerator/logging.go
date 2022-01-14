@@ -62,3 +62,17 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 		},
 	}
 }
+
+// prometheusExporterOutputComponent generates a component that outputs to metrics prometheus format.
+func prometheusExporterOutputComponent() fluentbit.Component {
+	return fluentbit.Component{
+		Kind: "OUTPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/outputs/prometheus-exporter
+			"Name":  "prometheus_exporter",
+			"Match": "*",
+			"host":  "0.0.0.0",
+			"port":  "2222",
+		},
+	}
+}

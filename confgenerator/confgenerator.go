@@ -175,6 +175,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, prometheusExporterOutputComponent())
 
 	return out, nil
 }
