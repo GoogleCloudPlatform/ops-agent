@@ -49,7 +49,7 @@ metrics:
     postgresql_metrics:
       type: postgresql 
       endpoint: localhost:3306
-      collection_interval: 30s
+      collection_interval: 60s
       password: pwd
       username: usr
   service:
