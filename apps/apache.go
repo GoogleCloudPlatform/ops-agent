@@ -123,7 +123,7 @@ type LoggingProcessorApacheAccess struct {
 }
 
 func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	return apacheAccessLogParser(tag, uid)
+	return genericAccessLogParser(tag, uid)
 }
 
 func (LoggingProcessorApacheAccess) Type() string {

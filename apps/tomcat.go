@@ -101,7 +101,7 @@ type LoggingProcessorTomcatAccess struct {
 }
 
 func (p LoggingProcessorTomcatAccess) Components(tag string, uid string) []fluentbit.Component {
-	return apacheAccessLogParser(tag, uid)
+	return genericAccessLogParser(tag, uid)
 }
 
 func (LoggingProcessorTomcatAccess) Type() string {
