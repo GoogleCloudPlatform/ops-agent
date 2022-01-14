@@ -43,7 +43,7 @@ In addition to Tomcat specific metrics, by default Tomcat will also report [JVM 
 | workload.googleapis.com/tomcat.processing_time       | Cumulative     | ms          | proto_handler                  | The total processing time. |
 | workload.googleapis.com/tomcat.traffic               | Cumulative     | by          | proto_handler, direction       | The number of bytes transmitted and received. |
 | workload.googleapis.com/tomcat.threads               | Gauge          | threads     | proto_handler, state           | The number of threads. |
-| workload.googleapis.com/tomcat.max_time              | Cumulative     | ms          | proto_handler                  | Maximum time to process a request. |
+| workload.googleapis.com/tomcat.max_time              | Gauge          | ms          | proto_handler                  | Maximum time to process a request. |
 | workload.googleapis.com/tomcat.request_count         | Cumulative     | requests    | proto_handler                  | The total requests. |
 
 
