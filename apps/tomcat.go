@@ -27,9 +27,9 @@ type MetricsReceiverTomcat struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|url"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|url,startswith=service:jmx:"`
+	Username string `yaml:"username" validate:"required_with=Password"`
+	Password string `yaml:"password" validate:"required_with=Username"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
@@ -63,10 +63,8 @@ func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
 	}
 
 	// Only set the username & password fields if provided
-	if r.Username != "" {
+	if r.Username != "" && r.Password != "" {
 		config["username"] = r.Username
-	}
-	if r.Password != "" {
 		config["password"] = r.Password
 	}
 
