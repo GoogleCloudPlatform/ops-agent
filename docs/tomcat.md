@@ -11,11 +11,11 @@ To configure a receiver for your tomcat system logs, specify the following field
 | `include_paths`       | `[/opt/tomcat/logs/catalina.out]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 
-To configure a receiver for your tomcat debug logs, specify the following fields:
+To configure a receiver for your tomcat access logs, specify the following fields:
 
 | Field                 | Default                                         | Description |
 | ---                   | ---                                             | ---         |
-| `type`                | required                                        | Must be `tomcat_debug`. |
+| `type`                | required                                        | Must be `tomcat_access`. |
 | `include_paths`       | `[/opt/tomcat/logs/localhost_access_log.*.txt]` | The log files to read. |
 | `exclude_paths`       | `[]`                                            | Log files to exclude (if `include_paths` contains a glob or directory). |
 
@@ -24,16 +24,16 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    tomcat_default_system:
+    tomcat_system:
       type: tomcat_system
-    tomcat_default_debug:
-      type: tomcat_debug
+    tomcat_access:
+      type: tomcat_access
   service:
     pipelines:
       tomcat:
         receivers:
-          - tomcat_default_system
-          - tomcat_default_debug
+          - tomcat_system
+          - tomcat_access
 ```
 
 ## Logs

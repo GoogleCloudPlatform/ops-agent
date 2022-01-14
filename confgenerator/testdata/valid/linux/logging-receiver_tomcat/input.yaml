@@ -14,44 +14,13 @@
 
 logging:
   receivers:
-    tomcat_default_system:
+    tomcat_system:
       type: tomcat_system
-    tomcat_default_access:
-      type: tomcat_access
-    tomcat_custom_system:
-      type: tomcat_system
-      include_paths:
-        - /var/log/tomcat/mysystem.log
-    tomcat_custom_access:
-      type: tomcat_access
-      include_paths:
-        - /var/log/tomcat/myaccess.log
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    tomcat_syslog_system:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-    tomcat_syslog_access:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-  processors:
-    tomcat_syslog_system:
-      type: tomcat_system
-    tomcat_syslog_access:
+    tomcat_access:
       type: tomcat_access
   service:
     pipelines:
-      tomcat_default:
+      tomcat:
         receivers:
-          - tomcat_default_system
-          - tomcat_default_access
-      tomcat_custom:
-        receivers:
-          - tomcat_custom_system
-          - tomcat_custom_access
-      tomcat_syslog_system:
-        receivers: [tomcat_syslog_system, tomcat_syslog_access]
-        processors: [tomcat_syslog_system, tomcat_syslog_access]
+          - tomcat_system
+          - tomcat_access
