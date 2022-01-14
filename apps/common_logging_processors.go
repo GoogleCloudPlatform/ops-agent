@@ -21,15 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-type LoggingProcessorAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
-
-func (LoggingProcessorAccess) Type() string {
-	return "apache_access"
-}
-
-func (p LoggingProcessorAccess) Components(tag string, uid string) []fluentbit.Component {
+func apacheAccessLogParser(tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#accesslog
 		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
@@ -74,8 +66,4 @@ func (p LoggingProcessorAccess) Components(tag string, uid string) []fluentbit.C
 		},
 	})
 	return c
-}
-
-func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorAccess{} })
 }

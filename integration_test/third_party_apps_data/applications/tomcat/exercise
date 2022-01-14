@@ -1,0 +1,4 @@
+set -e
+
+# request non-existent file
+curl http://localhost:8080/forbidden.html

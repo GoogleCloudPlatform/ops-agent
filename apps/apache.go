@@ -118,8 +118,20 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 	return c
 }
 
+type LoggingProcessorApacheAccess struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
+	return apacheAccessLogParser(tag, uid)
+}
+
+func (LoggingProcessorApacheAccess) Type() string {
+	return "apache_access"
+}
+
 type LoggingReceiverApacheAccess struct {
-	LoggingProcessorAccess                  `yaml:",inline"`
+	LoggingProcessorApacheAccess            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
@@ -135,7 +147,7 @@ func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Componen
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorAccess.Components(tag, "apache_access")...)
+	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
 	return c
 }
 
@@ -161,6 +173,7 @@ func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component
 }
 
 func init() {
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorApacheError{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheAccess{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverApacheError{} })

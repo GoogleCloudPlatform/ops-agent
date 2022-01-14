@@ -19,25 +19,48 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-type LoggingProcessorTomcat struct {
+type LoggingProcessorTomcatSystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (LoggingProcessorTomcat) Type() string {
-	return "tomcat"
+func (LoggingProcessorTomcatSystem) Type() string {
+	return "tomcat_system"
 }
 
-func (p LoggingProcessorTomcat) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Sample line: 11-Jan-2022 20:41:58.279 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=/opt/tomcat/temp
-		// Sample line: 11-Jan-2022 20:41:58.283 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent The Apache Tomcat Native library which allows using OpenSSL was not found on the java.library.path: [/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib]
-		// Sample line: 11-Jan-2022 20:41:58.988 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
-		Regex: `(?<time>\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})\s(?<level>[A-Z]+)\s\[(?<module>[^\]]+)\]\s(?<message>(?:(?<source>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%d %b %Y %H:%M:%S.%L",
-			Types: map[string]string{
-				"lineNumber": "integer",
+func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					// Sample line: 11-Jan-2022 20:41:58.279 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=/opt/tomcat/temp
+					// Sample line: 11-Jan-2022 20:41:58.283 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent The Apache Tomcat Native library which allows using OpenSSL was not found on the java.library.path: [/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib]
+					// Sample line: 13-Jan-2022 16:10:27.715 SEVERE [main] org.apache.catalina.core.ContainerBase.removeChild Error destroying child
+					//
+					// Sample line: org.apache.catalina.LifecycleException: An invalid Lifecycle transition was attempted ([before_destroy]) for component [StandardEngine[Catalina].StandardHost[localhost].StandardContext[/examples]] in state [STARTED]
+					// Sample line:         at org.apache.catalina.util.LifecycleBase.invalidTransition(LifecycleBase.java:430)
+					// Sample line:         at org.apache.catalina.util.LifecycleBase.destroy(LifecycleBase.java:316)
+					Regex: `^(?<time>\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})\s(?<level>[A-Z]+)\s\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[\S\s]+)`,
+					Parser: confgenerator.ParserShared{
+						TimeKey: "time",
+						//   13-Jan-2022 16:10:27.715
+						TimeFormat: "%d-%b-%Y %H:%M:%S.%L",
+						Types: map[string]string{
+							"lineNumber": "integer",
+						},
+					},
+				},
+			},
+		},
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
 			},
 		},
 	}.Components(tag, uid)
@@ -58,12 +81,12 @@ func (p LoggingProcessorTomcat) Components(tag string, uid string) []fluentbit.C
 	return c
 }
 
-type LoggingReceiverTomcat struct {
-	LoggingProcessorTomcat                  `yaml:",inline"`
+type SystemLoggingReceiverTomcat struct {
+	LoggingProcessorTomcatSystem            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
+func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
@@ -71,29 +94,42 @@ func (r LoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorTomcat.Components(tag, "tomcat")...)
+	c = append(c, r.LoggingProcessorTomcatSystem.Components(tag, "tomcat_system")...)
 	return c
 }
 
-type AccessLoggingReceiverTomcat struct {
-	LoggingProcessorAccess                  `yaml:",inline"`
+type LoggingProcessorTomcatAccess struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (p LoggingProcessorTomcatAccess) Components(tag string, uid string) []fluentbit.Component {
+	return apacheAccessLogParser(tag, uid)
+}
+
+func (LoggingProcessorTomcatAccess) Type() string {
+	return "tomcat_access"
+}
+
+type AccessSystemLoggingReceiverTomcat struct {
+	LoggingProcessorTomcatAccess            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r AccessLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
+func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
-			"/opt/tomcat/logs/localhost_access_log.*.txt ",
+			"/opt/tomcat/logs/localhost_access_log.*.txt",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorAccess.Components(tag, "tomcat_access")...)
+	c = append(c, r.LoggingProcessorTomcatAccess.Components(tag, "tomcat_access")...)
 	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverTomcat{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorTomcat{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverTomcat{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorTomcatAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorTomcatSystem{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessSystemLoggingReceiverTomcat{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &SystemLoggingReceiverTomcat{} })
 }
