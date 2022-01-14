@@ -88,7 +88,6 @@ type SystemLoggingReceiverTomcat struct {
 func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path on Ubuntu / Debian
 			"/opt/tomcat/logs/catalina.out",
 		}
 	}
@@ -117,7 +116,6 @@ type AccessSystemLoggingReceiverTomcat struct {
 func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path on Ubuntu / Debian
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
 		}
 	}
