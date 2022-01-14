@@ -32,7 +32,9 @@ import (
 
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
-	versionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
+	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
+	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
+
 	pipelines := make(map[string]otel.Pipeline)
 	if uc.Metrics != nil {
 		var err error
@@ -43,7 +45,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	}
 
 	pipelines["agent"] = MetricsReceiverAgent{
-		Version: versionLabel,
+		Version: metricVersionLabel,
+	}.Pipeline()
+
+	pipelines["fluentbit"] = MetricsReceiverLogging{
+		Version: loggingVersionLabel,
 	}.Pipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
