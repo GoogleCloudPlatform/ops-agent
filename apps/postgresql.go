@@ -40,7 +40,8 @@ type MetricsReceiverPostgresql struct {
 	Databases []string `yaml:"databases" validate:"omitempty"`
 }
 
-// Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq expects it like this
+// Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq go module used by
+// the underlying receiver expects it like this
 const defaultpostgresqlUnixEndpoint = "var/run/postgresql/:5432"
 
 func (r MetricsReceiverPostgresql) Type() string {
@@ -70,7 +71,12 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		"transport":           transport,
 	}
 
-	if transport == "tcp" && r.Insecure != nil && *r.Insecure == false {
+	if transport == "tcp" {
+		if r.Insecure == nil {
+			insecure := true
+			r.Insecure = &insecure
+		}
+
 		skip_verify := true
 		if r.InsecureSkipVerify != nil && *r.InsecureSkipVerify == false {
 			skip_verify = false
@@ -131,7 +137,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
 					//    from pg_database
 					//    where 1=1;
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))?\s*(?<type>\w+):\s+(?<message>[\s\S]*)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))?\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
@@ -158,7 +164,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "type", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
 			[]struct{ SrcVal, DestVal string }{
 				{"DEBUG1", "DEBUG"},
 				{"DEBUG2", "DEBUG"},
