@@ -178,6 +178,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, prometheusExporterOutputComponent())
 
 	return out, nil
 }
