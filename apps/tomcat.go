@@ -77,6 +77,15 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 			},
 		)...,
 	)
+
+	c = append(c, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":   "modify",
+			"Match":  tag,
+			"Remove": "level",
+		},
+	})
 	return c
 }
 
