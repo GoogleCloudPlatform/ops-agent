@@ -38,6 +38,25 @@ func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal,
 	return c
 }
 
+// TranslationRenameComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.
+// The original key is removed when translated.
+func TranslationRenameComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
+	c := []Component{}
+	for _, t := range translations {
+		c = append(c, Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
+				"Rename":    fmt.Sprintf("%s %s", dest, t.DestVal),
+			},
+		})
+	}
+
+	return c
+}
+
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
 func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]string, tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
