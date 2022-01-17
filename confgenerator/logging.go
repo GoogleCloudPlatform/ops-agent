@@ -72,7 +72,7 @@ func prometheusExporterOutputComponent() fluentbit.Component {
 			"Name":  "prometheus_exporter",
 			"Match": "*",
 			"host":  "0.0.0.0",
-			"port":  "2222",
+			"port":  "20202",
 		},
 	}
 }
