@@ -145,6 +145,11 @@ func newValidator() *validator.Validate {
 	})
 	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
+		fieldStr := fl.Field().String()
+		if fieldStr == "" {
+			// Ignore the case where this field is not actually specified or is left empty.
+			return true
+		}
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
 			return false
@@ -374,7 +379,7 @@ type MetricsReceiver interface {
 }
 
 type MetricsReceiverShared struct {
-	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
+	CollectionInterval string `yaml:"collection_interval" validate:"duration=10s"` // time.Duration format
 }
 
 func (m MetricsReceiverShared) CollectionIntervalString() string {

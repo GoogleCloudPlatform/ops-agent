@@ -1,12 +1,3 @@
-# Ignore the list of platforms stored in the kokoro config
-# in google3. Let's test on the following platforms.
-platforms_override:
-  - debian-10
-  - centos-7
-  - centos-8
-  - sles-12
-  - sles-15
-  - ubuntu-2004-lts
 per_application_overrides:
   apache:
     # Skip all platforms listed above except debian-10 for now.
