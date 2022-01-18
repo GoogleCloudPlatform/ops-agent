@@ -21,6 +21,11 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
 	// this parser handles that case.
 	multilineParser := &confgenerator.LoggingProcessorParseMultiline{
+		// sample log line:
+		// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
+		// Logs are formatted based on configuration (log4j);
+		// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
+		// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of loggins
 		Rules: []confgenerator.MultilineRule{
 			{
 				StateName: "start_state",
@@ -113,6 +118,8 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 	c := []fluentbit.Component{}
 
 	regexParser := confgenerator.LoggingProcessorParseRegex{
+		// Sample log line:
+		// [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
 		Regex: `\[(?<time>\d+-\d+-\d+T\d+:\d+:\d+.\d+\+\d+)\]\[\d+\]\[(?<type>[A-z,]+)\s*\]\s*(?:GC\((?<gc_run>\d+)\))?\s*(?<message>.*)`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
