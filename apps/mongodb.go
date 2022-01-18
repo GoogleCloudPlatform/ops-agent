@@ -94,7 +94,15 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	c = append(c, filterComponent)
+	c = append(c, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":     "parser",
+			"Match":    tag,
+			"Key_Name": "message",
+			"Parser":   parserComponent.OrderedConfig[0][1],
+		},
+	})
 
 	removeTimestamp := fluentbit.Component{
 		Kind: "FILTER",
