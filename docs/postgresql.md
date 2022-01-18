@@ -15,7 +15,7 @@ To configure a receiver for your postgresql metrics, specify the following field
 | Field                   | Required | Default                         | Description |
 | ---                     | ---      | ---                             | ---         |
 | `type`                  | required |                      | Must be `postgresql`. |
-| `endpoint`              | optional | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path used to connect to postgresql |
+| `endpoint`              | optional | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path starting with `/` used to connect to postgresql |
 | `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `username`              | optional |                                 | The username used to connect to the server. |
 | `password`              | optional |                                 | The password used to connect to the server. |
@@ -50,7 +50,7 @@ metrics:
     postgresql_metrics:
       type: postgresql 
       endpoint: localhost:3306
-      collection_interval: 30s
+      collection_interval: 60s
       password: pwd
       username: usr
   service:
@@ -68,7 +68,7 @@ metrics:
     postgresql_metrics:
       type: postgresql 
       endpoint: localhost:3306
-      collection_interval: 30s
+      collection_interval: 60s
       password: pwd
       username: usr
       insecure: false
