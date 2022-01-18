@@ -10,5 +10,4 @@ log_entries:
 - log_name: "elasticsearch_default_gc"
   field_matchers:
     jsonPayload.message: "Pause Young (Normal) (G1 Evacuation Pause)"
-    jsonPayload.gc_run: 0
     jsonPayload.type: "gc,start"
