@@ -56,38 +56,14 @@ func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []flu
 		SrcVal  string
 		DestVal string
 	}{
-		{
-			SrcVal:  "TRACE",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "DEBUG",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "INFO",
-			DestVal: "INFO",
-		},
-		{
-			SrcVal:  "WARN",
-			DestVal: "WARNING",
-		},
-		{
-			SrcVal:  "DEPRECATION",
-			DestVal: "WARNING",
-		},
-		{
-			SrcVal:  "ERROR",
-			DestVal: "ERROR",
-		},
-		{
-			SrcVal:  "CRITICAL",
-			DestVal: "ERROR",
-		},
-		{
-			SrcVal:  "FATAL",
-			DestVal: "FATAL",
-		},
+		{"TRACE", "DEBUG"},
+		{"DEBUG", "DEBUG"},
+		{"INFO", "INFO"},
+		{"WARN", "WARNING"},
+		{"DEPRECATION", "WARNING"},
+		{"ERROR", "ERROR"},
+		{"CRITICAL", "ERROR"},
+		{"FATAL", "FATAL"},
 	})
 }
 
