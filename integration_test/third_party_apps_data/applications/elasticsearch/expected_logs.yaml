@@ -5,7 +5,6 @@ log_entries:
     jsonPayload.message: "initialized"
     jsonPayload.component: "o.e.n.Node"
     jsonPayload.type: "server"
-    severity: "INFO"
 
 # [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
 - log_name: "elasticsearch_default_gc"
