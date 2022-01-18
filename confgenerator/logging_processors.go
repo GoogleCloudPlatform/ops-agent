@@ -39,26 +39,6 @@ func (mp *MultiParser) Components(tag, uid string) []fluentbit.Component {
 	return c
 }
 
-type LoggingProcessorJsonParser struct {
-	Field string `yaml:"field,omitempty"`
-	ParserShared
-}
-
-func (jp *LoggingProcessorJsonParser) Type() string {
-	return "json"
-}
-
-func (jp *LoggingProcessorJsonParser) Components(tag, uid string) []fluentbit.Component {
-	parser, parserName := jp.ParserShared.Component(tag, uid)
-	parser.Config["Format"] = "json"
-	json := fluentbit.ParserFilterComponent(tag, jp.Field, []string{parserName})
-	return []fluentbit.Component{parser, json}
-}
-
-func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorJsonParser{} })
-}
-
 // ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
 type ParserShared struct {
 	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp

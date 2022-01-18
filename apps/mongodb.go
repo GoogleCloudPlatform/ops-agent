@@ -34,6 +34,7 @@ func (p *LoggingProcessorMongodb) Components(tag, uid string) []fluentbit.Compon
 
 	c = append(c, p.JsonLogComponents(tag, uid)...)
 	c = append(c, p.RegexLogComponents(tag, uid)...)
+	c = append(c, p.severityParser(tag, uid)...)
 
 	return c
 }
@@ -44,7 +45,6 @@ func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit
 	c := p.jsonParserWithTimeKey(tag, uid)
 
 	c = append(c, p.promoteWiredTiger(tag, uid)...)
-	c = append(c, p.severityParser(tag, uid)...)
 	c = append(c, p.renames(tag, uid)...)
 
 	return c
@@ -55,7 +55,7 @@ func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit
 func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
-	jsonParser := &confgenerator.LoggingProcessorJsonParser{
+	jsonParser := &confgenerator.LoggingProcessorParseJson{
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
@@ -109,6 +109,8 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 	return c
 }
 
+// severityParser is used by both regex and json parser to ensure an "s" field on the entry gets translated
+// to a valid logging.googleapis.com/seveirty field
 func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Component {
 	severityComponents := []fluentbit.Component{}
 	severityKey := "logging.googleapis.com/severity"
@@ -126,46 +128,16 @@ func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Co
 		SrcVal  string
 		DestVal string
 	}{
-		{
-			SrcVal:  "D",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "D1",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "D2",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "D3",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "D4",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "D5",
-			DestVal: "DEBUG",
-		},
-		{
-			SrcVal:  "I",
-			DestVal: "INFO",
-		},
-		{
-			SrcVal:  "E",
-			DestVal: "ERROR",
-		},
-		{
-			SrcVal:  "F",
-			DestVal: "FATAL",
-		},
-		{
-			SrcVal:  "W",
-			DestVal: "WARNING",
-		},
+		{"D", "DEBUG"},
+		{"D1", "DEBUG"},
+		{"D2", "DEBUG"},
+		{"D3", "DEBUG"},
+		{"D4", "DEBUG"},
+		{"D5", "DEBUG"},
+		{"I", "INFO"},
+		{"E", "ERROR"},
+		{"F", "FATAL"},
+		{"W", "WARNING"},
 	})...)
 
 	severityComponents = append(severityComponents, fluentbit.Component{
@@ -186,18 +158,9 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 		src  string
 		dest string
 	}{
-		{
-			src:  "c",
-			dest: "component",
-		},
-		{
-			src:  "ctx",
-			dest: "context",
-		},
-		{
-			src:  "msg",
-			dest: "message",
-		},
+		{"c", "component"},
+		{"ctx", "context"},
+		{"msg", "message"},
 	}
 
 	for _, rename := range renames {
@@ -250,7 +213,7 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 		"context":   "string",
 	}, fmt.Sprintf("%s_regex", tag), uid)
 	parser.Config["Format"] = "regex"
-	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<severity>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
+	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
 	parser.Config["Key_Name"] = "message"
 
 	parserFilter := fluentbit.Component{
@@ -262,9 +225,7 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 			"Key_Name": "message",
 		},
 	}
-
 	c = append(c, parser, parserFilter)
-	c = append(c, p.severityParser(tag, uid)...)
 
 	return c
 }
