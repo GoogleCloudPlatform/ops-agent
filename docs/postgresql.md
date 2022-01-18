@@ -4,7 +4,7 @@ The postgresql receiver can retrieve stats from your postgresql instance by conn
 
 ## Prerequisites
 
-The `postgresql` receiver defaults to connecting to a local postgresql server using a Unix socket and Unix authentication as the `postgres` user.
+The `postgresql` receiver defaults to connecting to a local postgresql server using a Unix socket and Unix authentication as the `root` user.
 
 ## Configuration
 
@@ -12,18 +12,18 @@ Following the guide for [Configuring the Ops Agent](https://cloud.google.com/sta
 
 To configure a receiver for your postgresql metrics, specify the following fields:
 
-| Field                   | Default                         | Description |
-| ---                     | ---                             | ---         |
-| `type`                  | required                        | Must be `postgresql`. |
-| `endpoint`              | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path used to connect to postgresql |
-| `collection_interval`   | `60s`                           | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`              | `postgres`                          | The username used to connect to the server. |
-| `password`              |                                 | The password used to connect to the server. |
-| `insecure`              | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
-| `insecure_skip_verify`  | true                            | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
-| `cert_file`             |                             | Path to the TLS cert to use for TLS required connections. |
-| `key_file`              |                             | Path to the TLS key to use for TLS required connections. |
-| `ca_file`               |                             | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
+| Field                   | Required | Default                         | Description |
+| ---                     | ---      | ---                             | ---         |
+| `type`                  | required |                      | Must be `postgresql`. |
+| `endpoint`              | optional | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path used to connect to postgresql |
+| `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+| `username`              | optional |                                 | The username used to connect to the server. |
+| `password`              | optional |                                 | The password used to connect to the server. |
+| `insecure`              | optional | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
+| `insecure_skip_verify`  | optional | true                            | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
+| `cert_file`             | optional |                             | Path to the TLS cert to use for TLS required connections. |
+| `key_file`              | optional |                             | Path to the TLS key to use for TLS required connections. |
+| `ca_file`               | optional |                             | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
 
 Example Configuration:
 
@@ -32,6 +32,7 @@ metrics:
   receivers:
     postgresql_metrics:
       type: postgresql
+      collection_interval: 60s
       username: usr
       password: pwd
   service:

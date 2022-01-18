@@ -16,15 +16,8 @@ metrics:
   receivers:
     postgresqlmetrics:
       type: postgresql
-      endpoint: localhost:3306
+      endpoint: localhost
       collection_interval: 30s
-      password: pwd
-      username: usr
-      insecure: false
-      insecure_skip_verify: false
-      cert_file: /path/to/crt
-      ca_file: /path/to/ca
-      key_file: /path/to/ca
   service:
     pipelines:
       postgresqlpipeline:

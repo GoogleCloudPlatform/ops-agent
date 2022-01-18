@@ -25,15 +25,10 @@ import (
 type MetricsReceiverPostgresql struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	confgenerator.MetricsReceiverShared    `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
-
-	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
-	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
-	CertFile           string `yaml:"cert_file" validate:"omitempty"`
-	KeyFile            string `yaml:"key_file" validate:"omitempty"`
-	CAFile             string `yaml:"ca_file" validate:"omitempty"`
 
 	Password  string   `yaml:"password" validate:"omitempty"`
 	Username  string   `yaml:"username" validate:"omitempty"`
@@ -42,7 +37,7 @@ type MetricsReceiverPostgresql struct {
 
 // Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq go module used by
 // the underlying receiver expects it like this
-const defaultpostgresqlUnixEndpoint = "var/run/postgresql/:5432"
+const defaultPostgresqlUnixEndpoint = "var/run/postgresql/:5432"
 
 func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
@@ -52,15 +47,11 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
-		r.Endpoint = defaultpostgresqlUnixEndpoint
+		r.Endpoint = defaultPostgresqlUnixEndpoint
 	} else if strings.HasPrefix(r.Endpoint, "/") {
 		transport = "unix"
 		endpointParts := strings.Split(r.Endpoint, ".")
 		r.Endpoint = strings.TrimLeft(endpointParts[0], "/") + ":" + endpointParts[len(endpointParts)-1]
-	}
-
-	if r.Username == "" {
-		r.Username = "postgres"
 	}
 
 	cfg := map[string]interface{}{
@@ -72,32 +63,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 	}
 
 	if transport == "tcp" {
-		if r.Insecure == nil {
-			insecure := true
-			r.Insecure = &insecure
-		}
-
-		skip_verify := true
-		if r.InsecureSkipVerify != nil && *r.InsecureSkipVerify == false {
-			skip_verify = false
-		}
-
-		tls := map[string]interface{}{
-			"insecure":             *r.Insecure,
-			"insecure_skip_verify": skip_verify,
-		}
-
-		if r.CertFile != "" {
-			tls["cert_file"] = r.CertFile
-		}
-		if r.CAFile != "" {
-			tls["ca_file"] = r.CAFile
-		}
-		if r.KeyFile != "" {
-			tls["key_file"] = r.KeyFile
-		}
-
-		cfg["tls"] = tls
+		cfg["tls"] = r.TLSConfig(true)
 	}
 
 	return []otel.Pipeline{{
@@ -201,11 +167,6 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 			"/var/lib/pgsql/data/log/postgresql*.log",
 			// Default log paths for CentOS / RHEL
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
-			// "/var/lib/pgsql/14/data/log/postgresql*.log",
-			// "/var/lib/pgsql/13/data/log/postgresql*.log",
-			// "/var/lib/pgsql/12/data/log/postgresql*.log",
-			// "/var/lib/pgsql/11/data/log/postgresql*.log",
-			// "/var/lib/pgsql/10/data/log/postgresql*.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)

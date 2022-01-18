@@ -383,6 +383,42 @@ func (m MetricsReceiverShared) CollectionIntervalString() string {
 	return "60s"
 }
 
+type MetricsReceiverSharedTLS struct {
+	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
+	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
+	CertFile           string `yaml:"cert_file" validate:"omitempty"`
+	KeyFile            string `yaml:"key_file" validate:"omitempty"`
+	CAFile             string `yaml:"ca_file" validate:"omitempty"`
+}
+
+func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]interface{} {
+	if m.Insecure == nil {
+		m.Insecure = &defaultInsecure
+	}
+
+	skip_verify := true
+	if m.InsecureSkipVerify != nil && *m.InsecureSkipVerify == false {
+		skip_verify = false
+	}
+
+	tls := map[string]interface{}{
+		"insecure":             *m.Insecure,
+		"insecure_skip_verify": skip_verify,
+	}
+
+	if m.CertFile != "" {
+		tls["cert_file"] = m.CertFile
+	}
+	if m.CAFile != "" {
+		tls["ca_file"] = m.CAFile
+	}
+	if m.KeyFile != "" {
+		tls["key_file"] = m.KeyFile
+	}
+
+	return tls
+}
+
 var MetricsReceiverTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "receiver",
 }
