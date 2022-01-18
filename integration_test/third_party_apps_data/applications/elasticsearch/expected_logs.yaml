@@ -1,0 +1,15 @@
+log_entries:
+# {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
+- log_name: "elasticsearch_default_json"
+  field_matchers:
+    jsonPayload.message: "initialized"
+    jsonPayload.component: "o.e.n.Node"
+    jsonPayload.type: "server"
+    severity: "INFO"
+
+# [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+- log_name: "elasticsearch_default_gc"
+  field_matchers:
+    jsonPayload.message: "Pause Young (Normal) (G1 Evacuation Pause)"
+    jsonPayload.gc_run: 0
+    jsonPayload.type: "gc,start"

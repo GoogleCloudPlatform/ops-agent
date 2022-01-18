@@ -1,0 +1,26 @@
+set -e
+
+sudo zypper install -y curl java-11-openjdk insserv-compat
+
+sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+cat << EOF > elasticsearch.repo
+[elasticsearch]
+name=Elasticsearch repository for 7.x packages
+baseurl=https://artifacts.elastic.co/packages/7.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+EOF
+
+sudo mv elasticsearch.repo /etc/zypp/repos.d/elasticsearch.repo
+sudo chown root:root /etc/zypp/repos.d/elasticsearch.repo
+sudo chmod 0644 /etc/zypp/repos.d/elasticsearch.repo
+
+sudo zypper modifyrepo --enable elasticsearch
+sudo zypper install -y elasticsearch
+sudo zypper modifyrepo --disable elasticsearch 
+
+sudo chkconfig elasticsearch on

@@ -29,7 +29,7 @@ logging:
       type: elasticsearch_gc
   service:
     pipelines:
-      nginx:
+      elasticsearch:
         receivers:
           - elasticsearch_default_json
           - elasticsearch_default_gc
@@ -41,7 +41,6 @@ JSON logs commonly contain the following fields in the [`LogEntry`](https://clou
 
 | Field | Type | Description |
 | ---   | ---- | ----------- |
-| `jsonPayload.level` | string | Log entry level |
 | `jsonPayload.component` | string | The component of Elasticsearch that emitted the log |
 | `jsonPayload.type` | string | The type of log, indicating which log the record came from (e.g. `server` indicates this LogEntry came from the server log) |
 | `jsonPayload.cluster.name` | string | The name of the cluster emitting the log record |
