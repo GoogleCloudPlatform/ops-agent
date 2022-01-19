@@ -1,3 +1,5 @@
+//go:build integration_test
+
 /*
 Package agents holds various helpers for interacting with the agents on GCE
 instances.

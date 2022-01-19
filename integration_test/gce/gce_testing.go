@@ -1,3 +1,5 @@
+//go:build integration_test
+
 /*
 Package gce holds various helpers for testing the agents on GCE.
 
