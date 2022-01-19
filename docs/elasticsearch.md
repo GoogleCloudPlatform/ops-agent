@@ -9,7 +9,8 @@ To configure a receiver for your Elasticsearch JSON logs, specify the following 
 | `type`                | required                      | Must be `elasticsearch_json`. |
 | `include_paths`       | `[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]` | The log files to read. |
 | `exclude_paths`       | `[]`                          | Log files to exclude (if `include_paths` contains a glob or directory). |
-| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). |
+| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+
 To configure a receiver for Elasticsearch GC logs, specify the following fields:
 
 | Field                 | Default                      | Description |
@@ -17,7 +18,7 @@ To configure a receiver for Elasticsearch GC logs, specify the following fields:
 | `type`                | required                     | Must be `elasticsearch_gc`. |
 | `include_paths`       | `[/var/log/elasticsearch/gc.log]` | The log files to read. |
 | `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). |
+| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
 Example Configuration:
 
