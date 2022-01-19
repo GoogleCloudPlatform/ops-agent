@@ -1,0 +1,16 @@
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  processors:
+    json_processor:
+      type: parse_json
+      field: field_1
+      time_key: time_key_1
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
