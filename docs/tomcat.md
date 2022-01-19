@@ -93,7 +93,6 @@ System logs contain the following fields in the [`LogEntry`](https://cloud.googl
 | ---   | ---- | ----------- |
 | `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received |
 | `jsonPayload.module` | string | Module of tomcat where the log originated |
-| `jsonPayload.level` | string | Log entry level |
 | `jsonPayload.source` | string | source of where the log originated |
 | `jsonPayload.message` | string | Log message, including detailed stacktrace where provided |
 | `severity` | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)) | Log entry level (translated) |
