@@ -18,27 +18,11 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
-	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
-	// this parser handles that case.
-	multilineParser := &confgenerator.LoggingProcessorParseMultiline{
-		// sample log line:
-		// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
-		// Logs are formatted based on configuration (log4j);
-		// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
-		// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^{.*`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^[^{].*[,}]$`,
-			},
-		},
-	}
+	// sample log line:
+	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
+	// Logs are formatted based on configuration (log4j);
+	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
+	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 
 	jsonParser := &confgenerator.LoggingProcessorParseJson{
 		ParserShared: confgenerator.ParserShared{
@@ -47,7 +31,6 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
-	c = append(c, multilineParser.Components(tag, uid)...)
 	c = append(c, jsonParser.Components(tag, uid)...)
 	c = append(c, p.severityParser(tag, uid)...)
 	c = append(c, p.nestingProcessors(tag, uid)...)
@@ -150,6 +133,21 @@ func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Com
 			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
 			"/var/log/elasticsearch/*_audit.json",
 		}
+	}
+
+	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+	// so we need this multiline parsing to properly parse the record.
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^{.*`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^[^{].*[,}]$`,
+		},
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
