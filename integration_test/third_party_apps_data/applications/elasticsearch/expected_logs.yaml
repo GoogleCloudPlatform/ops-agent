@@ -6,8 +6,8 @@ log_entries:
     jsonPayload.component: "o.e.n.Node"
     jsonPayload.type: "server"
 
-# [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+# [2022-01-19T16:16:39.445+0000][40361][gc] Using G1
 - log_name: "elasticsearch_default_gc"
   field_matchers:
-    jsonPayload.message: 'Pause Young \(Normal\) \(G1 Evacuation Pause\)'
-    jsonPayload.type: "gc,start"
+    jsonPayload.message: 'Using G1'
+    jsonPayload.type: "gc"
