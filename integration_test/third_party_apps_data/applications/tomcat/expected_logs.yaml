@@ -4,7 +4,7 @@ log_entries:
     jsonPayload.message: "org.apache.catalina.startup.Catalina.start Server startup*"
     jsonPayload.module: "main"
     jsonPayload.source: "org.apache.catalina.startup.Catalina.start"
-- log_name: "tomcat_debug"
+- log_name: "tomcat_access"
   field_matchers:
     httpRequest.remoteIp: "0:0:0:0:0:0:0:1"
     httpRequest.requestUrl: "/forbidden.html"
