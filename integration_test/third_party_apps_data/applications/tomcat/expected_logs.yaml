@@ -1,14 +1,13 @@
 log_entries:
-- log_name: "cassandra_default_system"
+- log_name: "tomcat_system"
   field_matchers:
     jsonPayload.message: "org.apache.catalina.startup.Catalina.start Server startup*"
     jsonPayload.module: "main"
     jsonPayload.source: "org.apache.catalina.startup.Catalina.start"
-- log_name: "cassandra_default_debug"
+- log_name: "tomcat_debug"
   field_matchers:
     httpRequest.remoteIp: "0:0:0:0:0:0:0:1"
     httpRequest.requestUrl: "/forbidden.html"
     httpRequest.protocol: "HTTP/1.1"
     httpRequest.requestMethod: "GET"
-    responseSize: "765"
     status: 404
