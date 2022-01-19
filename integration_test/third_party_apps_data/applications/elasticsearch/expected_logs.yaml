@@ -9,5 +9,5 @@ log_entries:
 # [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
 - log_name: "elasticsearch_default_gc"
   field_matchers:
-    jsonPayload.message: "Pause Young (Normal) (G1 Evacuation Pause)"
+    jsonPayload.message: 'Pause Young \(Normal\) \(G1 Evacuation Pause\)'
     jsonPayload.type: "gc,start"
