@@ -304,7 +304,6 @@ func parseTestConfigFile() (testConfig, error) {
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
 func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType, app string) (retry bool, err error) {
-	return nonRetryable, fmt.Errorf("fake error: %v", 5)
 	if strings.Contains(vm.Platform, "sles") {
 		if err = prepareSLES(ctx, logger.ToMainLog(), vm); err != nil {
 			return nonRetryable, fmt.Errorf("prepareSLES() failed: %v", err)
