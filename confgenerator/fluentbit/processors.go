@@ -21,10 +21,12 @@ import (
 	"strings"
 )
 
-func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
+// TranslationComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.
+// If removeSrc is true, the original key is removed when translated.
+func TranslationComponents(tag, src, dest string, removeSrc bool, translations []struct{ SrcVal, DestVal string }) []Component {
 	c := []Component{}
 	for _, t := range translations {
-		c = append(c, Component{
+		comp := Component{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":      "modify",
@@ -32,14 +34,18 @@ func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal,
 				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
 				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
 			},
-		})
+		}
+
+		if removeSrc {
+			comp.Config["Remove"] = src
+		}
+
+		c = append(c, comp)
 	}
 
 	return c
 }
 
-// TranslationMoveComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.
-// The original key is removed when translated.
 func TranslationMoveComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
 	c := []Component{}
 	for _, t := range translations {

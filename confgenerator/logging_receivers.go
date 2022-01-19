@@ -232,7 +232,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
-	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity",
+	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
 			{"Error", "ERROR"},
 			{"Information", "INFO"},
