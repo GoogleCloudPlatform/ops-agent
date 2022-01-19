@@ -46,24 +46,6 @@ func TranslationComponents(tag, src, dest string, removeSrc bool, translations [
 	return c
 }
 
-func TranslationMoveComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
-	c := []Component{}
-	for _, t := range translations {
-		c = append(c, Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
-				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
-				"Remove":    src,
-			},
-		})
-	}
-
-	return c
-}
-
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
 func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]string, tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)

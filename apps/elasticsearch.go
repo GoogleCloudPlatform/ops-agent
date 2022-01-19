@@ -40,7 +40,7 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 
 func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []fluentbit.Component {
 	severityKey := "logging.googleapis.com/severity"
-	return fluentbit.TranslationMoveComponents(tag, "level", severityKey, []struct {
+	return fluentbit.TranslationComponents(tag, "level", severityKey, true, []struct {
 		SrcVal  string
 		DestVal string
 	}{
