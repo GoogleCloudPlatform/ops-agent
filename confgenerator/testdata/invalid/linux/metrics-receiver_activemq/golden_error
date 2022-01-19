@@ -1,0 +1,10 @@
+[19:17] "endpoint" must start with "service:jmx:"
+  16 |   receivers:
+  17 |     activemqmetrics:
+  18 |       type: activemq
+> 19 |       endpoint: localhost:1099
+                       ^
+  20 |       collection_interval: 30s
+  21 |     jvmmetrics:
+  22 |       type: jvm
+  23 |       
