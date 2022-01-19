@@ -80,7 +80,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/logging/logadmin"
-	"cloud.google.com/go/monitoring/apiv3"
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/storage"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
