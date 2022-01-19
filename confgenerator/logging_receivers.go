@@ -128,6 +128,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
 		config["multiline.parser"] = parserName
 
+		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
 		c = append(c, fluentbit.Component{
 			Kind: "FILTER",
 			Config: map[string]string{
