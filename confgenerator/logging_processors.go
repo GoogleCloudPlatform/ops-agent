@@ -16,8 +16,10 @@ package confgenerator
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
@@ -228,4 +230,31 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 			TimeFormat: "%b %d %H:%M:%S",
 		},
 	},
+}
+
+// A LoggingProcessorExcludeLogs filters out logs according to a pattern.
+type LoggingProcessorExcludeLogs struct {
+	ConfigComponent `yaml:",inline"`
+	MatchAny        []string `yaml:"match_any" validate:"required,dive,filter"`
+}
+
+func (r LoggingProcessorExcludeLogs) Type() string {
+	return "exclude_logs"
+}
+
+func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Component {
+	filters := make([]*filter.Filter, 0, len(p.MatchAny))
+	for _, condition := range p.MatchAny {
+		filter, err := filter.NewFilter(condition)
+		if err != nil {
+			log.Printf("error parsing condition '%s': %v", condition, err)
+			return nil
+		}
+		filters = append(filters, filter)
+	}
+	return filter.AllComponents(tag, filters, true)
+}
+
+func init() {
+	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorExcludeLogs{} })
 }
