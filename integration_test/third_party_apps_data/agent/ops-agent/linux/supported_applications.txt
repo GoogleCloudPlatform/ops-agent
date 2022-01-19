@@ -6,3 +6,4 @@ mysql
 nginx
 postgresql
 redis
+tomcat

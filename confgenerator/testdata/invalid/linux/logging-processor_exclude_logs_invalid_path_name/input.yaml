@@ -1,0 +1,9 @@
+logging:
+  processors:
+    p1:
+      type: exclude_logs
+      match_any: ['invalid.path = foo']
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [p1]
