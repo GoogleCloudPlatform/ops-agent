@@ -1,0 +1,9 @@
+[5:18] "match_any[0]": 1:28: error: expected one of not, minus, lparen, text, or string; got: ")"
+   2 |   processors:
+   3 |     p1:
+   4 |       type: exclude_logs
+>  5 |       match_any: ['(jsonPayload.message = foo )']
+                        ^
+   6 |   service:
+   7 |     pipelines:
+   8 |       default_pipeline:

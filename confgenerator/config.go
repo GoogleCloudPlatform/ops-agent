@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
@@ -106,6 +107,9 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
+	case "filter":
+		_, err := filter.NewFilter(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	}
 
 	return ve.FieldError.Error()
@@ -159,6 +163,11 @@ func newValidator() *validator.Validate {
 			panic(err)
 		}
 		return t >= tmin
+	})
+	// filter validates that a Cloud Logging filter condition is valid
+	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
+		_, err := filter.NewFilter(fl.Field().String())
+		return err == nil
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
