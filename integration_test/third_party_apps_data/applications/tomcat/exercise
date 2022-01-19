@@ -1,2 +1,2 @@
 # request non-existent file
-curl http://localhost:8080/forbidden.html
+sudo curl http://localhost:8080/forbidden.html
