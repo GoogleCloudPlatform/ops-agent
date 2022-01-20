@@ -137,6 +137,13 @@ func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Com
 
 	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
 	// so we need this multiline parsing to properly parse the record.
+	// Example multiline log record:
+	// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
+	// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
+	// -- snip --
+	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
+	// "... 6 more"] }
+
 	r.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
