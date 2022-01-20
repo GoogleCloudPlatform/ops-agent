@@ -28,6 +28,19 @@ metrics:
       tomcat_pipeline:
         receivers:
           - tomcat_metrics
+
+logging:
+  receivers:
+    tomcat_access:
+      type: tomcat_access
+    tomcat_system:
+      type: tomcat_system
+  service:
+    pipelines:
+      tomcat:
+        receivers:
+          - tomcat_access
+          - tomcat_system
 EOF
 
 sudo service google-cloud-ops-agent restart
