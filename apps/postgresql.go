@@ -130,7 +130,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"DEBUG1", "DEBUG"},
 				{"DEBUG2", "DEBUG"},

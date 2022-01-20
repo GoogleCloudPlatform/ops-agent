@@ -134,7 +134,7 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"FINEST", "DEBUG"},
 				{"FINER", "DEBUG"},
