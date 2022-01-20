@@ -1,0 +1,12 @@
+log_entries:
+- log_name: "tomcat_system"
+  field_matchers:
+    jsonPayload.message: "org.apache.catalina.startup.Catalina.start Server startup*"
+    jsonPayload.module: "main"
+    jsonPayload.source: "org.apache.catalina.startup.Catalina.start"
+- log_name: "tomcat_access"
+  field_matchers:
+    httpRequest.remoteIp: "127.0.0.1"
+    httpRequest.requestUrl: "/forbidden.html"
+    httpRequest.protocol: "HTTP/1.1"
+    httpRequest.requestMethod: "GET"
