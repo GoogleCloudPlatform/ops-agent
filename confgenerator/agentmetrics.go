@@ -16,14 +16,14 @@ package confgenerator
 
 import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
-// MetricsReceiverAgent provides the agent.googleapis.com/agent/ metrics.
+// AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
 // It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
 // Therefore, it does not need to implement any interfaces.
-type MetricsReceiverAgent struct {
+type AgentSelfMetrics struct {
 	Version string
 }
 
-func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
+func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 	return otel.Pipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -85,7 +85,7 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 	}
 }
 
-func (r MetricsReceiverAgent) LoggingPipeline() otel.Pipeline {
+func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 	return otel.Pipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",

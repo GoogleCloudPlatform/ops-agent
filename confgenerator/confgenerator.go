@@ -44,13 +44,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 	}
 
-	pipelines["agent"] = MetricsReceiverAgent{
+	pipelines["agent"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
-	}.Pipeline()
+	}.MetricsSubmodulePipeline()
 
-	pipelines["fluentbit"] = MetricsReceiverAgent{
+	pipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
-	}.LoggingPipeline()
+	}.LoggingSubmodulePipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
