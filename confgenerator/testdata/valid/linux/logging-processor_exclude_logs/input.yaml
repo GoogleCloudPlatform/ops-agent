@@ -1,0 +1,103 @@
+logging:
+  receivers:
+    sample_logs:
+      type: files
+      include_paths: [/tmp/*.log]
+  processors:
+    simple:
+      type: exclude_logs
+      match_any: ['jsonPayload.message = bar']
+    escaped_regex:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ "a\\.b"']
+    regex_leading_spaces:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ " bar "']
+    regex_slashes:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ "/bar/"']
+    special_severity:
+      type: exclude_logs
+      match_any: ['severity =~ ERROR']
+    special_jsonPayload:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ foo']
+    special_httpRequest:
+      type: exclude_logs
+      match_any: ['httpRequest.method =~ GET']
+    nested_tabs:
+      type: exclude_logs
+      match_any: ['jsonPayload."aa	bb" = foo']
+    nested_symbols:
+      type: exclude_logs
+      match_any: ['jsonPayload."a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:b" = foo']
+    nested_escaped:
+      type: exclude_logs
+      match_any: ['jsonPayload."a\:\=\<\>\+\~\\\.\*\a\b\f\t\vb" = foo']
+    nested_newline:
+      type: exclude_logs
+      match_any:
+      - |-
+        jsonPayload.message =~ "foo
+        bar"
+    nested_unicode:
+      type: exclude_logs
+      match_any: ['jsonPayload.☃ = foo']
+    nested_single_quotes:
+      type: exclude_logs
+      match_any:
+      - jsonPayload."a'b" = foo
+    combinations:
+      type: exclude_logs
+      match_any: ['((jsonPayload.message = foo AND severity =~ "bar") OR NOT jsonPayload.log !~ "baz") jsonPayload.message : frob']
+    operators:
+      type: exclude_logs
+      match_any: ['jsonPayload.message = foo OR jsonPayload.message != bar OR jsonPayload.message : baz OR jsonPayload.message =~ "wal" OR jsonPayload.message !~ "rus"']
+    string_symbols:
+      type: exclude_logs
+      match_any: ['jsonPayload.message = "a`~!@#$%^&*()-_=+\\|]}[{<.>/?;:,b"']
+    string_escapes:
+      type: exclude_logs
+      match_any: ['jsonPayload.message = "a\,\:\=\<\>\+\~\"\\\.\*\a\b\f\n\r\t\v\u0021\041\41\x21b"']
+    regex_symbols:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ "foo\[bar\]"']
+    regex_unicode:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ "☃"']
+    regex_unicode_escaped:
+      type: exclude_logs
+      match_any: ['jsonPayload.message =~ "\☃"']
+    multiple_conditions:
+      type: exclude_logs
+      match_any:
+      - jsonPayload.field1 =~ "first"
+      - jsonPayload.field2 =~ "second"
+  service:
+    pipelines:
+      p1:
+        receivers: [sample_logs]
+        processors:
+        - simple
+        - escaped_regex
+        - regex_leading_spaces
+        - regex_slashes
+        - special_severity
+        - special_jsonPayload
+        - special_httpRequest
+        - nested_tabs
+        - nested_symbols
+        - nested_escaped
+        - nested_newline
+        - nested_unicode
+        - nested_single_quotes
+        - combinations
+        - operators
+        - string_symbols
+        - string_escapes
+        - regex_symbols
+        - regex_unicode
+        - regex_unicode_escaped
+        - multiple_conditions
+        exporters: [google]
+      

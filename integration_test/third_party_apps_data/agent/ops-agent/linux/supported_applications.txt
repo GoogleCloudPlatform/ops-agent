@@ -5,3 +5,4 @@ memcached
 mysql
 nginx
 redis
+tomcat
