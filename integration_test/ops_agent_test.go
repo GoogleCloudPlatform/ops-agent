@@ -546,7 +546,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := "{'field':'value'}\n"
+		line := `{"field":"value"}`+"\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}

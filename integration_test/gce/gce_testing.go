@@ -282,6 +282,8 @@ func imageProject(family string) (string, error) {
 			return "rhel-sap-cloud", nil
 		}
 		return "rhel-cloud", nil
+	case "rocky":
+		return "rocky-linux-cloud", nil
 	case "opensuse":
 		return "opensuse-cloud", nil
 	case "sles":
