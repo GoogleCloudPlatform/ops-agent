@@ -1,0 +1,1 @@
+workload.googleapis.com/hbase.master.region_server.count
