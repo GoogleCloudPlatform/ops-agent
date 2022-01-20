@@ -48,9 +48,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Version: metricVersionLabel,
 	}.Pipeline()
 
-	pipelines["fluentbit"] = MetricsReceiverLogging{
+	pipelines["fluentbit"] = MetricsReceiverAgent{
 		Version: loggingVersionLabel,
-	}.Pipeline()
+	}.LoggingPipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"

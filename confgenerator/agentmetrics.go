@@ -85,4 +85,42 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 	}
 }
 
+func (r MetricsReceiverAgent) LoggingPipeline() otel.Pipeline {
+	return otel.Pipeline{
+		Receiver: otel.Component{
+			Type: "prometheus",
+			Config: map[string]interface{}{
+				"config": map[string]interface{}{
+					"scrape_configs": []map[string]interface{}{{
+						"job_name":        "logging-collector",
+						"scrape_interval": "1m",
+						"metrics_path":    "/metrics",
+						"static_configs": []map[string]interface{}{{
+							// TODO(b/196990135): Customization for the port number
+							"targets": []string{"0.0.0.0:20202"},
+						}},
+					}},
+				},
+			},
+		},
+		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				"fluentbit_uptime",
+			),
+			otel.MetricsTransform(
+				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AddLabel("version", r.Version),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
+				),
+				otel.AddPrefix("agent.googleapis.com"),
+			),
+		},
+	}
+}
+
 // intentionally not registered as a component because this is not created by users
