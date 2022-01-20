@@ -1,0 +1,1 @@
+when insecure is true, no other TLS fields may be configured. Values were found for field(s) insecure_skip_verify, cert_file, ca_file, key_file for receiver postgresqlmetrics
