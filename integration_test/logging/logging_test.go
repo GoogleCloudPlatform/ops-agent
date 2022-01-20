@@ -49,7 +49,9 @@ func TestDirectoryLogger(t *testing.T) {
 					logger.ToFile(path).Print(content)
 				}
 			}
-			logger.Close()
+			if err := logger.Close(); err != nil {
+				t.Errorf("logger.Close() failed with err=%v", err)
+			}
 
 			// Now verify that the expected content ended up on disk.
 			for file, expectedContent := range testCase.LogContent {
@@ -83,8 +85,18 @@ func TestInvalidFile(t *testing.T) {
 		t.Fatalf("NewDirectoryLogger(%q) failed: %v", tmp, err)
 	}
 
+	defer func() {
+		if err := dirLog.Close(); err != nil {
+			t.Errorf("dirLog.Close() failed with err=%v", err)
+		}
+	}()
+
 	// This will result in an error because /etc is already a directory.
 	invalidPath := "../../../../../../../../../etc"
+	if runtime.GOOS == "windows" {
+		// In this case, C:/Users is already a directory.
+		invalidPath = "C:/Users"
+	}
 	logger := dirLog.ToFile(invalidPath)
 	if logger != log.Default() {
 		t.Errorf("ToFile(%q) = %p, want %p (AKA log.Default())", invalidPath, logger, log.Default())
@@ -98,20 +110,32 @@ func TestConcurrentLogging(t *testing.T) {
 		t.Fatalf("NewDirectoryLogger(%q) failed: %v", tmp, err)
 	}
 
-	for i := 0; i < 50; i++ {
+	defer func() {
+		if err := dirLog.Close(); err != nil {
+			t.Errorf("dirLog.Close() failed with err=%v", err)
+		}
+	}()
+
+	limit := 50
+	for i := 0; i < limit; i++ {
 		testName := fmt.Sprintf("shard_%d", i)
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			dirLog.ToFile(testName).Print(testName)
-
-			content, err := os.ReadFile(path.Join(tmp, testName))
-			if err != nil {
-				t.Fatalf("could not read file %v: %v", testName, err)
-			}
-			if !strings.Contains(string(content), testName) {
-				t.Errorf("file %v did not contain expected content %q. Instead was: %q", testName, testName, string(content))
-			}
 		})
+	}
+	if err := dirLog.Close(); err != nil {
+		t.Errorf("dirLog.Close() failed with err=%v", err)
+	}
+	for i := 0; i < limit; i++ {
+		testName := fmt.Sprintf("shard_%d", i)
+		content, err := os.ReadFile(path.Join(tmp, testName))
+		if err != nil {
+			t.Fatalf("could not read file %v: %v", testName, err)
+		}
+		if !strings.Contains(string(content), testName) {
+			t.Errorf("file %v did not contain expected content %q. Instead was: %q", testName, testName, string(content))
+		}
 	}
 }
