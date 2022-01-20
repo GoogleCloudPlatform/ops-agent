@@ -44,7 +44,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		}
 	}
 
-	pipelines["agent"] = AgentSelfMetrics{
+	pipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 	}.MetricsSubmodulePipeline()
 
