@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -117,15 +118,17 @@ func TestConcurrentLogging(t *testing.T) {
 		}
 	}()
 
+	var wg sync.WaitGroup
 	limit := 50
 	for i := 0; i < limit; i++ {
 		testName := fmt.Sprintf("shard_%d", i)
-		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			dirLog.ToFile(testName).Print(testName)
-		})
+		}()
 	}
+	wg.Wait()
 	if err := dirLog.Close(); err != nil {
 		t.Errorf("dirLog.Close() failed with err=%v", err)
 	}
