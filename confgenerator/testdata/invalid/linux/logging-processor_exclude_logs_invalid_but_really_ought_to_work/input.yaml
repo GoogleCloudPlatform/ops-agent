@@ -1,0 +1,9 @@
+logging:
+  processors:
+    p1:
+      type: exclude_logs
+      match_any: ['jsonPayload.message!~foo']
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [p1]

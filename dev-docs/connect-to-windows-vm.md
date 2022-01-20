@@ -40,20 +40,20 @@ proceeding.
 
 1.  Start an IAP tunnel to the VM.
 
-    Set `$IAP_VM_NAME` to one of:
-    
-    - `${USER}-win-build-vm`
-    - `${USER}-win-test-vm`
-    - Any other Windows VM name to use.
+    Customize `$VM_PROJECT_ID`, `$VM_ZONE`, and `$IAP_VM_NAME` as needed.
 
     ```shell
-    $ gcloud compute firewall-rules create allow-rdp-ingress-from-iap \
+    export VM_PROJECT_ID=${USER}-sandbox
+    export VM_ZONE=us-central1-a
+    export IAP_VM_NAME=${USER}-win-build-vm
+
+    gcloud compute firewall-rules create allow-rdp-ingress-from-iap \
         --direction=INGRESS \
         --action=allow \
         --rules=tcp:3389 \
         --source-ranges=35.235.240.0/20
 
-    $ gcloud compute start-iap-tunnel \
+    gcloud compute start-iap-tunnel \
         --project $VM_PROJECT_ID --zone $VM_ZONE \
         --local-host-port=localhost:13000 \
         $IAP_VM_NAME 3389
@@ -63,7 +63,7 @@ proceeding.
     to connect to it. Use the password you recorded in the previous
     `gcloud compute reset-windows-password` step when
     prompted to do so.
-    
+
    ![image](https://user-images.githubusercontent.com/5287526/133006175-a1f2b019-1a75-4f62-9c3c-18759f951d90.png)
 
 

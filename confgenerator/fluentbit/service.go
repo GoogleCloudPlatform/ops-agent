@@ -31,12 +31,8 @@ func (s Service) Component() Component {
 			// Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
 			"Log_Level": s.LogLevel,
 
-			// https://docs.fluentbit.io/manual/administration/monitoring
-			// Enable a built-in HTTP server that can be used to query internal information and monitor metrics of each running plugin.
-			"HTTP_Server": "On",
-			"HTTP_Listen": "0.0.0.0",
-			"HTTP_PORT":   "2020",
-
+			// Use the legacy DNS resolver mechanism to work around b/206549605 temporarily.
+			"dns.resolver": "legacy",
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
 			"storage.sync": "normal",
@@ -50,6 +46,17 @@ func (s Service) Component() Component {
 			// Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
 			// we don't want them to all be loaded into the memory.
 			"storage.max_chunks_up": "128",
+		},
+	}
+}
+
+func (s Service) MetricsComponent() Component {
+	return Component{
+		Kind: "INPUT",
+		Config: map[string]string{
+			"Name":            "fluentbit_metrics",
+			"Scrape_On_Start": "True",
+			"Scrape_Interval": "60",
 		},
 	}
 }

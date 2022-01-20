@@ -27,9 +27,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -43,9 +43,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -67,9 +67,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -81,7 +81,27 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config golang-go openjdk-11-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/deb/build.sh
+
+FROM ubuntu:impish AS impish-build
+
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -95,9 +115,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -111,33 +131,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
-
-COPY . /work
-WORKDIR /work
-RUN ./pkg/deb/build.sh
-
-FROM ubuntu:xenial AS xenial-build
-
-RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common && \
-    add-apt-repository ppa:openjdk-r/ppa && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-11-jdk
-
-# This repairs an issue with java9+ certificates
-RUN /usr/bin/printf '\xfe\xed\xfe\xed\x00\x00\x00\x02\x00\x00\x00\x00\xe2\x68\x6e\x45\xfb\x43\xdf\xa4\xd9\x92\xdd\x41\xce\xb6\xb2\x1c\x63\x30\xd7\x92' > /etc/ssl/certs/java/cacerts&& \
-    /var/lib/dpkg/info/ca-certificates-java.postinst configure
-
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -156,9 +152,9 @@ RUN set -x; yum -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -174,16 +170,16 @@ RUN set -x; yum -y update && \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
-FROM opensuse/leap:42.3 AS sles12-build
+FROM opensuse/archive:42.3 AS sles12-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros && \
     # Remove expired root certificate.
@@ -206,9 +202,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -225,9 +221,9 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -249,6 +245,10 @@ FROM scratch AS hirsute
 COPY --from=hirsute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
 COPY --from=hirsute-build /google-cloud-ops-agent*.deb /
 
+FROM scratch AS impish
+COPY --from=impish-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-impish.tgz
+COPY --from=impish-build /google-cloud-ops-agent*.deb /
+
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
@@ -256,10 +256,6 @@ COPY --from=focal-build /google-cloud-ops-agent*.deb /
 FROM scratch AS bionic
 COPY --from=bionic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
 COPY --from=bionic-build /google-cloud-ops-agent*.deb /
-
-FROM scratch AS xenial
-COPY --from=xenial-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
-COPY --from=xenial-build /google-cloud-ops-agent*.deb /
 
 FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
@@ -282,9 +278,9 @@ COPY --from=bullseye /* /
 COPY --from=buster /* /
 COPY --from=stretch /* /
 COPY --from=hirsute /* /
+COPY --from=impish /* /
 COPY --from=focal /* /
 COPY --from=bionic /* /
-COPY --from=xenial /* /
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=sles12 /* /

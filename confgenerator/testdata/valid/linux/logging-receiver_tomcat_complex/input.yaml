@@ -1,0 +1,57 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    tomcat_default_system:
+      type: tomcat_system
+    tomcat_default_access:
+      type: tomcat_access
+    tomcat_custom_system:
+      type: tomcat_system
+      include_paths:
+        - /var/log/tomcat/mysystem.log
+    tomcat_custom_access:
+      type: tomcat_access
+      include_paths:
+        - /var/log/tomcat/myaccess.log
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    tomcat_syslog_system:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+    tomcat_syslog_access:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+  processors:
+    tomcat_syslog_system:
+      type: tomcat_system
+    tomcat_syslog_access:
+      type: tomcat_access
+  service:
+    pipelines:
+      tomcat_default:
+        receivers:
+          - tomcat_default_system
+          - tomcat_default_access
+      tomcat_custom:
+        receivers:
+          - tomcat_custom_system
+          - tomcat_custom_access
+      tomcat_syslog_system:
+        receivers: [tomcat_syslog_system, tomcat_syslog_access]
+        processors: [tomcat_syslog_system, tomcat_syslog_access]

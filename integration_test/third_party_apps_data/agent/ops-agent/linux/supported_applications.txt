@@ -1,6 +1,8 @@
 apache
 cassandra
 jvm
+memcached
 mysql
 nginx
 redis
+tomcat
