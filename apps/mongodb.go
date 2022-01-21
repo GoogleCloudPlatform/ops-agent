@@ -86,7 +86,7 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 		},
 	}
 
-	renameTsOption := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey, nil)
+	renameTsOption := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
 	renameTs := renameTsOption.Component(tag)
 
 	c = append(c, liftTs, renameTs)
@@ -172,7 +172,7 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	}
 
 	for _, rename := range renames {
-		rename := fluentbit.NewRenameModifyOptions(rename.src, rename.dest, nil)
+		rename := fluentbit.NewRenameModifyOptions(rename.src, rename.dest)
 		r = append(r, rename.Component(tag))
 	}
 
@@ -193,7 +193,7 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 		},
 	}
 
-	hardRenameMessage := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%smessage", addPrefix), "msg", nil)
+	hardRenameMessage := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
 	wiredTigerRename := hardRenameMessage.Component(tag)
 
 	renameRemainingAttributes := fluentbit.Component{

@@ -31,28 +31,9 @@ const (
 	ModifyKeyValueMatches          ModifyConditionKey = "Key_value_matches"
 )
 
-// ModifyCondition is a representation of a fluentbit modify condition which
-// evaluates an expression in order to determine if the modify should be done
-type ModifyCondition struct {
-	Name ModifyConditionKey
-	Key  string
-	// if condition does not require a parameter, omit or use zero value: ""
-	Value string
-}
-
-// Expression returns the expression string for a conditional modify statement
-func (mc *ModifyCondition) Expression() string {
-	expr := fmt.Sprintf("%s %s", mc.Name, mc.Key)
-	if mc.Value != "" {
-		expr += fmt.Sprintf(" %s", mc.Value)
-	}
-	return expr
-}
-
 // ModifyOptions are a representation of a config for a modify block in fluentbit
 type ModifyOptions struct {
 	ModifyRule ModifyRule
-	Condition  *ModifyCondition
 	// Parameters is the string input of the modify rule
 	// i.e "Rename timestamp time"; Parameters = "timestamp time"
 	Parameters string
@@ -69,9 +50,6 @@ func (mo *ModifyOptions) Component(tag string) Component {
 	}
 	c.Config[mo.ModifyRule] = mo.Parameters
 
-	if mo.Condition != nil {
-		c.Config["Condition"] = mo.Condition.Expression()
-	}
 	return c
 }
 
@@ -88,26 +66,20 @@ func MapModify(tag string, modifications []ModifyOptions) []Component {
 // NewSetModifyOptions creates the ModifyOptions that will construct a Set modify
 // where the `field` is set to the `value` parameter. Note this will overwrite if field
 // already exists
-func NewSetModifyOptions(field, value string, condition *ModifyCondition) ModifyOptions {
+func NewSetModifyOptions(field, value string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: SetModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, value),
-	}
-	if condition != nil {
-		mo.Condition = condition
 	}
 	return mo
 }
 
 // NewRenameModifyOptions creates the ModifyOptions that on `Component()` will construct a Rename
 // fluentbit component. Note that Rename does not overwrite fields if they exist
-func NewRenameModifyOptions(field, renameTo string, condition *ModifyCondition) ModifyOptions {
+func NewRenameModifyOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: RenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
-	}
-	if condition != nil {
-		mo.Condition = condition
 	}
 	return mo
 }
@@ -115,13 +87,10 @@ func NewRenameModifyOptions(field, renameTo string, condition *ModifyCondition) 
 // NewHardRenameModifyOptions creates the ModifyOptions that on `Component()` will return
 // a fluentbit component that does a hard rename of `field` to `renameTo`. Note that this will overwrite
 // the current value of field if it does exist.
-func NewHardRenameModifyOptions(field, renameTo string, condition *ModifyCondition) ModifyOptions {
+func NewHardRenameModifyOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: HardRenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
-	}
-	if condition != nil {
-		mo.Condition = condition
 	}
 	return mo
 }
