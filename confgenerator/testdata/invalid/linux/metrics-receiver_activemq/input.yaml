@@ -16,15 +16,11 @@ metrics:
   receivers:
     activemqmetrics:
       type: activemq
-      endpoint: localhost:1099
-      collection_interval: 30s
-    jvmmetrics:
-      type: jvm
-      endpoint: localhost:1099
+      endpoint: localhost
       collection_interval: 30s
   service:
     pipelines:
       activemqpipeline:
         receivers:
           - activemqmetrics
-          - jvmmetrics
+          
