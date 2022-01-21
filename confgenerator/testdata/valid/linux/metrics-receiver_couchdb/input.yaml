@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    couchdbmetrics:
+    couchdb_metrics:
       type: couchdb
       endpoint: http://localhost:5984
       username: usr
@@ -22,6 +22,6 @@ metrics:
       collection_interval: 60s
   service:
     pipelines:
-      couchdbpipeline:
+      couchdb_pipeline:
         receivers:
-          - couchdbmetrics
+          - couchdb_metrics
