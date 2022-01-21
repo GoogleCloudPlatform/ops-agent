@@ -2,6 +2,7 @@ apache
 cassandra
 jvm
 memcached
+mongodb
 mysql
 nginx
 redis
