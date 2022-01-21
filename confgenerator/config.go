@@ -720,12 +720,12 @@ func validateSSLConfig(receivers metricsReceiverMap) error {
 
 					for _, field := range []string{"insecure_skip_verify", "cert_file", "ca_file", "key_file"} {
 						if val, ok := cfg[field]; ok && val != "" {
-							invalidFields = append(invalidFields, field)
+							invalidFields = append(invalidFields, fmt.Sprintf("\"%s\"", field))
 						}
 					}
 
 					if len(invalidFields) > 0 {
-						return fmt.Errorf("when insecure is true, no other TLS fields may be configured. Values were found for field(s) %s for receiver %s", strings.Join(invalidFields, ", "), receiverId)
+						return fmt.Errorf("%s are not allowed when \"insecure\" is true, which indicates TLS is disabled for receiver \"%s\"", strings.Join(invalidFields, ", "), receiverId)
 					}
 				}
 			}
