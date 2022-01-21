@@ -25,16 +25,16 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    elasticsearch_default_json:
+    elasticsearch_json:
       type: elasticsearch_json
-    elasticsearch_default_gc:
+    elasticsearch_gc:
       type: elasticsearch_gc
   service:
     pipelines:
       elasticsearch:
         receivers:
-          - elasticsearch_default_json
-          - elasticsearch_default_gc
+          - elasticsearch_json
+          - elasticsearch_gc
 ```
 
 ## Logs
