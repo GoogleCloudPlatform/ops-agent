@@ -107,9 +107,8 @@ To configure a receiver for your postgresql general logs, specify the following 
 | Field                 | Default                      | Description |
 | ---                   | ---                          | ---         |
 | `type`                | required                     | Must be `postgresql_general`. |
-| `include_paths`       | `[/var/log/postgresql/postgresql*.log]` | The log files to read. |
+| `include_paths`       | `[/var/log/postgresql/postgresql*.log, /var/lib/pgsql/data/log/postgresql*.log, /var/lib/pgsql/*/data/log/postgresql*.log]` | The log files to read. |
 | `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
 
 Example Configuration:
 
