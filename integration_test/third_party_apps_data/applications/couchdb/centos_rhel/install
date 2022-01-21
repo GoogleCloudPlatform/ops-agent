@@ -1,0 +1,24 @@
+set -e
+
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://couchdb.apache.org/repo/couchdb.repo
+
+sudo yum install -y couchdb
+
+PASSWORD=$(echo $RANDOM | md5sum | head -c 20; echo;)
+cat << EOF > local.ini
+[couchdb]
+[couch_peruser]
+[chttpd]
+[httpd]
+[chttpd_auth]
+[ssl]
+[vhosts]
+[admins]
+admin = ${PASSWORD}
+EOF
+sudo mv local.ini /opt/couchdb/etc/local.ini
+sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
+sudo chmod 0755 /opt/couchdb/etc/local.ini
+
+sudo systemctl enable couchdb 

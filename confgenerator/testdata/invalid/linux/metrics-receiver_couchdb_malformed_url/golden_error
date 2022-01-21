@@ -1,0 +1,9 @@
+[19:17] "endpoint" must be a URL
+  16 |   receivers:
+  17 |     couchdb_metrics:
+  18 |       type: couchdb
+> 19 |       endpoint: localhost
+                       ^
+  20 |       collection_interval: 60s
+  21 |   service:
+  22 |     pipelines:
