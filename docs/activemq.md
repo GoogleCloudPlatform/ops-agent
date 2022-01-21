@@ -33,7 +33,7 @@ metrics:
 ```
 
 ## Metrics
-In addition to Cassandra specific metrics, by default Cassandra will also report [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics)
+In addition to ActiveMQ specific metrics, by default ActiveMQ will also report [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics)
 
 | Metric                                                                          | Data Type | Unit        | Labels      | Description |
 | ---                                                                             | ---       | ---         | ---         | ---         | 
