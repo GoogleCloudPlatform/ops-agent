@@ -1,0 +1,1 @@
+"insecure_skip_verify", "cert_file", "ca_file", "key_file" are not allowed when "insecure" is true, which indicates TLS is disabled for receiver "postgresqlmetrics"
