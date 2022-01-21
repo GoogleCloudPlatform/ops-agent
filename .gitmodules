@@ -7,3 +7,6 @@
 [submodule "submodules/opentelemetry-java-contrib"]
 	path = submodules/opentelemetry-java-contrib
 	url = ../../open-telemetry/opentelemetry-java-contrib.git
+[submodule "submodules/opentelemetry-operations-collector"]
+	path = submodules/opentelemetry-operations-collector
+	url = ../../open-telemetry/opentelemetry-operations-collector.git
