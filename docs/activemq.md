@@ -7,7 +7,7 @@ The `activemq` metrics receiver will be collected through the [Otel JMX Metric G
 
 JMX support must be enabled in the [broker configuration](https://activemq.apache.org/jmx).
 
-## Configuration
+## Configuration 
 
 | Field                 | Default            | Description |
 | ---                   |--------------------| ---         |
