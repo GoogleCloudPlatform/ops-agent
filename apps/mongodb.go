@@ -58,16 +58,21 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 		},
 	}
 
+	config := map[string]interface{}{
+		"hosts":               hosts,
+		"username":            r.Username,
+		"password":            r.Password,
+		"collection_interval": r.CollectionIntervalString(),
+	}
+
+	if transport != "unix" {
+		config["tls"] = r.TLSConfig(false)
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: r.Type(),
-			Config: map[string]interface{}{
-				"hosts":               hosts,
-				"username":            r.Username,
-				"password":            r.Password,
-				"tls":                 r.TLSConfig(false),
-				"collection_interval": r.CollectionIntervalString(),
-			},
+			Type:   r.Type(),
+			Config: config,
 		},
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
