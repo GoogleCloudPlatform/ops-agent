@@ -9,7 +9,7 @@ To configure a receiver for your mongodb logs, specify the following fields:
 | `type`                | required                      | Must be `redis`. |
 | `include_paths`       | `[/var/log/mongodb/mongod.log*]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/mongodb/*.log`.
 | `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
-| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
 
 Example Configuration:
