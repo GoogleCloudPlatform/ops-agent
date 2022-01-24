@@ -37,37 +37,54 @@ In addition to Hbase specific metrics, by default Hbase will also report [JVM me
 
 | Metric                                                 | Data Type  | Unit           | Labels                       | Description |
 | ---                                                    | ---        | ---            | ---                          | ---   |  
-|  hbase.master.region_server.count                      | gauge      |  {servers}     |  state                       | The number of region servers. 
-|  hbase.master.in_transition_regions.count              | gauge      |  {regions}     |                              | The number of regions that are in transition. 
-|  hbase.master.in_transition_regions.over_threshold     | gauge      |  {regions}     |                              | The number of regions that have been in transition longer than a threshold time. 
-|  hbase.master.in_transition_regions.oldest_age         | gauge      |  ms            |                              | The age of the longest region in transition. 
-|  hbase.region_server.region.count                      | gauge      |  {regions}     |  region_server               | The number of regions hosted by the region server. 
-|  hbase.region_server.disk.store_file.count             | gauge      |  {files}       |  region_server               | The number of store files on disk currently managed by the region server. 
-|  hbase.region_server.disk.store_file.size              | gauge      |  By            |  region_server               | Aggregate size of the store files on disk. 
-|  hbase.region_server.write_ahead_log.count             | gauge      |  {logs}        |  region_server               | The number of write ahead logs not yet archived. 
-|  hbase.region_server.request.count                     | gauge      |  {requests}    |  region_server , state       | The number of requests received. 
-|  hbase.region_server.queue.length                      | gauge      |  {handlers}    |  region_server , state       | The number of RPC handlers actively servicing requests. 
-|  hbase.region_server.blocked_update.time               | gauge      |  ms            |  region_server               | Amount of time updates have been blocked so the memstore can be flushed. 
-|  hbase.region_server.block_cache.operation.count       | gauge      |  {operations}  |  region_server , state       | Number of block cache hits/misses. 
-|  hbase.region_server.files.local                       | gauge      |  %             |  region_server               | Percent of store file data that can be read from the local. 
-|  hbase.region_server.operation.append.latency.p99      | gauge      |  ms            |  region_server               | Append operation 99th Percentile latency. 
-|  hbase.region_server.operation.append.latency.max      | gauge      |  ms            |  region_server               | Append operation max latency. 
-|  hbase.region_server.operation.delete.latency.p99      | gauge      |  ms            |  region_server               | Delete operation 99th Percentile latency. 
-|  hbase.region_server.operation.delete.latency.max      | gauge      |  ms            |  region_server               | Delete operation max latency. 
-|  hbase.region_server.operation.put.latency.p99         | gauge      |  ms            |  region_server               | Put operation 99th Percentile latency. 
-|  hbase.region_server.operation.put.latency.max         | gauge      |  ms            |  region_server               | Put operation max latency. 
-|  hbase.region_server.operation.get.latency.p99         | gauge      |  ms            |  region_server               | Get operation 99th Percentile latency. 
-|  hbase.region_server.operation.get.latency.max         | gauge      |  ms            |  region_server               | Get operation max latency. 
-|  hbase.region_server.operation.replay.latency.p99      | gauge      |  ms            |  region_server               | Replay operation 99th Percentile latency. 
-|  hbase.region_server.operation.replay.latency.max      | gauge      |  ms            |  region_server               | Replay operation max latency. 
-|  hbase.region_server.operation.increment.latency.p99   | gauge      |  ms            |  region_server               | Increment operation 99th Percentile latency. 
-|  hbase.region_server.operation.increment.latency.max   | gauge      |  ms            |  region_server               | Increment operation max latency. 
-|  hbase.region_server.operations.slow                   | gauge      |  {operations}  |  region_server , operation   | Number of operations that took over 1000ms to complete. 
-|  hbase.region_server.open_connection.count             | gauge      |  {connections} |  region_server               | The number of open connections at the RPC layer. 
-|  hbase.region_server.active_handler.count              | gauge      |  {handlers}    |  region_server               | The number of RPC handlers actively servicing requests. 
-|  hbase.region_server.queue.request.count               | gauge      |  {requests}    |  region_server , state       | The number of currently enqueued requests. 
-|  hbase.region_server.authentication.count              | gauge      |  1             |  region_server , state       | Number of client connection authentication failures/successes. 
-|  hbase.region_server.gc.time                           | cumulative |  ms            |  region_server               | Time spent in garbage collection. 
-|  hbase.region_server.gc.young_gen.time                 | cumulative |  ms            |  region_server               | Time spent in garbage collection of the young generation. 
-|  hbase.region_server.gc.old_gen.time                   | cumulative |  ms            |  region_server               | Time spent in garbage collection of the old generation.
-         
+| `hbase.master.region_server.count` | Gauge | `{servers}` | `state` | The number of region servers. |
+| `hbase.master.regions_in_transition.count` | Gauge | `{regions}` |  | The number of regions that are in transition. |
+| `hbase.master.regions_in_transition.over_threshold` | Gauge | `{regions}` |  | The number of regions that have been in transition longer than a threshold time. |
+| `hbase.master.regions_in_transition.oldest_age` | Gauge | `ms` |  | The age of the longest region in transition. |
+| `hbase.region_server.region.count` | Gauge | `{regions}` | `region_server` | The number of regions hosted by the region server. |
+| `hbase.region_server.disk.store_file.count` | Gauge | `{files}` | `region_server` | The number of store files on disk currently managed by the region server. |
+| `hbase.region_server.disk.store_file.size` | Gauge | `By` | `region_server` | Aggregate size of the store files on disk. |
+| `hbase.region_server.write_ahead_log.count` | Gauge | `{logs}` | `region_server` | The number of write ahead logs not yet archived. |
+| `hbase.region_server.request.count` | Gauge | `{requests}` | `region_server`, `state` | The number of requests received. |
+| `hbase.region_server.queue.length` | Gauge | `{handlers}` | `region_server`, `state` | The number of RPC handlers actively servicing requests. |
+| `hbase.region_server.blocked_update.time` | Gauge | `ms` | `region_server` | Amount of time updates have been blocked so the memstore can be flushed. |
+| `hbase.region_server.block_cache.operation.count` | Gauge | `{operations}` | `region_server`, `state` | Number of block cache hits/misses. |
+| `hbase.region_server.files.local` | Gauge | `%` | `region_server` | Percent of store file data that can be read from the local. |
+| `hbase.region_server.operation.append.latency.p99` | Gauge | `ms` | `region_server` | Append operation 99th Percentile latency. |
+| `hbase.region_server.operation.append.latency.max` | Gauge | `ms` | `region_server` | Append operation max latency. |
+| `hbase.region_server.operation.append.latency.min` | Gauge | `ms` | `region_server` | Append operation minimum latency. |
+| `hbase.region_server.operation.append.latency.mean` | Gauge | `ms` | `region_server` | Append operation mean latency. |
+| `hbase.region_server.operation.append.latency.median` | Gauge | `ms` | `region_server` | Append operation median latency. |
+| `hbase.region_server.operation.delete.latency.p99` | Gauge | `ms` | `region_server` | Delete operation 99th Percentile latency. |
+| `hbase.region_server.operation.delete.latency.max` | Gauge | `ms` | `region_server` | Delete operation max latency. |
+| `hbase.region_server.operation.delete.latency.min` | Gauge | `ms` | `region_server` | Delete operation minimum latency. |
+| `hbase.region_server.operation.delete.latency.mean` | Gauge | `ms` | `region_server` | Delete operation mean latency. |
+| `hbase.region_server.operation.delete.latency.median` | Gauge | `ms` | `region_server` | Delete operation median latency. |
+| `hbase.region_server.operation.put.latency.p99` | Gauge | `ms` | `region_server` | Put operation 99th Percentile latency. |
+| `hbase.region_server.operation.put.latency.max` | Gauge | `ms` | `region_server` | Put operation max latency. |
+| `hbase.region_server.operation.put.latency.min` | Gauge | `ms` | `region_server` | Put operation minimum latency. |
+| `hbase.region_server.operation.put.latency.mean` | Gauge | `ms` | `region_server` | Put operation mean latency. |
+| `hbase.region_server.operation.put.latency.median` | Gauge | `ms` | `region_server` | Put operation median latency. |
+| `hbase.region_server.operation.get.latency.p99` | Gauge | `ms` | `region_server` | Get operation 99th Percentile latency. |
+| `hbase.region_server.operation.get.latency.max` | Gauge | `ms` | `region_server` | Get operation max latency. |
+| `hbase.region_server.operation.get.latency.min` | Gauge | `ms` | `region_server` | Get operation minimum latency. |
+| `hbase.region_server.operation.get.latency.mean` | Gauge | `ms` | `region_server` | Get operation mean latency. |
+| `hbase.region_server.operation.get.latency.median` | Gauge | `ms` | `region_server` | Get operation median latency. |
+| `hbase.region_server.operation.replay.latency.p99` | Gauge | `ms` | `region_server` | Replay operation 99th Percentile latency. |
+| `hbase.region_server.operation.replay.latency.max` | Gauge | `ms` | `region_server` | Replay operation max latency. |
+| `hbase.region_server.operation.replay.latency.min` | Gauge | `ms` | `region_server` | Replay operation minimum latency. |
+| `hbase.region_server.operation.replay.latency.mean` | Gauge | `ms` | `region_server` | Replay operation mean latency. |
+| `hbase.region_server.operation.replay.latency.median` | Gauge | `ms` | `region_server` | Replay operation median latency. |
+| `hbase.region_server.operation.increment.latency.p99` | Gauge | `ms` | `region_server` | Increment operation 99th Percentile latency. |
+| `hbase.region_server.operation.increment.latency.max` | Gauge | `ms` | `region_server` | Increment operation max latency. |
+| `hbase.region_server.operation.increment.latency.min` | Gauge | `ms` | `region_server` | Increment operation minimum latency. |
+| `hbase.region_server.operation.increment.latency.mean` | Gauge | `ms` | `region_server` | Increment operation mean latency. |
+| `hbase.region_server.operation.increment.latency.median` | Gauge | `ms` | `region_server` | Increment operation median latency. |
+| `hbase.region_server.operations.slow` | Gauge | `{operations}` | `region_server`, `operation` | Number of operations that took over 1000ms to complete. |
+| `hbase.region_server.open_connection.count` | Gauge | `{connections}` | `region_server` | The number of open connections at the RPC layer. |
+| `hbase.region_server.active_handler.count` | Gauge | `{handlers}` | `region_server` | The number of RPC handlers actively servicing requests. |
+| `hbase.region_server.queue.request.count` | Gauge | `{requests}` | `region_server`, `state` | The number of currently enqueued requests. |
+| `hbase.region_server.authentication.count` | Gauge | `{authentication requests}` | `region_server`, `state` | Number of client connection authentication failures/successes. |
+| `hbase.region_server.gc.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection. |
+| `hbase.region_server.gc.young_gen.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection of the young generation. |
+| `hbase.region_server.gc.old_gen.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection of the old generation. |
