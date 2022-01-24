@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    activemqmetrics:
+    activemq_metrics:
       type: activemq
       # exercising default endpoint
       username: otelu
@@ -22,6 +22,6 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      activemqpipeline:
+      activemq_pipeline:
         receivers:
-          - activemqmetrics
+          - activemq_metrics
