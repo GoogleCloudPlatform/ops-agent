@@ -27,9 +27,14 @@ type MetricsReceiverMongoDB struct {
 	confgenerator.ConfigComponent          `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
-	Endpoint                               string `yaml:"endpoint" validate:"omitempty"`
+	Endpoint                               string `yaml:"endpoint,omitempty"`
 	Username                               string `yaml:"username,omitempty"`
 	Password                               string `yaml:"password,omitempty"`
+}
+
+type MetricsReceiverMongoDBHosts struct {
+	Endpoint  string `yaml:"endpoint"`
+	Transport string `yaml:"transport"`
 }
 
 const defaultMongodbEndpoint = "localhost:27017"
@@ -46,13 +51,10 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 		transport = "unix"
 	}
 
-	hosts := []struct {
-		endpoint  string `yaml:"endpoint"`
-		transport string `yaml:"transport"`
-	}{
+	hosts := []MetricsReceiverMongoDBHosts{
 		{
-			endpoint:  r.Endpoint,
-			transport: transport,
+			r.Endpoint,
+			transport,
 		},
 	}
 
@@ -61,7 +63,6 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 			Type: r.Type(),
 			Config: map[string]interface{}{
 				"hosts":               hosts,
-				"endpoint":            r.Endpoint,
 				"username":            r.Username,
 				"password":            r.Password,
 				"tls":                 r.TLSConfig(false),
