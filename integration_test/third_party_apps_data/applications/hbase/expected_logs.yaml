@@ -1,0 +1,6 @@
+log_entries:
+- log_name: "hbase_system"
+  field_matchers:
+    jsonPayload.message: "org.apache.catalina.startup.Catalina.start Server startup*"
+    jsonPayload.module: "main"
+    jsonPayload.source: "org.apache.catalina.startup.Catalina.start"
