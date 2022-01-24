@@ -16,10 +16,69 @@ package apps
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverMongoDB struct {
+	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
+	confgenerator.MetricsReceiverShared    `yaml:",inline"`
+	Endpoint                               string `yaml:"endpoint" validate:"omitempty"`
+	Username                               string `yaml:"username,omitempty"`
+	Password                               string `yaml:"password,omitempty"`
+}
+
+const defaultMongodbEndpoint = "localhost:27017"
+
+func (r MetricsReceiverMongoDB) Type() string {
+	return "mongodb"
+}
+
+func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
+	transport := "tcp"
+	if r.Endpoint == "" {
+		r.Endpoint = defaultMongodbEndpoint
+	} else if strings.HasSuffix(r.Endpoint, ".sock") {
+		transport = "unix"
+	}
+
+	hosts := []struct {
+		endpoint  string `yaml:"endpoint"`
+		transport string `yaml:"transport"`
+	}{
+		{
+			endpoint:  r.Endpoint,
+			transport: transport,
+		},
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: r.Type(),
+			Config: map[string]interface{}{
+				"hosts":               hosts,
+				"endpoint":            r.Endpoint,
+				"username":            r.Username,
+				"password":            r.Password,
+				"tls":                 r.TLSConfig(false),
+				"collection_interval": r.CollectionIntervalString(),
+			},
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMongoDB{} })
+}
 
 type LoggingProcessorMongodb struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
