@@ -50,11 +50,6 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			otel.MetricsFilter(
-				"exclude",
-				"strict",
-				"couchdb.average_request_time",
-			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),

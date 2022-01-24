@@ -40,6 +40,7 @@ The Ops Agent collects the following metrics from your couchdb server.
 
 | Metric                                               | Data Type | Unit       | Labels                      | Description                                  |
 |------------------------------------------------------|-----------|------------|-----------------------------|----------------------------------------------|
+| workload.googleapis.com/couchdb.average_request_time | gauge     | ms         | node_name                   | The average duration of a served request.    |
 | workload.googleapis.com/couchdb.httpd.bulk_requests  | sum       | requests   | node_name                   | The number of bulk requests.                 |
 | workload.googleapis.com/couchdb.httpd.requests       | sum       | requests   | node_name, http.method      | The number of HTTP requests by method.       |
 | workload.googleapis.com/couchdb.httpd.responses      | sum       | responses  | node_name, http.status_code | The number of HTTP responses by status code. |
