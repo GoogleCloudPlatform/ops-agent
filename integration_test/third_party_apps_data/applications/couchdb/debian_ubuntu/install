@@ -11,7 +11,6 @@ echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://ap
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y couchdb
 
-PASSWORD=$(echo $RANDOM | md5sum | head -c 20; echo;)
 cat << EOF > local.ini
 [couchdb]
 [couch_peruser]
@@ -21,7 +20,7 @@ cat << EOF > local.ini
 [ssl]
 [vhosts]
 [admins]
-admin = PASSWORD
+admin = otelp
 EOF
 sudo mv local.ini /opt/couchdb/etc/local.ini
 sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
