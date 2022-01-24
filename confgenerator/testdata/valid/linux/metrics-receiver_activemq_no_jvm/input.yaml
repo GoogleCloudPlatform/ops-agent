@@ -16,7 +16,7 @@ metrics:
   receivers:
     activemq_metrics:
       type: activemq
-      endpoint: localhost:1099
+      endpoint: localhost:7199
       collect_jvm_metrics: false
       username: otelu
       password: otelp
