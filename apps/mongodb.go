@@ -19,6 +19,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+
+	"github.com/GoogleCloudPlatform/ops-agent/apps/modify"
 )
 
 type LoggingProcessorMongodb struct {
@@ -86,7 +88,7 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 		},
 	}
 
-	renameTsOption := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
+	renameTsOption := modify.NewHardRenameOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
 	renameTs := renameTsOption.Component(tag)
 
 	c = append(c, liftTs, renameTs)
@@ -172,7 +174,7 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	}
 
 	for _, rename := range renames {
-		rename := fluentbit.NewRenameModifyOptions(rename.src, rename.dest)
+		rename := modify.NewRenameOptions(rename.src, rename.dest)
 		r = append(r, rename.Component(tag))
 	}
 
@@ -193,7 +195,7 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 		},
 	}
 
-	hardRenameMessage := fluentbit.NewHardRenameModifyOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
+	hardRenameMessage := modify.NewHardRenameOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
 	wiredTigerRename := hardRenameMessage.Component(tag)
 
 	renameRemainingAttributes := fluentbit.Component{
