@@ -16,11 +16,10 @@ metrics:
   receivers:
     activemq_metrics:
       type: activemq
-      endpoint: localhost
+      username: usr
       collection_interval: 30s
   service:
     pipelines:
       activemq_pipeline:
         receivers:
           - activemq_metrics
-          
