@@ -7,3 +7,4 @@ nginx
 postgresql
 redis
 tomcat
+elasticsearch
