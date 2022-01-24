@@ -103,7 +103,7 @@ func TestInvalidFile(t *testing.T) {
 	// unit tests (which run on both linux and windows). In practice, the
 	// DirectoryLogger is only run on linux. Future work could be to figure out
 	// how to set up github workflows/actions to separate out this test so that
-	// it's only run when changes are made to the DirectoryLogger itself, and 
+	// it's only run when changes are made to the DirectoryLogger itself, and
 	// only on linux (meaning this check could be deleted).
 	if runtime.GOOS == "windows" {
 		// In this case, C:/Users is already a directory.
