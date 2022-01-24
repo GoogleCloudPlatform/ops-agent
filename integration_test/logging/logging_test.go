@@ -1,3 +1,6 @@
+// Unit tests for the DirectoryLogger, which is itself only used
+// for integration testing.
+
 package logging
 
 import (
@@ -95,6 +98,14 @@ func TestInvalidFile(t *testing.T) {
 
 	// This will result in an error because /etc is already a directory.
 	invalidPath := "../../../../../../../../../etc"
+	this check is
+
+	// This check is necessary only because this test is bundled into the other
+	// unit tests (which run on both linux and windows). In practice, the
+	// DirectoryLogger is only run on linux. Future work could be to figure out
+	// how to set up github workflows/actions to separate out this test so that
+	// it's only run when changes are made to the DirectoryLogger itself, and 
+	// only on linux (meaning this check could be deleted).
 	if runtime.GOOS == "windows" {
 		// In this case, C:/Users is already a directory.
 		invalidPath = "C:/Users"
