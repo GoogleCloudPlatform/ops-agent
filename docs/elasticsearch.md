@@ -18,7 +18,7 @@ To configure a receiver for Elasticsearch GC logs, specify the following fields:
 | `type`                | required                     | Must be `elasticsearch_gc`. |
 | `include_paths`       | `[/var/log/elasticsearch/gc.log]` | The log files to read. |
 | `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-| `wildcard_refresh_interval` | `1m0s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
 Example Configuration:
 
