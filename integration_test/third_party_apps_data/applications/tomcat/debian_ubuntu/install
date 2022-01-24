@@ -1,36 +1,39 @@
 set -e
-
+sudo apt update
 sudo apt-get install -y curl default-jre
-sudo mkdir -p /opt/tomcat/stage
-sudo curl "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.56/bin/apache-tomcat-9.0.56.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
-sudo tar -xvzf /opt/tomcat/stage/tomcat.tgz -C /opt/tomcat --strip 1
+sudo apt install tomcat9 -y
+sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat9.service 
 
-cat << EOF > tomcat.service
 [Unit]
-Description=Tomcat Server
-After=syslog.target network.target
-
+Description=Apache Tomcat 9 Web Application Server
+Documentation=https://tomcat.apache.org/tomcat-9.0-doc/index.html
+After=network.target
+RequiresMountsFor=/var/log/tomcat9 /var/lib/tomcat9
 [Service]
-Type=forking
-User=root
-Group=root
-
-Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-Environment='JAVA_OPTS=-Djava.awt.headless=true'
-Environment=CATALINA_HOME=/opt/tomcat
-Environment=CATALINA_BASE=/opt/tomcat
-Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
-Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
-ExecStart=/opt/tomcat/bin/catalina.sh start
-ExecStop=/opt/tomcat/bin/catalina.sh stop
-
-[Install]
-WantedBy=multi-user.target
+# Configuration
+Environment="CATALINA_HOME=/usr/share/tomcat9"
+Environment="CATALINA_BASE=/var/lib/tomcat9"
+Environment="CATALINA_TMPDIR=/tmp"
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="JAVA_OPTS=-Djava.awt.headless=true"
+# Lifecycle
+Type=simple
+ExecStartPre=+/usr/libexec/tomcat9/tomcat-update-policy.sh
+ExecStart=/bin/sh /usr/libexec/tomcat9/tomcat-start.sh
+SuccessExitStatus=143
+Restart=on-abort
+# Logging
+SyslogIdentifier=tomcat9
+# Security
+User=tomcat
+Group=tomcat
+PrivateTmp=yes
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+CacheDirectory=tomcat9
+CacheDirectoryMode=750
+ProtectSystem=strict
+ReadWritePaths=/etc/tomcat9/Catalina/
 EOF
 
-sudo mv tomcat.service /usr/lib/systemd/system/tomcat.service
-sudo chown root:root /usr/lib/systemd/system/tomcat.service
-sudo chmod 0644 /usr/lib/systemd/system/tomcat.service
-
 sudo systemctl daemon-reload
-sudo systemctl enable tomcat

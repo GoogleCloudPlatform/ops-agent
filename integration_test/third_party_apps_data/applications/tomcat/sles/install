@@ -1,36 +1,30 @@
 set -e
-
-sudo zypper install -y curl java-11-openjdk
-sudo mkdir -p /opt/tomcat/stage
-sudo curl "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.56/bin/apache-tomcat-9.0.56.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
-sudo tar -xvzf /opt/tomcat/stage/tomcat.tgz -C /opt/tomcat --strip 1
-
-cat << EOF > tomcat.service
+sudo zypper install -y curl default-jre
+sudo zypper install tomcat -y
+sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat9.service 
+# Systemd unit file for default tomcat
+# 
+# To create clones of this service:
+# DO NOTHING, use tomcat@.service instead.
 [Unit]
-Description=Tomcat Server
+Description=Apache Tomcat Web Application Container
 After=syslog.target network.target
-
 [Service]
-Type=forking
-User=root
-Group=root
-
-Environment=JAVA_HOME=/usr/lib64/jvm/jre-11-openjdk
-Environment='JAVA_OPTS=-Djava.awt.headless=true'
-Environment=CATALINA_HOME=/opt/tomcat
-Environment=CATALINA_BASE=/opt/tomcat
-Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
-Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
-ExecStart=/opt/tomcat/bin/catalina.sh start
-ExecStop=/opt/tomcat/bin/catalina.sh stop
-
+TasksMax=576
+LimitNOFILE=8192
+Type=simple
+EnvironmentFile=/etc/tomcat/tomcat.conf
+Environment="NAME="
+EnvironmentFile=-/etc/sysconfig/tomcat
+ExecStart=/usr/lib/tomcat/server start
+ExecStop=/usr/lib/tomcat/server stop
+SuccessExitStatus=143
+User=tomcat
+Group=tomcat
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="JAVA_OPTS=-Djava.awt.headless=true"
 [Install]
 WantedBy=multi-user.target
 EOF
 
-sudo mv tomcat.service /usr/lib/systemd/system/tomcat.service
-sudo chown root:root /usr/lib/systemd/system/tomcat.service
-sudo chmod 0644 /usr/lib/systemd/system/tomcat.service
-
 sudo systemctl daemon-reload
-sudo systemctl enable tomcat
