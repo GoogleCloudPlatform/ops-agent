@@ -11,3 +11,5 @@ postgresql
 redis
 solr
 tomcat
+elasticsearch
+zookeeper
