@@ -127,7 +127,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"ERROR", "ERROR"},
 				{"Error", "ERROR"},

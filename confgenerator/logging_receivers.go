@@ -53,9 +53,10 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths            []string       `yaml:"include_paths,omitempty"`
-	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	IncludePaths            []string        `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	MultilineRules          []MultilineRule `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -101,10 +102,49 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
 	}
-	return []fluentbit.Component{{
+
+	c := []fluentbit.Component{}
+
+	if len(r.MultilineRules) > 0 {
+		// Configure multiline in the input component;
+		// This is necessary, since using the multiline filter will not work
+		// if a multiline message spans between two chunks.
+		rules := [][2]string{}
+		for _, rule := range r.MultilineRules {
+			rules = append(rules, [2]string{"rule", rule.AsString()})
+		}
+
+		parserName := fmt.Sprintf("multiline.%s", tag)
+
+		c = append(c, fluentbit.Component{
+			Kind: "MULTILINE_PARSER",
+			Config: map[string]string{
+				"name":          parserName,
+				"type":          "regex",
+				"flush_timeout": "5000",
+			},
+			OrderedConfig: rules,
+		})
+		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
+		config["multiline.parser"] = parserName
+
+		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match":  tag,
+				"Name":   "modify",
+				"Rename": "log message",
+			},
+		})
+	}
+
+	c = append(c, fluentbit.Component{
 		Kind:   "INPUT",
 		Config: config,
-	}}
+	})
+
+	return c
 }
 
 func init() {
@@ -232,7 +272,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
-	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity",
+	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
 			{"Error", "ERROR"},
 			{"Information", "INFO"},

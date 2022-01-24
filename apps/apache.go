@@ -93,7 +93,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"emerg", "EMERGENCY"},
 				{"alert", "ALERT"},

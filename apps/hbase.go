@@ -60,7 +60,7 @@ func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluent
 
 	// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
 			[]struct{ SrcVal, DestVal string }{
 				{"TRACE", "DEBUG"},
 				{"DEBUG", "DEBUG"},
@@ -71,15 +71,6 @@ func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluent
 			},
 		)...,
 	)
-
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": "level",
-		},
-	})
 	return c
 }
 
