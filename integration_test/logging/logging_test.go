@@ -98,7 +98,6 @@ func TestInvalidFile(t *testing.T) {
 
 	// This will result in an error because /etc is already a directory.
 	invalidPath := "../../../../../../../../../etc"
-	this check is
 
 	// This check is necessary only because this test is bundled into the other
 	// unit tests (which run on both linux and windows). In practice, the
