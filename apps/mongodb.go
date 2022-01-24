@@ -24,6 +24,7 @@ import (
 )
 
 type MetricsReceiverMongoDB struct {
+	confgenerator.ConfigComponent          `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 	Endpoint                               string `yaml:"endpoint" validate:"omitempty"`

@@ -399,10 +399,6 @@ func (m MetricsReceiverShared) CollectionIntervalString() string {
 	return "60s"
 }
 
-var MetricsReceiverTypes = &componentTypeRegistry{
-	Subagent: "metrics", Kind: "receiver",
-}
-
 type MetricsReceiverSharedTLS struct {
 	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
 	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
@@ -434,6 +430,10 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 	}
 
 	return tls
+}
+
+var MetricsReceiverTypes = &componentTypeRegistry{
+	Subagent: "metrics", Kind: "receiver",
 }
 
 // Wrapper type to store the unmarshaled YAML value.
@@ -578,6 +578,10 @@ func (m *Metrics) Validate(platform string) error {
 			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
 				return err
 			}
+
+			if err := validateSSLConfig(m.Receivers); err != nil {
+				return err
+			}
 		}
 
 		if _, err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
@@ -700,6 +704,32 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 
 	if jvmReceiverCount > 1 {
 		return fmt.Errorf("at most one metrics receiver of JVM types [%s] is allowed: JVM based receivers currently conflict, and only one can be configured", strings.Join(jvmReceivers, ", "))
+	}
+
+	return nil
+}
+
+func validateSSLConfig(receivers metricsReceiverMap) error {
+	for receiverId, receiver := range receivers {
+		for _, pipeline := range receiver.Pipelines() {
+			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
+				cfg := tlsCfg.(map[string]interface{})
+				// If insecure, no other fields are allowed
+				if cfg["insecure"] == true {
+					invalidFields := []string{}
+
+					for _, field := range []string{"insecure_skip_verify", "cert_file", "ca_file", "key_file"} {
+						if val, ok := cfg[field]; ok && val != "" {
+							invalidFields = append(invalidFields, fmt.Sprintf("\"%s\"", field))
+						}
+					}
+
+					if len(invalidFields) > 0 {
+						return fmt.Errorf("%s are not allowed when \"insecure\" is true, which indicates TLS is disabled for receiver \"%s\"", strings.Join(invalidFields, ", "), receiverId)
+					}
+				}
+			}
+		}
 	}
 
 	return nil
