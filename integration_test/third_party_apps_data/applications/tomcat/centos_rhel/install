@@ -1,6 +1,6 @@
 set -e
 
-sudo yum install -y curl default-jre
+sudo yum install -y curl java
 sudo yum install tomcat -y
 sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat.service
 # Systemd unit file for default tomcat

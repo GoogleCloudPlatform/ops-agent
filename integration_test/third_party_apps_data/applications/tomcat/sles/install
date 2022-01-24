@@ -1,5 +1,5 @@
 set -e
-sudo zypper install -y curl default-jre
+sudo zypper install -y curl java-11-openjdk
 sudo zypper install tomcat -y
 sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat9.service 
 # Systemd unit file for default tomcat
