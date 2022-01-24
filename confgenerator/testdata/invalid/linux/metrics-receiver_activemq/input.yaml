@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    activemqmetrics:
+    activemq_metrics:
       type: activemq
       endpoint: localhost
       collection_interval: 30s
   service:
     pipelines:
-      activemqpipeline:
+      activemq_pipeline:
         receivers:
-          - activemqmetrics
+          - activemq_metrics
           
