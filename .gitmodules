@@ -9,4 +9,4 @@
 	url = ../../open-telemetry/opentelemetry-java-contrib.git
 [submodule "submodules/opentelemetry-operations-collector"]
 	path = submodules/opentelemetry-operations-collector
-	url = ../../open-telemetry/opentelemetry-operations-collector.git
+	url = ../../GoogleCloudPlatform/opentelemetry-operations-collector.git
