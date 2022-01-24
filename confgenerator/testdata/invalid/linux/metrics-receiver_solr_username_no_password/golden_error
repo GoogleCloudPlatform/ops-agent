@@ -1,0 +1,9 @@
+[17:17] "password" is required when "Username" is set
+  15 | metrics:
+  16 |   receivers:
+> 17 |     solr_metrics:
+                       ^
+  18 |       type: solr
+  19 |       username: usr
+  20 |       collection_interval: 30s
+  21 |   

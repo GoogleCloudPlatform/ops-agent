@@ -1,0 +1,5 @@
+set -e
+
+sudo systemctl restart solr
+
+sudo su - solr -c "/opt/solr/bin/solr create -c otel"

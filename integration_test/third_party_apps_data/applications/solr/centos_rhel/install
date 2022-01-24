@@ -1,0 +1,40 @@
+set -e
+
+sudo setenforce 0
+
+cat <<EOF | sudo tee /etc/selinux/config
+SELINUX=disabled
+SELINUXTYPE=targeted
+EOF
+
+sudo yum install -y \
+    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof
+
+curl -L -o \
+    solr-8.11.1.tgz \
+    https://downloads.apache.org/lucene/solr/8.11.1/solr-8.11.1.tgz
+
+tar -xzf \
+    solr-8.11.1.tgz \
+    solr-8.11.1/bin/install_solr_service.sh \
+    --strip-components=2
+
+sudo bash ./install_solr_service.sh solr-8.11.1.tgz -n
+
+sudo chown -R solr:solr /opt/solr*
+
+cat <<EOF | sudo tee /etc/default/solr.in.sh
+# default
+SOLR_PID_DIR="/var/solr"
+SOLR_HOME="/var/solr/data"
+LOG4J_PROPS="/var/solr/log4j2.xml"
+SOLR_LOGS_DIR="/var/solr/logs"
+SOLR_PORT="8983"
+
+# enable jmx
+ENABLE_REMOTE_JMX_OPTS="true"  
+RMI_PORT=18983
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable solr
