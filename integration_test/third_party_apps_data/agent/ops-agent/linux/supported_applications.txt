@@ -6,3 +6,4 @@ mysql
 nginx
 redis
 tomcat
+hbase
