@@ -181,6 +181,30 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
 }
 
+type LoggingProcessorNestWildcard struct {
+	Wildcard     string
+	NestUnder    string
+	RemovePrefix string
+}
+
+func (p LoggingProcessorNestWildcard) Components(tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      p.Wildcard,
+			"Nest_under":    p.NestUnder,
+			"Remove_prefix": p.RemovePrefix,
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
