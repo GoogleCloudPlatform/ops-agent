@@ -134,7 +134,7 @@ func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Co
 		},
 	})
 
-	severityComponents = append(severityComponents, fluentbit.TranslationComponents(tag, "severity", severityKey, []struct {
+	severityComponents = append(severityComponents, fluentbit.TranslationComponents(tag, "severity", severityKey, true, []struct {
 		SrcVal  string
 		DestVal string
 	}{
@@ -149,15 +149,6 @@ func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Co
 		{"F", "FATAL"},
 		{"W", "WARNING"},
 	})...)
-
-	severityComponents = append(severityComponents, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": "severity",
-		},
-	})
 
 	return severityComponents
 }
