@@ -12,7 +12,7 @@ To configure a receiver for your Elasticsearch JSON logs, specify the following 
 | Field                  | Required | Default                 | Description                                                                                                                                                             |
 |------------------------|----------|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `type`                 | required |                         | Must be `elasticsearch`.                                                                                                                                                |
-| `collection_interval`  | required |                         | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                  |
+| `collection_interval`  | optional | `60s`                   | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                  |
 | `endpoint`             | optional | `http://localhost:9200` | Base URL for the Elasticsearch REST API                                                                                                                                 |
 | `username`             | optional |                         | Username for authentication with Elasticsearch. Required if `password` is set.                                                                                          |
 | `password`             | optional |                         | Password for authentication with Elasticsearch. Required if `username` is set.                                                                                          |
@@ -31,7 +31,6 @@ metrics:
   receivers:
     elasticsearch_metrics:
       type: elasticsearch
-      collection_interval: 60s
   service:
     pipelines:
       elasticsearch_pipeline:
@@ -45,7 +44,6 @@ metrics:
   receivers:
     elasticsearch_metrics:
       type: elasticsearch
-      collection_interval: 60s
       username: "user"
       password: "password"
   service:
@@ -61,7 +59,6 @@ metrics:
   receivers:
     elasticsearch_metrics:
       type: elasticsearch
-      collection_interval: 60s
       endpoint: "https://example.com/elasticsearch"
       username: "user"
       password: "password"

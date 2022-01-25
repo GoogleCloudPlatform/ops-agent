@@ -16,8 +16,6 @@ metrics:
   receivers:
     elasticsearch_default:
       type: elasticsearch
-      collection_interval: 60s
-      
   service:
     pipelines:
       elasticsearch_pipeline:
