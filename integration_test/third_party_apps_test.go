@@ -360,7 +360,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
-	
+
 	if scriptsDir == "" {
 		t.Fatalf("Cannot run test with empty value of SCRIPTS_DIR.")
 	}
