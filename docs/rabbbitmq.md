@@ -1,26 +1,29 @@
-# `postgresql` Metrics Receiver
+# `rabbitmq` Metrics Receiver
 
-The postgresql receiver can retrieve stats from your postgresql instance by connecting as a monitoring user.
+This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
 ## Prerequisites
 
-The `postgresql` receiver defaults to connecting to a local postgresql server using a Unix socket and Unix authentication as the `root` user.
+This receiver supports RabbitMQ versions `3.8` and `3.9`.
 
+The RabbitMQ Management Plugin must be enabled by following the [official instructions](https://www.rabbitmq.com/management.html#getting-started).
+
+Also, a user with at least [monitoring](https://www.rabbitmq.com/management.html#permissions) level permissions must be used for monitoring.
 ## Configuration
 
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your postgresql configuration.
+Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your rabbitmq configuration.
 
-To configure a receiver for your postgresql metrics, specify the following fields:
+To configure a receiver for your rabbitmq metrics, specify the following fields:
 
 | Field                   | Required | Default                         | Description |
 | ---                     | ---      | ---                             | ---         |
-| `type`                  | required |                      | Must be `postgresql`. |
-| `endpoint`              | optional | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path starting with `/` used to connect to postgresql |
+| `type`                  | required |                                 | Must be `rabbitmq`. |
+| `endpoint`              | optional | `http://localhost:15672`        | URL of node to be monitored |
 | `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`              | optional |                                 | The username used to connect to the server. |
-| `password`              | optional |                                 | The password used to connect to the server. |
+| `username`              | optional | required                        | The username used to connect to the server. |
+| `password`              | optional | required                        | The password used to connect to the server. |
 | `insecure`              | optional | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
-| `insecure_skip_verify`  | optional | false                           | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
+| `insecure_skip_verify`  | optional |                                 | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
 | `cert_file`             | optional |                             | Path to the TLS cert to use for TLS required connections. |
 | `key_file`              | optional |                             | Path to the TLS key to use for TLS required connections. |
 | `ca_file`               | optional |                             | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
@@ -31,17 +34,17 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    postgresql_metrics:
-      type: postgresql 
-      endpoint: localhost:3306
+    rabbitmq_metrics:
+      type: rabbitmq 
+      endpoint: http://localhost:15672
       collection_interval: 60s
       password: pwd
       username: usr
   service:
     pipelines:
-      postgresql_pipeline:
+      rabbitmq_pipeline:
         receivers:
-          - postgresql_metrics
+          - rabbitmq_metrics
 ```
 
 TCP connection with a username and password and TLS:
@@ -49,9 +52,9 @@ TCP connection with a username and password and TLS:
 ```yaml
 metrics:
   receivers:
-    postgresql_metrics:
-      type: postgresql 
-      endpoint: localhost:3306
+    rabbitmq_metrics:
+      type: rabbitmq 
+      endpoint: http://localhost:15672
       collection_interval: 60s
       password: pwd
       username: usr
@@ -61,14 +64,14 @@ metrics:
       ca_file: /path/to/ca
   service:
     pipelines:
-      postgresql_pipeline:
+      rabbitmq_pipeline:
         receivers:
-          - postgresql_metrics
+          - rabbitmq_metrics
 ```
 
 ## Metrics
 
-The Ops Agent collects the following metrics from your postgresql instances.
+The Ops Agent collects the following metrics from your rabbitmq instances.
 
 | Metric                                                 | Data Type | Unit        | Labels                          | Description    |
 | ---                                                    | ---       | ---         | ---                             | ---            | git 

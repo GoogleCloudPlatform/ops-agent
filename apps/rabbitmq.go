@@ -13,10 +13,10 @@ type MetricsReceiverRabbitmq struct {
 
 	Password string `yaml:"password" validate:"required"`
 	Username string `yaml:"username" validate:"required"`
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|url"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
 }
 
-const defaultRabbitmqTCPEndpoint = "localhost:15672"
+const defaultRabbitmqTCPEndpoint = "http://localhost:15672"
 
 func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
