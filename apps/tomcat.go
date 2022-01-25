@@ -166,6 +166,7 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
+			"/var/log/tomcat*/catalina.out",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
@@ -194,6 +195,7 @@ func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Co
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
+			"/var/log/tomcat*/localhost_access_log.*.txt",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
