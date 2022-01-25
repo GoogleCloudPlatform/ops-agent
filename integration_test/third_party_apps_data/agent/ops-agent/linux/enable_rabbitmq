@@ -20,10 +20,8 @@ metrics:
   receivers:
     rabbitmq_metrics:
       type: rabbitmq
-      collection_interval: 30s
-      username: postgres
-      password: abc123
-      endpoint: localhost:15672
+      username: otelu
+      password: otelp
   service:
     pipelines:
       rabbitmq_pipeline:
