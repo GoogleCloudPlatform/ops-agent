@@ -20,12 +20,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-<<<<<<< HEAD
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-=======
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps/modify"
->>>>>>> 2c1a87d3a2142503f25973734a0c8a6a950ff0c2
 )
 
 type MetricsReceiverMongoDB struct {
