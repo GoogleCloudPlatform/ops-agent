@@ -25,8 +25,8 @@ type MetricsReceiverCouchdb struct {
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
-	Username string `yaml:"username" validate:"omitempty"`
-	Password string `yaml:"password" validate:"omitempty"`
+	Username string `yaml:"username" validate:"required_with=Password"`
+	Password string `yaml:"password" validate:"required_with=Username"`
 }
 
 const defaultCouchdbEndpoint = "http://localhost:5984"

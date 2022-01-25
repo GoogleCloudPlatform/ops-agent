@@ -25,8 +25,8 @@ metrics:
       type: couchdb
       endpoint: http://localhost:5984
       collection_interval: 60s
-      username: usr
-      password: pwd
+      username: otelu
+      password: otelp
   service:
     pipelines:
       couchdb_pipeline:
