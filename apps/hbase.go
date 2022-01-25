@@ -34,7 +34,7 @@ type MetricsReceiverHbase struct {
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
 
-const defaultHbaseEndpoint = "localhost:7199"
+const defaultHbaseEndpoint = "localhost:10101"
 
 func (r MetricsReceiverHbase) Type() string {
 	return "hbase"
