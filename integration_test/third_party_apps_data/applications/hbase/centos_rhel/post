@@ -1,4 +1,4 @@
 set -e
 
 sudo systemctl restart hbase 
-sleep 30
+sleep 60
