@@ -1,3 +1,7 @@
 set -e
 
+<<<<<<< HEAD
 sudo systemctl restart activemq 
+=======
+sudo systemctl restart activemq 
+>>>>>>> c06d4c5f (updating install scripts)
