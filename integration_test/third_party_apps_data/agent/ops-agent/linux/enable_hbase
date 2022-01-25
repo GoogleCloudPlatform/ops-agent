@@ -28,19 +28,6 @@ metrics:
       hbase_pipeline:
         receivers:
           - hbase_metrics
-
-logging:
-  receivers:
-    hbase_access:
-      type: hbase_access
-    hbase_system:
-      type: hbase_system
-  service:
-    pipelines:
-      hbase:
-        receivers:
-          - hbase_access
-          - hbase_system
 EOF
 
 sudo service google-cloud-ops-agent restart
