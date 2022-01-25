@@ -179,8 +179,10 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // Installs the agent according to the instructions in a script
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
-	environmentVariables := map[string]string{
-		environmentVariables["REPO_SUFFIX"]: os.Getenv("REPO_SUFFIX"),
+	environmentVariables := make(map[string]string)
+	suffix := os.Getenv("REPO_SUFFIX")
+	if suffix != "" {
+		environmentVariables["REPO_SUFFIX"] = suffix
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
