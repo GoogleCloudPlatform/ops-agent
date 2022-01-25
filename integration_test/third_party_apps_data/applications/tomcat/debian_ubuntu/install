@@ -2,7 +2,7 @@ set -e
 
 sudo apt-get install -y curl default-jre
 sudo mkdir -p /opt/tomcat/stage
-sudo curl "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
+sudo curl "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
 sudo tar -xvzf /opt/tomcat/stage/tomcat.tgz -C /opt/tomcat --strip 1
 
 cat << EOF > tomcat.service
