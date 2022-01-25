@@ -20,8 +20,8 @@ To configure a receiver for your Elasticsearch JSON logs, specify the following 
 | `skip_cluster_metrics` | optional | `true`                  | If true, cluster level metrics will not be collected. To prevent duplicate metrics, this should be set to false for one node only.                                      |
 | `insecure`             | optional | true                    | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled.                                                                     |
 | `insecure_skip_verify` | optional | false                   | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
-| `cert_file`            | optional |                         | Path to the TLS cert to use for TLS required connections.                                                                                                               |
-| `key_file`             | optional |                         | Path to the TLS key to use for TLS required connections.                                                                                                                |
+| `cert_file`            | optional |                         | Path to the TLS cert to use for mTLS required connections.                                                                                                              |
+| `key_file`             | optional |                         | Path to the TLS key to use for mTLS required connections.                                                                                                               |
 | `ca_file`              | optional |                         | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA.                                                                   |
 
 Example Configuration:
