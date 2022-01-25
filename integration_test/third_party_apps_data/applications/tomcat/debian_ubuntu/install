@@ -2,7 +2,7 @@ set -e
 sudo apt update
 sudo apt-get install -y curl default-jre
 sudo apt install tomcat9 -y
-sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat9.service 
+sudo cat << EOF | sudo tee /etc/systemd/system/tomcat9.service 
 
 [Unit]
 Description=Apache Tomcat 9 Web Application Server

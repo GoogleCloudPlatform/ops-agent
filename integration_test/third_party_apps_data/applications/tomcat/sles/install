@@ -1,7 +1,7 @@
 set -e
 sudo zypper --non-interactive install curl java-11-openjdk 
 sudo zypper --non-interactive install tomcat 
-sudo cat << EOF | sudo tee /usr/lib/systemd/system/tomcat9.service 
+sudo cat << EOF | sudo tee /etc/systemd/system/tomcat9.service 
 # Systemd unit file for default tomcat
 # 
 # To create clones of this service:
