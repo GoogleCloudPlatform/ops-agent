@@ -1,10 +1,14 @@
-package fluentbit
+package modify
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+)
 
 // ModifyRule is a string corresponding to one of the Configuration Rules of fluentbit
 // for a full list please refer to https://docs.fluentbit.io/manual/pipeline/filters/modify#configuration-parameters
-type ModifyRule = string
+type ModifyRule string
 
 const (
 	// Add a key/value pair with key KEY and value VALUE if KEY does not exist
@@ -21,7 +25,7 @@ const (
 
 // ModifyConditionKey is a string corresponding to a name of the modify filter's
 // conditional expressions. For a full list please refer to https://docs.fluentbit.io/manual/pipeline/filters/modify#conditions
-type ModifyConditionKey = string
+type ModifyConditionKey string
 
 const (
 	ModifyConditionKeyExists       ModifyConditionKey = "Key_exists"
@@ -40,23 +44,23 @@ type ModifyOptions struct {
 }
 
 // Component uses the option and transforms it into a Component
-func (mo *ModifyOptions) Component(tag string) Component {
-	c := Component{
+func (mo *ModifyOptions) Component(tag string) fluentbit.Component {
+	c := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
 			"Name":  "modify",
 			"Match": tag,
 		},
 	}
-	c.Config[mo.ModifyRule] = mo.Parameters
+	c.Config[string(mo.ModifyRule)] = mo.Parameters
 
 	return c
 }
 
 // MapModify takes a list of ModifyOptions and converts them to Modify components
 // and returns a slice of them
-func MapModify(tag string, modifications []ModifyOptions) []Component {
-	c := []Component{}
+func MapModify(tag string, modifications []ModifyOptions) []fluentbit.Component {
+	c := []fluentbit.Component{}
 	for _, m := range modifications {
 		c = append(c, m.Component(tag))
 	}
@@ -66,7 +70,7 @@ func MapModify(tag string, modifications []ModifyOptions) []Component {
 // NewSetModifyOptions creates the ModifyOptions that will construct a Set modify
 // where the `field` is set to the `value` parameter. Note this will overwrite if field
 // already exists
-func NewSetModifyOptions(field, value string) ModifyOptions {
+func NewSetOptions(field, value string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: SetModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, value),
@@ -76,7 +80,7 @@ func NewSetModifyOptions(field, value string) ModifyOptions {
 
 // NewRenameModifyOptions creates the ModifyOptions that on `Component()` will construct a Rename
 // fluentbit component. Note that Rename does not overwrite fields if they exist
-func NewRenameModifyOptions(field, renameTo string) ModifyOptions {
+func NewRenameOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: RenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
@@ -87,7 +91,7 @@ func NewRenameModifyOptions(field, renameTo string) ModifyOptions {
 // NewHardRenameModifyOptions creates the ModifyOptions that on `Component()` will return
 // a fluentbit component that does a hard rename of `field` to `renameTo`. Note that this will overwrite
 // the current value of field if it does exist.
-func NewHardRenameModifyOptions(field, renameTo string) ModifyOptions {
+func NewHardRenameOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: HardRenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
