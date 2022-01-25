@@ -1,0 +1,5 @@
+$ProgressPreference = 'SilentlyContinue'
+$repoSuffix = if ($env:REPO_SUFFIX) { $env:REPO_SUFFIX } else { "all" };
+
+(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")
+Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"
