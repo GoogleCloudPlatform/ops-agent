@@ -26,12 +26,13 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
+
 	cfg := map[string]interface{}{
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"username":            r.Username,
 		"password":            r.Password,
-		"tls":                 r.TLSConfig(false),
+		"tls":                 r.TLSConfig(true),
 	}
 
 	return []otel.Pipeline{{
