@@ -165,7 +165,6 @@ type SystemLoggingReceiverTomcat struct {
 func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			"/var/log/tomcat*/catalina.out",
 			"/opt/tomcat/logs/catalina.out",
 			"/var/log/tomcat*/catalina.out",
 		}
@@ -195,7 +194,6 @@ type AccessSystemLoggingReceiverTomcat struct {
 func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			"/var/log/tomcat*/localhost_access_log.*.txt",
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
 			"/var/log/tomcat*/localhost_access_log.*.txt",
 		}
