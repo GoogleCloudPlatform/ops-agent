@@ -1,0 +1,6 @@
+set -e
+
+sudo systemctl restart rabbitmq-server
+sudo rabbitmq-plugins enable rabbitmq_management
+sudo systemctl restart rabbitmq-server
+
