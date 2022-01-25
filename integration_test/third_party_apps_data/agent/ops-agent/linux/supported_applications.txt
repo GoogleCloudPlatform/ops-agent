@@ -1,5 +1,6 @@
 apache
 cassandra
+hadoop
 jvm
 memcached
 mysql
