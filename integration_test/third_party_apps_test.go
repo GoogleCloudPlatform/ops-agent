@@ -359,9 +359,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 // This is the entry point for the test. Runs runSingleTest
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
-	
 	t.Cleanup(gce.CleanupKeysOrDie)
-	t.Errorf("qwerty error")
 	
 	if scriptsDir == "" {
 		t.Fatalf("Cannot run test with empty value of SCRIPTS_DIR.")
