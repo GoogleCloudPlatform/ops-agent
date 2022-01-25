@@ -1,9 +1,10 @@
-[19:17] Key: 'MetricsReceiverPostgresql.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=/' tag
+[19:17] Key: 'MetricsReceiverRabbitmq.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|url' tag
   16 |   receivers:
-  17 |     postgresqlmetrics:
-  18 |       type: postgresql
+  17 |     rabbitmqmetrics:
+  18 |       type: rabbitmq
 > 19 |       endpoint: localhost
                        ^
   20 |       collection_interval: 30s
-  21 |   service:
-  22 |     pipelines:
+  21 |       password: pwd
+  22 |       username: usr
+  23 |   
