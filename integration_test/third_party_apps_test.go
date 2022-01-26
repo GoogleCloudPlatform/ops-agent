@@ -387,11 +387,6 @@ func TestThirdPartyApps(t *testing.T) {
 				t.Run(app, func(t *testing.T) {
 					t.Parallel()
 
-					if app == "mysql" {
-						// TODO(b/215197805): Reenable this test once the repos are fixed.
-						t.Skip("mysql repos seem to be totally broken, see b/215197805")
-					}
-
 					if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
 						t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
 					}
