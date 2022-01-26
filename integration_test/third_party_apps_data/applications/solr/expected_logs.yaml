@@ -1,0 +1,6 @@
+log_entries:
+- log_name: "solr_system"
+  field_matchers:
+    jsonPayload.message: " ___      _       Welcome to Apache Solr™ version 8.11.1"
+    jsonPayload.thread: "main"
+    jsonPayload.source: "o.a.s.s.SolrDispatchFilter"
