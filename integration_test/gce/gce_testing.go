@@ -345,7 +345,9 @@ func isRetriableLookupMetricError(err error) bool {
 	return strings.Contains(err.Error(), "Internal error") ||
 		strings.Contains(err.Error(), "The metric referenced by the provided filter is unknown") ||
 		// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
-		strings.Contains(err.Error(), "failed to look up metric workload.googleapis.com")
+		// The error doesn't always look the same, hopefully looking for "code = NotFound" will catch all variations.
+		strings.Contains(err.Error(), "failed to look up metric workload.googleapis.com") ||
+		strings.Contains(err.Error(), "code = NotFound")
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
