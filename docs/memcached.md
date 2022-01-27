@@ -1,39 +1,11 @@
-# `memcached` Metrics Receiver
+# Memcache
 
-The memcached receiver can retrieve stats from your memcached server through the . 
-
-
-## Configuration
-
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your memcached configuration.
-
-To configure a receiver for your memcached metrics, specify the following fields:
-
-| Field                 | Default                   | Description |
-| ---                   | ---                       | ---         |
-| `type`                | required                  | Must be `memcached`. |
-| `endpoint`            | `localhost:3306`          | The url, or unix socket file path, for your memcached server. |
-| `collection_interval` | `60s`                     | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    memcached_metrics:
-      type: memcached
-      collection_interval: 60s
-  service:
-    pipelines:
-      memcached_pipeline:
-        receivers:
-          - memcached_metrics
-```
-
+Follow https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/memcached
+for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Metrics
 
-These are the metrics available for this scraper.
+The following table provides the list of metrics that the Ops Agent collects from this application.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
@@ -48,7 +20,7 @@ These are the metrics available for this scraper.
 | memcached.operations | Operation counts. | 1 | Sum | <ul> <li>type</li> <li>operation</li> </ul> |
 | memcached.threads | Number of threads used by the memcached instance. | 1 | Gauge | <ul> </ul> |
 
-## Attributes
+### Metrics labels
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
@@ -57,7 +29,3 @@ These are the metrics available for this scraper.
 | operation | The type of operation. | <ul> <li>increment</li> <li>decrement</li> <li>get</li> </ul> |
 | state | The type of CPU usage. | <ul> <li>system</li> <li>user</li> </ul> |
 | type | Result of cache request. | <ul> <li>hit</li> <li>miss</li> </ul> |
-
-# `memcached` Logging Receiver
-
-Memcached logs are collected by the default syslog receiver.
