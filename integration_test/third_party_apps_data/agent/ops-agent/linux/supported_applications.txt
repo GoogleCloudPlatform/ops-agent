@@ -1,10 +1,11 @@
 apache
 cassandra
+elasticsearch
 jvm
+kafka
 memcached
 mysql
 nginx
 postgresql
 redis
 tomcat
-elasticsearch
