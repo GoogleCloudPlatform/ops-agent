@@ -44,7 +44,9 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					"network":    struct{}{},
 					"paging":     struct{}{},
 					"process":    struct{}{},
-					"processes":  struct{}{},
+					"processes": map[string]bool{
+						"mute_process_name_error": true,
+					},
 				},
 			},
 		},
