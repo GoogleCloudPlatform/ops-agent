@@ -15,6 +15,9 @@
 package apps
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -74,7 +77,7 @@ func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 			Config: config,
 		},
 		Processors: []otel.Component{
-			// Kafka script contains other metrics not desired by ops-agent
+			// Kafka script contains several metrics not desired by ops-agent
 			// as it existed in opentelemetry-java-contrib prior to the
 			// development of this integration
 			otel.MetricsFilter(
@@ -101,6 +104,7 @@ func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverKafka{} })
+}
 
 type LoggingProcessorKafka struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
