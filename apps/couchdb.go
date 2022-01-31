@@ -24,7 +24,7 @@ type MetricsReceiverCouchdb struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
 	Username string `yaml:"username" validate:"required_with=Password"`
 	Password string `yaml:"password" validate:"required_with=Username"`
 }

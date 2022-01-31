@@ -16,7 +16,7 @@ metrics:
   receivers:
     couchdb_metrics:
       type: couchdb
-      endpoint: http://localhost:5984
+      # exercising default endpoint
       username: otelu
       password: otelp
       collection_interval: 60s

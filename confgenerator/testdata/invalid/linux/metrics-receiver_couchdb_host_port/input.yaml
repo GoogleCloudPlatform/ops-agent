@@ -1,9 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-# Copyright 2020 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,16 +16,11 @@ metrics:
   receivers:
     couchdb_metrics:
       type: couchdb
-      endpoint: http://localhost:5984
       collection_interval: 60s
-      username: admin
-      password: otelp
+      endpoint: localhost:5984
+
   service:
     pipelines:
       couchdb_pipeline:
         receivers:
           - couchdb_metrics
-EOF
-
-sudo service google-cloud-ops-agent restart
-sleep 30

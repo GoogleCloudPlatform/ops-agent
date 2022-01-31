@@ -1,1 +1,1 @@
-workload.googleapis.com/couchdb.httpd.requests
+workload.googleapis.com/couchdb.database.open

@@ -1,0 +1,8 @@
+[20:17] "endpoint" must start with "http:"
+  17 |     couchdb_metrics:
+  18 |       type: couchdb
+  19 |       collection_interval: 60s
+> 20 |       endpoint: localhost:5984
+                       ^
+  22 |   service:
+  23 |     pipelines:
