@@ -160,7 +160,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM centos:8 AS centos8-build
+FROM rockylinux:8 AS rockylinux8-build
 
 RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
@@ -261,9 +261,9 @@ FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
 
-FROM scratch AS centos8
-COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
-COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
+FROM scratch AS rockylinux8
+COPY --from=rockylinux8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-8.tgz
+COPY --from=rockylinux8-build /google-cloud-ops-agent*.rpm /
 
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
@@ -282,6 +282,6 @@ COPY --from=impish /* /
 COPY --from=focal /* /
 COPY --from=bionic /* /
 COPY --from=centos7 /* /
-COPY --from=centos8 /* /
+COPY --from=rockylinux8 /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
