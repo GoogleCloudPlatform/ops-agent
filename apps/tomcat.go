@@ -134,7 +134,7 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"FINEST", "DEBUG"},
 				{"FINER", "DEBUG"},
@@ -166,6 +166,7 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
+			"/var/log/tomcat*/catalina.out",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
@@ -194,6 +195,7 @@ func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Co
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
+			"/var/log/tomcat*/localhost_access_log.*.txt",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
