@@ -17,7 +17,90 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverKafka struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+}
+
+const defaultKafkaEndpoint = "localhost:9999"
+
+func (r MetricsReceiverKafka) Type() string {
+	return "kafka"
+}
+
+func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
+	if r.Endpoint == "" {
+		r.Endpoint = defaultKafkaEndpoint
+	}
+
+	jarPath, err := FindJarPath()
+	if err != nil {
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+	}
+
+	targetSystem := "kafka"
+	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
+	config := map[string]interface{}{
+		"target_system":       targetSystem,
+		"collection_interval": r.CollectionIntervalString(),
+		"endpoint":            r.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	// Only set the username & password fields if provided
+	if r.Username != "" {
+		config["username"] = r.Username
+	}
+	if r.Password != "" {
+		config["password"] = r.Password
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "jmx",
+			Config: config,
+		},
+		Processors: []otel.Component{
+			// Kafka script contains other metrics not desired by ops-agent
+			// as it existed in opentelemetry-java-contrib prior to the
+			// development of this integration
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				"kafka.message.count",
+				"kafka.request.count",
+				"kafka.request.failed",
+				"kafka.request.time.total",
+				"kafka.network.io",
+				"kafka.purgatory.size",
+				"kafka.partition.count",
+				"kafka.partition.offline",
+				"kafka.partition.under_replicated",
+				"kafka.isr.operation.count",
+			),
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverKafka{} })
 
 type LoggingProcessorKafka struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
