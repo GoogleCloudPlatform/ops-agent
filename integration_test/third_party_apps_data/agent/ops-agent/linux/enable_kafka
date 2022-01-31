@@ -17,6 +17,18 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+metrics:
+  receivers:
+    kafka_metrics:
+      type: kafka
+      endpoint: localhost:9999
+      collection_interval: 30s
+  service:
+    pipelines:
+      kafka_pipeline:
+        receivers:
+          - kafka_metrics
 logging:
   receivers:
     kafka_default:
