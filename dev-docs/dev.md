@@ -910,39 +910,28 @@ ops-agent$ /google/bin/releases/opensource/thirdparty/cross/cross .
 
 #### Linux
 
-Description                                                                                         | Link
---------------------------------------------------------------------------------------------------- | ----
-Log file - Fluent Bit                                                                               | /var/log/google-cloud-ops-agent/subagents/logging-module.log
-Log file - Collectd                                                                                 | /var/log/google-cloud-ops-agent/subagents/metrics-module.log
-Config file - Ops Agent                                                                             | /etc/google-cloud-ops-agent/config.yaml (custom agent configurations)
-Config file - Ops Agent (Debug)                                                                     | /run/google-cloud-ops-agent-fluent-bit/conf/debug/ or /run/google-cloud-ops-agent-opentelemetry-collector/conf/debug/
-Config file - Fluent Bit - Main config. Only present when the systemd fluent-bit unit is running.   | /var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf
-Config file - Fluent Bit - Parsers config Only present when the systemd fluent-bit unit is running. | /var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf
-Config file - Collectd                                                                              | /var/run/google-cloud-ops-agent-collectd/collectd.conf
-Buffer files - Fluent Bit                                                                           | /var/lib/google-cloud-ops-agent/fluent-bit/buffers/
+Description                                                                                          | Link
+---------------------------------------------------------------------------------------------------- | ----
+Config file - Ops Agent                                                                              | `/etc/google-cloud-ops-agent/config.yaml` (custom agent configurations)
+Logs - Fluent Bit                                                                                    | `/var/log/google-cloud-ops-agent/subagents/logging-module.log`
+Logs - OT Metrics Agent                                                                              | `/var/log/syslog` or `/var/log/messages`. This agent does not write logs directly to disk today.
+Config file - Ops Agent (Debug)                                                                      | `/run/google-cloud-ops-agent-fluent-bit/conf/debug/` or `/run/google-cloud-ops-agent-opentelemetry-collector/conf/debug/`
+Config file - Fluent Bit - Main config. Only present when the systemd fluent-bit unit is running.    | `/var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf`
+Config file - Fluent Bit - Parsers config. Only present when the systemd fluent-bit unit is running. | `/var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf`
+Config file - OT Metrics Agent                                                                       | `/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml`
+Buffer files - Fluent Bit                                                                            | `/var/lib/google-cloud-ops-agent/fluent-bit/buffers/`
 
 #### Windows
 
-| Description       | Link                                                     |
-| ----------------- | -------------------------------------------------------- |
-| Logs - Fluent Bit | C:\ProgramData\Google\Cloud Operations\Ops               |
-:                   : Agent\log\logging-module.log                             :
-| Logs - OT Metrics | In the `Event Viewer` app, click `Windows Logs` then     |
-: Agent             : `Application`, filter by `Source` equal to `Google Cloud :
-:                   : Ops Agent - Metrics Agent`. This agent does not write    :
-:                   : logs directly to disk today.                             :
-| Config file - Ops | C:\Program Files\Google\Cloud Operations\Ops             |
-: Agent             : Agent\config\config.yaml                                 :
-| Config file -     | C:\ProgramData\Google\Cloud Operations\Ops               |
-: Fluent Bit - Main : Agent\generated_configs\fluentbit\fluent_bit_main.conf   :
-: config            :                                                          :
-| Config file -     | C:\ProgramData\Google\Cloud Operations\Ops               |
-: Fluent Bit -      : Agent\generated_configs\fluentbit\fluent_bit_parser.conf :
-: Parsers config    :                                                          :
-| Config file -     | C:\ProgramData\Google\Cloud Operations\Ops               |
-: Collectd          : Agent\generated_configs\otel\otel.yaml                   :
-| Buffer files -    | C:\ProgramData\Google\Cloud Operations\Ops               |
-: Fluent Bit        : Agent\run\buffers                                        :
+Description                               | Link
+----------------------------------------- | ----
+Config file - Ops Agent                   | `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
+Logs - Fluent Bit                         | `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`
+Logs - OT Metrics Agent                   | In the `Event Viewer` app, click `Windows Logs` then `Application`, filter by `Source` equal to `Google Cloud Ops Agent - Metrics Agent`. This agent does not write logs directly to disk today.
+Config file - Fluent Bit - Main config    | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`
+Config file - Fluent Bit - Parsers config | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`
+Config file - OpenTelemetry               | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operations\Ops Agent\run\buffers`
 
 ### Check logs
 
