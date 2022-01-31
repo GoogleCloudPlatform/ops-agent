@@ -1,4 +1,6 @@
 per_application_overrides:
+  # Note: New applications are not supposed to add additional skips
+  # here unless deemed absolutely necessary.
   apache:
     # Skip all platforms listed above except debian-10 for now.
     # New applications should use platforms_to_skip sparingly
@@ -20,5 +22,11 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   redis:
     platforms_to_skip: *common_skips
-  # Note: New applications are not supposed to add additional skips
-  # here unless deemed absolutely necessary.
+  # Note: centos8 is EOL and skips are being added temporarily until it has been removed upstream
+  elasticsearch:
+    platforms_to_skip: &remove_centos8
+      - centos-8
+  postgresql:
+    platforms_to_skip: *remove_centos8
+  tomcat:
+    platforms_to_skip: *remove_centos8
