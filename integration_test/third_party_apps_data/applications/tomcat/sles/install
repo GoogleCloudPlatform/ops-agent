@@ -21,7 +21,7 @@ ExecStop=/usr/lib/tomcat/server stop
 SuccessExitStatus=143
 User=tomcat
 Group=tomcat
-Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 Environment="JAVA_OPTS=-Djava.awt.headless=true"
 [Install]
 WantedBy=multi-user.target

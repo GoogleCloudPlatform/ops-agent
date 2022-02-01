@@ -18,7 +18,7 @@ EnvironmentFile=-/etc/sysconfig/tomcat
 ExecStart=/usr/libexec/tomcat/server start
 SuccessExitStatus=143
 User=tomcat
-Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 Environment="JAVA_OPTS=-Djava.awt.headless=true"
 [Install]
 WantedBy=multi-user.target

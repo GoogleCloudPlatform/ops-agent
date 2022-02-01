@@ -14,7 +14,7 @@ RequiresMountsFor=/var/log/tomcat9 /var/lib/tomcat9
 Environment="CATALINA_HOME=/usr/share/tomcat9"
 Environment="CATALINA_BASE=/var/lib/tomcat9"
 Environment="CATALINA_TMPDIR=/tmp"
-Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 Environment="JAVA_OPTS=-Djava.awt.headless=true"
 # Lifecycle
 Type=simple
