@@ -1,6 +1,6 @@
 # Apache Web Server (httpd)
 
-Follow https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache)
 for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Metrics

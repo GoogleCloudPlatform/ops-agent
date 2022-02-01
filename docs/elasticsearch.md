@@ -1,41 +1,7 @@
-# `elasticsearch_json` and `elasticsearch_gc` Logging Receivers
+# Elasticsearch
 
-## Configuration
-
-To configure a receiver for your Elasticsearch JSON logs, specify the following fields:
-
-| Field                 | Default                       | Description |
-| ---                   | ---                           | ---         |
-| `type`                | required                      | Must be `elasticsearch_json`. |
-| `include_paths`       | `[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]` | The log files to read. |
-| `exclude_paths`       | `[]`                          | Log files to exclude (if `include_paths` contains a glob or directory). |
-| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
-
-To configure a receiver for Elasticsearch GC logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `elasticsearch_gc`. |
-| `include_paths`       | `[/var/log/elasticsearch/gc.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
-
-Example Configuration:
-
-```yaml
-logging:
-  receivers:
-    elasticsearch_json:
-      type: elasticsearch_json
-    elasticsearch_gc:
-      type: elasticsearch_gc
-  service:
-    pipelines:
-      elasticsearch:
-        receivers:
-          - elasticsearch_json
-          - elasticsearch_gc
-```
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Logs
 

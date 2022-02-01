@@ -1,6 +1,6 @@
 # MySQL
 
-Follow https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql)
 for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Metrics
