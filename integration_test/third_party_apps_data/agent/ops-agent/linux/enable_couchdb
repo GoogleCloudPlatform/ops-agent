@@ -22,7 +22,7 @@ metrics:
     couchdb_metrics:
       type: couchdb
       endpoint: http://localhost:5984
-      collection_interval: 60s
+      collection_interval: 30s
       username: admin
       password: otelp
   service:
