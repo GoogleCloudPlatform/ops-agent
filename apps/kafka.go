@@ -121,13 +121,16 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 				{
 					// Sample line: [2022-01-26 18:25:20,466] INFO Initiating client connection, connectString=localhost:2181 sessionTimeout=18000 watcher=kafka.zookeeper.ZooKeeperClient$ZooKeeperClientWatcher$@22ff4249 (org.apache.zookeeper.ZooKeeper)
 					// Sample line: [2022-01-26 18:25:20,485] INFO [ZooKeeperClient Kafka server] Waiting until connected. (kafka.zookeeper.ZooKeeperClient)
+					// Sample line: [2022-02-01 21:34:19,045] INFO [BrokerToControllerChannelManager broker=0 name=alterIsr]: Recorded new controller, from now on will use broker sam-test-kafka.c.otel-agent-dev.internal:9092 (id: 0 rack: null) (kafka.server.BrokerToControllerRequestThread)
+					// Sample line: [2022-02-01 21:34:21,230] INFO [ExpirationReaper-0-Produce]: Starting (kafka.server.DelayedOperationPurgatory$ExpiredOperationReaper)
+					// Sample line: [2022-02-01 21:34:26,063] INFO [LogLoader partition=quickstart-events-1, dir=/tmp/kafka-logs] Loading producer state till offset 0 with message format version 2 (kafka.log.Log$)
 					// Sample line: [2022-01-26 18:25:20,462] INFO Client environment:java.class.path=/opt/kafka/bin/../libs/activation-1.1.1.jar:/opt/kafka/bin/... (org.apache.zookeeper.ZooKeeper)
 					// Sample line: [2022-01-26 18:25:21,107] INFO KafkaConfig values:
 					// 		advertised.listeners = null
 					// 		alter.config.policy.class.name = null
 					// 		alter.log.dirs.replication.quota.window.num = 11
 					// 		alter.log.dirs.replication.quota.window.size.seconds = 1
-					Regex: `^\[(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(?<level>[A-Z]+)(?:\s+\[(?<source>.*)\])?\s+(?<message>[\s\S]*)(?=\s+\([\w\s\.]+\)$|\s+$)(?:\s+\((?<logger>[\w\s\.]+)\))?`,
+					Regex: `^\[(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(?<level>[A-Z]+)(?:\s+\[(?<source>[\s\S]*)\]:?)?\s+(?<message>.*)(?=\s+\([\w\s\.\$]+\)$|\s+$)(?:\s+\((?<logger>[\w\s\.\$]+)\))?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
