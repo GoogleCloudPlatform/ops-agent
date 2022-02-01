@@ -22,7 +22,7 @@ metrics:
     zookeeper_metrics:
       type: zookeeper
       endpoint: localhost:2181
-      collection_interval: 60s
+      collection_interval: 30s
   service:
     pipelines:
       zookeeper_pipeline:
@@ -31,3 +31,4 @@ metrics:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 30
