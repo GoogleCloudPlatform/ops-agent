@@ -43,10 +43,10 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					"filesystem": struct{}{},
 					"network":    struct{}{},
 					"paging":     struct{}{},
-					"process":    struct{}{},
-					"processes": map[string]bool{
+					"process": map[string]bool{
 						"mute_process_name_error": true,
 					},
+					"processes": struct{}{},
 				},
 			},
 		},
