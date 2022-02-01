@@ -24,7 +24,7 @@ logging:
   service:
     pipelines:
       mongo:
-        receivers: [mongodb_default]
+        receivers: [mongodb]
 EOF
 
 sudo service google-cloud-ops-agent restart
