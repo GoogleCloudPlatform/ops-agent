@@ -37,6 +37,7 @@ initLimit=10
 syncLimit=5
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr
 EOF
 
 cat <<EOF | sudo tee /opt/zookeeper/conf/zookeeper-env.sh
@@ -45,7 +46,6 @@ JMXDISABLE=false
 JMXPORT=9999
 JMXAUTH=false
 JMXSSL=false
-4lw.commands.whitelist=mntr
 EOF
 
 sudo systemctl daemon-reload
