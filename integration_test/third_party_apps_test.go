@@ -122,7 +122,7 @@ func distroFolder(platform string) (string, error) {
 	}
 	firstWord := strings.Split(platform, "-")[0]
 	switch firstWord {
-	case "centos", "rhel":
+	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
