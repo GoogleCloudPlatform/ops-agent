@@ -14,10 +14,10 @@
 
 logging:
   receivers:
-    mongodb_default:
+    mongodb:
       type: mongodb
   service:
     pipelines:
-      mongo:
+      mongodb:
         receivers:
-          - mongodb_default
+          - mongodb
