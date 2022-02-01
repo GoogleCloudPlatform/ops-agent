@@ -684,7 +684,7 @@ func globForAgentPackage(platform string) (string, error) {
 	switch {
 	case strings.HasPrefix(platform, "centos-7") || strings.HasPrefix(platform, "rhel-7"):
 		return "*.el7.*.rpm", nil
-	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rocky-linux-8") || strings.HasPrefix(platform, "rhel-8"):
+	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rockylinux-8") || strings.HasPrefix(platform, "rhel-8"):
 		return "*.el8.*.rpm", nil
 	case strings.HasPrefix(platform, "sles-12"):
 		return "*.sles12.*.rpm", nil
