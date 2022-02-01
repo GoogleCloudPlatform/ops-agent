@@ -19,7 +19,7 @@ metrics:
       # exercising default endpoint
       username: otelu
       password: otelp
-      collection_interval: 60s
+      collection_interval: 30s
   service:
     pipelines:
       couchdb_pipeline:
