@@ -1,2 +1,2 @@
 log_entries:
-- log_name: "mongodb_default"
+- log_name: "mongodb"
