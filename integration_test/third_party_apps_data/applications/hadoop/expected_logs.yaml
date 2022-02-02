@@ -1,0 +1,5 @@
+log_entries:
+- log_name: "hadoop"
+  field_matchers:
+    jsonPayload.message: 'STARTUP_MSG:(.|\n)*'
+    jsonPayload.source: "org.apache.hadoop.hdfs.server.namenode.NameNode"
