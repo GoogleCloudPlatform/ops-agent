@@ -1,4 +1,0 @@
-set -e
-
-(cd /etc/stackdriver/collectd.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/collectd.d/memcached.conf)
-sudo service stackdriver-agent restart
