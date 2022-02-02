@@ -395,9 +395,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 	}
 	for _, pkg := range pkgs {
 		cmd := ""
-		if strings.HasPrefix(vm.Platform, "centos-") ||
-			strings.HasPrefix(vm.Platform, "rhel-") ||
-			strings.HasPrefix(vm.Platform, "sles-") {
+		if IsRPMBased(vm.Platform) {
 			cmd = fmt.Sprintf("rpm --query %s", pkg)
 			if !installed {
 				cmd = "! " + cmd
@@ -414,7 +412,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 				cmd = "! (" + cmd + ")"
 			}
 		} else {
-			return fmt.Errorf("unsupported platform: %s", vm.Platform)
+			return fmt.Errorf("checkPackages() does not support platform: %s", vm.Platform)
 		}
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", cmd); err != nil {
 			return fmt.Errorf("command could not be run or %q was unexpectedly %sinstalled. err: %v", pkg, errPrefix, err)
@@ -454,6 +452,7 @@ func CheckAgentsUninstalled(ctx context.Context, logger *log.Logger, vm *gce.VM,
 func IsRPMBased(platform string) bool {
 	return strings.HasPrefix(platform, "centos-") ||
 		strings.HasPrefix(platform, "rhel-") ||
+		strings.HasPrefix(platform, "rocky-linux-") ||
 		strings.HasPrefix(platform, "sles-") ||
 		strings.HasPrefix(platform, "opensuse-")
 }
@@ -684,7 +683,7 @@ func globForAgentPackage(platform string) (string, error) {
 	switch {
 	case strings.HasPrefix(platform, "centos-7") || strings.HasPrefix(platform, "rhel-7"):
 		return "*.el7.*.rpm", nil
-	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rhel-8"):
+	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rhel-8") || strings.HasPrefix(platform, "rocky-linux-8"):
 		return "*.el8.*.rpm", nil
 	case strings.HasPrefix(platform, "sles-12"):
 		return "*.sles12.*.rpm", nil

@@ -160,7 +160,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM centos:8 AS centos8-build
+FROM rockylinux:8 AS centos8-build
 
 RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \

@@ -1,86 +1,7 @@
-# `postgresql` Metrics Receiver
+# PostgreSQL
 
-The postgresql receiver can retrieve stats from your postgresql instance by connecting as a monitoring user.
-
-## Prerequisites
-
-The `postgresql` receiver defaults to connecting to a local postgresql server using a Unix socket and Unix authentication as the `root` user.
-
-## Configuration
-
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your postgresql configuration.
-
-To configure a receiver for your postgresql metrics, specify the following fields:
-
-| Field                   | Required | Default                         | Description |
-| ---                     | ---      | ---                             | ---         |
-| `type`                  | required |                      | Must be `postgresql`. |
-| `endpoint`              | optional | `/var/run/postgresql/.s.PGSQL.5432`   | The hostname:port or socket path starting with `/` used to connect to postgresql |
-| `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`              | optional |                                 | The username used to connect to the server. |
-| `password`              | optional |                                 | The password used to connect to the server. |
-| `insecure`              | optional | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
-| `insecure_skip_verify`  | optional | false                           | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
-| `cert_file`             | optional |                             | Path to the TLS cert to use for TLS required connections. |
-| `key_file`              | optional |                             | Path to the TLS key to use for TLS required connections. |
-| `ca_file`               | optional |                             | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    postgresql_metrics:
-      type: postgresql
-      collection_interval: 60s
-      username: usr
-      password: pwd
-  service:
-    pipelines:
-      postgresql_pipeline:
-        receivers:
-          - postgresql_metrics
-```
-
-TCP connection with a username and password:
-
-```yaml
-metrics:
-  receivers:
-    postgresql_metrics:
-      type: postgresql 
-      endpoint: localhost:3306
-      collection_interval: 60s
-      password: pwd
-      username: usr
-  service:
-    pipelines:
-      postgresql_pipeline:
-        receivers:
-          - postgresql_metrics
-```
-
-TCP connection with a username and password and TLS:
-
-```yaml
-metrics:
-  receivers:
-    postgresql_metrics:
-      type: postgresql 
-      endpoint: localhost:3306
-      collection_interval: 60s
-      password: pwd
-      username: usr
-      insecure: false
-      insecure_skip_verify: false
-      cert_file: /path/to/cert
-      ca_file: /path/to/ca
-  service:
-    pipelines:
-      postgresql_pipeline:
-        receivers:
-          - postgresql_metrics
-```
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/postgresql)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Metrics
 
@@ -95,34 +16,6 @@ The Ops Agent collects the following metrics from your postgresql instances.
 | workload.googleapis.com/postgresql.operations          | sum       | 1           | database, table, operation      | The number of db row operations. |
 | workload.googleapis.com/postgresql.rollbacks           | sum       | 1           | database                        | The number of rollbacks. |
 | workload.googleapis.com/postgresql.rows                | sum       | 1           | database, table, state          | The number of rows in the database. |
-
-
-
-# `postgresql_general` Logging Receiver
-
-## Configuration
-
-To configure a receiver for your postgresql general logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `postgresql_general`. |
-| `include_paths`       | `[/var/log/postgresql/postgresql*.log, /var/lib/pgsql/data/log/postgresql*.log, /var/lib/pgsql/*/data/log/postgresql*.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-Example Configuration:
-
-```yaml
-logging:
-  receivers:
-    postgresql_general:
-      type: postgresql_general
-  service:
-    pipelines:
-      postgresql:
-        receivers:
-          - postgresql_general
-```
 
 ## Logs
 
