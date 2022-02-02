@@ -19,7 +19,6 @@ metrics:
       # exercising default endpoint
       username: otelu
       password: otelp
-      collection_interval: 30s
   service:
     pipelines:
       hadoop_pipeline:
