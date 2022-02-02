@@ -22,18 +22,20 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    solr_metrics:
+    solr:
       type: solr
       collection_interval: 60s
   service:
     pipelines:
-      solr_pipeline:
+      solr:
         receivers:
-          - solr_metrics
+          - solr
 ```
 
 ## Metrics
 The Ops Agent collects the following metrics from Solr.
+
+Note: Limited metrics will be reported if no cores have been created.
 
 | Metric                                               | Data Type      | Unit        | Labels                         | Description |
 | ---                                                  | ---            | ---         | ---                            | ---         | 

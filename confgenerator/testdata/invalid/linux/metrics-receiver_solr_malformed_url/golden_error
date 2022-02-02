@@ -1,6 +1,6 @@
-[19:17] Key: 'MetricsReceiverSolr.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port' tag
+[19:17] Key: 'MetricsReceiverSharedJVM.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=service:jmx:' tag
   16 |   receivers:
-  17 |     solr_metrics:
+  17 |     solr:
   18 |       type: solr
 > 19 |       endpoint: localhost
                        ^

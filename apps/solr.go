@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"log"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -26,9 +24,7 @@ type MetricsReceiverSolr struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 }
 
 const defaultSolrEndpoint = "localhost:18983"
@@ -38,42 +34,19 @@ func (r MetricsReceiverSolr) Type() string {
 }
 
 func (r MetricsReceiverSolr) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultSolrEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
 	targetSystem := "solr"
 
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	// Only set the username & password fields if provided
-	if r.Username != "" && r.Password != "" {
-		config["username"] = r.Username
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultSolrEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
+	)
 }
 
 func init() {

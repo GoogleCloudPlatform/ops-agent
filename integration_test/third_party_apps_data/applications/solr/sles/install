@@ -16,18 +16,8 @@ sudo bash ./install_solr_service.sh solr-8.11.1.tgz -n
 
 sudo chown -R solr:solr /opt/solr*
 
-cat <<EOF | sudo tee /etc/default/solr.in.sh
-# default
-SOLR_PID_DIR="/var/solr"
-SOLR_HOME="/var/solr/data"
-LOG4J_PROPS="/var/solr/log4j2.xml"
-SOLR_LOGS_DIR="/var/solr/logs"
-SOLR_PORT="8983"
-
-# enable jmx
-ENABLE_REMOTE_JMX_OPTS="true"  
-RMI_PORT=18983
-EOF
+sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/false/true/' /etc/default/solr.in.sh
+sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
 
 sudo systemctl daemon-reload
 sudo systemctl enable solr

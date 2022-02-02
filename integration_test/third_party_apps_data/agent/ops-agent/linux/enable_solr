@@ -19,15 +19,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    solr_metrics:
+    solr:
       type: solr
       endpoint: localhost:18983
-      collection_interval: 60s
   service:
     pipelines:
-      solr_pipeline:
+      solr:
         receivers:
-          - solr_metrics
+          - solr
 EOF
 
 sudo service google-cloud-ops-agent restart

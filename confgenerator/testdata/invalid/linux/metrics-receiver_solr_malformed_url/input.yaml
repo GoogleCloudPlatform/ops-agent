@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    solr_metrics:
+    solr:
       type: solr
       endpoint: localhost
       collection_interval: 30s
   service:
     pipelines:
-      solr_pipeline:
+      solr:
         receivers:
-          - solr_metrics
+          - solr
