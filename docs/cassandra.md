@@ -1,41 +1,13 @@
-# `cassandra` Metrics Receiver
+# Cassandra
 
-The `cassandra` metrics receiver can fetch stats from a Cassandra node's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
-
-## Prerequisites
-
-In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. By default, these properties are set in a Cassandra deployment's cassandra-env.sh file and the default Cassandra installation requires no JMX authentication with JMX exposed locally on 127.0.0.1:7199.
-
-## Configuration
-
-| Field                 | Default            | Description |
-| ---                   | ---                | ---         |
-| `type`                | required           | Must be `cassandra`. |
-| `endpoint`            | `localhost:7199`   | The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`. |
-| `collect_jvm_metrics` | true               | Should the set of support [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics) also be collected |
-| `username`            | not set by default | The configured username if JMX is configured to require authentication. |
-| `password`            | not set by default | The configured password if JMX is configured to require authentication. |
-| `collection_interval` | `60s`              | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    cassandra_metrics:
-      type: cassandra
-      endpoint: localhost:7199
-      collection_interval: 30s
-  service:
-    pipelines:
-      cassandra_pipeline:
-        receivers:
-          - cassandra_metrics
-```
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/cassandra)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
 ## Metrics
-In addition to Cassandra specific metrics, by default Cassandra will also report [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics)
+
+The following table provides the list of metrics that the Ops Agent collects from this application.
+
+In addition to these Cassandra specific metrics, by default Cassandra will also report [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics)
 
 | Metric                                                                          | Data Type | Unit        | Labels | Description |
 | ---                                                                             | ---       | ---         | ---    | ---         | 
@@ -55,55 +27,6 @@ In addition to Cassandra specific metrics, by default Cassandra will also report
 | workload.googleapis.com/cassandra.storage.load.count                            | gauge       | bytes       |        | Size of the on disk data size this node manages |
 | workload.googleapis.com/cassandra.storage.total_hints.count                     | cumulative       | 1           |        | Number of hint messages written to this node since start |
 | workload.googleapis.com/cassandra.storage.total_hints.in_progress.count         | gauge       | 1           |        | Number of hints attempting to be sent currently |
-
-
-# `cassandra_system`, `cassandra_debug` and `cassandra_gc` Logging Receivers
-
-## Configuration
-
-To configure a receiver for your cassandra system logs, specify the following fields:
-
-| Field                 | Default                       | Description |
-| ---                   | ---                           | ---         |
-| `type`                | required                      | Must be `cassandra_system`. |
-| `include_paths`       | `[/var/log/cassandra/system*.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
-| `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
-
-To configure a receiver for your cassandra debug logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `cassandra_debug`. |
-| `include_paths`       | `[/var/log/cassandra/debug*.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-To configure a receiver for your cassandra gc logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `cassandra_gc`. |
-| `include_paths`       | `[/var/log/cassandra/gc.log.*.current]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-Example Configuration:
-
-```yaml
-logging:
-  receivers:
-    cassandra_default_system:
-      type: cassandra_system
-    cassandra_default_debug:
-      type: cassandra_debug
-    cassandra_default_gc:
-      type: cassandra_gc
-  service:
-    pipelines:
-      cassandra:
-        receivers:
-          - cassandra_default_system
-          - cassandra_default_debug
-          - cassandra_default_gc
-```
 
 ## Logs
 
