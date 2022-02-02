@@ -19,15 +19,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    hbase_metrics:
+    hbase:
       type: hbase
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:10101/jmxrmi
-      collection_interval: 60s
   service:
     pipelines:
-      hbase_pipeline:
+      hbase:
         receivers:
-          - hbase_metrics
+          - hbase
 EOF
 
 sudo service google-cloud-ops-agent restart

@@ -22,14 +22,13 @@ Example Configuration:
 ```yaml
 metrics:
  receivers:
- hbase_metrics:
+ hbase:
   type: hbase
-  collection_interval: 60s
  service:
  pipelines:
-  hbase_pipeline:
+  hbase:
   receivers:
-   - hbase_metrics
+   - hbase
 ```
 
 ## Metrics

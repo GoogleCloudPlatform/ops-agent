@@ -20,7 +20,6 @@ metrics:
       collect_jvm_metrics: false
       username: otelu
       password: otelp
-      collection_interval: 30s
   service:
     pipelines:
       hbase_pipeline:
