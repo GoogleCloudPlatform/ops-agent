@@ -1,6 +1,0 @@
-set -e
-
-# TODO: Change this from Collectd agent instructions to Ops Agent instructions
-# and move it to the expected location `third_party_apps_data/ops-agent/...`.
-(cd /etc/stackdriver/collectd.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/collectd.d/apache.conf)
-sudo service stackdriver-agent restart
