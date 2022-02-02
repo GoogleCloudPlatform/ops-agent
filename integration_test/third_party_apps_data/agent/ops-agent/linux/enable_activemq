@@ -19,15 +19,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    activemq_metrics:
+    activemq:
       type: activemq
       endpoint: localhost:1099
       collection_interval: 60s
   service:
     pipelines:
-      activemq_pipeline:
+      activemq:
         receivers:
-          - activemq_metrics
+          - activemq
 EOF
 
 sudo service google-cloud-ops-agent restart

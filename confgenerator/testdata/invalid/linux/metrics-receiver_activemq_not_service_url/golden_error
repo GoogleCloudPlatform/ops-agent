@@ -1,6 +1,6 @@
 [19:17] Key: 'MetricsReceiverActivemq.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=service:jmx:' tag
   16 |   receivers:
-  17 |     activemq_metrics:
+  17 |     activemq:
   18 |       type: activemq
 > 19 |       endpoint: http://localhost:80/forbidden.html
                        ^
