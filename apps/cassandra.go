@@ -16,7 +16,6 @@ package apps
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -28,9 +27,7 @@ type MetricsReceiverCassandra struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
@@ -42,47 +39,22 @@ func (r MetricsReceiverCassandra) Type() string {
 }
 
 func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultCassandraEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
 	targetSystem := "cassandra"
 	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	// Only set the username & password fields if provided
-	if r.Username != "" {
-		config["username"] = r.Username
-	}
-	if r.Password != "" {
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultCassandraEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
+	)
 }
 
 func init() {

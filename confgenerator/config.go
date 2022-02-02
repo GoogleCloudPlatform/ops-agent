@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -28,6 +30,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
+	"github.com/kardianos/osext"
 )
 
 // Ops Agent config.
@@ -430,6 +433,61 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 	}
 
 	return tls
+}
+
+type MetricsReceiverSharedJVM struct {
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
+	Username string `yaml:"username" validate:"required_with=Password"`
+	Password string `yaml:"password" validate:"required_with=Username"`
+}
+
+func (m MetricsReceiverSharedJVM) JVMConfig(targetSystem string, defaultEndpoint string, collectionIntervalString string, processors []otel.Component) []otel.Pipeline {
+	if m.Endpoint == "" {
+		m.Endpoint = defaultEndpoint
+	}
+
+	jarPath, err := FindJarPath()
+	if err != nil {
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+	}
+
+	config := map[string]interface{}{
+		"target_system":       targetSystem,
+		"collection_interval": collectionIntervalString,
+		"endpoint":            m.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	// Only set the username & password fields if provided
+	if m.Username != "" {
+		config["username"] = m.Username
+	}
+	if m.Password != "" {
+		config["password"] = m.Password
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "jmx",
+			Config: config,
+		},
+		Processors: processors,
+	}}
+}
+
+var FindJarPath = func() (string, error) {
+	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
+
+	executableDir, err := osext.ExecutableFolder()
+	if err != nil {
+		return jarName, fmt.Errorf("could not determine binary path for jvm receiver: %w", err)
+	}
+
+	// TODO(djaglowski) differentiate behavior via build tags
+	if runtime.GOOS != "windows" {
+		return filepath.Join(executableDir, "../subagents/opentelemetry-collector/", jarName), nil
+	}
+	return filepath.Join(executableDir, jarName), nil
 }
 
 var MetricsReceiverTypes = &componentTypeRegistry{
