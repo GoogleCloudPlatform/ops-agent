@@ -20,7 +20,6 @@ metrics:
   receivers:
     elasticsearch:
       type: elasticsearch
-      collection_interval: 30s
   service:
     pipelines:
       elasticsearch:
