@@ -28,16 +28,16 @@ metrics:
 
 logging:
   receivers:
-    elasticsearch_json:
+    elasticsearch_default_json:
       type: elasticsearch_json
-    elasticsearch_gc:
+    elasticsearch_default_gc:
       type: elasticsearch_gc
   service:
     pipelines:
       elasticsearch:
         receivers:
-          - elasticsearch_json
-          - elasticsearch_gc
+          - elasticsearch_default_json
+          - elasticsearch_default_gc
 EOF
 
 sudo service google-cloud-ops-agent restart
