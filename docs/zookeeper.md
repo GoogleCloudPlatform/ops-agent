@@ -18,10 +18,17 @@ To configure a receiver for your Zookeeper metrics, specify the following fields
 Example configuration.
 
 ```yaml
-receivers:
-  zookeeper:
-    endpoint: "localhost:2181"
-    collection_interval: 20s
+metrics:
+  receivers:
+    zookeeper:
+      type: zookeeper
+      endpoint: localhost:2181
+      collection_interval: 30s
+  service:
+    pipelines:
+      zookeeper:
+        receivers:
+          - zookeeper
 ```
 
 ## Metrics
