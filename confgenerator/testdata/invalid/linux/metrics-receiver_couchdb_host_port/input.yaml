@@ -14,13 +14,11 @@
 
 metrics:
   receivers:
-    couchdb_metrics:
+    couchdb:
       type: couchdb
-      collection_interval: 60s
       endpoint: localhost:5984
-
   service:
     pipelines:
-      couchdb_pipeline:
+      couchdb:
         receivers:
-          - couchdb_metrics
+          - couchdb

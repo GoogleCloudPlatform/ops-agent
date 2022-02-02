@@ -19,7 +19,7 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    couchdb_metrics:
+    couchdb:
       type: couchdb
       endpoint: http://localhost:5984
       collection_interval: 30s
@@ -27,9 +27,9 @@ metrics:
       password: otelp
   service:
     pipelines:
-      couchdb_pipeline:
+      couchdb:
         receivers:
-          - couchdb_metrics
+          - couchdb
 EOF
 
 sudo service google-cloud-ops-agent restart

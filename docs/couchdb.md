@@ -21,17 +21,16 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    couchdb_metrics:
+    couchdb:
       type: couchdb
       endpoint: http://localhost:5984
-      collection_interval: 60s
       username: otelu
       password: otelp
   service:
     pipelines:
-      couchdb_pipeline:
+      couchdb:
         receivers:
-          - couchdb_metrics
+          - couchdb
 ```
 
 ## Metrics
