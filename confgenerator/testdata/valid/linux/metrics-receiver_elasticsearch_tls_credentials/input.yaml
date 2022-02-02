@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    elasticsearch_metrics:
+    elasticsearch:
       type: elasticsearch
       collection_interval: 60s
       endpoint: "https://example.com/elasticsearch"
@@ -25,6 +25,6 @@ metrics:
       ca_file: /path/to/ca
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_metrics
+          - elasticsearch

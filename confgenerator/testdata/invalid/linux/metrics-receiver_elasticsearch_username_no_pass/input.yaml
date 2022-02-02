@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    elasticsearch_default:
+    elasticsearch:
       type: elasticsearch
       collection_interval: 60s
       username: "user"
       
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_default
+          - elasticsearch

@@ -29,35 +29,35 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    elasticsearch_metrics:
+    elasticsearch:
       type: elasticsearch
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_metrics
+          - elasticsearch
 ```
 
 Example Configuration with Credentials:
 ```yaml
 metrics:
   receivers:
-    elasticsearch_metrics:
+    elasticsearch:
       type: elasticsearch
       username: "user"
       password: "password"
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_metrics
+          - elasticsearch
 ```
 
 Example Configuration with TLS and Credentials:
 ```yaml
 metrics:
   receivers:
-    elasticsearch_metrics:
+    elasticsearch:
       type: elasticsearch
       endpoint: "https://example.com/elasticsearch"
       username: "user"
@@ -67,9 +67,9 @@ metrics:
       ca_file: /path/to/ca
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_metrics
+          - elasticsearch
 ```
 ## Metrics
 

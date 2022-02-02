@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    elasticsearch_no_jvm:
+    elasticsearch:
       type: elasticsearch
       collection_interval: 60s
       collect_jvm_metrics: false
       
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_no_jvm
+          - elasticsearch

@@ -18,14 +18,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # limitations under the License.
 metrics:
   receivers:
-    elasticsearch_metrics:
+    elasticsearch:
       type: elasticsearch
       collection_interval: 30s
   service:
     pipelines:
-      elasticsearch_pipeline:
+      elasticsearch:
         receivers:
-          - elasticsearch_metrics
+          - elasticsearch
 
 logging:
   receivers:

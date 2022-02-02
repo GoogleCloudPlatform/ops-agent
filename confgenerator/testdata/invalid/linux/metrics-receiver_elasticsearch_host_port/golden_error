@@ -1,5 +1,5 @@
 [20:17] Key: 'MetricsReceiverElasticsearch.endpoint' Error:Field validation for 'endpoint' failed on the 'startswith=http:|startswith=https:' tag
-  17 |     elasticsearch_default:
+  17 |     elasticsearch:
   18 |       type: elasticsearch
   19 |       collection_interval: 60s
 > 20 |       endpoint: localhost:8080
