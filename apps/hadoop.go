@@ -16,20 +16,15 @@ package apps
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type MetricsReceiverHadoop struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	confgenerator.ConfigComponent          `yaml:",inline"`
+	confgenerator.MetricsReceiverShared    `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
@@ -41,45 +36,22 @@ func (r MetricsReceiverHadoop) Type() string {
 }
 
 func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultHadoopEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
 	targetSystem := "hadoop"
 	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	// Only set the username & password fields if provided
-	if r.Username != "" && r.Password != "" {
-		config["username"] = r.Username
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultHadoopEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
+	)
 }
 
 func init() {
