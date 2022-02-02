@@ -347,6 +347,7 @@ func TestProcessorOrder(t *testing.T) {
       type: parse_json
       field: message
       time_key: time
+      time_format: "%s"
     json2:
       type: parse_json
       field: log
@@ -356,7 +357,7 @@ func TestProcessorOrder(t *testing.T) {
         receivers: [mylog_source]
         processors: [json1, json2]
         exporters: [google]
-`, logPath)
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%Z")
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
