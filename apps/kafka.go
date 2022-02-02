@@ -16,7 +16,6 @@ package apps
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -28,9 +27,7 @@ type MetricsReceiverKafka struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
@@ -42,41 +39,17 @@ func (r MetricsReceiverKafka) Type() string {
 }
 
 func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultKafkaEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
 	targetSystem := "kafka"
 	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultKafkaEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 
-	// Only set the username & password fields if provided
-	if r.Username != "" {
-		config["username"] = r.Username
-	}
-	if r.Password != "" {
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
 			// Kafka script contains several metrics not desired by ops-agent
 			// as it existed in opentelemetry-java-contrib prior to the
 			// development of this integration
@@ -99,7 +72,7 @@ func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
+	)
 }
 
 func init() {
