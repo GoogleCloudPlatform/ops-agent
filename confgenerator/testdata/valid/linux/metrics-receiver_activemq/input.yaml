@@ -14,14 +14,13 @@
 
 metrics:
   receivers:
-    activemq_metrics:
+    activemq:
       type: activemq
       # exercising default endpoint
       username: otelu
-      password: otelp
-      collection_interval: 30s
+      password: otelp 
   service:
     pipelines:
-      activemq_pipeline:
+      activemq:
         receivers:
-          - activemq_metrics
+          - activemq

@@ -22,14 +22,15 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    activemq_metrics:
+    activemq:
+      type: activemq
       endpoint: localhost:1099
       collection_interval: 30s
   service:
     pipelines:
-      activemq_pipeline:
+      activemq:
         receivers:
-          - activemq_metrics
+          - activemq
 ```
 
 ## Metrics
