@@ -24,4 +24,8 @@ metrics:
     pipelines:
       activemq:
         receivers:
+<<<<<<< HEAD
           - activemq
+=======
+          - activemq
+>>>>>>> af4df4c5 (feedback updates,)
