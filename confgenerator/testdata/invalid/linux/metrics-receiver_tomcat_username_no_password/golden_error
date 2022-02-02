@@ -1,9 +1,1 @@
-[17:19] "password" is required when "Username" is set
-  15 | metrics:
-  16 |   receivers:
-> 17 |     tomcat_metrics:
-                         ^
-  18 |       type: tomcat
-  19 |       username: usr
-  20 |       collection_interval: 30s
-  21 |   
+"password" is required when "Username" is set
