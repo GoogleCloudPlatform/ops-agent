@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    activemq_metrics:
+    activemq:
       type: activemq
       username: usr
       collection_interval: 30s
   service:
     pipelines:
-      activemq_pipeline:
+      activemq:
         receivers:
-          - activemq_metrics
+          - activemq
