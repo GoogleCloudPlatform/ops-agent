@@ -19,15 +19,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    hadoop_metrics:
+    hadoop:
       type: hadoop
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:8004/jmxrmi
       collection_interval: 60s
   service:
     pipelines:
-      hadoop_pipeline:
+      hadoop:
         receivers:
-          - hadoop_metrics
+          - hadoop
 EOF
 
 sudo service google-cloud-ops-agent restart

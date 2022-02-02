@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    hadoop_metrics:
+    hadoop:
       type: hadoop
       endpoint: localhost:7199
       collect_jvm_metrics: false
@@ -23,6 +23,6 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      hadoop_pipeline:
+      hadoop:
         receivers:
-          - hadoop_metrics
+          - hadoop

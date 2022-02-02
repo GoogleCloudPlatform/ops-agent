@@ -23,13 +23,13 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    hadoop_metrics:
+    hadoop:
       type: hadoop
   service:
     pipelines:
-      hadoop_pipeline:
+      hadoop:
         receivers:
-          - hadoop_metrics
+          - hadoop
 ```
 
 ## Metrics
