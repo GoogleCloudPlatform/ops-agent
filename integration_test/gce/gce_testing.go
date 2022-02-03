@@ -960,6 +960,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
+	if isSUSE(vm.Platform) {
+		// Set download.max_silent_tries to 5 (by default, it is commented out in
+		// the config file). This should help with issues like b/211003972.
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf")
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
+		}
+	}
+
 	if !IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		_, err := RunRemotely(ctx, logger, vm, "", strings.Join([]string{
