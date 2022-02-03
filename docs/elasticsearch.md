@@ -92,21 +92,45 @@ The Ops Agent collects the following metrics from your Elasticsearch nodes:
 | workload.googleapis.com/elasticsearch.node.documents                  | Gauge (INT64)      | {documents}   | state                   | The number of documents on the node.                                                     |
 | workload.googleapis.com/elasticsearch.node.open_files                 | Gauge (INT64)      | {files}       |                         | The number of open file descriptors held by the node.                                    |
 
+Labels:
+| Metric Name                                                           | Label Name       | Description                    | Values                                                                           |
+|-----------------------------------------------------------------------|------------------|--------------------------------|----------------------------------------------------------------------------------|
+| workload.googleapis.com/elasticsearch.node.cache.memory.usage         | cache_name       | The name of cache.             | fielddata, query                                                                 |
+| workload.googleapis.com/elasticsearch.node.cache.evictions            | cache_name       | The name of cache.             | fielddata, query                                                                 |
+| workload.googleapis.com/elasticsearch.node.cluster.io                 | direction        | The direction of network data. | received, sent                                                                   |
+| workload.googleapis.com/elasticsearch.node.operations.completed       | operation        | The type of operation.         | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
+| workload.googleapis.com/elasticsearch.node.operations.time            | operation        | The type of operation.         | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
+| workload.googleapis.com/elasticsearch.node.thread_pool.threads        | thread_pool_name | The name of the thread pool.   |                                                                                  |
+| workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued   | thread_pool_name | The name of the thread pool.   |                                                                                  |
+| workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished | thread_pool_name | The name of the thread pool.   |                                                                                  |
+| workload.googleapis.com/elasticsearch.node.thread_pool.threads        | state            | The state of the thread.       | active, idle                                                                     |
+| workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished | state            | The state of the task.         | rejected, completed                                                              |
+| workload.googleapis.com/elasticsearch.node.documents                  | state            | The state of the document      | active, deleted                                                                  |
+
 If `collect_jvm_metrics` is true, the following JVM metrics are collected:
 
-| Metric                       | Data Type          | Unit | Labels | Description                                                                   |
-|------------------------------|--------------------|------|--------|-------------------------------------------------------------------------------|
-| jvm.classes.loaded           | Gauge (INT64)      | 1    |        | The number of loaded classes                                                  |
-| jvm.gc.collections.count     | Cumulative (INT64) | 1    | name   | The total number of garbage collections that have occurred                    |
-| jvm.gc.collections.elapsed   | Cumulative (INT64) | ms   | name   | The approximate accumulated collection elapsed time                           |
-| jvm.memory.heap.max          | Gauge (INT64)      | By   |        | The maximum amount of memory can be used for the heap                         |
-| jvm.memory.heap.used         | Gauge (INT64)      | By   |        | The current heap memory usage                                                 |
-| jvm.memory.heap.committed    | Gauge (INT64)      | By   |        | The amount of memory that is guaranteed to be available for the heap          |
-| jvm.memory.nonheap.used      | Gauge (INT64)      | By   |        | The current non-heap memory usage                                             |
-| jvm.memory.nonheap.committed | Gauge (INT64)      | By   |        | The amount of memory that is guaranteed to be available for non-heap purposes |
-| jvm.memory.pool.max          | Gauge (INT64)      | By   | name   | The maximum amount of memory can be used for the memory pool                  |
-| jvm.memory.pool.used         | Gauge (INT64)      | By   | name   | The current memory pool memory usage                                          |
-| jvm.threads.count            | Gauge (INT64)      | 1    |        | The current number of threads                                                 |
+| Metric                                               | Data Type          | Unit | Labels | Description                                                                   |
+|------------------------------------------------------|--------------------|------|--------|-------------------------------------------------------------------------------|
+| workload.googleapis.com/jvm.classes.loaded           | Gauge (INT64)      | 1    |        | The number of loaded classes                                                  |
+| workload.googleapis.com/jvm.gc.collections.count     | Cumulative (INT64) | 1    | name   | The total number of garbage collections that have occurred                    |
+| workload.googleapis.com/jvm.gc.collections.elapsed   | Cumulative (INT64) | ms   | name   | The approximate accumulated collection elapsed time                           |
+| workload.googleapis.com/jvm.memory.heap.max          | Gauge (INT64)      | By   |        | The maximum amount of memory can be used for the heap                         |
+| workload.googleapis.com/jvm.memory.heap.used         | Gauge (INT64)      | By   |        | The current heap memory usage                                                 |
+| workload.googleapis.com/jvm.memory.heap.committed    | Gauge (INT64)      | By   |        | The amount of memory that is guaranteed to be available for the heap          |
+| workload.googleapis.com/jvm.memory.nonheap.used      | Gauge (INT64)      | By   |        | The current non-heap memory usage                                             |
+| workload.googleapis.com/jvm.memory.nonheap.committed | Gauge (INT64)      | By   |        | The amount of memory that is guaranteed to be available for non-heap purposes |
+| workload.googleapis.com/jvm.memory.pool.max          | Gauge (INT64)      | By   | name   | The maximum amount of memory can be used for the memory pool                  |
+| workload.googleapis.com/jvm.memory.pool.used         | Gauge (INT64)      | By   | name   | The current memory pool memory usage                                          |
+| workload.googleapis.com/jvm.threads.count            | Gauge (INT64)      | 1    |        | The current number of threads                                                 |
+
+Labels:
+| Metric Name                                        | Label Name | Description                        | Values |
+|----------------------------------------------------|------------|------------------------------------|--------|
+| workload.googleapis.com/jvm.gc.collections.count   | name       | The name of the garbage collector. |        |
+| workload.googleapis.com/jvm.gc.collections.elapsed | name       | The name of the garbage collector. |        |
+| workload.googleapis.com/jvm.memory.pool.max        | name       | The name of the JVM memory pool.   |        |
+| workload.googleapis.com/jvm.memory.pool.used       | name       | The name of the JVM memory pool.   |        |
+
 
 If `skip_cluster_metrics` is false, the following cluster-level metrics are collected:
 | Metric                                                   | Data Type     | Unit     | Labels | Description                                                                                                                                                                                    |
@@ -115,6 +139,12 @@ If `skip_cluster_metrics` is false, the following cluster-level metrics are coll
 | workload.googleapis.com/elasticsearch.cluster.data_nodes | Gauge (INT64) | {nodes}  |        | The number of data nodes in the cluster.                                                                                                                                                       |
 | workload.googleapis.com/elasticsearch.cluster.nodes      | Gauge (INT64) | {nodes}  |        | The total number of nodes in the cluster.                                                                                                                                                      |
 | workload.googleapis.com/elasticsearch.cluster.health     | Gauge (INT64) | {status} | status | The health status of the cluster. See [the Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/cluster-health.html#cluster-health-api-desc) for more information. |
+
+Labels:
+| Metric Name                                          | Label Name | Description                       | Values                                       |
+|------------------------------------------------------|------------|-----------------------------------|----------------------------------------------|
+| workload.googleapis.com/elasticsearch.cluster.shards | state      | The state of the shard.           | active, relocating, initializing, unassigned |
+| workload.googleapis.com/elasticsearch.cluster.health | status     | The health status of the cluster. | green, yellow, red                           |
 
 # `elasticsearch_json` and `elasticsearch_gc` Logging Receivers
 
