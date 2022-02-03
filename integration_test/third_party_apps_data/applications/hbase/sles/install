@@ -5,29 +5,13 @@ wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
 
-JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
-
-sudo tee /etc/systemd/system/hbase.service
-[Unit]
-Description=HBase Hadoop database
-After=network.target
-
-[Service]
-Type=forking
-Environment=JAVA_HOME=$JAVA_HOME
-ExecStart=/opt/hbase/bin/start-hbase.sh
-ExecStop=/opt/hbase/bin/stop-hbase.sh
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
-export HBASE_JMX_BASE="-Djava.rmi.server.hostname=0.0.0.0 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
-export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.management.jmxremote.rmi.port=9999 -Dcom.sun.management.jmxremote.port=9999"
+export HBASE_JMX_BASE="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
+export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.management.jmxremote.rmi.port=10101 -Dcom.sun.management.jmxremote.port=9999"
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
 
-sudo systemctl daemon-reload
+JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+export JAVA_HOME
+
+/opt/hbase/bin/start-hbase.sh
