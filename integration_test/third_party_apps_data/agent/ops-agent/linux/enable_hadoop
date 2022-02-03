@@ -22,7 +22,6 @@ metrics:
     hadoop:
       type: hadoop
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:8004/jmxrmi
-      collection_interval: 60s
   service:
     pipelines:
       hadoop:
