@@ -17,7 +17,7 @@ To configure a receiver for your Elasticsearch JSON logs, specify the following 
 | `username`             | optional |                         | Username for authentication with Elasticsearch. Required if `password` is set.                                                                                          |
 | `password`             | optional |                         | Password for authentication with Elasticsearch. Required if `username` is set.                                                                                          |
 | `collect_jvm_metrics`  | optional | `true`                  | If true, supported JVM metrics will be collected                                                                                                                        |
-| `skip_cluster_metrics` | optional | `true`                  | If true, cluster level metrics will not be collected. To prevent duplicate metrics, this should be set to false for one node only.                                      |
+| `collect_cluster_metrics` | optional | `false`                  | If true, cluster level metrics will be collected. To prevent duplicate metrics, this should be set to true for one node only.                                      |
 | `insecure`             | optional | true                    | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled.                                                                     |
 | `insecure_skip_verify` | optional | false                   | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
 | `cert_file`            | optional |                         | Path to the TLS cert to use for mTLS required connections.                                                                                                              |
@@ -132,7 +132,7 @@ Labels:
 | workload.googleapis.com/jvm.memory.pool.used       | name       | The name of the JVM memory pool.   |        |
 
 
-If `skip_cluster_metrics` is false, the following cluster-level metrics are collected:
+If `collect_cluster_metrics` is true, the following cluster-level metrics are collected:
 | Metric                                                   | Data Type     | Unit     | Labels | Description                                                                                                                                                                                    |
 |----------------------------------------------------------|---------------|----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | workload.googleapis.com/elasticsearch.cluster.shards     | Gauge (INT64) | {shards} | state  | The number of shards in the cluster.                                                                                                                                                           |

@@ -18,13 +18,13 @@ type MetricsReceiverElasticsearch struct {
 	Username string `yaml:"username" validate:"required_with=Password"`
 	Password string `yaml:"password" validate:"required_with=Username"`
 
-	CollectJVMMetrics  *bool `yaml:"collect_jvm_metrics" validate:"omitempty"`
-	SkipClusterMetrics *bool `yaml:"skip_cluster_metrics" validate:"omitempty"`
+	CollectJVMMetrics     *bool `yaml:"collect_jvm_metrics" validate:"omitempty"`
+	CollectClusterMetrics bool  `yaml:"collect_cluster_metrics" validate:"omitempty"`
 }
 
 const (
-	defaultElasticsearchEndpoint           = "http://localhost:9200"
-	defaultElasticsearchSkipClusterMetrics = true
+	defaultElasticsearchEndpoint              = "http://localhost:9200"
+	defaultElasticsearchCollectClusterMetrics = false
 )
 
 func (r MetricsReceiverElasticsearch) Type() string {
@@ -37,24 +37,18 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
 	}
 
 	cfg := map[string]interface{}{
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"username":            r.Username,
-		"password":            r.Password,
-		"nodes":               []string{"_local"},
-		"tls":                 r.TLSConfig(true),
+		"collection_interval":  r.CollectionIntervalString(),
+		"endpoint":             r.Endpoint,
+		"username":             r.Username,
+		"password":             r.Password,
+		"nodes":                []string{"_local"},
+		"tls":                  r.TLSConfig(true),
+		"skip_cluster_metrics": !r.CollectClusterMetrics,
 	}
 
 	if r.CollectJVMMetrics != nil && !*r.CollectJVMMetrics {
 		cfg["metrics"] = r.skipJVMMetricsConfig()
 	}
-
-	if r.SkipClusterMetrics == nil {
-		skipClusterMetrics := defaultElasticsearchSkipClusterMetrics
-		r.SkipClusterMetrics = &skipClusterMetrics
-	}
-
-	cfg["skip_cluster_metrics"] = r.SkipClusterMetrics
 
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
