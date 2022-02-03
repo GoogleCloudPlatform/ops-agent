@@ -21,6 +21,8 @@ metrics:
   receivers:
     couchdb:
       type: couchdb
+      username: admin
+      password: otelp
   service:
     pipelines:
       couchdb:

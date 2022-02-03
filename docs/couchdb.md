@@ -1,37 +1,8 @@
-# `couchdb` Metrics Receiver
+# Couchdb
 
-The couchdb receiver can retrieve stats from your couchdb server using the `/_node/_local/_stats/couchdb` endpoint.
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/couchdb)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
-## Configuration
-
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your Apache web server configuration.
-
-To configure a receiver for your Apache web server metrics, specify the following fields:
-
-| Field                 | Default                 | Description                                                                            |
-|-----------------------|-------------------------|----------------------------------------------------------------------------------------|
-| `type`                | required                | Must be `couchdb`.                                                                     |
-| `endpoint`            | `http://localhost:5984` | The url exposed by couchdb                                                             |
-| `username`            | not set by default      | The username used to connect to the server.                                            |
-| `password`            | not set by default      | The password used to connect to the server.                                            |
-| `collection_interval` | `60s`                   | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    couchdb:
-      type: couchdb
-      endpoint: http://localhost:5984
-      username: otelu
-      password: otelp
-  service:
-    pipelines:
-      couchdb:
-        receivers:
-          - couchdb
-```
 
 ## Metrics
 
