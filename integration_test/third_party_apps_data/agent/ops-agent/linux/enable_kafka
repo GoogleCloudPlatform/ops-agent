@@ -20,24 +20,24 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    kafka_metrics:
+    kafka:
       type: kafka
       endpoint: localhost:9999
       collection_interval: 30s
   service:
     pipelines:
-      kafka_pipeline:
+      kafka:
         receivers:
-          - kafka_metrics
+          - kafka
 logging:
   receivers:
-    kafka_default:
+    kafka:
       type: kafka
   service:
     pipelines:
       kafka:
         receivers:
-          - kafka_default
+          - kafka
 EOF
 
 sudo service google-cloud-ops-agent restart
