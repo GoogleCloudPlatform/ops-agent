@@ -23,15 +23,14 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    kafka_metrics:
+    kafka:
       type: kafka
       endpoint: localhost:9999
-      collection_interval: 30s
   service:
     pipelines:
-      kafka_pipeline:
+      kafka:
         receivers:
-          - kafka_metrics
+          - kafka
 ```
 
 ## Metrics
@@ -68,13 +67,13 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    kafka_default:
+    kafka:
       type: kafka
   service:
     pipelines:
       kafka:
         receivers:
-          - kafka_default
+          - kafka
 ```
 
 ## Logs
