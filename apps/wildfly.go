@@ -41,13 +41,10 @@ func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []flue
 					//                   awt.toolkit = sun.awt.X11.XToolkit
 					//                   file.encoding = UTF-8
 					//                   file.separator = /
-					Regex: `^(?<level>[A-Z]+)\s+\[(?<module>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}.\d{3,})\s+(?<level>\w+)(?:\s+\[(?<source>.+?)\])?(?:\s+\((?<thread>.+?)\))?\s+(?<message>(?:(?<messageCode>[\d\w]+):)?[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-						Types: map[string]string{
-							"lineNumber": "integer",
-						},
 					},
 				},
 			},
@@ -56,12 +53,12 @@ func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []flue
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
+				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,}`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
+				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,})`,
 			},
 		},
 	}.Components(tag, uid)
