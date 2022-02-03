@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    kafkametrics:
+    kafka:
       type: kafka
       # exercising default endpoint
       username: otelu
       password: otelp
   service:
     pipelines:
-      kafkapipeline:
+      kafka:
         receivers:
-          - kafkametrics
+          - kafka

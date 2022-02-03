@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    kafkametrics:
+    kafka:
       type: kafka
       endpoint: localhost:39999
       collect_jvm_metrics: false
@@ -23,6 +23,6 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      kafkapipeline:
+      kafka:
         receivers:
-          - kafkametrics
+          - kafka
