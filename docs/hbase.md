@@ -1,6 +1,8 @@
 # `hbase` Metrics Receiver
 
-The `hbase` metrics receiver can fetch stats from a Hbase server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
+The `hbase` metric receiver can fetch stats from a HBase server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html). It collects metrics specific to the local region server, as well as metrics presented by the Master node if the node being monitored is indeed the Master.
+
+For High Availability configurations it is recommended to monitor the active Master node only. Monitoring the active Master and its replicants will result in duplicate metrics for the Master node.
 
 ## Prerequisites
 
@@ -87,3 +89,14 @@ In addition to Hbase specific metrics, by default Hbase will also report [JVM me
 | `hbase.region_server.gc.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection. |
 | `hbase.region_server.gc.young_gen.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection of the young generation. |
 | `hbase.region_server.gc.old_gen.time` | Cumulative | `ms` | `region_server` | Time spent in garbage collection of the old generation. |
+
+### Metrics labels
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| hbase.region_server.queue.request.count.state | The type of request queue. | replication, user, priority |
+| hbase.master.region_server.count.state | state of server. | dead, live |
+| hbase.region_server.request.count.state | The type of request. | read, write |
+| hbase.region_server.queue.length.state | The type of handlers. | flush, compaction |
+| hbase.region_server.block_cache.operation.count.state | The type of operation. | miss, hit |
+| hbase.region_server.authentication.count.state | The type of authentications. | successes, failures |
