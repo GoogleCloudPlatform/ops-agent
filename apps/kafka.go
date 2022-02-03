@@ -103,7 +103,7 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 					// 		alter.config.policy.class.name = null
 					// 		alter.log.dirs.replication.quota.window.num = 11
 					// 		alter.log.dirs.replication.quota.window.size.seconds = 1
-					Regex: `^\[(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(?<level>[A-Z]+)(?:\s+\[(?<source>[\s\S]*)\]:?)?\s+(?<message>.*)(?=\s+\([\w\s\.\$]+\)$|\s+$)(?:\s+\((?<logger>[\w\s\.\$]+)\))?`,
+					Regex: `^\[(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(?<level>[A-Z]+)(?:\s+\[(?<source>.*)\]:?)?\s+(?<message>[\s\S]*)(?=\s+\([\w\s\.\$]+\)$|\s+$)(?:\s+\((?<logger>[\w\s\.\$]+)\))?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
