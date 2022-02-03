@@ -1,0 +1,7 @@
+log_entries:
+- log_name: "wildfly_server"
+  field_matchers:
+    jsonPayload.messageCode: "WFLYSRV0049"
+    jsonPayload.message: "*WildFly Elytron version*"
+    jsonPayload.thread: "ServerService Thread Pool*"
+    jsonPayload.source: "org.wildfly.security"
