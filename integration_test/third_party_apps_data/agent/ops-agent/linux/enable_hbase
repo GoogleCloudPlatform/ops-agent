@@ -23,7 +23,7 @@ logging:
       type: hbase_system
   service:
     pipelines:
-      hbase:
+      hbase_system:
         receivers:
           - hbase_system
 EOF

@@ -26,11 +26,10 @@ Group=root
 WantedBy=multi-user.target
 EOF
 
-cat <<EOF | sudo tee /opt/hbase/conf/hbase-env.sh
+sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
 export HBASE_JMX_BASE="-Djava.rmi.server.hostname=0.0.0.0 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
 export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.management.jmxremote.rmi.port=9999 -Dcom.sun.management.jmxremote.port=9999"
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
 
 sudo systemctl daemon-reload
-sudo systemctl enable hbase 
