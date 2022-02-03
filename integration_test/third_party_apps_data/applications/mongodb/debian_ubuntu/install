@@ -1,31 +1,25 @@
 set -e
 
+sudo apt-get update
 sudo apt-get install -y gnupg wget
 wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
 
-source /etc/os-release
-case $VERSION_ID in
-  20.04)
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+oscode="$(lsb_release -sc)"
+osname="$(lsb_release -si)"
+
+case $osname in 
+  Ubuntu)
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     ;;
-  18.04)
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-    ;;
-  16.04)
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-    ;;
-  # Debian 11 is not officially supported, so use 'buster'.
-  11)
-    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-    ;;  
-  10)
-    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-    ;;
-  9)
-    echo "deb http://repo.mongodb.org/apt/debian stretch/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+  Debian)
+    # Debian 11 is not officially supported, so use 'buster'.
+    if [ "$oscode" = "bullseye" ]; then
+      oscode="buster"
+    fi
+    echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     ;;
   *)
-    echo -n "unknown version"
+    echo -n "unknown os release"
     exit 1
     ;;
 esac
@@ -38,5 +32,3 @@ sudo apt-get install -y \
     mongodb-org-shell=5.0.5 \
     mongodb-org-mongos=5.0.5 \
     mongodb-org-tools=5.0.5
-
-sudo systemctl enable mongod
