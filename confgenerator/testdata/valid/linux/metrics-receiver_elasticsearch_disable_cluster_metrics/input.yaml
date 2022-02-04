@@ -16,7 +16,7 @@ metrics:
   receivers:
     elasticsearch:
       type: elasticsearch
-      collect_cluster_metrics: true
+      collect_cluster_metrics: false
   service:
     pipelines:
       elasticsearch:
