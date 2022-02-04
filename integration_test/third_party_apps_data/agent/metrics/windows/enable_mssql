@@ -1,3 +1,0 @@
-$ProgressPreference = 'SilentlyContinue'
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/GoogleCloudPlatform/opentelemetry-operations-collector/master/config/config-windows.yaml -OutFile 'C:\Program Files\Google\Cloud Operations\Metrics Agent\config.yaml'
-Restart-Service -Name google-cloud-metrics-agent

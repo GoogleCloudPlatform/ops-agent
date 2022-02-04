@@ -143,7 +143,7 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 
 	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"emerg", "EMERGENCY"},
 				{"alert", "ALERT"},

@@ -1,0 +1,9 @@
+[8:7] unknown field "multilinerules"
+   5 |       include_paths:
+   6 |       - /var/log/messages
+   7 |       - /var/log/syslog
+>  8 |       multilinerules:
+             ^
+   9 |       - statename: "start_state"
+  10 |         regex: ".*"
+  11 |         nextstate: "start_state"

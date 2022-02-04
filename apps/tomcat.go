@@ -16,7 +16,6 @@ package apps
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -28,9 +27,7 @@ type MetricsReceiverTomcat struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
 }
@@ -42,45 +39,22 @@ func (r MetricsReceiverTomcat) Type() string {
 }
 
 func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultTomcatEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
 	targetSystem := "tomcat"
 	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	config := map[string]interface{}{
-		"target_system":       targetSystem,
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	// Only set the username & password fields if provided
-	if r.Username != "" && r.Password != "" {
-		config["username"] = r.Username
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultTomcatEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
+	)
 }
 
 func init() {
@@ -134,7 +108,7 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"FINEST", "DEBUG"},
 				{"FINER", "DEBUG"},
@@ -166,6 +140,7 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
+			"/var/log/tomcat*/catalina.out",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
@@ -194,6 +169,7 @@ func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Co
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
+			"/var/log/tomcat*/localhost_access_log.*.txt",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
