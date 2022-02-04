@@ -1,0 +1,34 @@
+set -e
+
+sudo apt-get update
+sudo apt-get install -y gnupg wget
+wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+
+oscode="$(lsb_release -sc)"
+osname="$(lsb_release -si)"
+
+case $osname in 
+  Ubuntu)
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    ;;
+  Debian)
+    # Debian 11 is not officially supported, so use 'buster'.
+    if [ "$oscode" = "bullseye" ]; then
+      oscode="buster"
+    fi
+    echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    ;;
+  *)
+    echo -n "unknown os release"
+    exit 1
+    ;;
+esac
+
+sudo apt-get update
+sudo apt-get install -y \
+    mongodb-org=5.0.5 \
+    mongodb-org-database=5.0.5 \
+    mongodb-org-server=5.0.5 \
+    mongodb-org-shell=5.0.5 \
+    mongodb-org-mongos=5.0.5 \
+    mongodb-org-tools=5.0.5
