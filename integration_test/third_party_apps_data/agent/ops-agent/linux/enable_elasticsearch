@@ -19,16 +19,17 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 logging:
   receivers:
-    elasticsearch_default_json:
+    elasticsearch_json:
       type: elasticsearch_json
-    elasticsearch_default_gc:
+    elasticsearch_gc:
       type: elasticsearch_gc
   service:
     pipelines:
       elasticsearch:
         receivers:
-          - elasticsearch_default_json
-          - elasticsearch_default_gc
+          - elasticsearch_json
+          - elasticsearch_gc
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

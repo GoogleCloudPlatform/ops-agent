@@ -14,29 +14,10 @@
 
 logging:
   receivers:
-    postgresql_default_general:
-      type: postgresql_general
-    postgresql_custom_general:
-      type: postgresql_general
-      include_paths:
-        - /srv/postgresql/general.log
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    postgresql_syslog_general:
-      type: syslog
-      transport_protocol: tcp
-      listen_host: 1.1.1.1
-      listen_port: 2
-  processors:
-    postgresql_syslog_general:
+    postgresql_general:
       type: postgresql_general
   service:
     pipelines:
-      postgresql_default:
+      postgresql:
         receivers:
-          - postgresql_default_general
-      postgresql_custom:
-        receivers:
-          - postgresql_custom_general
-      postgresql_syslog_error:
-        receivers: [postgresql_syslog_general]
-        processors: [postgresql_syslog_general]
+          - postgresql_general
