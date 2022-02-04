@@ -1,6 +1,7 @@
 apache
 cassandra
 elasticsearch
+couchdb
 jvm
 kafka
 memcached
