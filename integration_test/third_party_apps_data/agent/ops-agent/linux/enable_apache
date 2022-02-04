@@ -19,14 +19,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    apache_metrics:
+    apache:
       type: apache
       server_status_url: http://localhost:80/server-status?auto
   service:
     pipelines:
-      apache_metrics:
+      apache:
         receivers:
-          - apache_metrics
+          - apache
 logging:
   receivers:
     apache_access:
