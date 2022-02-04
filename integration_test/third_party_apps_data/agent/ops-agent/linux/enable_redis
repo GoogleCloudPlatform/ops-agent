@@ -19,14 +19,13 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    redis_metrics:
+    redis:
       type: redis
-      collection_interval: 10s
   service:
     pipelines:
-      redis_pipeline:
+      redis:
         receivers:
-        - redis_metrics
+        - redis
 logging:
   receivers:
     redis:
@@ -39,4 +38,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 30
+sleep 60
