@@ -29,7 +29,7 @@ type MetricsReceiverKafka struct {
 
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
-	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+	CollectJVMMetrics *bool `yaml:"collect_jvm_metrics"`
 }
 
 const defaultKafkaEndpoint = "localhost:9999"
@@ -40,7 +40,7 @@ func (r MetricsReceiverKafka) Type() string {
 
 func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 	targetSystem := "kafka"
-	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+	if r.CollectJVMMetrics == nil || *r.CollectJVMMetrics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 

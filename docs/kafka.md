@@ -11,7 +11,7 @@ In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremot
 | Field                 | Default            | Description |
 | ---                   | ---                | ---         |
 | `type`                | required           | Must be `kafka`. |
-| `endpoint`            | `localhost:7199`   | The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`. |
+| `endpoint`            | `localhost:9999`   | The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`. |
 | `collect_jvm_metrics` | true               | Should the set of support [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics) also be collected |
 | `username`            | not set by default | The configured username if JMX is configured to require authentication. |
 | `password`            | not set by default | The configured password if JMX is configured to require authentication. |

@@ -22,8 +22,6 @@ metrics:
   receivers:
     kafka:
       type: kafka
-      endpoint: localhost:9999
-      collection_interval: 30s
   service:
     pipelines:
       kafka:
