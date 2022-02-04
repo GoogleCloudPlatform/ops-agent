@@ -23,6 +23,7 @@ metrics:
       username: postgres
       password: abc123
       insecure: true
+      endpoint: localhost:5432
   service:
     pipelines:
       postgresql:
