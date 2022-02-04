@@ -1,0 +1,28 @@
+set -e
+
+sudo rpm --import https://www.mongodb.org/static/pgp/server-5.0.asc
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+case $SUSE_VERSION in
+  15)
+    sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/" mongodb
+    ;;
+  12)
+    sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/12/mongodb-org/5.0/x86_64/" mongodb
+    ;;
+  *)
+    echo -n "unknown version"
+    exit 1
+    ;;
+esac
+
+sudo zypper install -y \
+    mongodb-org-5.0.5 \
+    mongodb-org-database-5.0.5 \
+    mongodb-org-server-5.0.5 \
+    mongodb-org-shell-5.0.5 \
+    mongodb-org-mongos-5.0.5 \
+    mongodb-org-tools-5.0.5
+
+sudo systemctl enable mongod
