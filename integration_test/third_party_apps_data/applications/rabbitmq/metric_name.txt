@@ -1,1 +1,1 @@
-workload.googleapis.com/redis.clients.max_input_buffer
+workload.googleapis.com/rabbitmq.message.published
