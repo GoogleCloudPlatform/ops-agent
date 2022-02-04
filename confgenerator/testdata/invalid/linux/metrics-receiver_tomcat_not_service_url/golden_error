@@ -1,4 +1,4 @@
-[19:17] Key: 'MetricsReceiverTomcat.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=service:jmx:' tag
+[19:17] Key: 'MetricsReceiverSharedJVM.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=service:jmx:' tag
   16 |   receivers:
   17 |     tomcat_metrics:
   18 |       type: tomcat

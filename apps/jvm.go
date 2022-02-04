@@ -15,14 +15,8 @@
 package apps
 
 import (
-	"fmt"
-	"log"
-	"path/filepath"
-	"runtime"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/kardianos/osext"
 )
 
 type MetricsReceiverJVM struct {
@@ -30,9 +24,7 @@ type MetricsReceiverJVM struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 }
 
 const defaultJVMEndpoint = "localhost:9999"
@@ -42,57 +34,17 @@ func (r MetricsReceiverJVM) Type() string {
 }
 
 func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
-	if r.Endpoint == "" {
-		r.Endpoint = defaultJVMEndpoint
-	}
-
-	jarPath, err := FindJarPath()
-	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
-	}
-
-	config := map[string]interface{}{
-		"target_system":       "jvm",
-		"collection_interval": r.CollectionIntervalString(),
-		"endpoint":            r.Endpoint,
-		"jar_path":            jarPath,
-	}
-
-	// Only set the username & password fields if provided
-	if r.Username != "" {
-		config["username"] = r.Username
-	}
-	if r.Password != "" {
-		config["password"] = r.Password
-	}
-
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "jmx",
-			Config: config,
-		},
-		Processors: []otel.Component{
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		"jvm",
+		defaultJVMEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
-	}}
-}
-
-var FindJarPath = func() (string, error) {
-	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
-
-	executableDir, err := osext.ExecutableFolder()
-	if err != nil {
-		return jarName, fmt.Errorf("could not determine binary path for jvm receiver: %w", err)
-	}
-
-	// TODO(djaglowski) differentiate behavior via build tags
-	if runtime.GOOS != "windows" {
-		return filepath.Join(executableDir, "../subagents/opentelemetry-collector/", jarName), nil
-	}
-	return filepath.Join(executableDir, jarName), nil
+	)
 }
 
 func init() {

@@ -7,7 +7,7 @@ per_application_overrides:
     platforms_to_skip: &common_skips
       - centos-7
       - centos-8
-      - rockylinux-8
+      - rocky-linux-8
       - sles-12
       - sles-15
       - ubuntu-2004-lts
@@ -23,3 +23,5 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   # Note: New applications are not supposed to add additional skips
   # here unless deemed absolutely necessary.
+  couchdb: # couchdb is not supported on sles
+    platforms_to_skip: [sles-12, sles-15]
