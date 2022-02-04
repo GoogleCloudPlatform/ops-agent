@@ -14,11 +14,12 @@
 
 metrics:
   receivers:
-    apache_metrics:
-      type: apache
+    jvm:
+      type: jvm
+      endpoint: localhost:9999
       collection_interval: 30s
   service:
     pipelines:
-      apache_pipeline:
+      jvm:
         receivers:
-          - apache_metrics
+          - jvm

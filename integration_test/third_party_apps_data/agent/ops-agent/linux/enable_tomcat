@@ -19,15 +19,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    tomcat_metrics:
+    tomcat:
       type: tomcat
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:8050/jmxrmi
-      collection_interval: 60s
   service:
     pipelines:
-      tomcat_pipeline:
+      tomcat:
         receivers:
-          - tomcat_metrics
+          - tomcat
 
 logging:
   receivers:
@@ -44,3 +43,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60
