@@ -17,6 +17,7 @@ metrics:
     apache:
       type: apache
       server_status_url: http://localhost/server-status?auto
+      collection_interval: 10s
   service:
     pipelines:
       apache:
