@@ -14,11 +14,10 @@
 
 metrics:
   receivers:
-    memcachedmetrics:
+    memcached:
       type: memcached
-      collection_interval: 30s
   service:
     pipelines:
-      memcachedpipeline:
+      memcached:
         receivers:
-          - memcachedmetrics
+          - memcached
