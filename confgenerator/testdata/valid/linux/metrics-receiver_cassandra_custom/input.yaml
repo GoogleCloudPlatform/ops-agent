@@ -14,12 +14,15 @@
 
 metrics:
   receivers:
-    redis_metrics:
-      type: redis
+    cassandra:
+      type: cassandra
+      endpoint: localhost:7199
+      collect_jvm_metrics: false
+      username: otelu
+      password: otelp
       collection_interval: 30s
-      password: pwd
   service:
     pipelines:
-      redis_pipeline:
+      cassandra:
         receivers:
-          - redis_metrics
+          - cassandra

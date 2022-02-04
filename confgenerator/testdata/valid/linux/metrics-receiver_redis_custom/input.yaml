@@ -14,15 +14,13 @@
 
 metrics:
   receivers:
-    tomcat_metrics:
-      type: tomcat
-      endpoint: localhost:7199
-      collect_jvm_metrics: false
-      username: otelu
-      password: otelp
+    redis:
+      type: redis
+      address: localhost:6379
       collection_interval: 30s
+      password: pwd
   service:
     pipelines:
-      tomcat_pipeline:
+      redis:
         receivers:
-          - tomcat_metrics
+          - redis

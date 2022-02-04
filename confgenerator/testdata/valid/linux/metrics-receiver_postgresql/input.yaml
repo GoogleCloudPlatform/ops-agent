@@ -14,13 +14,12 @@
 
 metrics:
   receivers:
-    postgresqlmetrics:
+    postgresql:
       type: postgresql
-      collection_interval: 30s
       password: pwd
       username: usr
   service:
     pipelines:
-      postgresqlpipeline:
+      postgresql:
         receivers:
-          - postgresqlmetrics
+          - postgresql

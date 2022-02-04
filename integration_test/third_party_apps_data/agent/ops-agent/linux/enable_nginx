@@ -22,7 +22,6 @@ metrics:
     nginx_metrics:
       type: nginx
       stub_status_url: http://127.0.0.1:80/nginx_status
-      collection_interval: 30s
   service:
     pipelines:
       nginxpipeline:
@@ -43,3 +42,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

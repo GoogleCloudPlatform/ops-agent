@@ -22,7 +22,6 @@ metrics:
     apache_metrics:
       type: apache
       server_status_url: http://localhost:80/server-status?auto
-      collection_interval: 30s
   service:
     pipelines:
       apache_metrics:
@@ -43,4 +42,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 30
+sleep 60
