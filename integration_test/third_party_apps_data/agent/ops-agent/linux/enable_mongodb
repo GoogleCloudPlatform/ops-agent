@@ -19,12 +19,20 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 logging:
   receivers:
+<<<<<<< HEAD
     mongodb_default:
+=======
+    mongodb:
+>>>>>>> b2007768550fe2c492e21cecfa32ac7558cbd6f1
       type: mongodb
   service:
     pipelines:
       mongo:
+<<<<<<< HEAD
         receivers: [mongodb_default]
+=======
+        receivers: [mongodb]
+>>>>>>> b2007768550fe2c492e21cecfa32ac7558cbd6f1
 EOF
 
 sudo service google-cloud-ops-agent restart

@@ -109,6 +109,7 @@ func (p *LoggingProcessorMongodb) Components(tag, uid string) []fluentbit.Compon
 
 // JsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
+// documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
 func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit.Component {
 	c := p.jsonParserWithTimeKey(tag, uid)
 

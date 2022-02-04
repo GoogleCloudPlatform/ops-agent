@@ -11,25 +11,15 @@ SCRIPTS_DIR: a path containing scripts for installing/configuring the various
     applications and agents. Also has some files that aren't technically
     scripts that tell the test what to do, such as supported_applications.txt.
 
-TODO: Remove AGENTS_TO_TEST and make the code assume that it's testing only
-    the Ops Agent.
-AGENTS_TO_TEST: a comma-separated list of agents, e.g. "metrics,ops-agent".
-    The values are the same as the values of the agent type documented here:
-    https://cloud.google.com/sdk/gcloud/reference/beta/compute/instances/ops-agents/policies/create#--agent-rules
 PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
 MONITORING_AGENT_SUFFIX: If provided, repo suffix to provide when installing the monitoring agent.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Each agent in
-    AGENTS_TO_TEST must have its own subdirectory, so for example this would be
-    a valid structure inside AGENT_PACKAGES_IN_GCS if
-    AGENTS_TO_TEST=metrics,ops_agent:
-    ├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
+    .deb/.rpm/.goo files to install on the testing VMs. They must be inside
+	a directory called ops-agent. For example, this would be a valid structure
+	inside AGENT_PACKAGES_IN_GCS:
     └── ops-agent
         ├── ops-agent-google-cloud-1.2.3.deb
         ├── ops-agent-google-cloud-1.2.3.rpm
@@ -102,7 +92,7 @@ func appsToTest(agentType, platform string) ([]string, error) {
 // findMetricName reads which metric to query from the metric_name.txt file
 // corresponding to the given application. The file is allowed to be empty,
 // and if so, the test is skipped.
-func findMetricName(agentType string, app string) (string, error) {
+func findMetricName(app string) (string, error) {
 	contents, err := os.ReadFile(path.Join(scriptsDir, "applications", app, "metric_name.txt"))
 	if err != nil {
 		return "", fmt.Errorf("could not read metric_name.txt: %v", err)
@@ -132,7 +122,7 @@ func distroFolder(platform string) (string, error) {
 	}
 	firstWord := strings.Split(platform, "-")[0]
 	switch firstWord {
-	case "centos", "rhel":
+	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
@@ -350,7 +340,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	metricName, err := findMetricName(agentType, app)
+	metricName, err := findMetricName(app)
 	if err != nil {
 		return nonRetryable, fmt.Errorf("error finding metric name for %v: %v", app, err)
 	}
@@ -366,21 +356,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-// dumpLogs fetches useful logs for debugging test failures.
-func dumpLogs(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) {
-	if agentType == agents.OpsAgentType {
-		agents.RunOpsAgentDiagnostics(ctx, logger, vm)
-		return
-	}
-	if gce.IsWindows(vm.Platform) {
-		// To be implemented if needed.
-		return
-	}
-	// If we got here, we are testing non-ops agents on Linux. Dump a few useful things.
-	gce.RunRemotely(ctx, logger.ToFile("syslog.txt"), vm, "", "sudo cat /var/log/{messages,syslog}")
-	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "", "sudo journalctl -xe")
-}
-
 // This is the entry point for the test. Runs runSingleTest
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
@@ -389,75 +364,66 @@ func TestThirdPartyApps(t *testing.T) {
 	if scriptsDir == "" {
 		t.Fatalf("Cannot run test with empty value of SCRIPTS_DIR.")
 	}
-	agentTypes := strings.Split(os.Getenv("AGENTS_TO_TEST"), ",")
-	if len(agentTypes) == 0 {
-		t.Fatalf("Cannot run test with empty value of AGENTS_TO_TEST.")
+	agentType := agents.OpsAgentType
+
+	testConfig, err := parseTestConfigFile()
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, agentType := range agentTypes {
-		agentType := agentType // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(agentType, func(t *testing.T) {
+	for _, platform := range testConfig.Platforms {
+		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(platform, func(t *testing.T) {
 			t.Parallel()
 
-			testConfig, err := parseTestConfigFile()
+			apps, err := appsToTest(agentType, platform)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
 			}
-			for _, platform := range testConfig.Platforms {
-				platform := platform // https://golang.org/doc/faq#closures_and_goroutines
-				t.Run(platform, func(t *testing.T) {
+			if len(apps) == 0 {
+				t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
+			}
+			for _, app := range apps {
+				app := app // https://golang.org/doc/faq#closures_and_goroutines
+				t.Run(app, func(t *testing.T) {
 					t.Parallel()
 
-					apps, err := appsToTest(agentType, platform)
-					if err != nil {
-						t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
+					if app == "mysql" {
+						// TODO(b/215197805): Reenable this test once the repos are fixed.
+						t.Skip("mysql repos seem to be totally broken, see b/215197805")
 					}
-					if len(apps) == 0 {
-						t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
+
+					if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
+						t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
 					}
-					for _, app := range apps {
-						app := app // https://golang.org/doc/faq#closures_and_goroutines
-						t.Run(app, func(t *testing.T) {
-							t.Parallel()
+					ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+					defer cancel()
 
-							if app == "mysql" {
-								// TODO(b/215197805): Reenable this test once the repos are fixed.
-								t.Skip("mysql repos seem to be totally broken, see b/215197805")
-							}
+					var err error
+					for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
+						logger := gce.SetupLogger(t)
+						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
+						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
+						logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
-							if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
-								t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
-							}
-							ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-							defer cancel()
-
-							var err error
-							for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
-								logger := gce.SetupLogger(t)
-								logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-								vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
-								logger.ToMainLog().Printf("VM is ready: %#v", vm)
-
-								var retryable bool
-								retryable, err = runSingleTest(ctx, logger, vm, agentType, app)
-								log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, platform, app, err, retryable)
-								if err == nil {
-									return
-								}
-								dumpLogs(ctx, logger, vm, agentType)
-								if !retryable {
-									t.Fatalf("Non-retryable error: %v", err)
-								}
-								// If we got here, we're going to retry runSingleTest(). The VM we spawned
-								// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
-								// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
-								// do our retries, we preemptively delete the VM now.
-								if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
-									t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
-								}
-							}
-							t.Errorf("Final attempt failed: %v", err)
-						})
+						var retryable bool
+						retryable, err = runSingleTest(ctx, logger, vm, agentType, app)
+						log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, platform, app, err, retryable)
+						if err == nil {
+							return
+						}
+						agents.RunOpsAgentDiagnostics(ctx, logger, vm)
+						if !retryable {
+							t.Fatalf("Non-retryable error: %v", err)
+						}
+						// If we got here, we're going to retry runSingleTest(). The VM we spawned
+						// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
+						// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
+						// do our retries, we preemptively delete the VM now.
+						if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+							t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
+						}
 					}
+					t.Errorf("Final attempt failed: %v", err)
 				})
 			}
 		})
