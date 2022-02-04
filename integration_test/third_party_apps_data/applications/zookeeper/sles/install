@@ -8,7 +8,7 @@ sudo curl \
     -o /opt/zookeeper/stage/zk.tgz
 sudo tar -xvzf /opt/zookeeper/stage/zk.tgz -C /opt/zookeeper --strip 1
 
-cat <<EOF | sudo tee /usr/lib/systemd/system/zookeeper.service
+cat <<EOF | sudo tee /etc/systemd/system/zookeeper.service
 [Unit]
 Description=ZooKeeper Service
 Documentation=http://zookeeper.apache.org
