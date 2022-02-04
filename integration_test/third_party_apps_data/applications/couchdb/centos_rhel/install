@@ -1,0 +1,48 @@
+set -e
+
+sudo yum install -y yum-utils
+
+source /etc/os-release
+case $ID in
+  rhel)
+    major_version=7
+    if echo $VERSION_ID | grep 8; then
+      major_version=8
+    fi
+    cat <<EOF | sudo tee /etc/yum.repos.d/couchdb.repo
+[couchdb]
+name=couchdb
+baseurl=https://apache.jfrog.io/artifactory/couchdb-rpm/el${major_version}/\$basearch/
+gpgkey=https://couchdb.apache.org/repo/keys.asc https://couchdb.apache.org/repo/rpm-package-key.asc
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+EOF
+    ;;
+  centos)
+    sudo yum-config-manager --add-repo https://couchdb.apache.org/repo/couchdb.repo
+    ;;
+  *)
+    echo -n "unknown os ID in /etc/os-release"
+    exit 1
+    ;;
+esac
+
+sudo yum install -y couchdb
+
+cat << EOF > local.ini
+[couchdb]
+[couch_peruser]
+[chttpd]
+[httpd]
+[chttpd_auth]
+[ssl]
+[vhosts]
+[admins]
+admin = otelp
+EOF
+sudo mv local.ini /opt/couchdb/etc/local.ini
+sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
+sudo chmod 0755 /opt/couchdb/etc/local.ini
+
+sudo systemctl enable couchdb 
