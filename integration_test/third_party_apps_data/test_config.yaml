@@ -23,3 +23,5 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   # Note: New applications are not supposed to add additional skips
   # here unless deemed absolutely necessary.
+  couchdb: # couchdb is not supported on sles
+    platforms_to_skip: [sles-12, sles-15]
