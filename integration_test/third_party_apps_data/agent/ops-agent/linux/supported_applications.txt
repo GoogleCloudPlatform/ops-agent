@@ -4,8 +4,10 @@ elasticsearch
 jvm
 kafka
 memcached
+mongodb
 mysql
 nginx
 postgresql
 redis
+solr
 tomcat

@@ -1,0 +1,1 @@
+workload.googleapis.com/solr.cache.size
