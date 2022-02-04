@@ -1,9 +1,1 @@
-[9:16] "regex" is a required field
-   6 |       - /var/log/messages
-   7 |       - /var/log/syslog
-   8 |   processors:
->  9 |     processor_1:
-                      ^
-  10 |       type: parse_regex
-  11 |       field: field_1
-  12 |   service:
+"time_format" is required when "TimeKey" is set
