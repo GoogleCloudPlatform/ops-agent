@@ -1,0 +1,24 @@
+set -e
+
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install \
+    -y default-jdk default-jdk-headless curl lsof
+
+curl -L -o \
+    solr-8.11.1.tgz \
+    https://downloads.apache.org/lucene/solr/8.11.1/solr-8.11.1.tgz
+
+tar -xzf \
+    solr-8.11.1.tgz \
+    solr-8.11.1/bin/install_solr_service.sh \
+    --strip-components=2
+
+sudo bash ./install_solr_service.sh solr-8.11.1.tgz -n
+
+sudo chown -R solr:solr /opt/solr*
+
+sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/false/true/' /etc/default/solr.in.sh
+sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
+
+sudo systemctl daemon-reload
+sudo systemctl enable solr
