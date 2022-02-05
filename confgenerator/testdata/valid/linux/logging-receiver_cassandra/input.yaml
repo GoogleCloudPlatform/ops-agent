@@ -14,59 +14,16 @@
 
 logging:
   receivers:
-    cassandra_default_system:
+    cassandra_system:
       type: cassandra_system
-    cassandra_default_debug:
+    cassandra_debug:
       type: cassandra_debug
-    cassandra_default_gc:
-      type: cassandra_gc
-    cassandra_custom_system:
-      type: cassandra_system
-      include_paths:
-        - /var/log/cassandra/mysystem.log
-    cassandra_custom_debug:
-      type: cassandra_debug
-      include_paths:
-        - /var/log/cassandra/mydebug.log
-    cassandra_custom_gc:
-      type: cassandra_gc
-      include_paths:
-        - /var/log/cassandra/mygc.log
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    cassandra_syslog_system:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-    cassandra_syslog_debug:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-    cassandra_syslog_gc:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-  processors:
-    cassandra_syslog_system:
-      type: cassandra_system
-    cassandra_syslog_debug:
-      type: cassandra_debug
-    cassandra_syslog_gc:
+    cassandra_gc:
       type: cassandra_gc
   service:
     pipelines:
-      cassandra_default:
+      cassandra:
         receivers:
-          - cassandra_default_system
-          - cassandra_default_debug
-          - cassandra_default_gc
-      cassandra_custom:
-        receivers:
-          - cassandra_custom_system
-          - cassandra_custom_debug
-          - cassandra_custom_gc
-      cassandra_syslog_system:
-        receivers: [cassandra_syslog_system, cassandra_syslog_debug, cassandra_syslog_gc]
-        processors: [cassandra_syslog_system, cassandra_syslog_debug, cassandra_syslog_gc]
+          - cassandra_system
+          - cassandra_debug
+          - cassandra_gc

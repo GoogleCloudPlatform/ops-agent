@@ -14,12 +14,10 @@
 
 metrics:
   receivers:
-    nginxmetrics:
+    nginx:
       type: nginx
-      stub_status_url: http://localhost/status
-      collection_interval: 30s
   service:
     pipelines:
-      nginxpipeline:
+      nginx:
         receivers:
-          - nginxmetrics
+          - nginx

@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    postgresqlmetrics:
+    postgresql:
       type: postgresql
       endpoint: localhost:3306
       collection_interval: 30s
@@ -23,6 +23,6 @@ metrics:
       insecure: false
   service:
     pipelines:
-      postgresqlpipeline:
+      postgresql:
         receivers:
-          - postgresqlmetrics
+          - postgresql

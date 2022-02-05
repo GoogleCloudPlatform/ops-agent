@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    redis_metrics:
-      type: redis
-      collection_interval: 30s
+    postgresql:
+      type: postgresql
       password: pwd
+      username: usr
   service:
     pipelines:
-      redis_pipeline:
+      postgresql:
         receivers:
-          - redis_metrics
+          - postgresql
