@@ -12,6 +12,21 @@ sudo tar -xf hadoop-3.3.1.tar.gz -C /opt/hadoop --strip 1
 
 JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
 
+cat <<EOF | sudo tee /opt/hadoop/env
+export JAVA_HOME=$JAVA_HOME
+export PATH=$PATH:$JAVA_HOME/bin
+export CLASSPATH=.:$JAVA_HOME/jre/lib:$JAVA_HOME/lib:$JAVA_HOME/lib/tools.jar
+export HADOOP_HOME=/opt/hadoop
+export HADOOP_COMMON_HOME=/opt/hadoop
+export HADOOP_HDFS_HOME=/opt/hadoop
+export HADOOP_MAPRED_HOME=/opt/hadoop
+export HADOOP_YARN_HOME=/opt/hadoop
+export HADOOP_OPTS="-Djava.library.path=/opt/hadoop/lib/native"
+export HADOOP_COMMON_LIB_NATIVE_DIR=/opt/hadoop/lib/native
+export PATH=$PATH:/opt/hadoop/sbin:/opt/hadoop/bin
+EOF
+source /opt/hadoop/env
+
 cat <<EOF | sudo tee /etc/systemd/system/hadoop.service
 [Unit]
 Description=Hadoop database
@@ -23,13 +38,13 @@ Type=forking
 Environment=JAVA_HOME=$JAVA_HOME
 Environment=PATH=$PATH:$JAVA_HOME/bin
 Environment=CLASSPATH=.:$JAVA_HOME/jre/lib:$JAVA_HOME/lib:$JAVA_HOME/lib/tools.jar
-Environment=HADOOP_HOME=/opt/hadoop
-Environment=HADOOP_COMMON_HOME=/opt/hadoop
-Environment=HADOOP_HDFS_HOME=/opt/hadoop
-Environment=HADOOP_MAPRED_HOME=/opt/hadoop
-Environment=HADOOP_YARN_HOME=/opt/hadoop
-Environment=HADOOP_OPTS="-Djava.library.path=/opt/hadoop/lib/native"
-Environment=HADOOP_COMMON_LIB_NATIVE_DIR=/opt/hadoop/lib/native
+Environment=HADOOP_HOME=$HADOOP_HOME
+Environment=HADOOP_COMMON_HOME=$HADOOP_COMMON_HOME
+Environment=HADOOP_HDFS_HOME=$HADOOP_HDFS_HOME
+Environment=HADOOP_MAPRED_HOME=$HADOOP_MAPRED_HOME
+Environment=HADOOP_YARN_HOME=$HADOOP_YARN_HOME
+Environment=HADOOP_OPTS="$HADOOP_OPTS"
+Environment=HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_COMMON_LIB_NATIVE_DIR
 Environment=PATH=$PATH:/opt/hadoop/sbin:/opt/hadoop/bin
 ExecStart=/opt/hadoop/sbin/start-dfs.sh
 WorkingDirectory=/opt/hadoop
