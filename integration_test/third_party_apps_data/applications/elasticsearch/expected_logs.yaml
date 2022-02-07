@@ -1,13 +1,13 @@
 log_entries:
 # {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
-- log_name: "elasticsearch_default_json"
+- log_name: "elasticsearch_json"
   field_matchers:
     jsonPayload.message: "initialized"
     jsonPayload.component: "o.e.n.Node"
     jsonPayload.type: "server"
 
 # [2022-01-19T16:16:39.445+0000][40361][gc] Using G1
-- log_name: "elasticsearch_default_gc"
+- log_name: "elasticsearch_gc"
   field_matchers:
     jsonPayload.message: 'Using G1'
     jsonPayload.type: "gc"

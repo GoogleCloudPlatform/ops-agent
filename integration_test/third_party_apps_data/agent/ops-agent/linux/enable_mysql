@@ -18,14 +18,13 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # limitations under the License.
 metrics:
   receivers:
-    mysql_metrics:
+    mysql:
       type: mysql
-      collection_interval: 30s
   service:
     pipelines:
-      mysql_pipeline:
+      mysql:
         receivers:
-        - mysql_metrics
+        - mysql
 logging:
   receivers:
     mysql_error:
@@ -44,4 +43,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 30
+sleep 60
