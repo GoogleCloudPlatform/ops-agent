@@ -8,7 +8,7 @@ wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
 sudo tar -xvf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
-export HBASE_JMX_BASE="-Djava.rmi.server.hostname=0.0.0.0 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
+export HBASE_JMX_BASE="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
 export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.management.jmxremote.rmi.port=10101 -Dcom.sun.management.jmxremote.port=10101"
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
