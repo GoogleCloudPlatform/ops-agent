@@ -81,7 +81,9 @@ func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interfac
 	conf := map[string]interface{}{}
 
 	for _, metric := range jvmMetrics {
-		conf[fmt.Sprintf("%s.enabled", metric)] = false
+		conf[metric] = map[string]bool{
+			"enabled": false,
+		}
 	}
 
 	return conf
