@@ -1,16 +1,16 @@
 log_entries:
-- log_name: "cassandra_default_system"
+- log_name: "cassandra_system"
   field_matchers:
     jsonPayload.message: ".*Startup complete.*"
     jsonPayload.level: "INFO"
     jsonPayload.module: "main"
     jsonPayload.javaClass: "CassandraDaemon.java"
-- log_name: "cassandra_default_debug"
+- log_name: "cassandra_debug"
   field_matchers:
     jsonPayload.message: ".*Loading settings from file.*"
     jsonPayload.level: "DEBUG"
     jsonPayload.module: "main"
     jsonPayload.javaClass: "YamlConfigurationLoader.java"
-- log_name: "cassandra_default_gc"
+- log_name: "cassandra_gc"
   field_matchers:
     jsonPayload.message: '.*Total time for which application threads were stopped.*'

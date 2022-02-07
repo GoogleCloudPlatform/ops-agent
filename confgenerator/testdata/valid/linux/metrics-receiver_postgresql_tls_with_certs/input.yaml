@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    postgresqlmetrics:
+    postgresql:
       type: postgresql
       endpoint: localhost:3306
       collection_interval: 30s
@@ -27,6 +27,6 @@ metrics:
       key_file: /path/to/ca
   service:
     pipelines:
-      postgresqlpipeline:
+      postgresql:
         receivers:
-          - postgresqlmetrics
+          - postgresql

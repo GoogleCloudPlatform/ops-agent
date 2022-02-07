@@ -14,11 +14,12 @@
 
 metrics:
   receivers:
-    jvmmetrics:
-      type: jvm
+    nginx:
+      type: nginx
+      stub_status_url: http://localhost/status
       collection_interval: 30s
   service:
     pipelines:
-      jvmpipeline:
+      nginx:
         receivers:
-          - jvmmetrics
+          - nginx
