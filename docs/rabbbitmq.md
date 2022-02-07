@@ -75,12 +75,12 @@ The Ops Agent collects the following metrics from your rabbitmq instances.
 
 | Metric                                                 | Data Type | Unit        | Labels                          | Description    |
 | ---                                                    | ---       | ---         | ---                             | ---            | git 
-| rabbitmq.consumer.count | Sum(Int) | {consumers} | <ul> </ul>  | The number of consumers currently reading from the queue. |
-| rabbitmq.message.acknowledged | Sum(Int) | {messages} | <ul> </ul>  | The number of messages acknowledged by consumers. |
-| rabbitmq.message.current | Sum(Int) | {messages} | <ul> <li>message.state</li> </ul>  | The total number of messages currently in the queue. |
-| rabbitmq.message.delivered | Sum(Int) | {messages} | <ul> </ul>  | The number of messages delivered to consumers. |
-| rabbitmq.message.dropped | Sum(Int) | {messages} | <ul> </ul>  | The number of messages dropped as unroutable. |
-| rabbitmq.message.published | Sum(Int) | {messages} | <ul> </ul>  | The number of messages published to a queue. |
+| rabbitmq.consumer.count | gauge | {consumers} | <ul> </ul>  | The number of consumers currently reading from the queue. |
+| rabbitmq.message.acknowledged | cumulative | {messages} | <ul> </ul>  | The number of messages acknowledged by consumers. |
+| rabbitmq.message.current | gauge | {messages} | <ul> <li>message.state</li> </ul>  | The total number of messages currently in the queue. |
+| rabbitmq.message.delivered | cumulative | {messages} | <ul> </ul>  | The number of messages delivered to consumers. |
+| rabbitmq.message.dropped | cumulative | {messages} | <ul> </ul>  | The number of messages dropped as unroutable. |
+| rabbitmq.message.published | cumulative | {messages} | <ul> </ul>  | The number of messages published to a queue. |
 
 ## Attributes
 

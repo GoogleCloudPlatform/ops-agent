@@ -1,1 +1,1 @@
-workload.googleapis.com/rabbitmq.message.published
+workload.googleapis.com/rabbitmq.message.current
