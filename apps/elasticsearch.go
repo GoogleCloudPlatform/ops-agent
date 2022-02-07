@@ -5,7 +5,93 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverElasticsearch struct {
+	confgenerator.ConfigComponent                 `yaml:",inline"`
+	confgenerator.MetricsReceiverShared           `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedTLS        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCluster    `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:|startswith=https:"`
+
+	Username string `yaml:"username" validate:"required_with=Password"`
+	Password string `yaml:"password" validate:"required_with=Username"`
+}
+
+const (
+	defaultElasticsearchEndpoint = "http://localhost:9200"
+)
+
+func (r MetricsReceiverElasticsearch) Type() string {
+	return "elasticsearch"
+}
+
+func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
+	if r.Endpoint == "" {
+		r.Endpoint = defaultElasticsearchEndpoint
+	}
+
+	cfg := map[string]interface{}{
+		"collection_interval":  r.CollectionIntervalString(),
+		"endpoint":             r.Endpoint,
+		"username":             r.Username,
+		"password":             r.Password,
+		"nodes":                []string{"_local"},
+		"tls":                  r.TLSConfig(true),
+		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
+	}
+
+	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
+	if !r.ShouldCollectJVMMetrics() {
+		cfg["metrics"] = r.skipJVMMetricsConfig()
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "elasticsearch",
+			Config: cfg,
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interface{} {
+	jvmMetrics := []string{
+		"jvm.classes.loaded",
+		"jvm.gc.collections.count",
+		"jvm.gc.collections.elapsed",
+		"jvm.memory.heap.max",
+		"jvm.memory.heap.used",
+		"jvm.memory.heap.committed",
+		"jvm.memory.nonheap.used",
+		"jvm.memory.nonheap.committed",
+		"jvm.memory.pool.max",
+		"jvm.memory.pool.used",
+		"jvm.threads.count",
+	}
+
+	conf := map[string]interface{}{}
+
+	for _, metric := range jvmMetrics {
+		conf[metric] = map[string]bool{
+			"enabled": false,
+		}
+	}
+
+	return conf
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverElasticsearch{} })
+}
 
 type LoggingProcessorElasticsearchJson struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
