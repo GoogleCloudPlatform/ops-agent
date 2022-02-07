@@ -151,8 +151,10 @@ type LoggingReceiverKafka struct {
 func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// No default package installers, this is default log path from install
+			// No default package installers, these are common log paths from installs online
 			"/var/log/kafka/*.log",
+			"/opt/kafka/logs/server.log",
+			"/opt/kafka/logs/controller.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
