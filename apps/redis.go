@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -41,6 +43,13 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 		r.Address = defaultRedisEndpoint
 	}
 
+	var transport string
+	if strings.HasPrefix(r.Address, "/") {
+		transport = "unix"
+	} else {
+		transport = "tcp"
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
@@ -49,6 +58,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Address,
 				"password":            r.Password,
 				"tls":                 r.TLSConfig(true),
+				"transport":           transport,
 			},
 		},
 		Processors: []otel.Component{
