@@ -1,5 +1,8 @@
 set -e
 
+# From https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/#repo-qg-apt-repo-manual-setup
+sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
+
 sudo apt update
 sudo apt install -y wget
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.14-1_all.deb
@@ -11,7 +14,7 @@ sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-aut
 
 source /etc/os-release
 
- sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
+sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
 
 if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18

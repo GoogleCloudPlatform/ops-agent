@@ -14,13 +14,13 @@
 
 metrics:
   receivers:
-    postgresqlmetrics:
-      type: postgresql
+    redis:
+      type: redis
+      address: localhost:6379
       collection_interval: 30s
       password: pwd
-      username: usr
   service:
     pipelines:
-      postgresqlpipeline:
+      redis:
         receivers:
-          - postgresqlmetrics
+          - redis

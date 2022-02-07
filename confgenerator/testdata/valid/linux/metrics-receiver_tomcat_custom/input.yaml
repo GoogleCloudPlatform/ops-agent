@@ -14,11 +14,15 @@
 
 metrics:
   receivers:
-    nginxmetrics:
-      type: nginx
+    tomcat:
+      type: tomcat
+      endpoint: localhost:7199
+      collect_jvm_metrics: false
+      username: otelu
+      password: otelp
       collection_interval: 30s
   service:
     pipelines:
-      nginxpipeline:
+      tomcat:
         receivers:
-          - nginxmetrics
+          - tomcat
