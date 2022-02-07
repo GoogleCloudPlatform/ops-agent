@@ -14,14 +14,13 @@
 
 metrics:
   receivers:
-    tomcat_metrics:
+    tomcat:
       type: tomcat
       # exercising default endpoint
       username: otelu
       password: otelp
-      collection_interval: 30s
   service:
     pipelines:
-      tomcat_pipeline:
+      tomcat:
         receivers:
-          - tomcat_metrics
+          - tomcat

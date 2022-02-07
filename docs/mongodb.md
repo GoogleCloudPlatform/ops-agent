@@ -17,12 +17,12 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    mongodb_default:
+    mongodb:
       type: mongodb
   service:
     pipelines:
-      mongo:
-        receivers: [mongodb_default]
+      mongodb:
+        receivers: [mongodb]
 ```
 
 ## Logs

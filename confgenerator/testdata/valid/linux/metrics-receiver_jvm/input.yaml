@@ -14,12 +14,10 @@
 
 metrics:
   receivers:
-    jvmmetrics:
+    jvm:
       type: jvm
-      endpoint: localhost:9999
-      collection_interval: 30s
   service:
     pipelines:
-      jvmpipeline:
+      jvm:
         receivers:
-          - jvmmetrics
+          - jvm

@@ -19,22 +19,21 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    cassandra_metrics:
+    cassandra:
       type: cassandra
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:7199/jmxrmi
-      collection_interval: 30s
   service:
     pipelines:
-      cassandra_pipeline:
+      cassandra:
         receivers:
-          - cassandra_metrics
+          - cassandra
 logging:
   receivers:
-    cassandra_default_system:
+    cassandra_system:
       type: cassandra_system
-    cassandra_default_debug:
+    cassandra_debug:
       type: cassandra_debug
-    cassandra_default_gc:
+    cassandra_gc:
       type: cassandra_gc
     cassandra_sles_system:
       type: cassandra_system
@@ -55,12 +54,13 @@ logging:
     pipelines:
       cassandra:
         receivers:
-          - cassandra_default_system
-          - cassandra_default_debug
-          - cassandra_default_gc
+          - cassandra_system
+          - cassandra_debug
+          - cassandra_gc
           - cassandra_sles_system
           - cassandra_sles_debug
           - cassandra_sles_gc
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

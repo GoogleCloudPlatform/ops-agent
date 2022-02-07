@@ -2,6 +2,7 @@ apache
 cassandra
 hadoop
 elasticsearch
+couchdb
 jvm
 memcached
 mongodb

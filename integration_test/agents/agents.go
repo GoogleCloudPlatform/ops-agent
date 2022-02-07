@@ -699,8 +699,6 @@ func globForAgentPackage(platform string) (string, error) {
 		return "*~ubuntu18.04_*.deb", nil
 	case platform == "ubuntu-2004-lts" || platform == "ubuntu-minimal-2004-lts":
 		return "*~ubuntu20.04_*.deb", nil
-	case platform == "ubuntu-2104" || platform == "ubuntu-minimal-2104":
-		return "*~ubuntu21.04_*.deb", nil
 	default:
 		return "", fmt.Errorf("agents.go does not know how to convert platform %q into a glob that can pick the appropriate package out of a lineup", platform)
 	}
