@@ -475,6 +475,21 @@ func (m MetricsReceiverSharedJVM) JVMConfig(targetSystem string, defaultEndpoint
 	}}
 }
 
+type MetricsReceiverSharedCollectJVM struct {
+	CollectJVMMetrics *bool `yaml:"collect_jvm_metrics"`
+}
+
+func (m MetricsReceiverSharedCollectJVM) TargetSystemString(targetSystem string) string {
+	if m.ShouldCollectJVMMetrics() {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+	return targetSystem
+}
+
+func (m MetricsReceiverSharedCollectJVM) ShouldCollectJVMMetrics() bool {
+	return m.CollectJVMMetrics == nil || *m.CollectJVMMetrics
+}
+
 var FindJarPath = func() (string, error) {
 	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
 

@@ -9,16 +9,16 @@ import (
 )
 
 type MetricsReceiverElasticsearch struct {
-	confgenerator.ConfigComponent          `yaml:",inline"`
-	confgenerator.MetricsReceiverShared    `yaml:",inline"`
-	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
+	confgenerator.ConfigComponent                 `yaml:",inline"`
+	confgenerator.MetricsReceiverShared           `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedTLS        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:|startswith=https:"`
 
 	Username string `yaml:"username" validate:"required_with=Password"`
 	Password string `yaml:"password" validate:"required_with=Username"`
 
-	CollectJVMMetrics     *bool `yaml:"collect_jvm_metrics" validate:"omitempty"`
 	CollectClusterMetrics *bool `yaml:"collect_cluster_metrics" validate:"omitempty"`
 }
 
@@ -54,7 +54,8 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
 		"skip_cluster_metrics": !*r.CollectClusterMetrics,
 	}
 
-	if r.CollectJVMMetrics != nil && !*r.CollectJVMMetrics {
+	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
+	if !r.ShouldCollectJVMMetrics() {
 		cfg["metrics"] = r.skipJVMMetricsConfig()
 	}
 
