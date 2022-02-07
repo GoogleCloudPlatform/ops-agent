@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -29,7 +27,7 @@ type MetricsReceiverCassandra struct {
 
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
-	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
 const defaultCassandraEndpoint = "localhost:7199"
@@ -40,12 +38,9 @@ func (r MetricsReceiverCassandra) Type() string {
 
 func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
 	targetSystem := "cassandra"
-	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
-		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
-	}
 
 	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
+		r.TargetSystemString(targetSystem),
 		defaultCassandraEndpoint,
 		r.CollectionIntervalString(),
 		[]otel.Component{
