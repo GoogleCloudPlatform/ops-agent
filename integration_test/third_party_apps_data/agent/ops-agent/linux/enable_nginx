@@ -19,15 +19,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    nginx_metrics:
+    nginx:
       type: nginx
       stub_status_url: http://127.0.0.1:80/nginx_status
-      collection_interval: 30s
   service:
     pipelines:
-      nginxpipeline:
+      nginx:
         receivers:
-          - nginx_metrics
+          - nginx
 logging:
   receivers:
     nginx_access:
@@ -43,3 +42,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

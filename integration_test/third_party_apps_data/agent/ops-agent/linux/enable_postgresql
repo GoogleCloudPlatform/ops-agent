@@ -18,18 +18,17 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # limitations under the License.
 metrics:
   receivers:
-    postgresql_metrics:
+    postgresql:
       type: postgresql
-      collection_interval: 30s
       username: postgres
       password: abc123
-      endpoint: localhost:5432
       insecure: true
+      endpoint: localhost:5432
   service:
     pipelines:
-      postgresql_pipeline:
+      postgresql:
         receivers:
-        - postgresql_metrics
+        - postgresql
 logging:
   receivers:
     postgresql_general:
@@ -42,4 +41,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 30
+sleep 60

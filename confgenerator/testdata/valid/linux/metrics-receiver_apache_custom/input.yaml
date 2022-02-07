@@ -14,15 +14,12 @@
 
 metrics:
   receivers:
-    tomcat_metrics:
-      type: tomcat
-      endpoint: localhost:7199
-      collect_jvm_metrics: false
-      username: otelu
-      password: otelp
-      collection_interval: 30s
+    apache:
+      type: apache
+      server_status_url: http://localhost/server-status?auto
+      collection_interval: 10s
   service:
     pipelines:
-      tomcat_pipeline:
+      apache:
         receivers:
-          - tomcat_metrics
+          - apache
