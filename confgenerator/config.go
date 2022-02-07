@@ -505,6 +505,14 @@ var FindJarPath = func() (string, error) {
 	return filepath.Join(executableDir, jarName), nil
 }
 
+type MetricsReceiverSharedCluster struct {
+	CollectClusterMetrics *bool `yaml:"collect_cluster_metrics" validate:"omitempty"`
+}
+
+func (m MetricsReceiverSharedCluster) ShouldCollectClusterMetrics() bool {
+	return m.CollectClusterMetrics == nil || *m.CollectClusterMetrics
+}
+
 var MetricsReceiverTypes = &componentTypeRegistry{
 	Subagent: "metrics", Kind: "receiver",
 }
