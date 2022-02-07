@@ -31,7 +31,7 @@ ExecStart=/opt/wildfly/bin/launch.sh standalone standalone.xml 0.0.0.0
 WantedBy=multi-user.target
 EOF
 
-sed -i.bak 's/<subsystem xmlns="urn:jboss:domain:jmx:1.3">/&\n            <remoting-connector use-management-endpoint="true"\/>/' /opt/wildfly/standalone/configuration/standalone.xml
+sed -i.bak 's/<remoting-connector\/>/<remoting-connector use-management-endpoint="true"\/>/' /opt/wildfly/standalone/configuration/standalone.xml
 
 sudo systemctl daemon-reload
 sudo systemctl enable wildfly
