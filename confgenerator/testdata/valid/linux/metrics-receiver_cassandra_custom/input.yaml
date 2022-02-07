@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    cassandrametrics:
+    cassandra:
       type: cassandra
       endpoint: localhost:7199
       collect_jvm_metrics: false
@@ -23,6 +23,6 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      cassandrapipeline:
+      cassandra:
         receivers:
-          - cassandrametrics
+          - cassandra

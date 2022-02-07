@@ -14,12 +14,10 @@
 
 metrics:
   receivers:
-    apache_metrics:
+    apache:
       type: apache
-      server_status_url: http://localhost/server-status?auto
-      collection_interval: 30s
   service:
     pipelines:
-      apache_pipeline:
+      apache:
         receivers:
-          - apache_metrics
+          - apache

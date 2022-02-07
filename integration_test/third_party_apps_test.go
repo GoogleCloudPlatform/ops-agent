@@ -133,17 +133,22 @@ func distroFolder(platform string) (string, error) {
 }
 
 // prepareSLES runs some preliminary steps that get a SLES VM ready to install packages.
-// First it runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
+// First it repeatedly runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
 // When that happens, the VM is ready to install packages.
 // See b/148612123 and b/196246592 for some history about this.
 func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest"); err != nil {
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
+	err := backoff.Retry(func() error {
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
+		return err
+	}, backoffPolicy)
+	if err != nil {
 		gce.RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
 		return fmt.Errorf("error running registercloudguest: %v", err)
 	}
 
-	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 240), ctx) // 20 minutes max.
-	err := backoff.Retry(func() error {
+	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 240), ctx) // 20 minutes max.
+	err = backoff.Retry(func() error {
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
@@ -296,7 +301,7 @@ func parseTestConfigFile() (testConfig, error) {
 func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType, app string) (retry bool, err error) {
 	if strings.Contains(vm.Platform, "sles") {
 		if err = prepareSLES(ctx, logger.ToMainLog(), vm); err != nil {
-			return nonRetryable, fmt.Errorf("prepareSLES() failed: %v", err)
+			return retryable, fmt.Errorf("prepareSLES() failed: %v", err)
 		}
 	}
 
@@ -386,11 +391,6 @@ func TestThirdPartyApps(t *testing.T) {
 				app := app // https://golang.org/doc/faq#closures_and_goroutines
 				t.Run(app, func(t *testing.T) {
 					t.Parallel()
-
-					if app == "mysql" {
-						// TODO(b/215197805): Reenable this test once the repos are fixed.
-						t.Skip("mysql repos seem to be totally broken, see b/215197805")
-					}
 
 					if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
 						t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
