@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -25,11 +23,9 @@ import (
 type MetricsReceiverKafka struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
-	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
-
-	CollectJVMMetrics *bool `yaml:"collect_jvm_metrics"`
+	confgenerator.MetricsReceiverShared           `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
 const defaultKafkaEndpoint = "localhost:9999"
@@ -40,12 +36,8 @@ func (r MetricsReceiverKafka) Type() string {
 
 func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 	targetSystem := "kafka"
-	if r.CollectJVMMetrics == nil || *r.CollectJVMMetrics {
-		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
-	}
-
 	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
+		r.TargetSystemString(targetSystem),
 		defaultKafkaEndpoint,
 		r.CollectionIntervalString(),
 		[]otel.Component{
