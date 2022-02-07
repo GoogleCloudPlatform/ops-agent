@@ -7,6 +7,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install \
 sudo sed -i 's/useJmx="false"/useJmx="true"/g' /etc/activemq/instances-available/main/activemq.xml 
 
 sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enabled/main
+<<<<<<< HEAD
 
 cat <<EOF | sudo tee /opt/activemq/bin/env
 # ------------------------------------------------------------------------
@@ -56,6 +57,8 @@ ACTIVEMQ_USER=""
 JAVACMD="auto"
 ACTIVEMQ_OPTS="$ACTIVEMQ_OPTS $ACTIVEMQ_JMX_OPTS -Dhawtio.authenticationEnabled=false -Dhawtio.realm=activemq -Dhawtio.role=admins -Dhawtio.rolePrincipalClasses=org.apache.activemq.jaas.GroupPrincipal"
 EOF
+=======
+>>>>>>> 933fbbfa (updated install scripts for for package manager)
 
 sudo systemctl daemon-reload
 sudo systemctl enable activemq
