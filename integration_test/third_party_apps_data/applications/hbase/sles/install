@@ -14,4 +14,4 @@ sudo chmod +x /opt/hbase/conf/hbase-env.sh
 JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
 export JAVA_HOME
 
-/opt/hbase/bin/start-hbase.sh
+sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh
