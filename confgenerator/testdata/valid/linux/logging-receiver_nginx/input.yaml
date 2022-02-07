@@ -14,47 +14,13 @@
 
 logging:
   receivers:
-    nginx_default_access:
+    nginx_access:
       type: nginx_access
-    nginx_default_error:
-      type: nginx_error
-    nginx_custom_access:
-      type: nginx_access
-      include_paths:
-        - /var/log/nginx/vhosts.log
-    nginx_custom_error:
-      type: nginx_error
-      include_paths:
-        - /srv/nginx/error.log
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    nginx_syslog_access:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-    nginx_syslog_error:
-      type: syslog
-      transport_protocol: tcp
-      listen_host: 1.1.1.1
-      listen_port: 2
-  processors:
-    nginx_syslog_access:
-      type: nginx_access
-    nginx_syslog_error:
+    nginx_error:
       type: nginx_error
   service:
     pipelines:
-      nginx_default:
+      nginx:
         receivers:
-          - nginx_default_access
-          - nginx_default_error
-      nginx_custom:
-        receivers:
-          - nginx_custom_access
-          - nginx_custom_error
-      nginx_syslog_access:
-        receivers: [nginx_syslog_access]
-        processors: [nginx_syslog_access]
-      nginx_syslog_error:
-        receivers: [nginx_syslog_error]
-        processors: [nginx_syslog_error]
+          - nginx_access
+          - nginx_error

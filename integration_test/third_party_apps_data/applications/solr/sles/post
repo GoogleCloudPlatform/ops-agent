@@ -1,0 +1,6 @@
+set -e
+
+sudo systemctl restart solr
+
+# Adding a core called otel so that there are some metrics to scrape
+sudo su - solr -c "/opt/solr/bin/solr create -c otel"
