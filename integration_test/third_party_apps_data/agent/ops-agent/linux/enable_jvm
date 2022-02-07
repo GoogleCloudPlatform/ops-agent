@@ -17,15 +17,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 
 metrics:
   receivers:
-    jvm_metrics:
+    jvm:
       type: jvm
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:9010/jmxrmi
-      collection_interval: 30s
   service:
     pipelines:
-      jvm_pipeline:
+      jvm:
         receivers:
-          - jvm_metrics
+          - jvm
 EOF
 
 sudo systemctl restart google-cloud-ops-agent.service
+sleep 60
