@@ -15,7 +15,6 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
-MONITORING_AGENT_SUFFIX: If provided, repo suffix to provide when installing the monitoring agent.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs. They must be inside
     a directory called ops-agent. For example, this would be a valid structure
@@ -24,7 +23,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
         ├── ops-agent-google-cloud-1.2.3.deb
         ├── ops-agent-google-cloud-1.2.3.rpm
         └── ops-agent-google-cloud-1.2.3.goo
-REPO_SUFFIX: If provided, a Rapture repository suffix to install the agent from.
+REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */
 
