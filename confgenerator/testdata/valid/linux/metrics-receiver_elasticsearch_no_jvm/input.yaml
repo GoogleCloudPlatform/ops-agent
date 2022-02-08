@@ -1,9 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-# Copyright 2020 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +11,16 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 metrics:
   receivers:
     elasticsearch:
       type: elasticsearch
+      collection_interval: 60s
+      collect_jvm_metrics: false
+      
   service:
     pipelines:
       elasticsearch:
         receivers:
           - elasticsearch
-
-logging:
-  receivers:
-    elasticsearch_json:
-      type: elasticsearch_json
-    elasticsearch_gc:
-      type: elasticsearch_gc
-  service:
-    pipelines:
-      elasticsearch:
-        receivers:
-          - elasticsearch_json
-          - elasticsearch_gc
-EOF
-
-sudo service google-cloud-ops-agent restart
-sleep 60
