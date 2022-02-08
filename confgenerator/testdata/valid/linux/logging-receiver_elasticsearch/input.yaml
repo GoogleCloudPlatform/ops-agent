@@ -1,25 +1,13 @@
 
 logging:
   receivers:
-    elasticsearch_json_default:
+    elasticsearch_json:
       type: elasticsearch_json
-    elasticsearch_gc_default:
+    elasticsearch_gc:
       type: elasticsearch_gc
-    elasticsearch_json_custom:
-      type: elasticsearch_json
-      include_paths:
-        - /logs/es/example.json
-    elasticsearch_gc_custom:
-      type: elasticsearch_gc
-      include_paths:
-        - /logs/es/gc.log
   service:
     pipelines:
-      elasticsearch_default:
+      elasticsearch:
         receivers:
-          - elasticsearch_json_default
-          - elasticsearch_gc_default
-      elasticsearch_custom:
-        receivers:
-          - elasticsearch_json_custom
-          - elasticsearch_gc_custom
+          - elasticsearch_json
+          - elasticsearch_gc

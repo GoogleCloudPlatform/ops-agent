@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -29,7 +27,7 @@ type MetricsReceiverTomcat struct {
 
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
-	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
 const defaultTomcatEndpoint = "localhost:8050"
@@ -40,12 +38,9 @@ func (r MetricsReceiverTomcat) Type() string {
 
 func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
 	targetSystem := "tomcat"
-	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
-		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
-	}
 
 	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
+		r.TargetSystemString(targetSystem),
 		defaultTomcatEndpoint,
 		r.CollectionIntervalString(),
 		[]otel.Component{
