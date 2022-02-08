@@ -22,8 +22,6 @@ metrics:
   receivers:
     zookeeper:
       type: zookeeper
-      endpoint: localhost:2181
-      collection_interval: 30s
   service:
     pipelines:
       zookeeper:
