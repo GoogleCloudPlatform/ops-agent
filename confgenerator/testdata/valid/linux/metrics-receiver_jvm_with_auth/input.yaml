@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    jvmmetrics:
+    jvm:
       type: jvm
       endpoint: localhost:9999
       collection_interval: 30s
@@ -22,6 +22,6 @@ metrics:
       password: otel_p
   service:
     pipelines:
-      jvmpipeline:
+      jvm:
         receivers:
-          - jvmmetrics
+          - jvm

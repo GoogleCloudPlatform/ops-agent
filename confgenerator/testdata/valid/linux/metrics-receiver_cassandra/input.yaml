@@ -14,14 +14,13 @@
 
 metrics:
   receivers:
-    cassandrametrics:
+    cassandra:
       type: cassandra
       # exercising default endpoint
       username: otelu
       password: otelp
-      collection_interval: 30s
   service:
     pipelines:
-      cassandrapipeline:
+      cassandra:
         receivers:
-          - cassandrametrics
+          - cassandra

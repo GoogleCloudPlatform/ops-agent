@@ -21,7 +21,6 @@ metrics:
   receivers:
     solr:
       type: solr
-      endpoint: localhost:18983
   service:
     pipelines:
       solr:

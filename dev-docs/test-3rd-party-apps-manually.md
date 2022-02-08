@@ -70,16 +70,16 @@ Take Nginx for example:
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 logging:
   receivers:
-    nginx_default_access:
+    nginx_access:
       type: nginx_access
-    nginx_default_error:
+    nginx_error:
       type: nginx_error
   service:
     pipelines:
       nginx:
         receivers:
-          - nginx_default_access
-          - nginx_default_error
+          - nginx_access
+          - nginx_error
 metrics:
   receivers:
     nginx_metrics:
@@ -88,7 +88,7 @@ metrics:
       collection_interval: 30s
   service:
     pipelines:
-      nginx_pipeline:
+      nginx:
         receivers:
           - nginx_metrics
 EOF
@@ -115,6 +115,6 @@ Go to the [Log Viewer](https://console.cloud.google.com/logs/viewer) and use a q
 Take Nginx for example:
 ```
 resource.type="gce_instance"
-logName=("projects/{PROJECT_ID}/logs/nginx_default_error" OR "projects/{PROJECT_ID}/logs/nginx_default_access")
+logName=("projects/{PROJECT_ID}/logs/nginx_error" OR "projects/{PROJECT_ID}/logs/nginx_access")
 ```
 
