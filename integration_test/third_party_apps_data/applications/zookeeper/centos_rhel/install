@@ -1,0 +1,52 @@
+set -e
+
+sudo yum install -y curl java
+
+sudo mkdir -p /opt/zookeeper/stage
+sudo curl \
+    "https://dlcdn.apache.org/zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0-bin.tar.gz" \
+    -o /opt/zookeeper/stage/zk.tgz
+sudo tar -xvzf /opt/zookeeper/stage/zk.tgz -C /opt/zookeeper --strip 1
+
+cat <<EOF | sudo tee /etc/systemd/system/zookeeper.service
+[Unit]
+Description=ZooKeeper Service
+Documentation=http://zookeeper.apache.org
+Requires=network.target
+After=network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/opt/zookeeper/bin/zkServer.sh start /opt/zookeeper/conf/zoo.conf
+ExecStop=/opt/zookeeper/bin/zkServer.sh stop /opt/zookeeper/conf/zoo.conf
+ExecReload=/opt/zookeeper/bin/zkServer.sh restart /opt/zookeeper/conf/zoo.conf
+WorkingDirectory=/var/lib/zookeeper
+
+[Install]
+WantedBy=default.target
+EOF
+
+sudo mkdir -p /var/lib/zookeeper
+echo "1" | sudo tee /var/lib/zookeeper/myid
+
+cat <<EOF | sudo tee /opt/zookeeper/conf/zoo.conf
+tickTime=2000
+initLimit=10
+syncLimit=5
+dataDir=/var/lib/zookeeper
+clientPort=2181
+4lw.commands.whitelist=mntr
+EOF
+
+cat <<EOF | sudo tee /opt/zookeeper/conf/zookeeper-env.sh
+JMXLOCALONLY=false
+JMXDISABLE=false
+JMXPORT=9999
+JMXAUTH=false
+JMXSSL=false
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable zookeeper
