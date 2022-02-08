@@ -1,8 +1,8 @@
+
 set -e
 
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install \
-    -y default-jdk default-jdk-headless curl lsof wget
+sudo apt-get install -y default-jre wget
 
 sudo mkdir /opt/hbase
 wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
@@ -14,7 +14,7 @@ export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.managem
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
 
-JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
 export JAVA_HOME
 
 sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh

@@ -1,7 +1,6 @@
 set -e
 
-sudo zypper install -y \
-    java-11-openjdk java-11-openjdk-devel curl lsof insserv-compat wget
+sudo zypper install -y wget java-11-openjdk
 wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
@@ -12,7 +11,7 @@ export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.managem
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
 
-JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
 export JAVA_HOME
 
 sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh
