@@ -61,6 +61,7 @@ To configure a receiver for your Solr system logs, specify the following fields:
 | `type`                | required                          | Must be `solr_system`. |
 | `include_paths`       | `[/var/solr/logs/solr.log]`       | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/solr/logs/*.log`.
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+| `wildcard_refresh_interval` | `60s`                       | The interval at which wildcard file paths in `include_paths` are refreshed. Given as a time duration, for example `30s`, `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.|
 
 Example Configuration:
 
