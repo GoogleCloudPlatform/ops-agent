@@ -21,8 +21,6 @@ metrics:
   receivers:
     activemq:
       type: activemq
-      endpoint: localhost:1099
-      collection_interval: 60s
   service:
     pipelines:
       activemq:

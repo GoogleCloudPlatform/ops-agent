@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -31,7 +29,7 @@ type MetricsReceiverActivemq struct {
 	Password                               string `yaml:"password" validate:"required_with=Username"`
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
-	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
 const defaultActivemqEndpoint = "localhost:1099"
@@ -43,9 +41,6 @@ func (r MetricsReceiverActivemq) Type() string {
 func (r MetricsReceiverActivemq) Pipelines() []otel.Pipeline {
 
 	targetSystem := "activemq"
-	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
-		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
-	}
 
 	return r.MetricsReceiverSharedJVM.JVMConfig(
 		targetSystem,
