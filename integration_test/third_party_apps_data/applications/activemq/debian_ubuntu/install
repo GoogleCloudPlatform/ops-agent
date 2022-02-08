@@ -8,6 +8,7 @@ sudo sed -i 's/useJmx="false"/useJmx="true"/g' /etc/activemq/instances-available
 
 sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enabled/main
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 cat <<EOF | sudo tee /opt/activemq/bin/env
 # ------------------------------------------------------------------------
@@ -59,6 +60,8 @@ ACTIVEMQ_OPTS="$ACTIVEMQ_OPTS $ACTIVEMQ_JMX_OPTS -Dhawtio.authenticationEnabled=
 EOF
 =======
 >>>>>>> 933fbbfa (updated install scripts for for package manager)
+=======
+>>>>>>> 063a4b9fa5dd85138041b42e2683016baf7ca5c5
 
 sudo systemctl daemon-reload
 sudo systemctl enable activemq

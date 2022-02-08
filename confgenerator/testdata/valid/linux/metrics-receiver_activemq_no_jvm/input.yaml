@@ -25,7 +25,11 @@ metrics:
       activemq:
         receivers:
 <<<<<<< HEAD
+<<<<<<< HEAD
           - activemq
 =======
           - activemq
 >>>>>>> af4df4c5 (feedback updates,)
+=======
+          - activemq
+>>>>>>> 063a4b9fa5dd85138041b42e2683016baf7ca5c5
