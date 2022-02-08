@@ -1,0 +1,6 @@
+log_entries:
+- log_name: "kafka"
+  field_matchers:
+    jsonPayload.message: ".*Waiting until connected.*"
+    jsonPayload.source: "ZooKeeperClient Kafka server"
+    jsonPayload.logger: "kafka.zookeeper.ZooKeeperClient"

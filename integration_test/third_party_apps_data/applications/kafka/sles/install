@@ -1,0 +1,50 @@
+set -e
+
+sudo zypper install -y curl java-11-openjdk
+sudo mkdir -p /opt/kafka/stage
+sudo curl "https://dlcdn.apache.org/kafka/3.0.0/kafka_2.12-3.0.0.tgz" -o /opt/kafka/stage/kafka.tgz
+sudo tar -xvzf /opt/kafka/stage/kafka.tgz -C /opt/kafka --strip 1
+
+echo "KAFKA_JMX_OPTS=\"-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.net.preferIPv4Stack=true\"" | sudo tee -a /opt/kafka/bin/kafka-run-class.sh
+
+sudo tee /etc/systemd/system/kafka-zookeeper.service <<EOF > kafka-zookeeper.service
+[Unit]
+Description=Kafka Zookeeper
+Requires=network.target remote-fs.target
+After=network.target remote-fs.target
+
+[Service]
+Type=exec
+User=root
+ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo tee /etc/systemd/system/kafka.service <<EOF > kafka.service
+[Unit]
+Requires=kafka-zookeeper.service
+After=kafka-zookeeper.service
+
+[Service]
+Type=exec
+User=root
+Environment="JMX_PORT=9999"
+ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo chmod 0644 /etc/systemd/system/kafka-zookeeper.service
+
+sudo chmod 0644 /etc/systemd/system/kafka.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable kafka-zookeeper
+sudo systemctl enable kafka
+
+sudo mkdir -p /var/log/kafka
