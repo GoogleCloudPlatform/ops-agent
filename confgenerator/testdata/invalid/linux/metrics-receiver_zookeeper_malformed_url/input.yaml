@@ -14,12 +14,12 @@
 
 metrics:
   receivers:
-    zookeeper_metrics:
+    zookeeper:
       type: zookeeper
       endpoint: localhost
       collection_interval: 60s
   service:
     pipelines:
-      zookeeper_pipeline:
+      zookeeper:
         receivers:
-          - zookeeper_metrics
+          - zookeeper

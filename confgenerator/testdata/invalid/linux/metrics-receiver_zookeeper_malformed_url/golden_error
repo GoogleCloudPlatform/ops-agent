@@ -1,6 +1,6 @@
 [19:17] Key: 'MetricsReceiverZookeeper.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port' tag
   16 |   receivers:
-  17 |     zookeeper_metrics:
+  17 |     zookeeper:
   18 |       type: zookeeper
 > 19 |       endpoint: localhost
                        ^

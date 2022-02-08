@@ -14,11 +14,10 @@
 
 metrics:
   receivers:
-    zookeeper_metrics:
+    zookeeper:
       type: zookeeper
-      endpoint: localhost:2181
   service:
     pipelines:
-      zookeeper_pipeline:
+      zookeeper:
         receivers:
-          - zookeeper_metrics
+          - zookeeper
