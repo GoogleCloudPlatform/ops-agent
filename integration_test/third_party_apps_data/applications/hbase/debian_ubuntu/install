@@ -1,7 +1,8 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y default-jre wget
+sudo DEBIAN_FRONTEND=noninteractive apt-get install \
+    -y default-jdk default-jdk-headless curl lsof
 
 sudo mkdir /opt/hbase
 wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz

@@ -1,6 +1,7 @@
 set -e
 
-sudo zypper install -y wget java-11-openjdk
+sudo zypper install -y \
+    java-11-openjdk java-11-openjdk-devel curl lsof insserv-compat wget
 wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
