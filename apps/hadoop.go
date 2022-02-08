@@ -22,11 +22,10 @@ import (
 )
 
 type MetricsReceiverHadoop struct {
-	confgenerator.ConfigComponent          `yaml:",inline"`
-	confgenerator.MetricsReceiverShared    `yaml:",inline"`
-	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
-
-	CollectJVMMetics *bool `yaml:"collect_jvm_metrics"`
+	confgenerator.ConfigComponent                 `yaml:",inline"`
+	confgenerator.MetricsReceiverShared           `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
 const defaultHadoopEndpoint = "localhost:8004"
@@ -37,7 +36,7 @@ func (r MetricsReceiverHadoop) Type() string {
 
 func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
 	targetSystem := "hadoop"
-	if r.CollectJVMMetics == nil || *r.CollectJVMMetics {
+	if r.CollectJVMMetrics == nil || *r.CollectJVMMetrics {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
