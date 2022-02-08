@@ -17,28 +17,25 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 metrics:
   receivers:
-    apache:
-      type: apache
+    kafka:
+      type: kafka
   service:
     pipelines:
-      apache:
+      kafka:
         receivers:
-          - apache
+          - kafka
 logging:
   receivers:
-    apache_access:
-      type: apache_access
-    apache_error:
-      type: apache_error
+    kafka:
+      type: kafka
   service:
     pipelines:
-      apache:
+      kafka:
         receivers:
-          - apache_access
-          - apache_error
+          - kafka
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 60

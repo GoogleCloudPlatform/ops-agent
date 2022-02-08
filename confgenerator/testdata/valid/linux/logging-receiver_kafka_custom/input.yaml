@@ -1,9 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,28 +12,27 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    apache:
-      type: apache
-  service:
-    pipelines:
-      apache:
-        receivers:
-          - apache
 logging:
   receivers:
-    apache_access:
-      type: apache_access
-    apache_error:
-      type: apache_error
+    kafka_custom:
+      type: kafka
+      wildcard_refresh_interval: 13s
+      include_paths:
+        - /var/log/my_own_kafka/my_own*.log
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    kafka_syslog:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+  processors:
+    kafka_syslog:
+      type: kafka
   service:
     pipelines:
-      apache:
+      kafka_custom:
         receivers:
-          - apache_access
-          - apache_error
-EOF
-
-sudo service google-cloud-ops-agent restart
-sleep 60
+          - kafka_custom
+      kafka_syslog:
+        receivers: [kafka_syslog]
+        processors: [kafka_syslog]
