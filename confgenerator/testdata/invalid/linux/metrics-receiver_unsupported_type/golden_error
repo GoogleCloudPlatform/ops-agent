@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, hostmetrics, jvm, memcached, mysql, nginx, postgresql, redis, solr, tomcat].
-=======
-metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, hostmetrics, jvm, memcached, mysql, nginx, postgresql, redis, solr, tomcat].
->>>>>>> 169f7b2622f8b60f1940fa1605ce4dc638cb9329
