@@ -21,7 +21,6 @@ metrics:
   receivers:
     apache:
       type: apache
-      server_status_url: http://localhost:80/server-status?auto
   service:
     pipelines:
       apache:
