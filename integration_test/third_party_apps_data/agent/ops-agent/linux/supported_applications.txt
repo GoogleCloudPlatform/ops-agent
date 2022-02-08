@@ -3,6 +3,7 @@ cassandra
 elasticsearch
 couchdb
 jvm
+kafka
 memcached
 mongodb
 mysql
