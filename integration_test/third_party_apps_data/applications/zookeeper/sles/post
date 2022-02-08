@@ -1,0 +1,3 @@
+set -e
+
+sudo systemctl restart zookeeper
