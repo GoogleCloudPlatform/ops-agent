@@ -15,15 +15,16 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
-MONITORING_AGENT_SUFFIX: If provided, repo suffix to provide when installing the monitoring agent.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs. They must be inside
-	a directory called ops-agent. For example, this would be a valid structure
-	inside AGENT_PACKAGES_IN_GCS:
+    a directory called ops-agent. For example, this would be a valid structure
+    inside AGENT_PACKAGES_IN_GCS:
     └── ops-agent
         ├── ops-agent-google-cloud-1.2.3.deb
         ├── ops-agent-google-cloud-1.2.3.rpm
         └── ops-agent-google-cloud-1.2.3.goo
+REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
+    AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */
 
 package integration_test
@@ -183,8 +184,9 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
 	environmentVariables := make(map[string]string)
-	if agentType == "metrics" {
-		environmentVariables["MONITORING_AGENT_SUFFIX"] = os.Getenv("MONITORING_AGENT_SUFFIX")
+	suffix := os.Getenv("REPO_SUFFIX")
+	if suffix != "" {
+		environmentVariables["REPO_SUFFIX"] = suffix
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
