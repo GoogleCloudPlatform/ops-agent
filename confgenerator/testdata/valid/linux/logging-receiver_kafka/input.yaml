@@ -14,29 +14,10 @@
 
 logging:
   receivers:
-    kafka_default:
-      type: kafka
-    kafka_custom:
-      type: kafka
-      include_paths:
-        - /var/log/my_own_kafka/my_own*.log
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    kafka_syslog:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-  processors:
-    kafka_syslog:
+    kafka:
       type: kafka
   service:
     pipelines:
-      kafka_default:
+      kafka:
         receivers:
-          - kafka_default
-      kafka_custom:
-        receivers:
-          - kafka_custom
-      kafka_syslog:
-        receivers: [kafka_syslog]
-        processors: [kafka_syslog]
+          - kafka

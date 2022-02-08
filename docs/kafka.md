@@ -25,7 +25,6 @@ metrics:
   receivers:
     kafka:
       type: kafka
-      endpoint: localhost:9999
   service:
     pipelines:
       kafka:
@@ -61,6 +60,7 @@ To configure a receiver for your kafka logs, specify the following fields:
 | `type`                | required                      | Must be `kafka`. |
 | `include_paths`       | `[/var/log/kafka/*.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/kafka*/*.log`.
 | `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
 Example Configuration:
 

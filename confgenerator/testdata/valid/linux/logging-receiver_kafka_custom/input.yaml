@@ -14,8 +14,6 @@
 
 logging:
   receivers:
-    kafka_default:
-      type: kafka
     kafka_custom:
       type: kafka
       wildcard_refresh_interval: 13s
@@ -32,9 +30,6 @@ logging:
       type: kafka
   service:
     pipelines:
-      kafka_default:
-        receivers:
-          - kafka_default
       kafka_custom:
         receivers:
           - kafka_custom
