@@ -36,6 +36,14 @@ The Ops Agent collects the following metrics from your redis servers.
 | workload.googleapis.com/redis.replication.offset                    | gauge     | 1       |        | The server's current replication o
 
 ## Logs
+<!-- TODO: Add these config options to public docs -->
+<!-- 
+insecure	            true	Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+insecure_skip_verify	false	Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+cert_file		                Path to the TLS certificate to use for TLS-required connections.
+key_file		                Path to the TLS key to use for TLS-required connections.
+ca_file		                    Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA. -->
+
 
 Redis logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):
 
