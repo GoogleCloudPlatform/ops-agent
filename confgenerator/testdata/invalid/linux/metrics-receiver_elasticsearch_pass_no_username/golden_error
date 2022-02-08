@@ -1,0 +1,8 @@
+[17:18] "username" is required when "Password" is set
+  15 | metrics:
+  16 |   receivers:
+> 17 |     elasticsearch:
+                        ^
+  18 |       type: elasticsearch
+  19 |       collection_interval: 60s
+  20 |       password: "pass"
