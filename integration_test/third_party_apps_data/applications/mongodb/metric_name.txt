@@ -1,1 +1,1 @@
-agent.googleapis.com/mongodb.memory.usage
+workload.googleapis.com/mongodb.memory.usage
