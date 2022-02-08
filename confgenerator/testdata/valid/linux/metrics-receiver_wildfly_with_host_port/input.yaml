@@ -1,8 +1,3 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,21 +17,11 @@ metrics:
     wildfly:
       type: wildfly
       endpoint: localhost:9990
+      username: otelu
+      password: otelp
+      # exercising default additional_jars
   service:
     pipelines:
       wildfly:
         receivers:
           - wildfly
-
-logging:
-  receivers:
-    wildfly_system:
-      type: wildfly_system
-  service:
-    pipelines:
-      wildfly_system:
-        receivers:
-          - wildfly_system
-EOF
-
-sudo service google-cloud-ops-agent restart
