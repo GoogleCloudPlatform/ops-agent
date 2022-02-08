@@ -12,3 +12,4 @@ redis
 solr
 tomcat
 wildfly
+zookeeper
