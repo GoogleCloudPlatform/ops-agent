@@ -15,18 +15,20 @@
 package apps
 
 import (
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type MetricsReceiverRedis struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	confgenerator.ConfigComponent          `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
+	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 
 	// TODO: Add support for ACL Authentication
-	Address  string `yaml:"address" validate:"omitempty,hostname_port"`
+	Address  string `yaml:"address" validate:"omitempty,hostname_port|startswith=/"`
 	Password string `yaml:"password" validate:"omitempty"`
 }
 
@@ -37,9 +39,15 @@ func (r MetricsReceiverRedis) Type() string {
 }
 
 func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
-
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
+	}
+
+	var transport string
+	if strings.HasPrefix(r.Address, "/") {
+		transport = "unix"
+	} else {
+		transport = "tcp"
 	}
 
 	return []otel.Pipeline{{
@@ -49,6 +57,8 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Address,
 				"password":            r.Password,
+				"tls":                 r.TLSConfig(true),
+				"transport":           transport,
 			},
 		},
 		Processors: []otel.Component{
