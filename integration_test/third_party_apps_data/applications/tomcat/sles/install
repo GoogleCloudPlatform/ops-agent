@@ -1,30 +1,13 @@
 set -e
 sudo zypper --non-interactive install curl java-11-openjdk 
 sudo zypper --non-interactive install tomcat 
-sudo cat << EOF | sudo tee /etc/systemd/system/tomcat9.service 
-# Systemd unit file for default tomcat
-# 
-# To create clones of this service:
-# DO NOTHING, use tomcat@.service instead.
-[Unit]
-Description=Apache Tomcat Web Application Container
-After=syslog.target network.target
+sudo mkdir -p /etc/systemd/system/tomcat.service.d
+sudo cat >> /etc/systemd/system/tomcat.service.d/local.conf << EOF
 [Service]
-TasksMax=576
-LimitNOFILE=8192
-Type=simple
-EnvironmentFile=/etc/tomcat/tomcat.conf
-Environment="NAME="
-EnvironmentFile=-/etc/sysconfig/tomcat
-ExecStart=/usr/lib/tomcat/server start
-ExecStop=/usr/lib/tomcat/server stop
-SuccessExitStatus=143
-User=tomcat
-Group=tomcat
+# Configuration
 Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 Environment="JAVA_OPTS=-Djava.awt.headless=true"
-[Install]
-WantedBy=multi-user.target
+EOFdBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
