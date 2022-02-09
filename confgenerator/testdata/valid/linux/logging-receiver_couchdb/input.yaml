@@ -14,10 +14,10 @@
 
 logging:
   receivers:
-    couchdb_error:
-      type: couchdb_error
+    couchdb:
+      type: couchdb
   service:
     pipelines:
       couchdb:
         receivers:
-          - couchdb_error
+          - couchdb

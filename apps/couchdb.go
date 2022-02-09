@@ -68,7 +68,7 @@ type LoggingProcessorCouchdbError struct {
 }
 
 func (LoggingProcessorCouchdbError) Type() string {
-	return "couchdb_error"
+	return "couchdb"
 }
 
 func (p LoggingProcessorCouchdbError) Components(tag string, uid string) []fluentbit.Component {
@@ -78,10 +78,10 @@ func (p LoggingProcessorCouchdbError) Components(tag string, uid string) []fluen
 				{
 					// Format https://github.com/apache/couchdb/blob/main/src/couch_log/src/couch_log_writer_syslog.erl#L72
 					// Sample line: [notice] 2021-12-02T23:36:42.555157Z nonode@nohost <0.17165.1> a5f585a0d3 localhost:5984 127.0.0.1 otelu PUT /oteld 201 ok 16
-					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<user>\w+)@(?<host>[^\s]+) \<(?<process_id>[^ ]*)\> [\w-]+ ([^ ]*) (?<remote_host>[^ ]*) (?<remote_user>[^ ]*) (?<method>[^ ]*) (?<path>[^ ]*) (?<status>[^ ]*) (?<message>[^ ]*) (?<bytes_sent>[\d]*)$`,
+					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<node>\w+)@(?<host>[^\s]+) \<(?<pid>[^ ]*)\> [\w-]+ (?<http_request_serverIp>[^ ]*) (?<http_request_remoteIp>[^ ]*) (?<remote_user>[^ ]*) (?<http_request_requestMethod>[^ ]*) (?<path>[^ ]*) (?<http_request_status>[^ ]*) (?<message>[^ ]*) (?<http_request_responseSize>[\d]*)$`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dTH:%M:%S.%L%z",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 						Types: map[string]string{
 							"status":     "integer",
 							"bytes_sent": "integer",
@@ -94,19 +94,19 @@ func (p LoggingProcessorCouchdbError) Components(tag string, uid string) []fluen
 					[error] 2022-01-12T16:53:03.094488Z nonode@nohost emulator -------- Error in process <0.463.0> with exit value:
 					{database_does_not_exist,[{mem3_shards,load_shards_from_db,"_users",[{file,"src/mem3_shards.erl"},{line,399}]},{mem3_shards,load_shards_from_disk,1,[{file,"src/mem3_shards.erl"},{line,374}]},{mem3_shards,load_shards_from_disk,2,[{file,"src/mem3_shards.erl"},{line,403}]},{mem3_shards,for_docid,3,[{file,"src/mem3_shards.erl"},{line,96}]},{fabric_doc_open,go,3,[{file,"src/fabric_doc_open.erl"},{line,39}]},{chttpd_auth_cache,ensure_auth_ddoc_exists,2,[{file,"src/chttpd_auth_cache.erl"},{line,198}]},{chttpd_auth_cache,listen_for_changes,1,[{file,"src/chttpd_auth_cache.erl"},{line,145}]}]}
 					*/
-					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<user>\w+)@(?<host>[^\s]+) (\w+) [\w-]+ (?<message>[\s\S]*)`,
+					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<node>\w+)@(?<host>[^\s]+) (\w+) [\w-]+ (?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dTH:%M:%S.%L%z",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 					},
 				},
 				{
 					// Format https://github.com/apache/couchdb/blob/main/src/couch_log/src/couch_log_writer_syslog.erl#L72
 					// Sample line: [info] 2022-01-12T16:52:56.998128Z nonode@nohost <0.216.0> -------- Apache CouchDB has started. Time to relax.
-					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<user>\w+)@(?<host>[^\s]+) \<(?<process_id>[^>]+)\> [\w-]+ (?<message>.*)`,
+					Regex: `^\[(?<severity>\w*)\] (?<timestamp>[\d\-\.:TZ]+) (?<node>\w+)@(?<host>[^\s]+) \<(?<pid>[^>]+)\> [\w-]+ (?<message>.*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dTH:%M:%S.%L%z",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 					},
 				},
 			},
@@ -124,6 +124,19 @@ func (p LoggingProcessorCouchdbError) Components(tag string, uid string) []fluen
 			},
 		},
 	}.Components(tag, uid)
+
+	// Generate the httpRequest structure.
+	c = append(c, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      "http_request_*",
+			"Nest_under":    "logging.googleapis.com/http_request",
+			"Remove_prefix": "http_request_",
+		},
+	})
 
 	// Log levels documented: https://docs.couchdb.org/en/stable/config/logging.html#log/level
 	c = append(c,
