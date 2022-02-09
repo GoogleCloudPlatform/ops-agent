@@ -3,6 +3,7 @@ cassandra
 elasticsearch
 couchdb
 jvm
+kafka
 memcached
 mongodb
 mysql
@@ -12,3 +13,4 @@ rabbitmq
 redis
 solr
 tomcat
+zookeeper

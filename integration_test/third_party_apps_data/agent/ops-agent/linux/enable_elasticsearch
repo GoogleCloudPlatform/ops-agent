@@ -16,6 +16,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+metrics:
+  receivers:
+    elasticsearch:
+      type: elasticsearch
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch
 
 logging:
   receivers:

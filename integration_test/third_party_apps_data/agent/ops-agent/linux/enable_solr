@@ -26,6 +26,16 @@ metrics:
       solr:
         receivers:
           - solr
+
+logging:
+  receivers:
+    solr_system:
+      type: solr_system
+  service:
+    pipelines:
+      solr:
+        receivers:
+          - solr_system
 EOF
 
 sudo service google-cloud-ops-agent restart
