@@ -1,0 +1,8 @@
+set -e
+
+# These are the steps from our public documentation:
+# https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/installation#joint-install
+# It's important that these steps exactly match the ones we tell our
+# customers to run.
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+sudo REPO_SUFFIX="${REPO_SUFFIX}" bash add-google-cloud-ops-agent-repo.sh --also-install
