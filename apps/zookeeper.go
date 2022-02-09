@@ -22,7 +22,6 @@ import (
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverZookeeper{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverZookeeperGeneral{} })
 }
 
 type MetricsReceiverZookeeper struct {
@@ -171,4 +170,8 @@ func severityParser(tag, uid string) []fluentbit.Component {
 		{"CRITICAL", "ERROR"},
 		{"FATAL", "FATAL"},
 	})
+}
+
+func init() {
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverZookeeperGeneral{} })
 }
