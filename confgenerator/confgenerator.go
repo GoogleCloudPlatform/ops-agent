@@ -268,9 +268,10 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
 		}
 	}
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
-	}.Components("ops-agent-fluent-bit")...)
+	//out = append(out, LoggingReceiverFilesMixin{
+	//	IncludePaths: []string{"${logs_dir}/logging-module.log"},
+	//}.Components("ops-agent-fluent-bit")...)
+	out = append(out, LoggingReceiverSystemd{}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 	out = append(out, prometheusExporterOutputComponent())
