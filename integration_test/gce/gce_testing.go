@@ -90,6 +90,8 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -342,12 +344,11 @@ func IsWindows(platform string) bool {
 // isRetriableLookupMetricError returns whether the given error, returned from
 // lookupMetric() or WaitForMetric(), should be retried.
 func isRetriableLookupMetricError(err error) bool {
-	return strings.Contains(err.Error(), "Internal error") ||
-		strings.Contains(err.Error(), "The metric referenced by the provided filter is unknown") ||
-		// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
-		// The error doesn't always look the same, hopefully looking for "code = NotFound" will catch all variations.
-		strings.Contains(err.Error(), "failed to look up metric workload.googleapis.com") ||
-		strings.Contains(err.Error(), "code = NotFound")
+	myStatus, ok := status.FromError(err)
+	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
+	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
+	// The Internal case catches some transient errors returned by the monitoring API sometimes.
+	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal)
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
