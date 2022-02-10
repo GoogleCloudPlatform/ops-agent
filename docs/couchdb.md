@@ -25,19 +25,20 @@ Access logs contain the [`httpRequest` field](https://cloud.google.com/logging/d
 Error logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry)
 Any fields that are blank or missing will not be present in the log entry.
 
-| Field                       | Type                                                                                                                            | Description                            |
-|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
-| `httpRequest.serverIp`      | string                                                                                                                          | Server IP address                      |
-| `httpRequest.remoteIp`      | string                                                                                                                          | Client IP address                      |
-| `httpRequest.requestMethod` | string                                                                                                                          | HTTP method                            |
-| `httpRequest.responseSize`  | string (`int64`)                                                                                                                | Response size                          |
-| `httpRequest.status`        | number                                                                                                                          | HTTP status code                       |
-| `jsonPayload.remote_user`   | string                                                                                                                          | Authenticated username for the request |
-| `jsonPayload.pid`           | number                                                                                                                          | Process ID                             |
-| `jsonPayload.message`       | string                                                                                                                          | Log message                            |
-| `jsonPayload.node`          | string                                                                                                                          | node instance name                     |
-| `jsonPayload.host`          | string                                                                                                                          | host instance name                     |
-| `jsonPayload.path`          | string                                                                                                                          | request path                           |
-| `jsonPayload.remote_user`   | string                                                                                                                          | user id (optional)                     |
-| `severity`      | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity))                       | Log entry level (translated)           |
-| `timestamp`                 | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the entry was logged              |
+| Field                        | Type                                                                                                                            | Description                            |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| `httpRequest.serverIp`       | string                                                                                                                          | Server IP address                      |
+| `httpRequest.remoteIp`       | string                                                                                                                          | Client IP address                      |
+| `httpRequest.requestMethod`  | string                                                                                                                          | HTTP method                            |
+| `httpRequest.responseSize`   | string (`int64`)                                                                                                                | Response size                          |
+| `httpRequest.status`         | number                                                                                                                          | HTTP status code                       |
+| `jsonPayload.remote_user`    | string                                                                                                                          | Authenticated username for the request |
+| `jsonPayload.pid`            | number                                                                                                                          | Process ID                             |
+| `jsonPayload.message`        | string                                                                                                                          | Log message                            |
+| `jsonPayload.status_message` | string                                                                                                                          | status code message                    |
+| `jsonPayload.node`           | string                                                                                                                          | node instance name                     |
+| `jsonPayload.host`           | string                                                                                                                          | host instance name                     |
+| `jsonPayload.path`           | string                                                                                                                          | request path                           |
+| `jsonPayload.remote_user`    | string                                                                                                                          | user id (optional)                     |
+| `severity`                   | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity))                       | Log entry level (translated)           |
+| `timestamp`                  | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the entry was logged              |
