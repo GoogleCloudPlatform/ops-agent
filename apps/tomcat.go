@@ -136,6 +136,7 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
 			"/var/log/tomcat*/catalina.out",
+			"/var/log/tomcat*/catalina.*.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
