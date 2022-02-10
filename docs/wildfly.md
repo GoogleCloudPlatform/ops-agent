@@ -7,7 +7,7 @@ To configure a receiver for your wildfly server logs, specify the following fiel
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
 | `type`                | required                          | Must be `wildfly_server`. |
-| `include_paths`       | `[/opt/wildfly/standalone/log/server.log, /opt/wildfly/domain/servers/*/log/server.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
+| `include_paths`       | `[/opt/wildfly/standalone/log/server.log, /opt/wildfly/domain/servers/*/log/server.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/wildfly*/*.log`.
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 
 Example Configuration:
