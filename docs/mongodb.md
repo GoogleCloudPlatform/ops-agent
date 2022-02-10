@@ -1,3 +1,42 @@
+# `mongodb` Metrics Receiver
+
+The `mongodb` metrics receiver can fetch server stats and database stats from a MongoDB instance.
+
+## Prerequisites
+
+If authentication is required, the supplied user must have [clusterMonitor](https://docs.mongodb.com/manual/reference/built-in-roles/#mongodb-authrole-clusterMonitor) permissions.
+
+## Configuration
+
+| Field                  | Required | Default                 | Description                                                                                                                                                             |
+|------------------------|----------|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `type`                 | required |                         | Must be `mongodb`.                                                                                                                                                |
+| `collection_interval`  | optional | `60s`                   | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                  |
+| `endpoint`             | optional | `http://localhost:27017` | Either a hostname, IP address, or UNIX domain socket. A port can be specified like \<hostname\>:\<port\>. If no port is specified the default 27017 will be used.                                                                                                                                  |
+| `username`             | optional |                         | Username for authentication with the MongoDB instance. Required if `password` is set.                                                                                          |
+| `password`             | optional |                         | Password for authentication with MongoDB instance. Required if `username` is set.                                                                                          |                                                                      |
+| `insecure`             | optional | true                    | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled.                                                                     |
+| `insecure_skip_verify` | optional | false                   | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
+| `cert_file`            | optional |                         | Path to the TLS cert to use for mTLS required connections.                                                                                                              |
+| `key_file`             | optional |                         | Path to the TLS key to use for mTLS required connections.                                                                                                               |
+| `ca_file`              | optional |                         | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA.                                                                   |
+|
+
+
+Example Configuration:
+
+```yaml
+metrics:
+  receivers:
+    mongodb:
+      type: mongodb
+  service:
+    pipelines:
+      mongodb:
+        receivers:
+          - mongodb
+```
+
 # `mongodb` Logging Receiver
 
 ## Configuration
