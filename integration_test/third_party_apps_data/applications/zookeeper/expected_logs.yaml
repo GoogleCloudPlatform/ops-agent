@@ -1,6 +1,6 @@
 log_entries:
   # 2022-02-08 17:02:11,855 [myid:1] - INFO  [main:NIOServerCnxnFactory@660] - binding to port 0.0.0.0/0.0.0.0:2181
-  - log_name: "zookeeper"
+  - log_name: "zookeeper_general"
     field_matchers:
       jsonPayload.message: "binding to port 0.0.0.0/0.0.0.0:2181"
       jsonPayload.thread: "main"

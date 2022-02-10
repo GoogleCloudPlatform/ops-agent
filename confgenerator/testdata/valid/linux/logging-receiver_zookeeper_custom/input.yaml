@@ -1,8 +1,3 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,27 +12,14 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    zookeeper:
-      type: zookeeper
-  service:
-    pipelines:
-      zookeeper:
-        receivers:
-          - zookeeper
-
 logging:
   receivers:
     zookeeper_general:
       type: zookeeper_general
+      include_paths:
+        - /opt/zookeeper/logs/zookeeper.log
   service:
     pipelines:
       zookeeper:
         receivers:
           - zookeeper_general
-
-EOF
-
-sudo service google-cloud-ops-agent restart
-sleep 30

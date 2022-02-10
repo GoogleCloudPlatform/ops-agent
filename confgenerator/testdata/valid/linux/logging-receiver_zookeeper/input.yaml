@@ -14,17 +14,10 @@
 
 logging:
   receivers:
-    zookeeper_general_default:
+    zookeeper_general:
       type: zookeeper_general
-    zookeeper_general_custom:
-      type: zookeeper_general
-      include_paths:
-        - /opt/zookeeper/logs/zookeeper.log
   service:
     pipelines:
       zookeeper_default:
         receivers:
-          - zookeeper_general_default
-      zookeeper_custom:
-        receivers:
-          - zookeeper_general_custom
+          - zookeeper_general

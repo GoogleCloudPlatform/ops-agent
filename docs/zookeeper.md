@@ -61,8 +61,9 @@ To configure a receiver for your Zookeeper logs, specify the following fields:
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
 | `type`                | required                          | Must be `zookeeper_general`. |
-| `include_paths`       | `[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/zookeeper*/*.log`.
-| `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+| `include_paths`       | `[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/zookeeper*/*.log`. |
+| `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`. |
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
 Example Configuration:
 
