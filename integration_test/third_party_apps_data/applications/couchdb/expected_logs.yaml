@@ -12,5 +12,4 @@ log_entries:
     jsonPayload.path: "/forbidden"
     jsonPayload.pid: "0.4771.15"
     jsonPayload.remote_user: "admin"
-    jsonPayload.severity: "notice"
 
