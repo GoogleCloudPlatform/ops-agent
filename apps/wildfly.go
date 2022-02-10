@@ -28,38 +28,20 @@ func (LoggingProcessorWildflySystem) Type() string {
 }
 
 func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
-					// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
-					// Sample line: 2022-02-03 15:38:01,509 DEBUG [org.jboss.as.config] (MSC service thread 1-1) VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M ...Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties
-					// Sample line: 2022-02-03 15:38:03,548 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
-					// Sample line: 2022-02-03 15:38:01,506 DEBUG [org.jboss.as.config] (MSC service thread 1-1) Configured system properties:
-					//                   [Standalone] =
-					//                   awt.toolkit = sun.awt.X11.XToolkit
-					//                   file.encoding = UTF-8
-					//                   file.separator = /
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+(?<level>\w+)(?:\s+\[(?<source>.+?)\])?(?:\s+\((?<thread>.+?)\))?\s+(?<message>(?:(?<messageCode>[\d\w]+):)?[\s\S]*)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})`,
-			},
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
+		// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
+		// Sample line: 2022-02-03 15:38:01,509 DEBUG [org.jboss.as.config] (MSC service thread 1-1) VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M ...Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties
+		// Sample line: 2022-02-03 15:38:03,548 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
+		// Sample line: 2022-02-03 15:38:01,506 DEBUG [org.jboss.as.config] (MSC service thread 1-1) Configured system properties:
+		//                   [Standalone] =
+		//                   awt.toolkit = sun.awt.X11.XToolkit
+		//                   file.encoding = UTF-8
+		//                   file.separator = /
+		Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+(?<level>\w+)(?:\s+\[(?<source>.+?)\])?(?:\s+\((?<thread>.+?)\))?\s+(?<message>(?:(?<messageCode>[\d\w]+):)?[\s\S]*)`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
 		},
 	}.Components(tag, uid)
 
@@ -93,6 +75,20 @@ func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Compone
 			"/opt/wildfly/domain/servers/*/log/server.log",
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorWildflySystem.Components(tag, "wildfly_server")...)
 	return c
