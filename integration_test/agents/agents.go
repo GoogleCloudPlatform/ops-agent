@@ -641,6 +641,17 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 	return err
 }
 
+// RecommendedMachineType returns a reasonable setting for a VM's machine type
+// (https://cloud.google.com/compute/docs/machine-types). Windows instances
+// are configured to be larger because they need more CPUs to start up in a
+// reasonable amount of time.
+func RecommendedMachineType(platform string) string {
+	if gce.IsWindows(platform) {
+		return "e2-standard-4"
+	}
+	return "e2-standard-2"
+}
+
 // CommonSetup sets up the VM for testing.
 func CommonSetup(t *testing.T, platform string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -649,7 +660,7 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform)})
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
 		if t.Failed() {
