@@ -46,7 +46,6 @@ The following variables are optional:
 
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
     By default, a new temporary directory is created.
-INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
@@ -57,6 +56,9 @@ SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
     default is the project's "Compute Engine default service account".
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
     The default is "stackdriver-test-143416-file-transfers".
+INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
+    If provided, this value overrides the selection made by the callers to
+		this library.
 */
 package gce
 
@@ -863,7 +865,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.Zone == "" {
 		vm.Zone = os.Getenv("ZONE")
 	}
+	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
+	if vm.MachineType == "" {
+		vm.MachineType = options.MachineType
+	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
@@ -1488,6 +1494,9 @@ type VMOptions struct {
 	Metadata map[string]string
 	// Optional.
 	Labels map[string]string
+	// Optional. If missing, the default is e2-standard-4.
+	// Overridden by INSTANCE_SIZE if that environment variable is set.
+	MachineType string
 }
 
 // SetupVM creates a new VM according to the given options.
