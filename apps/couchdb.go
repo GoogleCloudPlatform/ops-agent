@@ -83,8 +83,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 						TimeKey:    "timestamp",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 						Types: map[string]string{
-							"status":     "integer",
-							"bytes_sent": "integer",
+							"http_request_status": "integer",
 						},
 					},
 				},
@@ -101,18 +100,6 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 					},
 				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\[\w+\]`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\[\w+\])`,
 			},
 		},
 	}.Components(tag, uid)
@@ -164,6 +151,19 @@ func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
 			"/var/log/couchdb/couchdb.log",
 		}
 	}
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^\[\w+\]`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\[\w+\])`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorCouchdb.Components(tag, "couchdb")...)
 	return c

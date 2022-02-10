@@ -5,11 +5,9 @@ log_entries:
     httpRequest.requestMethod: "GET"
     httpRequest.responseSize: "1"
     httpRequest.serverIp: "localhost:5984"
-    httpRequest.status: 404
     jsonPayload.host: "127.0.0.1"
     jsonPayload.message: "admin GET /forbidden 404 ok 1"
     jsonPayload.node: "couchdb"
     jsonPayload.path: "/forbidden"
-    jsonPayload.pid: "0.25387.37"
     jsonPayload.remote_user: "admin"
     jsonPayload.status_message: "ok"
