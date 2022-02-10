@@ -65,38 +65,20 @@ func (LoggingProcessorTomcatSystem) Type() string {
 }
 
 func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample line: 11-Jan-2022 20:41:58.279 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=/opt/tomcat/temp
-					// Sample line: 11-Jan-2022 20:41:58.283 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent The Apache Tomcat Native library which allows using OpenSSL was not found on the java.library.path: [/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib]
-					// Sample line: 13-Jan-2022 16:10:27.715 SEVERE [main] org.apache.catalina.core.ContainerBase.removeChild Error destroying child
-					// Sample line: org.apache.catalina.LifecycleException: An invalid Lifecycle transition was attempted ([before_destroy]) for component [StandardEngine[Catalina].StandardHost[localhost].StandardContext[/examples]] in state [STARTED]
-					// Sample line:         at org.apache.catalina.util.LifecycleBase.invalidTransition(LifecycleBase.java:430)
-					// Sample line:         at org.apache.catalina.util.LifecycleBase.destroy(LifecycleBase.java:316)
-					Regex: `^(?<time>\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})\s(?<level>[A-Z]+)\s\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[\S\s]+)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey: "time",
-						//   13-Jan-2022 16:10:27.715
-						TimeFormat: "%d-%b-%Y %H:%M:%S.%L",
-						Types: map[string]string{
-							"lineNumber": "integer",
-						},
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Sample line: 11-Jan-2022 20:41:58.279 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=/opt/tomcat/temp
+		// Sample line: 11-Jan-2022 20:41:58.283 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent The Apache Tomcat Native library which allows using OpenSSL was not found on the java.library.path: [/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib]
+		// Sample line: 13-Jan-2022 16:10:27.715 SEVERE [main] org.apache.catalina.core.ContainerBase.removeChild Error destroying child
+		// Sample line: org.apache.catalina.LifecycleException: An invalid Lifecycle transition was attempted ([before_destroy]) for component [StandardEngine[Catalina].StandardHost[localhost].StandardContext[/examples]] in state [STARTED]
+		// Sample line:         at org.apache.catalina.util.LifecycleBase.invalidTransition(LifecycleBase.java:430)
+		// Sample line:         at org.apache.catalina.util.LifecycleBase.destroy(LifecycleBase.java:316)
+		Regex: `^(?<time>\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})\s(?<level>[A-Z]+)\s\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[\S\s]+)`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey: "time",
+			//   13-Jan-2022 16:10:27.715
+			TimeFormat: "%d-%b-%Y %H:%M:%S.%L",
+			Types: map[string]string{
+				"lineNumber": "integer",
 			},
 		},
 	}.Components(tag, uid)
@@ -139,6 +121,20 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 			"/var/log/tomcat*/catalina.*.log",
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorTomcatSystem.Components(tag, "tomcat_system")...)
 	return c

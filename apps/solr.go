@@ -63,30 +63,12 @@ func (LoggingProcessorSolrSystem) Type() string {
 }
 
 func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample line: 2022-01-06 04:16:08.794 INFO  (qtp1489933928-64) [   x:gettingstarted] o.a.s.c.S.Request [gettingstarted]  webapp=/solr path=/get params={q=*:*&_=1641440398872} status=0 QTime=2
-					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3,6})\s(?<level>[A-z]+)\s{2}\((?<thread>[^\)]+)\)\s\[c?:?(?<collection>[^\s]*)\ss?:?(?<shard>[^\s]*)\sr?:?(?<replica>[^\s]*)\sx?:?(?<core>[^\]]*)\]\s(?<source>[^\s]+)\s(?<message>(?:(?!\s\=\>)[\s\S])+)\s?=?>?(?<exception>[\s\S]*)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{2}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{2})`,
-			},
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Sample line: 2022-01-06 04:16:08.794 INFO  (qtp1489933928-64) [   x:gettingstarted] o.a.s.c.S.Request [gettingstarted]  webapp=/solr path=/get params={q=*:*&_=1641440398872} status=0 QTime=2
+		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3,6})\s(?<level>[A-z]+)\s{2}\((?<thread>[^\)]+)\)\s\[c?:?(?<collection>[^\s]*)\ss?:?(?<shard>[^\s]*)\sr?:?(?<replica>[^\s]*)\sx?:?(?<core>[^\]]*)\]\s(?<source>[^\s]+)\s(?<message>(?:(?!\s\=\>)[\s\S])+)\s?=?>?(?<exception>[\s\S]*)`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
 		},
 	}.Components(tag, uid)
 
@@ -117,6 +99,20 @@ func (r LoggingReceiverSolrSystem) Components(tag string) []fluentbit.Component 
 			"/var/solr/logs/solr.log",
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{2}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{2})`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorSolrSystem.Components(tag, "solr_system")...)
 	return c

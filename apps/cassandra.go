@@ -81,39 +81,21 @@ func (p LoggingProcessorCassandraDebug) Components(tag string, uid string) []flu
 }
 
 func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample line: INFO [IndexSummaryManager:1] 2021-10-07 12:57:05,003 IndexSummaryRedistribution.java:83 - Redistributing index summaries
-					// Sample line: WARN [main] 2021-10-07 11:57:01,602 StartupChecks.java:329 - Maximum number of memory map areas per process (vm.max_map_count) 65530 is too low, recommended value: 1048575, you can change it with sysctl.
-					// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
-					// 				org.apache.cassandra.io.FSReadError: java.io.IOException: Invalid folder descriptor trying to create log replica /folder/views-9786ac1cdd583201a7cdad556410c985
-					// 					at org.apache.cassandra.db.lifecycle.LogReplica.create(LogReplica.java:59)
-					// 					at org.apache.cassandra.db.lifecycle.LogReplicaSet.maybeCreateReplica(LogReplicaSet.java:87)
-					// 					at org.apache.cassandra.db.lifecycle.LogFile.makeAddRecord(LogFile.java:336)
-					// 					at org.apache.cassandra.db.lifecycle.LogFile.add(LogFile.java:310)
-					Regex: `^(?<level>[A-Z]+)\s+\[(?<module>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-						Types: map[string]string{
-							"lineNumber": "integer",
-						},
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Sample line: INFO [IndexSummaryManager:1] 2021-10-07 12:57:05,003 IndexSummaryRedistribution.java:83 - Redistributing index summaries
+		// Sample line: WARN [main] 2021-10-07 11:57:01,602 StartupChecks.java:329 - Maximum number of memory map areas per process (vm.max_map_count) 65530 is too low, recommended value: 1048575, you can change it with sysctl.
+		// Sample line: ERROR [MemtablePostFlush:2] 2021-10-05 01:03:35,424 CassandraDaemon.java:579 - Exception in thread Thread[MemtablePostFlush:2,5,main]
+		// 				org.apache.cassandra.io.FSReadError: java.io.IOException: Invalid folder descriptor trying to create log replica /folder/views-9786ac1cdd583201a7cdad556410c985
+		// 					at org.apache.cassandra.db.lifecycle.LogReplica.create(LogReplica.java:59)
+		// 					at org.apache.cassandra.db.lifecycle.LogReplicaSet.maybeCreateReplica(LogReplicaSet.java:87)
+		// 					at org.apache.cassandra.db.lifecycle.LogFile.makeAddRecord(LogFile.java:336)
+		// 					at org.apache.cassandra.db.lifecycle.LogFile.add(LogFile.java:310)
+		Regex: `^(?<level>[A-Z]+)\s+\[(?<module>[^\]]+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<message>(?:(?<javaClass>[\w\.]+):(?<lineNumber>\d+))?[\S\s]+)`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+			Types: map[string]string{
+				"lineNumber": "integer",
 			},
 		},
 	}.Components(tag, uid)
@@ -144,38 +126,20 @@ func (LoggingProcessorCassandraGC) Type() string {
 }
 
 func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Vast majority of lines look like the first, with time stopped & time stopping
-					// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
-					// Sample line: 2021-10-05T01:20:52.695+0000: 4.434: [GC (CMS Initial Mark) [1 CMS-initial-mark: 0K(3686400K)] 36082K(4055040K), 0.0130057 secs] [Times: user=0.04 sys=0.00, real=0.01 secs]
-					// Sample line: 2021-10-05T01:20:52.741+0000: 4.481: [CMS-concurrent-preclean-start]
-					// Lines may also contain more detailed GC Heap information in the following lines
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\d+\.\d+) seconds, Stopping threads took: (?<timeStopping>\d+\.\d+)[\s\S]*|[\s\S]+))`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-						Types: map[string]string{
-							"uptime":       "float",
-							"timeStopped":  "float",
-							"timeStopping": "float",
-						},
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d{4}-\d{2}-\d{2}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2})`,
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Vast majority of lines look like the first, with time stopped & time stopping
+		// Sample line: 2021-10-02T04:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
+		// Sample line: 2021-10-05T01:20:52.695+0000: 4.434: [GC (CMS Initial Mark) [1 CMS-initial-mark: 0K(3686400K)] 36082K(4055040K), 0.0130057 secs] [Times: user=0.04 sys=0.00, real=0.01 secs]
+		// Sample line: 2021-10-05T01:20:52.741+0000: 4.481: [CMS-concurrent-preclean-start]
+		// Lines may also contain more detailed GC Heap information in the following lines
+		Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2})):\s+(?<uptime>\d+\.\d{3,6}):\s+(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\d+\.\d+) seconds, Stopping threads took: (?<timeStopping>\d+\.\d+)[\s\S]*|[\s\S]+))`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			Types: map[string]string{
+				"uptime":       "float",
+				"timeStopped":  "float",
+				"timeStopping": "float",
 			},
 		},
 	}.Components(tag, uid)
@@ -196,6 +160,20 @@ func (r LoggingReceiverCassandraSystem) Components(tag string) []fluentbit.Compo
 			// No default install position / log path for SLES
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorCassandraSystem.Components(tag, "cassandra_system")...)
 	return c
@@ -214,6 +192,20 @@ func (r LoggingReceiverCassandraDebug) Components(tag string) []fluentbit.Compon
 			// No default install position / log path for SLES
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorCassandraDebug.Components(tag, "cassandra_debug")...)
 	return c
@@ -232,6 +224,20 @@ func (r LoggingReceiverCassandraGC) Components(tag string) []fluentbit.Component
 			// No default install position / log path for SLES
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^\d{4}-\d{2}-\d{2}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2})`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorCassandraGC.Components(tag, "cassandra_gc")...)
 	return c

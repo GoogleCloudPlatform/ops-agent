@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -112,69 +111,6 @@ func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentb
 
 	components = append(components, fluentbit.ParserFilterComponent(tag, p.Field, parserNames))
 	return components
-}
-
-type MultilineRule struct {
-	StateName string
-	Regex     string
-	NextState string
-}
-
-func (r MultilineRule) AsString() string {
-	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
-	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
-}
-
-// A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
-//     #
-//     # Regex rules for multiline parsing
-//     # ---------------------------------
-//     #
-//     # configuration hints:
-//     #
-//     #  - first state always has the name: start_state
-//     #  - every field in the rule must be inside double quotes
-//     #
-//     # rules |   state name  | regex pattern                  | next state
-//     # ------|---------------|--------------------------------------------
-//     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
-//     rule      "cont"          "/^\s+at.*/"                     "cont"
-type LoggingProcessorParseMultilineRegex struct {
-	LoggingProcessorParseRegexComplex
-	Rules []MultilineRule
-}
-
-func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluentbit.Component {
-	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
-	rules := [][2]string{}
-	for _, rule := range p.Rules {
-		rules = append(rules, [2]string{"rule", rule.AsString()})
-	}
-
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":                  "multiline",
-			"Match":                 tag,
-			"Multiline.Key_Content": "message",
-			"Multiline.Parser":      multilineParserName,
-		},
-	}
-
-	if p.Field != "" {
-		filter.Config["Multiline.Key_Content"] = p.Field
-	}
-
-	multilineParser := fluentbit.Component{
-		Kind: "MULTILINE_PARSER",
-		Config: map[string]string{
-			"Name": multilineParserName,
-			"Type": "regex",
-		},
-		OrderedConfig: rules,
-	}
-
-	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(tag, uid)...)
 }
 
 func init() {

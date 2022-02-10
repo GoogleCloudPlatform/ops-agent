@@ -52,6 +52,31 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 	}.Components(tag)
 }
 
+// Multiline rules are used to generate a Multiline Parser for a log input
+//     #
+//     # Regex rules for multiline parsing
+//     # ---------------------------------
+//     #
+//     # configuration hints:
+//     #
+//     #  - first state always has the name: start_state
+//     #  - every field in the rule must be inside double quotes
+//     #
+//     # rules |   state name  | regex pattern                  | next state
+//     # ------|---------------|--------------------------------------------
+//     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
+//     rule      "cont"          "/^\s+at.*/"                     "cont"
+type MultilineRule struct {
+	StateName string
+	Regex     string
+	NextState string
+}
+
+func (r MultilineRule) AsString() string {
+	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
+	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
+}
+
 type LoggingReceiverFilesMixin struct {
 	IncludePaths            []string        `yaml:"include_paths,omitempty"`
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
