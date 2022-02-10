@@ -347,6 +347,7 @@ func TestProcessorOrder(t *testing.T) {
       type: parse_json
       field: message
       time_key: time
+      time_format: "%s"
     json2:
       type: parse_json
       field: log
@@ -356,13 +357,14 @@ func TestProcessorOrder(t *testing.T) {
         receivers: [mylog_source]
         processors: [json1, json2]
         exporters: [google]
-`, logPath)
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().Format(time.RFC3339Nano)) + "\n"
+		fmt.Println(line)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
