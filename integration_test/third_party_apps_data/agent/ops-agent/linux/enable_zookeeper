@@ -26,6 +26,17 @@ metrics:
       zookeeper:
         receivers:
           - zookeeper
+
+logging:
+  receivers:
+    zookeeper_general:
+      type: zookeeper_general
+  service:
+    pipelines:
+      zookeeper_general:
+        receivers:
+          - zookeeper_general
+
 EOF
 
 sudo service google-cloud-ops-agent restart
