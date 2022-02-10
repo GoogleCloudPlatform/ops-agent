@@ -33,7 +33,7 @@ logging:
       type: zookeeper_general
   service:
     pipelines:
-      zookeeper:
+      zookeeper_general:
         receivers:
           - zookeeper_general
 

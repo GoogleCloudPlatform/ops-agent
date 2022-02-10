@@ -18,6 +18,6 @@ logging:
       type: zookeeper_general
   service:
     pipelines:
-      zookeeper_default:
+      zookeeper_general:
         receivers:
           - zookeeper_general

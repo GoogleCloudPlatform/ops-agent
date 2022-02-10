@@ -60,15 +60,15 @@ func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
 	}}
 }
 
-type LoggingProcessorZookeeperApache struct {
+type LoggingProcessorZookeeperGeneral struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (LoggingProcessorZookeeperApache) Type() string {
+func (LoggingProcessorZookeeperGeneral) Type() string {
 	return "zookeeper_general"
 }
 
-func (p LoggingProcessorZookeeperApache) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	complexRegex := confgenerator.LoggingProcessorParseRegexComplex{
@@ -126,7 +126,7 @@ func (p LoggingProcessorZookeeperApache) Components(tag, uid string) []fluentbit
 }
 
 type LoggingReceiverZookeeperGeneral struct {
-	LoggingProcessorZookeeperApache         `yaml:",inline"`
+	LoggingProcessorZookeeperGeneral        `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
@@ -153,7 +153,7 @@ func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Comp
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorZookeeperApache.Components(tag, "zookeeper_general")...)
+	return append(c, r.LoggingProcessorZookeeperGeneral.Components(tag, "zookeeper_general")...)
 }
 
 func severityParser(tag, uid string) []fluentbit.Component {
