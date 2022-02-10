@@ -1,0 +1,38 @@
+set -e
+
+sudo yum install -y \
+    curl java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
+
+curl -L -o \
+    activemq.tar.gz \
+    http://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
+
+sudo mkdir /opt/activemq
+sudo tar -xf \
+    activemq.tar.gz \
+    --strip-components=1 -C /opt/activemq
+
+sudo useradd activemq
+sudo chown -R activemq:activemq /opt/activemq
+
+cat <<EOF | sudo tee /etc/systemd/system/activemq.service
+[Unit]
+Description=Apache ActiveMQ Messaging Server
+After=network.target
+[Service]
+Type=forking
+User=activemq
+Group=activemq
+ExecStart=/opt/activemq/bin/activemq start
+ExecStop=/opt/activemq/bin/activemq stop
+[Install]
+WantedBy=multi-user.target
+EOF
+
+before='ACTIVEMQ_SUNJMX_START="$ACTIVEMQ_SUNJMX_START -Dcom.sun.management.jmxremote"'
+after='ACTIVEMQ_SUNJMX_START="$ACTIVEMQ_SUNJMX_START -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.rmi.port=1099 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"'
+
+sudo sed -i "s/$before/$after/g" /opt/activemq/bin/env
+
+sudo systemctl daemon-reload
+sudo systemctl enable activemq
