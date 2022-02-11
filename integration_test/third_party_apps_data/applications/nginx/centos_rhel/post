@@ -21,6 +21,9 @@ EOF
 
 sudo service nginx restart
 
+# Give nginx time to start up.
+sleep 5
+
 # Verify the metrics is exposed successfully. Sample output:
 # Active connections: 1
 # server accepts handled requests
