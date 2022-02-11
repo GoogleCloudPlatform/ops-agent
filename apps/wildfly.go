@@ -24,7 +24,7 @@ type LoggingProcessorWildflySystem struct {
 }
 
 func (LoggingProcessorWildflySystem) Type() string {
-	return "wildfly_server"
+	return "wildfly_system"
 }
 
 func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []fluentbit.Component {
@@ -33,6 +33,8 @@ func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []flue
 		// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
 		// Sample line: 2022-02-03 15:38:01,509 DEBUG [org.jboss.as.config] (MSC service thread 1-1) VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M ...Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties
 		// Sample line: 2022-02-03 15:38:03,548 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
+		// Sample line: 2022-02-11 14:29:56,734 INFO  [org.jboss.as.process.Server:server-one.status] (ProcessController-threads - 3) WFLYPC0018: Starting process 'Server:server-one'
+		// Sample line: 2022-02-11 14:29:52,217 INFO  [org.jboss.as.process.Host Controller.status] (main) WFLYPC0018: Starting process 'Host Controller'
 		// Sample line: 2022-02-03 15:38:01,506 DEBUG [org.jboss.as.config] (MSC service thread 1-1) Configured system properties:
 		//                   [Standalone] =
 		//                   awt.toolkit = sun.awt.X11.XToolkit
@@ -73,6 +75,8 @@ func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Compone
 			"/opt/wildfly/standalone/log/server.log",
 			// Managed Domain server log(s)
 			"/opt/wildfly/domain/servers/*/log/server.log",
+			// Managed Domain controller log(s)
+			"/opt/wildfly/domain/log/*.log",
 		}
 	}
 
@@ -90,7 +94,7 @@ func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Compone
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorWildflySystem.Components(tag, "wildfly_server")...)
+	c = append(c, r.LoggingProcessorWildflySystem.Components(tag, "wildfly_system")...)
 	return c
 }
 

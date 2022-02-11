@@ -1,5 +1,5 @@
 log_entries:
-- log_name: "wildfly_server"
+- log_name: "wildfly_system"
   field_matchers:
     jsonPayload.messageCode: "WFLYSRV0049"
     jsonPayload.message: ".*WildFly Full.*"

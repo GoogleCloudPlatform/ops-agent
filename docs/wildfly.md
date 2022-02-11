@@ -1,4 +1,4 @@
-# `wildfly_server` Logging Receiver
+# `wildfly_system` Logging Receiver
 
 ## Configuration
 
@@ -6,7 +6,7 @@ To configure a receiver for your wildfly server logs, specify the following fiel
 
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
-| `type`                | required                          | Must be `wildfly_server`. |
+| `type`                | required                          | Must be `wildfly_system`. |
 | `include_paths`       | `[/opt/wildfly/standalone/log/server.log, /opt/wildfly/domain/servers/*/log/server.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/wildfly*/*.log`.
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 | `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s, 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval. Must be a multiple of 1s.|
@@ -16,13 +16,13 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    wildfly_server:
-      type: wildfly_server
+    wildfly_system:
+      type: wildfly_system
   service:
     pipelines:
-      wildfly_server:
+      wildfly_system:
         receivers:
-          - wildfly_server
+          - wildfly_system
 ```
 
 ## Logs

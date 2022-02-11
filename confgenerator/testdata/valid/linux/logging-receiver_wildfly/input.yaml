@@ -14,10 +14,10 @@
 
 logging:
   receivers:
-    wildfly_server:
-      type: wildfly_server
+    wildfly_system:
+      type: wildfly_system
   service:
     pipelines:
-      wildfly_server:
+      wildfly_system:
         receivers:
-          - wildfly_server
+          - wildfly_system
