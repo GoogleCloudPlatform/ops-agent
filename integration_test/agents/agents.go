@@ -652,9 +652,7 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
-		if t.Failed() {
-			RunOpsAgentDiagnostics(ctx, logger, vm)
-		}
+		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
 }
