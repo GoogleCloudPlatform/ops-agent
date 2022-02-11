@@ -23,7 +23,7 @@ logging:
       type: wildfly_server
   service:
     pipelines:
-      wildfly:
+      wildfly_server:
         receivers:
           - wildfly_server
 EOF
