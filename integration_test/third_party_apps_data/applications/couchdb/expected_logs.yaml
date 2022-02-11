@@ -3,7 +3,6 @@ log_entries:
   field_matchers:
     httpRequest.remoteIp: "127.0.0.1"
     httpRequest.requestMethod: "GET"
-    httpRequest.responseSize: "1"
     httpRequest.serverIp: "localhost:5984"
     jsonPayload.host: "127.0.0.1"
     jsonPayload.message: "admin GET /forbidden 404 ok 1"
