@@ -1,1 +1,1 @@
-metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, hostmetrics, iis, jvm, kafka, memcached, mssql, mysql, nginx, postgresql, rabbitmq, redis, solr, tomcat, zookeeper].
+metrics receiver with type "unsupported_type" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, hostmetrics, iis, jvm, kafka, memcached, mongodb, mssql, mysql, nginx, postgresql, rabbitmq, redis, solr, tomcat, zookeeper].
