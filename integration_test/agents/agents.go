@@ -353,7 +353,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 	}
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-")  ||
+		strings.HasPrefix(vm.Platform, "rhel-") ||
 		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
