@@ -67,14 +67,20 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$$`,
 					"iis/network/transferred_bytes_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
 				),
 				otel.RenameMetric(
 					`\Web Service(_Total)\Total Connection Attempts (all instances)`,
 					"iis/new_connection_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
 				),
 				otel.CombineMetrics(
 					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$$`,
 					"iis/request_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
