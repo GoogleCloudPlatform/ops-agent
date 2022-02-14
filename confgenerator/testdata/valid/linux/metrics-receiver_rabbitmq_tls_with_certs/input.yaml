@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    rabbitmqmetrics:
+    rabbitmq:
       type: rabbitmq
       collection_interval: 30s
       password: pwd
@@ -26,6 +26,6 @@ metrics:
       key_file: /path/to/ca
   service:
     pipelines:
-      rabbitmqpipeline:
+      rabbitmq:
         receivers:
-          - rabbitmqmetrics
+          - rabbitmq

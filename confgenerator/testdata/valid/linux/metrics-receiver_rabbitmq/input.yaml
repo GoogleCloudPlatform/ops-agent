@@ -14,13 +14,12 @@
 
 metrics:
   receivers:
-    rabbitmqmetrics:
+    rabbitmq:
       type: rabbitmq
-      collection_interval: 30s
       password: pwd
       username: usr
   service:
     pipelines:
-      rabbitmqpipeline:
+      rabbitmq:
         receivers:
-          - rabbitmqmetrics
+          - rabbitmq

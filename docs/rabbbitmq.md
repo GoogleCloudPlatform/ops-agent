@@ -24,9 +24,9 @@ To configure a receiver for your rabbitmq metrics, specify the following fields:
 | `password`              | optional | required                        | The password used to connect to the server. |
 | `insecure`              | optional | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
 | `insecure_skip_verify`  | optional |                                 | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
-| `cert_file`             | optional |                             | Path to the TLS cert to use for TLS required connections. |
-| `key_file`              | optional |                             | Path to the TLS key to use for TLS required connections. |
-| `ca_file`               | optional |                             | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
+| `cert_file`             | optional |                                 | Path to the TLS cert to use for TLS required connections. |
+| `key_file`              | optional |                                 | Path to the TLS key to use for TLS required connections. |
+| `ca_file`               | optional |                                 | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
 
 Example Configuration:
 
@@ -34,17 +34,16 @@ Example Configuration:
 ```yaml
 metrics:
   receivers:
-    rabbitmq_metrics:
+    rabbitmq:
       type: rabbitmq 
       endpoint: http://localhost:15672
-      collection_interval: 60s
       password: pwd
       username: usr
   service:
     pipelines:
-      rabbitmq_pipeline:
+      rabbitmq:
         receivers:
-          - rabbitmq_metrics
+          - rabbitmq
 ```
 
 TCP connection with a username and password and TLS:
@@ -52,7 +51,7 @@ TCP connection with a username and password and TLS:
 ```yaml
 metrics:
   receivers:
-    rabbitmq_metrics:
+    rabbitmq:
       type: rabbitmq 
       endpoint: http://localhost:15672
       collection_interval: 60s
@@ -64,9 +63,9 @@ metrics:
       ca_file: /path/to/ca
   service:
     pipelines:
-      rabbitmq_pipeline:
+      rabbitmq:
         receivers:
-          - rabbitmq_metrics
+          - rabbitmq
 ```
 
 ## Metrics

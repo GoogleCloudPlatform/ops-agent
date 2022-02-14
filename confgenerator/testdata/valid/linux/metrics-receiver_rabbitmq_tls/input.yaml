@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    rabbitmqmetrics:
+    rabbitmq:
       type: rabbitmq
       collection_interval: 30s
       password: pwd
@@ -22,6 +22,6 @@ metrics:
       insecure: false
   service:
     pipelines:
-      rabbitmqpipeline:
+      rabbitmq:
         receivers:
-          - rabbitmqmetrics
+          - rabbitmq

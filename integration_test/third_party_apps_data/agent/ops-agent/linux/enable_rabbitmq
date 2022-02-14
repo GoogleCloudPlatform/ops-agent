@@ -18,15 +18,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # limitations under the License.
 metrics:
   receivers:
-    rabbitmq_metrics:
+    rabbitmq:
       type: rabbitmq
       username: otelu
       password: otelp
   service:
     pipelines:
-      rabbitmq_pipeline:
+      rabbitmq:
         receivers:
-        - rabbitmq_metrics
+        - rabbitmq
 EOF
 
 sudo service google-cloud-ops-agent restart
