@@ -131,6 +131,8 @@ a hop. The following is sorted roughly in descending order of usefulness.
 
 Let's go through each of these files and discuss what they are.
 
+TODO: Document log files for a Windows VM.
+
 *   `build_and_test.txt`: The top-level log that holds the stdout/stderr for
     the Kokoro job. Near the bottom is a summary of which tests passed and
     which ones failed.
@@ -139,12 +141,9 @@ Let's go through each of these files and discuss what they are.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
     `TestThirdPartyApps_ops-agent_debian-10_nginx`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
-
-The rest of these files are only uploaded if the test fails.
-
 *   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.
-*   `logging-module.log.txt`: The Fluent-Bit log file. Not useful right now.
+*   `logging-module.log.txt`: The Fluent-Bit log file.
 *   `journalctl_output.txt`: The output of running `journalctl -xe`. Useful
     when the Ops Agent can't start/restart properly, often due to malformed
     config files.
@@ -156,4 +155,3 @@ The rest of these files are only uploaded if the test fails.
 
 The `agent_packages` directory contains the package files built from the PR
 and installed on the VM for testing.
-    
