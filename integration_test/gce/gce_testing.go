@@ -900,6 +900,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		imageOrImageFamilyFlag,
 		"--image-family-scope=global",
 		"--network=" + vm.Network,
+		// Attempt to debug errors like https://github.com/GoogleCloudPlatform/ops-agent/issues/407.
+		"--verbosity=debug",
 		"--format=json",
 	}
 	if len(newMetadata) > 0 {
@@ -1098,6 +1100,8 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 			"--project=" + vm.Project,
 			"--zone=" + vm.Zone,
 			vm.Name,
+			// Attempt to debug errors like https://github.com/GoogleCloudPlatform/ops-agent/issues/407.
+			"--verbosity=debug",
 		})
 	if err == nil {
 		vm.AlreadyDeleted = true
