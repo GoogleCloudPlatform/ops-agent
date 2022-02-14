@@ -478,7 +478,7 @@ func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRege
 	for {
 		entry, err := it.Next()
 		if err == iterator.Done {
-			logger.Println("iterator stopped")
+			logger.Printf("Iterator stopped: %v", entry)
 			break
 		}
 		if err != nil {

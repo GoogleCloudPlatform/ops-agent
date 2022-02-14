@@ -6,5 +6,5 @@ log_entries:
     jsonPayload.message: "admin GET /forbidden 404 ok 1"
     jsonPayload.node: "couchdb"
     jsonPayload.path: "/forbidden"
-    jsonPayload.remote_user: "admin"
+    jsonPayload.remote_user: "undefined"
     jsonPayload.status_message: "ok"
