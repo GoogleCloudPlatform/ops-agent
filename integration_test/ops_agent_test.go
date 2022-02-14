@@ -255,6 +255,7 @@ func TestCustomLogFormat(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		logPath := logPathForPlatform(vm.Platform)
+		// TODO(b/219518200) : Update time_format to use correct format.
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
