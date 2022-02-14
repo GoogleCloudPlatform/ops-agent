@@ -1,7 +1,8 @@
+activemq
 apache
 cassandra
-elasticsearch
 couchdb
+elasticsearch
 jvm
 kafka
 memcached
@@ -12,4 +13,5 @@ postgresql
 redis
 solr
 tomcat
+wildfly
 zookeeper
