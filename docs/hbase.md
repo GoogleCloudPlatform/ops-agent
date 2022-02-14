@@ -23,14 +23,14 @@ Example Configuration:
 
 ```yaml
 metrics:
- receivers:
- hbase:
-  type: hbase
- service:
- pipelines:
-  hbase:
-  receivers:
-   - hbase
+   receivers:
+      hbase:
+         type: hbase
+   service:
+      pipelines:
+         hbase:
+            receivers:
+               - hbase
 ```
 
 ## Metrics
