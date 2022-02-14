@@ -404,7 +404,7 @@ func TestThirdPartyApps(t *testing.T) {
 					for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
 						logger := gce.SetupLogger(t)
 						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
+						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
 						logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 						var retryable bool
