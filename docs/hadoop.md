@@ -1,7 +1,7 @@
 # `hadoop` Metrics Receiver
 
 The `hadoop` metrics receiver can fetch stats from a Hadoop server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
-
+It collects metrics specific to the local region server, as well as metrics presented by the Master node if the node being monitored is indeed the Master. For High Availability configurations, it is recommended for every master node to report cluster metrics, which will have identical values, to avoid single point of failures when one master goes down.
 ## Prerequisites
 
 In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. By default, these properties are set in a Hadoop deployment's hadoop-env.sh file and the default Hadoop installation requires no JMX authentication with JMX exposed locally on 127.0.0.1:8050.

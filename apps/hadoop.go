@@ -36,7 +36,7 @@ func (r MetricsReceiverHadoop) Type() string {
 
 func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
 	targetSystem := "hadoop"
-	if r.CollectJVMMetrics == nil || *r.CollectJVMMetrics {
+	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
