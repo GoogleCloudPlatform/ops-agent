@@ -3,7 +3,7 @@ log_entries:
   field_matchers:
     httpRequest.requestMethod: "GET"
     httpRequest.serverIp: "localhost:5984"
-    jsonPayload.message: "admin GET /forbidden 404 ok 1"
+    jsonPayload.message: "undefined GET /forbidden 404 ok 1"
     jsonPayload.node: "couchdb"
     jsonPayload.path: "/forbidden"
     jsonPayload.remote_user: "undefined"
