@@ -316,7 +316,8 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	}
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") {
+		strings.HasPrefix(vm.Platform, "rhel-") ||
+		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
@@ -324,7 +325,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
-		return fmt.Errorf("unsupported platform: %s", vm.Platform)
+		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
@@ -352,7 +353,8 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 	}
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") {
+		strings.HasPrefix(vm.Platform, "rhel-") ||
+		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
@@ -360,7 +362,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
 	} else {
-		return fmt.Errorf("unsupported platform: %s", vm.Platform)
+		return fmt.Errorf("UninstallPackages() doesn't support platform %q", vm.Platform)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", cmd); err != nil {
 		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)

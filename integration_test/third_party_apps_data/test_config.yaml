@@ -21,6 +21,10 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   redis:
     platforms_to_skip: *common_skips
+  # As wildfly does not have package installers & is installed from tar,
+  # we only want to test on one distribution to help reduce integration test size
+  wildfly:
+    platforms_to_skip: *common_skips
   # Note: New applications are not supposed to add additional skips
   # here unless deemed absolutely necessary.
   couchdb: # couchdb is not supported on sles

@@ -1,0 +1,37 @@
+set -e
+
+sudo apt-get update
+sudo apt-get install -y curl default-jre
+
+curl -L \
+    -o wildfly.tar.gz \
+    https://github.com/wildfly/wildfly/releases/download/26.0.0.Final/wildfly-26.0.0.Final.tar.gz
+
+sudo mkdir -p /opt/wildfly
+sudo tar xf wildfly.tar.gz -C /opt/wildfly --strip-components 1
+
+sudo cp /opt/wildfly/docs/contrib/scripts/systemd/launch.sh /opt/wildfly/bin/launch.sh
+sudo chmod +x /opt/wildfly/bin/*.sh
+
+sudo mkdir -p /var/run/wildfly
+
+cat <<EOF | sudo tee /etc/systemd/system/wildfly.service
+[Unit]
+Description=The WildFly Application Server
+After=syslog.target network.target
+
+[Service]
+User=root
+Group=root
+LimitNOFILE=102642
+Environment=LAUNCH_JBOSS_IN_BACKGROUND=1
+ExecStart=/opt/wildfly/bin/launch.sh standalone standalone.xml 0.0.0.0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sed -i.bak 's/<remoting-connector\/>/<remoting-connector use-management-endpoint="true"\/>/' /opt/wildfly/standalone/configuration/standalone.xml
+
+sudo systemctl daemon-reload
+sudo systemctl enable wildfly
