@@ -1,0 +1,12 @@
+set -e
+
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install \
+    -y default-jdk default-jdk-headless activemq
+
+sudo sed -i 's/useJmx="false"/useJmx="true"/g' /etc/activemq/instances-available/main/activemq.xml 
+
+sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enabled/main
+
+sudo systemctl daemon-reload
+sudo systemctl enable activemq
