@@ -17,7 +17,6 @@ metrics:
   receivers:
     mongodb:
       type: mongodb
-      collection_interval: 30s
   service:
     pipelines:
       mongodb:
