@@ -363,8 +363,11 @@ func TestProcessorOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work correctly in windows (b/218888265).
-		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
+		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
+		// correctly in windows (b/218888265). The similar test TestCustomLogFormat uses the time
+		// format "%Y-%m-%dT%H:%M:%S.%L%Z" which is invalid to parse time.RFC3339Nano format.
+		// TestCustomLogFormat passes since it fallbacks to use a "now" timestamp when parsing fails.
+		ine := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
