@@ -20,8 +20,8 @@ To configure a receiver for your rabbitmq metrics, specify the following fields:
 | `type`                  | required |                                 | Must be `rabbitmq`. |
 | `endpoint`              | optional | `http://localhost:15672`        | URL of node to be monitored |
 | `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
-| `username`              | optional | required                        | The username used to connect to the server. |
-| `password`              | optional | required                        | The password used to connect to the server. |
+| `username`              | required |                                 | The username used to connect to the server. |
+| `password`              | required |                                 | The password used to connect to the server. |
 | `insecure`              | optional | true                            | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
 | `insecure_skip_verify`  | optional |                                 | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
 | `cert_file`             | optional |                                 | Path to the TLS cert to use for TLS required connections. |
