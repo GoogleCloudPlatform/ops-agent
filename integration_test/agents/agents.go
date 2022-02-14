@@ -316,7 +316,8 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	}
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") {
+		strings.HasPrefix(vm.Platform, "rhel-") ||
+		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
@@ -324,7 +325,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
-		return fmt.Errorf("unsupported platform: %s", vm.Platform)
+		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
@@ -352,7 +353,8 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 	}
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") {
+		strings.HasPrefix(vm.Platform, "rhel-") ||
+		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
@@ -360,7 +362,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
 	} else {
-		return fmt.Errorf("unsupported platform: %s", vm.Platform)
+		return fmt.Errorf("UninstallPackages() doesn't support platform %q", vm.Platform)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", cmd); err != nil {
 		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
@@ -641,6 +643,17 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 	return err
 }
 
+// RecommendedMachineType returns a reasonable setting for a VM's machine type
+// (https://cloud.google.com/compute/docs/machine-types). Windows instances
+// are configured to be larger because they need more CPUs to start up in a
+// reasonable amount of time.
+func RecommendedMachineType(platform string) string {
+	if gce.IsWindows(platform) {
+		return "e2-standard-4"
+	}
+	return "e2-standard-2"
+}
+
 // CommonSetup sets up the VM for testing.
 func CommonSetup(t *testing.T, platform string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -649,12 +662,10 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform)})
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
-		if t.Failed() {
-			RunOpsAgentDiagnostics(ctx, logger, vm)
-		}
+		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
 }
@@ -699,8 +710,6 @@ func globForAgentPackage(platform string) (string, error) {
 		return "*~ubuntu18.04_*.deb", nil
 	case platform == "ubuntu-2004-lts" || platform == "ubuntu-minimal-2004-lts":
 		return "*~ubuntu20.04_*.deb", nil
-	case platform == "ubuntu-2104" || platform == "ubuntu-minimal-2104":
-		return "*~ubuntu21.04_*.deb", nil
 	default:
 		return "", fmt.Errorf("agents.go does not know how to convert platform %q into a glob that can pick the appropriate package out of a lineup", platform)
 	}

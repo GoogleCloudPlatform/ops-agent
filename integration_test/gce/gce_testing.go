@@ -46,7 +46,6 @@ The following variables are optional:
 
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
     By default, a new temporary directory is created.
-INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
@@ -57,6 +56,9 @@ SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
     default is the project's "Compute Engine default service account".
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
     The default is "stackdriver-test-143416-file-transfers".
+INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
+    If provided, this value overrides the selection made by the callers to
+		this library.
 */
 package gce
 
@@ -90,6 +92,8 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -342,10 +346,11 @@ func IsWindows(platform string) bool {
 // isRetriableLookupMetricError returns whether the given error, returned from
 // lookupMetric() or WaitForMetric(), should be retried.
 func isRetriableLookupMetricError(err error) bool {
-	return strings.Contains(err.Error(), "Internal error") ||
-		strings.Contains(err.Error(), "The metric referenced by the provided filter is unknown") ||
-		// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
-		strings.Contains(err.Error(), "failed to look up metric workload.googleapis.com")
+	myStatus, ok := status.FromError(err)
+	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
+	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
+	// The Internal case catches some transient errors returned by the monitoring API sometimes.
+	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal)
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
@@ -863,7 +868,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.Zone == "" {
 		vm.Zone = os.Getenv("ZONE")
 	}
+	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
+	if vm.MachineType == "" {
+		vm.MachineType = options.MachineType
+	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
@@ -1488,6 +1497,9 @@ type VMOptions struct {
 	Metadata map[string]string
 	// Optional.
 	Labels map[string]string
+	// Optional. If missing, the default is e2-standard-4.
+	// Overridden by INSTANCE_SIZE if that environment variable is set.
+	MachineType string
 }
 
 // SetupVM creates a new VM according to the given options.

@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -70,49 +68,7 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Sample line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
-		// TODO: fluentd's default parser appends (?:\s+(?<http_x_forwarded_for>[^ ]+))? but this is not part of Nginx's log format. Consider adding it or other support for extra fields?
-		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
-			Types: map[string]string{
-				"http_request_status": "integer",
-				// N.B. "http_request_responseSize" is a string containing an integer.
-				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
-			},
-		},
-	}.Components(tag, uid)
-	// nginx logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	for _, field := range []string{
-		"host", // always empty with default nginx config
-		"user",
-		"http_request_referer",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
-	}
-	// Generate the httpRequest structure.
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
-			"Remove_prefix": "http_request_",
-		},
-	})
-	return c
+	return genericAccessLogParser(tag, uid)
 }
 
 type LoggingProcessorNginxError struct {

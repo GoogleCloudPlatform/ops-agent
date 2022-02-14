@@ -14,29 +14,10 @@
 
 logging:
   receivers:
-    redis_default:
-      type: redis
-    redis_custom:
-      type: redis
-      include_paths:
-        - /usr/log/redis/custom.log*
-    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    redis_syslog:
-      type: syslog
-      transport_protocol: udp
-      listen_host: 1.1.1.1
-      listen_port: 1
-  processors:
-    redis_syslog:
+    redis:
       type: redis
   service:
     pipelines:
-      redis_default:
+      redis:
         receivers:
-          - redis_default
-      redis_custom:
-        receivers:
-          - redis_custom
-      redis_syslog:
-        receivers: [redis_syslog]
-        processors: [redis_syslog]
+          - redis
