@@ -161,9 +161,10 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				//
 				// <pipeline_id>.<receiver_id>.<existing_tag>
 				//
-				// And so we will need to match with <pipeline_id>.<receiver_id>.* to
+				// And since the existing tag is unknown at the time of configuring the
+				// receiver (and the receiver could ingest records with different tags),
+				// we will need to match with <pipeline_id>.<receiver_id>.* to
 				// match with these input records if we want to route them correctly.
-				// For more information see go/ops-agent-forward-receiver-design.
 				if receiver.Type() == "fluent_forward" {
 					quotedTag := regexp.QuoteMeta(tag)
 
@@ -186,10 +187,8 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				}
 
 				// Logs ingested using the fluent_forward receiver already have the LogName
-				// set using special rules because the LogName must preserve the existing
-				// tag on the record. And so we don't overwrite the LogName here as usual.
-				//
-				// For more information see go/ops-agent-forward-receiver-design.
+				// set, using special rules because the LogName must preserve the existing
+				// tag on the record.
 				if receiver.Type() != "fluent_forward" {
 					components = append(components, setLogNameComponents(tag, rID)...)
 				}

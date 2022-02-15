@@ -620,6 +620,44 @@ func TestTCPLog(t *testing.T) {
 	})
 }
 
+func TestFluentForwardLog(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		config := `logging:
+  receivers:
+    fluent_logs:
+      type: fluent_forward
+      listen_host: 127.0.0.1
+      listen_port: 24224
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      fluent_pipeline:
+        receivers: [fluent_logs]
+        exporters: [google]
+`
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit --log_file=/var/log/forwarder.log -i stdin -o forward://127.0.0.1:24224"); err != nil {
+			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.*", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
