@@ -290,12 +290,12 @@ func (r LoggingReceiverMysqlSlow) Components(tag string) []fluentbit.Component {
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+			Regex:     `# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
 		},
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
+			Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 		},
 	}
 
@@ -325,12 +325,12 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+			Regex:     `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
 		},
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
+			Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 		},
 	}
 
