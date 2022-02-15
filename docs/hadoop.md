@@ -1,3 +1,5 @@
+# Hadoop
+
 # `hadoop` Metrics Receiver
 
 The `hadoop` metrics receiver can fetch stats from a Hadoop server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
@@ -46,3 +48,43 @@ In addition to Hadoop specific metrics, by default Hadoop will also report [JVM 
 | `hadoop.name_node.file.count` | Gauge | `{files}` | `node_name` | The total number of files being tracked by the name node. |
 | `hadoop.name_node.file.load` | Gauge | `{operations}` | `node_name` | The current number of concurrent file accesses. |
 | `hadoop.name_node.data_node.count` | Gauge | `{nodes}` | `node_name`, `state` | The number of data nodes reporting to the name node. |
+
+# `hadoop` Logging Receiver
+
+## Configuration
+
+To configure a logging receiver for hadoop, specify the following fields:
+
+| Field                 | Default                       | Description |
+| ---                   | ---                           | ---         |
+| `type`                | required                      | Must be `hadoop`. |
+| `include_paths`       | `[/opt/hadoop/logs/hadoop-*.log, /opt/hadoop/logs/yarn-*.log]` | The log files to read. |
+| `exclude_paths`       | `[]`                          | Log files to exclude (if `include_paths` contains a glob or directory). |
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+
+Example Configuration:
+
+```yaml
+logging:
+  receivers:
+    hadoop:
+      type: hadoop
+  service:
+    pipelines:
+      hadoop:
+        receivers:
+          - hadoop
+```
+
+## Logs
+
+Hadoop logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):
+
+| Field | Type | Description |
+| ---   | ---- | ----------- |
+| `jsonPayload.source` | string | The source Java class of the log entry |
+| `jsonPayload.message` | string | Log message |
+| `severity` | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)) | Log entry level (translated) |
+| `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the entry was logged |
+
+If the fields are absent on the original log record, the will not be present on the resultant LogEntry.
