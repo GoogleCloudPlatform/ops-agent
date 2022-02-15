@@ -1,0 +1,6 @@
+log_entries:
+- log_name: "hbase_system"
+  field_matchers:
+    jsonPayload.message: "master.HMaster: STARTING service HMaster"
+    jsonPayload.module: "main"
+    jsonPayload.source: "master.HMaster"
