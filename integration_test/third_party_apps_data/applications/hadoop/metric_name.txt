@@ -1,0 +1,1 @@
+workload.googleapis.com/hadoop.name_node.capacity.usage
