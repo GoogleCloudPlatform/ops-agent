@@ -255,6 +255,7 @@ func TestCustomLogFormat(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		logPath := logPathForPlatform(vm.Platform)
+		// TODO(b/219518200) : Update time_format to use correct format.
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -347,6 +348,7 @@ func TestProcessorOrder(t *testing.T) {
       type: parse_json
       field: message
       time_key: time
+      time_format: "%s"
     json2:
       type: parse_json
       field: log
@@ -356,13 +358,17 @@ func TestProcessorOrder(t *testing.T) {
         receivers: [mylog_source]
         processors: [json1, json2]
         exporters: [google]
-`, logPath)
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().Format(time.RFC3339Nano)) + "\n"
+		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
+		// correctly in windows (b/218888265). The similar test TestCustomLogFormat uses the time
+		// format "%Y-%m-%dT%H:%M:%S.%L%Z" which is invalid to parse time.RFC3339Nano format.
+		// TestCustomLogFormat passes since it fallbacks to use a "now" timestamp when parsing fails.
+		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}

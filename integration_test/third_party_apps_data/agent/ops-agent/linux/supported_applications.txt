@@ -4,7 +4,9 @@ cassandra
 hadoop
 elasticsearch
 couchdb
+hbase
 elasticsearch
+hbase
 jvm
 kafka
 memcached
