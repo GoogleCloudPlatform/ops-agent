@@ -1,0 +1,42 @@
+set -e
+
+sudo apt-get update
+sudo apt-get install -y \
+    curl \
+    gnupg \
+    apt-transport-https \
+    debian-keyring \
+    debian-archive-keyring 
+    
+
+curl -s https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | \
+    sudo apt-key add -
+
+source /etc/os-release
+case $VERSION_ID in
+  20.04)
+    # ubuntu
+    echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
+  10)
+    # debian
+    echo "deb https://packages.erlang-solutions.com/ubuntu bionic contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
+  *)
+    echo -n "unknown version"
+    exit 1
+    ;;
+esac
+
+sudo apt-get update
+sudo apt-get install -y erlang
+
+curl -s \
+    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \
+    sudo bash
+
+sudo apt-get update
+sudo apt-get install -y rabbitmq-server
+
+sudo systemctl daemon-reload
+sudo systemctl enable rabbitmq-server
