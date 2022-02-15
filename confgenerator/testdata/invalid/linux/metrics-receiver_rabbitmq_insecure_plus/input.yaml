@@ -14,7 +14,7 @@
 
 metrics:
   receivers:
-    rabbitmqmetrics:
+    rabbitmq:
       type: rabbitmq
       endpoint: localhost:3306
       collection_interval: 30s
@@ -27,6 +27,6 @@ metrics:
       cert_file: /path/to/cert
   service:
     pipelines:
-      rabbitmqpipeline:
+      rabbitmq:
         receivers:
-          - rabbitmqmetrics
+          - rabbitmq

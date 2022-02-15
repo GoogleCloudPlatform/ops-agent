@@ -1,6 +1,6 @@
 [19:17] "endpoint" must be a URL
   16 |   receivers:
-  17 |     rabbitmqmetrics:
+  17 |     rabbitmq:
   18 |       type: rabbitmq
 > 19 |       endpoint: localhost
                        ^
