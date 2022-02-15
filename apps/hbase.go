@@ -49,7 +49,9 @@ func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
-				otel.AggregateLabels("max", "state"),
+				otel.UpdateMetric("hbase.region_server.*",
+					otel.AggregateLabels("max", "state"),
+				),
 			),
 		},
 	)

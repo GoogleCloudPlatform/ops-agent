@@ -94,6 +94,18 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 	return out
 }
 
+// RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
+func UpdateMetric(old string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"include": old,
+		"action":  "update",
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
 // DuplicateMetric returns a config snippet that copies old to new, applying zero or more transformations.
 func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{

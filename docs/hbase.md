@@ -2,8 +2,7 @@
 
 The `hbase` metric receiver can fetch stats from a HBase server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html). It collects metrics specific to the local region server, as well as metrics presented by the Master node if the node being monitored is indeed the Master.
 
-For High Availability configurations it is recommended to monitor only one Master node and all Region Server nodes. Monitoring the active Master and its replicants will result in duplicate metrics for the Master node.
-
+For High Availability configurations, it is recommended for every master node to report cluster metrics, which will have identical values, to avoid single point of failures when one master goes down.
 ## Prerequisites
 
 In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. In the default hbase-env.sh file these properties are set. it  requires no JMX authentication with JMX exposed locally on 127.0.0.1:10101 when the default line for the JMX port is uncommented.
