@@ -398,11 +398,6 @@ func TestThirdPartyApps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	type test struct {
-		platform   string
-		app        string
-		skipReason string
-	}
 	tests := []test{}
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
