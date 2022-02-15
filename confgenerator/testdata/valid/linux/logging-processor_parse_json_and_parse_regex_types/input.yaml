@@ -46,26 +46,12 @@ logging:
       field: key_1
       time_key: time_key_1
       time_format: time_format_1
-    parse_json_2:
-      type: parse_json
-      time_key: time_key_2
-    parse_json_3:
-      type: parse_json
-      time_format: time_format_3
     parse_regex_1:
       type: parse_regex
       field: key_1
       regex: regex_pattern_1
       time_key: time_key_1
       time_format: time_format_1
-    parse_regex_2:
-      type: parse_regex
-      regex: regex_pattern_2
-      time_key: time_key_2
-    parse_regex_3:
-      type: parse_regex
-      regex: regex_pattern_3
-      time_format: time_format_3
   service:
     pipelines:
       default_pipeline:

@@ -1,0 +1,17 @@
+logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  processors:
+    regex_processor:
+      type: parse_regex
+      field: field_1
+      regex: regex_pattern_1
+      time_key: time_key_1
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
