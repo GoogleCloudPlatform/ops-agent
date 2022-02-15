@@ -28,33 +28,14 @@ func (LoggingProcessorHbaseSystem) Type() string {
 }
 
 func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample line: 2022-01-20 20:38:18,856 INFO  [main] master.HMaster: STARTING service HMaster
-					// Sample line: 2022-01-20 20:38:20,304 INFO  [main] metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl
-					// Sample line: 2022-01-20 20:38:20,385 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})\s(?<level>[A-Z]+)\s{2}\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[^\n]+)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey: "time",
-						//
-						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
-					},
-				},
-			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
-			},
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Sample line: 2022-01-20 20:38:18,856 INFO  [main] master.HMaster: STARTING service HMaster
+		// Sample line: 2022-01-20 20:38:20,304 INFO  [main] metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl
+		// Sample line: 2022-01-20 20:38:20,385 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+		Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})\s(?<level>[A-Z]+)\s{2}\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[^\n]+)`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
 		},
 	}.Components(tag, uid)
 
@@ -86,6 +67,20 @@ func (r SystemLoggingReceiverHbase) Components(tag string) []fluentbit.Component
 			"/opt/hbase/logs/hbase-*-master-*.log",
 		}
 	}
+
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
+		},
+	}
+
 	c := r.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, r.LoggingProcessorHbaseSystem.Components(tag, "hbase_system")...)
 	return c
