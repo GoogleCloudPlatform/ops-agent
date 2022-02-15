@@ -49,7 +49,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 			"debug", "DEBUG",
 		},
 		{
-			"erro", "ERROR",
+			"error", "ERROR",
 		},
 		{
 			"info", "INFO",
