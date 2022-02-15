@@ -27,6 +27,15 @@ metrics:
       hadoop:
         receivers:
           - hadoop
+logging:
+  receivers:
+    hadoop:
+      type: hadoop
+  service:
+    pipelines:
+      hadoop:
+        receivers:
+          - hadoop
 EOF
 
 sudo service google-cloud-ops-agent restart

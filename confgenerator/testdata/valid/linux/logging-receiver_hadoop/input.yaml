@@ -1,9 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-
-set -e
-
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-# Copyright 2020 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,25 +12,12 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-metrics:
-  receivers:
-    hbase:
-      type: hbase
-      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:10101/jmxrmi
-  service:
-    pipelines:
-      hbase:
-        receivers:
-          - hbase
 logging:
   receivers:
-    hbase_system:
-      type: hbase_system
+    hadoop:
+      type: hadoop
   service:
     pipelines:
-      hbase_system:
+      hadoop:
         receivers:
-          - hbase_system
-EOF
-
-sudo service google-cloud-ops-agent restart
+          - hadoop
