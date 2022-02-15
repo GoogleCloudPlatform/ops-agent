@@ -357,6 +357,8 @@ type test struct {
 	skipReason string
 }
 
+const defaultPlatform = "debian-10"
+
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	_, testAll := impactedApps["all"]
 	for i, test := range tests {
@@ -365,6 +367,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				_, testApp := impactedApps[test.app]
 				if testAll == false && testApp == false {
 					tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
+				} else if testAll == true {
+					if test.platform != defaultPlatform {
+						tests[i].skipReason = fmt.Sprintf("skipping %v. Running %v against all apps.", test.platform, defaultPlatform)
+					}
 				}
 			}
 		}
