@@ -1,6 +1,8 @@
 activemq
 apache
 cassandra
+hadoop
+elasticsearch
 couchdb
 elasticsearch
 jvm
