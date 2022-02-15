@@ -76,16 +76,13 @@ The Ops Agent collects the following metrics from your rabbitmq instances.
 | ---                                                    | ---       | ---         | ---                             | ---            | git 
 | rabbitmq.consumer.count | gauge | {consumers} | <ul> </ul>  | The number of consumers currently reading from the queue. |
 | rabbitmq.message.acknowledged | cumulative | {messages} | <ul> </ul>  | The number of messages acknowledged by consumers. |
-| rabbitmq.message.current | gauge | {messages} | <ul> <li>message.state</li> </ul>  | The total number of messages currently in the queue. |
+| rabbitmq.message.current | gauge | {messages} | <ul> <li>state</li> </ul>  | The total number of messages currently in the queue. |
 | rabbitmq.message.delivered | cumulative | {messages} | <ul> </ul>  | The number of messages delivered to consumers. |
 | rabbitmq.message.dropped | cumulative | {messages} | <ul> </ul>  | The number of messages dropped as unroutable. |
 | rabbitmq.message.published | cumulative | {messages} | <ul> </ul>  | The number of messages published to a queue. |
 
-## Attributes
+## Labels
 
 | Name | Description |
 | ---- | ----------- |
-| message.state | The state of messages in a queue. |
-| rabbitmq.node.name | The name of the RabbitMQ node. |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. |
+| state | The state of messages in a queue. |
