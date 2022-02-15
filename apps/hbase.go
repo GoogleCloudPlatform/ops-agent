@@ -15,9 +15,51 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverHbase struct {
+	confgenerator.ConfigComponent                 `yaml:",inline"`
+	confgenerator.MetricsReceiverShared           `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
+}
+
+const defaultHbaseEndpoint = "localhost:10101"
+
+func (r MetricsReceiverHbase) Type() string {
+	return "hbase"
+}
+
+func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
+	targetSystem := "hbase"
+	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
+	return r.MetricsReceiverSharedJVM.JVMConfig(
+		targetSystem,
+		defaultHbaseEndpoint,
+		r.CollectionIntervalString(),
+		[]otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+				otel.UpdateMetric("hbase.region_server.*",
+					otel.AggregateLabels("max", "state"),
+				),
+			),
+		},
+	)
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverHbase{} })
+}
 
 type LoggingProcessorHbaseSystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
