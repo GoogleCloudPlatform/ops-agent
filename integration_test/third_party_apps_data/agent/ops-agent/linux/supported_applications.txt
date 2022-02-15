@@ -1,8 +1,11 @@
 activemq
 apache
 cassandra
+hadoop
+elasticsearch
 couchdb
 elasticsearch
+hbase
 jvm
 kafka
 memcached
