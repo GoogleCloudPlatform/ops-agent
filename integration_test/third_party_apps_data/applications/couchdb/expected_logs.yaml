@@ -1,6 +1,8 @@
 log_entries:
 - log_name: "couchdb"
   field_matchers:
+    jsonPayload.host: "127.0.0.1"
+    jsonPayload.message: "undefined GET /forbidden 404 ok 0"
     jsonPayload.node: "couchdb"
     jsonPayload.path: "/forbidden"
     jsonPayload.remote_user: "undefined"
