@@ -325,6 +325,57 @@ func modifiedFiles(t *testing.T) []string {
 	return strings.Split(string(out), "\n")
 }
 
+func determineImpactedApps(mf []string) map[string]bool {
+	impactedApps := make(map[string]bool)
+	for _, f := range mf {
+		if strings.HasPrefix(f, "apps/") {
+			// File names: apps/<appname>.go
+			f := strings.TrimPrefix(f, "apps/")
+			f = strings.TrimSuffix(f, ".go")
+			impactedApps[f] = true
+
+		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
+			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
+			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
+			f = strings.Split(f, "/")[0]
+			impactedApps[f] = true
+
+		} else {
+			// Any other modified file means we should test
+			// everything.
+			impactedApps["all"] = true
+			break
+		}
+
+	}
+	return impactedApps
+}
+
+type test struct {
+	platform   string
+	app        string
+	skipReason string
+}
+
+func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+	_, testAll := impactedApps["all"]
+	for i := range tests {
+		if len(impactedApps) > 0 {
+			_, testApp := impactedApps[tests[i].app]
+			if testAll == false && testApp == false {
+				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", tests[i].app)
+			}
+		}
+		if tests[i].app == "mysql" {
+			// TODO(b/215197805): Reenable this test once the repos are fixed.
+			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
+		}
+		if sliceContains(testConfig.PerApplicationOverrides[tests[i].app].PlatformsToSkip, tests[i].platform) {
+			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		}
+	}
+}
+
 // This is the entry point for the test. Runs runSingleTest
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
@@ -338,11 +389,6 @@ func TestThirdPartyApps(t *testing.T) {
 	testConfig, err := parseTestConfigFile()
 	if err != nil {
 		t.Fatal(err)
-	}
-	type test struct {
-		platform   string
-		app        string
-		skipReason string
 	}
 	tests := []test{}
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
@@ -361,49 +407,15 @@ func TestThirdPartyApps(t *testing.T) {
 
 	// Filter tests
 	mf := modifiedFiles(t)
-	impactedApps := make(map[string]bool)
-	for _, f := range mf {
-		if strings.HasPrefix(f, "apps/") {
-			// File names: apps/<appname>.go
-			f := strings.TrimPrefix(f, "apps/")
-			f = strings.TrimSuffix(f, ".go")
-			impactedApps[f] = true
-
-		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
-			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
-			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
-			f = strings.Split(f, "/")[0]
-			impactedApps[f] = true
-
-		} else if strings.HasPrefix(f, "integration_test") {
-			// Any other modified file in the directory probably
-			// means we should test everything.
-			impactedApps = make(map[string]bool)
-			break
-		}
-
-	}
-	for i := range tests {
-		if len(impactedApps) > 0 {
-			if _, ok := impactedApps[tests[i].app]; ok == false {
-				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", tests[i].app)
-			}
-		}
-		if tests[i].app == "mysql" {
-			// TODO(b/215197805): Reenable this test once the repos are fixed.
-			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
-		}
-		if sliceContains(testConfig.PerApplicationOverrides[tests[i].app].PlatformsToSkip, tests[i].platform) {
-			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
-		}
-	}
+	ia := determineImpactedApps(mf)
+	determineTestsToSkip(tests, ia, testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
-		platform := tc.platform // https://golang.org/doc/faq#closures_and_goroutines
-		app := tc.app           // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(platform, func(t *testing.T) {
-			t.Run(app, func(t *testing.T) {
+		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(tc.platform, func(t *testing.T) {
+			t.Parallel()
+			t.Run(tc.app, func(t *testing.T) {
 				t.Parallel()
 
 				if tc.skipReason != "" {
@@ -417,12 +429,12 @@ func TestThirdPartyApps(t *testing.T) {
 				for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
 					logger := gce.SetupLogger(t)
 					logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform})
+					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform})
 					logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 					var retryable bool
-					retryable, err = runSingleTest(ctx, logger, vm, agentType, app)
-					log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, platform, app, err, retryable)
+					retryable, err = runSingleTest(ctx, logger, vm, agentType, tc.app)
+					log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 					if err == nil {
 						return
 					}
