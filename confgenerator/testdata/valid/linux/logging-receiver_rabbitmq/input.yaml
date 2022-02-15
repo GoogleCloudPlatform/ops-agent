@@ -14,15 +14,10 @@
 
 logging:
   receivers:
-    rabbitmq_default:
+    rabbitmq:
       type: rabbitmq
-    rabbitmq_custom:
-      type: rabbitmq
-      include_paths:
-        - /var/log/rabbitmq/*.log
   service:
     pipelines:
-      rabbitmq_default:
+      rabbitmq:
         receivers:
-          - rabbitmq_default
-          - rabbitmq_custom
+          - rabbitmq
