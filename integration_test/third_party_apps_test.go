@@ -359,19 +359,19 @@ type test struct {
 
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	_, testAll := impactedApps["all"]
-	for i := range tests {
+	for i, test := range tests {
 		if len(impactedApps) > 0 {
-			_, testApp := impactedApps[tests[i].app]
+			_, testApp := impactedApps[test.app]
 			if testAll == false && testApp == false {
-				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", tests[i].app)
+				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if tests[i].app == "mysql" {
+		if test.app == "mysql" {
 			// TODO(b/215197805): Reenable this test once the repos are fixed.
 			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
 		}
 		if sliceContains(testConfig.PerApplicationOverrides[tests[i].app].PlatformsToSkip, tests[i].platform) {
-			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+			test.skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
 	}
 }
