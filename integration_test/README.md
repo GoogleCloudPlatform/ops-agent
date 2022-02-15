@@ -1,12 +1,89 @@
 # Integration Testing
 
-Currently the only thing that is implemented is a test for third-party
-application support. This test is currently implemented as a Kokoro build
-that is run on all PRs. The test builds the Ops Agent on one distro (currently
-Debian 10) and attempts to verify, for each application in
-`supported_applications.txt`, that the application can be installed on a real GCE
-VM and that a single representative metric is successfully uploaded to Google Cloud
-Monitoring.
+Integration tests are implemented as Kokoko builds that run on each PR. The
+builds first build the Ops Agent and then run tests on that agent. The Kokoro
+builds are split up by distro.
+
+## Ops Agent Test
+
+This test exercises "core" features of the Ops Agent such as watching syslog or
+a custom log file. It is implemented in ops_agent_test.go. It can be run outside
+of Kokoro with some setup.
+
+### Setup
+
+You will need a project to run VMs in and a service account with permissions to
+run various operations in the project. You can set up such a service account with
+a few commands:
+
+```
+gcloud iam service-accounts create "service-account-$(whoami)" \
+  --project "${PROJECT}" \
+  --display-name "service-account-$(whoami)"  
+```
+
+```
+for ROLE in \
+    logging.logWriter \
+    monitoring.metricWriter \
+    stackdriver.resourceMetadata.writer \
+    logging.viewer \
+    monitoring.viewer \
+    stackdriver.resourceMetadata.viewer \
+  ; do
+      gcloud projects add-iam-policy-binding "${PROJECT}" \
+          --member "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com" \
+          --role "roles/${ROLE}" > /dev/null
+  done
+```
+
+You will also need a GCS bucket that is used to transfer files onto
+the testing VMs. Store it in env variable `$BUCKET` and add your
+service account as principal with role "Storage Admin" to the bucket:
+
+```
+gsutil iam ch \
+  "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com:roles/storage.admin" \
+  "gs://${BUCKET}"
+```
+
+Finally, download your credentials as a JSON file:
+
+```
+gcloud iam service-accounts keys create $HOME/credentials.json \
+  --project "${PROJECT}" \
+  --iam-account "service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com"
+```
+
+### Testing Command
+
+When the setup steps are complete, you can run ops_agent_test like this:
+
+```
+PROJECT="${PROJECT}" \
+TRANSFERS_BUCKET="${BUCKET}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+ZONE=us-central1-b \
+PLATFORMS=debian-10 \
+go test -v ops_agent_test.go \
+ -test.parallel=1000 \
+ -tags=integration_test \
+ -timeout=4h
+```
+
+This will run the tests against the stable Ops Agent. To test against a pre-built
+but unreleased agent, you can use add the AGENT_PACKAGES_IN_GCS environment
+variable onto your command like this:
+
+```
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
+```
+
+## Third Party Apps Test
+
+This test attempts to verify, for each application in `supported_applications.txt`,
+that the application can be installed on a real GCE VM and that a single
+representative metric is successfully uploaded to Google Cloud Monitoring.
 
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
@@ -52,7 +129,7 @@ NOTE: Currently there are various directories that are included in
 1.  to be a starting point so that nobody has to rewrite our logic for
     installing, e.g. redis on CentOS 7.
     
-# Adding a new third-party application
+### Adding a new third-party application
 
 You will need to add a few files, and possibly change what's there currently,
 since much of it is there only as a starting point and example.
@@ -72,28 +149,26 @@ simplified to:
     sometimes, e.g. to get the application to log to a particular file.
 1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
 
-# test_config.yaml
+### Testing Command
 
-This file sets some options that alter how the test runs. An example is:
+This needs the same setup steps as the Ops Agent test (see above). The command
+is nearly the same, just change the test file and add
+`SCRIPTS_DIR=third_party_apps_data`:
 
 ```
-platforms_override:
-  - centos-7
-  - sles-12
-retries: 0
+PROJECT="${PROJECT}" \
+TRANSFERS_BUCKET="${BUCKET}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+ZONE=us-central1-b \
+PLATFORMS=debian-10 \
+SCRIPTS_DIR=third_party_apps_data \
+go test -v third_party_apps_test.go \
+ -test.parallel=1000 \
+ -tags=integration_test \
+ -timeout=4h
 ```
 
-`platforms_override` is a list of strings (default is just debian-10 for now),
-and that will tell the test to run on those platforms (which are really image
-families). Note: the way the Kokoro build is set up, it will *build* all Linux
-distros no matter what, but it only run the *test* on the platforms in
-`platforms_override`.
-
-`retries` configures the number of retries to do for certain errors. These
-retries only apply to errors running the per-application `install` or `post`
-scripts. Note that a value of 0 means to attempt the test once, but to skip
-retrying the failures. This is a very useful thing to do when debugging new
-scripts.
+As above, you can supply `AGENT_PACKAGES_IN_GCS` to test a pre-built agent.
 
 # Test Logs
 
