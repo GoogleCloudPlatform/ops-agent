@@ -796,7 +796,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		return fmt.Errorf("error running registercloudguest: %v", err)
 	}
 
-	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 240), ctx) // 20 minutes max.
+	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 60), ctx) // 5 minutes max.
 	err = backoff.Retry(func() error {
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
