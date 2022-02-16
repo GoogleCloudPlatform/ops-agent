@@ -36,7 +36,9 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 
 // setInstanceNameComponent generates a component that inserts the hostname to all log entries.
 func setInstanceNameComponent(Hostname string) []fluentbit.Component {
-	if len(Hostname) == 0 {Hostname = ""}
+	if len(Hostname) == 0 {
+		Hostname = ""
+	}
 	return []fluentbit.Component{
 		{
 			Kind: "FILTER",
