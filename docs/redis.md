@@ -30,7 +30,7 @@ The Ops Agent collects the following metrics from your redis servers.
 | workload.googleapis.com/redis.net.output                            | sum       | by      |        | The total number of bytes written to the network |
 | workload.googleapis.com/redis.keyspace.hits                         | sum       | 1       |        | Number of successful lookup of keys in the main dictionary |
 | workload.googleapis.com/redis.keyspace.misses                       | sum       | 1       |        | Number of failed lookup of keys in the main dictionary |
-| workload.googleapis.com/redis.latest_fork                           | guage     | us      |        | Duration of the latest fork operation in microseconds |
+| workload.googleapis.com/redis.latest_fork                           | gauge     | us      |        | Duration of the latest fork operation in microseconds |
 | workload.googleapis.com/redis.slaves.connected                      | gauge     | 1       |        | Number of connected replicas |
 | workload.googleapis.com/redis.replication.backlog_first_byte_offset | gauge     | 1       |        | The master offset of the replication backlog buffer |
 | workload.googleapis.com/redis.replication.offset                    | gauge     | 1       |        | The server's current replication o
