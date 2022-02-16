@@ -1,6 +1,3 @@
-[submodule "submodules/collectd"]
-	path = submodules/collectd
-	url = ../../Stackdriver/collectd.git
 [submodule "submodules/fluent-bit"]
 	path = submodules/fluent-bit
 	url = ../../fluent/fluent-bit.git
