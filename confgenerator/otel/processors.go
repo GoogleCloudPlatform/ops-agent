@@ -57,6 +57,16 @@ func NormalizeSums() Component {
 	}
 }
 
+// CastToSum returns a Component that performs a cast of each metric to a sum.
+func CastToSum(metrics ...string) Component {
+	return Component{
+		Type: "casttosum",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a prefix to all metrics.
 func AddPrefix(prefix string) map[string]interface{} {
 	// $ needs to be escaped because reasons.
