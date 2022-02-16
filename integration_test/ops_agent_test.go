@@ -812,6 +812,19 @@ func metricsForPlatform(platform string) []string {
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
+	if !IsWindows(vm.Platform) {
+		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
+		_, err := RunRemotely(ctx, logger, vm, "", strings.Join([]string{
+			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
+			"sudo chmod 600 /swapfile",
+			"sudo mkswap /swapfile",
+			"sudo swapon /swapfile",
+		}, " && "))
+		if err != nil {
+			return nil, err
+		}
+	}
+	
 	// First make sure that the uptime metrics are being uploaded.
 	var uptimeWaitGroup sync.WaitGroup
 	regexes := agentVersionRegexesForPlatform(vm.Platform)
