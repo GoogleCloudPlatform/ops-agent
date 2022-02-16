@@ -34,6 +34,31 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 	}
 }
 
+// setInstanceNameComponent generates a component that inserts the hostname to all log entries.
+func setInstanceNameComponent(Hostname string) []fluentbit.Component {
+	if len(Hostname) == 0 {Hostname = ""}
+	return []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match": "*",
+				"Add":   fmt.Sprintf("compute.googleapis.com/resource_name %s", Hostname),
+				"Name":  "modify",
+			},
+		},
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match":      "*",
+				"Operation":  "nest",
+				"Wildcard":   "compute.googleapis.com/resource_name*",
+				"Nest_under": "logging.googleapis.com/labels",
+				"Name":       "nest",
+			},
+		},
+	}
+}
+
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
 func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 	return fluentbit.Component{

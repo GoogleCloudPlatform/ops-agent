@@ -179,6 +179,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
 		}
 	}
+	for _, c := range setInstanceNameComponent(hostInfo.Hostname) {
+		out = append(out, c)
+	}
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
