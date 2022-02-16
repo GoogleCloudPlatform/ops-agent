@@ -824,7 +824,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			return nil, err
 		}
 	}
-	
+
 	// First make sure that the uptime metrics are being uploaded.
 	var uptimeWaitGroup sync.WaitGroup
 	regexes := agentVersionRegexesForPlatform(vm.Platform)
