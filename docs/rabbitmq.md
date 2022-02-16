@@ -87,10 +87,6 @@ The Ops Agent collects the following metrics from your rabbitmq instances.
 | ---- | ----------- |
 | state | The state of messages in a queue. |
 
-
-
-
-
 # `rabbitmq` Logging Receiver
 
 ## Configuration
