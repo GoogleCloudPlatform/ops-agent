@@ -977,20 +977,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
 		}
 	}
-
-	if !IsWindows(vm.Platform) {
-		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
-		_, err := RunRemotely(ctx, logger, vm, "", strings.Join([]string{
-			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
-			"sudo chmod 600 /swapfile",
-			"sudo mkswap /swapfile",
-			"sudo swapon /swapfile",
-		}, " && "))
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return vm, nil
 }
 
