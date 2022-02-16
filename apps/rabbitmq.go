@@ -46,18 +46,10 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 		SrcVal  string
 		DestVal string
 	}{
-		{
-			"debug", "DEBUG",
-		},
-		{
-			"error", "ERROR",
-		},
-		{
-			"info", "INFO",
-		},
-		{
-			"noti", "DEFAULT",
-		},
+		{"debug", "DEBUG"},
+		{"error", "ERROR"},
+		{"info", "INFO"},
+		{"noti", "DEFAULT"},
 	})...)
 
 	return c
@@ -85,12 +77,12 @@ func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `^(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+			Regex:     `\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
 		},
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^\s*$`,
+			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
