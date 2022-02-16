@@ -785,14 +785,14 @@ const (
 // First it repeatedly runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
 // When that happens, the VM is ready to install packages.
 // See b/148612123 and b/196246592 for some history about this.
-func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
 		return err
 	}, backoffPolicy)
 	if err != nil {
-		gce.RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
+		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
 		return fmt.Errorf("error running registercloudguest: %v", err)
 	}
 
@@ -801,11 +801,11 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		_, zypperErr := gce.RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
-		gce.RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
+		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
 	}
 	return err
 }
