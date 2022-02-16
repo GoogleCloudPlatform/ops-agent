@@ -95,7 +95,7 @@ The Ops Agent collects the following metrics from your rabbitmq instances.
 
 ## Configuration
 
-To configure a receiver for your mongodb logs, specify the following fields:
+To configure a receiver for your RabbitMQ logs, specify the following fields:
 
 | Field                 | Default                       | Description |
 | ---                   | ---                           | ---         |
