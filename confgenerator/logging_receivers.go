@@ -273,10 +273,10 @@ func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Compone
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/forward
-			"Name":   "forward",
-			"Tag_Prefix":    tag + ".",
-			"Listen": r.ListenHost,
-			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Name":       "forward",
+			"Tag_Prefix": tag + ".",
+			"Listen":     r.ListenHost,
+			"Port":       fmt.Sprintf("%d", r.ListenPort),
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
 			"storage.type": "filesystem",
@@ -290,12 +290,12 @@ func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Compone
 		},
 	},
 		{
-			Kind:          "FILTER",
-			Config:        map[string]string{
-				"Name":	"lua",
-				"Match": tag + ".*",
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":   "lua",
+				"Match":  tag + ".*",
 				"script": "add_log_name.lua",
-				"call": "add_log_name",
+				"call":   "add_log_name",
 			},
 		}}
 }

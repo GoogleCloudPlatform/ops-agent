@@ -165,15 +165,12 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				// receiver (and the receiver could ingest records with different tags),
 				// we will need to match with <pipeline_id>.<receiver_id>.* to
 				// match with these input records if we want to route them correctly.
+				suffix := ""
 				if receiver.Type() == "fluent_forward" {
-					quotedTag := regexp.QuoteMeta(tag)
-
-					tag = tag + ".*"
-					quotedTag = quotedTag + ".*"
-					tags = append(tags, quotedTag)
-				} else {
-					tags = append(tags, regexp.QuoteMeta(tag))
+					suffix = ".*"
 				}
+				tags = append(tags, regexp.QuoteMeta(tag) + suffix)
+				tag = tag + suffix
 
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
@@ -187,8 +184,8 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				}
 
 				// Logs ingested using the fluent_forward receiver already have the LogName
-				// set, using special rules because the LogName must preserve the existing
-				// tag on the record.
+				// set using a Lua filter. This was done so the LogName preserves the existing
+				// tag on the record prior to ingestion.
 				if receiver.Type() != "fluent_forward" {
 					components = append(components, setLogNameComponents(tag, rID)...)
 				}

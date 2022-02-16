@@ -51,6 +51,9 @@ end
 
 // writeForwardScript writes the above Lua script to the given path so it can be
 // used by the logging subagent.
+//
+// TODO(ridwanmsharif): Replace this with in-config script when
+//   fluent/fluent-bit#4634 is supported.
 func writeForwardScript(path string) error {
   // Make sure the directory exists before writing the file.
   if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

@@ -590,14 +590,10 @@ func TestTCPLog(t *testing.T) {
       format: json
       listen_host: 0.0.0.0
       listen_port: 5170
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       tcp_pipeline:
         receivers: [tcp_logs]
-        exporters: [google]
 `
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -635,24 +631,25 @@ func TestFluentForwardLog(t *testing.T) {
       type: fluent_forward
       listen_host: 127.0.0.1
       listen_port: 24224
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       fluent_pipeline:
         receivers: [fluent_logs]
-        exporters: [google]
 `
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit --log_file=/var/log/forwarder.log -i stdin -o forward://127.0.0.1:24224"); err != nil {
+		// Use another instance of Fluent Bit to read from stdin and  forward to the
+		// Ops Agent.
+		//
+		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
+		// log record. This will be preserved in the LogName
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
 			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.*", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
 			t.Error(err)
 		}
 	})
