@@ -34,15 +34,22 @@ function split (inputstr, sep)
 end
 
 function add_log_name(tag, timestamp, record)
-  -- Split the tag by . to seperate the pipeline_id from the rest
+  -- Split the tag by . to separate the pipeline_id from the rest
   local split_tag = split(tag, '.')
   
-  -- Join the rest of the tag without the pipeline_id
+  -- The tag is formatted like the following:
+  -- <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
+  --
+  -- We can assert that the hash_string, pipeline_id, receiver_id do not
+  -- contain the "." delimiter.
+  -- We append the existing_tag to the LogName field in the record.
+  local receiver_uuid = table.remove(split_tag, 1)
   local pipeline_id = table.remove(split_tag, 1)
-  local log_name = table.concat(split_tag, ".")
-  
+  local receiver_id = table.remove(split_tag, 1)
+  local existing_tag = table.concat(split_tag, ".")
+
   -- Replace the record with one with the log name
-  record["logging.googleapis.com/logName"] = log_name
+  record["logging.googleapis.com/logName"] = record["logging.googleapis.com/logName"] .. "." .. existing_tag
   
   -- Use code 2 to replace the original record but keep the original timestamp
   return 2, timestamp, record

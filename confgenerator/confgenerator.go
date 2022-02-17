@@ -16,6 +16,8 @@
 package confgenerator
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"path"
 	"regexp"
@@ -153,24 +155,48 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					return nil, fmt.Errorf("receiver %q not found", rID)
 				}
 				tag := fmt.Sprintf("%s.%s", pID, rID)
+
+				// For fluent_forward, we construct the tag in the following way:
+				// - Prefix it with a unique identifier
+				// - Replace all the "." with "_" from the pipeline_id and receiver_id
+				//
+				// This is needed since the Lua filter uses the "." to remove the pipeline_id
+				// from the LogName and add the existing tag to it. The prefix is required
+				// to avoid collisions in the match string. For an example see:
+				//
+				// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
+				if receiver.Type() == "fluent_forward" {
+					receiverUuid := getMD5Hash(tag)
+					pipelineIdCleaned := strings.ReplaceAll(pID, ".", "_")
+					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
+					tag = fmt.Sprintf("%s.%s.%s", receiverUuid, pipelineIdCleaned, receiverIdCleaned)
+				}
 				components := receiver.Components(tag)
 
 				// For records ingested with fluent_forward, the tags are set differently.
 				// Tags normally are <pipeline_id>.<receiver_id> but since these records
 				// come with an existing tag, their tags are formatted like:
 				//
-				// <pipeline_id>.<receiver_id>.<existing_tag>
+				// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
 				//
 				// And since the existing tag is unknown at the time of configuring the
 				// receiver (and the receiver could ingest records with different tags),
-				// we will need to match with <pipeline_id>.<receiver_id>.* to
-				// match with these input records if we want to route them correctly.
-				suffix := ""
+				// we will need to match with <hash_string>.<pipeline_id>.<receiver_id>.*
+				// to match with these input records if we want to route them correctly.
+				//
+				// The <hash_string> is added to the tag above to prevent collisions that
+				// would be possibly introduced by the match semantics of the wildcard *.
+				// For an example see:
+				//
+				// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
+				globSuffix := ""
+				regexSuffix := ""
 				if receiver.Type() == "fluent_forward" {
-					suffix = ".*"
+					regexSuffix = `\..*`
+					globSuffix = `.*`
 				}
-				tags = append(tags, regexp.QuoteMeta(tag) + suffix)
-				tag = tag + suffix
+				tags = append(tags, regexp.QuoteMeta(tag) + regexSuffix)
+				tag = tag + globSuffix
 
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
@@ -182,12 +208,12 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					}
 					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
+				components = append(components, setLogNameComponents(tag, rID)...)
 
-				// Logs ingested using the fluent_forward receiver already have the LogName
-				// set using a Lua filter. This was done so the LogName preserves the existing
-				// tag on the record prior to ingestion.
-				if receiver.Type() != "fluent_forward" {
-					components = append(components, setLogNameComponents(tag, rID)...)
+				// Logs ingested using the fluent_forward receiver must add the existing_tag
+				// on the record to the LogName. This is done with a Lua filter.
+				if receiver.Type() == "fluent_forward" {
+					components = append(components, addLuaFilter(tag, "add_log_name.lua", "add_log_name")...)
 				}
 				sources = append(sources, fbSource{tag, components})
 			}
@@ -243,4 +269,10 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
+}
+
+func getMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
