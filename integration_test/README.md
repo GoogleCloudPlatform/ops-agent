@@ -79,6 +79,10 @@ variable onto your command like this:
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
 ```
 
+You can obtain such a URI by taking a previous Kokoro ru with
+a successful build, obtaining the URI to `+build_and_test.txt`,
+and replacing `logs/+build_and_test.txt` with `agent_packages`.
+
 ## Third Party Apps Test
 
 This test attempts to verify, for each application in `supported_applications.txt`,
