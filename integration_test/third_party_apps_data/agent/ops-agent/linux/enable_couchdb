@@ -28,6 +28,16 @@ metrics:
       couchdb:
         receivers:
           - couchdb
+
+logging:
+  receivers:
+    couchdb:
+      type: couchdb
+  service:
+    pipelines:
+      couchdb:
+        receivers:
+          - couchdb
 EOF
 
 sudo service google-cloud-ops-agent restart
