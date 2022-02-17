@@ -277,7 +277,7 @@ func TestCustomLogFormat(t *testing.T) {
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%Z")
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
