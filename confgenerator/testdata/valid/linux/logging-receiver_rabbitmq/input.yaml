@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-metrics:
+logging:
   receivers:
-    mongodb:
-      type: mongodb
+    rabbitmq:
+      type: rabbitmq
   service:
     pipelines:
-      mongodb:
+      rabbitmq:
         receivers:
-          - mongodb
+          - rabbitmq
