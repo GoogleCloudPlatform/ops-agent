@@ -53,7 +53,7 @@ The Ops Agent collects the following metrics from your couchdb server.
 
 # `couchdb` Logging Receiver
 
-To configure a receiver for your Couchdb logs, specify the following fields:
+To configure a receiver for your CouchDB logs, specify the following fields:
 
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
