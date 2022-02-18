@@ -26,7 +26,6 @@ metrics:
   receivers:
     couchdb:
       type: couchdb
-      endpoint: http://localhost:5984
       username: usr
       password: pwd
   service:
