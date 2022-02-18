@@ -31,6 +31,7 @@ package integration_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
@@ -49,7 +50,6 @@ import (
 )
 
 var (
-	scriptsDir    = os.Getenv("SCRIPTS_DIR")
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
 )
 
@@ -77,8 +77,8 @@ func osFolder(platform string) string {
 // appsToTest reads which applications to test for the given agent+platform
 // combination from the appropriate supported_applications.txt file.
 func appsToTest(agentType, platform string) ([]string, error) {
-	contents, err := os.ReadFile(
-		path.Join(scriptsDir, "agent", agentType, osFolder(platform), "supported_applications.txt"))
+	contents, err := scriptsDir.ReadFile(
+		path.Join("agent", agentType, osFolder(platform), "supported_applications.txt"))
 	if err != nil {
 		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
 	}
@@ -94,7 +94,7 @@ func appsToTest(agentType, platform string) ([]string, error) {
 // corresponding to the given application. The file is allowed to be empty,
 // and if so, the test is skipped.
 func findMetricName(app string) (string, error) {
-	contents, err := os.ReadFile(path.Join(scriptsDir, "applications", app, "metric_name.txt"))
+	contents, err := scriptsDir.ReadFile(path.Join("applications", app, "metric_name.txt"))
 	if err != nil {
 		return "", fmt.Errorf("could not read metric_name.txt: %v", err)
 	}
@@ -162,9 +162,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	return err
 }
 
-func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
-	return os.ReadFile(path.Join(scriptsDir, scriptPath))
-}
+//go:embed third_party_apps_data
+var scriptsDir embed.FS
 
 // runScriptFromScriptsDir runs a script on the given VM.
 // The scriptPath should be relative to SCRIPTS_DIR.
@@ -173,7 +172,7 @@ func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
 func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
 	logger.ToMainLog().Printf("Running script with path %s", scriptPath)
 
-	scriptContents, err := readFileFromScriptsDir(scriptPath)
+	scriptContents, err := scriptsDir.ReadFile(scriptPath)
 	if err != nil {
 		return gce.CommandOutput{}, err
 	}
@@ -283,7 +282,7 @@ func parseTestConfigFile() (testConfig, error) {
 		Retries:   3,
 	}
 
-	bytes, err := readFileFromScriptsDir("test_config.yaml")
+	bytes, err := scriptsDir.ReadFile("test_config.yaml")
 	if err != nil {
 		log.Printf("Reading test_config.yaml failed with err=%v, proceeding...", err)
 		// Probably the file is just missing, return the defaults.
@@ -331,7 +330,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	// Check if the exercise script exists, and run it if it does.
 	exerciseScript := path.Join("applications", app, "exercise")
-	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
+	if _, err := scriptsDir.ReadFile(exerciseScript); err == nil {
 		logger.ToMainLog().Println("exercise script found, running...")
 		if _, err = runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
@@ -339,7 +338,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	// Check if expected_logs.yaml exists, and run the test cases if it does.
-	testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml"))
+	testCaseBytes, err := scriptsDir.ReadFile(path.Join("applications", app, "expected_logs.yaml"))
 	if err == nil {
 		logger.ToMainLog().Println("found expected_logs.yaml, running logging test cases...")
 		if err = runLoggingTestCases(ctx, logger, vm, testCaseBytes); err != nil {
@@ -368,9 +367,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
-	if scriptsDir == "" {
-		t.Fatalf("Cannot run test with empty value of SCRIPTS_DIR.")
-	}
 	agentType := agents.OpsAgentType
 
 	testConfig, err := parseTestConfigFile()
