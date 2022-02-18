@@ -22,8 +22,6 @@ import (
 type MetricsReceiverActivemq struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
 	Endpoint                               string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
 	Username                               string `yaml:"username" validate:"required_with=Password"`
 	Password                               string `yaml:"password" validate:"required_with=Username"`
@@ -42,17 +40,17 @@ func (r MetricsReceiverActivemq) Pipelines() []otel.Pipeline {
 
 	targetSystem := "activemq"
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
-		defaultActivemqEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultActivemqEndpoint).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {
