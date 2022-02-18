@@ -812,16 +812,17 @@ func metricsForPlatform(platform string) []string {
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
-	if !IsWindows(vm.Platform) {
+	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
-		_, err := RunRemotely(ctx, logger, vm, "", strings.Join([]string{
+		// We do this so that swap file metrics will show up.
+		_, err := gce.RunRemotely(ctx, logger, vm, "", strings.Join([]string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
 			"sudo mkswap /swapfile",
 			"sudo swapon /swapfile",
 		}, " && "))
 		if err != nil {
-			return nil, err
+			t.Fatalf("Failed to enable swap file: %v", err)
 		}
 	}
 
