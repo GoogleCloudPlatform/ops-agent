@@ -107,6 +107,10 @@ func ParserFilterComponent(tag string, field string, parserNames []string) Compo
 			"Match":    tag,
 			"Name":     "parser",
 			"Key_Name": "message", // Required
+
+			// We need to preserve existing fields (like LogName) that are present
+			// before parsing.
+			"Reserve_Data": "True",
 		},
 		OrderedConfig: parsers,
 	}
