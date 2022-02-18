@@ -9,7 +9,7 @@ for instructions to collect logs and metrics from this application using Ops Age
 
 Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your CouchDB server configuration.
 
-To configure a receiver for your couchdb metrics, specify the following fields:
+To configure a receiver for your CouchDB metrics, specify the following fields:
 
 | Field                   | Required | Default                         | Description |
 | ---                     | ---      | ---                             | ---         |
