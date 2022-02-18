@@ -156,39 +156,37 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				}
 				tag := fmt.Sprintf("%s.%s", pID, rID)
 
-				// For fluent_forward, we construct the tag in the following way:
-				// - Prefix it with a unique identifier
-				// - Replace all the "." with "_" from the pipeline_id and receiver_id
+				// For fluent_forward we create the tag in the following format:
+				// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
 				//
-				// This is needed since the Lua filter uses the "." to remove the pipeline_id
-				// from the LogName and add the existing tag to it. The prefix is required
-				// to avoid collisions in the match string. For an example see:
+				// hash_string: Deterministic unique identifier for the pipeline_id + receiver_id.
+				//   This is needed to prevent collisions between receivers in the same
+				//   pipeline when using the glob syntax for matching (using wildcards).
+				// pipeline_id: User defined pipeline_id but with the "." replaced with "_"
+				//   since the "." character is reserved to be used as a delimiter in the
+				//   Lua script.
+				// receiver_id: User defined receiver_id but with the "." replaced with "_"
+				//   since the "." character is reserved to be used as a delimiter in the
+				//   Lua script.
+				//  existing_tag: Tag associated with the record prior to ingesting.
+				//
+				// For an example testing collisions in receiver_ids, see:
 				//
 				// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
 				if receiver.Type() == "fluent_forward" {
-					receiverUuid := getMD5Hash(tag)
+					hashString := getMD5Hash(tag)
+
+					// Note that we only update the tag for the tag. The LogName will still
+					// use the user defined receiver_id without this replacement.
 					pipelineIdCleaned := strings.ReplaceAll(pID, ".", "_")
 					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
-					tag = fmt.Sprintf("%s.%s.%s", receiverUuid, pipelineIdCleaned, receiverIdCleaned)
+					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 				}
 				components := receiver.Components(tag)
 
-				// For records ingested with fluent_forward, the tags are set differently.
-				// Tags normally are <pipeline_id>.<receiver_id> but since these records
-				// come with an existing tag, their tags are formatted like:
-				//
-				// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
-				//
-				// And since the existing tag is unknown at the time of configuring the
-				// receiver (and the receiver could ingest records with different tags),
-				// we will need to match with <hash_string>.<pipeline_id>.<receiver_id>.*
-				// to match with these input records if we want to route them correctly.
-				//
-				// The <hash_string> is added to the tag above to prevent collisions that
-				// would be possibly introduced by the match semantics of the wildcard *.
-				// For an example see:
-				//
-				// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
+				// To match on fluent_forward records, we need to account for the addition
+				// of the existing tag (unknown during config generation) as the suffix
+				// of the tag.
 				globSuffix := ""
 				regexSuffix := ""
 				if receiver.Type() == "fluent_forward" {
