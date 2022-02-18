@@ -67,7 +67,7 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    couchdb
+    couchdb:
       type: couchdb
   service:
     pipelines:
