@@ -27,6 +27,15 @@ metrics:
       rabbitmq:
         receivers:
         - rabbitmq
+logging:
+  receivers:
+    rabbitmq:
+      type: rabbitmq
+  service:
+    pipelines:
+      rabbitmq:
+        receivers:
+        - rabbitmq
 EOF
 
 sudo service google-cloud-ops-agent restart
