@@ -31,7 +31,7 @@ package integration_test
 
 import (
 	"context"
-	_ "embed"
+	"embed"
 	"fmt"
 	"log"
 	"os"
