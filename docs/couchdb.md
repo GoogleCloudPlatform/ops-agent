@@ -1,8 +1,39 @@
-# Couchdb
+# CouchDB
 
 Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/couchdb)
 for instructions to collect logs and metrics from this application using Ops Agent.
 
+# `couchdb` Metrics Receiver
+
+## Configuration
+
+Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your CouchDB server configuration.
+
+To configure a receiver for your CouchDB metrics, specify the following fields:
+
+| Field                   | Required | Default                         | Description |
+| ---                     | ---      | ---                             | ---         |
+| `type`                  | required |                                 | Must be `couchdb`. |
+| `endpoint`              | optional | `http://localhost:5984`        | URL of node to be monitored |
+| `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+| `username`              | required |                                 | The username used to connect to the server. |
+| `password`              | required |                                 | The password used to connect to the server. |
+
+Example Configuration:
+
+```yaml
+metrics:
+  receivers:
+    couchdb:
+      type: couchdb
+      username: usr
+      password: pwd
+  service:
+    pipelines:
+      couchdb:
+        receivers:
+          - couchdb
+```
 
 ## Metrics
 
@@ -18,6 +49,32 @@ The Ops Agent collects the following metrics from your couchdb server.
 | workload.googleapis.com/couchdb.database.open        | gauge     | {databases}  | node_name                   | The number of open databases.                |
 | workload.googleapis.com/couchdb.file_descriptor.open | gauge     | {files}      | node_name                   | The number of open file descriptors.         |
 | workload.googleapis.com/couchdb.database.operations  | sum       | {operations} | node_name, operation        | The number of database operations.           |
+
+
+# `couchdb` Logging Receiver
+
+To configure a receiver for your CouchDB logs, specify the following fields:
+
+| Field                 | Default                           | Description |
+| ---                   | ---                               | ---         |
+| `type`                | required                          | Must be `couchdb`. |
+| `include_paths`       | `[/var/log/couchdb/couchdb.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/couchdb*/*.log`. |
+| `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`. |
+| `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+
+Example Configuration:
+
+```yaml
+logging:
+  receivers:
+    couchdb:
+      type: couchdb
+  service:
+    pipelines:
+      couchdb:
+        receivers:
+          - couchdb
+```
 
 ## Logs
 
