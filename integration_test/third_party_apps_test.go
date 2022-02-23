@@ -43,7 +43,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/cenkalti/backoff/v4"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 )
@@ -131,35 +130,6 @@ func distroFolder(platform string) (string, error) {
 		return "sles", nil
 	}
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
-}
-
-// prepareSLES runs some preliminary steps that get a SLES VM ready to install packages.
-// First it repeatedly runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
-// When that happens, the VM is ready to install packages.
-// See b/148612123 and b/196246592 for some history about this.
-func prepareSLES(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
-	err := backoff.Retry(func() error {
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
-		return err
-	}, backoffPolicy)
-	if err != nil {
-		gce.RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
-		return fmt.Errorf("error running registercloudguest: %v", err)
-	}
-
-	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 240), ctx) // 20 minutes max.
-	err = backoff.Retry(func() error {
-		// timezone-java was selected arbitrarily as a package that:
-		// a) can be installed from the default repos, and
-		// b) isn't installed already.
-		_, zypperErr := gce.RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
-		return zypperErr
-	}, backoffPolicy)
-	if err != nil {
-		gce.RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
-	}
-	return err
 }
 
 func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
@@ -301,12 +271,6 @@ func parseTestConfigFile() (testConfig, error) {
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
 func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType, app string) (retry bool, err error) {
-	if strings.Contains(vm.Platform, "sles") {
-		if err = prepareSLES(ctx, logger.ToMainLog(), vm); err != nil {
-			return retryable, fmt.Errorf("prepareSLES() failed: %v", err)
-		}
-	}
-
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
