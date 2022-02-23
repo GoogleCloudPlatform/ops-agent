@@ -66,6 +66,9 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err = writeConfigFile([]byte(parserConfig), filepath.Join(outDir, "fluent_bit_parser.conf")); err != nil {
 			return err
 		}
+		if err = writeForwardScript(filepath.Join(outDir, "add_log_name.lua")); err != nil {
+			return err
+		}
 	case "otel":
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
