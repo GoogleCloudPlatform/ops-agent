@@ -1,1 +1,1 @@
-metrics receiver with type "iis" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, hadoop, hbase, hostmetrics, jvm, kafka, memcached, mongodb, mysql, nginx, postgresql, rabbitmq, redis, solr, tomcat, zookeeper].
+metrics receiver with type "iis" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, hadoop, hbase, hostmetrics, jvm, kafka, memcached, mongodb, mysql, nginx, postgresql, rabbitmq, redis, solr, tomcat, wildfly, zookeeper].
