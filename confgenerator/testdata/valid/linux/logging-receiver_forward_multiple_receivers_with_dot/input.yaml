@@ -14,15 +14,15 @@
 
 logging:
   receivers:
-    fluent_logs:
+    fluent_forward:
       type: fluent_forward
       listen_host: 1.2.3.4
       listen_port: 5678
-    fluent.logs:
+    fluent.forward:
       type: fluent_forward
       listen_host: 1.2.3.4
       listen_port: 5679
   service:
     pipelines:
-      fluent_pipeline:
-        receivers: [fluent_logs, fluent.logs]
+      fluent_forward:
+        receivers: [fluent_forward, fluent.forward]
