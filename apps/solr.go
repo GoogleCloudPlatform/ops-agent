@@ -23,8 +23,6 @@ import (
 type MetricsReceiverSolr struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 }
 
@@ -37,17 +35,17 @@ func (r MetricsReceiverSolr) Type() string {
 func (r MetricsReceiverSolr) Pipelines() []otel.Pipeline {
 	targetSystem := "solr"
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
-		defaultSolrEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultSolrEndpoint).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {
