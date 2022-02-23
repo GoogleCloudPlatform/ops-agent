@@ -57,7 +57,8 @@ gcloud iam service-accounts keys create $HOME/credentials.json \
 
 ### Testing Command
 
-When the setup steps are complete, you can run ops_agent_test like this:
+When the setup steps are complete, you can run ops_agent_test (for Linux)
+like this:
 
 ```
 PROJECT="${PROJECT}" \
@@ -71,17 +72,28 @@ go test -v ops_agent_test.go \
  -timeout=4h
 ```
 
-This will run the tests against the stable Ops Agent. To test against a pre-built
-but unreleased agent, you can use add the AGENT_PACKAGES_IN_GCS environment
-variable onto your command like this:
+Testing on Windows is tricky because it requires a suitable value of
+WINRM_PAR_PATH, and for now only Goooglers can build winrm.par to supply it at
+runtime.
+
+The above command will run the tests against the stable Ops Agent. To test
+against a pre-built but unreleased agent, you can use add the
+AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
 ```
 
-You can obtain such a URI by taking a previous Kokoro ru with
-a successful build, obtaining the URI to `+build_and_test.txt`,
-and replacing `logs/+build_and_test.txt` with `agent_packages`.
+You can obtain such a URI by taking a previous Kokoro run with
+a successful build and getting the "gsutil URI" to `+build_and_test.txt`
+from Pantheon. For example:
+
+```
+gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt
+```
+
+Then replace `logs/+build_and_test.txt` at the end of the URI with
+`agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
 
 ## Third Party Apps Test
 
