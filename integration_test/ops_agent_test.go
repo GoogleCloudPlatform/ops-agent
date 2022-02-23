@@ -498,25 +498,28 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
+	for i := 0; i < 20; i++ {
+		t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+			t.Parallel()
+			platform := "windows-2016"
 
-		// This exclude_logs processor operates on a non-default field which is
-		// present if and only if the log is structured accordingly.
-		// The intended mechanism for inputting structured logs from a file is to
-		// use a parse_json processor. Since processors operate in the order in
-		// which they're written, the expectation is that if a parse_json processor
-		// comes before the exclude_logs processor then the log is
-		// excluded. (pipeline p1)
-		// Conversely, if a parse_json processor comes after the exclude_logs
-		// processor then the log is not excluded: the log inputted to exclude_logs
-		// is unstructured, and unstructured logs do not contain non-default
-		// fields, so it cannot be matched by the match_any expression
-		// below. (pipeline p2)
-		config := fmt.Sprintf(`logging:
+			ctx, logger, vm := agents.CommonSetup(t, platform)
+			file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+			file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
+
+			// This exclude_logs processor operates on a non-default field which is
+			// present if and only if the log is structured accordingly.
+			// The intended mechanism for inputting structured logs from a file is to
+			// use a parse_json processor. Since processors operate in the order in
+			// which they're written, the expectation is that if a parse_json processor
+			// comes before the exclude_logs processor then the log is
+			// excluded. (pipeline p1)
+			// Conversely, if a parse_json processor comes after the exclude_logs
+			// processor then the log is not excluded: the log inputted to exclude_logs
+			// is unstructured, and unstructured logs do not contain non-default
+			// fields, so it cannot be matched by the match_any expression
+			// below. (pipeline p2)
+			config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -548,31 +551,32 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		line := `{"field":"value"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
+			line := `{"field":"value"}` + "\n"
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
 
-		// Expect to see the log included in p1 but not p2.
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field="value"`); err != nil {
-			t.Error(err)
-		}
-		// Give the excluded log some time to show up.
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
+			// Expect to see the log included in p1 but not p2.
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field="value"`); err != nil {
+				t.Error(err)
+			}
+			// Give the excluded log some time to show up.
+			time.Sleep(60 * time.Second)
+			_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
+			if err == nil {
+				t.Error("expected log to be excluded but was included")
+			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
 }
 
 func TestTCPLog(t *testing.T) {

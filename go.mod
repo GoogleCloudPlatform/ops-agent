@@ -20,11 +20,12 @@ require (
 	github.com/shirou/gopsutil v3.21.8+incompatible
 	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	go.uber.org/multierr v1.7.0
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.7
 	google.golang.org/api v0.65.0
 	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5
 	google.golang.org/grpc v1.40.1
 	google.golang.org/protobuf v1.27.1
-	gopkg.in/yaml.v2 v2.2.3
+	gopkg.in/yaml.v2 v2.2.4
 )
