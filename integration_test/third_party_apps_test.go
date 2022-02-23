@@ -315,6 +315,24 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
+// Returns the authoritative set of all apps available for testing.
+// The authoritative list corresponds to the directory names under
+// integration_test/third_party_apps_data/applications
+func determineAllApps(t *testing.T) map[string]bool {
+	allApps := make(map[string]bool)
+
+	files, err := os.ReadDir("third_party_apps_data/applications")
+	if err != nil {
+		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			allApps[file.Name()] = true
+		}
+	}
+	return allApps
+}
+
 func modifiedFiles(t *testing.T) []string {
 	cmd := exec.Command("git", "diff", "--name-only", "upstream/master")
 	out, err := cmd.Output()
@@ -325,26 +343,33 @@ func modifiedFiles(t *testing.T) []string {
 	return strings.Split(string(out), "\n")
 }
 
-func determineImpactedApps(mf []string) map[string]bool {
+func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
+
 			// File names: apps/<appname>.go
 			f := strings.TrimPrefix(f, "apps/")
 			f = strings.TrimSuffix(f, ".go")
-			impactedApps[f] = true
+
+			if _, ok := allApps[f]; ok {
+				impactedApps[f] = true
+			} else {
+				impactedApps["all"] = true
+			}
 
 		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
 			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
 			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
 			f = strings.Split(f, "/")[0]
+			// The directories here are already authoritative, no
+			// need to check against list.
 			impactedApps[f] = true
 
 		} else {
 			// Any other modified file means we should test
 			// everything.
 			impactedApps["all"] = true
-			break
 		}
 
 	}
@@ -359,6 +384,7 @@ type test struct {
 
 const defaultPlatform = "debian-10"
 
+// Mark some tests for skipping, based on test_config and impacted apps.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	_, testAll := impactedApps["all"]
 	for i, test := range tests {
@@ -414,9 +440,7 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 
 	// Filter tests
-	mf := modifiedFiles(t)
-	ia := determineImpactedApps(mf)
-	determineTestsToSkip(tests, ia, testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)), testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
