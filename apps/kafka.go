@@ -23,7 +23,6 @@ import (
 type MetricsReceiverKafka struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared           `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
@@ -36,35 +35,34 @@ func (r MetricsReceiverKafka) Type() string {
 
 func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 	targetSystem := "kafka"
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		r.TargetSystemString(targetSystem),
-		defaultKafkaEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-
-			// Kafka script contains several metrics not desired by ops-agent
-			// as it existed in opentelemetry-java-contrib prior to the
-			// development of this integration
-			otel.MetricsFilter(
-				"include",
-				"strict",
-				"kafka.message.count",
-				"kafka.request.count",
-				"kafka.request.failed",
-				"kafka.request.time.total",
-				"kafka.network.io",
-				"kafka.purgatory.size",
-				"kafka.partition.count",
-				"kafka.partition.offline",
-				"kafka.partition.under_replicated",
-				"kafka.isr.operation.count",
-			),
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultKafkaEndpoint).
+		ConfigurePipelines(
+			r.TargetSystemString(targetSystem),
+			[]otel.Component{
+				// Kafka script contains several metrics not desired by ops-agent
+				// as it existed in opentelemetry-java-contrib prior to the
+				// development of this integration
+				otel.MetricsFilter(
+					"include",
+					"strict",
+					"kafka.message.count",
+					"kafka.request.count",
+					"kafka.request.failed",
+					"kafka.request.time.total",
+					"kafka.network.io",
+					"kafka.purgatory.size",
+					"kafka.partition.count",
+					"kafka.partition.offline",
+					"kafka.partition.under_replicated",
+					"kafka.isr.operation.count",
+				),
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {

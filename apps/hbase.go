@@ -24,7 +24,6 @@ import (
 
 type MetricsReceiverHbase struct {
 	confgenerator.ConfigComponent                 `yaml:",inline"`
-	confgenerator.MetricsReceiverShared           `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
@@ -41,20 +40,20 @@ func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
-		defaultHbaseEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-				otel.UpdateMetric("hbase.region_server.*",
-					otel.AggregateLabels("max", "state"),
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultHbaseEndpoint).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+					otel.UpdateMetric("hbase.region_server.*",
+						otel.AggregateLabels("max", "state"),
+					),
 				),
-			),
-		},
-	)
+			},
+		)
 }
 
 func init() {

@@ -23,8 +23,6 @@ import (
 type MetricsReceiverTomcat struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
@@ -39,17 +37,17 @@ func (r MetricsReceiverTomcat) Type() string {
 func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
 	targetSystem := "tomcat"
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		r.TargetSystemString(targetSystem),
-		defaultTomcatEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultTomcatEndpoint).
+		ConfigurePipelines(
+			r.TargetSystemString(targetSystem),
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {

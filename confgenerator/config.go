@@ -436,16 +436,26 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 }
 
 type MetricsReceiverSharedJVM struct {
+	MetricsReceiverShared `yaml:",inline"`
+
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
 	Username string `yaml:"username" validate:"required_with=Password"`
 	Password string `yaml:"password" validate:"required_with=Username"`
 }
 
-func (m MetricsReceiverSharedJVM) JVMConfig(targetSystem string, defaultEndpoint string, collectionIntervalString string, processors []otel.Component) []otel.Pipeline {
+// WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
+// It then returns a new MetricReceiverSharedJVM with this change.
+func (m MetricsReceiverSharedJVM) WithDefaultEndpoint(defaultEndpoint string) MetricsReceiverSharedJVM {
 	if m.Endpoint == "" {
 		m.Endpoint = defaultEndpoint
 	}
 
+	return m
+}
+
+// ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
+// This is used alongside the passed in processors to return a single Pipeline in an array.
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.Pipeline {
 	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
@@ -453,7 +463,7 @@ func (m MetricsReceiverSharedJVM) JVMConfig(targetSystem string, defaultEndpoint
 
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
-		"collection_interval": collectionIntervalString,
+		"collection_interval": m.CollectionIntervalString(),
 		"endpoint":            m.Endpoint,
 		"jar_path":            jarPath,
 	}

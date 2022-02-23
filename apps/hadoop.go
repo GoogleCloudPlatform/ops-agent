@@ -24,7 +24,6 @@ import (
 
 type MetricsReceiverHadoop struct {
 	confgenerator.ConfigComponent                 `yaml:",inline"`
-	confgenerator.MetricsReceiverShared           `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
@@ -41,17 +40,17 @@ func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
 	}
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		targetSystem,
-		defaultHadoopEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultHadoopEndpoint).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {

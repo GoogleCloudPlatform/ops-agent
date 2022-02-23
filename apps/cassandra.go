@@ -23,8 +23,6 @@ import (
 type MetricsReceiverCassandra struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
@@ -39,17 +37,17 @@ func (r MetricsReceiverCassandra) Type() string {
 func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
 	targetSystem := "cassandra"
 
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		r.TargetSystemString(targetSystem),
-		defaultCassandraEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultCassandraEndpoint).
+		ConfigurePipelines(
+			r.TargetSystemString(targetSystem),
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {
