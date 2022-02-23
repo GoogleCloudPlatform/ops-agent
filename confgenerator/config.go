@@ -438,9 +438,10 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 type MetricsReceiverSharedJVM struct {
 	MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Endpoint       string   `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
+	Username       string   `yaml:"username" validate:"required_with=Password"`
+	Password       string   `yaml:"password" validate:"required_with=Username"`
+	AdditionalJars []string `yaml:"additional_jars" validate:"omitempty,dive,file"`
 }
 
 // WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
@@ -448,6 +449,16 @@ type MetricsReceiverSharedJVM struct {
 func (m MetricsReceiverSharedJVM) WithDefaultEndpoint(defaultEndpoint string) MetricsReceiverSharedJVM {
 	if m.Endpoint == "" {
 		m.Endpoint = defaultEndpoint
+	}
+
+	return m
+}
+
+// WithDefaultAdditionalJars overrides the MetricReceiverSharedJVM's AdditionalJars if it is empty.
+// It then returns a new MetricReceiverSharedJVM with this change.
+func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJars ...string) MetricsReceiverSharedJVM {
+	if len(m.AdditionalJars) == 0 {
+		m.AdditionalJars = defaultAdditionalJars
 	}
 
 	return m
@@ -466,6 +477,10 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		"collection_interval": m.CollectionIntervalString(),
 		"endpoint":            m.Endpoint,
 		"jar_path":            jarPath,
+	}
+
+	if len(m.AdditionalJars) > 0 {
+		config["additional_jars"] = m.AdditionalJars
 	}
 
 	// Only set the username & password fields if provided
