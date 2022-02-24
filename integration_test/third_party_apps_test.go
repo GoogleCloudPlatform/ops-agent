@@ -390,7 +390,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
-			if test.platform != defaultPlatform || testApp == false {
+			if test.platform != defaultPlatform && testApp == false {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
