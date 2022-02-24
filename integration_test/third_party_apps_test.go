@@ -361,10 +361,7 @@ func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool
 
 			if _, ok := allApps[f]; ok {
 				impactedApps[f] = true
-			} else {
-				impactedApps["all"] = true
 			}
-
 		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
 			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
 			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
@@ -373,12 +370,7 @@ func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool
 			// need to check against list.
 			impactedApps[f] = true
 
-		} else {
-			// Any other modified file means we should test
-			// everything.
-			impactedApps["all"] = true
 		}
-
 	}
 	return impactedApps
 }
@@ -392,20 +384,13 @@ type test struct {
 const defaultPlatform = "debian-10"
 
 // Mark some tests for skipping, based on test_config and impacted apps.
-// Only ever test one slice in presubmit (i.e. short mode), either one app
-// across all supported platforms, or all apps across one platform.
+// Always test all apps against the default platform.  If a subset of apps is
+// determined to be impacted, also test all platforms for those apps.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
-	_, testAll := impactedApps["all"]
-	testSpecificApps := false
-	if testAll == false && len(impactedApps) > 0 {
-		testSpecificApps = true
-	}
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
-			if testAll && test.platform != defaultPlatform {
-				tests[i].skipReason = fmt.Sprintf("skipping %v. Running %v against all apps.", test.platform, defaultPlatform)
-			} else if testSpecificApps && !testApp {
+			if test.platform != defaultPlatform || testApp == false {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
