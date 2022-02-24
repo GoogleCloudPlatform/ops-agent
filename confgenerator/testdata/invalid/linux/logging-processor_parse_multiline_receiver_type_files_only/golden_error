@@ -1,10 +1,1 @@
-[11:7] unknown field "field"
-   8 |       type: systemd_journald
-   9 |   processors:
-  10 |     multiline_parser_1:
-> 11 |       field: message
-             ^
-  12 |       type: parse_multiline
-  13 |       match_any:
-  14 |       - type: language_exceptions
-  15 |         
+processor "multiline_parser_1" with type "parse_multiline" can only be applied on receivers with type "files"

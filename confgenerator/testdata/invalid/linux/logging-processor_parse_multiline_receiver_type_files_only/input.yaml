@@ -8,7 +8,6 @@ logging:
       type: systemd_journald
   processors:
     multiline_parser_1:
-      field: message
       type: parse_multiline
       match_any:
       - type: language_exceptions
