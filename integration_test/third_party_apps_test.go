@@ -348,8 +348,6 @@ func modifiedFiles(t *testing.T) []string {
 //   apps/<appname>.go
 //   integration_test/third_party_apps_data/<appname>/
 // Checks the extracted app names against the set of all known apps.
-// If any file modified is not specifically app related, appends an `all`
-// entry to the set of impacted apps, to be handled by the caller.
 func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
