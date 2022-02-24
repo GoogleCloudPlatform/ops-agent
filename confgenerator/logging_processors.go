@@ -27,7 +27,7 @@ import (
 
 type ParseMultilineGroup struct {
 	Type      string   `yaml:"type" validate:"required,oneof=language_exceptions"`
-	Languages []string `yaml:"languages" validate:"required,min=1,dive,oneof=java"`
+	Languages []string `yaml:"languages" validate:"required,unique,min=1,dive,oneof=java"`
 }
 
 type ParseMultiline struct {
