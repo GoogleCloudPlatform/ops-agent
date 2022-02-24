@@ -97,7 +97,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 						"metrics_path":    "/metrics",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{"0.0.0.0:28475"},
+							"targets": []string{"0.0.0.0:888"},
 						}},
 					}},
 				},
