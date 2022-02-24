@@ -15,10 +15,10 @@
 package confgenerator
 
 import (
-  "fmt"
-  "io/ioutil"
-  "os"
-  "path/filepath"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 const addLogNameLuaScriptContents string = `
@@ -62,12 +62,12 @@ end
 // TODO(ridwanmsharif): Replace this with in-config script when
 //   fluent/fluent-bit#4634 is supported.
 func writeForwardScript(path string) error {
-  // Make sure the directory exists before writing the file.
-  if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-    return fmt.Errorf("failed to create directory for %q: %w", path, err)
-  }
-  if err := ioutil.WriteFile(path, []byte(addLogNameLuaScriptContents), 0644); err != nil {
-    return fmt.Errorf("failed to write file to %q: %w", path, err)
-  }
-  return nil
+	// Make sure the directory exists before writing the file.
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %q: %w", path, err)
+	}
+	if err := ioutil.WriteFile(path, []byte(addLogNameLuaScriptContents), 0644); err != nil {
+		return fmt.Errorf("failed to write file to %q: %w", path, err)
+	}
+	return nil
 }

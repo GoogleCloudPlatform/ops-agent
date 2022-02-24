@@ -193,7 +193,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					regexSuffix = `\..*`
 					globSuffix = `.*`
 				}
-				tags = append(tags, regexp.QuoteMeta(tag) + regexSuffix)
+				tags = append(tags, regexp.QuoteMeta(tag)+regexSuffix)
 				tag = tag + globSuffix
 
 				for i, pID := range p.ProcessorIDs {
