@@ -385,19 +385,21 @@ type test struct {
 const defaultPlatform = "debian-10"
 
 // Mark some tests for skipping, based on test_config and impacted apps.
+// Only ever test one slice in presubmit (i.e. short mode), either one app
+// across all supported platforms, or all apps across one platform.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	_, testAll := impactedApps["all"]
+	testSpecificApps := false
+	if testAll == false && len(impactedApps) > 0 {
+		testSpecificApps = true
+	}
 	for i, test := range tests {
 		if testing.Short() {
-			if len(impactedApps) > 0 {
-				_, testApp := impactedApps[test.app]
-				if testAll == false && testApp == false {
-					tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
-				} else if testAll == true {
-					if test.platform != defaultPlatform {
-						tests[i].skipReason = fmt.Sprintf("skipping %v. Running %v against all apps.", test.platform, defaultPlatform)
-					}
-				}
+			_, testApp := impactedApps[test.app]
+			if testAll && test.platform != defaultPlatform {
+				tests[i].skipReason = fmt.Sprintf("skipping %v. Running %v against all apps.", test.platform, defaultPlatform)
+			} else if testSpecificApps && !testApp {
+				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
 		if test.app == "mysql" {
