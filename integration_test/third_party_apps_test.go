@@ -330,12 +330,14 @@ func determineAllApps(t *testing.T) map[string]bool {
 			allApps[file.Name()] = true
 		}
 	}
+	log.Printf("all apps: %v", allApps)
 	return allApps
 }
 
 func modifiedFiles(t *testing.T) []string {
 	cmd := exec.Command("git", "diff", "--name-only", "origin/master")
 	out, err := cmd.Output()
+	log.Printf("git diff output:\n\tstdout:%v\n\tstderr:%v\n", out, err)
 	if err != nil {
 		t.Fatalf("got error calling `git diff`: %v", err)
 	}
@@ -370,6 +372,7 @@ func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool
 
 		}
 	}
+	log.Printf("impacted apps: %v", impactedApps)
 	return impactedApps
 }
 
