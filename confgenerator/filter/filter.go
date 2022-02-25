@@ -19,6 +19,7 @@ package filter
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
@@ -26,6 +27,22 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/parser"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
+
+type Member struct {
+	ast.Target
+}
+
+func NewMember(m string) (*Member, error) {
+	lex := lexer.NewLexer([]byte(m))
+	p := parser.NewParser()
+	out, err := p.Parse(lex)
+	if err != nil {
+		return nil, err
+	}
+	// XXX extract Member or return error if not Member
+	log.Printf("Got ast: %+r", out)
+	return &Member{}, nil
+}
 
 type Filter struct {
 	expr ast.Expression

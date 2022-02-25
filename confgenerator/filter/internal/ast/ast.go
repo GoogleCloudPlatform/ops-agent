@@ -40,8 +40,7 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"httpRequest":    "logging.googleapis.com/http_request",
 }
 
-// RecordAccessor returns a string that can be used as a key in a FluentBit config
-func (m Target) RecordAccessor() (string, error) {
+func (m Target) fluentBitPath([]string, error) {
 	var fluentBit []string
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
@@ -56,7 +55,16 @@ func (m Target) RecordAccessor() (string, error) {
 		}
 	}
 	if fluentBit == nil {
-		return "", fmt.Errorf("invalid target: %v", strings.Join(m, "."))
+		return nil, fmt.Errorf("invalid target: %v", strings.Join(m, "."))
+	}
+	return fluentBit, nil
+}
+
+// RecordAccessor returns a string that can be used as a key in a FluentBit config
+func (m Target) RecordAccessor() (string, error) {
+	fluentBit, err := m.fluentBitPath()
+	if err != nil {
+		return "", err
 	}
 	recordAccessor := "$record"
 	for _, part := range fluentBit {
@@ -73,6 +81,45 @@ func (m Target) RecordAccessor() (string, error) {
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
 	}
 	return recordAccessor, nil
+}
+
+func (m Target) LuaAccessor(write bool) (string, error) {
+	fluentBit, err := m.fluentBitPath
+	if err != nil {
+		return "", err
+	}
+	for i := range fluentBit {
+		fluentBit[i] = LuaQuote(fluentBit[i])
+	}
+	var out strings.Builder
+	if write {
+		out.WriteString(`(function(value)
+`)
+	} else {
+		out.WriteString(`(function()
+`)
+	}
+	for i := 0; i < len(fluentBit)-1; i++ {
+		p := strings.Join(fluentBit[:i+1], "][")
+		fmt.Fprintf(out, `if record[%s] == nil
+then
+`, p)
+		if write {
+			fmt.Fprintf(out, `record[%s] = {}
+`, p)
+		} else {
+			fmt.Fprintf(out, `return nil`)
+		}
+	}
+	p = strings.Join(fluentBit, "][")
+	if write {
+		fmt.Fprintf(out, `record[%s] = value
+end)`, p)
+	} else {
+		fmt.Fprintf(out, `return record[%s]
+end)`, p)
+	}
+	return out.String()
 }
 
 func prepend(value string, slice []string) []string {
@@ -424,4 +471,23 @@ func ParseString(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	// TODO: Support all escape sequences
 	return str[1 : len(str)-1], nil
+}
+
+func LuaQuote(in string) string {
+	var b strings.Builder
+	b.Grow(len(in) + 2)
+	b.WriteString(`"`)
+	for i := 0; i < len(in); i++ {
+		// N.B. slicing a string gives bytes, not runes
+		c := in[i]
+		if c >= 32 && c < 127 {
+			// printable character
+			b.WriteByte(c)
+		} else {
+			// N.B. Lua character escapes are always integers
+			fmt.Fprintf(b, `\%d`, c)
+		}
+	}
+	b.WriteString(`"`)
+	return b.String()
 }
