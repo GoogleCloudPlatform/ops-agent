@@ -379,7 +379,10 @@ type test struct {
 	skipReason string
 }
 
-const defaultPlatform = "debian-10"
+var defaultPlatforms = map[string]bool{
+	"debian-10":    true,
+	"windows-2019": true,
+}
 
 // Mark some tests for skipping, based on test_config and impacted apps.
 // Always test all apps against the default platform.  If a subset of apps is
@@ -388,7 +391,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
-			if test.platform != defaultPlatform && testApp == false {
+			_, defaultPlatform := defaultPlatforms[test.platform]
+			if defaultPlatform == false && testApp == false {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
