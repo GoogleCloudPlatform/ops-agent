@@ -384,9 +384,10 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
-// Mark some tests for skipping, based on test_config and impacted apps.
-// Always test all apps against the default platform.  If a subset of apps is
-// determined to be impacted, also test all platforms for those apps.
+// When in `-short` test mode, mark some tests for skipping, based on
+// test_config and impacted apps.  Always test all apps against the default
+// platform.  If a subset of apps is determined to be impacted, also test all
+// platforms for those apps.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
