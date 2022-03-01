@@ -1002,7 +1002,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if isSUSE(vm.Platform) {
+	if IsSUSE(vm.Platform) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf")
@@ -1020,7 +1020,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-func isSUSE(platform string) bool {
+func IsSUSE(platform string) bool {
 	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
 }
 
@@ -1046,7 +1046,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(isSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1203,7 +1203,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if !isSUSE(vm.Platform) {
+	if !IsSUSE(vm.Platform) {
 		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
 	}
 
@@ -1422,7 +1422,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if isSUSE(vm.Platform) {
+	if IsSUSE(vm.Platform) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
