@@ -14,3 +14,11 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server=14.1-5.6.1 postgresql14-contrib=14.1-5.6.1 postgresql14-libs=14.1-1PGDG.sles15 postgresql14=14.1-5.6.1
 fi
+
+sudo service postgresql restart
+
+sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
+sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
+
+sudo service postgresql restart

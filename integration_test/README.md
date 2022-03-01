@@ -113,9 +113,6 @@ the test will:
 1.  Install the application on the VM by running
     `applications/<application>/<platform>/install` on the VM
 1.  Install the Ops Agent (built from the contents of the PR) on the VM
-1.  Configure the application to expose its metrics by running
-    `applications/<application>/<platform>/post` on the VM. This might
-    be a no-op for some applications.
 1.  Configure the the Ops Agent to look for the application's logs/metrics by
     running `agent/ops-agent/<platform>/enable_<application>` on the VM.
 1.  Run `applications/<application>/exercise` script to send some load to
@@ -156,9 +153,6 @@ simplified to:
 1.  `agent/ops-agent/linux/supported_applications.txt`
 1.  `applications/<application>/debian_ubuntu/install` (may already exist) to
     install the application,
-1.  `applications/<application>/debian_ubuntu/post` (may already exist) to
-    configure the application to expose metrics somewhere. This might be a
-    no-op for some applications. If so, just leave the file empty.
 1.  `agent/ops-agent/linux/enable_<application>` to configure the Ops Agent to
     read the application's metrics exposed in the previous step.
 1.  (if necessary) `applications/<application>/exercise`. This is only needed

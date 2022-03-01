@@ -1,2 +1,5 @@
 $ProgressPreference = 'SilentlyContinue'
 Install-WindowsFeature -name Web-Server
+
+$ProgressPreference = 'SilentlyContinue'
+Start-WebSite -Name "Default Web Site"
