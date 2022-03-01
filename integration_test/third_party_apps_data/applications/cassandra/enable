@@ -1,0 +1,66 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+metrics:
+  receivers:
+    cassandra:
+      type: cassandra
+      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:7199/jmxrmi
+  service:
+    pipelines:
+      cassandra:
+        receivers:
+          - cassandra
+logging:
+  receivers:
+    cassandra_system:
+      type: cassandra_system
+    cassandra_debug:
+      type: cassandra_debug
+    cassandra_gc:
+      type: cassandra_gc
+    cassandra_sles_system:
+      type: cassandra_system
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/system*.log
+    cassandra_sles_debug:
+      type: cassandra_debug
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/debug*.log
+    cassandra_sles_gc:
+      type: cassandra_gc
+      include_paths:
+      # This path is specific to SLES integration tests manual install
+      - /home/test_user/apache-cassandra/logs/gc.log.*.current
+  service:
+    pipelines:
+      cassandra:
+        receivers:
+          - cassandra_system
+          - cassandra_debug
+          - cassandra_gc
+          - cassandra_sles_system
+          - cassandra_sles_debug
+          - cassandra_sles_gc
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60
