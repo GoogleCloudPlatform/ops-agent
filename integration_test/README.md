@@ -102,10 +102,8 @@ that the application can be installed on a real GCE VM and that a single
 representative metric is successfully uploaded to Google Cloud Monitoring.
 
 The test is designed to be highly parameterizable. It reads various files from
-`third_party_apps_data` and decides what to do based on their contents. First
-it reads `test_config.yaml` and uses that to set some testing options. See the
-"test_config.yaml" section below. Then it reads
-`agent/ops-agent/<platform>/supported_applications.txt` to determine
+`third_party_apps_data` and decides what to do based on their contents. First it
+reads `agent/ops-agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -127,24 +125,11 @@ the test will:
     `applications/<application>/metric_name.txt` to appear in the Google Cloud
     Monitoring backend.
 
-The code for the test runner is not open source yet, unfortunately.
-
 The test is designed so that simply modifying files in the
 `third_party_apps_data` directory is sufficient to get the test runner to do the
 right thing. But we do expect that we will need to make big changes to both the
 data directory and the test runner before it is really meeting our needs.
 
-NOTE: Currently there are various directories that are included in
-`third_party_apps_data` that are unused, such as everything in the
-`agent/metrics/` directory. These are provided for a few reasons:
-
-1.  To serve as an example for how the directory structure is expected to look
-    as the number of platforms and applications increases,
-1.  because I uploaded our existing data directory mostly as-is, and it is
-    currently being used to test agents besides the Ops Agent, and
-1.  to be a starting point so that nobody has to rewrite our logic for
-    installing, e.g. redis on CentOS 7.
-    
 ### Adding a new third-party application
 
 You will need to add a few files, and possibly change what's there currently,

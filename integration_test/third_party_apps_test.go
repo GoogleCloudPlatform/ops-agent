@@ -221,49 +221,35 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-type testConfig struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-
-	// Until we have tests working on all platforms, platforms_override
-	// provides a way for people to control which platforms actually run
-	// from GitHub, because some of our GitHub contributors don't have access
-	// to the GCL file where the full set of platforms is configured.
-	Platforms []string `yaml:"platforms_override"`
-	// retries provides a way for GitHub contributors to control the number
-	// of retries (for retriable errors only).
-	Retries int `yaml:"retries"`
-
-	// per_application_overrides is a map from application to specific settings
-	// for that application.
-	PerApplicationOverrides map[string]struct {
-		// platforms_to_skip is a list of platforms that need to be skipped for
-		// this application. Ideally this will be empty or nearly empty most of
-		// the time.
-		PlatformsToSkip []string `yaml:"platforms_to_skip"`
-	} `yaml:"per_application_overrides"`
-}
-
-// parseTestConfigFile looks for test_config.yaml, and if it exists, merges
-// any options in it into the default test config and returns the result.
-func parseTestConfigFile() (testConfig, error) {
-	// Set up the default test options.
-	config := testConfig{
-		Platforms: strings.Split(os.Getenv("PLATFORMS"), ","),
-		Retries:   3,
+// shouldSkip returns a reason that the given pair of application and platform
+// should be skipped, or "" if it should not be skipped.
+// New applications should return skip reasons sparingly if at all.
+func shouldSkip(app, platform string) string {
+	switch app {
+	case "apache", "cassandra", "jvm", "mysql", "nginx", "redis":
+		if platform != "debian-10" {
+			return "application without multi-platform support implemented yet"
+		}
+		return ""
+	case "wildfly":
+		if platform != "debian-10" {
+			// As wildfly does not have package installers & is installed from tar,
+			// we only want to test on one distribution to help reduce integration test size
+			return "installed from tar, no need to test across platforms"
+		}
+		return ""
+	case "couchdb":
+		if gce.IsSUSE(platform) {
+			return "couchdb is not supported on SuSE"
+		}
+		return ""
+	case "rabbitmq":
+		if platform == "sles-12" {
+			return "rabbitmq is not supported on sles-12"
+		}
+		return ""
 	}
-
-	bytes, err := readFileFromScriptsDir("test_config.yaml")
-	if err != nil {
-		log.Printf("Reading test_config.yaml failed with err=%v, proceeding...", err)
-		// Probably the file is just missing, return the defaults.
-		return config, nil
-	}
-
-	if err = yaml.UnmarshalStrict(bytes, &config); err != nil {
-		return testConfig{}, err
-	}
-	return config, nil
+	return ""
 }
 
 // runSingleTest starts with a fresh VM, installs the app and agent on it,
@@ -337,11 +323,8 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 	agentType := agents.OpsAgentType
 
-	testConfig, err := parseTestConfigFile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, platform := range testConfig.Platforms {
+	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	for _, platform := range platforms {
 		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
 		t.Run(platform, func(t *testing.T) {
 			t.Parallel()
@@ -358,14 +341,14 @@ func TestThirdPartyApps(t *testing.T) {
 				t.Run(app, func(t *testing.T) {
 					t.Parallel()
 
-					if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
-						t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
+					if reason := shouldSkip(app, platform); reason != "" {
+						t.Skip(reason)
 					}
 					ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 					defer cancel()
 
 					var err error
-					for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
+					for attempt := 1; attempt <= 4; attempt++ {
 						logger := gce.SetupLogger(t)
 						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
