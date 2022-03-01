@@ -228,6 +228,7 @@ func shouldSkip(app, platform string) string {
 	switch app {
 	case "apache", "cassandra", "jvm", "mysql", "nginx", "redis":
 		if platform != "debian-10" {
+			// TODO: enable multi-platform support for these application.s
 			return "application without multi-platform support implemented yet"
 		}
 		return ""
@@ -249,6 +250,8 @@ func shouldSkip(app, platform string) string {
 		}
 		return ""
 	}
+	// Most applications support all platforms and don't appear anywhere
+	// in the switch/case.
 	return ""
 }
 
