@@ -96,6 +96,9 @@ func appsToTest(agentType, platform string) ([]string, error) {
 	}
 
 	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	if err = rejectDuplicates(apps); err != nil {
+		return err
+	}
 	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
 		apps = removeFromSlice(apps, "mssql")
 	}
