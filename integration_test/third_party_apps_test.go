@@ -79,7 +79,7 @@ func rejectDuplicates(apps []string) error {
 	unique := make(map[string]bool)
 	for _, app := range apps {
 		if unique[app] {
-			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)	
+			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
 		}
 		unique[app] = true
 	}
