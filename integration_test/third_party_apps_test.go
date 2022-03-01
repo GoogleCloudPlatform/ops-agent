@@ -73,6 +73,19 @@ func osFolder(platform string) string {
 	return "linux"
 }
 
+// rejectDuplicates looks for duplicate entries in the input slice and returns
+// an error if any is found.
+func rejectDuplicates(apps []string) error {
+	unique := make(map[string]bool)
+	for _, app := range apps {
+		if unique[app] {
+			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)	
+		}
+		unique[app] = true
+	}
+	return nil
+}
+
 // appsToTest reads which applications to test for the given agent+platform
 // combination from the appropriate supported_applications.txt file.
 func appsToTest(agentType, platform string) ([]string, error) {
