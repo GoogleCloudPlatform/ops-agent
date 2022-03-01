@@ -1020,6 +1020,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
+// IsSUSE returns whether the given platform looks like SLES or openSUSE.
 func IsSUSE(platform string) bool {
 	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
 }
