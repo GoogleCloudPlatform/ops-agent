@@ -156,8 +156,8 @@ simplified to:
 ### Testing Command
 
 This needs the same setup steps as the Ops Agent test (see above). The command
-is nearly the same, just change the test file and add
-`SCRIPTS_DIR=third_party_apps_data`:
+is nearly the same, just replace `ops_agent_test.go` with
+`third_party_apps_test.go`:
 
 ```
 PROJECT="${PROJECT}" \
@@ -165,7 +165,6 @@ TRANSFERS_BUCKET="${BUCKET}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
-SCRIPTS_DIR=third_party_apps_data \
 go test -v third_party_apps_test.go \
  -test.parallel=1000 \
  -tags=integration_test \
