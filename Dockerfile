@@ -25,11 +25,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config default-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -41,11 +41,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config default-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -58,23 +58,34 @@ RUN set -x; \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config default-jdk
+    devscripts cdbs pkg-config
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    mkdir -p /usr/local/java-11-openjdk && \
+    tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+
+ENV JAVA_HOME /usr/local/java-11-openjdk/
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:hirsute AS hirsute-build
+FROM ubuntu:impish AS impish-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config golang-go openjdk-11-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -86,11 +97,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -102,28 +113,11 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
+    devscripts cdbs pkg-config openjdk-11-jdk
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
-
-COPY . /work
-WORKDIR /work
-RUN ./pkg/deb/build.sh
-
-FROM ubuntu:xenial AS xenial-build
-
-RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y -t xenial-backports install debhelper && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-    build-essential cmake bison flex file libsystemd-dev \
-    devscripts cdbs pkg-config openjdk-8-jdk
-
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -134,44 +128,44 @@ FROM centos:7 AS centos7-build
 RUN set -x; yum -y update && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-1.8.0-openjdk java-1.8.0-openjdk-devel \
+    gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
     expect rpm-sign && \
     yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum install -y cmake3 && \
     ln -fs cmake3 /usr/bin/cmake
 
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk/
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM centos:8 AS centos8-build
+FROM rockylinux:8 AS centos8-build
 
 RUN set -x; yum -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
     yum config-manager --set-enabled powertools && \
     yum -y install git systemd \
     autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-1.8.0-openjdk-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
-FROM opensuse/leap:42.3 AS sles12-build
+FROM opensuse/archive:42.3 AS sles12-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros && \
     # Remove expired root certificate.
     mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
     update-ca-certificates && \
@@ -185,9 +179,16 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    mkdir -p /usr/local/java-11-openjdk && \
+    tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+
+ENV JAVA_HOME /usr/local/java-11-openjdk/
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -195,7 +196,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-1_8_0-openjdk-devel && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel && \
     # Add home:ptrommler:formal repo to install >3.4 bison
     zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
@@ -204,9 +205,9 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.16.3.linux-amd64.tar.gz /tmp/go1.16.3.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.16.3.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -224,9 +225,9 @@ FROM scratch AS stretch
 COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
 COPY --from=stretch-build /google-cloud-ops-agent*.deb /
 
-FROM scratch AS hirsute
-COPY --from=hirsute-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-hirsute.tgz
-COPY --from=hirsute-build /google-cloud-ops-agent*.deb /
+FROM scratch AS impish
+COPY --from=impish-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-impish.tgz
+COPY --from=impish-build /google-cloud-ops-agent*.deb /
 
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
@@ -235,10 +236,6 @@ COPY --from=focal-build /google-cloud-ops-agent*.deb /
 FROM scratch AS bionic
 COPY --from=bionic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
 COPY --from=bionic-build /google-cloud-ops-agent*.deb /
-
-FROM scratch AS xenial
-COPY --from=xenial-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-xenial.tgz
-COPY --from=xenial-build /google-cloud-ops-agent*.deb /
 
 FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
@@ -260,10 +257,9 @@ FROM scratch
 COPY --from=bullseye /* /
 COPY --from=buster /* /
 COPY --from=stretch /* /
-COPY --from=hirsute /* /
+COPY --from=impish /* /
 COPY --from=focal /* /
 COPY --from=bionic /* /
-COPY --from=xenial /* /
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=sles12 /* /

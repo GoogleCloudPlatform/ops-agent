@@ -1,0 +1,4 @@
+set -e
+
+sudo systemctl restart tomcat9
+sleep 60

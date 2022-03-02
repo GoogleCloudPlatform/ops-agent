@@ -1,6 +1,0 @@
-apache
-jvm
-memcached
-mysql
-nginx
-redis

@@ -1,0 +1,62 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    nginx_default_access:
+      type: nginx_access
+    nginx_default_error:
+      type: nginx_error
+    nginx_custom_access:
+      type: nginx_access
+      wildcard_refresh_interval: 20s
+      include_paths:
+        - /var/log/nginx/vhosts.log
+    nginx_custom_error:
+      type: nginx_error
+      wildcard_refresh_interval: 1h
+      include_paths:
+        - /srv/nginx/error.log
+    # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
+    nginx_syslog_access:
+      type: syslog
+      transport_protocol: udp
+      listen_host: 1.1.1.1
+      listen_port: 1
+    nginx_syslog_error:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 2
+  processors:
+    nginx_syslog_access:
+      type: nginx_access
+    nginx_syslog_error:
+      type: nginx_error
+  service:
+    pipelines:
+      nginx_default:
+        receivers:
+          - nginx_default_access
+          - nginx_default_error
+      nginx_custom:
+        receivers:
+          - nginx_custom_access
+          - nginx_custom_error
+      nginx_syslog_access:
+        receivers: [nginx_syslog_access]
+        processors: [nginx_syslog_access]
+      nginx_syslog_error:
+        receivers: [nginx_syslog_error]
+        processors: [nginx_syslog_error]

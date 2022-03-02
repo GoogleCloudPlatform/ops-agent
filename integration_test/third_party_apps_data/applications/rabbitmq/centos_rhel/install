@@ -1,0 +1,22 @@
+set -e
+
+sudo yum install -y curl epel-release
+
+curl -s \
+    -o erlang.rpm \
+    https://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
+sudo rpm -Uvh erlang.rpm
+
+sudo yum install -y erlang
+
+curl -s \
+    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | \
+    sudo bash
+
+sudo yum makecache -y \
+    --disablerepo='*' --enablerepo='rabbitmq_rabbitmq-server'
+
+sudo yum -y install rabbitmq-server
+
+sudo systemctl daemon-reload
+sudo systemctl enable rabbitmq-server

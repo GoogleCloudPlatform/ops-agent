@@ -1,0 +1,1 @@
+workload.googleapis.com/elasticsearch.node.open_files

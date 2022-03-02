@@ -1,0 +1,13 @@
+set -e
+sudo apt update
+sudo apt-get install -y curl default-jdk default-jdk-headless
+sudo apt install tomcat9 -y
+sudo mkdir -p /etc/systemd/system/tomcat9.service.d
+sudo cat >> /etc/systemd/system/tomcat9.service.d/local.conf << EOF
+[Service]
+# Configuration
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="JAVA_OPTS=-Djava.awt.headless=true"
+EOF
+
+sudo systemctl daemon-reload

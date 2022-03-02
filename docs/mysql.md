@@ -1,50 +1,28 @@
-# `mysql_error`, `mysql_general` and `mysql_slow` Logging Receivers
+# MySQL
 
-## Configuration
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
-To configure a receiver for your mysql error logs, specify the following fields:
+## Metrics
 
-| Field                 | Default                       | Description |
-| ---                   | ---                           | ---         |
-| `type`                | required                      | Must be `mysql_error`. |
-| `include_paths`       | `[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
-| `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+The following table provides the list of metrics that the Ops Agent collects from this application.
 
-To configure a receiver for your mysql general query logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `mysql_general`. |
-| `include_paths`       | `[/var/lib/mysql/${HOSTNAME}.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-To configure a receiver for your mysql slow query logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `mysql_slow`. |
-| `include_paths`       | `[/var/lib/mysql/${HOSTNAME}-slow.log` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-Example Configuration:
-
-```yaml
-logging:
-  receivers:
-    mysql_error:
-      type: mysql_error
-    mysql_general:
-      type: mysql_general
-    mysql_slow:
-      type: mysql_slow
-  service:
-    pipelines:
-      mysql:
-        receivers:
-          - mysql_error
-          - mysql_general
-          - mysql_slow
-```
+| Metric                                               | Data Type | Unit        | Labels                  | Description    |
+| ---                                                  | ---       | ---         | ---                     | ---            | 
+| workload.googleapis.com/mysql.buffer_pool_pages      | gauge     | 1           | buffer_pool_pages       | Buffer pool page count. |
+| workload.googleapis.com/mysql.buffer_pool_operations | sum       | 1           | buffer_pool_operations  | Buffer pool operation count. |
+| workload.googleapis.com/mysql.buffer_pool_size       | gauge     | 1           | buffer_pool_size        | Buffer pool size.     |
+| workload.googleapis.com/mysql.commands               | sum       | 1           | command                 | MySQL command count. |
+| workload.googleapis.com/mysql.handlers               | sum       | 1           | handler                 | MySQL handler count. |
+| workload.googleapis.com/mysql.double_writes          | sum       | 1           | double_writes           | InnoDB doublewrite buffer count. |
+| workload.googleapis.com/mysql.log_operations         | sum       | 1           | log_operations          | InndoDB log operation count. |
+| workload.googleapis.com/mysql.operations             | sum       | 1           | operations              | InndoDB operation count. |
+| workload.googleapis.com/mysql.page_operations        | sum       | 1           | page_operations         | InndoDB page operation count. |
+| workload.googleapis.com/mysql.row_locks              | sum       | 1           | row_locks               | InndoDB row lock count. |
+| workload.googleapis.com/mysql.row_operations         | sum       | 1           | row_operations          | InndoDB row operation count. |
+| workload.googleapis.com/mysql.locks                  | sum       | 1           | locks                   | MySQL lock count. |
+| workload.googleapis.com/mysql.sorts                  | sum       | 1           | sorts                   | MySQL sort count. |
+| workload.googleapis.com/mysql.threads                | gauge     | 1           | threads                 | Thread count. |
 
 ## Logs
 

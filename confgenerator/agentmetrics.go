@@ -16,14 +16,14 @@ package confgenerator
 
 import "github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
-// MetricsReceiverAgent provides the agent.googleapis.com/agent/ metrics.
+// AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
 // It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
 // Therefore, it does not need to implement any interfaces.
-type MetricsReceiverAgent struct {
+type AgentSelfMetrics struct {
 	Version string
 }
 
-func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
+func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 	return otel.Pipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -54,8 +54,13 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.AddLabel("version", r.Version),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
 				),
-				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage"),
+				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage",
+					// remove service.version label
+					otel.AggregateLabels("sum"),
+				),
 				otel.RenameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
@@ -65,12 +70,52 @@ func (r MetricsReceiverAgent) Pipeline() otel.Pipeline {
 					//   label: grpc_client_method
 					//   value_regexp: ^google\.monitoring
 					otel.RenameLabel("grpc_client_status", "state"),
-					// delete grpc_client_method dimension, retaining only state
+					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
 				otel.RenameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
+					// Remove service.version label
+					otel.AggregateLabels("sum", "status"),
+				),
+				otel.AddPrefix("agent.googleapis.com"),
+			),
+		},
+	}
+}
+
+func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
+	return otel.Pipeline{
+		Receiver: otel.Component{
+			Type: "prometheus",
+			Config: map[string]interface{}{
+				"config": map[string]interface{}{
+					"scrape_configs": []map[string]interface{}{{
+						"job_name":        "logging-collector",
+						"scrape_interval": "1m",
+						"metrics_path":    "/metrics",
+						"static_configs": []map[string]interface{}{{
+							// TODO(b/196990135): Customization for the port number
+							"targets": []string{"0.0.0.0:20202"},
+						}},
+					}},
+				},
+			},
+		},
+		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				"fluentbit_uptime",
+			),
+			otel.MetricsTransform(
+				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AddLabel("version", r.Version),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),

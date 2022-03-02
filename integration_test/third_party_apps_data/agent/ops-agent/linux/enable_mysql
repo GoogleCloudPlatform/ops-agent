@@ -16,7 +16,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+metrics:
+  receivers:
+    mysql:
+      type: mysql
+  service:
+    pipelines:
+      mysql:
+        receivers:
+        - mysql
 logging:
   receivers:
     mysql_error:
@@ -35,3 +43,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

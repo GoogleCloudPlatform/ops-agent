@@ -15,65 +15,53 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
-type LoggingProcessorApacheAccess struct {
+type MetricsReceiverApache struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	ServerStatusURL string `yaml:"server_status_url" validate:"omitempty,url"`
 }
 
-func (LoggingProcessorApacheAccess) Type() string {
-	return "apache_access"
+const defaultServerStatusURL = "http://localhost:80/server-status?auto"
+
+func (r MetricsReceiverApache) Type() string {
+	return "apache"
 }
 
-func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Documentation: https://httpd.apache.org/docs/current/logs.html#accesslog
-		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
-		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
-		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
-			Types: map[string]string{
-				"http_request_status": "integer",
-				// N.B. "http_request_responseSize" is a string containing an integer.
-				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
-			},
-		},
-	}.Components(tag, uid)
-	// apache logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	for _, field := range []string{
-		"host",
-		"user",
-		"http_request_referer",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
+func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+	if r.ServerStatusURL == "" {
+		r.ServerStatusURL = defaultServerStatusURL
 	}
-	// Generate the httpRequest structure.
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
-			"Remove_prefix": "http_request_",
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "apache",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.ServerStatusURL,
+			},
 		},
-	})
-	return c
+		Processors: []otel.Component{
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"apache.uptime",
+			),
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverApache{} })
 }
 
 type LoggingProcessorApacheError struct {
@@ -105,7 +93,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"emerg", "EMERGENCY"},
 				{"alert", "ALERT"},
@@ -128,6 +116,18 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 	)
 
 	return c
+}
+
+type LoggingProcessorApacheAccess struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
+	return genericAccessLogParser(tag, uid)
+}
+
+func (LoggingProcessorApacheAccess) Type() string {
+	return "apache_access"
 }
 
 type LoggingReceiverApacheAccess struct {

@@ -1,0 +1,15 @@
+logging:
+  receivers:
+    receiver_1:
+      type: elasticsearch_json
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+      multilinerules:
+      - statename: "start_state"
+        regex: ".*"
+        nextstate: "start_state"  
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [receiver_1]

@@ -17,7 +17,9 @@ package confgenerator
 import (
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -33,8 +35,9 @@ func DBPath(tag string) string {
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
-	IncludePaths []string `yaml:"include_paths,omitempty" validate:"required"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
+	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -43,14 +46,17 @@ func (r LoggingReceiverFiles) Type() string {
 
 func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 	return LoggingReceiverFilesMixin{
-		IncludePaths: r.IncludePaths,
-		ExcludePaths: r.ExcludePaths,
+		IncludePaths:            r.IncludePaths,
+		ExcludePaths:            r.ExcludePaths,
+		WildcardRefreshInterval: r.WildcardRefreshInterval,
 	}.Components(tag)
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths []string `yaml:"include_paths,omitempty"`
-	ExcludePaths []string `yaml:"exclude_paths,omitempty"`
+	IncludePaths            []string        `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	MultilineRules          []MultilineRule `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -92,10 +98,53 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		// TODO: Escaping?
 		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
 	}
-	return []fluentbit.Component{{
+	if r.WildcardRefreshInterval != nil {
+		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
+		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
+	}
+
+	c := []fluentbit.Component{}
+
+	if len(r.MultilineRules) > 0 {
+		// Configure multiline in the input component;
+		// This is necessary, since using the multiline filter will not work
+		// if a multiline message spans between two chunks.
+		rules := [][2]string{}
+		for _, rule := range r.MultilineRules {
+			rules = append(rules, [2]string{"rule", rule.AsString()})
+		}
+
+		parserName := fmt.Sprintf("multiline.%s", tag)
+
+		c = append(c, fluentbit.Component{
+			Kind: "MULTILINE_PARSER",
+			Config: map[string]string{
+				"name":          parserName,
+				"type":          "regex",
+				"flush_timeout": "5000",
+			},
+			OrderedConfig: rules,
+		})
+		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
+		config["multiline.parser"] = parserName
+
+		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Match":  tag,
+				"Name":   "modify",
+				"Rename": "log message",
+			},
+		})
+	}
+
+	c = append(c, fluentbit.Component{
 		Kind:   "INPUT",
 		Config: config,
-	}}
+	})
+
+	return c
 }
 
 func init() {
@@ -200,6 +249,52 @@ func init() {
 	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverTCP{} })
 }
 
+// A LoggingReceiverFluentForward represents the configuration for a Forward Protocol receiver.
+type LoggingReceiverFluentForward struct {
+	ConfigComponent `yaml:",inline"`
+
+	ListenHost string `yaml:"listen_host,omitempty" validate:"omitempty,ip"`
+	ListenPort uint16 `yaml:"listen_port,omitempty"`
+}
+
+func (r LoggingReceiverFluentForward) Type() string {
+	return "fluent_forward"
+}
+
+func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Component {
+	if r.ListenHost == "" {
+		r.ListenHost = "127.0.0.1"
+	}
+	if r.ListenPort == 0 {
+		r.ListenPort = 24224
+	}
+
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/forward
+			"Name":       "forward",
+			"Tag_Prefix": tag + ".",
+			"Listen":     r.ListenHost,
+			"Port":       fmt.Sprintf("%d", r.ListenPort),
+			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
+			// Buffer in disk to improve reliability.
+			"storage.type": "filesystem",
+
+			// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
+			// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
+			// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
+			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
+			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
+			"Mem_Buf_Limit": "10M",
+		},
+	}}
+}
+
+func init() {
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverFluentForward{} })
+}
+
 // A LoggingReceiverWindowsEventLog represents the user configuration for a Windows event log receiver.
 type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
@@ -212,7 +307,7 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 }
 
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{{
+	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
@@ -223,6 +318,16 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
+	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
+		[]struct{ SrcVal, DestVal string }{
+			{"Error", "ERROR"},
+			{"Information", "INFO"},
+			{"Warning", "WARNING"},
+			{"SuccessAudit", "NOTICE"},
+			{"FailureAudit", "NOTICE"},
+		})
+
+	return append(input, filters...)
 }
 
 func init() {

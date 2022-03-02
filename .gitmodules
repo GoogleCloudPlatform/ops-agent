@@ -1,12 +1,9 @@
-[submodule "submodules/collectd"]
-	path = submodules/collectd
-	url = ../../Stackdriver/collectd.git
 [submodule "submodules/fluent-bit"]
 	path = submodules/fluent-bit
 	url = ../../fluent/fluent-bit.git
-[submodule "submodules/opentelemetry-operations-collector"]
-	path = submodules/opentelemetry-operations-collector
-	url = ../../GoogleCloudPlatform/opentelemetry-operations-collector.git
 [submodule "submodules/opentelemetry-java-contrib"]
 	path = submodules/opentelemetry-java-contrib
 	url = ../../open-telemetry/opentelemetry-java-contrib.git
+[submodule "submodules/opentelemetry-operations-collector"]
+	path = submodules/opentelemetry-operations-collector
+	url = ../../GoogleCloudPlatform/opentelemetry-operations-collector.git

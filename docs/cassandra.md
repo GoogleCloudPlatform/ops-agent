@@ -1,50 +1,32 @@
-# `cassandra_system`, `cassandra_debug` and `cassandra_gc` Logging Receivers
+# Cassandra
 
-## Configuration
+Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/cassandra)
+for instructions to collect logs and metrics from this application using Ops Agent.
 
-To configure a receiver for your cassandra system logs, specify the following fields:
+## Metrics
 
-| Field                 | Default                       | Description |
-| ---                   | ---                           | ---         |
-| `type`                | required                      | Must be `cassandra_system`. |
-| `include_paths`       | `[/var/log/cassandra/system*.log]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
-| `exclude_paths`       | `[]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+The following table provides the list of metrics that the Ops Agent collects from this application.
 
-To configure a receiver for your cassandra debug logs, specify the following fields:
+In addition to these Cassandra specific metrics, by default Cassandra will also report [JVM metrics](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/docs/jvm.md#metrics)
 
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `cassandra_debug`. |
-| `include_paths`       | `[/var/log/cassandra/debug*.log]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-To configure a receiver for your cassandra gc logs, specify the following fields:
-
-| Field                 | Default                      | Description |
-| ---                   | ---                          | ---         |
-| `type`                | required                     | Must be `cassandra_gc`. |
-| `include_paths`       | `[/var/log/cassandra/gc.log.*.current]` | The log files to read. |
-| `exclude_paths`       | `[]`                         | Log files to exclude (if `include_paths` contains a glob or directory). |
-
-Example Configuration:
-
-```yaml
-logging:
-  receivers:
-    cassandra_default_system:
-      type: cassandra_system
-    cassandra_default_debug:
-      type: cassandra_debug
-    cassandra_default_gc:
-      type: cassandra_gc
-  service:
-    pipelines:
-      cassandra:
-        receivers:
-          - cassandra_default_system
-          - cassandra_default_debug
-          - cassandra_default_gc
-```
+| Metric                                                                          | Data Type | Unit        | Labels | Description |
+| ---                                                                             | ---       | ---         | ---    | ---         | 
+| workload.googleapis.com/cassandra.client.request.count                          | cumulative | 1          | operation | Number of requests by operation |
+| workload.googleapis.com/cassandra.client.request.error.count                    | cumulative | 1          | operation, status | Number of request errors by operation |
+| workload.googleapis.com/cassandra.client.request.read.latency.50p               | gauge     | µs          |        | Standard read request latency - 50th percentile |
+| workload.googleapis.com/cassandra.client.request.read.latency.99p               | gauge     | µs          |        | Standard read request latency - 99th percentile |
+| workload.googleapis.com/cassandra.client.request.read.latency.max               | gauge     | µs          |        | Maximum standard read request latency |
+| workload.googleapis.com/cassandra.client.request.write.latency.50p              | gauge     | µs          |        | Standard write request latency - 50th percentile |
+| workload.googleapis.com/cassandra.client.request.write.latency.99p              | gauge     | µs          |        | Standard write request latency - 99th percentile |
+| workload.googleapis.com/cassandra.client.request.write.latency.max              | gauge     | µs          |        | Maximum standard write request latency |
+| workload.googleapis.com/cassandra.client.request.range_slice.latency.50p        | gauge     | µs          |        | Token range read request latency - 50th percentile |
+| workload.googleapis.com/cassandra.client.request.range_slice.latency.99p        | gauge     | µs          |        | Token range read request latency - 99th percentile |
+| workload.googleapis.com/cassandra.client.request.range_slice.latency.max        | gauge     | µs          |        | Maximum token range read request latency |
+| workload.googleapis.com/cassandra.compaction.tasks.completed                    | cumulative       | 1           |        | Number of completed compactions since server start |
+| workload.googleapis.com/cassandra.compaction.tasks.pending                      | gauge     | 1           |        | Estimated number of compactions remaining to perform |
+| workload.googleapis.com/cassandra.storage.load.count                            | gauge       | bytes       |        | Size of the on disk data size this node manages |
+| workload.googleapis.com/cassandra.storage.total_hints.count                     | cumulative       | 1           |        | Number of hint messages written to this node since start |
+| workload.googleapis.com/cassandra.storage.total_hints.in_progress.count         | gauge       | 1           |        | Number of hints attempting to be sent currently |
 
 ## Logs
 

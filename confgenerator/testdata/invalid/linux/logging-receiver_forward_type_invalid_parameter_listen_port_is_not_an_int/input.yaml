@@ -1,0 +1,10 @@
+logging:
+  receivers:
+    fluent_logs:
+      type: fluent_forward
+      listen_host: "1.1.1.1"
+      listen_port: abc
+  service:
+    pipelines:
+      fluent_pipeline:
+        receivers: [fluent_logs]

@@ -1,0 +1,13 @@
+set -e
+sudo zypper --non-interactive install curl java-11-openjdk 
+sudo zypper --non-interactive install tomcat 
+sudo mkdir -p /etc/systemd/system/tomcat.service.d
+sudo cat >> /etc/systemd/system/tomcat.service.d/local.conf << EOF
+[Service]
+# Configuration
+Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+Environment="JAVA_OPTS=-Djava.awt.headless=true"
+EOFdBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload

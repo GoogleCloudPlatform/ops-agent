@@ -1,1 +1,1 @@
-agent.googleapis.com/iis/current_connections
+agent.googleapis.com/iis/request_count

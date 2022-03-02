@@ -15,6 +15,7 @@
 package otel
 
 import (
+	"fmt"
 	"path"
 	"sort"
 )
@@ -56,6 +57,16 @@ func NormalizeSums() Component {
 	}
 }
 
+// CastToSum returns a Component that performs a cast of each metric to a sum.
+func CastToSum(metrics ...string) Component {
+	return Component{
+		Type: "casttosum",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a prefix to all metrics.
 func AddPrefix(prefix string) map[string]interface{} {
 	// $ needs to be escaped because reasons.
@@ -68,12 +79,36 @@ func AddPrefix(prefix string) map[string]interface{} {
 	}
 }
 
+// ChangePrefix returns a config snippet that updates a prefix on all metrics.
+func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
+	// $ needs to be escaped because reasons.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+	return map[string]interface{}{
+		"include":    fmt.Sprintf(`^%s(.*)$$`, oldPrefix),
+		"match_type": "regexp",
+		"action":     "update",
+		"new_name":   fmt.Sprintf("%s%s", newPrefix, `$${1}`),
+	}
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
 		"include":  old,
 		"action":   "update",
 		"new_name": new,
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
+// RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
+func UpdateMetric(old string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"include": old,
+		"action":  "update",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations

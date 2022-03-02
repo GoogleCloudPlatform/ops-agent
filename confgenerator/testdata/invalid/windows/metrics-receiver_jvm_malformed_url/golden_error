@@ -1,4 +1,4 @@
-[19:17] "endpoint" must be a URL
+[19:17] Key: 'MetricsReceiverSharedJVM.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=service:jmx:' tag
   16 |   receivers:
   17 |     jvmmetrics:
   18 |       type: jvm

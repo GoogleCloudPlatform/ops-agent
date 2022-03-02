@@ -22,32 +22,28 @@ import (
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
 func setLogNameComponents(tag, logName string) []fluentbit.Component {
-	// TODO: Can we just set log_name_key in the output plugin and avoid this mess?
 	return []fluentbit.Component{
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Match": tag,
-				"Add":   fmt.Sprintf("logName %s", logName),
+				"Add":   fmt.Sprintf("logging.googleapis.com/logName %s", logName),
 				"Name":  "modify",
 			},
 		},
+	}
+}
+
+// addLuaFilter generates a component with a Lua filter with the given parameters
+func addLuaFilter(tag, script, call string) []fluentbit.Component {
+	return []fluentbit.Component{
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
-				"Emitter_Mem_Buf_Limit": "10M",
-				"Emitter_Storage.type":  "filesystem",
-				"Match":                 tag,
-				"Name":                  "rewrite_tag",
-				"Rule":                  "$logName .* $logName false",
-			},
-		},
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  logName,
-				"Name":   "modify",
-				"Remove": "logName",
+				"Name":   "lua",
+				"Match":  tag,
+				"script": script,
+				"call":   call,
 			},
 		},
 	}
@@ -75,6 +71,23 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"tls.verify": "Off",
 
 			"workers": "8",
+
+			// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
+			"net.connect_timeout_log_error": "False",
+		},
+	}
+}
+
+// prometheusExporterOutputComponent generates a component that outputs to metrics prometheus format.
+func prometheusExporterOutputComponent() fluentbit.Component {
+	return fluentbit.Component{
+		Kind: "OUTPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/outputs/prometheus-exporter
+			"Name":  "prometheus_exporter",
+			"Match": "*",
+			"host":  "0.0.0.0",
+			"port":  "20202",
 		},
 	}
 }

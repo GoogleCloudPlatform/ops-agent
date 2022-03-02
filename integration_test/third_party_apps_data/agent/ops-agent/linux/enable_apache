@@ -17,6 +17,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+metrics:
+  receivers:
+    apache:
+      type: apache
+  service:
+    pipelines:
+      apache:
+        receivers:
+          - apache
 logging:
   receivers:
     apache_access:
@@ -32,3 +41,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

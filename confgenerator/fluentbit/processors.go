@@ -21,10 +21,34 @@ import (
 	"strings"
 )
 
-func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal, DestVal string }) []Component {
+// ParseMultilineComponent constitutes the mulltiline_parser components.
+func ParseMultilineComponent(tag string, uid string, languageRules []string) []Component {
+	var components []Component
+	multilineParserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
+	rules := [][2]string{}
+	for _, rule := range languageRules {
+		rules = append(rules, [2]string{"rule", rule})
+	}
+
+	multilineParser := Component{
+		Kind: "MULTILINE_PARSER",
+		Config: map[string]string{
+			"name":          multilineParserName,
+			"type":          "regex",
+			"flush_timeout": "1000",
+		},
+		OrderedConfig: rules,
+	}
+	components = append(components, multilineParser)
+	return components
+}
+
+// TranslationComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.
+// If removeSrc is true, the original key is removed when translated.
+func TranslationComponents(tag, src, dest string, removeSrc bool, translations []struct{ SrcVal, DestVal string }) []Component {
 	c := []Component{}
 	for _, t := range translations {
-		c = append(c, Component{
+		comp := Component{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":      "modify",
@@ -32,7 +56,13 @@ func TranslationComponents(tag, src, dest string, translations []struct{ SrcVal,
 				"Condition": fmt.Sprintf("Key_Value_Equals %s %s", src, t.SrcVal),
 				"Add":       fmt.Sprintf("%s %s", dest, t.DestVal),
 			},
-		})
+		}
+
+		if removeSrc {
+			comp.Config["Remove"] = src
+		}
+
+		c = append(c, comp)
 	}
 
 	return c

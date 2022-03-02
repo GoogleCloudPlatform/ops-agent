@@ -15,12 +15,67 @@
 package apps
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
+	"fmt"
+	"strings"
 )
+
+type MetricsReceiverMySql struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
+
+	Password string `yaml:"password" validate:"omitempty"`
+	Username string `yaml:"username" validate:"omitempty"`
+}
+
+const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
+
+func (r MetricsReceiverMySql) Type() string {
+	return "mysql"
+}
+
+func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+	transport := "tcp"
+	if r.Endpoint == "" {
+		transport = "unix"
+		r.Endpoint = defaultMySqlUnixEndpoint
+	} else if strings.HasPrefix(r.Endpoint, "/") {
+		transport = "unix"
+	}
+
+	if r.Username == "" {
+		r.Username = "root"
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "mysql",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.Endpoint,
+				"username":            r.Username,
+				"password":            r.Password,
+				"transport":           transport,
+			},
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMySql{} })
+}
 
 type LoggingProcessorMysqlError struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -34,7 +89,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
-				// MySQL >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
+				// MySql >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
 				// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 				// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
 				Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:?\d{2})?)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
@@ -72,7 +127,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"ERROR", "ERROR"},
 				{"Error", "ERROR"},

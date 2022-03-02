@@ -16,15 +16,70 @@ package confgenerator
 
 import (
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 )
+
+type ParseMultilineGroup struct {
+	Type      string   `yaml:"type" validate:"required,oneof=language_exceptions"`
+	Languages []string `yaml:"languages" validate:"required,unique,min=1,dive,oneof=java"`
+}
+
+type ParseMultiline struct {
+	ConfigComponent `yaml:",inline"`
+
+	// Make this a list so that it's forward compatible to support more `parse_multiline` type other than the build-in language exceptions.
+	MultilineGroups []*ParseMultilineGroup `yaml:"match_any" validate:"required,len=1"`
+}
+
+func (r ParseMultiline) Type() string {
+	return "parse_multiline"
+}
+
+var multilineRulesLanguageMap = map[string][]string{
+	// Below is the working java rules provided by fluentbit team: https://github.com/fluent/fluent-bit/issues/4611
+	// Move to built-in java support, when upstream fixes the issue
+	"java": {`"start_state, java_start_exception"  "/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/" "java_after_exception"`,
+		`"java_nested_exception" "/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/" "java_after_exception"`,
+		`"java_after_exception" "/^[\t ]*nested exception is:[\\t ]*/" "java_nested_exception"`,
+		`"java_after_exception" "/^[\r\n]*$/" "java_after_exception"`,
+		`"java_after_exception" "/^[\t ]+(?:eval )?at /" "java_after_exception"`,
+		`"java_after_exception" "/^[\t ]+--- End of inner exception stack trace ---$/" "java_after_exception"`,
+		`"java_after_exception" "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/" "java_after_exception"`,
+		`"java_after_exception" "/^[\t ]*(?:Caused by|Suppressed):/" "java_after_exception"`,
+		`"java_after_exception" "/^[\t ]*... \d+ (?:more|common frames omitted)/" "java_after_exception"`},
+}
+
+func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
+	var components []fluentbit.Component
+	for _, g := range p.MultilineGroups {
+		if g.Type == "language_exceptions" {
+			for i, l := range g.Languages {
+				component := fluentbit.ParseMultilineComponent(tag, fmt.Sprintf("%s_%s", uid, strconv.Itoa(i)), multilineRulesLanguageMap[l])
+				// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+				renameLogToMessage := modify.NewRenameOptions("log", "message")
+				components = append(components, renameLogToMessage.Component(tag))
+				components = append(components, component...)
+			}
+		}
+	}
+
+	return components
+}
+
+func init() {
+	LoggingProcessorTypes.RegisterType(func() Component { return &ParseMultiline{} })
+}
 
 // ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
 type ParserShared struct {
-	TimeKey    string `yaml:"time_key,omitempty"`    // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty"` // must be provided if time_key is present
+	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat"` // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"` // must be provided if time_key is present
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
 	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
@@ -179,6 +234,30 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
 }
 
+type LoggingProcessorNestWildcard struct {
+	Wildcard     string
+	NestUnder    string
+	RemovePrefix string
+}
+
+func (p LoggingProcessorNestWildcard) Components(tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      p.Wildcard,
+			"Nest_under":    p.NestUnder,
+			"Remove_prefix": p.RemovePrefix,
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
@@ -228,4 +307,31 @@ var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 			TimeFormat: "%b %d %H:%M:%S",
 		},
 	},
+}
+
+// A LoggingProcessorExcludeLogs filters out logs according to a pattern.
+type LoggingProcessorExcludeLogs struct {
+	ConfigComponent `yaml:",inline"`
+	MatchAny        []string `yaml:"match_any" validate:"required,dive,filter"`
+}
+
+func (r LoggingProcessorExcludeLogs) Type() string {
+	return "exclude_logs"
+}
+
+func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Component {
+	filters := make([]*filter.Filter, 0, len(p.MatchAny))
+	for _, condition := range p.MatchAny {
+		filter, err := filter.NewFilter(condition)
+		if err != nil {
+			log.Printf("error parsing condition '%s': %v", condition, err)
+			return nil
+		}
+		filters = append(filters, filter)
+	}
+	return filter.AllComponents(tag, filters, true)
+}
+
+func init() {
+	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorExcludeLogs{} })
 }

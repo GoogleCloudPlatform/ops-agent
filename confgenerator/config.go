@@ -18,15 +18,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
+	"github.com/kardianos/osext"
 )
 
 // Ops Agent config.
@@ -90,16 +94,25 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
 	case "ip":
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
+	case "min":
+		return fmt.Sprintf("%q must be a minimum of %s", ve.Field(), ve.Param())
+	case "multipleof_time":
+		return fmt.Sprintf("%q must be a multiple of %s", ve.Field(), ve.Param())
 	case "oneof":
 		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
 		return fmt.Sprintf("%q is a required field", ve.Field())
+	case "required_with":
+		return fmt.Sprintf("%q is required when %q is set", ve.Field(), ve.Param())
 	case "startsnotwith":
 		return fmt.Sprintf("%q must not start with %q", ve.Field(), ve.Param())
 	case "startswith":
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
+	case "filter":
+		_, err := filter.NewFilter(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	}
 
 	return ve.FieldError.Error()
@@ -137,8 +150,13 @@ func newValidator() *validator.Validate {
 	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return ctx.Value(platformKey) == fl.Param()
 	})
-	// duration validates that the value is a valid durationa and >= the parameter
+	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
+		fieldStr := fl.Field().String()
+		if fieldStr == "" {
+			// Ignore the case where this field is not actually specified or is left empty.
+			return true
+		}
 		t, err := time.ParseDuration(fl.Field().String())
 		if err != nil {
 			return false
@@ -148,6 +166,23 @@ func newValidator() *validator.Validate {
 			panic(err)
 		}
 		return t >= tmin
+	})
+	// filter validates that a Cloud Logging filter condition is valid
+	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
+		_, err := filter.NewFilter(fl.Field().String())
+		return err == nil
+	})
+	// multipleof_time validates that the value duration is a multiple of the parameter
+	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
+		t, ok := fl.Field().Interface().(time.Duration)
+		if !ok {
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Field().String()))
+		}
+		tfactor, err := time.ParseDuration(fl.Param())
+		if err != nil {
+			panic(fmt.Sprintf("multipleof_time: could not convert %s to time duration", fl.Param()))
+		}
+		return t%tfactor == 0
 	})
 	return v
 }
@@ -356,7 +391,7 @@ type MetricsReceiver interface {
 }
 
 type MetricsReceiverShared struct {
-	CollectionInterval string `yaml:"collection_interval" validate:"required,duration=10s"` // time.Duration format
+	CollectionInterval string `yaml:"collection_interval" validate:"duration=10s"` // time.Duration format
 }
 
 func (m MetricsReceiverShared) CollectionIntervalString() string {
@@ -365,6 +400,142 @@ func (m MetricsReceiverShared) CollectionIntervalString() string {
 		return m.CollectionInterval
 	}
 	return "60s"
+}
+
+type MetricsReceiverSharedTLS struct {
+	Insecure           *bool  `yaml:"insecure" validate:"omitempty"`
+	InsecureSkipVerify *bool  `yaml:"insecure_skip_verify" validate:"omitempty"`
+	CertFile           string `yaml:"cert_file" validate:"required_with=KeyFile"`
+	KeyFile            string `yaml:"key_file" validate:"required_with=CertFile"`
+	CAFile             string `yaml:"ca_file" validate:"omitempty"`
+}
+
+func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]interface{} {
+	if m.Insecure == nil {
+		m.Insecure = &defaultInsecure
+	}
+
+	tls := map[string]interface{}{
+		"insecure": *m.Insecure,
+	}
+
+	if m.InsecureSkipVerify != nil {
+		tls["insecure_skip_verify"] = *m.InsecureSkipVerify
+	}
+	if m.CertFile != "" {
+		tls["cert_file"] = m.CertFile
+	}
+	if m.CAFile != "" {
+		tls["ca_file"] = m.CAFile
+	}
+	if m.KeyFile != "" {
+		tls["key_file"] = m.KeyFile
+	}
+
+	return tls
+}
+
+type MetricsReceiverSharedJVM struct {
+	MetricsReceiverShared `yaml:",inline"`
+
+	Endpoint       string   `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
+	Username       string   `yaml:"username" validate:"required_with=Password"`
+	Password       string   `yaml:"password" validate:"required_with=Username"`
+	AdditionalJars []string `yaml:"additional_jars" validate:"omitempty,dive,file"`
+}
+
+// WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
+// It then returns a new MetricReceiverSharedJVM with this change.
+func (m MetricsReceiverSharedJVM) WithDefaultEndpoint(defaultEndpoint string) MetricsReceiverSharedJVM {
+	if m.Endpoint == "" {
+		m.Endpoint = defaultEndpoint
+	}
+
+	return m
+}
+
+// WithDefaultAdditionalJars overrides the MetricReceiverSharedJVM's AdditionalJars if it is empty.
+// It then returns a new MetricReceiverSharedJVM with this change.
+func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJars ...string) MetricsReceiverSharedJVM {
+	if len(m.AdditionalJars) == 0 {
+		m.AdditionalJars = defaultAdditionalJars
+	}
+
+	return m
+}
+
+// ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
+// This is used alongside the passed in processors to return a single Pipeline in an array.
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.Pipeline {
+	jarPath, err := FindJarPath()
+	if err != nil {
+		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+	}
+
+	config := map[string]interface{}{
+		"target_system":       targetSystem,
+		"collection_interval": m.CollectionIntervalString(),
+		"endpoint":            m.Endpoint,
+		"jar_path":            jarPath,
+	}
+
+	if len(m.AdditionalJars) > 0 {
+		config["additional_jars"] = m.AdditionalJars
+	}
+
+	// Only set the username & password fields if provided
+	if m.Username != "" {
+		config["username"] = m.Username
+	}
+	if m.Password != "" {
+		config["password"] = m.Password
+	}
+
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "jmx",
+			Config: config,
+		},
+		Processors: processors,
+	}}
+}
+
+type MetricsReceiverSharedCollectJVM struct {
+	CollectJVMMetrics *bool `yaml:"collect_jvm_metrics"`
+}
+
+func (m MetricsReceiverSharedCollectJVM) TargetSystemString(targetSystem string) string {
+	if m.ShouldCollectJVMMetrics() {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+	return targetSystem
+}
+
+func (m MetricsReceiverSharedCollectJVM) ShouldCollectJVMMetrics() bool {
+	return m.CollectJVMMetrics == nil || *m.CollectJVMMetrics
+}
+
+var FindJarPath = func() (string, error) {
+	jarName := "opentelemetry-java-contrib-jmx-metrics.jar"
+
+	executableDir, err := osext.ExecutableFolder()
+	if err != nil {
+		return jarName, fmt.Errorf("could not determine binary path for jvm receiver: %w", err)
+	}
+
+	// TODO(djaglowski) differentiate behavior via build tags
+	if runtime.GOOS != "windows" {
+		return filepath.Join(executableDir, "../subagents/opentelemetry-collector/", jarName), nil
+	}
+	return filepath.Join(executableDir, jarName), nil
+}
+
+type MetricsReceiverSharedCluster struct {
+	CollectClusterMetrics *bool `yaml:"collect_cluster_metrics" validate:"omitempty"`
+}
+
+func (m MetricsReceiverSharedCluster) ShouldCollectClusterMetrics() bool {
+	return m.CollectClusterMetrics == nil || *m.CollectClusterMetrics
 }
 
 var MetricsReceiverTypes = &componentTypeRegistry{
@@ -478,10 +649,10 @@ func (l *Logging) Validate(platform string) error {
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if _, err := validateComponentTypeCounts(l.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
+		if _, err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
@@ -507,12 +678,22 @@ func (m *Metrics) Validate(platform string) error {
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if receiverCounts, err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		} else {
+			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
+				return err
+			}
+
+			if err := validateSSLConfig(m.Receivers); err != nil {
+				return err
+			}
+		}
+
+		if _, err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
 			return err
 		}
-		if err := validateComponentTypeCounts(m.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
-			return err
-		}
+
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
@@ -596,7 +777,7 @@ func validateComponentKeys(components interface{}, refs []string, subagent strin
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) error {
+func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) (map[string]int, error) {
 	r := map[string]int{}
 	cm := reflect.ValueOf(components)
 	for _, id := range refs {
@@ -612,11 +793,51 @@ func validateComponentTypeCounts(components interface{}, refs []string, subagent
 		}
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
-				return fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
+				return nil, fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
 			}
-			return fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
+			return nil, fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
 		}
 	}
+	return r, nil
+}
+
+func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
+	jvmReceivers := []string{"jvm", "activemq", "cassandra", "tomcat"}
+	jvmReceiverCount := 0
+	for _, receiverType := range jvmReceivers {
+		jvmReceiverCount += typeCounts[receiverType]
+	}
+
+	if jvmReceiverCount > 1 {
+		return fmt.Errorf("at most one metrics receiver of JVM types [%s] is allowed: JVM based receivers currently conflict, and only one can be configured", strings.Join(jvmReceivers, ", "))
+	}
+
+	return nil
+}
+
+func validateSSLConfig(receivers metricsReceiverMap) error {
+	for receiverId, receiver := range receivers {
+		for _, pipeline := range receiver.Pipelines() {
+			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
+				cfg := tlsCfg.(map[string]interface{})
+				// If insecure, no other fields are allowed
+				if cfg["insecure"] == true {
+					invalidFields := []string{}
+
+					for _, field := range []string{"insecure_skip_verify", "cert_file", "ca_file", "key_file"} {
+						if val, ok := cfg[field]; ok && val != "" {
+							invalidFields = append(invalidFields, fmt.Sprintf("\"%s\"", field))
+						}
+					}
+
+					if len(invalidFields) > 0 {
+						return fmt.Errorf("%s are not allowed when \"insecure\" is true, which indicates TLS is disabled for receiver \"%s\"", strings.Join(invalidFields, ", "), receiverId)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

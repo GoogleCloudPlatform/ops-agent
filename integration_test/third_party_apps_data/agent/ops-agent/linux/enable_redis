@@ -17,6 +17,15 @@ sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+metrics:
+  receivers:
+    redis:
+      type: redis
+  service:
+    pipelines:
+      redis:
+        receivers:
+        - redis
 logging:
   receivers:
     redis:
@@ -29,3 +38,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60

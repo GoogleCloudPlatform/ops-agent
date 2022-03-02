@@ -17,7 +17,42 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverCassandra struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
+
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
+}
+
+const defaultCassandraEndpoint = "localhost:7199"
+
+func (r MetricsReceiverCassandra) Type() string {
+	return "cassandra"
+}
+
+func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
+	targetSystem := "cassandra"
+
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultCassandraEndpoint).
+		ConfigurePipelines(
+			r.TargetSystemString(targetSystem),
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverCassandra{} })
+}
 
 type LoggingProcessorCassandraSystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -84,7 +119,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 	// Best documentation found for log levels:
 	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity",
+		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{"TRACE", "TRACE"},
 				{"DEBUG", "DEBUG"},

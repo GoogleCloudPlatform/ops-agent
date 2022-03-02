@@ -1,0 +1,9 @@
+[5:20] "listen_host" must be an IP address
+   2 |   receivers:
+   3 |     fluent_logs:
+   4 |       type: fluent_forward
+>  5 |       listen_host: abc
+                          ^
+   6 |       listen_port: 1111
+   7 |   service:
+   8 |     pipelines:

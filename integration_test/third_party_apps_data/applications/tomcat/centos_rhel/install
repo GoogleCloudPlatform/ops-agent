@@ -1,0 +1,39 @@
+set -e
+
+sudo yum install -y curl java
+sudo mkdir -p /opt/tomcat/stage
+sudo curl "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
+sudo tar -xvzf /opt/tomcat/stage/tomcat.tgz -C /opt/tomcat --strip 1
+
+cat << EOF > tomcat.service
+[Unit]
+Description=Tomcat Server
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+
+Environment=JAVA_HOME=/usr/lib/jvm/jre
+Environment='JAVA_OPTS=-Djava.awt.headless=true'
+Environment=CATALINA_HOME=/opt/tomcat
+Environment=CATALINA_BASE=/opt/tomcat
+Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false'
+ExecStart=/opt/tomcat/bin/catalina.sh start
+ExecStop=/opt/tomcat/bin/catalina.sh stop
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo mv tomcat.service /usr/lib/systemd/system/tomcat.service
+sudo chown root:root /usr/lib/systemd/system/tomcat.service
+sudo chmod 0644 /usr/lib/systemd/system/tomcat.service
+
+# sometimes selinux will prevent systemd from picking up the file
+sudo restorecon /usr/lib/systemd/system/tomcat.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable tomcat

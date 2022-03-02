@@ -1,0 +1,1 @@
+at most one metrics receiver of JVM types [jvm, activemq, cassandra, tomcat] is allowed: JVM based receivers currently conflict, and only one can be configured

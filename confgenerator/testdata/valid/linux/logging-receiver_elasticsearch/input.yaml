@@ -1,0 +1,13 @@
+
+logging:
+  receivers:
+    elasticsearch_json:
+      type: elasticsearch_json
+    elasticsearch_gc:
+      type: elasticsearch_gc
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch_json
+          - elasticsearch_gc
