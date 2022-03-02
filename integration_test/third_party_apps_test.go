@@ -76,12 +76,12 @@ func osFolder(platform string) string {
 // rejectDuplicates looks for duplicate entries in the input slice and returns
 // an error if any is found.
 func rejectDuplicates(apps []string) error {
-	unique := make(map[string]bool)
+	seen := make(map[string]bool)
 	for _, app := range apps {
-		if unique[app] {
+		if seen[app] {
 			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
 		}
-		unique[app] = true
+		seen[app] = true
 	}
 	return nil
 }
