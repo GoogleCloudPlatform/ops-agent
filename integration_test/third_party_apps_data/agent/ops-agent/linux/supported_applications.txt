@@ -1,11 +1,9 @@
 activemq
 apache
 cassandra
-hadoop
-elasticsearch
 couchdb
-hbase
 elasticsearch
+hadoop
 hbase
 jvm
 kafka
