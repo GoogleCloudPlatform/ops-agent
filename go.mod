@@ -1,6 +1,6 @@
 module github.com/GoogleCloudPlatform/ops-agent
 
-go 1.15
+go 1.17
 
 require (
 	cloud.google.com/go/iam v0.1.0 // indirect
