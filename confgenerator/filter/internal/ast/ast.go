@@ -40,7 +40,7 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"httpRequest":    "logging.googleapis.com/http_request",
 }
 
-func (m Target) fluentBitPath([]string, error) {
+func (m Target) fluentBitPath() ([]string, error) {
 	var fluentBit []string
 	if len(m) == 1 {
 		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
@@ -84,7 +84,7 @@ func (m Target) RecordAccessor() (string, error) {
 }
 
 func (m Target) LuaAccessor(write bool) (string, error) {
-	fluentBit, err := m.fluentBitPath
+	fluentBit, err := m.fluentBitPath()
 	if err != nil {
 		return "", err
 	}
@@ -101,25 +101,25 @@ func (m Target) LuaAccessor(write bool) (string, error) {
 	}
 	for i := 0; i < len(fluentBit)-1; i++ {
 		p := strings.Join(fluentBit[:i+1], "][")
-		fmt.Fprintf(out, `if record[%s] == nil
+		fmt.Fprintf(&out, `if record[%s] == nil
 then
 `, p)
 		if write {
-			fmt.Fprintf(out, `record[%s] = {}
+			fmt.Fprintf(&out, `record[%s] = {}
 `, p)
 		} else {
-			fmt.Fprintf(out, `return nil`)
+			fmt.Fprintf(&out, `return nil`)
 		}
 	}
-	p = strings.Join(fluentBit, "][")
+	p := strings.Join(fluentBit, "][")
 	if write {
-		fmt.Fprintf(out, `record[%s] = value
+		fmt.Fprintf(&out, `record[%s] = value
 end)`, p)
 	} else {
-		fmt.Fprintf(out, `return record[%s]
+		fmt.Fprintf(&out, `return record[%s]
 end)`, p)
 	}
-	return out.String()
+	return out.String(), nil
 }
 
 func prepend(value string, slice []string) []string {
@@ -485,7 +485,7 @@ func LuaQuote(in string) string {
 			b.WriteByte(c)
 		} else {
 			// N.B. Lua character escapes are always integers
-			fmt.Fprintf(b, `\%d`, c)
+			fmt.Fprintf(&b, `\%d`, c)
 		}
 	}
 	b.WriteString(`"`)

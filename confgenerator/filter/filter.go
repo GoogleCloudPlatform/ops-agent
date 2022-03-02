@@ -44,6 +44,8 @@ func NewMember(m string) (*Member, error) {
 	return &Member{}, nil
 }
 
+var LuaQuote = ast.LuaQuote
+
 type Filter struct {
 	expr ast.Expression
 }
