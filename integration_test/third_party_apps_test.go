@@ -225,15 +225,6 @@ type testConfig struct {
 	// Note on tags: the "yaml" tag specifies the name of this field in the
 	// .yaml file.
 
-	// Until we have tests working on all platforms, platforms_override
-	// provides a way for people to control which platforms actually run
-	// from GitHub, because some of our GitHub contributors don't have access
-	// to the GCL file where the full set of platforms is configured.
-	Platforms []string `yaml:"platforms_override"`
-	// retries provides a way for GitHub contributors to control the number
-	// of retries (for retriable errors only).
-	Retries int `yaml:"retries"`
-
 	// per_application_overrides is a map from application to specific settings
 	// for that application.
 	PerApplicationOverrides map[string]struct {
@@ -247,11 +238,7 @@ type testConfig struct {
 // parseTestConfigFile looks for test_config.yaml, and if it exists, merges
 // any options in it into the default test config and returns the result.
 func parseTestConfigFile() (testConfig, error) {
-	// Set up the default test options.
-	config := testConfig{
-		Platforms: strings.Split(os.Getenv("PLATFORMS"), ","),
-		Retries:   3,
-	}
+	config := testConfig{}
 
 	bytes, err := readFileFromScriptsDir("test_config.yaml")
 	if err != nil {
@@ -336,7 +323,8 @@ func TestThirdPartyApps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, platform := range testConfig.Platforms {
+	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	for _, platform := range platforms {
 		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
 		t.Run(platform, func(t *testing.T) {
 			t.Parallel()
@@ -360,7 +348,7 @@ func TestThirdPartyApps(t *testing.T) {
 					defer cancel()
 
 					var err error
-					for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
+					for attempt := 1; attempt <= 4; attempt++ {
 						logger := gce.SetupLogger(t)
 						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
