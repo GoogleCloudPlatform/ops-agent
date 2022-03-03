@@ -458,7 +458,7 @@ func TestThirdPartyApps(t *testing.T) {
 				defer cancel()
 
 				var err error
-				for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
+				for attempt := 1; attempt <= 4; attempt++ {
 					logger := gce.SetupLogger(t)
 					logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
