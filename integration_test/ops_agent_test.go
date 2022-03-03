@@ -44,6 +44,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/masterzen/winrm"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -296,6 +297,55 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func TestNoop(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+		t.Cleanup(cancel)
+
+		logger := gce.SetupLogger(t)
+
+		vm := &gce.VM{
+			Name:           "test-20220303-e8588-d932a34f-f57b-4726-b498-06914b490d8c",
+			Project:        "stackdriver-kubernetes-1337",
+			Network:        "default",
+			Platform:       "windows-2019",
+			Zone:           "us-central1-b",
+			MachineType:    "e2-standard-4",
+			ID:             3401206805551728572,
+			IPAddress:      "34.123.195.15",
+			WinRMClient:    nil,
+			AlreadyDeleted: false,
+		}
+
+		// winrm.DefaultParameters.TransportDecorator = func() winrm.Transporter { return &winrm.ClientNTLM{} }
+		endpoint := winrm.NewEndpoint(
+			vm.IPAddress,
+			5986,           // port
+			false,          // use TLS
+			true,           // Allow insecure connection
+			nil,            // CA certificate
+			nil,            // Client Certificate
+			nil,            // Client Key
+			20*time.Second, // Timeout
+		)
+		client, err := winrm.NewClient(endpoint, "windows_user", "7L~J#7tUbygl&D3")
+		log.Printf("winrm.NewClient() finished with err=%v", err)
+		if err != nil {
+			t.Fatal(err)
+		}
+		vm.WinRMClient = client
+
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Printf("output was: %#v", output)
 	})
 }
 

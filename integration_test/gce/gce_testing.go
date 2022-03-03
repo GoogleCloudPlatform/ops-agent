@@ -39,8 +39,6 @@ ZONE: What GCP zone to run in.
 GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
     some GCP services. All gcloud commands actually use a different set of
     credentials, those in CLOUDSDK_CONFIG (unfortunately).
-WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
-    Windows VMs.
 
 The following variables are optional:
 
@@ -88,6 +86,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
+	"github.com/masterzen/winrm"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
@@ -145,10 +144,6 @@ const (
 func init() {
 	ctx := context.Background()
 	var err error
-
-	if strings.Contains(os.Getenv("PLATFORMS"), "windows") && os.Getenv("WINRM_PAR_PATH") == "" {
-		log.Fatal("WINRM_PAR_PATH must be nonempty when testing Windows VMs")
-	}
 
 	storageClient, err = storage.NewClient(ctx)
 	if err != nil {
@@ -260,9 +255,9 @@ type VM struct {
 	// USE_INTERNAL_IP is set to 'true'. See comment on extractIPAddress() for
 	// rationale.
 	IPAddress string
-	// WindowsCredentials is only populated for Windows VMs.
-	WindowsCredentials *WindowsCredentials
-	AlreadyDeleted     bool
+	// WinRMClient is only populated for Windows VMs.
+	WinRMClient    *winrm.Client
+	AlreadyDeleted bool
 }
 
 // imageProject returns the image project providing the given image family.
@@ -330,12 +325,6 @@ var (
 // instead of the default gcloud installed on the system.
 func SetGcloudPath(path string) {
 	gcloudPath = path
-}
-
-// winRM() returns the path to the winrm.par binary to use to connect to
-// Windows VMs.
-func winRM() string {
-	return os.Getenv("WINRM_PAR_PATH")
 }
 
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
@@ -536,12 +525,8 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
-	if !strings.HasSuffix(args[0], "winrm.par") {
-		// Print out the command we're running. Skip this for winrm.par commands
-		// because they are base64 encoded and the real command is already printed
-		// inside runRemotelyWindows() anyway.
-		logger.Printf("Running command: %v", args)
-	}
+	logger.Printf("Running command: %v", args)
+
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
@@ -596,20 +581,58 @@ func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []str
 func runRemotelyWindows(ctx context.Context, logger *log.Logger, vm *VM, command string) (CommandOutput, error) {
 	logger.Printf("Running command %q", command)
 
+	var output CommandOutput
+
 	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 	encoded, err := uni.NewEncoder().String(command)
 	if err != nil {
-		return CommandOutput{}, err
+		return output, err
 	}
-	return runCommand(ctx, logger, "",
-		[]string{winRM(),
-			"--host=" + vm.IPAddress,
-			"--username=" + vm.WindowsCredentials.Username,
-			"--password=" + vm.WindowsCredentials.Password,
-			fmt.Sprintf("--command=powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))),
-			"--stderrthreshold=fatal",
-			"--verbosity=-2",
-		})
+
+	shell, err := vm.WinRMClient.CreateShell()
+	if err != nil {
+		return output, fmt.Errorf("client.CreateShell() failed: %v", err)
+	}
+	defer shell.Close()
+
+	var cmd *winrm.Command
+	cmd, err = shell.Execute(fmt.Sprintf("powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))))
+	if err != nil {
+		return output, fmt.Errorf("shell.Execute() failed: %v", err)
+	}
+
+	var stdoutBuilder strings.Builder
+	var stderrBuilder strings.Builder
+
+	go io.Copy(&stdoutBuilder, cmd.Stdout)
+	go io.Copy(&stderrBuilder, cmd.Stderr)
+
+	cmdDone := make(chan struct{})
+	go func() {
+		cmd.Wait()
+		cmdDone <- struct{}{}
+	}()
+
+	select {
+	case <-ctx.Done():
+		err = ctx.Err()
+		cmd.Close()
+	case <-cmdDone:
+	}
+
+	exitCode := cmd.ExitCode()
+	logger.Printf("exit code: %v", exitCode)
+	if err == nil && exitCode != 0 {
+		err = fmt.Errorf("command finished with exit code %v", exitCode)
+	}
+
+	output.Stdout = stdoutBuilder.String()
+	output.Stderr = stderrBuilder.String()
+
+	logger.Printf("stdout: %s", output.Stdout)
+	logger.Printf("stderr: %s", output.Stderr)
+
+	return output, err
 }
 
 var (
@@ -834,6 +857,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		metadataCopy["windows-startup-script-ps1"] = `
 Enable-PSRemoting  # Might help to diagnose b/185923886.
 
+Set-WSManInstance WinRM/Config/Service/Auth -ValueSet @{Basic = $true}
+Set-WSManInstance WinRM/Config/Service -ValueSet @{AllowUnencrypted = $true}
+Set-WSManInstance WinRM/Config/WinRS -ValueSet @{MaxMemoryPerShellMB = 1024}
+Set-WSManInstance WinRM/Config/Client -ValueSet @{TrustedHosts="*"}
+
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
 $port.WriteLine("STARTUP_SCRIPT_DONE")
@@ -997,6 +1025,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// This is just informational, so it's ok if it fails. Just warn and proceed.
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
+	log.Printf("vm info: %#v", vm)
 
 	if err := waitForStart(ctx, logger, vm); err != nil {
 		return nil, err
@@ -1017,6 +1046,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	log.Printf("vm info: %#v", vm)
 	return vm, nil
 }
 
@@ -1034,7 +1064,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	// immediately.
 	// If retriable errors happen quickly, there will be more than 3 attempts.
 	// If retriable errors happen slowly, there will still be at least 3 attempts.
-	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
+	ctx, cancel := context.WithTimeout(origCtx, 1*vmInitTimeout) // DO NOT SUBMIT this change
 	defer cancel()
 
 	shouldRetry := func(err error) bool {
@@ -1117,6 +1147,7 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 // Doesn't take a Context argument because even if the test has timed out or is
 // cancelled, we still want to delete the VMs.
 func DeleteInstance(logger *log.Logger, vm *VM) error {
+	return nil
 	if vm.AlreadyDeleted {
 		logger.Printf("VM %v was already deleted, skipping delete.", vm.Name)
 		return nil
@@ -1392,17 +1423,40 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	if err != nil {
 		return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
 	}
-	vm.WindowsCredentials = creds
 
 	// Now, make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
 	attempt := 0
 	printFoo := func() error {
 		attempt++
+
+		log.Printf("starting attempt #%d", attempt)
+		endpoint := winrm.NewEndpoint(
+			vm.IPAddress,
+			5986,          // port
+			false,         // use TLS
+			true,          // Allow insecure connection
+			nil,           // CA certificate
+			nil,           // Client Certificate
+			nil,           // Client Key
+			1*time.Minute, // Timeout
+		)
+		client, err := winrm.NewClient(endpoint, creds.Username, creds.Password)
+		logger.Printf("winrm.NewClient() finished with err=%v, attempt #%d", err, attempt)
+		log.Printf("winrm.NewClient() finished with err=%v, attempt #%d", err, attempt)
+		if err != nil {
+			return err
+		}
+		vm.WinRMClient = client
+
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
-		return err
+		log.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v", err, attempt, output) //for debugging
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
 	gracePeriod := 3 * time.Minute // I'm not sure what's a good value here.
