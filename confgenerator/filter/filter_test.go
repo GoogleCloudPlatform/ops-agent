@@ -61,11 +61,11 @@ func TestShouldParse(t *testing.T) {
 			}
 			components := filter.Components("logname", false)
 			t.Logf("components = %+v", components)
-			main, _, err := fluentbit.ModularConfig{Components: components}.Generate()
+			files, err := fluentbit.ModularConfig{Components: components}.Generate()
 			if err != nil {
 				t.Error(err)
 			}
-			t.Logf("generated config:\n%s", main)
+			t.Logf("generated config:\n%v", files)
 		})
 	}
 }
