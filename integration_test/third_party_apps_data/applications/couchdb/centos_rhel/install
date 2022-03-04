@@ -28,7 +28,7 @@ EOF
     ;;
 esac
 
-sudo yum install -y --nogpgcheck couchdb
+sudo yum install -y couchdb
 
 cat << EOF > local.ini
 [couchdb]
