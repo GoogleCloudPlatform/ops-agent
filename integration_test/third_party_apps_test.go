@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"testing"
@@ -221,40 +222,6 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-// shouldSkip returns a reason that the given pair of application and platform
-// should be skipped, or "" if it should not be skipped.
-// New applications should return skip reasons sparingly if at all.
-func shouldSkip(app, platform string) string {
-	switch app {
-	case "apache", "cassandra", "jvm", "mysql", "nginx", "redis":
-		if platform != "debian-10" {
-			// TODO: enable multi-platform support for these applications.
-			return "application without multi-platform support implemented yet"
-		}
-		return ""
-	case "wildfly":
-		if platform != "debian-10" {
-			// As wildfly does not have package installers & is installed from tar,
-			// we only want to test on one distribution to help reduce integration test size
-			return "installed from tar, no need to test across platforms"
-		}
-		return ""
-	case "couchdb":
-		if gce.IsSUSE(platform) {
-			return "couchdb is not supported on SuSE"
-		}
-		return ""
-	case "rabbitmq":
-		if platform == "sles-12" {
-			return "rabbitmq is not supported on sles-12"
-		}
-		return ""
-	}
-	// Most applications support all platforms and don't appear anywhere
-	// in the switch/case.
-	return ""
-}
-
 // runSingleTest starts with a fresh VM, installs the app and agent on it,
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
@@ -278,7 +245,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error starting %s: %v", app, err)
 	}
 
-	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "enable_"+app), nil); err != nil {
+	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
@@ -316,6 +283,136 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
+// Returns the authoritative set of all apps available for testing.
+// The authoritative list corresponds to the directory names under
+// integration_test/third_party_apps_data/applications
+func determineAllApps(t *testing.T) map[string]bool {
+	allApps := make(map[string]bool)
+
+	files, err := os.ReadDir("third_party_apps_data/applications")
+	if err != nil {
+		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			allApps[file.Name()] = true
+		}
+	}
+	log.Printf("all apps: %v", allApps)
+	return allApps
+}
+
+func modifiedFiles(t *testing.T) []string {
+	cmd := exec.Command("git", "diff", "--name-only", "origin/master")
+	out, err := cmd.Output()
+	log.Printf("git diff output:\n\tstdout:%v\n\tstderr:%v\n", out, err)
+	if err != nil {
+		t.Fatalf("got error calling `git diff`: %v", err)
+	}
+
+	return strings.Split(string(out), "\n")
+}
+
+// Determine what apps are impacted by current code changes.
+// Extracts app names as follows:
+//   apps/<appname>.go
+//   integration_test/third_party_apps_data/<appname>/
+// Checks the extracted app names against the set of all known apps.
+func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
+	impactedApps := make(map[string]bool)
+	for _, f := range mf {
+		if strings.HasPrefix(f, "apps/") {
+
+			// File names: apps/<appname>.go
+			f := strings.TrimPrefix(f, "apps/")
+			f = strings.TrimSuffix(f, ".go")
+
+			if _, ok := allApps[f]; ok {
+				impactedApps[f] = true
+			}
+		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
+			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
+			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
+			f = strings.Split(f, "/")[0]
+			// The directories here are already authoritative, no
+			// need to check against list.
+			impactedApps[f] = true
+
+		}
+	}
+	log.Printf("impacted apps: %v", impactedApps)
+	return impactedApps
+}
+
+type test struct {
+	platform   string
+	app        string
+	skipReason string
+}
+
+// shouldSkip returns a reason that the given pair of application and platform
+// should be skipped, or "" if it should not be skipped.
+// New applications should return skip reasons sparingly if at all.
+func shouldSkip(app, platform string) string {
+	switch app {
+	case "apache", "cassandra", "jvm", "mysql", "nginx", "redis":
+		if platform != "debian-10" {
+			// TODO: enable multi-platform support for these applications.
+			return "application without multi-platform support implemented yet"
+		}
+		return ""
+	case "wildfly":
+		if platform != "debian-10" {
+			// As wildfly does not have package installers & is installed from tar,
+			// we only want to test on one distribution to help reduce integration test size
+			return "installed from tar, no need to test across platforms"
+		}
+		return ""
+	case "couchdb":
+		if gce.IsSUSE(platform) {
+			return "couchdb is not supported on SuSE"
+		}
+		return ""
+	case "rabbitmq":
+		if platform == "sles-12" {
+			return "rabbitmq is not supported on sles-12"
+		}
+		return ""
+	}
+	// Most applications support all platforms and don't appear anywhere
+	// in the switch/case.
+	return ""
+}
+
+var defaultPlatforms = map[string]bool{
+	"debian-10":    true,
+	"windows-2019": true,
+}
+
+// When in `-short` test mode, mark some tests for skipping, based on
+// test_config and impacted apps.  Always test all apps against the default
+// platform.  If a subset of apps is determined to be impacted, also test all
+// platforms for those apps.
+func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
+	for i, test := range tests {
+		if testing.Short() {
+			_, testApp := impactedApps[test.app]
+			_, defaultPlatform := defaultPlatforms[test.platform]
+			if !defaultPlatform && !testApp {
+				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
+			}
+		}
+		if test.app == "mysql" {
+			// TODO(b/215197805): Reenable this test once the repos are fixed.
+			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
+		}
+		
+    if reason := shouldSkip(test.app, test.platform); reason != "" {
+     tests[i].skipReason = reason 
+    }
+	}
+}
+
 // This is the entry point for the test. Runs runSingleTest
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
@@ -326,58 +423,66 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 	agentType := agents.OpsAgentType
 
+	tests := []test{}
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
-		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(platform, func(t *testing.T) {
+		apps, err := appsToTest(agentType, platform)
+		if err != nil {
+			t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
+		}
+		if len(apps) == 0 {
+			t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
+		}
+		for _, app := range apps {
+			tests = append(tests, test{platform, app, ""})
+		}
+  }
+
+	// Filter tests
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)))
+
+	// Execute tests
+	for _, tc := range tests {
+		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(tc.platform, func(t *testing.T) {
 			t.Parallel()
+			t.Run(tc.app, func(t *testing.T) {
+				t.Parallel()
 
-			apps, err := appsToTest(agentType, platform)
-			if err != nil {
-				t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
-			}
-			if len(apps) == 0 {
-				t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
-			}
-			for _, app := range apps {
-				app := app // https://golang.org/doc/faq#closures_and_goroutines
-				t.Run(app, func(t *testing.T) {
-					t.Parallel()
+				if tc.skipReason != "" {
+					t.Skip(tc.skipReason)
+				}
 
-					if reason := shouldSkip(app, platform); reason != "" {
-						t.Skip(reason)
+				ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+				defer cancel()
+
+				var err error
+				for attempt := 1; attempt <= 4; attempt++ {
+					logger := gce.SetupLogger(t)
+					logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
+					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
+					logger.ToMainLog().Printf("VM is ready: %#v", vm)
+
+					var retryable bool
+					retryable, err = runSingleTest(ctx, logger, vm, agentType, tc.app)
+					log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+					if err == nil {
+						return
 					}
-					ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-					defer cancel()
-
-					var err error
-					for attempt := 1; attempt <= 4; attempt++ {
-						logger := gce.SetupLogger(t)
-						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
-						logger.ToMainLog().Printf("VM is ready: %#v", vm)
-
-						var retryable bool
-						retryable, err = runSingleTest(ctx, logger, vm, agentType, app)
-						log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, platform, app, err, retryable)
-						if err == nil {
-							return
-						}
-						agents.RunOpsAgentDiagnostics(ctx, logger, vm)
-						if !retryable {
-							t.Fatalf("Non-retryable error: %v", err)
-						}
-						// If we got here, we're going to retry runSingleTest(). The VM we spawned
-						// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
-						// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
-						// do our retries, we preemptively delete the VM now.
-						if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
-							t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
-						}
+					agents.RunOpsAgentDiagnostics(ctx, logger, vm)
+					if !retryable {
+						t.Fatalf("Non-retryable error: %v", err)
 					}
-					t.Errorf("Final attempt failed: %v", err)
-				})
-			}
+					// If we got here, we're going to retry runSingleTest(). The VM we spawned
+					// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
+					// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
+					// do our retries, we preemptively delete the VM now.
+					if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+						t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
+					}
+				}
+				t.Errorf("Final attempt failed: %v", err)
+			})
 		})
 	}
 }

@@ -115,10 +115,10 @@ the test will:
     `applications/<application>/<platform>/post` on the VM. This might
     be a no-op for some applications.
 1.  Configure the the Ops Agent to look for the application's logs/metrics by
-    running `agent/ops-agent/<platform>/enable_<application>` on the VM.
+    running `applications/<application>/enable` on the VM.
 1.  Run `applications/<application>/exercise` script to send some load to
     the application, so that we can get it to generate some logs/metrics
-1.  Wait for up to 7 minutes for logs matching the expectations in 
+1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
 1.  Wait up to 7 minutes for the metric from
@@ -132,23 +132,21 @@ data directory and the test runner before it is really meeting our needs.
 
 ### Adding a new third-party application
 
-You will need to add a few files, and possibly change what's there currently,
-since much of it is there only as a starting point and example.
+You will need to add and modify a few files. Start by adding your new
+application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
 
-For now, the test only runs on debian-10, so the list of files to edit can be
-simplified to:
+Then, inside `applications/<application>/`:
 
-1.  `agent/ops-agent/linux/supported_applications.txt`
-1.  `applications/<application>/debian_ubuntu/install` (may already exist) to
-    install the application,
-1.  `applications/<application>/debian_ubuntu/post` (may already exist) to
-    configure the application to expose metrics somewhere. This might be a
-    no-op for some applications. If so, just leave the file empty.
-1.  `agent/ops-agent/linux/enable_<application>` to configure the Ops Agent to
-    read the application's metrics exposed in the previous step.
-1.  (if necessary) `applications/<application>/exercise`. This is only needed
+1.  `<platform>/install` to install the application,
+1.  `<platform>/post` to configure the application to expose metrics somewhere.
+    This might be a no-op for some applications. If so, just leave the file
+    empty.
+1.  `enable` to configure the Ops Agent to read the application's metrics
+    exposed in the previous step.
+1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
-1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
+1.  (if you want to test logging) `expected_logs.yaml`
+1.  (if you want to test metrics) `metric_name.txt`
 
 ### Testing Command
 
