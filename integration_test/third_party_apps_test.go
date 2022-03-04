@@ -51,6 +51,9 @@ import (
 
 var (
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
+
+	//go:embed third_party_apps_data
+	scriptsDir embed.FS
 )
 
 // removeFromSlice returns a new []string that is a copy of the given []string
@@ -132,9 +135,6 @@ func distroFolder(platform string) (string, error) {
 	}
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
 }
-
-//go:embed third_party_apps_data
-var scriptsDir embed.FS
 
 // runScriptFromScriptsDir runs a script on the given VM.
 // The scriptPath should be relative to SCRIPTS_DIR.
