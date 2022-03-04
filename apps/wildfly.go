@@ -15,9 +15,49 @@
 package apps
 
 import (
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverWildfly struct {
+	confgenerator.ConfigComponent          `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
+}
+
+const defaultWildflyEndpoint = "service:jmx:remote+http://localhost:9990"
+const defaultAdditionalJar = "/opt/wildfly/bin/client/jboss-client.jar"
+
+func (r MetricsReceiverWildfly) Type() string {
+	return "wildfly"
+}
+
+func (r MetricsReceiverWildfly) Pipelines() []otel.Pipeline {
+	targetSystem := "wildfly"
+
+	if r.MetricsReceiverSharedJVM.Endpoint != "" && !strings.HasPrefix(r.MetricsReceiverSharedJVM.Endpoint, "service:jmx") {
+		r.MetricsReceiverSharedJVM.Endpoint = "service:jmx:remote+http://" + r.MetricsReceiverSharedJVM.Endpoint
+	}
+
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultWildflyEndpoint).
+		WithDefaultAdditionalJars(defaultAdditionalJar).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverWildfly{} })
+}
 
 type LoggingProcessorWildflySystem struct {
 	confgenerator.ConfigComponent `yaml:",inline"`

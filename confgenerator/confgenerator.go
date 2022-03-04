@@ -16,6 +16,8 @@
 package confgenerator
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"path"
 	"regexp"
@@ -127,6 +129,42 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	}
 	return c.Generate()
 }
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
+	var multilineParserNames []string
+	if processor.Type() != "parse_multiline" {
+		return nil
+	}
+	for _, p := range processorComponents {
+		if p.Kind == "MULTILINE_PARSER" {
+			multilineParserNames = append(multilineParserNames, p.Config["name"])
+		}
+	}
+	allowedMultilineReceiverTypes := []string{"files"}
+	for _, r := range receiverComponents {
+		if len(multilineParserNames) != 0 &&
+			!contains(allowedMultilineReceiverTypes, receiver.Type()) {
+			return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
+		}
+		if len(multilineParserNames) != 0 {
+			r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
+		}
+
+	}
+	if i != 0 {
+		return fmt.Errorf(`at most one logging processor with type "parse_multiline" is allowed in the pipeline. A logging processor with type "parse_multiline" must be right after a logging receiver with type "files"`)
+	}
+	return nil
+}
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
@@ -153,7 +191,49 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					return nil, fmt.Errorf("receiver %q not found", rID)
 				}
 				tag := fmt.Sprintf("%s.%s", pID, rID)
-				components := receiver.Components(tag)
+
+				// For fluent_forward we create the tag in the following format:
+				// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
+				//
+				// hash_string: Deterministic unique identifier for the pipeline_id + receiver_id.
+				//   This is needed to prevent collisions between receivers in the same
+				//   pipeline when using the glob syntax for matching (using wildcards).
+				// pipeline_id: User defined pipeline_id but with the "." replaced with "_"
+				//   since the "." character is reserved to be used as a delimiter in the
+				//   Lua script.
+				// receiver_id: User defined receiver_id but with the "." replaced with "_"
+				//   since the "." character is reserved to be used as a delimiter in the
+				//   Lua script.
+				//  existing_tag: Tag associated with the record prior to ingesting.
+				//
+				// For an example testing collisions in receiver_ids, see:
+				//
+				// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
+				if receiver.Type() == "fluent_forward" {
+					hashString := getMD5Hash(tag)
+
+					// Note that we only update the tag for the tag. The LogName will still
+					// use the user defined receiver_id without this replacement.
+					pipelineIdCleaned := strings.ReplaceAll(pID, ".", "_")
+					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
+					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
+				}
+				var components []fluentbit.Component
+				receiverComponents := receiver.Components(tag)
+				components = append(components, receiverComponents...)
+
+				// To match on fluent_forward records, we need to account for the addition
+				// of the existing tag (unknown during config generation) as the suffix
+				// of the tag.
+				globSuffix := ""
+				regexSuffix := ""
+				if receiver.Type() == "fluent_forward" {
+					regexSuffix = `\..*`
+					globSuffix = `.*`
+				}
+				tags = append(tags, regexp.QuoteMeta(tag)+regexSuffix)
+				tag = tag + globSuffix
+
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
 					if !ok {
@@ -162,10 +242,19 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
+					processorComponents := processor.Components(tag, strconv.Itoa(i))
+					if err := processUserDefinedMultilineParser(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
+						return nil, err
+					}
+					components = append(components, processorComponents...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
-				tags = append(tags, regexp.QuoteMeta(tag))
+
+				// Logs ingested using the fluent_forward receiver must add the existing_tag
+				// on the record to the LogName. This is done with a Lua filter.
+				if receiver.Type() == "fluent_forward" {
+					components = append(components, addLuaFilter(tag, "add_log_name.lua", "add_log_name")...)
+				}
 				sources = append(sources, fbSource{tag, components})
 			}
 		}
@@ -220,4 +309,10 @@ func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
 		"ShortVersion": hostInfo.PlatformVersion,
 	}
 	return expandTemplate(userAgentTemplate, prefix, extraParams)
+}
+
+func getMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }

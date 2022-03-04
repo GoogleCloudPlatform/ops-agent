@@ -1,0 +1,9 @@
+[23:7] Key: 'MetricsReceiverSharedJVM.additional_jars[0]' Error:Field validation for 'additional_jars[0]' failed on the 'file' tag
+  20 |       password: pas
+  21 |       collection_interval: 30s
+  22 |       additional_jars:
+> 23 |       - /does_not_exist.jar
+             ^
+  24 |   service:
+  25 |     pipelines:
+  26 |       wildfly:

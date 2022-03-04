@@ -777,6 +777,39 @@ func instanceLogURL(vm *VM) string {
 	return fmt.Sprintf("https://console.cloud.google.com/logs/viewer?resource=gce_instance%%2Finstance_id%%2F%d&project=%s", vm.ID, vm.Project)
 }
 
+const (
+	prepareSLESMessage = "prepareSLES() failed"
+)
+
+// prepareSLES runs some preliminary steps that get a SLES VM ready to install packages.
+// First it repeatedly runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
+// When that happens, the VM is ready to install packages.
+// See b/148612123 and b/196246592 for some history about this.
+func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
+	err := backoff.Retry(func() error {
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
+		return err
+	}, backoffPolicy)
+	if err != nil {
+		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
+		return fmt.Errorf("error running registercloudguest: %v", err)
+	}
+
+	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 120), ctx) // 10 minutes max.
+	err = backoff.Retry(func() error {
+		// timezone-java was selected arbitrarily as a package that:
+		// a) can be installed from the default repos, and
+		// b) isn't installed already.
+		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
+		return zypperErr
+	}, backoffPolicy)
+	if err != nil {
+		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
+	}
+	return err
+}
+
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
@@ -978,16 +1011,9 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if !IsWindows(vm.Platform) {
-		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
-		_, err := RunRemotely(ctx, logger, vm, "", strings.Join([]string{
-			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
-			"sudo chmod 600 /swapfile",
-			"sudo mkswap /swapfile",
-			"sudo swapon /swapfile",
-		}, " && "))
-		if err != nil {
-			return nil, err
+	if strings.HasPrefix(vm.Platform, "sles-") {
+		if err := prepareSLES(ctx, logger, vm); err != nil {
+			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
 	}
 
@@ -1020,7 +1046,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(isSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage))
+			(isSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
 	var vm *VM

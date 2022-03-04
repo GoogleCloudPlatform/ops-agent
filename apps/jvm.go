@@ -22,8 +22,6 @@ import (
 type MetricsReceiverJVM struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	confgenerator.MetricsReceiverShared `yaml:",inline"`
-
 	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
 }
 
@@ -34,17 +32,17 @@ func (r MetricsReceiverJVM) Type() string {
 }
 
 func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
-	return r.MetricsReceiverSharedJVM.JVMConfig(
-		"jvm",
-		defaultJVMEndpoint,
-		r.CollectionIntervalString(),
-		[]otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	)
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultJVMEndpoint).
+		ConfigurePipelines(
+			"jvm",
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
 }
 
 func init() {

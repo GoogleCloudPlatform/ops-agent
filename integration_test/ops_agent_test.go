@@ -19,9 +19,9 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 		a valid structure inside AGENT_PACKAGES_IN_GCS if
 		AGENTS_TO_TEST=metrics,ops_agent:
 		├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
+    │   ├── collectd-4.5.6.deb
+    │   ├── collectd-4.5.6.rpm
+    │   └── otel-collector-0.1.2.goo
     └── ops-agent
         ├── ops-agent-google-cloud-1.2.3.deb
         ├── ops-agent-google-cloud-1.2.3.rpm
@@ -199,6 +199,106 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nil
 }
 
+func TestParseMultilineFile(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        languages: [java]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from 3 java exception stacktraces, thus expect 3 logEntries.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
+  at com.my.app.Object.do$a1(MakeLog.java:50)
+  at java.lang.Thing.call(Thing.java:10)
+javax.servlet.ServletException: Something bad happened
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)
+    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)
+    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)
+    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)
+    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)
+    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)
+    at org.mortbay.jetty.Server.handle(Server.java:326)
+    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)
+    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)
+    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)
+    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)
+    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)
+    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)
+    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)
+Caused by: com.example.myproject.MyProjectServletException
+    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
+    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
+    ... 27 common frames omitted
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)\n"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -255,7 +355,6 @@ func TestCustomLogFormat(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		logPath := logPathForPlatform(vm.Platform)
-		// TODO(b/219518200) : Update time_format to use correct format.
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -277,13 +376,15 @@ func TestCustomLogFormat(t *testing.T) {
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%Z")
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().Format(time.RFC3339Nano), vm.Name)
+		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
+		// correctly in windows (b/218888265).
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
@@ -365,9 +466,7 @@ func TestProcessorOrder(t *testing.T) {
 		}
 
 		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265). The similar test TestCustomLogFormat uses the time
-		// format "%Y-%m-%dT%H:%M:%S.%L%Z" which is invalid to parse time.RFC3339Nano format.
-		// TestCustomLogFormat passes since it fallbacks to use a "now" timestamp when parsing fails.
+		// correctly in windows (b/218888265).
 		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
@@ -591,14 +690,10 @@ func TestTCPLog(t *testing.T) {
       format: json
       listen_host: 0.0.0.0
       listen_port: 5170
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       tcp_pipeline:
         receivers: [tcp_logs]
-        exporters: [google]
 `
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -616,6 +711,45 @@ func TestTCPLog(t *testing.T) {
 		}
 
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 2"); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestFluentForwardLog(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		config := `logging:
+  receivers:
+    fluent_logs:
+      type: fluent_forward
+      listen_host: 127.0.0.1
+      listen_port: 24224
+  service:
+    pipelines:
+      fluent_pipeline:
+        receivers: [fluent_logs]
+`
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Use another instance of Fluent Bit to read from stdin and  forward to the
+		// Ops Agent.
+		//
+		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
+		// log record. This will be preserved in the LogName.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
 			t.Error(err)
 		}
 	})
@@ -812,6 +946,20 @@ func metricsForPlatform(platform string) []string {
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
+	if !gce.IsWindows(vm.Platform) {
+		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
+		// We do this so that swap file metrics will show up.
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", strings.Join([]string{
+			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
+			"sudo chmod 600 /swapfile",
+			"sudo mkswap /swapfile",
+			"sudo swapon /swapfile",
+		}, " && "))
+		if err != nil {
+			t.Fatalf("Failed to enable swap file: %v", err)
+		}
+	}
+
 	// First make sure that the uptime metrics are being uploaded.
 	var uptimeWaitGroup sync.WaitGroup
 	regexes := agentVersionRegexesForPlatform(vm.Platform)
