@@ -407,9 +407,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
 		}
 		
-    if reason := shouldSkip(test.app, test.platform); reason != "" {
-     tests[i].skipReason = reason 
-    }
+		if reason := shouldSkip(test.app, test.platform); reason != "" {
+		tests[i].skipReason = reason 
+		}
 	}
 }
 
@@ -436,7 +436,7 @@ func TestThirdPartyApps(t *testing.T) {
 		for _, app := range apps {
 			tests = append(tests, test{platform, app, ""})
 		}
-  }
+  	}
 
 	// Filter tests
 	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)))
