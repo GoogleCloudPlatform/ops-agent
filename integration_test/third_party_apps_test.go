@@ -51,10 +51,9 @@ import (
 
 var (
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
-
-	//go:embed third_party_apps_data
-	scriptsDir embed.FS
 )
+//go:embed third_party_apps_data
+var scriptsDir embed.FS
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
