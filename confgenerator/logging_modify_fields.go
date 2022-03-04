@@ -59,6 +59,9 @@ func (p LoggingProcessorModifyFields) Components(tag, uid string) []fluentbit.Co
 }
 func (p LoggingProcessorModifyFields) components(tag, uid string) ([]fluentbit.Component, error) {
 	var lua strings.Builder
+	lua.WriteString(`
+function process(tag, timestamp, record)
+`)
 	var components []fluentbit.Component
 	// Step 1: Obtain any source values needed for move or copy
 	var i int
@@ -127,7 +130,10 @@ func (p LoggingProcessorModifyFields) components(tag, uid string) ([]fluentbit.C
 `, ra, src)
 	}
 
-	// XXX Execute Lua code
+	// Execute Lua code
+	lua.WriteString("return 2, timestamp, record\n")
+	lua.WriteString("end\n")
+	components = append(components, fluentbit.LuaFilterComponents(tag, "process", lua.String())...)
 
 	// Step 4: Cleanup
 	// XXX Remove temporary fields
