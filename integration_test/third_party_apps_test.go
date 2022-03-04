@@ -408,7 +408,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		}
 		
 		if reason := shouldSkip(test.app, test.platform); reason != "" {
-			tests[i].skipReason = reason 
+			tests[i].skipReason = reason
 		}
 	}
 }
