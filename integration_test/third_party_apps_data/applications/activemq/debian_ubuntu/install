@@ -6,6 +6,8 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install \
 
 sudo sed -i 's/useJmx="false"/useJmx="true"/g' /etc/activemq/instances-available/main/activemq.xml 
 
+sudo sed -i 's/dataDirectory="${activemq.base}\/data">/dataDirectory="${activemq.base}\/data">\n\n            <managementContext>\n                <managementContext createConnector="true" connectorPort="1099"\/>\n            <\/managementContext>/g' /etc/activemq/instances-available/main/activemq.xml
+
 sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enabled/main
 
 sudo systemctl daemon-reload

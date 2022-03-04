@@ -5,7 +5,7 @@ log_entries:
     httpRequest.requestUrl: "/forbidden.html"
     httpRequest.protocol: "HTTP/1.1"
     httpRequest.requestMethod: "GET"
-    httpRequest.userAgent: "curl/7.64.0"
+    httpRequest.userAgent: "curl/.*"
 - log_name: "apache_error"
   field_matchers:
     jsonPayload.client: "::1"
