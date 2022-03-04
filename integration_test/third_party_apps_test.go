@@ -52,6 +52,7 @@ import (
 var (
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
 )
+
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
