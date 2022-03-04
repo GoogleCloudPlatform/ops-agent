@@ -408,7 +408,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		}
 		
 		if reason := shouldSkip(test.app, test.platform); reason != "" {
-		tests[i].skipReason = reason 
+			tests[i].skipReason = reason 
 		}
 	}
 }
@@ -436,7 +436,7 @@ func TestThirdPartyApps(t *testing.T) {
 		for _, app := range apps {
 			tests = append(tests, test{platform, app, ""})
 		}
-  	}
+	}
 
 	// Filter tests
 	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)))
