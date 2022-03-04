@@ -19,7 +19,6 @@ package filter
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
@@ -39,9 +38,11 @@ func NewMember(m string) (*Member, error) {
 	if err != nil {
 		return nil, err
 	}
-	// XXX extract Member or return error if not Member
-	log.Printf("Got ast: %+r", out)
-	return &Member{}, nil
+	r, ok := out.(ast.Restriction)
+	if !ok || r.Operator != "GLOBAL" {
+		return nil, fmt.Errorf("not a field: %#v", out)
+	}
+	return &Member{r.LHS}, nil
 }
 
 var LuaQuote = ast.LuaQuote
