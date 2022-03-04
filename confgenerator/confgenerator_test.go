@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -190,7 +191,13 @@ func readFileContents(t *testing.T, testName, goos, dir string) map[string]strin
 func updateOrCompareGolden(t *testing.T, testName, goos, dir, name, got, want string) {
 	t.Helper()
 	goldenPath := fmt.Sprintf("%s/%s/%s/%s%s", dir, goos, testName, goldenPrefix, name)
-	diff := cmp.Diff(want, got)
+	diff := cmp.Diff(
+		want, got,
+		// Diff each line separately
+		cmpopts.AcyclicTransformer("multiline", func(s string) []string {
+			return strings.Split(s, "\n")
+		}),
+	)
 	if *updateGolden {
 		// If there is a diff, or if the actual is empty (it may be due to the file
 		// not existing), write the golden file with the expected content.
