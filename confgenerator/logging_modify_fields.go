@@ -130,14 +130,19 @@ function process(tag, timestamp, record)
 `, ra, src)
 	}
 
+	// Step 4: Cleanup
+	// Remove temporary fields
+	lua.WriteString(`
+for k,v in pairs(record) do
+  if string.match(k, "^__field.+") or string.match(k, "^__match.+") then
+    record[k] = nil
+  end
+return 2, timestamp, record
+end
+`)
 	// Execute Lua code
-	lua.WriteString("return 2, timestamp, record\n")
-	lua.WriteString("end\n")
 	components = append(components, fluentbit.LuaFilterComponents(tag, "process", lua.String())...)
 
-	// Step 4: Cleanup
-	// XXX Remove temporary fields
-	// XXX Consider doing this in Lua?
 	return components, nil
 }
 
