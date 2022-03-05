@@ -425,7 +425,7 @@ func TestThirdPartyApps(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []test{}
-	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	platforms := []string{"debian-11"} //strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
 		apps, err := appsToTest(agentType, platform)
 		if err != nil {
