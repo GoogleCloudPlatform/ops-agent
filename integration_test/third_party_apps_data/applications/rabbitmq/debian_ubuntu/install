@@ -20,9 +20,10 @@ case $VERSION_ID in
     ;;
   # debian
   10)
-    ;&
-  11)
     echo "deb https://packages.erlang-solutions.com/ubuntu bionic contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
+  11)
+    echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   *)
     echo -n "unknown version"
