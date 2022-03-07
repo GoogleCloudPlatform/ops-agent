@@ -110,6 +110,7 @@ then
 		} else {
 			fmt.Fprintf(&out, `return nil`)
 		}
+		fmt.Fprintf(&out, "end\n")
 	}
 	p := strings.Join(fluentBit, "][")
 	if write {

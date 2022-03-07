@@ -16,6 +16,7 @@ package confgenerator
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
@@ -26,9 +27,9 @@ import (
 type ModifyField struct {
 	// Source of value for this field
 	// XXX: Validate field names
-	MoveFrom    string  `yaml:"move_from" validate:"required_without_all=CopyFrom StaticValue,excluded_with=CopyFrom StaticValue"`
-	CopyFrom    string  `yaml:"copy_from" validate:"required_without_all=MoveFrom StaticValue,excluded_with=MoveFrom StaticValue"`
-	StaticValue *string `yaml:"static_value" validate:"required_without_all=MoveFrom CopyFrom,excluded_with=MoveFrom CopyFrom"`
+	MoveFrom    string  `yaml:"move_from" validate:"excluded_with=CopyFrom StaticValue"`
+	CopyFrom    string  `yaml:"copy_from" validate:"excluded_with=MoveFrom StaticValue"`
+	StaticValue *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
 
 	// Name of field with copied value
 	sourceField string `yaml:"-"`
@@ -42,7 +43,7 @@ type ModifyField struct {
 
 type LoggingProcessorModifyFields struct {
 	ConfigComponent `yaml:",inline"`
-	Fields          map[string]ModifyField `yaml:"fields"`
+	Fields          map[string]*ModifyField `yaml:"fields"`
 }
 
 func (p LoggingProcessorModifyFields) Type() string {
@@ -67,7 +68,17 @@ function process(tag, timestamp, record)
 	var i int
 	fieldMappings := map[string]string{}
 	moveFromFields := map[string]bool{}
-	for _, field := range p.Fields {
+	var dests []string
+	for dest := range p.Fields {
+		dests = append(dests, dest)
+	}
+	sort.Strings(dests)
+	for _, dest := range dests {
+		field := p.Fields[dest]
+		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil {
+			// Default to modifying field in place
+			field.CopyFrom = dest
+		}
 		for j, name := range []*string{&field.MoveFrom, &field.CopyFrom} {
 			if *name == "" {
 				continue
@@ -87,7 +98,7 @@ function process(tag, timestamp, record)
 				// TODO: Do this with Lua for performance?
 				components = append(components, modify.ModifyOptions{modify.CopyModifyKey, fmt.Sprintf("%s %s", new, key)}.Component(tag))
 			}
-			*name = fieldMappings[key]
+			field.sourceField = fieldMappings[key]
 			if j == 0 {
 				ra, err := m.LuaAccessor(true)
 				if err != nil {
@@ -105,14 +116,12 @@ function process(tag, timestamp, record)
 	// Step 3: Evaluate any OmitIf conditions
 	// XXX
 	// Step 4: Assign values
-	for outName, field := range p.Fields {
-		outM, err := filter.NewMember(outName)
+	for _, dest := range dests {
+		field := p.Fields[dest]
+		outM, err := filter.NewMember(dest)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse output field %q: %m", outName, err)
+			return nil, fmt.Errorf("failed to parse output field %q: %m", dest, err)
 		}
-
-		// XXX: Process MapValues
-		// XXX: Process Type
 
 		src := "nil"
 		if field.sourceField != "" {
@@ -122,12 +131,45 @@ function process(tag, timestamp, record)
 			src = filter.LuaQuote(*field.StaticValue)
 		}
 
+		fmt.Fprintf(&lua, "local v = %s\n", src)
+
+		// Process MapValues
+
+		i := 0
+		// TODO: Iterate in a deterministic order
+		for k, v := range field.MapValues {
+			if i > 0 {
+				lua.WriteString("else")
+			}
+			fmt.Fprintf(&lua, "if v == %s then v = %s\n", filter.LuaQuote(k), filter.LuaQuote(v))
+			i++
+		}
+		if i > 0 {
+			lua.WriteString("end\n")
+		}
+
+		// Process Type
+		var conv string
+		switch field.Type {
+		case "integer":
+			conv = "math.tointeger"
+		case "float":
+			conv = "tonumber"
+		}
+		if conv != "" {
+			// Leave existing string value if not convertible
+			fmt.Fprintf(&lua, `
+local v2 = %s(v)
+if v2 != fail then v = v2
+end
+`, conv)
+		}
+
 		ra, err := outM.LuaAccessor(true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %v to Lua accessor: %w", outM, err)
 		}
-		fmt.Fprintf(&lua, `%s(%s)
-`, ra, src)
+		fmt.Fprintf(&lua, "%s(v)\n", ra)
 	}
 
 	// Step 4: Cleanup
