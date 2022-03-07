@@ -1,0 +1,103 @@
+- type: workload.googleapis.com/elasticsearch.cluster.data_nodes
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.cluster.health
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    status: .*
+- type: workload.googleapis.com/elasticsearch.cluster.nodes
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.cluster.shards
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/elasticsearch.node.cache.evictions
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache_name: .*
+- type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    cache_name: .*
+- type: workload.googleapis.com/elasticsearch.node.cluster.connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.cluster.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/elasticsearch.node.documents
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/elasticsearch.node.fs.disk.available
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.http.connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.open_files
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.operations.completed
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/elasticsearch.node.operations.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/elasticsearch.node.shards.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+    thread_pool_name: .*
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    thread_pool_name: .*
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+    thread_pool_name: .*

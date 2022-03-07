@@ -1,0 +1,49 @@
+- type: workload.googleapis.com/hadoop.name_node.block.corrupt
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.block.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.block.missing
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.capacity.limit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.capacity.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.data_node.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.file.load
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.volume.failed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*

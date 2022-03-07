@@ -1,0 +1,79 @@
+- type: workload.googleapis.com/solr.cache.eviction.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache: .*
+    core: .*
+- type: workload.googleapis.com/solr.cache.hit.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache: .*
+    core: .*
+- type: workload.googleapis.com/solr.cache.insert.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache: .*
+    core: .*
+- type: workload.googleapis.com/solr.cache.lookup.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache: .*
+    core: .*
+- type: workload.googleapis.com/solr.cache.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    cache: .*
+    core: .*
+- type: workload.googleapis.com/solr.document.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    core: .*
+- type: workload.googleapis.com/solr.index.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    core: .*
+- type: workload.googleapis.com/solr.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    handler: .*
+    core: .*
+    type: .*
+- type: workload.googleapis.com/solr.request.error.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    handler: .*
+    core: .*
+    type: .*
+- type: workload.googleapis.com/solr.request.time.average
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    handler: .*
+    core: .*
+    type: .*
+- type: workload.googleapis.com/solr.request.timeout.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    handler: .*
+    core: .*
+    type: .*
