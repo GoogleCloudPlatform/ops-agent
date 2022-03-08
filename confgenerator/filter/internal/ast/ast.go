@@ -242,7 +242,7 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		return nil, fmt.Sprintf(`(string.lower(%s) == string.lower(%s))`, lhs, rhsQuoted)
 	case "!=":
 		// inequality, case insensitive
-		return nil, fmt.Sprintf(`(string.lower(%s) != string.lower(%s))`, lhs, rhsQuoted)
+		return nil, fmt.Sprintf(`(string.lower(%s) ~= string.lower(%s))`, lhs, rhsQuoted)
 	}
 	// shouldn't be able to reach here
 	return nil, "false"
