@@ -179,6 +179,7 @@ for k,v in pairs(record) do
   if string.match(k, "^__field.+") or string.match(k, "^__match.+") then
     record[k] = nil
   end
+end
 return 2, timestamp, record
 end
 `)
