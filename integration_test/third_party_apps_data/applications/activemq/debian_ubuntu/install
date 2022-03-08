@@ -12,3 +12,4 @@ sudo ln -s /etc/activemq/instances-available/main /etc/activemq/instances-enable
 
 sudo systemctl daemon-reload
 sudo systemctl enable activemq
+sudo systemctl restart activemq 

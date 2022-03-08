@@ -1,6 +1,0 @@
-set -e
-
-sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
-sudo service postgresql-14 restart
-
-sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""

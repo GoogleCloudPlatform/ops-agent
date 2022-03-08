@@ -1,2 +1,0 @@
-$ProgressPreference = 'SilentlyContinue'
-Start-WebSite -Name "Default Web Site"

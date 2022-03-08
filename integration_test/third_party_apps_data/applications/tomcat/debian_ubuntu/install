@@ -11,3 +11,6 @@ Environment="JAVA_OPTS=-Djava.awt.headless=true"
 EOF
 
 sudo systemctl daemon-reload
+
+sudo systemctl restart tomcat9
+sleep 60

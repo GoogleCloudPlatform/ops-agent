@@ -35,3 +35,21 @@ sed -i.bak 's/<remoting-connector\/>/<remoting-connector use-management-endpoint
 
 sudo systemctl daemon-reload
 sudo systemctl enable wildfly
+sudo systemctl restart wildfly
+
+timeout 60s bash <<EOF
+wait_for_wildfly() {
+    until curl localhost:9990 > /dev/null 2>&1
+    do
+        echo "Waiting for wildfly to start. . ."
+        sleep "1"
+    done
+}
+
+wait_for_wildfly
+
+sleep 5
+echo "Wildfly started"
+EOF
+
+sudo /opt/wildfly/bin/add-user.sh otelu otelp --silent

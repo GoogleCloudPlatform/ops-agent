@@ -49,3 +49,5 @@ sudo systemctl enable kafka-zookeeper
 sudo systemctl enable kafka
 
 sudo mkdir -p /var/log/kafka
+sudo systemctl restart kafka-zookeeper
+sudo systemctl restart kafka
