@@ -1,0 +1,81 @@
+- type: workload.googleapis.com/wildfly.session.count
+  optional: true
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+- type: workload.googleapis.com/wildfly.session.active
+  optional: true
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+- type: workload.googleapis.com/wildfly.session.expired
+  optional: true
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+- type: workload.googleapis.com/wildfly.session.rejected
+  optional: true
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+- type: workload.googleapis.com/wildfly.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server: .*
+    listener: .*
+- type: workload.googleapis.com/wildfly.request.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server: .*
+    listener: .*
+- type: workload.googleapis.com/wildfly.request.server_error
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server: .*
+    listener: .*
+- type: workload.googleapis.com/wildfly.network.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server: .*
+    listener: .*
+    state: .*
+- type: workload.googleapis.com/wildfly.jdbc.connection.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    data_source: .*
+    state: .*
+- type: workload.googleapis.com/wildfly.jdbc.request.wait
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    data_source: .*
+- type: workload.googleapis.com/wildfly.jdbc.transaction.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/wildfly.jdbc.rollback.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cause: .*
