@@ -400,10 +400,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if test.app == "mysql" {
-			// TODO(b/215197805): Reenable this test once the repos are fixed.
-			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
-		}
 		if sliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
