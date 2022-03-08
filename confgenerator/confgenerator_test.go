@@ -161,7 +161,14 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			}
 
 			for f := range expectedFiles {
-				t.Errorf("missing expected file %q", f)
+				if *updateGolden {
+					t.Logf("Detected -update_golden flag. Removing the %q golden file that no longer exists", f)
+					if err := os.Remove(fmt.Sprintf("%s/%s/%s/%s%s", dir, platform.OS, testName, goldenPrefix, f)); err != nil {
+						t.Error(err)
+					}
+				} else {
+					t.Errorf("missing expected file %q", f)
+				}
 			}
 		})
 	}
