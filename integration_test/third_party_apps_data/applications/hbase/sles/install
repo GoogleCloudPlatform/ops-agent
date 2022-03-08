@@ -1,7 +1,7 @@
 set -e
 
 sudo zypper install -y wget java-11-openjdk
-wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
+wget http://apache.mirror.gtcomm.net/hbase/2.4.9/hbase-2.4.9-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
 
