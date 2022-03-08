@@ -89,6 +89,8 @@ func (m Target) LuaAccessor(write bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Make a copy so we don't mutate m
+	fluentBit = append([]string{}, fluentBit...)
 	for i := range fluentBit {
 		fluentBit[i] = LuaQuote(fluentBit[i])
 	}
@@ -225,10 +227,14 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	case "=~", "!~":
 		// regex match, case sensitive
 		c := modify(tag, key)
+		lhsRA, err := r.LHS.RecordAccessor()
+		if err != nil {
+			panic(fmt.Errorf("LHS %v couldn't parse: %w", r.LHS, err))
+		}
 		if r.Operator == "=~" {
-			c.Config["Condition"] = cond("Key_value_matches", lhs, rhsRegex)
+			c.Config["Condition"] = cond("Key_value_matches", lhsRA, rhsRegex)
 		} else {
-			c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, rhsRegex)})
+			c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhsRA, rhsRegex)})
 		}
 		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] != nil)`, LuaQuote(key))
 	case "=":
