@@ -5,12 +5,22 @@ log_entries:
     jsonPayload.level: "INFO"
     jsonPayload.module: "main"
     jsonPayload.javaClass: "CassandraDaemon.java"
+    jsonPayload.lineNumber: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"
 - log_name: "cassandra_debug"
   field_matchers:
     jsonPayload.message: ".*Loading settings from file.*"
     jsonPayload.level: "DEBUG"
     jsonPayload.module: "main"
     jsonPayload.javaClass: "YamlConfigurationLoader.java"
+    jsonPayload.lineNumber: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"
 - log_name: "cassandra_gc"
   field_matchers:
     jsonPayload.message: '.*Total time for which application threads were stopped.*'
+    jsonPayload.uptime: "PLACEHOLDER"
+    jsonPayload.timeStopped: "PLACEHOLDER"
+    jsonPayload.timeStopping: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

@@ -5,3 +5,7 @@ log_entries:
       jsonPayload.message: "binding to port 0.0.0.0/0.0.0.0:2181"
       jsonPayload.thread: "main"
       jsonPayload.source: "NIOServerCnxnFactory"
+      timestamp: "PLACEHOLDER"
+      jsonPayload.line: "PLACEHOLDER"
+      jsonPayload.myid: "PLACEHOLDER"
+      severity: "PLACEHOLDER"

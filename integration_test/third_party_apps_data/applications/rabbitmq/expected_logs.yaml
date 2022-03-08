@@ -1,2 +1,7 @@
 log_entries:
 - log_name: "rabbitmq"
+  field_matchers:
+    jsonPayload.process_id: "PLACEHOLDER"
+    jsonPayload.message: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

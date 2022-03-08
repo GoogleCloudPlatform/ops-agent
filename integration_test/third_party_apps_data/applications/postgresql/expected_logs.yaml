@@ -3,3 +3,8 @@ log_entries:
   field_matchers:
     jsonPayload.message: '.*starting PostgreSQL.*'
     jsonPayload.level: "LOG"
+    jsonPayload.tid: "PLACEHOLDER"
+    jsonPayload.role: "PLACEHOLDER"
+    jsonPayload.user: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

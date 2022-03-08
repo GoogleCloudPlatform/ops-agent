@@ -3,3 +3,5 @@ log_entries:
   field_matchers:
     jsonPayload.message: 'STARTUP_MSG:.*'
     jsonPayload.source: "org.apache.hadoop.hdfs.server.namenode.NameNode"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

@@ -1,2 +1,6 @@
 log_entries:
 - log_name: "mongodb"
+  field_matchers:
+    include_paths: "PLACEHOLDER"
+    exclude_paths: "PLACEHOLDER"
+    wildcard_refresh_interval: "PLACEHOLDER"

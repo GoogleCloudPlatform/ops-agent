@@ -5,3 +5,6 @@ log_entries:
     jsonPayload.message: 'Ready to accept connections'
     jsonPayload.roleChar: "M"
     jsonPayload.role: "master"
+    jsonPayload.pid: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

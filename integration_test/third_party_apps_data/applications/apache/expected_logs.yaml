@@ -6,6 +6,13 @@ log_entries:
     httpRequest.protocol: "HTTP/1.1"
     httpRequest.requestMethod: "GET"
     httpRequest.userAgent: "curl/.*"
+    httpRequest.referer: "PLACEHOLDER"
+    httpRequest.responseSize: "PLACEHOLDER"
+    httpRequest.status: "PLACEHOLDER"
+    httpRequest.userAgent: "PLACEHOLDER"
+    jsonPayload.host: "PLACEHOLDER"
+    jsonPayload.user: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"
 - log_name: "apache_error"
   field_matchers:
     jsonPayload.client: "::1"
@@ -13,3 +20,7 @@ log_entries:
     jsonPayload.module: "core"
     jsonPayload.message: '.*file permissions deny server access.*'
     jsonPayload.errorCode: '.*Permission denied.*'
+    jsonPayload.pid: "PLACEHOLDER"
+    jsonPayload.tid: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

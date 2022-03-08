@@ -5,9 +5,16 @@ log_entries:
     jsonPayload.message: "initialized"
     jsonPayload.component: "o.e.n.Node"
     jsonPayload.type: "server"
-
+    jsonPayload.cluster.name: "PLACEHOLDER"
+    jsonPayload.cluster.uuid: "PLACEHOLDER"
+    jsonPayload.node.name: "PLACEHOLDER"
+    jsonPayload.node.uuid: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"
 # [2022-01-19T16:16:39.445+0000][40361][gc] Using G1
 - log_name: "elasticsearch_gc"
   field_matchers:
     jsonPayload.message: 'Using G1'
     jsonPayload.type: "gc"
+    jsonPayload.gc_run: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

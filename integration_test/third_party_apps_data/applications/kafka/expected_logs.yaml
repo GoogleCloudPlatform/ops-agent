@@ -4,3 +4,5 @@ log_entries:
     jsonPayload.message: ".*Waiting until connected.*"
     jsonPayload.source: "ZooKeeperClient Kafka server"
     jsonPayload.logger: "kafka.zookeeper.ZooKeeperClient"
+    severity: "PLACEHOLDER"
+    timestamp: "PLACEHOLDER"

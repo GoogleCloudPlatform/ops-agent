@@ -5,3 +5,5 @@ log_entries:
     jsonPayload.message: ".*WildFly Full.*"
     jsonPayload.thread: "MSC service thread.*"
     jsonPayload.source: "org.jboss.as"
+    timestamp: "PLACEHOLDER"
+    severity: "PLACEHOLDER"
