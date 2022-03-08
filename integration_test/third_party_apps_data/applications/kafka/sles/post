@@ -1,4 +1,0 @@
-set -e
-
-sudo systemctl restart kafka-zookeeper
-sudo systemctl restart kafka

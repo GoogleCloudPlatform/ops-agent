@@ -12,3 +12,4 @@ EOF
 sudo yum update
 
 sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra
+sudo service cassandra start

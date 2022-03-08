@@ -113,9 +113,6 @@ the test will:
 1.  Install the application on the VM by running
     `applications/<application>/<platform>/install` on the VM
 1.  Install the Ops Agent (built from the contents of the PR) on the VM
-1.  Configure the application to expose its metrics by running
-    `applications/<application>/<platform>/post` on the VM. This might
-    be a no-op for some applications.
 1.  Configure the the Ops Agent to look for the application's logs/metrics by
     running `applications/<application>/enable` on the VM.
 1.  Run `applications/<application>/exercise` script to send some load to
@@ -140,9 +137,6 @@ application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
 Then, inside `applications/<application>/`:
 
 1.  `<platform>/install` to install the application,
-1.  `<platform>/post` to configure the application to expose metrics somewhere.
-    This might be a no-op for some applications. If so, just leave the file
-    empty.
 1.  `enable` to configure the Ops Agent to read the application's metrics
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed

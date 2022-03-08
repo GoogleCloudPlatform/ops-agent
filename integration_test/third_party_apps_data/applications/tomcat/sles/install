@@ -11,3 +11,5 @@ EOFdBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
+sudo service tomcat restart
+sleep 60
