@@ -1,4 +1,0 @@
-set -e
-
-sudo service tomcat restart
-sleep 60

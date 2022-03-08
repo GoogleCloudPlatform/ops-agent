@@ -13,3 +13,5 @@ fi
 sudo zypper -n refresh
 
 sudo zypper -n install memcached
+
+sudo service memcached start
