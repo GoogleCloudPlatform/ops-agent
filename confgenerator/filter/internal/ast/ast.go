@@ -83,6 +83,7 @@ func (m Target) RecordAccessor() (string, error) {
 	return recordAccessor, nil
 }
 
+// LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).
 func (m Target) LuaAccessor(write bool) (string, error) {
 	fluentBit, err := m.fluentBitPath()
 	if err != nil {
@@ -118,7 +119,7 @@ then
 end)`, p)
 	} else {
 		fmt.Fprintf(&out, `return record[%s]
-end)`, p)
+end)()`, p)
 	}
 	return out.String(), nil
 }
@@ -207,6 +208,40 @@ func escapeWhitespace(s string) string {
 	return s
 }
 
+func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
+	lhs, _ := r.LHS.LuaAccessor(false)
+	rhsLiteral, _ := Unquote(r.RHS)
+	rhsQuoted := LuaQuote(rhsLiteral)
+	rhsRegex := escapeWhitespace(r.RHS)
+
+	// TODO: Add support for numeric comparisons
+
+	switch r.Operator {
+	case "GLOBAL", "<", "<=", ">", ">=":
+		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
+	case ":":
+		// substring match, case insensitive
+		return nil, fmt.Sprintf(`(string.find(string.lower(%s), string.lower(%s), 1, false) != nil)`, lhs, rhsQuoted)
+	case "=~", "!~":
+		// regex match, case sensitive
+		c := modify(tag, key)
+		if r.Operator == "=~" {
+			c.Config["Condition"] = cond("Key_value_matches", lhs, rhsRegex)
+		} else {
+			c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, rhsRegex)})
+		}
+		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] != nil)`, LuaQuote(key))
+	case "=":
+		// equality, case insensitive
+		return nil, fmt.Sprintf(`(string.lower(%s) == string.lower(%s))`, lhs, rhsQuoted)
+	case "!=":
+		// inequality, case insensitive
+		return nil, fmt.Sprintf(`(string.lower(%s) != string.lower(%s))`, lhs, rhsQuoted)
+	}
+	// shouldn't be able to reach here
+	return nil, "false"
+}
+
 func (r Restriction) Components(tag, key string) []fluentbit.Component {
 	c := modify(tag, key)
 	lhs, _ := r.LHS.RecordAccessor()
@@ -237,6 +272,9 @@ func (r Restriction) Components(tag, key string) []fluentbit.Component {
 type Expression interface {
 	// Simplify returns a logically equivalent Expression.
 	Simplify() Expression
+
+	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record..
+	FluentConfig(tag, key string) ([]fluentbit.Component, string)
 
 	// Components returns a sequence of fluentbit operations that
 	// will set key if tagged records match this expression.
@@ -284,6 +322,24 @@ func (c Conjunction) Append(a Attrib) (Conjunction, error) {
 	return nil, fmt.Errorf("expected expression: %v", a)
 }
 
+type exprSlice []Expression
+
+func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Component, string) {
+	var components []fluentbit.Component
+	var exprs []string
+	for i, e := range s {
+		subkey := fmt.Sprintf("%s_%d", key, i)
+		exprComponents, expr := e.FluentConfig(tag, subkey)
+		components = append(components, exprComponents...)
+		exprs = append(exprs, expr)
+	}
+	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
+}
+
+func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
+	return exprSlice(c).FluentConfig(tag, key, " and ")
+}
+
 func (c Conjunction) Components(tag, key string) []fluentbit.Component {
 	var components []fluentbit.Component
 	m := modify(tag, key)
@@ -323,6 +379,10 @@ func (d Disjunction) Append(a Attrib) (Disjunction, error) {
 		return append(d, a.Simplify()), nil
 	}
 	return nil, fmt.Errorf("expected expression: %v", a)
+}
+
+func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
+	return exprSlice(d).FluentConfig(tag, key, " or ")
 }
 
 func (d Disjunction) Components(tag, key string) []fluentbit.Component {
