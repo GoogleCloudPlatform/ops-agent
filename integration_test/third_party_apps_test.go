@@ -350,6 +350,11 @@ type test struct {
 	skipReason string
 }
 
+var defaultPlatforms = map[string]bool{
+	"debian-10":    true,
+	"windows-2019": true,
+}
+
 // shouldSkip returns a reason that the given pair of application and platform
 // should be skipped, or "" if it should not be skipped.
 // New applications should return skip reasons sparingly if at all.
@@ -362,7 +367,7 @@ func shouldSkip(app, platform string) string {
 		}
 		return ""
 	case "wildfly":
-		if platform != "debian-10" {
+		if !defaultPlatforms[platform] {
 			// As wildfly does not have package installers & is installed from tar,
 			// we only want to test on one distribution to help reduce integration test size
 			return "installed from tar, no need to test across platforms"
@@ -378,15 +383,11 @@ func shouldSkip(app, platform string) string {
 			return "rabbitmq is not supported on sles-12"
 		}
 		return ""
+
 	}
 	// Most applications support all platforms and don't appear anywhere
 	// in the switch/case.
 	return ""
-}
-
-var defaultPlatforms = map[string]bool{
-	"debian-10":    true,
-	"windows-2019": true,
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -402,11 +403,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if test.app == "mysql" {
-			// TODO(b/215197805): Reenable this test once the repos are fixed.
-			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
-		}
-		
+
 		if reason := shouldSkip(test.app, test.platform); reason != "" {
 			tests[i].skipReason = reason
 		}
