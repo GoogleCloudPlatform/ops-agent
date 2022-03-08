@@ -377,27 +377,28 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 
 // hasNonEmptySeries examines the given iterator, returning true if the
 // lookup succeeded and returned a nonempty time series, and false otherwise.
-// Also returns an error if the lookup failed.
-// A return value of (false, nil) indicates that the lookup succeeded but
+// Also returns an error if the lookup failed, as well as the time series
+// itself if the lookup succeeded.
+// A return value of (false, nil, nil) indicates that the lookup succeeded but
 // returned no data.
-func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (bool, error) {
+func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (bool, error, *monitoringpb.TimeSeries) {
 	// Loop through the iterator, looking for at least one nonempty time series.
 	for {
 		series, err := it.Next()
 		logger.Printf("hasNonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			// Either there were no data series in the iterator or all of them were empty.
-			return false, nil
+			return false, nil, nil
 		}
 		if err != nil {
-			return false, err
+			return false, err, nil
 		}
 		if len(series.Points) == 0 {
 			// Look at the next element(s) of the iterator.
 			continue
 		}
 		// Success, we found a timeseries with len(series.Points) > 0.
-		return true, nil
+		return true, nil, series
 	}
 }
 
@@ -406,15 +407,25 @@ func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (b
 // number of times. This is useful because it takes time for monitoring data to
 // become visible after it has been uploaded.
 func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) error {
+	_, err := QueryMetric(ctx, logger, vm, metric, window, extraFilters)
+	return err
+}
+
+// QueryMetric looks for the given metric in the backend and returns an error
+// if it does not have data. This function will retry "no data" errors a fixed
+// number of times. This is useful because it takes time for monitoring data to
+// become visible after it has been uploaded. If the metric's data exists, it is
+// returned as a TimeSeries.
+func QueryMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
-		found, err := hasNonEmptySeries(logger, it)
+		found, err, series := hasNonEmptySeries(logger, it)
 		if found {
 			// Success.
-			return nil
+			return series, nil
 		}
 		if err != nil && !isRetriableLookupMetricError(err) {
-			return fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+			return nil, fmt.Errorf("QueryMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
@@ -423,7 +434,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 			metric, extraFilters, err, found, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
+	return nil, fmt.Errorf("QueryMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
 }
 
 // AssertMetricMissing looks for data of a metric and returns success if
@@ -432,7 +443,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil)
-		found, err := hasNonEmptySeries(logger, it)
+		found, err, _ := hasNonEmptySeries(logger, it)
 		logger.Printf("hasNonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
