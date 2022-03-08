@@ -4,6 +4,7 @@
   monitored_resource: gce_instance
   labels:
     server_name: .*
+  is_representative: true
 - type: workload.googleapis.com/apache.requests
   value_type: INT64
   kind: CUMULATIVE
@@ -15,8 +16,8 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     server_name: .*
+    state: .*
 - type: workload.googleapis.com/apache.traffic
   value_type: INT64
   kind: CUMULATIVE
@@ -28,5 +29,5 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     server_name: .*
+    state: .*

@@ -33,6 +33,7 @@
   labels:
     cache: .*
     core: .*
+  is_representative: true
 - type: workload.googleapis.com/solr.document.count
   value_type: INT64
   kind: GAUGE
@@ -50,30 +51,30 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    handler: .*
     core: .*
+    handler: .*
     type: .*
 - type: workload.googleapis.com/solr.request.error.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    handler: .*
     core: .*
+    handler: .*
     type: .*
 - type: workload.googleapis.com/solr.request.time.average
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    handler: .*
     core: .*
+    handler: .*
     type: .*
 - type: workload.googleapis.com/solr.request.timeout.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    handler: .*
     core: .*
+    handler: .*
     type: .*

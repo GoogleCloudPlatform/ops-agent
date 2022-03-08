@@ -30,15 +30,15 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     region_server: .*
+    state: .*
 - type: workload.googleapis.com/hbase.region_server.block_cache.operation.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     region_server: .*
+    state: .*
 - type: workload.googleapis.com/hbase.region_server.blocked_update.time
   value_type: INT64
   kind: GAUGE
@@ -64,12 +64,12 @@
   labels:
     region_server: .*
 - type: workload.googleapis.com/hbase.region_server.gc.old_gen.time
-  optional: true
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
     region_server: .*
+  optional: true
 - type: workload.googleapis.com/hbase.region_server.gc.time
   value_type: INT64
   kind: CUMULATIVE
@@ -77,12 +77,12 @@
   labels:
     region_server: .*
 - type: workload.googleapis.com/hbase.region_server.gc.young_gen.time
-  optional: true
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
     region_server: .*
+  optional: true
 - type: workload.googleapis.com/hbase.region_server.open_connection.count
   value_type: INT64
   kind: GAUGE
@@ -119,6 +119,7 @@
   monitored_resource: gce_instance
   labels:
     region_server: .*
+  is_representative: true
 - type: workload.googleapis.com/hbase.region_server.operation.delete.latency.max
   value_type: INT64
   kind: GAUGE
@@ -281,15 +282,15 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     region_server: .*
+    state: .*
 - type: workload.googleapis.com/hbase.region_server.queue.request.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     region_server: .*
+    state: .*
 - type: workload.googleapis.com/hbase.region_server.region.count
   value_type: INT64
   kind: GAUGE
@@ -301,8 +302,8 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     region_server: .*
+    state: .*
 - type: workload.googleapis.com/hbase.region_server.write_ahead_log.count
   value_type: INT64
   kind: GAUGE

@@ -3,6 +3,7 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+  is_representative: true
 - type: agent.googleapis.com/mssql/transaction_rate
   value_type: DOUBLE
   kind: GAUGE

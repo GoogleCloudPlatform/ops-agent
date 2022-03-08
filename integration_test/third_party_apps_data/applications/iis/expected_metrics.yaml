@@ -20,3 +20,4 @@
   monitored_resource: gce_instance
   labels:
     http_method: .*
+  is_representative: true

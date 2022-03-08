@@ -212,6 +212,10 @@ type expectedMetricEntry struct {
 	// because ingesting them requires some additional complex
 	// setup.
 	Optional bool `yaml:"optional,omitempty"`
+	// If set to true, this metric is considered to be a
+	// representative sample of all metrics for this app.
+	// Exactly one metric per app should set this to true.
+	IsRepresentative bool `yaml:"is_representative,omitempty"`
 }
 
 // constructQuery converts the given map of:
@@ -255,6 +259,19 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
+	}
+	if len(entries) == 0 {
+		logger.ToMainLog().Printf("Skipping metrics test: expected_metrics.yaml is empty")
+		return nil
+	}
+	representativeCount := 0
+	for _, entry := range entries {
+		if entry.IsRepresentative {
+			representativeCount += 1
+		}
+	}
+	if representativeCount != 1 {
+		return fmt.Errorf("There must be exactly one metric with is_representatve: true. Found %v.", representativeCount)
 	}
 	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", entries)
 	for _, entry := range entries {

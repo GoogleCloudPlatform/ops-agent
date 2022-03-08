@@ -15,8 +15,8 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    type: .*
     database: .*
+    type: .*
 - type: workload.googleapis.com/mongodb.data.size
   value_type: INT64
   kind: GAUGE
@@ -45,8 +45,9 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    type: .*
     database: .*
+    type: .*
+  is_representative: true
 - type: workload.googleapis.com/mongodb.object.count
   value_type: INT64
   kind: GAUGE

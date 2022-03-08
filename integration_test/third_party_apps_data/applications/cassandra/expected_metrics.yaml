@@ -4,13 +4,14 @@
   monitored_resource: gce_instance
   labels:
     operation: .*
+  is_representative: true
 - type: workload.googleapis.com/cassandra.client.request.error.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    status: .*
     operation: .*
+    status: .*
 - type: workload.googleapis.com/cassandra.client.request.range_slice.latency.50p
   value_type: DOUBLE
   kind: GAUGE

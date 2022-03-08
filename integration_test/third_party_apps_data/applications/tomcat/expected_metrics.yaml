@@ -32,12 +32,13 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
     proto_handler: .*
+    state: .*
+  is_representative: true
 - type: workload.googleapis.com/tomcat.traffic
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    proto_handler: .*
     direction: .*
+    proto_handler: .*

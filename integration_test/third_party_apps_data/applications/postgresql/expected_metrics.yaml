@@ -4,6 +4,7 @@
   monitored_resource: gce_instance
   labels:
     database: .*
+  is_representative: true
 - type: workload.googleapis.com/postgresql.commits
   value_type: INT64
   kind: CUMULATIVE
