@@ -16,7 +16,6 @@ package ast
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -226,6 +225,11 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		return nil, fmt.Sprintf(`(string.find(string.lower(%s), string.lower(%s), 1, false) != nil)`, lhs, rhsQuoted)
 	case "=~", "!~":
 		// regex match, case sensitive
+
+		// TODO: Re-implement using Lua once regex is supported. Lua has been shown to perform better
+		// than the next/modify/lift pattern used here, but we are unable to use Lua for now since
+		// it does not yet support regex.
+
 		c := modify(tag, key)
 		lhsRA, err := r.LHS.RecordAccessor()
 		if err != nil {
@@ -248,43 +252,12 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return nil, "false"
 }
 
-func (r Restriction) Components(tag, key string) []fluentbit.Component {
-	c := modify(tag, key)
-	lhs, _ := r.LHS.RecordAccessor()
-	rhs := r.RHS
-	rhsLiteral, _ := Unquote(rhs)
-	rhsLiteral = escapeWhitespace(regexp.QuoteMeta(rhsLiteral))
-	rhsRegex := escapeWhitespace(rhs)
-	switch r.Operator {
-	case "GLOBAL", "<", "<=", ">", ">=":
-		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
-	case ":":
-		// substring match
-		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`.*%s.*`, rhsLiteral))
-	case "=~":
-		// regex match
-		c.Config["Condition"] = cond("Key_value_matches", lhs, rhsRegex)
-	case "!~":
-		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, rhsRegex)})
-	case "=":
-		// equality
-		c.Config["Condition"] = cond("Key_value_matches", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))
-	case "!=":
-		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhs, fmt.Sprintf(`(?i)^%s$`, rhsLiteral))})
-	}
-	return []fluentbit.Component{c}
-}
-
 type Expression interface {
 	// Simplify returns a logically equivalent Expression.
 	Simplify() Expression
 
-	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record..
+	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record.
 	FluentConfig(tag, key string) ([]fluentbit.Component, string)
-
-	// Components returns a sequence of fluentbit operations that
-	// will set key if tagged records match this expression.
-	Components(tag, key string) []fluentbit.Component
 }
 
 func Simplify(a Attrib) (Expression, error) {
@@ -346,20 +319,6 @@ func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(c).FluentConfig(tag, key, " and ")
 }
 
-func (c Conjunction) Components(tag, key string) []fluentbit.Component {
-	var components []fluentbit.Component
-	m := modify(tag, key)
-	for i, e := range c {
-		subkey := fmt.Sprintf("%s_%d", key, i)
-		components = append(components, e.Components(tag, subkey)...)
-		m.OrderedConfig = append(m.OrderedConfig, [2]string{
-			"Condition", cond("Key_exists", subkey),
-		})
-	}
-	components = append(components, m)
-	return components
-}
-
 func NewDisjunction(a Attrib) (Disjunction, error) {
 	switch a := a.(type) {
 	case Disjunction:
@@ -389,23 +348,6 @@ func (d Disjunction) Append(a Attrib) (Disjunction, error) {
 
 func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	return exprSlice(d).FluentConfig(tag, key, " or ")
-}
-
-func (d Disjunction) Components(tag, key string) []fluentbit.Component {
-	var components []fluentbit.Component
-	var subkeys []string
-	for i, e := range d {
-		subkey := fmt.Sprintf("%s_%d", key, i)
-		components = append(components, e.Components(tag, subkey)...)
-		subkeys = append(subkeys, subkey)
-	}
-	// NB: We can't just pass key to e.Components because nested expressions might collide.
-	for _, subkey := range subkeys {
-		m := modify(tag, key)
-		m.Config["Condition"] = cond("Key_exists", subkey)
-		components = append(components, m)
-	}
-	return components
 }
 
 type Negation struct {

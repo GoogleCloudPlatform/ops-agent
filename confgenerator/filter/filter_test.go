@@ -59,8 +59,9 @@ func TestShouldParse(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			components := filter.Components("logname", false)
+			components, expr := AllFluentConfig("logname", map[string]*Filter{"filter": filter})
 			t.Logf("components = %+v", components)
+			t.Logf("expression =\n%s", expr)
 			files, err := fluentbit.ModularConfig{Components: components}.Generate()
 			if err != nil {
 				t.Error(err)
