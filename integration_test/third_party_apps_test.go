@@ -212,9 +212,9 @@ type expectedMetric struct {
 	// because ingesting them requires some additional complex
 	// setup.
 	Optional bool `yaml:"optional,omitempty"`
-	// If set to true, this metric is considered to be a
-	// representative sample of all metrics for this app.
-	// Exactly one metric per app should set this to true.
+	// Exactly one metric in each expected_metrics.yaml must
+	// have Representative set to true. This metric can be used
+	// to test that the integration is enabled.
 	Representative bool `yaml:"representative,omitempty"`
 }
 

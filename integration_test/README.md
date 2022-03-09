@@ -172,7 +172,7 @@ For example, if a metric defines a label `operation` whose values can only be `r
     operation: read|write
 ```
 
-`representative` is optional. Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This is used for documentation only, however the test will still validate that exactly one metric sets it to `true`.
+Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled.
 
 `optional` is optional. When set to `true`, the metric will be skipped during the test. This is useful for documenting metrics that we don't have tests for.
 
