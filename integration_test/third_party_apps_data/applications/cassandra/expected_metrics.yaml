@@ -4,7 +4,7 @@
   monitored_resource: gce_instance
   labels:
     operation: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/cassandra.client.request.error.count
   value_type: INT64
   kind: CUMULATIVE

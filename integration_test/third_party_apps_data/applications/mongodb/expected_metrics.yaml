@@ -47,7 +47,7 @@
   labels:
     database: .*
     type: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/mongodb.object.count
   value_type: INT64
   kind: GAUGE

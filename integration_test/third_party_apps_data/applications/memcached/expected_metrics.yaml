@@ -3,7 +3,7 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/memcached.commands
   value_type: INT64
   kind: CUMULATIVE

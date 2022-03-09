@@ -34,7 +34,7 @@
   labels:
     proto_handler: .*
     state: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/tomcat.traffic
   value_type: INT64
   kind: CUMULATIVE

@@ -215,7 +215,7 @@ type expectedMetric struct {
 	// If set to true, this metric is considered to be a
 	// representative sample of all metrics for this app.
 	// Exactly one metric per app should set this to true.
-	IsRepresentative bool `yaml:"is_representative,omitempty"`
+	Representative bool `yaml:"representative,omitempty"`
 }
 
 // constructQuery converts the given map of:
@@ -266,12 +266,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 	representativeCount := 0
 	for _, entry := range entries {
-		if entry.IsRepresentative {
+		if entry.Representative {
 			representativeCount += 1
 		}
 	}
 	if representativeCount != 1 {
-		return fmt.Errorf("There must be exactly one metric with is_representatve: true. Found %v.", representativeCount)
+		return fmt.Errorf("There must be exactly one metric with representative: true. Found %v.", representativeCount)
 	}
 	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", entries)
 	for _, entry := range entries {

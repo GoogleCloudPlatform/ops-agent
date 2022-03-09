@@ -33,7 +33,7 @@
   labels:
     cache: .*
     core: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/solr.document.count
   value_type: INT64
   kind: GAUGE

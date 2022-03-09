@@ -28,7 +28,7 @@
   monitored_resource: gce_instance
   labels:
     node_name: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/hadoop.name_node.data_node.count
   value_type: INT64
   kind: GAUGE

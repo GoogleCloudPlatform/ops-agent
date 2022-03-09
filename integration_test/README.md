@@ -157,7 +157,7 @@ A sample `expected_metrics.yaml` snippet looks like:
   monitored_resource: gce_instance
   labels:
     server_name: .*
-  is_representative: true
+  representative: true
   optional: true
 ```
 
@@ -172,7 +172,7 @@ For example, if a metric defines a label `operation` whose values can only be `r
     state: (read|write)
 ```
 
-`is_representative` is optional. Exactly one metric from each integration's `expected_metrics.yaml` must have `is_representative: true`. This is used for documentation only, however the test will still validate that exactly one metric sets it to `true`.
+`representative` is optional. Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This is used for documentation only, however the test will still validate that exactly one metric sets it to `true`.
 
 `optional` is optional. When set to `true`, the metric will be skipped during the test. This is useful for documenting metrics that we don't have tests for.
 

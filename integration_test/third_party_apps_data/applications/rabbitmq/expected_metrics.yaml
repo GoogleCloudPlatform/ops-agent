@@ -9,4 +9,4 @@
   monitored_resource: gce_instance
   labels:
     state: .*
-  is_representative: true
+  representative: true

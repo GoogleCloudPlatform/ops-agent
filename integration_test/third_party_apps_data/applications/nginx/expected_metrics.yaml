@@ -19,4 +19,4 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-  is_representative: true
+  representative: true

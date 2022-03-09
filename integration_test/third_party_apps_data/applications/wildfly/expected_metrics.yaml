@@ -55,7 +55,7 @@
     listener: .*
     server: .*
     state: .*
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/wildfly.jdbc.connection.open
   value_type: INT64
   kind: GAUGE

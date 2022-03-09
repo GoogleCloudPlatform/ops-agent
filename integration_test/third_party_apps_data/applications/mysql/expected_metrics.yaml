@@ -82,4 +82,4 @@
   monitored_resource: gce_instance
   labels:
     kind: .*
-  is_representative: true
+  representative: true

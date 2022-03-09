@@ -9,7 +9,7 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-  is_representative: true
+  representative: true
 - type: workload.googleapis.com/kafka.network.io
   value_type: INT64
   kind: CUMULATIVE
