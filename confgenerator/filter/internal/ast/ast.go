@@ -236,7 +236,7 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		} else {
 			c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", cond("Key_value_does_not_match", lhsRA, rhsRegex)})
 		}
-		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] != nil)`, LuaQuote(key))
+		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] ~= nil)`, LuaQuote(key))
 	case "=":
 		// equality, case insensitive
 		return nil, fmt.Sprintf(`(string.lower(%s) == string.lower(%s))`, lhs, rhsQuoted)
@@ -416,13 +416,9 @@ func (n Negation) Simplify() Expression {
 	return Negation{n.Expression.Simplify()}
 }
 
-func (n Negation) Components(tag, key string) []fluentbit.Component {
-	subkey := fmt.Sprintf("%s_0", key)
-	components := n.Expression.Components(tag, subkey)
-	m := modify(tag, key)
-	m.Config["Condition"] = cond("Key_does_not_exist", subkey)
-	components = append(components, m)
-	return components
+func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
+	c, expr := n.Expression.FluentConfig(tag, key)
+	return c, fmt.Sprintf("(not %s)", expr)
 }
 
 // Unquote replaces all escape sequences with their respective characters that they represent.
