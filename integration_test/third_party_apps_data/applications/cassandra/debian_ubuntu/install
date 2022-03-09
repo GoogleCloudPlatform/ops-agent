@@ -9,3 +9,5 @@ curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
 
 sudo apt update
 sudo apt install -y openjdk-8-jdk cassandra
+
+sudo service cassandra start

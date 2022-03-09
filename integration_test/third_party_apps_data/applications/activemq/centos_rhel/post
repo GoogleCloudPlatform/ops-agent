@@ -1,3 +1,0 @@
-set -e
-
-sudo systemctl restart activemq 
