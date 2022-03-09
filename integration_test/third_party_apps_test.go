@@ -295,7 +295,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric expectedMetric) error {
-	series, err := gce.QueryMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
+	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err == nil {
 		if series.ValueType.String() != metric.ValueType {
 			err = fmt.Errorf("%s: valueType: expected %s but got %s", metric.Type, metric.ValueType, series.ValueType.String())
