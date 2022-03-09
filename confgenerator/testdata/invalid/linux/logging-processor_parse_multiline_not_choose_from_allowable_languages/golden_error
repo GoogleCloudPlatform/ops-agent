@@ -1,9 +1,0 @@
-[15:20] "languages[0]" must be one of [java]
-  12 |       type: parse_multiline
-  13 |       match_any:
-  14 |       - type: language_exceptions
-> 15 |         languages: [japa]
-                          ^
-  16 |   service:
-  17 |     pipelines:
-  18 |       p1:
