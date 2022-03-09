@@ -176,23 +176,23 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agentType, packagesInGCS)
 }
 
-// expectedEntries encodes a series of assertions about what data we expect to
+// expectedLogs encodes a series of assertions about what data we expect
 // to see in the logging backend.
-type expectedEntries struct {
+type expectedLogs struct {
 	// Note on tags: the "yaml" tag specifies the name of this field in the
 	// .yaml file.
-	LogEntries []expectedEntry `yaml:"log_entries"`
+	LogEntries []expectedLog `yaml:"log_entries"`
 }
-type expectedEntry struct {
+type expectedLog struct {
 	LogName string `yaml:"log_name"`
 	// Map of field name to a regex that is expected to match the field value.
 	// For example, {"jsonPayload.message": ".*access denied.*"}.
 	FieldMatchers map[string]string `yaml:"field_matchers"`
 }
 
-// expectedMetricsEntry encodes a series of assertions about what data we expect
+// expectedMetric encodes a series of assertions about what data we expect
 // to see in the metrics backend.
-type expectedMetricEntry struct {
+type expectedMetric struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
 	Type string `yaml:"type"`
 	// The value type, for example INT64.
@@ -230,7 +230,7 @@ func constructQuery(fieldMatchers map[string]string) string {
 }
 
 func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries expectedEntries
+	var entries expectedLogs
 	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_logs.yaml: %v", err)
@@ -254,8 +254,8 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries []expectedMetricEntry
-	var requiredEntries []expectedMetricEntry
+	var entries []expectedMetric
+	var requiredEntries []expectedMetric
 	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
@@ -294,7 +294,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric expectedMetricEntry) error {
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric expectedMetric) error {
 	series, err := gce.QueryMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err == nil {
 		if series.ValueType.String() != metric.ValueType {
@@ -310,36 +310,36 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return err
 }
 
-func assertMetricLabels(expectedMetric expectedMetricEntry, series *monitoringpb.TimeSeries) error {
+func assertMetricLabels(metric expectedMetric, series *monitoringpb.TimeSeries) error {
 	// All present labels must be expected
 	for actualLabel := range series.Metric.Labels {
-		if _, ok := expectedMetric.Labels[actualLabel]; !ok {
+		if _, ok := metric.Labels[actualLabel]; !ok {
 			return fmt.Errorf("%s: unexpected label %s",
-				expectedMetric.Type,
+				metric.Type,
 				actualLabel,
 			)
 		}
 	}
 
 	// All expected labels must be present and match the given pattern
-	for expectedLabel, expectedPattern := range expectedMetric.Labels {
+	for expectedLabel, expectedPattern := range metric.Labels {
 		actualValue, ok := series.Metric.Labels[expectedLabel]
 		if !ok {
 			return fmt.Errorf("%s: expected label not found: %s",
-				expectedMetric.Type,
+				metric.Type,
 				expectedLabel,
 			)
 		}
 		match, err := regexp.MatchString(expectedPattern, actualValue)
 		if err != nil {
 			return fmt.Errorf("%s: error parsing pattern for label %s: %s",
-				expectedMetric.Type,
+				metric.Type,
 				expectedLabel,
 				expectedPattern,
 			)
 		} else if !match {
 			return fmt.Errorf("%s: error: label value does not match pattern. label=%s, pattern=%s, value=%s",
-				expectedMetric.Type,
+				metric.Type,
 				expectedLabel,
 				expectedPattern,
 				actualValue,
