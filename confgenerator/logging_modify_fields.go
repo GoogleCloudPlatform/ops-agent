@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 )
 
 type ModifyField struct {
@@ -87,16 +86,15 @@ function process(tag, timestamp, record)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse field %q: %w", *name, err)
 			}
-			key, err := m.RecordAccessor()
+			key, err := m.LuaAccessor(false)
 			if err != nil {
-				return nil, fmt.Errorf("failed to convert field %q to record accessor: %w", *name, err)
+				return nil, fmt.Errorf("failed to convert field %q to Lua accessor: %w", *name, err)
 			}
 			if _, ok := fieldMappings[key]; !ok {
 				new := fmt.Sprintf("__field_%d", i)
 				fieldMappings[key] = new
 				i++
-				// TODO: Do this with Lua for performance?
-				components = append(components, modify.ModifyOptions{modify.CopyModifyKey, fmt.Sprintf("%s %s", new, key)}.Component(tag))
+				fmt.Fprintf(&lua, "local %s = %s;\n", new, key)
 			}
 			field.sourceField = fieldMappings[key]
 			if j == 0 {
@@ -131,7 +129,7 @@ function process(tag, timestamp, record)
 			src = filter.LuaQuote(*field.StaticValue)
 		}
 
-		fmt.Fprintf(&lua, "local v = %s\n", src)
+		fmt.Fprintf(&lua, "local v = %s;\n", src)
 
 		// Process MapValues
 
