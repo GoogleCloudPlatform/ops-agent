@@ -275,11 +275,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
-	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "post"), nil); err != nil {
-		return retryable, fmt.Errorf("error starting %s: %v", app, err)
-	}
-
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
@@ -402,10 +397,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 			if !defaultPlatform && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
-		}
-		if test.app == "mysql" {
-			// TODO(b/215197805): Reenable this test once the repos are fixed.
-			tests[i].skipReason = "mysql repos seem to be totally broken, see b/215197805"
 		}
 		if sliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"

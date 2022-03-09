@@ -17,3 +17,5 @@ JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
 export JAVA_HOME
 
 sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh
+
+sleep 30

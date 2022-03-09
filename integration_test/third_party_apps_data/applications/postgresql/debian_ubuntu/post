@@ -1,5 +1,0 @@
-set -e
-
-sudo service postgresql restart
-
-sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""

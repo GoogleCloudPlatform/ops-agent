@@ -22,3 +22,7 @@ sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
 
 sudo systemctl daemon-reload
 sudo systemctl enable solr
+sudo systemctl restart solr
+
+# Adding a core called otel so that there are some metrics to scrape
+sudo su - solr -c "/opt/solr/bin/solr create -c otel"

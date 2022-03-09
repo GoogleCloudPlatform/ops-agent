@@ -23,3 +23,5 @@ elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
 elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
   sudo apt install -y libmysqlclient21
 fi
+
+sudo service mysql start
