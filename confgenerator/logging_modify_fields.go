@@ -30,8 +30,8 @@ type ModifyField struct {
 	CopyFrom    string  `yaml:"copy_from" validate:"excluded_with=MoveFrom StaticValue"`
 	StaticValue *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
 
-	// Name of field with copied value
-	sourceField string `yaml:"-"`
+	// Name of variable with copied value
+	sourceVar string `yaml:"-"`
 
 	// Operations to perform
 	MapValues map[string]string `yaml:"map_values"`
@@ -96,7 +96,7 @@ function process(tag, timestamp, record)
 				i++
 				fmt.Fprintf(&lua, "local %s = %s;\n", new, key)
 			}
-			field.sourceField = fieldMappings[key]
+			field.sourceVar = fieldMappings[key]
 			if j == 0 {
 				ra, err := m.LuaAccessor(true)
 				if err != nil {
@@ -122,8 +122,8 @@ function process(tag, timestamp, record)
 		}
 
 		src := "nil"
-		if field.sourceField != "" {
-			src = fmt.Sprintf(`record["%s"]`, field.sourceField)
+		if field.sourceVar != "" {
+			src = field.sourceVar
 		}
 		if field.StaticValue != nil {
 			src = filter.LuaQuote(*field.StaticValue)
