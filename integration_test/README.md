@@ -121,7 +121,7 @@ the test will:
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
 1.  Wait up to 7 minutes for metrics matching the expectations in
-   `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
+    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
     Monitoring backend.
 
 The test is designed so that simply modifying files in the
