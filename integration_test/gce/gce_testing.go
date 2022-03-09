@@ -584,7 +584,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 //
 // Note: most calls to this function could be replaced by calls to the Compute API
 // (https://cloud.google.com/compute/docs/reference/rest/v1).
-// Various pros/cons of shelling out to gcloud vs using the Compute API are dicussed here:
+// Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
