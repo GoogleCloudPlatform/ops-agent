@@ -139,6 +139,7 @@ func distroFolder(platform string) (string, error) {
 func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
 	return scriptsDir.ReadFile(path.Join("third_party_apps_data", scriptPath))
 }
+
 // runScriptFromScriptsDir runs a script on the given VM.
 // The scriptPath should be relative to SCRIPTS_DIR.
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
