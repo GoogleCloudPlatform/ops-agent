@@ -140,6 +140,8 @@ const (
 	vmInitBackoffDuration = 10 * time.Second
 
 	sshUserName = "test_user"
+
+	exhaustedRetriesSuffix = "exhausted retries"
 )
 
 func init() {
@@ -422,7 +424,13 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 			metric, extraFilters, err, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
+	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// IsExhaustedRetriesMetricError returns true if the given error is an
+// "exhausted retries" error returned from WaitForMetric.
+func IsExhaustedRetriesMetricError(err error) bool {
+	return err != nil && strings.HasSuffix(err.Error(), exhaustedRetriesSuffix)
 }
 
 // AssertMetricMissing looks for data of a metric and returns success if

@@ -206,11 +206,8 @@ type expectedMetric struct {
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels"`
-	// If set to true, skip this entry during the test.
-	// Used for documenting metrics that exist in the backend
-	// but have not yet been implemented in this test, usually
-	// because ingesting them requires some additional complex
-	// setup.
+	// If Optional is true, the test will not fail if this metric
+	// is missing.
 	Optional bool `yaml:"optional,omitempty"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
@@ -254,18 +251,16 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries []expectedMetric
-	var requiredEntries []expectedMetric
-	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
+	var metrics []expectedMetric
+	err := yaml.UnmarshalStrict(testCaseBytes, &metrics)
 	if err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
 	}
-	if len(entries) == 0 {
-		logger.ToMainLog().Printf("Skipping metrics test: expected_metrics.yaml is empty")
-		return nil
+	if len(metrics) == 0 {
+		return fmt.Errorf("expected_metrics.yaml must be non-empty (delete it instead to skip the test)")
 	}
 	representativeCount := 0
-	for _, entry := range entries {
+	for _, entry := range metrics {
 		if entry.Representative {
 			representativeCount += 1
 		}
@@ -273,22 +268,15 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	if representativeCount != 1 {
 		return fmt.Errorf("There must be exactly one metric with representative: true. Found %v.", representativeCount)
 	}
-	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", entries)
-	for _, entry := range entries {
-		if entry.Optional {
-			logger.ToMainLog().Printf("Skipping expected metric %s because it is marked optional", entry.Type)
-		} else {
-			requiredEntries = append(requiredEntries, entry)
-		}
-	}
-	c := make(chan error, len(requiredEntries))
-	for _, entry := range requiredEntries {
+	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
+	c := make(chan error, len(metrics))
+	for _, entry := range metrics {
 		entry := entry
 		go func() {
 			c <- assertMetric(ctx, logger, vm, entry)
 		}()
 	}
-	for range requiredEntries {
+	for range metrics {
 		err = multierr.Append(err, <-c)
 	}
 	return err
@@ -296,57 +284,60 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric expectedMetric) error {
 	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
-	if err == nil {
-		if series.ValueType.String() != metric.ValueType {
-			err = fmt.Errorf("%s: valueType: expected %s but got %s", metric.Type, metric.ValueType, series.ValueType.String())
-		} else if series.MetricKind.String() != metric.Kind {
-			err = fmt.Errorf("%s: kind: expected %s but got %s", metric.Type, metric.Kind, series.MetricKind.String())
-		} else if series.Resource.Type != metric.MonitoredResource {
-			err = fmt.Errorf("%s: monitored_resource: expected %s but got %s", metric.Type, metric.MonitoredResource, series.Resource.Type)
-		} else {
-			err = assertMetricLabels(metric, series)
+	if err != nil {
+		// Optional metrics can be missing
+		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
+			return nil
 		}
+		return err
 	}
-	return err
+	if series.ValueType.String() != metric.ValueType {
+		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
+	}
+	if series.MetricKind.String() != metric.Kind {
+		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
+	}
+	if series.Resource.Type != metric.MonitoredResource {
+		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
+	}
+	err = multierr.Append(err, assertMetricLabels(metric, series))
+	if err != nil {
+		return fmt.Errorf("%s: %w", metric.Type, err)
+	}
+	return nil
 }
 
 func assertMetricLabels(metric expectedMetric, series *monitoringpb.TimeSeries) error {
 	// All present labels must be expected
+	var err error
 	for actualLabel := range series.Metric.Labels {
 		if _, ok := metric.Labels[actualLabel]; !ok {
-			return fmt.Errorf("%s: unexpected label %s",
-				metric.Type,
-				actualLabel,
-			)
+			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
 		}
 	}
-
 	// All expected labels must be present and match the given pattern
 	for expectedLabel, expectedPattern := range metric.Labels {
 		actualValue, ok := series.Metric.Labels[expectedLabel]
 		if !ok {
-			return fmt.Errorf("%s: expected label not found: %s",
-				metric.Type,
-				expectedLabel,
-			)
+			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
+			continue
 		}
-		match, err := regexp.MatchString(expectedPattern, actualValue)
-		if err != nil {
-			return fmt.Errorf("%s: error parsing pattern for label %s: %s",
-				metric.Type,
+		match, matchErr := regexp.MatchString(expectedPattern, actualValue)
+		if matchErr != nil {
+			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
 				expectedLabel,
 				expectedPattern,
-			)
+				matchErr,
+			))
 		} else if !match {
-			return fmt.Errorf("%s: error: label value does not match pattern. label=%s, pattern=%s, value=%s",
-				metric.Type,
+			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
 				expectedLabel,
 				expectedPattern,
 				actualValue,
-			)
+			))
 		}
 	}
-	return nil
+	return err
 }
 
 type testConfig struct {
