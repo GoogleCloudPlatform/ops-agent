@@ -169,7 +169,7 @@ For example, if a metric defines a label `operation` whose values can only be `r
 
 ```yaml
   labels:
-    state: (read|write)
+    operation: read|write
 ```
 
 `representative` is optional. Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This is used for documentation only, however the test will still validate that exactly one metric sets it to `true`.
