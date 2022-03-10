@@ -1530,7 +1530,7 @@ type VMOptions struct {
 	MachineType string
 	// Optional. If provided, these arguments are appended on to the end
 	// of the "gcloud compute instances create" command.
-	ExtraCreateArguments string[]
+	ExtraCreateArguments []string
 }
 
 // SetupVM creates a new VM according to the given options.
