@@ -941,6 +941,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
+	args = append(args, options.ExtraCreateArguments)
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
@@ -1527,6 +1528,9 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If provided, these arguments are appended on to the end
+	// of the "gcloud compute instances create" command.
+	ExtraCreateArguments string[]
 }
 
 // SetupVM creates a new VM according to the given options.
