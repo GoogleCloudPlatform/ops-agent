@@ -31,6 +31,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -45,6 +46,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -54,7 +56,54 @@ import (
 var (
 	scriptsDir    = os.Getenv("SCRIPTS_DIR")
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
+	allowedEnums  = map[string][]string{
+		"metric_kind":               {"GAUGE", "DELTA", "CUMULATIVE"},
+		"metric_value_type":         {"BOOL", "INT64", "DOUBLE", "STRING", "DISTRIBUTION"},
+		"metric_monitored_resource": {"gce_instance"},
+	}
 )
+
+type thirdPartyValidator struct {
+	v *validator.Validate
+}
+
+func newValidator() *validator.Validate {
+	v := validator.New()
+	for enumKey, enumValues := range allowedEnums {
+		enumKey := enumKey
+		enumValues := enumValues
+		v.RegisterValidation(enumKey, func(fl validator.FieldLevel) bool {
+			return sliceContains(enumValues, fl.Field().String())
+		})
+	}
+	return v
+}
+
+// rewriteEnumErrors rewrites enum validation errors to be more informative.
+// After rewriting:
+//     Kind: invalid value CUMULATIV (must be one of [GAUGE DELTA CUMULATIVE])
+// Before rewriting:
+//     Key: 'expectedMetric.Kind' Error:Field validation for 'Kind' failed on the 'metric_kind' tag
+func rewriteEnumErrors(err error) error {
+	var ve validator.ValidationErrors
+	if !errors.As(err, &ve) {
+		return err
+	}
+	err = nil
+	for _, v := range ve {
+		allowedEnumValues, ok := allowedEnums[v.Tag()]
+		if !ok {
+			err = multierr.Append(err, ve)
+			continue
+		}
+		err = multierr.Append(err, fmt.Errorf("%s: invalid value %v (must be one of %v)",
+			v.Field(),
+			v.Value(),
+			allowedEnumValues,
+		))
+	}
+	return err
+}
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -196,13 +245,13 @@ type expectedMetric struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
 	Type string `yaml:"type"`
 	// The value type, for example INT64.
-	ValueType string `yaml:"value_type"`
+	ValueType string `yaml:"value_type" validate:"metric_value_type"`
 	// The kind, for example GAUGE.
-	Kind string `yaml:"kind"`
+	Kind string `yaml:"kind" validate:"metric_kind"`
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance, so we expect
 	// all expectedMetricsEntries to have gce_instance.
-	MonitoredResource string `yaml:"monitored_resource"`
+	MonitoredResource string `yaml:"monitored_resource" validate:"metric_monitored_resource"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels"`
@@ -252,21 +301,12 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
 	var metrics []expectedMetric
-	err := yaml.UnmarshalStrict(testCaseBytes, &metrics)
-	if err != nil {
+	var err error
+	if err = yaml.UnmarshalStrict(testCaseBytes, &metrics); err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
 	}
-	if len(metrics) == 0 {
-		return fmt.Errorf("expected_metrics.yaml must be non-empty (delete it instead to skip the test)")
-	}
-	representativeCount := 0
-	for _, entry := range metrics {
-		if entry.Representative {
-			representativeCount += 1
-		}
-	}
-	if representativeCount != 1 {
-		return fmt.Errorf("There must be exactly one metric with representative: true. Found %v.", representativeCount)
+	if err = validateMetrics(metrics); err != nil {
+		return fmt.Errorf("expected_metrics.yaml failed validation: %v", err)
 	}
 	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
 	c := make(chan error, len(metrics))
@@ -278,6 +318,31 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 	for range metrics {
 		err = multierr.Append(err, <-c)
+	}
+	return err
+}
+
+// validateMetrics checks that all enum fields have valid values and that
+// there is exactly one representative metric in the slice
+func validateMetrics(metrics []expectedMetric) error {
+	var err error
+	// Field validation
+	v := newValidator()
+	for _, metric := range metrics {
+		validatorErr := rewriteEnumErrors(v.Struct(metric))
+		if validatorErr != nil {
+			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, validatorErr))
+		}
+	}
+	// Slice validation
+	representativeCount := 0
+	for _, entry := range metrics {
+		if entry.Representative {
+			representativeCount += 1
+		}
+	}
+	if representativeCount != 1 {
+		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %v were found", representativeCount))
 	}
 	return err
 }
