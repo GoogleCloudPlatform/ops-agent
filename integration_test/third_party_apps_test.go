@@ -77,6 +77,19 @@ func osFolder(platform string) string {
 	return "linux"
 }
 
+// rejectDuplicates looks for duplicate entries in the input slice and returns
+// an error if any is found.
+func rejectDuplicates(apps []string) error {
+	seen := make(map[string]bool)
+	for _, app := range apps {
+		if seen[app] {
+			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
+		}
+		seen[app] = true
+	}
+	return nil
+}
+
 // appsToTest reads which applications to test for the given agent+platform
 // combination from the appropriate supported_applications.txt file.
 func appsToTest(agentType, platform string) ([]string, error) {
@@ -87,6 +100,9 @@ func appsToTest(agentType, platform string) ([]string, error) {
 	}
 
 	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	if err = rejectDuplicates(apps); err != nil {
+		return nil, err
+	}
 	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
 		apps = removeFromSlice(apps, "mssql")
 	}
