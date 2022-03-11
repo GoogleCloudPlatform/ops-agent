@@ -952,6 +952,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
@@ -1527,6 +1528,9 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If provided, these arguments are appended on to the end
+	// of the "gcloud compute instances create" command.
+	ExtraCreateArguments []string
 }
 
 // SetupVM creates a new VM according to the given options.
