@@ -346,6 +346,8 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
+	// Components returns fluentbit components that implement this receiver.
+	// tag is the log tag that should be produced by those components.
 	Components(tag string) []fluentbit.Component
 }
 
@@ -378,7 +380,7 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 
 type LoggingProcessor interface {
 	Component
-	// Components returns fluentbit components that implement this procesor.
+	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(tag string, uid string) []fluentbit.Component
 }
