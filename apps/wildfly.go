@@ -34,7 +34,7 @@ func (r MetricsReceiverWildfly) Type() string {
 	return "wildfly"
 }
 
-func (r MetricsReceiverWildfly) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverWildfly) Pipelines(platform string) []otel.Pipeline {
 	targetSystem := "wildfly"
 
 	if r.MetricsReceiverSharedJVM.Endpoint != "" && !strings.HasPrefix(r.MetricsReceiverSharedJVM.Endpoint, "service:jmx") {
@@ -67,7 +67,7 @@ func (LoggingProcessorWildflySystem) Type() string {
 	return "wildfly_system"
 }
 
-func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorWildflySystem) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
 		// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
@@ -85,7 +85,7 @@ func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []flue
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	c = append(c,
 		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
@@ -107,7 +107,7 @@ type LoggingReceiverWildflySystem struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverWildflySystem) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// no package installers, default installation usually provides the following
@@ -133,8 +133,8 @@ func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Compone
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorWildflySystem.Components(tag, "wildfly_system")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorWildflySystem.Components(tag, "wildfly_system", platform)...)
 	return c
 }
 

@@ -34,7 +34,7 @@ func (r MetricsReceiverTomcat) Type() string {
 	return "tomcat"
 }
 
-func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverTomcat) Pipelines(platform string) []otel.Pipeline {
 	targetSystem := "tomcat"
 
 	return r.MetricsReceiverSharedJVM.
@@ -62,7 +62,7 @@ func (LoggingProcessorTomcatSystem) Type() string {
 	return "tomcat_system"
 }
 
-func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorTomcatSystem) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -97,7 +97,7 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 				Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 	c = append(c,
@@ -129,7 +129,7 @@ type SystemLoggingReceiverTomcat struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
+func (r SystemLoggingReceiverTomcat) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
@@ -137,8 +137,8 @@ func (r SystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Componen
 			"/var/log/tomcat*/catalina.*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorTomcatSystem.Components(tag, "tomcat_system")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorTomcatSystem.Components(tag, "tomcat_system", platform)...)
 	return c
 }
 
@@ -146,8 +146,8 @@ type LoggingProcessorTomcatAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (p LoggingProcessorTomcatAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+func (p LoggingProcessorTomcatAccess) Components(tag string, uid, platform string) []fluentbit.Component {
+	return genericAccessLogParser(tag, uid, platform)
 }
 
 func (LoggingProcessorTomcatAccess) Type() string {
@@ -159,15 +159,15 @@ type AccessSystemLoggingReceiverTomcat struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Component {
+func (r AccessSystemLoggingReceiverTomcat) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log.*.txt",
 			"/var/log/tomcat*/localhost_access_log.*.txt",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorTomcatAccess.Components(tag, "tomcat_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorTomcatAccess.Components(tag, "tomcat_access", platform)...)
 	return c
 }
 

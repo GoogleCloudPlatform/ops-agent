@@ -34,7 +34,7 @@ func (r MetricsReceiverHadoop) Type() string {
 	return "hadoop"
 }
 
-func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverHadoop) Pipelines(platform string) []otel.Pipeline {
 	targetSystem := "hadoop"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -65,7 +65,7 @@ func (LoggingProcessorHadoop) Type() string {
 	return "hadoop"
 }
 
-func (LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component {
+func (LoggingProcessorHadoop) Components(tag, uid, platform string) []fluentbit.Component {
 	// Sample log line:
 	// 2022-02-01 18:09:47,136 INFO org.apache.hadoop.hdfs.server.namenode.FSEditLog: Edit logging is async:true
 
@@ -92,7 +92,7 @@ func (LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component 
 		{"FATAL", "FATAL"},
 	})
 
-	c := regexParser.Components(tag, uid)
+	c := regexParser.Components(tag, uid, platform)
 	c = append(c, severityMappingComponents...)
 
 	return c
@@ -103,7 +103,7 @@ type LoggingReceiverHadoop struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverHadoop) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverHadoop) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default logs for hadoop
 		r.IncludePaths = []string{
@@ -125,9 +125,9 @@ func (r LoggingReceiverHadoop) Components(tag string) []fluentbit.Component {
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
 
-	return append(c, r.LoggingProcessorHadoop.Components(tag, "hadoop")...)
+	return append(c, r.LoggingProcessorHadoop.Components(tag, "hadoop", platform)...)
 }
 
 func init() {

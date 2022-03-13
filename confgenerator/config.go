@@ -347,8 +347,8 @@ type Logging struct {
 type LoggingReceiver interface {
 	Component
 	// Components returns fluentbit components that implement this receiver.
-	// tag is the log tag that should be produced by those components.
-	Components(tag string) []fluentbit.Component
+	// tag is the log tag that should be produced by those components, and platform is the target platform.
+	Components(tag string, platform string) []fluentbit.Component
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry{
@@ -381,8 +381,8 @@ func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) er
 type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
-	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(tag string, uid string) []fluentbit.Component
+	// tag is the log tag that should be matched by those components, uid is a string which should be used when needed to generate unique names, and platform is the target platform.
+	Components(tag string, uid string, platform string) []fluentbit.Component
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry{
@@ -437,7 +437,7 @@ type Metrics struct {
 
 type MetricsReceiver interface {
 	Component
-	Pipelines() []otel.Pipeline
+	Pipelines(platform string) []otel.Pipeline
 }
 
 type MetricsReceiverShared struct {
@@ -735,7 +735,7 @@ func (m *Metrics) Validate(platform string) error {
 				return err
 			}
 
-			if err := validateSSLConfig(m.Receivers); err != nil {
+			if err := validateSSLConfig(m.Receivers, platform); err != nil {
 				return err
 			}
 		}
@@ -865,9 +865,9 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 	return nil
 }
 
-func validateSSLConfig(receivers metricsReceiverMap) error {
+func validateSSLConfig(receivers metricsReceiverMap, platform string) error {
 	for receiverId, receiver := range receivers {
-		for _, pipeline := range receiver.Pipelines() {
+		for _, pipeline := range receiver.Pipelines(platform) {
 			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
 				cfg := tlsCfg.(map[string]interface{})
 				// If insecure, no other fields are allowed

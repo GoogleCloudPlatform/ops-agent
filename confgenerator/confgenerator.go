@@ -40,7 +40,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	pipelines := make(map[string]otel.Pipeline)
 	if uc.Metrics != nil {
 		var err error
-		pipelines, err = uc.Metrics.generateOtelPipelines()
+		pipelines, err = uc.Metrics.generateOtelPipelines(hostInfo.OS)
 		if err != nil {
 			return "", err
 		}
@@ -87,7 +87,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
+func (m *Metrics) generateOtelPipelines(platform string) (map[string]otel.Pipeline, error) {
 	out := make(map[string]otel.Pipeline)
 	for pID, p := range m.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
@@ -95,7 +95,7 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 			if !ok {
 				return nil, fmt.Errorf("receiver %q not found", rID)
 			}
-			for i, receiverPipeline := range receiver.Pipelines() {
+			for i, receiverPipeline := range receiver.Pipelines(platform) {
 				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
 				if i > 0 {
 					prefix = fmt.Sprintf("%s_%d", prefix, i)
@@ -185,7 +185,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
 					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 				}
-				components := receiver.Components(tag)
+				components := receiver.Components(tag, hostInfo.OS)
 
 				// To match on fluent_forward records, we need to account for the addition
 				// of the existing tag (unknown during config generation) as the suffix
@@ -207,9 +207,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
+					components = append(components, processor.Components(tag, strconv.Itoa(i), hostInfo.OS)...)
 				}
-				components = append(components, setLogNameComponents(tag, rID, receiver.Type())...)
+				components = append(components, setLogNameComponents(tag, rID, receiver.Type(), hostInfo.OS)...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
@@ -231,7 +231,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components("ops-agent-fluent-bit", hostInfo.OS)...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())

@@ -29,7 +29,7 @@ func (r MetricsReceiverElasticsearch) Type() string {
 	return "elasticsearch"
 }
 
-func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverElasticsearch) Pipelines(platform string) []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
@@ -101,7 +101,7 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) Components(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	// sample log line:
@@ -117,9 +117,9 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
-	c = append(c, jsonParser.Components(tag, uid)...)
+	c = append(c, jsonParser.Components(tag, uid, platform)...)
 	c = append(c, p.severityParser(tag, uid)...)
-	c = append(c, p.nestingProcessors(tag, uid)...)
+	c = append(c, p.nestingProcessors(tag, uid, platform)...)
 
 	return c
 }
@@ -141,7 +141,7 @@ func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []flu
 	})
 }
 
-func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid, platform string) []fluentbit.Component {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -169,7 +169,7 @@ func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []
 			NestUnder:    prefix,
 			RemovePrefix: fmt.Sprintf("%s.", prefix),
 		}
-		c = append(c, nestProcessor.Components(tag, uid)...)
+		c = append(c, nestProcessor.Components(tag, uid, platform)...)
 	}
 
 	return c
@@ -183,7 +183,7 @@ func (LoggingProcessorElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
-func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchGC) Components(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	regexParser := confgenerator.LoggingProcessorParseRegex{
@@ -199,7 +199,7 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 		},
 	}
 
-	c = append(c, regexParser.Components(tag, uid)...)
+	c = append(c, regexParser.Components(tag, uid, platform)...)
 
 	return c
 }
@@ -209,7 +209,7 @@ type LoggingReceiverElasticsearchJson struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchJson) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
 		r.IncludePaths = []string{
@@ -243,8 +243,8 @@ func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Com
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchJson.Components(tag, "elasticsearch_json")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	return append(c, r.LoggingProcessorElasticsearchJson.Components(tag, "elasticsearch_json", platform)...)
 }
 
 type LoggingReceiverElasticsearchGC struct {
@@ -252,7 +252,7 @@ type LoggingReceiverElasticsearchGC struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchGC) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default GC log for Elasticsearch
 		r.IncludePaths = []string{
@@ -260,8 +260,8 @@ func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Compo
 		}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(tag, "elasticsearch_gc")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	return append(c, r.LoggingProcessorElasticsearchGC.Components(tag, "elasticsearch_gc", platform)...)
 }
 
 func init() {

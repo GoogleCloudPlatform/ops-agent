@@ -34,7 +34,7 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverApache) Pipelines(platform string) []otel.Pipeline {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
@@ -72,7 +72,7 @@ func (LoggingProcessorApacheError) Type() string {
 	return "apache_error"
 }
 
-func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorApacheError) Components(tag string, uid string, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
 		// Sample line 2.4: [Fri Sep 09 10:42:29.902022 2011] [core:error] [pid 35708:tid 4328636416] (13)Permission denied [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
@@ -89,7 +89,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 				"tid": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 	c = append(c,
@@ -122,8 +122,8 @@ type LoggingProcessorApacheAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+func (p LoggingProcessorApacheAccess) Components(tag string, uid string, platform string) []fluentbit.Component {
+	return genericAccessLogParser(tag, uid, platform)
 }
 
 func (LoggingProcessorApacheAccess) Type() string {
@@ -135,7 +135,7 @@ type LoggingReceiverApacheAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheAccess) Components(tag string, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -146,8 +146,8 @@ func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Componen
 			"/var/log/httpd/access_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access", platform)...)
 	return c
 }
 
@@ -156,7 +156,7 @@ type LoggingReceiverApacheError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheError) Components(tag string, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -167,8 +167,8 @@ func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component
 			"/var/log/httpd/error_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorApacheError.Components(tag, "apache_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorApacheError.Components(tag, "apache_error", platform)...)
 	return c
 }
 
