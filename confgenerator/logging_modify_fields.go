@@ -170,17 +170,6 @@ end
 		fmt.Fprintf(&lua, "%s(v)\n", ra)
 	}
 
-	// Step 4: Cleanup
-	// Remove temporary fields
-	lua.WriteString(`
-for k,v in pairs(record) do
-  if string.match(k, "^__field.+") or string.match(k, "^__match.+") then
-    record[k] = nil
-  end
-end
-return 2, timestamp, record
-end
-`)
 	// Execute Lua code
 	components = append(components, fluentbit.LuaFilterComponents(tag, "process", lua.String())...)
 
