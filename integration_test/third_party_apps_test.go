@@ -452,7 +452,7 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform + "/" + tc.app, func(t *testing.T) {
+		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
