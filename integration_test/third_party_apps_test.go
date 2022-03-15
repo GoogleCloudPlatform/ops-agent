@@ -352,16 +352,18 @@ func validateMetrics(metrics []expectedMetric) error {
 	// Field validation
 	v := newValidator()
 	for _, metric := range metrics {
-		validatorErr := rewriteEnumErrors(v.Struct(metric))
-		if validatorErr != nil {
+		if validatorErr := rewriteEnumErrors(v.Struct(metric)); validatorErr != nil {
 			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, validatorErr))
 		}
 	}
 	// Slice validation
 	representativeCount := 0
-	for _, entry := range metrics {
-		if entry.Representative {
+	for _, metric := range metrics {
+		if metric.Representative {
 			representativeCount += 1
+			if metric.Optional {
+				err = multierr.Append(err, fmt.Errorf("%s: metric cannot be both representative and optional", metric.Type))
+			}
 		}
 	}
 	if representativeCount != 1 {
