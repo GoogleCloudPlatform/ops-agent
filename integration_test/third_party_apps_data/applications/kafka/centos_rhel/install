@@ -2,7 +2,7 @@ set -e
 
 sudo yum install -y curl java
 sudo mkdir -p /opt/kafka/stage
-sudo curl "https://dlcdn.apache.org/kafka/3.0.0/kafka_2.12-3.0.0.tgz" -o /opt/kafka/stage/kafka.tgz
+sudo curl "https://archive.apache.org/dist/kafka/3.0.1/kafka_2.12-3.0.1.tgz" -o /opt/kafka/stage/kafka.tgz
 sudo tar -xvzf /opt/kafka/stage/kafka.tgz -C /opt/kafka --strip 1
 
 echo "KAFKA_JMX_OPTS=\"-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.net.preferIPv4Stack=true\"" | sudo tee -a /opt/kafka/bin/kafka-run-class.sh
