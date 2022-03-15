@@ -448,45 +448,42 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform, func(t *testing.T) {
+		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
 			t.Parallel()
-			t.Run(tc.app, func(t *testing.T) {
-				t.Parallel()
 
-				if tc.skipReason != "" {
-					t.Skip(tc.skipReason)
+			if tc.skipReason != "" {
+				t.Skip(tc.skipReason)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+			defer cancel()
+
+			var err error
+			for attempt := 1; attempt <= 4; attempt++ {
+				logger := gce.SetupLogger(t)
+				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
+				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
+				logger.ToMainLog().Printf("VM is ready: %#v", vm)
+
+				var retryable bool
+				retryable, err = runSingleTest(ctx, logger, vm, agentType, tc.app)
+				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				if err == nil {
+					return
 				}
-
-				ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-				defer cancel()
-
-				var err error
-				for attempt := 1; attempt <= 4; attempt++ {
-					logger := gce.SetupLogger(t)
-					logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
-					logger.ToMainLog().Printf("VM is ready: %#v", vm)
-
-					var retryable bool
-					retryable, err = runSingleTest(ctx, logger, vm, agentType, tc.app)
-					log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
-					if err == nil {
-						return
-					}
-					agents.RunOpsAgentDiagnostics(ctx, logger, vm)
-					if !retryable {
-						t.Fatalf("Non-retryable error: %v", err)
-					}
-					// If we got here, we're going to retry runSingleTest(). The VM we spawned
-					// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
-					// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
-					// do our retries, we preemptively delete the VM now.
-					if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
-						t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
-					}
+				agents.RunOpsAgentDiagnostics(ctx, logger, vm)
+				if !retryable {
+					t.Fatalf("Non-retryable error: %v", err)
 				}
-				t.Errorf("Final attempt failed: %v", err)
-			})
+				// If we got here, we're going to retry runSingleTest(). The VM we spawned
+				// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
+				// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
+				// do our retries, we preemptively delete the VM now.
+				if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+					t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
+				}
+			}
+			t.Errorf("Final attempt failed: %v", err)
 		})
 	}
 }
