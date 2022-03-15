@@ -309,11 +309,34 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return fmt.Errorf("expected_metrics.yaml failed validation: %v", err)
 	}
 	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
+	// Wait for the representative metric first, which is intended to *always*
+	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
+	// if it does exist, we go on to the other metrics in parallel, by which point they
+	// have gotten a head start and should end up needing fewer API calls before being found.
+	// In both cases we make significantly fewer API calls which helps us stay under quota.
+	for _, metric := range metrics {
+		if !metric.Representative {
+			continue
+		}
+		err = assertMetric(ctx, logger, vm, metric)
+		if gce.IsExhaustedRetriesMetricError(err) {
+			return fmt.Errorf("representative metric %s not found, skipping remaining metrics", metric.Type)
+		}
+		break
+	}
+	// Give some catch-up time to the remaining metrics, which tend to be configured
+	// for a 60-second interval and sometimes require two data points.
+	logger.ToMainLog().Println("Found representative metric, sleeping before checking remaining metrics")
+	time.Sleep(120 * time.Second)
 	c := make(chan error, len(metrics))
-	for _, entry := range metrics {
-		entry := entry
+	for _, metric := range metrics {
+		if metric.Representative {
+			c <- nil
+			continue
+		}
+		metric := metric
 		go func() {
-			c <- assertMetric(ctx, logger, vm, entry)
+			c <- assertMetric(ctx, logger, vm, metric)
 		}()
 	}
 	for range metrics {
