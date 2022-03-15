@@ -176,6 +176,25 @@ Exactly one metric from each integration's `expected_metrics.yaml` must have `re
 
 With `optional: true`, the test will not fail if the metric is missing. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures.
 
+`expected_metrics.yaml` can be generated using `generate_expected_metrics.go`:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+go run ./generate_expected_metrics/generate_expected_metrics.go
+```
+
+This queries all metric descriptors under `workload.googleapis.com`, `agent.googleapis.com/iis`, and `agent.googleapis.com/mssql`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
+go run ./generate_expected_metrics/generate_expected_metrics.go
+```
+
 ### Testing Command
 
 This needs the same setup steps as the Ops Agent test (see above). The command
