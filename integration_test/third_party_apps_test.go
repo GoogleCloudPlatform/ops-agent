@@ -494,8 +494,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	// Check if expected_logs.yaml exists, and run the test cases if it does.
-	testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml"))
-	if err == nil {
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml")); err == nil {
 		logger.ToMainLog().Println("found expected_logs.yaml, running logging test cases...")
 		if err = runLoggingTestCases(ctx, logger, vm, testCaseBytes); err != nil {
 			return nonRetryable, err
@@ -503,8 +502,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	// Check if expected_metrics.yaml exists, and run the test cases if it does.
-	testCaseBytes, err = readFileFromScriptsDir(path.Join("applications", app, "expected_metrics.yaml"))
-	if err == nil {
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_metrics.yaml")); err == nil {
 		logger.ToMainLog().Println("found expected_metrics.yaml, running metrics test cases...")
 		if err = runMetricsTestCases(ctx, logger, vm, testCaseBytes); err != nil {
 			return nonRetryable, err
