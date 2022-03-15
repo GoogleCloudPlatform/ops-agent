@@ -7,10 +7,6 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-SCRIPTS_DIR: a path containing scripts for installing/configuring the various
-    applications and agents. Also has some files that aren't technically
-    scripts that tell the test what to do, such as supported_applications.txt.
-
 PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
