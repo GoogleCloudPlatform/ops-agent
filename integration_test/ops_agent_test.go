@@ -1104,7 +1104,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 }
 
 func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	msg := uuid.New()
+	msg := uuid.NewString()
 	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
 		return err
 	}
