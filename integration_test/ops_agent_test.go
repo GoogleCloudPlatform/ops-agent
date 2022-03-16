@@ -139,8 +139,6 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-
-
 func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	if packagesInGCS != "" {
 		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
@@ -1181,7 +1179,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		// This will install the stable (last-released) Ops Agent.
-		if err := installOpsAgentFromRapture(ctx, logger, vm, ""); err != nil {
+		if err := installOpsAgentFromRapture(ctx, loggerToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1189,7 +1187,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 		
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := setupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 		
