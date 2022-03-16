@@ -1183,17 +1183,17 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		if err := installOpsAgentFromRapture(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
-		
+
 		// Wait for the stable Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
-		
+
 		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
-		
+
 		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
