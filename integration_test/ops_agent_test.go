@@ -44,6 +44,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -143,34 +144,34 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	if packagesInGCS != "" {
 		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
 	}
-	return installOpsAgentFromRapture(ctx, logger, vm, os.Getenv("REPO_SUFFIX"))
+	return installOpsAgentFromRapture(ctx, logger.ToMainLog(), vm, os.Getenv("REPO_SUFFIX"))
 }
 
-func installOpsAgentFromRapture(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, suffix string) error {
+func installOpsAgentFromRapture(ctx context.Context, logger *log.Logger, vm *gce.VM, suffix string) error {
 	if gce.IsWindows(vm.Platform) {
 		if suffix == "" {
 			suffix = "all"
 		}
 		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
+			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
 			return err
 		}
-		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
+		if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
 			return fmt.Errorf("installOpsAgentFromRapture() failed to run googet: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
-		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
+		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
 		return fmt.Errorf("installOpsAgentFromRapture() failed to download repo script: %v", err)
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+suffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo REPO_SUFFIX="+suffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
-	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
+	if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
 		return fmt.Errorf("installOpsAgentFromRapture() error running repo script: %v", err)
 	}
 	return nil
@@ -1179,18 +1180,21 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		// This will install the stable (last-released) Ops Agent.
-		if err := installOpsAgentFromRapture(ctx, loggerToMainLog(), vm, ""); err != nil {
+		if err := installOpsAgentFromRapture(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
-
+		
+		// Wait for the stable Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 		
-		if err := setupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 		
+		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
