@@ -139,12 +139,17 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
+
+
 func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	if packagesInGCS != "" {
 		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
 	}
+	return installOpsAgentFromRapture(ctx, logger, vm, os.Getenv("REPO_SUFFIX"))
+}
+
+func installOpsAgentFromRapture(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, suffix string) error {
 	if gce.IsWindows(vm.Platform) {
-		suffix := os.Getenv("REPO_SUFFIX")
 		if suffix == "" {
 			suffix = "all"
 		}
@@ -153,22 +158,22 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 			return err
 		}
 		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
-			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
+			return fmt.Errorf("installOpsAgentFromRapture() failed to run googet: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
 		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
-		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
+		return fmt.Errorf("installOpsAgentFromRapture() failed to download repo script: %v", err)
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+os.Getenv("REPO_SUFFIX")+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+suffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
-		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
+		return fmt.Errorf("installOpsAgentFromRapture() error running repo script: %v", err)
 	}
 	return nil
 }
@@ -1081,22 +1086,31 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.Di
 	}
 }
 
+func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric from the last minute. Sleep for 3 minutes first
+	// to make sure we aren't picking up metrics from a previous instance
+	// of the metrics agent.
+	return gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+}
+
 func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			time.Sleep(3 * time.Minute)
-
-			if err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), metricsLivenessChecker)
 	})
+}
+
+func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	msg := uuid.New()
+	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
+		return err
+	}
+	tag := systemLogTagForPlatform(vm.Platform)
+	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, msg))
 }
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
@@ -1105,18 +1119,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			if err := writeToSystemLog(ctx, logger, vm, "33337777"); err != nil {
-				t.Fatal(err)
-			}
-
-			tag := systemLogTagForPlatform(vm.Platform)
-			if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, "33337777")); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
 	})
 }
 
@@ -1162,6 +1165,38 @@ func TestWindowsLoggingAgentConflict(t *testing.T) {
 func TestWindowsMonitoringAgentConflict(t *testing.T) {
 	wantError := "We detected an existing Windows service for the StackdriverMonitoring agent"
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
+}
+
+func waitForSubAgents(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	return multierr.Append(
+		loggingLivenessChecker(ctx, logger, vm),
+		metricsLivenessChecker(ctx, logger, vm))
+}
+
+func TestUpgradeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// This will install the stable (last-released) Ops Agent.
+		if err := installOpsAgentFromRapture(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := waitForSubAgents(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+		
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+		
+		if err := waitForSubAgents(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
