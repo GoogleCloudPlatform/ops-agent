@@ -1165,7 +1165,7 @@ func TestWindowsMonitoringAgentConflict(t *testing.T) {
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
 }
 
-func waitForSubAgents(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	return multierr.Append(
 		loggingLivenessChecker(ctx, logger, vm),
 		metricsLivenessChecker(ctx, logger, vm))
@@ -1183,7 +1183,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := waitForSubAgents(ctx, logger.ToMainLog(), vm); err != nil {
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 		
@@ -1191,7 +1191,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 		
-		if err := waitForSubAgents(ctx, logger.ToMainLog(), vm); err != nil {
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 	})
