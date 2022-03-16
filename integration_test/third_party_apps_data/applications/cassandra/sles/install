@@ -20,3 +20,6 @@ curl -OL https://dlcdn.apache.org/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar
 
 tar xzvf apache-cassandra-4.0.1-bin.tar.gz
 mv apache-cassandra-4.0.1 apache-cassandra
+
+apache-cassandra/bin/cassandra -f &
+ps -f -p $!

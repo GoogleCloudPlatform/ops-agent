@@ -24,3 +24,5 @@ sudo zypper install -y elasticsearch
 sudo zypper modifyrepo --disable elasticsearch 
 
 sudo chkconfig elasticsearch on
+
+sudo systemctl restart elasticsearch

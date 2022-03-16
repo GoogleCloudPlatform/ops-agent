@@ -4,7 +4,7 @@ sudo yum -y install \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
 
 sudo mkdir /opt/hbase
-wget http://apache.mirror.gtcomm.net/hbase/stable/hbase-2.4.9-bin.tar.gz
+wget http://apache.mirror.gtcomm.net/hbase/2.4.9/hbase-2.4.9-bin.tar.gz
 sudo tar -xvf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
@@ -17,3 +17,5 @@ JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
 export JAVA_HOME
 
 sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh
+
+sleep 30

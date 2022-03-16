@@ -34,3 +34,5 @@ sudo apt-get install -y \
     mongodb-org-tools=5.0.5
 
 systemctl enable mongod
+
+sudo systemctl restart mongod

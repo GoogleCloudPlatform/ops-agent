@@ -2,3 +2,5 @@ set -e
 
 sudo apt update
 sudo apt install -y memcached
+
+sudo service memcached start

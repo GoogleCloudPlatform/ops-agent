@@ -28,7 +28,7 @@ EOF
     ;;
 esac
 
-sudo yum install -y --nogpgcheck couchdb
+sudo yum install -y couchdb
 
 cat << EOF > local.ini
 [couchdb]
@@ -46,3 +46,4 @@ sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
 sudo chmod 0755 /opt/couchdb/etc/local.ini
 
 sudo systemctl enable couchdb 
+sudo systemctl restart couchdb

@@ -17,3 +17,8 @@ esac
 
 sudo yum install -y postgresql14-server postgresql14-contrib
 sudo systemctl enable postgresql-14
+
+sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
+sudo service postgresql-14 restart
+
+sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
