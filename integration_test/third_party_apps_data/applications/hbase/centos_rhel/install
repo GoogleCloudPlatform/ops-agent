@@ -1,6 +1,6 @@
 set -e
 
-HBASE_VERSION=2.4.10
+HBASE_VERSION=$(curl https://apache.mirror.gtcomm.net/hbase/stable/ | grep --extended-regexp 'hbase-[0-9.]+-bin.tar.gz' | grep --extended-regexp --only-matching '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 
 sudo yum -y install \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
