@@ -10,6 +10,9 @@ You will need a GCP project to run VMs in and a GCS bucket that is used to
 transfer files onto the testing VMs. These are referred to as `${PROJECT}`
 and `${TRANSFERS_BUCKET}` in the following instructions.
 
+You will need gcloud installed. Run `gcloud auth login` if you haven't
+done so already.
+
 Follow the setup instructions for either User Credentials or
 Service Account Credentials next.
 
