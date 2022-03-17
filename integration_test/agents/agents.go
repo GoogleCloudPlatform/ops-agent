@@ -748,7 +748,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if IsRPMBased(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade --replacepkgs /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}
 		return nil
@@ -758,7 +758,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	// 1. install stable package from Rapture
 	// 2. install just-built package from GCS
 	// Nor do I know why apt considers that sequence to be a downgrade.
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install --allow-downgrades /tmp/agentUpload/*"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
@@ -772,7 +772,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *logging.Directory
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/%s/*.goo C:\\agentUpload", gcsPath, agentType)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
