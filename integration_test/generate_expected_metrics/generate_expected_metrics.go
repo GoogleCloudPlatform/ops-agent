@@ -22,7 +22,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -212,12 +214,15 @@ func toExpectedMetric(metric *metric.MetricDescriptor) expectedMetric {
 }
 
 // readExpectedMetrics reads in the existing expected_metrics.yaml
-// file for the given app. If one doesn't exist, an empty map
-// is returned. The map is keyed by metric type.
+// file for the given app. If none exist, an empty slice is returned.
+// Otherwise, its contents are returned, or an error if it could
+// not be unmarshaled.
 func readExpectedMetrics(app string) ([]expectedMetric, error) {
 	file := path.Join(scriptsDir, "applications", app, "expected_metrics.yaml")
 	serialized, err := os.ReadFile(file)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) {
+		return make([]expectedMetric, 0), nil
+	} else if err != nil {
 		return nil, err
 	}
 	var metrics []expectedMetric
