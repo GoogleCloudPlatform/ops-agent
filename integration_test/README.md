@@ -92,7 +92,7 @@ like this:
 
 ```
 PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${BUCKET}" \
+TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
 go test -v ops_agent_test.go \
