@@ -4,7 +4,7 @@ Integration tests are implemented as Kokoko builds that run on each PR. The
 builds first build the Ops Agent and then run tests on that agent. The Kokoro
 builds are split up by distro.
 
-### Setup
+## Setup
 
 You will need a GCP project to run VMs in and a GCS bucket that is used to
 transfer files onto the testing VMs. These are referred to as `${PROJECT}`
