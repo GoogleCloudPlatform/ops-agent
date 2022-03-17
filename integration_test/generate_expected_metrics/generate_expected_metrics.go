@@ -3,8 +3,7 @@
 /*
 PROJECT: What GCP project to use.
 GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
-    some GCP services. All gcloud commands actually use a different set of
-    credentials, those in CLOUDSDK_CONFIG (unfortunately).
+    some GCP services.
 SCRIPTS_DIR: a path containing scripts for installing/configuring the various
     applications and agents. Also has some files that aren't technically
     scripts that tell the test what to do, such as supported_applications.txt.
