@@ -58,19 +58,18 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 # Install OpenSSL
 # This must be done after installing Visual Studio
-#
-# TODO: Put "Win64OpenSSL-1_1_1m.msi" into an ARG.
-ADD https://slproweb.com/download/Win64OpenSSL-1_1_1m.msi /local/Win64OpenSSL-1_1_1m.msi
-
-# Verify SHA256 hash using expected value from the win32_openssl_hashes.json file in
-# https://github.com/slproweb/opensslhashes
+ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1n.msi
+# SHA256 hash from win32_openssl_hashes.json in https://github.com/slproweb/opensslhashes.
 # DO NOT FORGET to change this hash when changing the MSI.
-RUN $ExpectedHash = 'c3c8543571d4d1af3be993602ae02f69ef8cc5366dc194cd037be946fea39985';`
-    $ActualHash = $(Get-FileHash /local/Win64OpenSSL-1_1_1m.msi).Hash.ToLower();`
-    if ($ActualHash -ne $ExpectedHash) {`
-      throw \"OpenSSL hash mismatch. Expected: $ExpectedHash, Actual: $ActualHash\"`
-    };`
-    Start-Process msiexec.exe -Wait -ArgumentList '/i C:\local\Win64OpenSSL-1_1_1m.msi /quiet';
+ARG OPENSSL_SHA256=66dc0e2536d688255247d90644acb8cf3d55c80b8a9d393aa5f03229e891949b
+ADD https://slproweb.com/download/$OPENSSL_INSTALLER /local/$OPENSSL_INSTALLER
+
+RUN $ExpectedHash = $env:OPENSSL_SHA256; `
+    $ActualHash = $(Get-FileHash /local/$env:OPENSSL_INSTALLER -Algorithm SHA256).Hash.ToLower(); `
+    if ($ActualHash -ne $env:OPENSSL_SHA256) { `
+      throw \"OpenSSL hash mismatch. Expected: $env:OPENSSL_HASH, Actual: $ActualHash\" `
+    }; `
+    Start-Process msiexec.exe -Wait -ArgumentList \"/i C:\local\$env:OPENSSL_INSTALLER /quiet\";
 
 #
 # Install winflexbison
