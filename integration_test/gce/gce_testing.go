@@ -385,7 +385,7 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 	// Loop through the iterator, looking for at least one non-empty time series.
 	for {
 		series, err := it.Next()
-		logger.Printf("hasNonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			// Either there were no data series in the iterator or all of them were empty.
 			return nil, nil

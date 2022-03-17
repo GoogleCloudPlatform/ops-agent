@@ -299,6 +299,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	c := make(chan error, len(metrics))
 	for _, metric := range metrics {
 		if metric.Representative {
+			// Ensure that we still fill the channel before skipping the representative metric
 			c <- nil
 			continue
 		}
