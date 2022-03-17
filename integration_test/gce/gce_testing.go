@@ -6,7 +6,7 @@ Package gce holds various helpers for testing the agents on GCE.
 To run a test based on this library, you can either:
 
 * use Kokoro by triggering automated presubmits on your change, or
-* use "go test" directly, after performing the setup steps described 
+* use "go test" directly, after performing the setup steps described
   in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
