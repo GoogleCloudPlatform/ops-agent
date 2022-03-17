@@ -170,6 +170,9 @@ end
 		fmt.Fprintf(&lua, "%s(v)\n", ra)
 	}
 
+	lua.WriteString("return 2, timestamp, record\n")
+	lua.WriteString("end\n")
+
 	// Execute Lua code
 	components = append(components, fluentbit.LuaFilterComponents(tag, "process", lua.String())...)
 
