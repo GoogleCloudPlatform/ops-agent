@@ -30,6 +30,7 @@ type Target []string
 
 var logEntryRootValueMapToFluentBit = map[string]string{
 	"severity": "logging.googleapis.com/severity",
+	"logName":  "logging.googleapis.com/logName",
 }
 
 var logEntryRootStructMapToFluentBit = map[string]string{

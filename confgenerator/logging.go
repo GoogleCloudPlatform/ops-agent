@@ -22,16 +22,13 @@ import (
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
 func setLogNameComponents(tag, logName string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match": tag,
-				"Add":   fmt.Sprintf("logging.googleapis.com/logName %s", logName),
-				"Name":  "modify",
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"logName": {
+				StaticValue: &logName,
 			},
 		},
-	}
+	}.Components(tag, "setlogname")
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
