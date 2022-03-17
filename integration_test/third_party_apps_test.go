@@ -337,12 +337,14 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		if gce.IsExhaustedRetriesMetricError(err) {
 			return fmt.Errorf("representative metric %s not found, skipping remaining metrics", metric.Type)
 		}
+		// If err is non-nil here, then the non-representative metric tests later on will
+		// pick it up and report it as part of the multierr.
 		break
 	}
 	// Give some catch-up time to the remaining metrics, which tend to be configured
-	// for a 60-second interval and sometimes require two data points.
+	// for a 60-second interval, plus 10 seconds to let the data propagate in the backend.
 	logger.ToMainLog().Println("Found representative metric, sleeping before checking remaining metrics")
-	time.Sleep(120 * time.Second)
+	time.Sleep(70 * time.Second)
 	c := make(chan error, len(metrics))
 	for _, metric := range metrics {
 		if metric.Representative {
@@ -371,7 +373,7 @@ func validateMetrics(metrics []expectedMetric) error {
 			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, validatorErr))
 		}
 	}
-	// Slice validation
+	// Representative validation
 	representativeCount := 0
 	for _, metric := range metrics {
 		if metric.Representative {
