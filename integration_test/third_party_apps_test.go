@@ -28,7 +28,6 @@ package integration_test
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -43,7 +42,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -52,54 +50,7 @@ import (
 
 var (
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
-	allowedEnums  = map[string][]string{
-		"metric_kind":               {"GAUGE", "DELTA", "CUMULATIVE"},
-		"metric_value_type":         {"BOOL", "INT64", "DOUBLE", "STRING", "DISTRIBUTION"},
-		"metric_monitored_resource": {"gce_instance"},
-	}
 )
-
-type thirdPartyValidator struct {
-	v *validator.Validate
-}
-
-func newValidator() *validator.Validate {
-	v := validator.New()
-	for enumKey, enumValues := range allowedEnums {
-		enumKey := enumKey
-		enumValues := enumValues
-		v.RegisterValidation(enumKey, func(fl validator.FieldLevel) bool {
-			return sliceContains(enumValues, fl.Field().String())
-		})
-	}
-	return v
-}
-
-// rewriteEnumErrors rewrites enum validation errors to be more informative.
-// After rewriting:
-//     Kind: invalid value CUMULATIV (must be one of [GAUGE DELTA CUMULATIVE])
-// Before rewriting:
-//     Key: 'expectedMetric.Kind' Error:Field validation for 'Kind' failed on the 'metric_kind' tag
-func rewriteEnumErrors(err error) error {
-	var ve validator.ValidationErrors
-	if !errors.As(err, &ve) {
-		return err
-	}
-	err = nil
-	for _, v := range ve {
-		allowedEnumValues, ok := allowedEnums[v.Tag()]
-		if !ok {
-			err = multierr.Append(err, ve)
-			continue
-		}
-		err = multierr.Append(err, fmt.Errorf("%s: invalid value %v (must be one of %v)",
-			v.Field(),
-			v.Value(),
-			allowedEnumValues,
-		))
-	}
-	return err
-}
 
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
@@ -367,10 +318,22 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 func validateMetrics(metrics []expectedMetric) error {
 	var err error
 	// Field validation
-	v := newValidator()
+	expectedKinds := []string{"GAUGE", "DELTA", "CUMULATIVE"}
+	expectedValueTypes := []string{"BOOL", "INT64", "DOUBLE", "STRING", "DISTRIBUTION"}
+	expectedResource := "gce_instance"
 	for _, metric := range metrics {
-		if validatorErr := rewriteEnumErrors(v.Struct(metric)); validatorErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, validatorErr))
+		innerErrs := make([]string, 0)
+		if !sliceContains(expectedKinds, metric.Kind) {
+			innerErrs = append(innerErrs, fmt.Sprintf("invalid kind %s (must be %v)", metric.Kind, expectedKinds))
+		}
+		if !sliceContains(expectedValueTypes, metric.ValueType) {
+			innerErrs = append(innerErrs, fmt.Sprintf("invalid value_type %s (must be %v)", metric.ValueType, expectedValueTypes))
+		}
+		if expectedResource != metric.MonitoredResource {
+			innerErrs = append(innerErrs, fmt.Sprintf("invalid monitored_resource %s (must be %v)", metric.MonitoredResource, expectedResource))
+		}
+		if len(innerErrs) > 0 {
+			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, strings.Join(innerErrs, ", ")))
 		}
 	}
 	// Representative validation
