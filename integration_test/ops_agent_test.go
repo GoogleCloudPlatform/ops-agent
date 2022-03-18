@@ -12,20 +12,20 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
-REPO_SUFFIX: If provided, what Rapture repo suffix to install the ops agent from.
+REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Each agent in
-		AGENTS_TO_TEST must have its own subdirectory, so for example this would be
-		a valid structure inside AGENT_PACKAGES_IN_GCS if
-		AGENTS_TO_TEST=metrics,ops_agent:
-		├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    a .deb/.rpm/.goo files to install on the testing VMs. This takes precedence
+    over REPO_SUFFIX. For historical reasons, AGENT_PACKAGES_IN_GCS must point
+    to a directory that contains a directory called "ops-agent" that itself
+    contains the actual .deb/.rpm/.goo files. To illustrate:
+    └── $AGENT_PACKAGES_IN_GCS
+        └── ops-agent
+            ├── ops-agent-google-cloud-1.2.3.deb
+            ├── ops-agent-google-cloud-1.2.3.rpm
+            └── ops-agent-google-cloud-1.2.3.goo
+REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
+    version of the Ops Agent to install first, before installing the version
+	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -160,11 +160,12 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
+		suffix := packageLocation.repoSuffix
 		if suffix == "" {
 			suffix = "all"
 		}
 		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", location.repoSuffix))
+			_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
 			return err
 		}
 		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
@@ -1197,18 +1198,21 @@ func TestUpgradeOpsAgent(t *testing.T) {
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// This will install the stable (last-released) Ops Agent.
-		if err := setupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", packageLocation{}); err != nil {
+		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
+		// a default value of "", which means stable.
+		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
+		if err := setupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", firstVersion); err != nil {
 			t.Fatal(err)
 		}
 
-		// Wait for the stable Ops Agent to be active. Make sure that it is working.
+		// Wait for the Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 
 		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		secondVersion := locationFromEnvVars()
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
 			t.Fatal(err)
 		}
 
