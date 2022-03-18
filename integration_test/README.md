@@ -18,19 +18,17 @@ Service Account Credentials next.
 
 ### Setup (User Credentials)
 
-To give the tests credentials to be able to access google APIs as you,
+To give the tests credentials to be able to access Google APIs as you,
 run the following command and do what it says:
 
 ```
-gcloud auth application-default login
+gcloud --billing-project="${PROJECT}" auth application-default login
 ```
 
 That's it! Now the test commands should be able to authenticate as you.
 
 NOTE: this way of using user credentials is new and may have unforseen
-problems, particularly due to which projects get used for billing.
-However, it is much easier than setting up a service account and
-rotating service account keys periodically.
+problems.
 
 ### Setup (Service Account Credentials)
 
