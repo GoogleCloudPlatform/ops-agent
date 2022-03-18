@@ -167,22 +167,22 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", location.repoSuffix))
 			return err
 		}
-		if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
+		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
 			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
-		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
+		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
 		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
-	if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
+	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
 		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
 	}
 	return nil
