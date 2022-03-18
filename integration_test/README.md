@@ -13,8 +13,8 @@ and `${TRANSFERS_BUCKET}` in the following instructions.
 You will need gcloud installed. Run `gcloud auth login` if you haven't
 done so already.
 
-Follow the setup instructions for either User Credentials or
-Service Account Credentials next.
+Next, follow the setup instructions for either User Credentials or
+Service Account Credentials.
 
 ### Setup (User Credentials)
 
