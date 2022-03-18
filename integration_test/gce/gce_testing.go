@@ -3,16 +3,11 @@
 /*
 Package gce holds various helpers for testing the agents on GCE.
 
-To run a test based on this library, you can use Kokoro by triggering
-automated presubmits on your change.
+To run a test based on this library, you can either:
 
-NOTE: This needs the $HOME/credentials.json file to exist. If it doesn't,
-    please run the commands at go/sdi-service-accounts#setup to generate it.
-    Your service account needs to have "Storage Object Viewer" and
-    "Storage Object Creator" permissions on the GCS bucket TRANSFERS_BUCKET.
-
-NOTE: This requires gcloud login to generate the $HOME/.config/gcloud directory.
-    Run "gcloud auth login" if you have not yet logged in.
+* use Kokoro by triggering automated presubmits on your change, or
+* use "go test" directly, after performing the setup steps described
+  in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
     a project whose firewall allows WinRM connections.
@@ -22,23 +17,21 @@ NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
 NOTE: This command does not actually build the Ops Agent. To test the latest
     Ops Agent code, first build and upload a package to Rapture. Then look up
     the REPO_SUFFIX for that build and add it as an environment variable to the
-    command below; for example: REPO_SUFFIX=20210805-2
+    command below; for example: REPO_SUFFIX=20210805-2. You can also use
+	AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 PROJECT=dev_project \
     ZONE=us-central1-b \
-    GOOGLE_APPLICATION_CREDENTIALS=$HOME/credentials.json \
     PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
     go test -v ops_agent_test.go \
-    -test.parallel=1000 \
-    -timeout=3h
+	-test.parallel=1000 \
+	-tags=integration_test \
+    -timeout=4h
 
 This library needs the following environment variables to be defined:
 
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
-GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
-    some GCP services. All gcloud commands actually use a different set of
-    credentials, those in CLOUDSDK_CONFIG (unfortunately).
 WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
     Windows VMs.
 

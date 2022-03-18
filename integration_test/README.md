@@ -4,16 +4,38 @@ Integration tests are implemented as Kokoko builds that run on each PR. The
 builds first build the Ops Agent and then run tests on that agent. The Kokoro
 builds are split up by distro.
 
-## Ops Agent Test
+## Setup
 
-This test exercises "core" features of the Ops Agent such as watching syslog or
-a custom log file. It is implemented in ops_agent_test.go. It can be run outside
-of Kokoro with some setup.
+You will need a GCP project to run VMs in and a GCS bucket that is used to
+transfer files onto the testing VMs. These are referred to as `${PROJECT}`
+and `${TRANSFERS_BUCKET}` in the following instructions.
 
-### Setup
+You will need gcloud installed. Run `gcloud auth login` if you haven't
+done so already.
 
-You will need a project to run VMs in and a service account with permissions to
-run various operations in the project. You can set up such a service account with
+Next, follow the setup instructions for either User Credentials or
+Service Account Credentials.
+
+### Setup (User Credentials)
+
+To give the tests credentials to be able to access Google APIs as you,
+run the following command and do what it says (it may ask you to run
+a command on a separate machine if your main machine doesn't have the
+ability to open a browser window):
+
+```
+gcloud --billing-project="${PROJECT}" auth application-default login
+```
+
+That's it! Now the test commands should be able to authenticate as you.
+
+NOTE: this way of using user credentials is new and may have unforeseen
+problems.
+
+### Setup (Service Account Credentials)
+
+You will need a service account with permissions to run various
+operations in the project. You can set up such a service account with
 a few commands:
 
 ```
@@ -37,14 +59,14 @@ for ROLE in \
   done
 ```
 
-You will also need a GCS bucket that is used to transfer files onto
-the testing VMs. Store it in env variable `$BUCKET` and add your
-service account as principal with role "Storage Admin" to the bucket:
+You will also need to give your service account read/write permissions on
+`${TRANSFERS_BUCKET}`. To do this, register your service account as principal
+with role "Storage Admin" to the bucket:
 
 ```
 gsutil iam ch \
   "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com:roles/storage.admin" \
-  "gs://${BUCKET}"
+  "gs://${TRANSFERS_BUCKET}"
 ```
 
 Finally, download your credentials as a JSON file:
@@ -55,6 +77,17 @@ gcloud iam service-accounts keys create $HOME/credentials.json \
   --iam-account "service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com"
 ```
 
+When runninng the test commands below, you must also pass the
+environment variable
+`GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json"` to the
+test command.
+
+## Ops Agent Test
+
+This test exercises "core" features of the Ops Agent such as watching syslog or
+a custom log file. It is implemented in ops_agent_test.go. It can be run outside
+of Kokoro with some setup (see above).
+
 ### Testing Command
 
 When the setup steps are complete, you can run ops_agent_test (for Linux)
@@ -62,8 +95,7 @@ like this:
 
 ```
 PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${BUCKET}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
 go test -v ops_agent_test.go \
@@ -152,8 +184,7 @@ is nearly the same, just replace `ops_agent_test.go` with
 
 ```
 PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${BUCKET}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
 go test -v third_party_apps_test.go \
