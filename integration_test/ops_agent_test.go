@@ -139,16 +139,16 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 type packageLocation struct {
 	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
 	// This setting takes precedence over repoSuffix.
-	packagesInGCS	string
+	packagesInGCS string
 	// Package repository suffix to install from. Setting this to ""
 	// means to install the latest stable release.
-	repoSuffix		string
+	repoSuffix string
 }
 
 func locationFromEnvVars() packageLocation {
 	return packageLocation{
 		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix: os.Getenv("REPO_SUFFIX"),
+		repoSuffix:    os.Getenv("REPO_SUFFIX"),
 	}
 }
 
