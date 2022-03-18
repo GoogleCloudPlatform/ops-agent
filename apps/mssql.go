@@ -72,6 +72,66 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 	}}
 }
 
+type LoggingProcessorMssqlLog struct {
+        confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (LoggingProcessorMssqlLog) Type() string {
+        return "mssql_log"
+}
+
+func (p LoggingProcessorMssqlLog) Components(tag string, uid string) []fluentbit.Component {
+        c := confgenerator.LoggingProcessorParseMultilineRegex{
+                LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+                        Parsers: []confgenerator.RegexParser{
+                                {
+                                        Regex: `^(?<logtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}) (?<spid>.{11}) (?<message>[\s|\S]*)?`,
+                                        //Regex: `^(?<logtime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}) (?<spid>.{11}) (?<message>.*)?`,
+                                        Parser: confgenerator.ParserShared{
+                                                Types: map[string]string{
+                                                        "spid": "integer",
+                                                },
+                                        },
+                                },
+                        },
+                },
+                Rules: []confgenerator.MultilineRule{
+                        {
+                                StateName: "start_state",
+                                NextState: "cont",
+                                Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}`,
+                        },
+                        {
+                                StateName: "cont",
+                                NextState: "cont",
+                                Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2})`,
+                        },
+                },
+        }.Components(tag, uid)
+
+        return c
+}
+
+type LoggingReceiverMssqlLog struct {
+        LoggingProcessorMssqlLog                `yaml:",inline"`
+        confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverMssqlLog) Components(tag string) []fluentbit.Component {
+        if len(r.IncludePaths) == 0 {
+                r.IncludePaths = []string{
+                        // Default log path for Linux installs
+                        // https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-overview
+                        "/var/opt/mssql/log/errorlog",
+                }
+        }
+        c := r.LoggingReceiverFilesMixin.Components(tag)
+        c = append(c, r.LoggingProcessorMssqlLog.Components(tag, "mssql_log")...)
+        return c
+}
+
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMssql{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMssqlLog{} })
+        confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMssqlLog{} })
 }
