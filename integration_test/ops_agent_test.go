@@ -50,10 +50,6 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-var (
-	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
-)
-
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return "C:/mylog"
@@ -140,45 +136,67 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
-	}
-	return installOpsAgentFromRapture(ctx, logger.ToMainLog(), vm, os.Getenv("REPO_SUFFIX"))
+type packageLocation struct {
+	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
+	// This setting takes precedence over repoSuffix.
+	packagesInGCS	string
+	// Package repository suffix to install from. Setting this to ""
+	// means to install the latest stable release.
+	repoSuffix		string
 }
 
-func installOpsAgentFromRapture(ctx context.Context, logger *log.Logger, vm *gce.VM, suffix string) error {
+func locationFromEnvVars() packageLocation {
+	return packageLocation{
+		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix: os.Getenv("REPO_SUFFIX"),
+	}
+}
+
+// installOpsAgent installs the Ops Agent on the given VM. Preferentially
+// chooses to install from location.packagesInGCS if that is set, otherwise
+// falls back to location.repoSuffix.
+func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
+	if location.packagesInGCS != "" {
+		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, location.packagesInGCS)
+	}
 	if gce.IsWindows(vm.Platform) {
 		if suffix == "" {
 			suffix = "all"
 		}
 		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
+			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", location.repoSuffix))
 			return err
 		}
 		if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
-			return fmt.Errorf("installOpsAgentFromRapture() failed to run googet: %v", err)
+			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
 		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
-		return fmt.Errorf("installOpsAgentFromRapture() failed to download repo script: %v", err)
+		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo REPO_SUFFIX="+suffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
-		return fmt.Errorf("installOpsAgentFromRapture() error running repo script: %v", err)
+		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
 	}
 	return nil
 }
 
+// setupOpsAgent installs the Ops Agent and installs the given config.
 func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
-	if err := installOpsAgent(ctx, logger, vm); err != nil {
+	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
+}
+
+// setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
+// decide which version of the agent gets installed.
+func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
+	if err := installOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
 	startupDelay := 20 * time.Second
@@ -1137,7 +1155,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger, vm); err != nil {
+		if err := installOpsAgent(ctx, logger, vm, locationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1180,7 +1198,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		// This will install the stable (last-released) Ops Agent.
-		if err := installOpsAgentFromRapture(ctx, logger.ToMainLog(), vm, ""); err != nil {
+		if err := setupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", packageLocation{}); err != nil {
 			t.Fatal(err)
 		}
 
