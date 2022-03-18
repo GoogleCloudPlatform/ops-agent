@@ -1,9 +1,15 @@
 set -e
+set -o pipefail
 
 sudo zypper install -y wget java-11-openjdk
-wget http://apache.mirror.gtcomm.net/hbase/2.4.9/hbase-2.4.9-bin.tar.gz
+
+HBASE_VERSION=$(curl https://apache.mirror.gtcomm.net/hbase/stable/ \
+    | grep --extended-regexp --only-matching 'hbase-[0-9.]+-bin.tar.gz' \
+    | grep --extended-regexp --only-matching --max-count=1 --color=never '[0-9]+\.[0-9]+\.[0-9]+')
+
+wget http://apache.mirror.gtcomm.net/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo mkdir /opt/hbase
-sudo tar -xzf hbase-2.4.9-bin.tar.gz -C /opt/hbase --strip 1
+sudo tar -xzf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
 export HBASE_JMX_BASE="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
