@@ -27,7 +27,7 @@ gcloud --billing-project="${PROJECT}" auth application-default login
 
 That's it! Now the test commands should be able to authenticate as you.
 
-NOTE: this way of using user credentials is new and may have unforseen
+NOTE: this way of using user credentials is new and may have unforeseen
 problems.
 
 ### Setup (Service Account Credentials)
