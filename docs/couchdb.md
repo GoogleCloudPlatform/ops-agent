@@ -96,6 +96,5 @@ Any fields that are blank or missing will not be present in the log entry.
 | `jsonPayload.node`           | string                                                                                                                          | node instance name                     |
 | `jsonPayload.host`           | string                                                                                                                          | host instance name                     |
 | `jsonPayload.path`           | string                                                                                                                          | request path                           |
-| `jsonPayload.remote_user`    | string                                                                                                                          | user id (optional)                     |
 | `severity`                   | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity))                       | Log entry level (translated)           |
 | `timestamp`                  | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the entry was logged              |
