@@ -160,7 +160,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
-		suffix := packageLocation.repoSuffix
+		suffix := location.repoSuffix
 		if suffix == "" {
 			suffix = "all"
 		}
@@ -1201,7 +1201,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
 		// a default value of "", which means stable.
 		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
-		if err := setupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", firstVersion); err != nil {
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
 			t.Fatal(err)
 		}
 
