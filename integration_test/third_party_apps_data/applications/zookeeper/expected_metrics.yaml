@@ -25,11 +25,13 @@
   monitored_resource: gce_instance
   labels: {}
 - type: workload.googleapis.com/zookeeper.fsync.exceeded_threshold.count
+  optional: true
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
 - type: workload.googleapis.com/zookeeper.latency.avg
+  optional: true
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance

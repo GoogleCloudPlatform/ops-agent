@@ -23,6 +23,7 @@
   labels:
     proto_handler: .*
 - type: workload.googleapis.com/tomcat.sessions
+  optional: true
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
