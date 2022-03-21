@@ -1,21 +1,41 @@
-log_entries:
-- log_name: "tomcat_system"
-  field_matchers:
-    jsonPayload.message: "org.apache.catalina.startup.Catalina.start Server startup*"
-    jsonPayload.module: "main"
-    jsonPayload.source: "org.apache.catalina.startup.Catalina.start"
-    timestamp: "PLACEHOLDER"
-    severity: "PLACEHOLDER"
-- log_name: "tomcat_access"
-  field_matchers:
-    httpRequest.remoteIp: "127.0.0.1"
-    httpRequest.requestUrl: "/forbidden.html"
-    httpRequest.protocol: "HTTP/1.1"
-    httpRequest.requestMethod: "GET"
-    httpRequest.referer: "PLACEHOLDER"
-    httpRequest.responseSize: "PLACEHOLDER"
-    httpRequest.status: "PLACEHOLDER"
-    httpRequest.userAgent: "PLACEHOLDER"
-    jsonPayload.host: "PLACEHOLDER"
-    jsonPayload.user: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: tomcat_system
+  fields:
+  - name: jsonPayload.message
+    value: org.apache.catalina.startup.Catalina.start Server startup*
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.module
+    value: main
+    type: string
+    description: Module of tomcat where the log originated
+  - name: jsonPayload.source
+    value: org.apache.catalina.startup.Catalina.start
+    type: string
+    description: source of where the log originated
+- log_name: tomcat_access
+  fields:
+  - name: httpRequest.remoteIp
+    value: 127.0.0.1
+    type: string
+    description: ''
+  - name: httpRequest.requestUrl
+    value: /forbidden.html
+    type: string
+    description: ''
+  - name: httpRequest.protocol
+    value: HTTP/1.1
+    type: string
+    description: ''
+  - name: httpRequest.requestMethod
+    value: GET
+    type: string
+    description: ''
+  - name: jsonPayload.host
+    value: PLACEHOLDER
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    value: PLACEHOLDER
+    type: string
+    description: Authenticated username for the request

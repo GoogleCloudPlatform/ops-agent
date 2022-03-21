@@ -1,17 +1,35 @@
-log_entries:
-- log_name: "couchdb"
-  field_matchers:
-    jsonPayload.node: "couchdb"
-    jsonPayload.path: "/forbidden"
-    jsonPayload.remote_user: "undefined"
-    jsonPayload.status_message: "ok"
-    httpRequest.serverIp: "PLACEHOLDER"
-    httpRequest.remoteIp: "PLACEHOLDER"
-    httpRequest.requestMethod: "PLACEHOLDER"
-    httpRequest.responseSize: "PLACEHOLDER"
-    httpRequest.status: "PLACEHOLDER"
-    jsonPayload.pid: "PLACEHOLDER"
-    jsonPayload.message: "PLACEHOLDER"
-    jsonPayload.host: "PLACEHOLDER"
-    severity: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: couchdb
+  fields:
+  - name: jsonPayload.node
+    value: couchdb
+    type: string
+    description: node instance name
+  - name: jsonPayload.path
+    value: /forbidden
+    type: string
+    description: request path
+  - name: jsonPayload.remote_user
+    value: undefined
+    type: string
+    description: Authenticated username for the request
+  - name: jsonPayload.status_message
+    value: ok
+    type: string
+    description: status code message
+  - name: jsonPayload.pid
+    value: PLACEHOLDER
+    type: string
+    description: Process ID
+  - name: jsonPayload.message
+    value: PLACEHOLDER
+    type: string
+    description: Log message
+  - name: jsonPayload.host
+    value: PLACEHOLDER
+    type: string
+    description: host instance name
+  - name: httpRequest
+    value: PLACEHOLDER
+    type: object
+    description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.

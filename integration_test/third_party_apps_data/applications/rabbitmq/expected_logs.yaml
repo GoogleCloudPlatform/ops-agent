@@ -1,7 +1,11 @@
-log_entries:
-- log_name: "rabbitmq"
-  field_matchers:
-    jsonPayload.process_id: "PLACEHOLDER"
-    jsonPayload.message: "PLACEHOLDER"
-    severity: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: rabbitmq
+  fields:
+  - name: jsonPayload.process_id
+    value: PLACEHOLDER
+    type: string
+    description: The process ID issuing the log
+  - name: jsonPayload.message
+    value: PLACEHOLDER
+    type: string
+    description: Log message

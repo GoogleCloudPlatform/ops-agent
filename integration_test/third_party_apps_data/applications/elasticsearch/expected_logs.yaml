@@ -1,20 +1,45 @@
-log_entries:
-# {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
-- log_name: "elasticsearch_json"
-  field_matchers:
-    jsonPayload.message: "initialized"
-    jsonPayload.component: "o.e.n.Node"
-    jsonPayload.type: "server"
-    jsonPayload.cluster.name: "PLACEHOLDER"
-    jsonPayload.cluster.uuid: "PLACEHOLDER"
-    jsonPayload.node.name: "PLACEHOLDER"
-    jsonPayload.node.uuid: "PLACEHOLDER"
-    severity: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
-# [2022-01-19T16:16:39.445+0000][40361][gc] Using G1
-- log_name: "elasticsearch_gc"
-  field_matchers:
-    jsonPayload.message: 'Using G1'
-    jsonPayload.type: "gc"
-    jsonPayload.gc_run: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: elasticsearch_json
+  fields:
+  - name: jsonPayload.message
+    value: initialized
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.component
+    value: o.e.n.Node
+    type: string
+    description: 'The component of Elasticsearch that emitted the log'
+  - name: jsonPayload.type
+    value: server
+    type: string
+    description: 'The type of log, indicating which log the record came from (e.g. *server* indicates this LogEntry came from the server log)'
+  - name: jsonPayload.cluster.name
+    value: PLACEHOLDER
+    type: string
+    description: 'The name of the cluster emitting the log record'
+  - name: jsonPayload.cluster.uuid
+    value: PLACEHOLDER
+    type: string
+    description: 'The uuid of the cluster emitting the log record'
+  - name: jsonPayload.node.name
+    value: PLACEHOLDER
+    type: string
+    description: 'The name of the node emitting the log record'
+  - name: jsonPayload.node.uuid
+    value: PLACEHOLDER
+    type: string
+    description: 'The uuid of the node emitting the log record'
+- log_name: elasticsearch_gc
+  fields:
+  - name: jsonPayload.message
+    value: Using G1
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.type
+    value: gc
+    type: string
+    description: 'The type of the log record'
+  - name: jsonPayload.gc_run
+    value: PLACEHOLDER
+    type: number
+    description: 'The run of the garbage collector'

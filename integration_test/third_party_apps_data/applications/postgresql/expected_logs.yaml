@@ -1,10 +1,23 @@
-log_entries:
-- log_name: "postgresql_general"
-  field_matchers:
-    jsonPayload.message: '.*starting PostgreSQL.*'
-    jsonPayload.level: "LOG"
-    jsonPayload.tid: "PLACEHOLDER"
-    jsonPayload.role: "PLACEHOLDER"
-    jsonPayload.user: "PLACEHOLDER"
-    severity: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: postgresql_general
+  fields:
+  - name: jsonPayload.message
+    value: .*starting PostgreSQL.*
+    type: string
+    description: Log of the database action
+  - name: jsonPayload.level
+    value: LOG
+    type: string
+    description: Log severity or type of database interaction type for some logs
+  - name: jsonPayload.tid
+    value: PLACEHOLDER
+    type: number
+    description: Thread ID where the log originated
+  - name: jsonPayload.role
+    value: PLACEHOLDER
+    type: string
+    description: Authenticated role for the action being logged when relevant
+  - name: jsonPayload.user
+    value: PLACEHOLDER
+    type: string
+    description: Authenticated user for the action being logged when relevant

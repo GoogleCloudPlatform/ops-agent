@@ -1,8 +1,23 @@
-log_entries:
-- log_name: "kafka"
-  field_matchers:
-    jsonPayload.message: ".*Waiting until connected.*"
-    jsonPayload.source: "ZooKeeperClient Kafka server"
-    jsonPayload.logger: "kafka.zookeeper.ZooKeeperClient"
-    severity: "PLACEHOLDER"
-    timestamp: "PLACEHOLDER"
+expected_logs:
+- log_name: kafka
+  fields:
+  - name: jsonPayload.message
+    value: .*Waiting until connected.*
+    type: string
+    description: ''
+  - name: jsonPayload.source
+    value: ZooKeeperClient Kafka server
+    type: string
+    description: ''
+  - name: jsonPayload.logger
+    value: kafka.zookeeper.ZooKeeperClient
+    type: string
+    description: ''
+  - name: severity
+    value: PLACEHOLDER
+    type: string
+    description: ''
+  - name: timestamp
+    value: PLACEHOLDER
+    type: string
+    description: ''
