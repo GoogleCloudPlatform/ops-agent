@@ -168,24 +168,24 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 
 // Installs the agent according to the instructions in a script
 // stored in the scripts directory.
-func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
+func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	environmentVariables := make(map[string]string)
 	suffix := os.Getenv("REPO_SUFFIX")
 	if suffix != "" {
 		environmentVariables["REPO_SUFFIX"] = suffix
 	}
-	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "install"), environmentVariables); err != nil {
+	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", osFolder(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
 	}
 	return nonRetryable, nil
 }
 
-func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
+func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	defer time.Sleep(10 * time.Second)
 	if packagesInGCS == "" {
-		return installUsingScript(ctx, logger, vm, agentType)
+		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agentType, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
 }
 
 // expectedEntries encodes a series of assertions about what data we expect to
@@ -420,8 +420,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 // for each platform in PLATFORMS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
-
-	agentType := agents.OpsAgentType
 
 	testConfig, err := parseTestConfigFile()
 	if err != nil {
