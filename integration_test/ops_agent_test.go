@@ -14,18 +14,7 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what Rapture repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Each agent in
-		AGENTS_TO_TEST must have its own subdirectory, so for example this would be
-		a valid structure inside AGENT_PACKAGES_IN_GCS if
-		AGENTS_TO_TEST=metrics,ops_agent:
-	├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 */
 package integration_test
 
@@ -141,7 +130,7 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 
 func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	if packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
+		return agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
 		suffix := os.Getenv("REPO_SUFFIX")
