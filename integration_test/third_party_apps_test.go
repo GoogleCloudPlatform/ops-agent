@@ -221,8 +221,7 @@ type expectedMetric struct {
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels"`
-	// If Optional is true, the test will not fail if this metric
-	// is missing.
+	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
@@ -296,19 +295,25 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	// for a 60-second interval, plus 10 seconds to let the data propagate in the backend.
 	logger.ToMainLog().Println("Found representative metric, sleeping before checking remaining metrics")
 	time.Sleep(70 * time.Second)
-	c := make(chan error, len(metrics))
+	// Wait for all remaining metrics, skipping the optional ones.
+	// TODO: Improve coverage for optional metrics.
+	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
+	var requiredMetrics []expectedMetric
 	for _, metric := range metrics {
-		if metric.Representative {
-			// Ensure that we still fill the channel before skipping the representative metric
-			c <- nil
+		if metric.Optional || metric.Representative {
+			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
+		requiredMetrics = append(requiredMetrics, metric)
+	}
+	c := make(chan error, len(requiredMetrics))
+	for _, metric := range requiredMetrics {
 		metric := metric
 		go func() {
 			c <- assertMetric(ctx, logger, vm, metric)
 		}()
 	}
-	for range metrics {
+	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
 	return err
