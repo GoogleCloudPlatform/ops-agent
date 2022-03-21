@@ -206,7 +206,7 @@ For example, if a metric defines a label `operation` whose values can only be `r
 
 Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled.
 
-With `optional: true`, the test will not fail if the metric is missing. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures.
+With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures.
 
 `expected_metrics.yaml` can be generated using `generate_expected_metrics.go`:
 
