@@ -88,9 +88,9 @@ func rejectDuplicates(apps []string) error {
 
 // appsToTest reads which applications to test for the given agent+platform
 // combination from the appropriate supported_applications.txt file.
-func appsToTest(agentType, platform string) ([]string, error) {
+func appsToTest(platform string) ([]string, error) {
 	contents, err := readFileFromScriptsDir(
-		path.Join("agent", agentType, osFolder(platform), "supported_applications.txt"))
+		path.Join("agent", osFolder(platform), "supported_applications.txt"))
 	if err != nil {
 		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
 	}
@@ -273,7 +273,7 @@ func parseTestConfigFile() (testConfig, error) {
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType, app string) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string) (retry bool, err error) {
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
@@ -283,7 +283,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
-	if shouldRetry, err := installAgent(ctx, logger, vm, agentType); err != nil {
+	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
@@ -428,12 +428,12 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
-		apps, err := appsToTest(agentType, platform)
+		apps, err := appsToTest(platform)
 		if err != nil {
-			t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
+			t.Fatalf("Error when reading list of apps to test for platform=%v. err=%v", platform, err)
 		}
 		if len(apps) == 0 {
-			t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
+			t.Fatalf("Found no applications when testing platform=%v", platform)
 		}
 		for _, app := range apps {
 			tests = append(tests, test{platform, app, ""})
@@ -464,7 +464,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
-				retryable, err = runSingleTest(ctx, logger, vm, agentType, tc.app)
+				retryable, err = runSingleTest(ctx, logger, vm, tc.app)
 				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
