@@ -18,7 +18,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 		AGENTS_TO_TEST must have its own subdirectory, so for example this would be
 		a valid structure inside AGENT_PACKAGES_IN_GCS if
 		AGENTS_TO_TEST=metrics,ops_agent:
-		├── metrics
+	├── metrics
     │   ├── collectd-4.5.6.deb
     │   ├── collectd-4.5.6.rpm
     │   └── otel-collector-0.1.2.goo
