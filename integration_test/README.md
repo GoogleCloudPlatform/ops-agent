@@ -214,8 +214,7 @@ With `optional: true`, the test will not fail if the metric is missing. This can
 PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
-go run ./generate_expected_metrics/generate_expected_metrics.go \
- -tags=integration_test
+go run generate_expected_metrics.go
 ```
 
 This queries all metric descriptors under `workload.googleapis.com`, `agent.googleapis.com/iis`, and `agent.googleapis.com/mssql`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
@@ -225,8 +224,7 @@ PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
-go run ./generate_expected_metrics/generate_expected_metrics.go \
- -tags=integration_test
+go run generate_expected_metrics.go
 ```
 
 ### Testing Command

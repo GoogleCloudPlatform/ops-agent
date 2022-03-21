@@ -1,5 +1,3 @@
-//go:build integration_test
-
 /*
 PROJECT: What GCP project to use.
 GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
