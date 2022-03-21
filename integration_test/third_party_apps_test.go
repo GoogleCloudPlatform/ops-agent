@@ -12,13 +12,7 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 The following variables are optional:
 
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. They must be inside
-    a directory called ops-agent. For example, this would be a valid structure
-    inside AGENT_PACKAGES_IN_GCS:
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */

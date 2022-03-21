@@ -137,7 +137,7 @@ The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
 it reads `test_config.yaml` and uses that to set some testing options. See the
 "test_config.yaml" section below. Then it reads
-`agent/ops-agent/<platform>/supported_applications.txt` to determine
+`agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -164,7 +164,7 @@ data directory and the test runner before it is really meeting our needs.
 ### Adding a new third-party application
 
 You will need to add and modify a few files. Start by adding your new
-application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
+application to `agent/<linux_or_windows>/supported_applications.txt`
 
 Then, inside `applications/<application>/`:
 
