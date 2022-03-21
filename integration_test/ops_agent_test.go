@@ -14,7 +14,7 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    a .deb/.rpm/.goo files to install on the testing VMs. This takes precedence
+    .deb/.rpm/.goo files to install on the testing VMs. This takes precedence
     over REPO_SUFFIX. For historical reasons, AGENT_PACKAGES_IN_GCS must point
     to a directory that contains a directory called "ops-agent" that itself
     contains the actual .deb/.rpm/.goo files. To illustrate:
