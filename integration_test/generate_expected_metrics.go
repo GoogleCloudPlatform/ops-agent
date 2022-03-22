@@ -65,7 +65,7 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	listMetrics, err := listAllMetricsWithLabels(ctx, project)
+	listMetrics, err := listAllMetrics(ctx, project)
 	if err != nil {
 		return err
 	}
@@ -98,8 +98,6 @@ func run() error {
 }
 
 // listMetrics calls projects.metricDescriptors.list with the given project ID and filter.
-// Note that the returned descriptors do not include labels;
-// a separate call to getMetricDescriptor is needed for that.
 func listMetrics(ctx context.Context, project string, filter string) ([]*metric.MetricDescriptor, error) {
 	req := &monitoringpb.ListMetricDescriptorsRequest{
 		Name:   "projects/" + project + "/metricDescriptors/",
@@ -145,33 +143,6 @@ func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescri
 		metrics = append(metrics, listMetricsResult...)
 	}
 	return metrics, err
-}
-
-// listAllMetricsWithLabels calls listAllMetrics, and for each result,
-// subsequently calls projects.metricDescriptors.get to get label
-// information as well.
-func listAllMetricsWithLabels(ctx context.Context, project string) ([]*metric.MetricDescriptor, error) {
-	metrics, err := listAllMetrics(ctx, project)
-	if err != nil {
-		return nil, err
-	}
-	for i, metric := range metrics {
-		metricWithLabels, err := getMetricDescriptor(ctx, project, metric.Type)
-		if err != nil {
-			return nil, err
-		}
-		metrics[i] = metricWithLabels
-	}
-	return metrics, nil
-}
-
-// getMetricDescriptor gets all metric descriptor information,
-// including labels, for a single metric type.
-func getMetricDescriptor(ctx context.Context, project string, metricType string) (*metric.MetricDescriptor, error) {
-	req := &monitoringpb.GetMetricDescriptorRequest{
-		Name: "projects/" + project + "/metricDescriptors/" + metricType,
-	}
-	return monClient.GetMetricDescriptor(ctx, req)
 }
 
 // expectedMetricsByApp creates a map of the given metrics keyed on their
