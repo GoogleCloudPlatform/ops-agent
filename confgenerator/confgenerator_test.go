@@ -114,7 +114,7 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
 			if err = confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
 				// TODO: Move this inside generateConfigs when we can do MergeConfFiles in-memory
-				if _, ok := expectedFiles["error"]; ok {
+				if _, ok := expectedFiles["error"]; ok || *updateGolden {
 					got = map[string]string{
 						"error": err.Error(),
 					}
