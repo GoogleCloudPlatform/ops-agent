@@ -133,16 +133,18 @@ function process(tag, timestamp, record)
 
 		// Process MapValues
 
-		i := 0
-		// TODO: Iterate in a deterministic order
-		for k, v := range field.MapValues {
+		var keys []string
+		for k := range field.MapValues {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for i, k := range keys {
 			if i > 0 {
 				lua.WriteString("else")
 			}
-			fmt.Fprintf(&lua, "if v == %s then v = %s\n", filter.LuaQuote(k), filter.LuaQuote(v))
-			i++
+			fmt.Fprintf(&lua, "if v == %s then v = %s\n", filter.LuaQuote(k), filter.LuaQuote(field.MapValues[k]))
 		}
-		if i > 0 {
+		if len(keys) > 0 {
 			lua.WriteString("end\n")
 		}
 
