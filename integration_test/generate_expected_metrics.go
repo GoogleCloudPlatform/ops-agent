@@ -140,19 +140,19 @@ func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescri
 // expectedMetricsByApp creates a map of the given metrics keyed on their
 // respective app (e.g. apache, iis, etc.), converted to []ExpectedMetric.
 func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]common.ExpectedMetric {
-	m := make(map[string][]common.ExpectedMetric, 0)
-	for _, _metric := range metrics {
-		matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(_metric.Type)
+	byApp := make(map[string][]common.ExpectedMetric, 0)
+	for _, m := range metrics {
+		matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(m.Type)
 		if len(matches) != 2 {
-			panic(fmt.Errorf("metric type doesn't match regex: %s", _metric.Type))
+			panic(fmt.Errorf("metric type doesn't match regex: %s", m.Type))
 		}
 		app := matches[1]
 		if app == "" {
-			panic(fmt.Errorf("app not detected for: %s", _metric.Type))
+			panic(fmt.Errorf("app not detected for: %s", m.Type))
 		}
-		m[app] = append(m[app], toExpectedMetric(_metric))
+		byApp[app] = append(byApp[app], toExpectedMetric(m))
 	}
-	return m
+	return byApp
 }
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
