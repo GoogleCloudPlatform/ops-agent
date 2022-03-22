@@ -3,11 +3,11 @@ set -e
 sudo apt update
 sudo apt install -y wget
 
-function install_key() {
+function add_apt_key() {
   # From https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/#repo-qg-apt-repo-manual-setup
   sudo apt-key adv --keyserver "$@" --recv-keys 3A79BD29
 }
-install_key pgp.mit.edu || install_key keyserver.ubuntu.com
+add_apt_key pgp.mit.edu || add_apt_key keyserver.ubuntu.com
 
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.14-1_all.deb
 # DEBIAN_FRONTEND=noninteractive gets us around a problematic prompt:
