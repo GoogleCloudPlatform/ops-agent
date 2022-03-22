@@ -10,9 +10,9 @@ SCRIPTS_DIR: a path containing scripts for installing/configuring the various
 FILTER: an optional Cloud Monitoring filter to use when querying for updated
     metrics descriptors. If omitted, the script will pull all metric descriptors
 	using the following default filters:
-		metric.type = starts_with("workload")
-		metric.type = starts_with("agent.googleapis.com/iis")
-		metric.type = starts_with("agent.googleapis.com/mssql")
+		metric.type = starts_with("workload.googleapis.com/")
+		metric.type = starts_with("agent.googleapis.com/iis/")
+		metric.type = starts_with("agent.googleapis.com/mssql/")
 	FILTER is useful when testing a single integration, for example,
 		FILTER='metric.type=starts_with("workload.googleapis.com/apache")'
 */
@@ -129,9 +129,9 @@ func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescri
 		filters = []string{filter}
 	} else {
 		filters = []string{
-			`metric.type = starts_with("workload")`,
-			`metric.type = starts_with("agent.googleapis.com/iis")`,
-			`metric.type = starts_with("agent.googleapis.com/mssql")`,
+			`metric.type = starts_with("workload.googleapis.com/")`,
+			`metric.type = starts_with("agent.googleapis.com/iis/")`,
+			`metric.type = starts_with("agent.googleapis.com/mssql/")`,
 		}
 	}
 	for _, filter := range filters {

@@ -218,7 +218,7 @@ go run generate_expected_metrics.go \
  -tags=integration_test
 ```
 
-This queries all metric descriptors under `workload.googleapis.com`, `agent.googleapis.com/iis`, and `agent.googleapis.com/mssql`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
+This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
 
 ```
 PROJECT="${PROJECT}" \
