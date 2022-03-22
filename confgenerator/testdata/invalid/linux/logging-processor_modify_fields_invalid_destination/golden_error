@@ -1,0 +1,9 @@
+[6:27] "fields[notJsonPayload.foo]": 1:19: error: invalid target: notJsonPayload.foo
+   3 |     processor_1:
+   4 |       type: modify_fields
+   5 |       fields:
+>  6 |         notJsonPayload.foo:
+                                 ^
+   7 |           static_value: bar
+   8 |   service:
+   9 |     pipelines:

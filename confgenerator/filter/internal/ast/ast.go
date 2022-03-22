@@ -60,19 +60,6 @@ func (m Target) fluentBitPath() ([]string, error) {
 	return fluentBit, nil
 }
 
-// Valid returns true if the target is a field that can be read or set.
-func (m Target) Valid() bool {
-	_, err := m.RecordAccessor()
-	if err != nil {
-		return false
-	}
-	_, err = m.LuaAccessor(false)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
 // RecordAccessor returns a string that can be used as a key in a FluentBit config
 func (m Target) RecordAccessor() (string, error) {
 	fluentBit, err := m.fluentBitPath()

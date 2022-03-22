@@ -1,0 +1,9 @@
+[7:20] "omit_if": 1:25: error: invalid target: notJsonPayload.foo
+   4 |       type: modify_fields
+   5 |       fields:
+   6 |         jsonPayload.missing:
+>  7 |           omit_if: notJsonPayload.foo = bar
+                          ^
+   8 |   service:
+   9 |     pipelines:
+  10 |       default_pipeline:

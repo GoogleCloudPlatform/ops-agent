@@ -110,8 +110,13 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must start with %q", ve.Field(), ve.Param())
 	case "url":
 		return fmt.Sprintf("%q must be a URL", ve.Field())
+	case "excluded_with":
+		return fmt.Sprintf("%q cannot be set if one of [%s] is set", ve.Field(), ve.Param())
 	case "filter":
 		_, err := filter.NewFilter(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
+	case "field":
+		_, err := filter.NewMember(ve.Value().(string))
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	}
 
@@ -170,18 +175,13 @@ func newValidator() *validator.Validate {
 	// filter validates that a Cloud Logging filter condition is valid
 	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewFilter(fl.Field().String())
-		// TODO: Ensure that a filter references valid fields
-		// (only checked when actually constructing the filter
-		// components).
 		return err == nil
 	})
 	// field validates that a Cloud Logging field expression is valid
 	v.RegisterValidation("field", func(fl validator.FieldLevel) bool {
-		m, err := filter.NewMember(fl.Field().String())
-		if err != nil {
-			return false
-		}
-		return m.Valid()
+		_, err := filter.NewMember(fl.Field().String())
+		// TODO: Disallow specific target fields?
+		return err == nil
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {

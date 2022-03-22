@@ -1,0 +1,9 @@
+[7:22] "copy_from": 1:19: error: invalid target: notJsonPayload.bar
+   4 |       type: modify_fields
+   5 |       fields:
+   6 |         jsonPayload.foo:
+>  7 |           copy_from: notJsonPayload.bar
+                            ^
+   8 |   service:
+   9 |     pipelines:
+  10 |       default_pipeline:
