@@ -1,13 +1,13 @@
 //go:build integration_test
 
 /*
-PROJECT: What GCP project to use.
+PROJECT: The GCP project to use.
 GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
-    some GCP services.
-SCRIPTS_DIR: a path containing scripts for installing/configuring the various
+    GCP Cloud Monitoring services.
+SCRIPTS_DIR: Path containing scripts for installing/configuring the various
     applications and agents. Also has some files that aren't technically
     scripts that tell the test what to do, such as supported_applications.txt.
-FILTER: an optional Cloud Monitoring filter to use when querying for updated
+FILTER: An optional Cloud Monitoring filter to use when querying for updated
     metrics descriptors. If omitted, the script will pull all metric descriptors
 	using the following default filters:
 		metric.type = starts_with("workload.googleapis.com/")
