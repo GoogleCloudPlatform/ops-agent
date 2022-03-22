@@ -30,6 +30,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
+
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"go.uber.org/multierr"
 	"google.golang.org/api/iterator"
@@ -44,16 +46,6 @@ var (
 	scriptsDir = os.Getenv("SCRIPTS_DIR")
 	filter     = os.Getenv("FILTER")
 )
-
-type expectedMetric struct {
-	Type              string            `yaml:"type"`
-	ValueType         string            `yaml:"value_type"`
-	Kind              string            `yaml:"kind"`
-	MonitoredResource string            `yaml:"monitored_resource"`
-	Labels            map[string]string `yaml:"labels"`
-	Optional          bool              `yaml:"optional,omitempty"`
-	Representative    bool              `yaml:"representative,omitempty"`
-}
 
 func main() {
 	if err := run(); err != nil {
@@ -73,7 +65,7 @@ func run() error {
 	metricsByApp := expectedMetricsByApp(allMetrics)
 	for app, newMetrics := range metricsByApp {
 		log.Printf("Processing %d metrics for %s...\n", len(newMetrics), app)
-		metricsToWrite := make([]expectedMetric, 0)
+		metricsToWrite := make([]common.ExpectedMetric, 0)
 		existingMetrics, readErr := readExpectedMetrics(app)
 		if readErr != nil {
 			err = multierr.Append(err, readErr)
@@ -146,9 +138,9 @@ func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescri
 }
 
 // expectedMetricsByApp creates a map of the given metrics keyed on their
-// respective app (e.g. apache, iis, etc.), converted to []expectedMetric.
-func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]expectedMetric {
-	m := make(map[string][]expectedMetric, 0)
+// respective app (e.g. apache, iis, etc.), converted to []ExpectedMetric.
+func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]common.ExpectedMetric {
+	m := make(map[string][]common.ExpectedMetric, 0)
 	for _, _metric := range metrics {
 		matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(_metric.Type)
 		if len(matches) != 2 {
@@ -163,13 +155,13 @@ func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]expec
 	return m
 }
 
-// toExpectedMetric converts from metric.MetricDescriptor to expectedMetric.
-func toExpectedMetric(metric *metric.MetricDescriptor) expectedMetric {
+// toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
+func toExpectedMetric(metric *metric.MetricDescriptor) common.ExpectedMetric {
 	labels := make(map[string]string, 0)
 	for _, l := range metric.Labels {
 		labels[l.Key] = ".*"
 	}
-	return expectedMetric{
+	return common.ExpectedMetric{
 		Type:              metric.Type,
 		Kind:              metric.MetricKind.String(),
 		ValueType:         metric.ValueType.String(),
@@ -186,15 +178,15 @@ func expectedMetricsFilename(app string) string {
 // file for the given app. If none exist, an empty slice is returned.
 // Otherwise, its contents are returned, or an error if it could
 // not be unmarshaled.
-func readExpectedMetrics(app string) ([]expectedMetric, error) {
+func readExpectedMetrics(app string) ([]common.ExpectedMetric, error) {
 	file := expectedMetricsFilename(app)
 	serialized, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
-		return make([]expectedMetric, 0), nil
+		return make([]common.ExpectedMetric, 0), nil
 	} else if err != nil {
 		return nil, err
 	}
-	var metrics []expectedMetric
+	var metrics []common.ExpectedMetric
 	if err = yaml.Unmarshal(serialized, &metrics); err != nil {
 		return nil, err
 	}
@@ -203,7 +195,7 @@ func readExpectedMetrics(app string) ([]expectedMetric, error) {
 
 // writeExpectedMetrics writes the given list of metrics to the
 // expected_metrics.yaml associated with the given app.
-func writeExpectedMetrics(app string, metrics []expectedMetric) error {
+func writeExpectedMetrics(app string, metrics []common.ExpectedMetric) error {
 	serialized, err := yaml.Marshal(metrics)
 	if err != nil {
 		return err
@@ -215,7 +207,7 @@ func writeExpectedMetrics(app string, metrics []expectedMetric) error {
 // mergeMetric produces a combination of the two given metrics, which
 // is based on newMetric but with Optional, Representative, and Label
 // patterns inherited from existingMetric.
-func mergeMetric(existingMetric expectedMetric, newMetric expectedMetric) expectedMetric {
+func mergeMetric(existingMetric common.ExpectedMetric, newMetric common.ExpectedMetric) common.ExpectedMetric {
 	merged := newMetric
 	// Use existing Optional and Representative
 	merged.Optional = existingMetric.Optional
@@ -229,7 +221,7 @@ func mergeMetric(existingMetric expectedMetric, newMetric expectedMetric) expect
 	return merged
 }
 
-func findMetric(existingMetrics []expectedMetric, metricType string) *expectedMetric {
+func findMetric(existingMetrics []common.ExpectedMetric, metricType string) *common.ExpectedMetric {
 	for _, existingMetric := range existingMetrics {
 		if existingMetric.Type == metricType {
 			return &existingMetric

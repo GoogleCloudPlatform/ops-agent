@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
@@ -205,30 +206,6 @@ type expectedLog struct {
 	FieldMatchers map[string]string `yaml:"field_matchers"`
 }
 
-// expectedMetric encodes a series of assertions about what data we expect
-// to see in the metrics backend.
-type expectedMetric struct {
-	// The metric type, for example workload.googleapis.com/apache.current_connections.
-	Type string `yaml:"type"`
-	// The value type, for example INT64.
-	ValueType string `yaml:"value_type" validate:"metric_value_type"`
-	// The kind, for example GAUGE.
-	Kind string `yaml:"kind" validate:"metric_kind"`
-	// The monitored resource, for example gce_instance.
-	// Currently we only test with gce_instance, so we expect
-	// all expectedMetricsEntries to have gce_instance.
-	MonitoredResource string `yaml:"monitored_resource" validate:"metric_monitored_resource"`
-	// Mapping of expected label keys to value patterns.
-	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels"`
-	// If Optional is true, the test for this metric will be skipped.
-	Optional bool `yaml:"optional,omitempty"`
-	// Exactly one metric in each expected_metrics.yaml must
-	// have Representative set to true. This metric can be used
-	// to test that the integration is enabled.
-	Representative bool `yaml:"representative,omitempty"`
-}
-
 // constructQuery converts the given map of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
@@ -265,7 +242,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var metrics []expectedMetric
+	var metrics []common.ExpectedMetric
 	var err error
 	if err = yaml.UnmarshalStrict(testCaseBytes, &metrics); err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
@@ -298,7 +275,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
 	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
-	var requiredMetrics []expectedMetric
+	var requiredMetrics []common.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
@@ -321,7 +298,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 // validateMetrics checks that all enum fields have valid values and that
 // there is exactly one representative metric in the slice
-func validateMetrics(metrics []expectedMetric) error {
+func validateMetrics(metrics []common.ExpectedMetric) error {
 	var err error
 	// Field validation
 	expectedKinds := []string{"GAUGE", "DELTA", "CUMULATIVE"}
@@ -358,7 +335,7 @@ func validateMetrics(metrics []expectedMetric) error {
 	return err
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric expectedMetric) error {
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric common.ExpectedMetric) error {
 	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err != nil {
 		// Optional metrics can be missing
@@ -383,7 +360,7 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nil
 }
 
-func assertMetricLabels(metric expectedMetric, series *monitoringpb.TimeSeries) error {
+func assertMetricLabels(metric common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	// All present labels must be expected
 	var err error
 	for actualLabel := range series.Metric.Labels {
