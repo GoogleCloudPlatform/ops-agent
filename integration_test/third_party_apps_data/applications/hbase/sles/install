@@ -3,11 +3,9 @@ set -o pipefail
 
 sudo zypper install -y wget java-11-openjdk
 
-HBASE_VERSION=$(curl https://apache.mirror.gtcomm.net/hbase/stable/ \
-    | grep --extended-regexp --only-matching 'hbase-[0-9.]+-bin.tar.gz' \
-    | grep --extended-regexp --only-matching --max-count=1 --color=never '[0-9]+\.[0-9]+\.[0-9]+')
+HBASE_VERSION=2.4.11
 
-wget http://apache.mirror.gtcomm.net/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
+wget https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 
