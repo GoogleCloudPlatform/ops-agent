@@ -4,7 +4,7 @@ sudo apt update
 sudo apt install -y wget
 
 # From https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/#repo-qg-apt-repo-manual-setup
-sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 3A79BD29
+sudo apt-key adv --keyserver pool.sks-keyservers.net --recv-keys 3A79BD29
 
 wget https://dev.mysql.com/get/mysql-apt-config_0.8.14-1_all.deb
 # DEBIAN_FRONTEND=noninteractive gets us around a problematic prompt:
