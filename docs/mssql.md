@@ -1,6 +1,6 @@
 # MS SQL Server
 
-Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql) for instructions to collect metrics from this application using Ops Agent.
+Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql) for instructions to collect metrics and logs from this application using Ops Agent.
 
 ## Metrics
 
