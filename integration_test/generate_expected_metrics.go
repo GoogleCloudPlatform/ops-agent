@@ -65,12 +65,12 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	listMetrics, err := listAllMetrics(ctx, project)
+	allMetrics, err := listAllMetrics(ctx, project)
 	if err != nil {
 		return err
 	}
 
-	metricsByApp := expectedMetricsByApp(listMetrics)
+	metricsByApp := expectedMetricsByApp(allMetrics)
 	for app, newMetrics := range metricsByApp {
 		log.Printf("Processing %d metrics for %s...\n", len(newMetrics), app)
 		metricsToWrite := make([]expectedMetric, 0)
@@ -106,13 +106,13 @@ func listMetrics(ctx context.Context, project string, filter string) ([]*metric.
 	it := monClient.ListMetricDescriptors(ctx, req)
 	metrics := make([]*metric.MetricDescriptor, 0)
 	for {
-		metric, err := it.Next()
+		m, err := it.Next()
 		if err == iterator.Done {
 			break
 		} else if err != nil {
 			return nil, err
 		}
-		metrics = append(metrics, metric)
+		metrics = append(metrics, m)
 	}
 	return metrics, nil
 }
@@ -158,12 +158,7 @@ func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]expec
 		if app == "" {
 			panic(fmt.Errorf("app not detected for: %s", _metric.Type))
 		}
-		existingMetrics, ok := m[app]
-		if !ok {
-			existingMetrics = make([]expectedMetric, 0)
-		}
-		existingMetrics = append(existingMetrics, toExpectedMetric(_metric))
-		m[app] = existingMetrics
+		m[app] = append(m[app], toExpectedMetric(_metric))
 	}
 	return m
 }
@@ -183,12 +178,16 @@ func toExpectedMetric(metric *metric.MetricDescriptor) expectedMetric {
 	}
 }
 
+func expectedMetricsFilename(app string) string {
+	return path.Join(scriptsDir, "applications", app, "expected_metrics.yaml")
+}
+
 // readExpectedMetrics reads in the existing expected_metrics.yaml
 // file for the given app. If none exist, an empty slice is returned.
 // Otherwise, its contents are returned, or an error if it could
 // not be unmarshaled.
 func readExpectedMetrics(app string) ([]expectedMetric, error) {
-	file := path.Join(scriptsDir, "applications", app, "expected_metrics.yaml")
+	file := expectedMetricsFilename(app)
 	serialized, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
 		return make([]expectedMetric, 0), nil
@@ -202,14 +201,14 @@ func readExpectedMetrics(app string) ([]expectedMetric, error) {
 	return metrics, nil
 }
 
-// writeExpectedMetrics write the given list of metrics to the
+// writeExpectedMetrics writes the given list of metrics to the
 // expected_metrics.yaml associated with the given app.
 func writeExpectedMetrics(app string, metrics []expectedMetric) error {
 	serialized, err := yaml.Marshal(metrics)
 	if err != nil {
 		return err
 	}
-	file := path.Join(scriptsDir, "applications", app, "expected_metrics.yaml")
+	file := expectedMetricsFilename(app)
 	return os.WriteFile(file, serialized, 0644)
 }
 

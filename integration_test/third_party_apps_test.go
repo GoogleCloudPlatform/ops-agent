@@ -353,7 +353,7 @@ func validateMetrics(metrics []expectedMetric) error {
 		}
 	}
 	if representativeCount != 1 {
-		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %v were found", representativeCount))
+		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %d were found", representativeCount))
 	}
 	return err
 }
