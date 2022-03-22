@@ -25,9 +25,8 @@ import (
 
 type ModifyField struct {
 	// Source of value for this field
-	// XXX: Validate field names
-	MoveFrom    string  `yaml:"move_from" validate:"excluded_with=CopyFrom StaticValue"`
-	CopyFrom    string  `yaml:"copy_from" validate:"excluded_with=MoveFrom StaticValue"`
+	MoveFrom    string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue"`
+	CopyFrom    string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
 	StaticValue *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
 
 	// Name of variable with copied value
@@ -35,14 +34,13 @@ type ModifyField struct {
 
 	// Operations to perform
 	MapValues map[string]string `yaml:"map_values"`
-	// XXX: Decide what the type names should be
-	Type   string `yaml:"type" validate:"omitempty,oneof=integer float"`
-	OmitIf string `yaml:"omit_if" validate:"omitempty,filter"`
+	Type      string            `yaml:"type" validate:"omitempty,oneof=integer float"`
+	OmitIf    string            `yaml:"omit_if" validate:"omitempty,filter"`
 }
 
 type LoggingProcessorModifyFields struct {
 	ConfigComponent `yaml:",inline"`
-	Fields          map[string]*ModifyField `yaml:"fields"`
+	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,endkeys"`
 }
 
 func (p LoggingProcessorModifyFields) Type() string {

@@ -170,7 +170,18 @@ func newValidator() *validator.Validate {
 	// filter validates that a Cloud Logging filter condition is valid
 	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewFilter(fl.Field().String())
+		// TODO: Ensure that a filter references valid fields
+		// (only checked when actually constructing the filter
+		// components).
 		return err == nil
+	})
+	// field validates that a Cloud Logging field expression is valid
+	v.RegisterValidation("field", func(fl validator.FieldLevel) bool {
+		m, err := filter.NewMember(fl.Field().String())
+		if err != nil {
+			return false
+		}
+		return m.Valid()
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
