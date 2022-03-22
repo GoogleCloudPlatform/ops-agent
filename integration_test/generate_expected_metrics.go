@@ -74,7 +74,7 @@ func run() error {
 		// Write existing metrics first, updating them if needed
 		for _, existingMetric := range existingMetrics {
 			if newMetric := findMetric(newMetrics, existingMetric.Type); newMetric != nil {
-				existingMetric = mergeMetric(existingMetric, *newMetric)
+				updateMetric(&existingMetric, newMetric)
 			}
 			metricsToWrite = append(metricsToWrite, existingMetric)
 		}
@@ -204,21 +204,34 @@ func writeExpectedMetrics(app string, metrics []common.ExpectedMetric) error {
 	return os.WriteFile(file, serialized, 0644)
 }
 
-// mergeMetric produces a combination of the two given metrics, which
-// is based on newMetric but with Optional, Representative, and Label
-// patterns inherited from existingMetric.
-func mergeMetric(existingMetric common.ExpectedMetric, newMetric common.ExpectedMetric) common.ExpectedMetric {
-	merged := newMetric
-	// Use existing Optional and Representative
-	merged.Optional = existingMetric.Optional
-	merged.Representative = existingMetric.Representative
-	// Use any existing Label patterns
-	for label, pattern := range existingMetric.Labels {
-		if _, ok := merged.Labels[label]; ok {
-			merged.Labels[label] = pattern
+// updateMetric updates the given metric in-place using values from withValuesFrom.
+// Existing Optional and Representative values are preserved, as well as existing
+// label patterns. All other values are copied from withValuesFrom. Existing label
+// keys not present in withValuesFrom.Labels are dropped.
+func updateMetric(toUpdate *common.ExpectedMetric, withValuesFrom *common.ExpectedMetric) {
+	if toUpdate.Type != withValuesFrom.Type {
+		panic(fmt.Errorf("updateMetric: attempted to update metric with mismatched type: %s, %s", toUpdate.Type, withValuesFrom.Type))
+	}
+	toUpdate.Kind = withValuesFrom.Kind
+	toUpdate.ValueType = withValuesFrom.ValueType
+	toUpdate.MonitoredResource = withValuesFrom.MonitoredResource
+
+	// TODO: Refactor to a simple map copy once we improve listMetrics to fetch
+	// label patterns automatically.
+
+	// Copy new label keys
+	for k, v := range withValuesFrom.Labels {
+		// Don't overwrite existing patterns
+		if _, ok := toUpdate.Labels[k]; !ok {
+			toUpdate.Labels[k] = v
 		}
 	}
-	return merged
+	// Remove dropped label keys
+	for k := range toUpdate.Labels {
+		if _, ok := withValuesFrom.Labels[k]; !ok {
+			delete(toUpdate.Labels, k)
+		}
+	}
 }
 
 func findMetric(existingMetrics []common.ExpectedMetric, metricType string) *common.ExpectedMetric {
