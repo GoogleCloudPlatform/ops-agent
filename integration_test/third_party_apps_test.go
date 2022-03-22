@@ -178,7 +178,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	defer time.Sleep(10 * time.Second)
 	if packagesInGCS == "" {
 		return installUsingScript(ctx, logger, vm)
-  	}
+	}
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
