@@ -28,6 +28,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
@@ -47,6 +48,8 @@ var (
 	filter     = os.Getenv("FILTER")
 )
 
+type expectedMetricsMap map[string]*common.ExpectedMetric
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("%v", err)
@@ -57,34 +60,28 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	allMetrics, err := listAllMetrics(ctx, project)
+	allMetrics, err := listAllMetricsByApp(ctx, project)
 	if err != nil {
 		return err
 	}
 
-	metricsByApp := expectedMetricsByApp(allMetrics)
-	for app, newMetrics := range metricsByApp {
+	for app, newMetrics := range allMetrics {
 		log.Printf("Processing %d metrics for %s...\n", len(newMetrics), app)
-		metricsToWrite := make([]common.ExpectedMetric, 0)
 		existingMetrics, readErr := readExpectedMetrics(app)
 		if readErr != nil {
 			err = multierr.Append(err, readErr)
 			continue
 		}
-		// Write existing metrics first, updating them if needed
-		for _, existingMetric := range existingMetrics {
-			if newMetric := findMetric(newMetrics, existingMetric.Type); newMetric != nil {
-				updateMetric(&existingMetric, newMetric)
-			}
-			metricsToWrite = append(metricsToWrite, existingMetric)
-		}
-		// Write exclusively new metrics last
+		// For each new metric, either update the corresponding existing metric,
+		// or add it.
 		for _, newMetric := range newMetrics {
-			if findMetric(existingMetrics, newMetric.Type) == nil {
-				metricsToWrite = append(metricsToWrite, newMetric)
+			if existingMetric, ok := existingMetrics[newMetric.Type]; ok {
+				updateMetric(existingMetric, newMetric)
+			} else {
+				existingMetrics[newMetric.Type] = newMetric
 			}
 		}
-		err = multierr.Append(err, writeExpectedMetrics(app, metricsToWrite))
+		err = multierr.Append(err, writeExpectedMetrics(app, existingMetrics))
 	}
 	return err
 }
@@ -111,9 +108,10 @@ func listMetrics(ctx context.Context, project string, filter string) ([]*metric.
 
 // listAllMetrics calls projects.metricDescriptors.list with the given project ID
 // using the Cloud Monitoring filter defined in FILTER, or an exhaustive set of
-// default filters if FILTER is not defined.
-func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescriptor, error) {
-	metrics := make([]*metric.MetricDescriptor, 0)
+// default filters if FILTER is not defined. Metrics are returned as a map from
+// app name to expectedMetricsMap.
+func listAllMetricsByApp(ctx context.Context, project string) (map[string]expectedMetricsMap, error) {
+	metrics := make(map[string]expectedMetricsMap)
 	var err error
 	var filters []string
 	// User-defined FILTER takes priority over default filters
@@ -132,36 +130,42 @@ func listAllMetrics(ctx context.Context, project string) ([]*metric.MetricDescri
 			err = multierr.Append(err, listMetricsErr)
 			continue
 		}
-		metrics = append(metrics, listMetricsResult...)
+		for _, m := range listMetricsResult {
+			app := getAppName(m.Type)
+			if _, ok := metrics[app]; !ok {
+				metrics[app] = make(expectedMetricsMap)
+			} else if _, ok := metrics[app][m.Type]; ok {
+				err = multierr.Append(err, fmt.Errorf("duplicate metric found, skipping: %s", m.Type))
+				continue
+			}
+			metrics[app][m.Type] = toExpectedMetric(m)
+		}
 	}
 	return metrics, err
 }
 
-// expectedMetricsByApp creates a map of the given metrics keyed on their
-// respective app (e.g. apache, iis, etc.), converted to []ExpectedMetric.
-func expectedMetricsByApp(metrics []*metric.MetricDescriptor) map[string][]common.ExpectedMetric {
-	byApp := make(map[string][]common.ExpectedMetric, 0)
-	for _, m := range metrics {
-		matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(m.Type)
-		if len(matches) != 2 {
-			panic(fmt.Errorf("metric type doesn't match regex: %s", m.Type))
-		}
-		app := matches[1]
-		if app == "" {
-			panic(fmt.Errorf("app not detected for: %s", m.Type))
-		}
-		byApp[app] = append(byApp[app], toExpectedMetric(m))
+// getAppName parses out the app name from a metric type, for example:
+//   workload.googleapis.com/apache.xyz -> apache
+//   agent.googleapis.com/iis/xyz -> iis
+func getAppName(metricType string) string {
+	matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(metricType)
+	if len(matches) != 2 {
+		panic(fmt.Errorf("metric type doesn't match regex: %s", metricType))
 	}
-	return byApp
+	app := matches[1]
+	if app == "" {
+		panic(fmt.Errorf("app not detected for metric type: %s", metricType))
+	}
+	return app
 }
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
-func toExpectedMetric(metric *metric.MetricDescriptor) common.ExpectedMetric {
-	labels := make(map[string]string, 0)
+func toExpectedMetric(metric *metric.MetricDescriptor) *common.ExpectedMetric {
+	labels := make(map[string]string)
 	for _, l := range metric.Labels {
 		labels[l.Key] = ".*"
 	}
-	return common.ExpectedMetric{
+	return &common.ExpectedMetric{
 		Type:              metric.Type,
 		Kind:              metric.MetricKind.String(),
 		ValueType:         metric.ValueType.String(),
@@ -175,14 +179,16 @@ func expectedMetricsFilename(app string) string {
 }
 
 // readExpectedMetrics reads in the existing expected_metrics.yaml
-// file for the given app. If none exist, an empty slice is returned.
+// file for the given app as a map keyed on metric type. If no file
+// exists, an empty map is returned.
 // Otherwise, its contents are returned, or an error if it could
 // not be unmarshaled.
-func readExpectedMetrics(app string) ([]common.ExpectedMetric, error) {
+func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 	file := expectedMetricsFilename(app)
 	serialized, err := os.ReadFile(file)
+	metricsByType := make(expectedMetricsMap)
 	if errors.Is(err, fs.ErrNotExist) {
-		return make([]common.ExpectedMetric, 0), nil
+		return metricsByType, nil
 	} else if err != nil {
 		return nil, err
 	}
@@ -190,13 +196,26 @@ func readExpectedMetrics(app string) ([]common.ExpectedMetric, error) {
 	if err = yaml.Unmarshal(serialized, &metrics); err != nil {
 		return nil, err
 	}
-	return metrics, nil
+	for _, m := range metrics {
+		m := m
+		if _, ok := metricsByType[m.Type]; ok {
+			return nil, fmt.Errorf("duplicate metric type in %s/expected_metrics.yaml: %s", app, m.Type)
+		}
+		metricsByType[m.Type] = &m
+	}
+	return metricsByType, nil
 }
 
-// writeExpectedMetrics writes the given list of metrics to the
-// expected_metrics.yaml associated with the given app.
-func writeExpectedMetrics(app string, metrics []common.ExpectedMetric) error {
-	serialized, err := yaml.Marshal(metrics)
+// writeExpectedMetrics writes the given map's values as a slice
+// to the expected_metrics.yaml associated with the given app. Metrics
+// are written in alphabetical order by type.
+func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
+	metricsSlice := make([]common.ExpectedMetric, 0)
+	for _, m := range metrics {
+		metricsSlice = append(metricsSlice, *m)
+	}
+	sort.Slice(metricsSlice, func(i, j int) bool { return metricsSlice[i].Type < metricsSlice[j].Type })
+	serialized, err := yaml.Marshal(metricsSlice)
 	if err != nil {
 		return err
 	}
@@ -232,15 +251,6 @@ func updateMetric(toUpdate *common.ExpectedMetric, withValuesFrom *common.Expect
 			delete(toUpdate.Labels, k)
 		}
 	}
-}
-
-func findMetric(existingMetrics []common.ExpectedMetric, metricType string) *common.ExpectedMetric {
-	for _, existingMetric := range existingMetrics {
-		if existingMetric.Type == metricType {
-			return &existingMetric
-		}
-	}
-	return nil
 }
 
 func init() {
