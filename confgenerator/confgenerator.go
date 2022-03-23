@@ -48,10 +48,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 
 	pipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
+		Port:    20201,
 	}.MetricsSubmodulePipeline()
 
 	pipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
+		Port:    20202,
 	}.LoggingSubmodulePipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
