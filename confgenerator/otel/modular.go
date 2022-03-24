@@ -22,7 +22,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-var MetricsPort = 20201
+const MetricsPort = 20201
 
 // Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type Pipeline struct {

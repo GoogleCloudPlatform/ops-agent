@@ -16,7 +16,7 @@ package fluentbit
 
 import "strconv"
 
-var MetricsPort = 20202
+const MetricsPort = 20202
 
 func MetricsInputComponent() Component {
 	return Component{
