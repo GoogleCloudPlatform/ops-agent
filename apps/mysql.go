@@ -67,6 +67,20 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
+				// The following changes are here to ensure maximum backwards compatibility after the fixes
+				// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
+				otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+				otel.UpdateMetric("mysql.buffer_pool_data_pages",
+					otel.RenameLabelValues("status", map[string]string{"clean": "flushed"}),
+				),
+				otel.UpdateMetric("mysql.threads",
+					otel.ToggleScalarDataType,
+				),
+				otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
+					otel.RenameLabel("status", "kind"),
+					otel.ToggleScalarDataType,
+					otel.RenameLabelValues("kind", map[string]string{"clean": "data"}),
+				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
