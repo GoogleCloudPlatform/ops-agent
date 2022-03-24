@@ -91,7 +91,7 @@ expected_metics:
     server_name: .*
     state: .*
 configuration_options:
-  log:
+  logs:
   - type: apache_access
     fields:
     - name: type
@@ -120,7 +120,7 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metric:
+  metrics:
   - type: apache
     fields:
     - name: type
