@@ -93,6 +93,7 @@ expected_metics:
 configuration_options:
   logging:
   - log_type: apache_access
+    fields:
     - name: type
       default: null
       description: This value must be apache_access.
@@ -106,6 +107,7 @@ configuration_options:
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   - log_type: apache_error
+    fields:
     - name: type
       default: null
       description: This value must be apache_error.
@@ -120,6 +122,7 @@ configuration_options:
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - metrics_type: apache
+    fields:
     - name: type
       default: null
       description: This value must be apache.
