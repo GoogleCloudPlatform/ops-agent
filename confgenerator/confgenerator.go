@@ -48,12 +48,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 
 	pipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
-		Port:    20201,
+		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
 
 	pipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
-		Port:    20202,
+		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
@@ -140,7 +140,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
 	out = append(out, service.Component())
-	out = append(out, service.MetricsComponent())
+	out = append(out, fluentbit.MetricsInputComponent())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
@@ -233,7 +233,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
-	out = append(out, prometheusExporterOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
 }
