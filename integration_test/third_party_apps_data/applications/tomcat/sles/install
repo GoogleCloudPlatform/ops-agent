@@ -10,6 +10,10 @@ Environment="JAVA_OPTS=-Djava.awt.headless=true"
 EOFdBy=multi-user.target
 EOF
 
+mkdir -p /usr/share/tomcat/webapps/ROOT
+
+sudo touch /usr/share/tomcat/webapps/ROOT/index.html
+ 
 sudo systemctl daemon-reload
 sudo service tomcat restart
 sleep 60
