@@ -1,1 +1,1 @@
-workload.googleapis.com/mysql.threads
+workload.googleapis.com/mysql.buffer_pool_size
