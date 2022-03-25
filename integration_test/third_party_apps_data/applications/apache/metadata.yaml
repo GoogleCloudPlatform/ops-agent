@@ -1,4 +1,6 @@
 supported_app_version: [2.4]
+short_name: apache
+long_name: Apache Web Server
 expected_logs:
 - log_name: apache_access
   fields:
