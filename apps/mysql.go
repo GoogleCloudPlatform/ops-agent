@@ -70,6 +70,9 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				// The following changes are here to ensure maximum backwards compatibility after the fixes
 				// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
 				otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+				otel.UpdateMetric("mysql.buffer_pool_pages",
+					otel.ToggleScalarDataType,
+				),
 				otel.UpdateMetric("mysql.buffer_pool_data_pages",
 					otel.RenameLabelValues("status", map[string]string{"clean": "flushed"}),
 				),
