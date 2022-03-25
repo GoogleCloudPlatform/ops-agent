@@ -527,9 +527,19 @@ type CommandOutput struct {
 	Stderr string
 }
 
-// runCommand invokes a binary and waits until it finishes. Returns the combined stdout
-// and stderr in a single string, and an error if the binary had a nonzero
-// exit code.
+type ThreadSafeWriter struct {
+	mu      sync.Mutex
+	guarded io.Writer
+}
+
+func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.guarded.Write(p)
+}
+
+// runCommand invokes a binary and waits until it finishes. Returns the stdout
+// and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
 func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
@@ -560,28 +570,28 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 
 	var stdoutBuilder strings.Builder
 	var stderrBuilder strings.Builder
+	var interleavedBuilder strings.Builder
 
-	cmd.Stdout = &stdoutBuilder
-	cmd.Stderr = &stderrBuilder
+	interleavedWriter := ThreadSafeWriter{guarded: &interleavedBuilder}
+	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
+	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
 	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v\nstdout: %s\nstderr: %s", args, err, stdoutBuilder.String(), stderrBuilder.String())
+		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
 	}
 
 	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
+	logger.Printf("stdout+stderr: %s", interleavedBuilder.String())
+
 	output.Stdout = stdoutBuilder.String()
 	output.Stderr = stderrBuilder.String()
-
-	logger.Printf("stdout: %s", output.Stdout)
-	logger.Printf("stderr: %s", output.Stderr)
 
 	return output, err
 }
 
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
-// Returns the combined stdout and stderr in a single string, and an error if
-// the binary had a nonzero exit code.
-// args is a slice containing the arguments to pass to gcloud.
+// Returns the stdout and stderr and an error if the binary had a nonzero exit
+// code. args is a slice containing the arguments to pass to gcloud.
 //
 // Note: most calls to this function could be replaced by calls to the Compute API
 // (https://cloud.google.com/compute/docs/reference/rest/v1).
