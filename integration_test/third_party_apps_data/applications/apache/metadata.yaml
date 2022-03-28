@@ -1,3 +1,4 @@
+public_doc_site: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache
 minium_supported_agent_version:
   logging: 2.6.0
   metrics: 2.9.0
