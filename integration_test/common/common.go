@@ -7,7 +7,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// expectedMetric encodes a series of assertions about what data we expect
+// ExpectedMetric encodes a series of assertions about what data we expect
 // to see in the metrics backend.
 type ExpectedMetric struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.

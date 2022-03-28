@@ -276,8 +276,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 	c := make(chan error, len(requiredMetrics))
 	for _, metric := range requiredMetrics {
-		// https://go.dev/doc/faq#closures_and_goroutines
-		metric := metric
+		metric := metric // https://go.dev/doc/faq#closures_and_goroutines
 		go func() {
 			c <- assertMetric(ctx, logger, vm, metric)
 		}()
