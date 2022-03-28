@@ -1,0 +1,45 @@
+- type: workload.googleapis.com/couchdb.average_request_time
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/couchdb.database.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/couchdb.database.operations
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/couchdb.file_descriptor.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/couchdb.httpd.bulk_requests
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/couchdb.httpd.requests
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    http_method: .*
+- type: workload.googleapis.com/couchdb.httpd.responses
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    http_status_code: .*
+- type: workload.googleapis.com/couchdb.httpd.views
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    view: .*
