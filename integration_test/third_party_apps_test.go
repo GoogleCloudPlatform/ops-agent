@@ -120,15 +120,6 @@ func findMetricName(app string) (string, error) {
 	return strings.TrimSpace(string(contents)), nil
 }
 
-func sliceContains(slice []string, toFind string) bool {
-	for _, entry := range slice {
-		if entry == toFind {
-			return true
-		}
-	}
-	return false
-}
-
 const (
 	retryable    = true
 	nonRetryable = false
@@ -247,7 +238,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	if err = yaml.UnmarshalStrict(testCaseBytes, &metrics); err != nil {
 		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
 	}
-	if err = validateMetrics(metrics); err != nil {
+	if err = common.ValidateMetrics(metrics); err != nil {
 		return fmt.Errorf("expected_metrics.yaml failed validation: %v", err)
 	}
 	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
@@ -293,45 +284,6 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
-	}
-	return err
-}
-
-// validateMetrics checks that all enum fields have valid values and that
-// there is exactly one representative metric in the slice
-func validateMetrics(metrics []common.ExpectedMetric) error {
-	var err error
-	// Field validation
-	expectedKinds := []string{"GAUGE", "DELTA", "CUMULATIVE"}
-	expectedValueTypes := []string{"BOOL", "INT64", "DOUBLE", "STRING", "DISTRIBUTION"}
-	expectedResource := "gce_instance"
-	for _, metric := range metrics {
-		innerErrs := make([]string, 0)
-		if !sliceContains(expectedKinds, metric.Kind) {
-			innerErrs = append(innerErrs, fmt.Sprintf("invalid kind %s (must be %v)", metric.Kind, expectedKinds))
-		}
-		if !sliceContains(expectedValueTypes, metric.ValueType) {
-			innerErrs = append(innerErrs, fmt.Sprintf("invalid value_type %s (must be %v)", metric.ValueType, expectedValueTypes))
-		}
-		if expectedResource != metric.MonitoredResource {
-			innerErrs = append(innerErrs, fmt.Sprintf("invalid monitored_resource %s (must be %v)", metric.MonitoredResource, expectedResource))
-		}
-		if len(innerErrs) > 0 {
-			err = multierr.Append(err, fmt.Errorf("%s: %v", metric.Type, strings.Join(innerErrs, ", ")))
-		}
-	}
-	// Representative validation
-	representativeCount := 0
-	for _, metric := range metrics {
-		if metric.Representative {
-			representativeCount += 1
-			if metric.Optional {
-				err = multierr.Append(err, fmt.Errorf("%s: metric cannot be both representative and optional", metric.Type))
-			}
-		}
-	}
-	if representativeCount != 1 {
-		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %d were found", representativeCount))
 	}
 	return err
 }
@@ -562,7 +514,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if sliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
+		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
 	}
