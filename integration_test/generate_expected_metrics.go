@@ -9,10 +9,7 @@ SCRIPTS_DIR: Path containing scripts for installing/configuring the various
     scripts that tell the test what to do, such as supported_applications.txt.
 FILTER: An optional Cloud Monitoring filter to use when querying for updated
     metrics descriptors. If omitted, the script will pull all metric descriptors
-	using the following default filters:
-		metric.type = starts_with("workload.googleapis.com/")
-		metric.type = starts_with("agent.googleapis.com/iis/")
-		metric.type = starts_with("agent.googleapis.com/mssql/")
+	using a set of default filters; see the defaultFilters variable.
 	FILTER is useful when testing a single integration, for example,
 		FILTER='metric.type=starts_with("workload.googleapis.com/apache")'
 */
@@ -42,10 +39,15 @@ import (
 )
 
 var (
-	monClient  *monitoring.MetricClient
-	project    = os.Getenv("PROJECT")
-	scriptsDir = os.Getenv("SCRIPTS_DIR")
-	filter     = os.Getenv("FILTER")
+	monClient      *monitoring.MetricClient
+	project        = os.Getenv("PROJECT")
+	scriptsDir     = os.Getenv("SCRIPTS_DIR")
+	filter         = os.Getenv("FILTER")
+	defaultFilters = []string{
+		`metric.type = starts_with("workload.googleapis.com/")`,
+		`metric.type = starts_with("agent.googleapis.com/iis/")`,
+		`metric.type = starts_with("agent.googleapis.com/mssql/")`,
+	}
 )
 
 type expectedMetricsMap map[string]*common.ExpectedMetric
@@ -118,11 +120,7 @@ func listAllMetricsByApp(ctx context.Context, project string) (map[string]expect
 	if len(filter) > 0 {
 		filters = []string{filter}
 	} else {
-		filters = []string{
-			`metric.type = starts_with("workload.googleapis.com/")`,
-			`metric.type = starts_with("agent.googleapis.com/iis/")`,
-			`metric.type = starts_with("agent.googleapis.com/mssql/")`,
-		}
+		filters = defaultFilters
 	}
 	for _, filter := range filters {
 		listMetricsResult, listMetricsErr := listMetrics(ctx, project, filter)
