@@ -50,7 +50,7 @@ var (
 	}
 )
 
-type expectedMetricsMap map[string]*common.ExpectedMetric
+type expectedMetricsMap map[string]common.ExpectedMetric
 
 func main() {
 	if err := run(); err != nil {
@@ -77,11 +77,7 @@ func run() error {
 		// For each new metric, either update the corresponding existing metric,
 		// or add it.
 		for _, newMetric := range newMetrics {
-			if existingMetric, ok := existingMetrics[newMetric.Type]; ok {
-				updateMetric(existingMetric, newMetric)
-			} else {
-				existingMetrics[newMetric.Type] = newMetric
-			}
+			existingMetrics[newMetric.Type] = updateMetric(existingMetrics[newMetric.Type], newMetric)
 		}
 		err = multierr.Append(err, writeExpectedMetrics(app, existingMetrics))
 	}
@@ -89,13 +85,13 @@ func run() error {
 }
 
 // listMetrics calls projects.metricDescriptors.list with the given project ID and filter.
-func listMetrics(ctx context.Context, project string, filter string) ([]*metric.MetricDescriptor, error) {
+func listMetrics(ctx context.Context, project string, filter string) ([]metric.MetricDescriptor, error) {
 	req := &monitoringpb.ListMetricDescriptorsRequest{
 		Name:   "projects/" + project + "/metricDescriptors/",
 		Filter: filter,
 	}
 	it := monClient.ListMetricDescriptors(ctx, req)
-	metrics := make([]*metric.MetricDescriptor, 0)
+	metrics := make([]metric.MetricDescriptor, 0)
 	for {
 		m, err := it.Next()
 		if err == iterator.Done {
@@ -103,7 +99,7 @@ func listMetrics(ctx context.Context, project string, filter string) ([]*metric.
 		} else if err != nil {
 			return nil, err
 		}
-		metrics = append(metrics, m)
+		metrics = append(metrics, *m)
 	}
 	return metrics, nil
 }
@@ -158,12 +154,12 @@ func getAppName(metricType string) string {
 }
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
-func toExpectedMetric(metric *metric.MetricDescriptor) *common.ExpectedMetric {
+func toExpectedMetric(metric metric.MetricDescriptor) common.ExpectedMetric {
 	labels := make(map[string]string)
 	for _, l := range metric.Labels {
 		labels[l.Key] = ".*"
 	}
-	return &common.ExpectedMetric{
+	return common.ExpectedMetric{
 		Type:              metric.Type,
 		Kind:              metric.MetricKind.String(),
 		ValueType:         metric.ValueType.String(),
@@ -199,7 +195,7 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 		if _, ok := metricsByType[m.Type]; ok {
 			return nil, fmt.Errorf("duplicate metric type in %s/expected_metrics.yaml: %s", app, m.Type)
 		}
-		metricsByType[m.Type] = &m
+		metricsByType[m.Type] = m
 	}
 	return metricsByType, nil
 }
@@ -210,7 +206,7 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 	metricsSlice := make([]common.ExpectedMetric, 0)
 	for _, m := range metrics {
-		metricsSlice = append(metricsSlice, *m)
+		metricsSlice = append(metricsSlice, m)
 	}
 	sort.Slice(metricsSlice, func(i, j int) bool { return metricsSlice[i].Type < metricsSlice[j].Type })
 	serialized, err := yaml.Marshal(metricsSlice)
@@ -221,11 +217,16 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 	return os.WriteFile(file, serialized, 0644)
 }
 
-// updateMetric updates the given metric in-place using values from withValuesFrom.
+// updateMetric returns the given metric with updates applied from withValuesFrom.
 // Existing Optional and Representative values are preserved, as well as existing
 // label patterns. All other values are copied from withValuesFrom. Existing label
 // keys not present in withValuesFrom.Labels are dropped.
-func updateMetric(toUpdate *common.ExpectedMetric, withValuesFrom *common.ExpectedMetric) {
+// If toUpdate.Type is empty, then withValuesFrom is returned.
+func updateMetric(toUpdate common.ExpectedMetric, withValuesFrom common.ExpectedMetric) common.ExpectedMetric {
+	if toUpdate.Type == "" {
+		// Empty struct to update; just copy over the new one
+		return withValuesFrom
+	}
 	if toUpdate.Type != withValuesFrom.Type {
 		panic(fmt.Errorf("updateMetric: attempted to update metric with mismatched type: %s, %s", toUpdate.Type, withValuesFrom.Type))
 	}
@@ -249,6 +250,8 @@ func updateMetric(toUpdate *common.ExpectedMetric, withValuesFrom *common.Expect
 			delete(toUpdate.Labels, k)
 		}
 	}
+
+	return toUpdate
 }
 
 func init() {
