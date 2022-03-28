@@ -21,7 +21,7 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: close|execute|fetch|prepare|reprepare|reset|send_long_data
+    command: .*
 - type: workload.googleapis.com/mysql.double_writes
   value_type: INT64
   kind: CUMULATIVE
