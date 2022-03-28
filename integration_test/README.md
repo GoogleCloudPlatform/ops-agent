@@ -203,9 +203,9 @@ For example, if a metric defines a label `operation` whose values can only be `r
     operation: read|write
 ```
 
-Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled.
+Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
 
-With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. This cannot be used in conjunction with `representative: true`.
+With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
 
 `expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
 
@@ -227,7 +227,8 @@ FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
 go run generate_expected_metrics.go \
  -tags=integration_test
 ```
-Existing `expected_metrics.yaml` files are updated with any new information that's retrieved, including the `kind`, `value_type`, 
+
+Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 
