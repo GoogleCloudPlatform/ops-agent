@@ -20,7 +20,7 @@
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: []
+  labels: {}
 - type: workload.googleapis.com/mysql.buffer_pool_size
   value_type: DOUBLE
   kind: GAUGE
@@ -31,7 +31,7 @@
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: []
+  labels: {}
 - type: workload.googleapis.com/mysql.commands
   value_type: INT64
   kind: CUMULATIVE
