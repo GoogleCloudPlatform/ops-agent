@@ -59,6 +59,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -167,7 +168,7 @@ func init() {
 		log.Fatalf("init() failed to make a temporary directory for ssh keys: %v", err)
 	}
 	privateKeyFile = filepath.Join(keysDir, "gce_testing_key")
-	if _, err := runCommand(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
+	if _, err := runAndLog(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
 		log.Fatalf("init() failed to generate new public+private key pair: %v", err)
 	}
 	publicKeyFile = privateKeyFile + ".pub"
@@ -517,6 +518,8 @@ func QueryLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex stri
 type CommandOutput struct {
 	Stdout string
 	Stderr string
+	// Stdout and stderr intermingled, in chronological order.
+	Interleaved string
 }
 
 type ThreadSafeWriter struct {
@@ -530,34 +533,47 @@ func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
 	return writer.guarded.Write(p)
 }
 
+// runAndLog invokes runCommand (see below) and logs the results to the given
+// logger.
+func runAndLog(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+	logger.Printf("Running command: %v", args)
+
+	output, exitCode, err := runCommand(ctx, logger, stdin, args)
+
+	logger.Printf("exit code: %v", exitCode)
+	logger.Printf("stdout+stderr: %s", output.Interleaved)
+
+	if err != nil {
+		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, output.Interleaved)
+	}
+	return output, err
+}
+
 // runCommand invokes a binary and waits until it finishes. Returns the stdout
-// and stderr, and an error if the binary had a nonzero exit code.
+// stderr, and stdout+stderr interleaved chronologically. Also returns the exit
+// code (-1 if the command could not be run) and an error if the binary had a
+// nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
-func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+func runCommand(ctx context.Context, stdin string, args []string) (CommandOutput, int, error) {
 	var output CommandOutput
+	exitCode := -1
 	if len(args) < 1 {
-		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
-	}
-	if !strings.HasSuffix(args[0], "winrm.par") {
-		// Print out the command we're running. Skip this for winrm.par commands
-		// because they are base64 encoded and the real command is already printed
-		// inside runRemotelyWindows() anyway.
-		logger.Printf("Running command: %v", args)
+		return output, exitCode, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
-		return output, fmt.Errorf("runCommand() failed to open a pipe to stdin: %v", err)
+		return output, exitCode, fmt.Errorf("runCommand() failed to open a pipe to stdin: %v", err)
 	}
 
 	if _, err = io.WriteString(stdinPipe, stdin); err != nil {
-		return output, fmt.Errorf("runCommand() failed to write to stdin: %v", err)
+		return output, exitCode, fmt.Errorf("runCommand() failed to write to stdin: %v", err)
 	}
 
 	if err = stdinPipe.Close(); err != nil {
-		return output, fmt.Errorf("runCommand() failed to close stdin: %v", err)
+		return output, exitCode, fmt.Errorf("runCommand() failed to close stdin: %v", err)
 	}
 
 	var stdoutBuilder strings.Builder
@@ -568,17 +584,15 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
-	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
-	}
-
-	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
-	logger.Printf("stdout+stderr: %s", interleavedBuilder.String())
+	err = cmd.Run()
 
 	output.Stdout = stdoutBuilder.String()
 	output.Stderr = stderrBuilder.String()
+	output.Interleaved = interleavedBuilder.String()
 
-	return output, err
+	exitCode = cmd.ProcessState.ExitCode()
+
+	return output, exitCode, err
 }
 
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
@@ -590,7 +604,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 // Various pros/cons of shelling out to gcloud vs using the Compute API are dicussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
-	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
+	return runAndLog(ctx, logger, stdin, append([]string{gcloudPath}, args...))
 }
 
 // runRemotelyWindows runs the provided powershell command on the provided Windows VM.
@@ -604,15 +618,47 @@ func runRemotelyWindows(ctx context.Context, logger *log.Logger, vm *VM, command
 	if err != nil {
 		return CommandOutput{}, err
 	}
-	return runCommand(ctx, logger, "",
+	output, exitCode, err := runCommand(ctx, "",
 		[]string{winRM(),
 			"--host=" + vm.IPAddress,
 			"--username=" + vm.WindowsCredentials.Username,
 			"--password=" + vm.WindowsCredentials.Password,
-			fmt.Sprintf("--command=powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))),
+			fmt.Sprintf("--command=powershell -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))),
 			"--stderrthreshold=fatal",
 			"--verbosity=-2",
 		})
+	// This is a workaround for the fact that powershell
+	// ignores -OutputFormat Text in certain situations (fixed in pwsh but
+	// not powershell): https://github.com/PowerShell/PowerShell/issues/5912
+	output.Stderr = stderrFromXML(output.Stderr)
+
+	if err != nil {
+		err = fmt.Errorf("Command failed with exit code %v: %v\n%v\nstdout: %s\nstderr: %s", exitCode, command, err, output.Stdout, output.Stderr)
+	}
+	logger.Printf("exit code: %v", exitCode)
+	logger.Printf("stdout: %s", output.Stdout)
+	logger.Printf("stderr: %s", output.Stderr)
+
+	return output, err
+}
+
+// stderrFromXML extracts the human-readable part of the XML returned by
+// powershell over stderr.
+func stderrFromXML(rawOutput string) string {
+	output := strings.TrimPrefix(rawOutput, "#< CLIXML\r\n")
+
+	// This holds the portion of the output that we care about. There is
+	// additional data in the XML but it is discarded.
+	var parsed struct {
+		S []string
+	}
+	err := xml.Unmarshal([]byte(output), &parsed)
+	if err != nil {
+		return fmt.Sprintf("(XML parse failure: %v), original: %v", err, rawOutput)
+	}
+	// Chunks are stored in successive elements of S. Newlines are encoded
+	// as "_x000D__x000A_".
+	return strings.ReplaceAll(strings.Join(parsed.S, ""), "_x000D__x000A_", "\n")
 }
 
 var (
@@ -668,7 +714,7 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, command)
-	return runCommand(ctx, logger, stdin, args)
+	return runAndLog(ctx, logger, stdin, args)
 }
 
 // UploadContent takes an io.Reader and uploads its contents as a file to a
