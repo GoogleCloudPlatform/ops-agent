@@ -1,1 +1,0 @@
-workload.googleapis.com/cassandra.client.request.count

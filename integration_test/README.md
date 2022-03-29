@@ -105,7 +105,7 @@ go test -v ops_agent_test.go \
 ```
 
 Testing on Windows is tricky because it requires a suitable value of
-WINRM_PAR_PATH, and for now only Goooglers can build winrm.par to supply it at
+WINRM_PAR_PATH, and for now only Googlers can build winrm.par to supply it at
 runtime.
 
 The above command will run the tests against the stable Ops Agent. To test
@@ -152,8 +152,8 @@ the test will:
 1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
-1.  Wait up to 7 minutes for the metric from
-    `applications/<application>/metric_name.txt` to appear in the Google Cloud
+1.  Wait up to 7 minutes for metrics matching the expectations in
+    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
     Monitoring backend.
 
 The test is designed so that simply modifying files in the
@@ -174,7 +174,61 @@ Then, inside `applications/<application>/`:
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
 1.  (if you want to test logging) `expected_logs.yaml`
-1.  (if you want to test metrics) `metric_name.txt`
+1.  (if you want to test metrics) `expected_metrics.yaml`
+
+### expected_metrics.yaml
+
+We use `expected_metrics.yaml` both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+
+A sample `expected_metrics.yaml` snippet looks like:
+
+```yaml
+- type: workload.googleapis.com/apache.current_connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+  representative: true
+```
+
+`type`, `value_type` and `kind` come directly from the metric descriptor for that metric. `monitored_resource` should always be `gce_instance`.
+
+`labels` is an exhaustive list of labels associated with the metric. Each key in `labels` is the label name, and its value is a regular expression. During the test, each label returned by the time series for that metric is checked against `labels`: every label in the time series must be present in `labels`, and its value must match the regular expression.
+
+For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics.yaml` would be as follows:
+
+```yaml
+  labels:
+    operation: read|write
+```
+
+Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
+
+With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
+
+`expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+go run generate_expected_metrics.go \
+ -tags=integration_test
+```
+
+This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
+go run generate_expected_metrics.go \
+ -tags=integration_test
+```
+
+Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 

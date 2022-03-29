@@ -1,1 +1,0 @@
-workload.googleapis.com/mysql.buffer_pool_size
