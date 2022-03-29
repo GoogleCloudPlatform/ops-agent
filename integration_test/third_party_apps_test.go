@@ -172,65 +172,61 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
 }
 
-// expectedLogs encodes a series of assertions about what data we expect
-// to see in the logging backend.
-type expectedLogs struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-	LogEntries []expectedLog `yaml:"log_entries"`
+type logFields struct {
+	Name        string `yaml:"name" validate:"required"`
+	Value       string `yaml:"value" validate:"required"`
+	Type        string `yaml:"type" validate:"required"`
+	Description string `yaml:"description" validate:"required"`
 }
+
 type expectedLog struct {
-	LogName string `yaml:"log_name"`
-	// Map of field name to a regex that is expected to match the field value.
-	// For example, {"jsonPayload.message": ".*access denied.*"}.
-	FieldMatchers map[string]string `yaml:"field_matchers"`
+	LogName string       `yaml:"log_name" validate:"required"`
+	Fields  []*logFields `yaml:"fields" validate:"required"`
+}
+
+type integrationMetadata struct {
+	ExpectedLogs    []*expectedLog          `yaml:"expected_logs"`
+	ExpectedMetrics []common.ExpectedMetric `yaml:"expected_metrics"`
 }
 
 // constructQuery converts the given map of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fieldMatchers map[string]string) string {
+func constructQuery(fields []*logFields) string {
 	var parts []string
-	for field, matcher := range fieldMatchers {
-		parts = append(parts, fmt.Sprintf("%s=~%q", field, matcher))
+	for _, field := range fields {
+		if field.Value != "PLACEHOLDER" {
+			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.Value))
+		}
 	}
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries expectedLogs
-	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal contents of expected_logs.yaml: %v", err)
-	}
-	logger.ToMainLog().Printf("Parsed expected_logs.yaml: %+v", entries)
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*expectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
-	c := make(chan error, len(entries.LogEntries))
-	for _, entry := range entries.LogEntries {
+	var err error
+	c := make(chan error, len(logs))
+	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.FieldMatchers))
+			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.Fields))
 		}()
 	}
-	for range entries.LogEntries {
+	for range logs {
 		err = multierr.Append(err, <-c)
 	}
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var metrics []common.ExpectedMetric
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []common.ExpectedMetric) error {
 	var err error
-	if err = yaml.UnmarshalStrict(testCaseBytes, &metrics); err != nil {
-		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
-	}
 	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics.yaml failed validation: %v", err)
+		return fmt.Errorf("expectedMetrics field failed validation: %v", err)
 	}
-	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
+	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
 	// if it does exist, we go on to the other metrics in parallel, by which point they
@@ -397,19 +393,26 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	// Check if expected_logs.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml")); err == nil {
-		logger.ToMainLog().Println("found expected_logs.yaml, running logging test cases...")
-		if err = runLoggingTestCases(ctx, logger, vm, testCaseBytes); err != nil {
-			return nonRetryable, err
+	// Check if metadata.yaml exists, and run the test cases if it does.
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
+		logger.ToMainLog().Println("found metadata.yaml, parsing...")
+		var metadata integrationMetadata
+		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
 		}
-	}
-
-	// Check if expected_metrics.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_metrics.yaml")); err == nil {
-		logger.ToMainLog().Println("found expected_metrics.yaml, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, testCaseBytes); err != nil {
-			return nonRetryable, err
+		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
+		if metadata.ExpectedLogs != nil {
+			logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
+			if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
+				return nonRetryable, err
+			}
+		}
+		if metadata.ExpectedMetrics != nil {
+			logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
+			if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+				return nonRetryable, err
+			}
 		}
 	}
 
