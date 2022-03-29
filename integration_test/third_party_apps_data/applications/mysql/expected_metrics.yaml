@@ -1,37 +1,37 @@
-- type: workload.googleapis.com/mysql.buffer_pool_operations
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    operation: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
-- type: workload.googleapis.com/mysql.buffer_pool_pages
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    kind: data|free|misc
 - type: workload.googleapis.com/mysql.buffer_pool_data_pages
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
     kind: dirty|flushed
+- type: workload.googleapis.com/mysql.buffer_pool_limit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mysql.buffer_pool_operations
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
 - type: workload.googleapis.com/mysql.buffer_pool_page_flushes
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
+- type: workload.googleapis.com/mysql.buffer_pool_pages
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    kind: data|free|misc
 - type: workload.googleapis.com/mysql.buffer_pool_size
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
     kind: data|dirty
-- type: workload.googleapis.com/mysql.buffer_pool_limit
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mysql.commands
   value_type: INT64
   kind: CUMULATIVE
