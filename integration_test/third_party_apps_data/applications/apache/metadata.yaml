@@ -1,4 +1,18 @@
 public_doc_site: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache
+configure_integration: "To collect telemetry from your Apache Web Server, you must configure the server's httpd.conf file to enable the mod_status plugin.
+Many Apache installations enable this plugin by default. To see if the plugin is enabled on your VM instance, run
+
+```curl localhost:80/server-status?auto```
+If the plugin is enabled, then the output includes lines similar to the following
+
+```
+Total Accesses: 2
+Total kBytes: 1
+BusyWorkers: 1
+IdleWorkers: 4
+```
+If you get a 404 Not Found page instead, then the mod_status plugin is not enabled.
+"
 minium_supported_agent_version:
   logging: 2.6.0
   metrics: 2.9.0
