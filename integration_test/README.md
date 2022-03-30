@@ -176,13 +176,41 @@ Then, inside `applications/<application>/`:
 1.  (if you want to test logging) `expected_logs.yaml`
 1.  (if you want to test metrics) `expected_metrics.yaml`
 
+### expected_logs
+
+We use `expected_logs` field inside `metadata.yaml` file both as a test artifact and as a source for documentation, e.g. [Apache(httpd) public doc](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache#monitored-logs). All logs ingested from the integration should be documented here.
+
+A sample `expected_logs` snippet looks like:
+
+```yaml
+expected_logs:
+- log_name: apache_access
+  fields:
+  - name: httpRequest.requestMethod
+    value: GET
+    type: string
+    description: HTTP method
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated username for the request
+```
+- `name`: required, it will be used in e2e searching for the matching logs
+- `type`: required, informational
+- `description`: required, informatinal
+- `value`: optional, the value of the logEntry field will be used in e2e searching for the matching logs
+ 
+
 ### expected_metrics.yaml
 
-We use `expected_metrics.yaml` both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+We use `expected_metrics` field inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
 
 A sample `expected_metrics.yaml` snippet looks like:
 
 ```yaml
+expected_metrics:
 - type: workload.googleapis.com/apache.current_connections
   value_type: INT64
   kind: GAUGE
