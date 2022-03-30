@@ -3,7 +3,7 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    status: dirty|flushed
+    status: dirty|clean
 - type: workload.googleapis.com/mysql.buffer_pool_limit
   value_type: INT64
   kind: GAUGE
@@ -31,7 +31,7 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    kind: data|dirty
+    kind: clean|dirty
 - type: workload.googleapis.com/mysql.commands
   value_type: INT64
   kind: CUMULATIVE
