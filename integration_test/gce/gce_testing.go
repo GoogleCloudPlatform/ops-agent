@@ -538,7 +538,7 @@ func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
 func runAndLog(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	logger.Printf("Running command: %v", args)
 
-	output, exitCode, err := runCommand(ctx, logger, stdin, args)
+	output, exitCode, err := runCommand(ctx, stdin, args)
 
 	logger.Printf("exit code: %v", exitCode)
 	logger.Printf("stdout+stderr: %s", output.Interleaved)
