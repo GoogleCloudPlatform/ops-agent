@@ -1,10 +1,7 @@
 logging:
   receivers:
     syslog:
-      type: files
-      include_paths:
-      - /var/log/messages
-      - /var/log/syslog
+      type: systemd_journald
   service:
     pipelines:
       default_pipeline:

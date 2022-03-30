@@ -5,5 +5,5 @@
                      ^
    4 |       type: files
    5 |     syslog:
-   6 |       type: files
-   7 |       
+   6 |       type: systemd_journald
+   7 |   

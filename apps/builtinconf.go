@@ -22,8 +22,8 @@ var (
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{
 					"syslog": &cg.LoggingReceiverFiles{
-						ConfigComponent: cg.ConfigComponent{Type: "files"},
-						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
+						ConfigComponent: cg.ConfigComponent{Type: "systemd_journald"},
+						//IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
 					},
 				},
 				Processors: map[string]cg.LoggingProcessor{},
