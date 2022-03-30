@@ -199,7 +199,7 @@ expected_logs:
 ```
 - `name`: required, it will be used in e2e searching for the matching logs
 - `type`: required, informational
-- `description`: required, informatinal
+- `description`: required, informational
 - `value`: optional, the value of the logEntry field will be used in e2e searching for the matching logs
  
 
@@ -207,7 +207,7 @@ expected_logs:
 
 We use `expected_metrics` field inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
 
-A sample `expected_metrics.yaml` snippet looks like:
+A sample `expected_metrics` snippet looks like:
 
 ```yaml
 expected_metrics:
