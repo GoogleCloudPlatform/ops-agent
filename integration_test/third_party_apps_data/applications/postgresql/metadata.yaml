@@ -36,14 +36,11 @@ expected_logs:
     type: string
     description: Log severity or type of database interaction type for some logs
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: number
     description: Thread ID where the log originated
   - name: jsonPayload.role
-    value: PLACEHOLDER
     type: string
     description: Authenticated role for the action being logged when relevant
   - name: jsonPayload.user
-    value: PLACEHOLDER
     type: string
     description: Authenticated user for the action being logged when relevant

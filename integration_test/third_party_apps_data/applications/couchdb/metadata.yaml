@@ -64,18 +64,14 @@ expected_logs:
     type: string
     description: status code message
   - name: jsonPayload.pid
-    value: PLACEHOLDER
     type: string
     description: Process ID
   - name: jsonPayload.message
-    value: PLACEHOLDER
     type: string
     description: Log message
   - name: jsonPayload.host
-    value: PLACEHOLDER
     type: string
     description: host instance name
   - name: httpRequest
-    value: PLACEHOLDER
     type: object
     description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.

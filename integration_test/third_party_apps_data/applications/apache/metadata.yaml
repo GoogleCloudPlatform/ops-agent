@@ -52,11 +52,9 @@ expected_logs:
     type: string
     description: HTTP method
   - name: jsonPayload.host
-    value: PLACEHOLDER
     type: string
     description: Contents of the Host header
   - name: jsonPayload.user
-    value: PLACEHOLDER
     type: string
     description: Authenticated username for the request
 - log_name: apache_error
@@ -82,10 +80,8 @@ expected_logs:
     type: string
     description: apache error code
   - name: jsonPayload.pid
-    value: PLACEHOLDER
     type: string
     description: Process ID
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: string
     description: Thread ID

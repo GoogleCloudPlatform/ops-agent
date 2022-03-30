@@ -72,10 +72,8 @@ expected_logs:
     type: string
     description: ''
   - name: severity
-    value: PLACEHOLDER
     type: string
     description: ''
   - name: timestamp
-    value: PLACEHOLDER
     type: string
     description: ''

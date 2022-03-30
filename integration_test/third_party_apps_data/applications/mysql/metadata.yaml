@@ -116,11 +116,9 @@ expected_logs:
     type: string
     description: 'MySQL subsystem where the log originated'
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: number
     description: 'Thread ID where the log originated'
   - name: jsonPayload.errorCode
-    value: PLACEHOLDER
     type: string
     description: 'MySQL error code associated with the log'
 - log_name: mysql_general
@@ -134,7 +132,6 @@ expected_logs:
     type: string
     description: 'Type of database action being logged'
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: number
     description: 'Thread ID where the log originated'
 - log_name: mysql_slow
@@ -156,105 +153,77 @@ expected_logs:
     type: string
     description: 'Host of the database instance'
   - name: jsonPayload.ipAddress
-    value: PLACEHOLDER
     type: string
     description: 'Address of the database instance'
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: number
     description: 'Thread ID where the query was logged'
   - name: jsonPayload.queryTime
-    value: PLACEHOLDER
     type: number
     description: 'The statement execution time in seconds'
   - name: jsonPayload.lockTime
-    value: PLACEHOLDER
     type: number
     description: 'The time to acquire locks in seconds'
   - name: jsonPayload.rowsSent
-    value: PLACEHOLDER
     type: number
     description: 'The number of rows sent to the client'
   - name: jsonPayload.rowsExamined
-    value: PLACEHOLDER
     type: number
     description: 'The number of rows examined by the server layer'
-  - name: jsonPayload.errorNumber*
-    value: PLACEHOLDER
+  - name: jsonPayload.errorNumber
     type: number
     description: 'The statement error number, or 0 if no error occurred'
-  - name: jsonPayload.killed*
-    value: PLACEHOLDER
+  - name: jsonPayload.killed
     type: number
     description: 'If the statement was terminated, the error number indicating why, or 0 if the statement terminated normally'
-  - name: jsonPayload.bytesReceived*
-    value: PLACEHOLDER
+  - name: jsonPayload.bytesReceived
     type: number
     description: 'The number of bytes received from all clients'
-  - name: jsonPayload.bytesSent*
-    value: PLACEHOLDER
+  - name: jsonPayload.bytesSent
     type: number
     description: 'The number of bytes sent to all clients'
-  - name: jsonPayload.readFirst*
-    value: PLACEHOLDER
+  - name: jsonPayload.readFirst
     type: number
     description: 'The number of times the first entry in an index was read'
-  - name: jsonPayload.readLast*
-    value: PLACEHOLDER
+  - name: jsonPayload.readLast
     type: number
     description: 'The number of requests to read the last key in an index'
-  - name: jsonPayload.readKey*
-    value: PLACEHOLDER
+  - name: jsonPayload.readKey
     type: number
     description: 'The number of requests to read a row based on a key'
-  - name: jsonPayload.readNext*
-    value: PLACEHOLDER
+  - name: jsonPayload.readNext
     type: number
     description: 'The number of requests to read the next row in key order'
-  - name: jsonPayload.readPrev*
-    value: PLACEHOLDER
+  - name: jsonPayload.readPrev
     type: number
     description: 'The number of requests to read the previous row in key order'
-  - name: jsonPayload.readRnd*
-    value: PLACEHOLDER
+  - name: jsonPayload.readRnd
     type: number
     description: 'The number of requests to read a row based on a fixed position'
-  - name: jsonPayload.readRndNext*
-    value: PLACEHOLDER
+  - name: jsonPayload.readRndNext
     type: number
     description: 'The number of requests to read the next row in the data file'
-  - name: jsonPayload.sortMergePasses*
-    value: PLACEHOLDER
+  - name: jsonPayload.sortMergePasses
     type: number
     description: 'The number of merge passes that the sort algorithm has had to do'
-  - name: jsonPayload.sortRangeCount*
-    value: PLACEHOLDER
+  - name: jsonPayload.sortRangeCount
     type: number
     description: 'The number of sorts that were done using ranges'
-  - name: jsonPayload.sortRows*
-    value: PLACEHOLDER
+  - name: jsonPayload.sortRows
     type: number
     description: 'The number of sorted rows'
-  - name: jsonPayload.sortScanCount*
-    value: PLACEHOLDER
+  - name: jsonPayload.sortScanCount
     type: number
     description: 'The number of sorts that were done by scanning the table'
-  - name: jsonPayload.createdTmpDiskTables*
-    value: PLACEHOLDER
+  - name: jsonPayload.createdTmpDiskTables
     type: number
     description: 'The number of internal on-disk temporary tables created by the server'
-  - name: jsonPayload.createdTmpTables*
-    value: PLACEHOLDER
+  - name: jsonPayload.createdTmpTables
     type: number
     description: 'The number of internal temporary tables created by the server'
-  - name: jsonPayload.startTime*
-    value: PLACEHOLDER
+  - name: jsonPayload.startTime
     type: string
     description: 'The statement execution start time'
-  - name: jsonPayload.endTime*
-    value: PLACEHOLDER
+  - name: jsonPayload.endTime
     type: string
     description: 'The statement execution end time'
-  foot_notes:
-  - special_char: *
-    description: These fields are only provided if the log_slow_extra (available as of MySQL 8.0.14) system variable is set to 'ON'. Documentation for the meaning of each field can be found in the [MySQL documentation](Documentation for the meaning of each field can be found in the MySQL documentation)

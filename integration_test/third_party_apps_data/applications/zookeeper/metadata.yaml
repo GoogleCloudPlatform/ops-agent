@@ -84,10 +84,8 @@ expected_logs:
     type: string
     description: Source of where the log originated
   - name: jsonPayload.line
-    value: PLACEHOLDER
     type: number
     description: Line number from which the log was generated in source
   - name: jsonPayload.myid
-    value: PLACEHOLDER
     type: number
     description: Numeric ID of the Zookeeper instance

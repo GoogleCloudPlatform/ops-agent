@@ -77,10 +77,8 @@ expected_logs:
     type: string
     description: ''
   - name: jsonPayload.host
-    value: PLACEHOLDER
     type: string
     description: Contents of the Host header
   - name: jsonPayload.user
-    value: PLACEHOLDER
     type: string
     description: Authenticated username for the request

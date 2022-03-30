@@ -27,17 +27,15 @@ expected_logs:
   - name: httpRequest.remoteIp
     value: ::1
     type: string
-    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: "192.168.1.1", "10.0.0.1:80", "FE80::0202:B3FF:FE1E:8329".
+    description: "The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80, FE80::0202:B3FF:FE1E:8329."
   - name: httpRequest.requestUrl
     value: /forbidden.html
     type: string
-    description: The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: "http://example.com/some/info?color=red".
+    description: "The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: http://example.com/some/info?color=red."
   - name: jsonPayload.host
-    value: PLACEHOLDER
     type: string
     description: Contents of the Host header (usually not reported by nginx)
   - name: jsonPayload.user
-    value: PLACEHOLDER
     type: string
     description: Authenticated username for the request
 - log_name: nginx_error
@@ -59,34 +57,26 @@ expected_logs:
     type: string
     description: Original HTTP request (optional)
   - name: jsonPayload.pid
-    value: PLACEHOLDER
     type: number
     description: Process ID
   - name: jsonPayload.tid
-    value: PLACEHOLDER
     type: number
     description: Thread ID
   - name: jsonPayload.connection
-    value: PLACEHOLDER
     type: number
     description: Connection ID
   - name: jsonPayload.server
-    value: PLACEHOLDER
     type: string
     description: Nginx server name (optional)
   - name: jsonPayload.subrequest
-    value: PLACEHOLDER
     type: string
     description: Nginx subrequest (optional)
   - name: jsonPayload.upstream
-    value: PLACEHOLDER
     type: string
     description: Upstream request URI (optional)
   - name: jsonPayload.host
-    value: PLACEHOLDER
     type: string
     description: Host header (optional)
   - name: jsonPayload.referer
-    value: PLACEHOLDER
     type: string
     description: Referer header (optional)

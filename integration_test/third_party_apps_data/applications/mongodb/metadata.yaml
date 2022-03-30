@@ -71,22 +71,17 @@ expected_logs:
 - log_name: mongodb
   fields:
   - name: jsonPayload.component
-    value: PLACEHOLDER
     type: string
     description: Categorization of the log message. A full list can be found [here](https://docs.mongodb.com/manual/reference/log-messages/#std-label-log-message-components)
   - name: jsonPayload.ctx
-    value: PLACEHOLDER
     type: string
     description: The name of the thread issuing the log statement
   - name: jsonPayload.id
-    value: PLACEHOLDER
     type: number
     description: Log ID
   - name: jsonPayload.message
-    value: PLACEHOLDER
     type: string
     description: Log message
   - name: jsonPayload.attributes
-    value: PLACEHOLDER
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided

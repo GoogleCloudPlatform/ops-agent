@@ -141,6 +141,5 @@ expected_logs:
     type: string
     description: translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
   - name: jsonPayload.pid
-    value: PLACEHOLDER
     type: number
     description: Process ID

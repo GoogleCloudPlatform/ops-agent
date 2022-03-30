@@ -176,7 +176,7 @@ type logFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	Value       string `yaml:"value" validate:"required"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description" validate:"required"`
+	Description string `yaml:"description" validate:"optional,omitempty"`
 }
 
 type expectedLog struct {
@@ -195,7 +195,7 @@ type integrationMetadata struct {
 func constructQuery(fields []*logFields) string {
 	var parts []string
 	for _, field := range fields {
-		if field.Value != "PLACEHOLDER" {
+		if field.Value != "" {
 			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.Value))
 		}
 	}
