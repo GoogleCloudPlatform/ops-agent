@@ -256,7 +256,10 @@ type VM struct {
 	// rationale.
 	IPAddress string
 	// WinRMClient is only populated for Windows VMs.
-	WinRMClient    *winrm.Client
+	WinRMClient *winrm.Client
+	/// for debugging
+	Password       string
+	Username       string
 	AlreadyDeleted bool
 }
 
@@ -854,6 +857,7 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
+
 		metadataCopy["windows-startup-script-ps1"] = `
 Enable-PSRemoting  # Might help to diagnose b/185923886.
 
@@ -1025,7 +1029,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// This is just informational, so it's ok if it fails. Just warn and proceed.
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
-	log.Printf("vm info: %#v", vm)
 
 	if err := waitForStart(ctx, logger, vm); err != nil {
 		return nil, err
@@ -1046,7 +1049,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	log.Printf("vm info: %#v", vm)
 	return vm, nil
 }
 
@@ -1434,7 +1436,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		endpoint := winrm.NewEndpoint(
 			vm.IPAddress,
 			5986,          // port
-			false,         // use TLS
+			true,          // use TLS
 			true,          // Allow insecure connection
 			nil,           // CA certificate
 			nil,           // Client Certificate
@@ -1443,7 +1445,6 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		)
 		client, err := winrm.NewClient(endpoint, creds.Username, creds.Password)
 		logger.Printf("winrm.NewClient() finished with err=%v, attempt #%d", err, attempt)
-		log.Printf("winrm.NewClient() finished with err=%v, attempt #%d", err, attempt)
 		if err != nil {
 			return err
 		}
@@ -1452,7 +1453,6 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
-		log.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v", err, attempt, output) //for debugging
 		if err != nil {
 			return err
 		}

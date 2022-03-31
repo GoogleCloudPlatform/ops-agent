@@ -302,51 +302,84 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestNoop(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-		t.Cleanup(cancel)
+	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+	t.Cleanup(cancel)
 
-		logger := gce.SetupLogger(t)
+	logger := gce.SetupLogger(t)
 
-		vm := &gce.VM{
-			Name:           "test-20220303-e8588-d932a34f-f57b-4726-b498-06914b490d8c",
-			Project:        "stackdriver-kubernetes-1337",
-			Network:        "default",
-			Platform:       "windows-2019",
-			Zone:           "us-central1-b",
-			MachineType:    "e2-standard-4",
-			ID:             3401206805551728572,
-			IPAddress:      "34.123.195.15",
-			WinRMClient:    nil,
-			AlreadyDeleted: false,
+	vm, err := gce.CreateInstance(ctx, logger.ToMainLog(), gce.VMOptions{Platform: "windows-2019"})
+	log.Printf("vm info 3: %#v", vm)
+
+	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Fatalf("output was: %#v", output)
+}
+
+func TestBackup(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+	t.Cleanup(cancel)
+
+	logger := gce.SetupLogger(t)
+
+	vm := &gce.VM{
+		Name:           "test-20220331-d74a5-70f9d460-01eb-4941-99b9-9be0e9ec796f",
+		Project:        "stackdriver-kubernetes-1337",
+		Network:        "default",
+		Platform:       "windows-2019",
+		Zone:           "us-central1-b",
+		MachineType:    "e2-standard-4",
+		ID:             20124175513973170,
+		IPAddress:      "34.67.251.50",
+		WinRMClient:    nil,
+		AlreadyDeleted: false,
+		Username:       "windows_user",
+		Password:       "{C*v,c&*+RqEP48",
+	}
+
+	//vm, err := gce.CreateInstance(ctx, logger.ToMainLog(), gce.VMOptions{Platform: "windows-2019"})
+	//log.Printf("vm info 3: %#v", vm)
+	//time.Sleep(30 * time.Second)
+
+	for _, ntlm := range []bool{false, true} {
+		if ntlm {
+			winrm.DefaultParameters.TransportDecorator = func() winrm.Transporter { return &winrm.ClientNTLM{} }
 		}
+		for _, port := range []int{5985, 5986} {
+			for _, tls := range []bool{false, true} {
+				log.Printf("params: %v %v %v", ntlm, port, tls)
 
-		// winrm.DefaultParameters.TransportDecorator = func() winrm.Transporter { return &winrm.ClientNTLM{} }
-		endpoint := winrm.NewEndpoint(
-			vm.IPAddress,
-			5986,           // port
-			false,          // use TLS
-			true,           // Allow insecure connection
-			nil,            // CA certificate
-			nil,            // Client Certificate
-			nil,            // Client Key
-			20*time.Second, // Timeout
-		)
-		client, err := winrm.NewClient(endpoint, "windows_user", "7L~J#7tUbygl&D3")
-		log.Printf("winrm.NewClient() finished with err=%v", err)
-		if err != nil {
-			t.Fatal(err)
-		}
-		vm.WinRMClient = client
+				endpoint := winrm.NewEndpoint(
+					vm.IPAddress,
+					5986,           // port
+					true,           // use TLS
+					true,           // Allow insecure connection
+					nil,            // CA certificate
+					nil,            // Client Certificate
+					nil,            // Client Key
+					20*time.Second, // Timeout
+				)
+				client, err := winrm.NewClient(endpoint, vm.Username, vm.Password)
+				log.Printf("winrm.NewClient() finished with err=%v", err)
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				vm.WinRMClient = client
 
-		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
-		if err != nil {
-			t.Fatal(err)
+				output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				t.Fatalf("output was: %#v", output)
+			}
 		}
-		log.Printf("output was: %#v", output)
-	})
+	}
 }
 
 func TestCustomLogFile(t *testing.T) {
