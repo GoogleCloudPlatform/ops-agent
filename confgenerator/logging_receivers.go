@@ -353,14 +353,6 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 			"DB":   DBPath(tag),
 		},
 	}}
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":  tag,
-			"Name":   "modify",
-			"Rename": "MESSAGE message",
-		},
-	})
 	filters := fluentbit.TranslationComponents(tag, "PRIORITY", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
 			{"7", "DEBUG"},
