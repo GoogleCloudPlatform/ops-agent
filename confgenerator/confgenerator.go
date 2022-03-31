@@ -182,6 +182,11 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 	}.Components("ops-agent-fluent-bit")...)
+	out = append(out, LoggingProcessorNestWildcard{
+		Wildcard: "agent.googleapis.com/log_file_path*",
+		NestUnder: "logging.googleapis.com/labels",
+		RemovePrefix: "",
+	}.Components("*", "")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 	out = append(out, prometheusExporterOutputComponent())

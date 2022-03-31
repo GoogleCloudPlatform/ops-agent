@@ -85,6 +85,7 @@ func ParserFilterComponent(tag string, field string, parserNames []string) Compo
 			"Match":    tag,
 			"Name":     "parser",
 			"Key_Name": "message", // Required
+			"Reserve_Data": "true",
 		},
 		OrderedConfig: parsers,
 	}
