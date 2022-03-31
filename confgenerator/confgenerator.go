@@ -48,10 +48,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 
 	pipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
+		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
 
 	pipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
+		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
@@ -129,42 +131,6 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 	}
 	return c.Generate()
 }
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
-}
-
-func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
-	var multilineParserNames []string
-	if processor.Type() != "parse_multiline" {
-		return nil
-	}
-	for _, p := range processorComponents {
-		if p.Kind == "MULTILINE_PARSER" {
-			multilineParserNames = append(multilineParserNames, p.Config["name"])
-		}
-	}
-	allowedMultilineReceiverTypes := []string{"files"}
-	for _, r := range receiverComponents {
-		if len(multilineParserNames) != 0 &&
-			!contains(allowedMultilineReceiverTypes, receiver.Type()) {
-			return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
-		}
-		if len(multilineParserNames) != 0 {
-			r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
-		}
-
-	}
-	if i != 0 {
-		return fmt.Errorf(`at most one logging processor with type "parse_multiline" is allowed in the pipeline. A logging processor with type "parse_multiline" must be right after a logging receiver with type "files"`)
-	}
-	return nil
-}
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
@@ -174,7 +140,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
 	out = append(out, service.Component())
-	out = append(out, service.MetricsComponent())
+	out = append(out, fluentbit.MetricsInputComponent())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
@@ -218,9 +184,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
 					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 				}
-				var components []fluentbit.Component
-				receiverComponents := receiver.Components(tag)
-				components = append(components, receiverComponents...)
+				components := receiver.Components(tag)
 
 				// To match on fluent_forward records, we need to account for the addition
 				// of the existing tag (unknown during config generation) as the suffix
@@ -242,11 +206,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					processorComponents := processor.Components(tag, strconv.Itoa(i))
-					if err := processUserDefinedMultilineParser(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
-						return nil, err
-					}
-					components = append(components, processorComponents...)
+					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
 				components = append(components, setLogNameComponents(tag, rID)...)
 
@@ -273,7 +233,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
-	out = append(out, prometheusExporterOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
 }

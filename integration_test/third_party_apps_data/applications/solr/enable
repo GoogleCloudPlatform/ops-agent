@@ -1,0 +1,27 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    solr:
+      type: solr
+  service:
+    pipelines:
+      solr:
+        receivers:
+          - solr
+
+logging:
+  receivers:
+    solr_system:
+      type: solr_system
+  service:
+    pipelines:
+      solr:
+        receivers:
+          - solr_system
+EOF
+
+sudo service google-cloud-ops-agent restart

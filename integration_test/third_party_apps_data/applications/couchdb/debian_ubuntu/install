@@ -27,3 +27,5 @@ sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
 sudo chmod 0755 /opt/couchdb/etc/local.ini
 
 sudo systemctl enable couchdb
+
+sudo systemctl restart couchdb

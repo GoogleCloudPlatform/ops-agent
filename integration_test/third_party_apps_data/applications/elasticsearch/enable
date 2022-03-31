@@ -1,0 +1,31 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    elasticsearch:
+      type: elasticsearch
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch
+
+logging:
+  receivers:
+    elasticsearch_json:
+      type: elasticsearch_json
+    elasticsearch_gc:
+      type: elasticsearch_gc
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch_json
+          - elasticsearch_gc
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60

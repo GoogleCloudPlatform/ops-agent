@@ -1,0 +1,31 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    nginx:
+      type: nginx
+      stub_status_url: http://127.0.0.1:80/nginx_status
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx
+logging:
+  receivers:
+    nginx_access:
+      type: nginx_access
+    nginx_error:
+      type: nginx_error
+  service:
+    pipelines:
+      nginx:
+        receivers:
+          - nginx_access
+          - nginx_error
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60

@@ -1,9 +1,0 @@
-[14:7] "languages" is a required field
-  11 |       field: message
-  12 |       type: parse_multiline
-  13 |       match_any:
-> 14 |       - type: language_exceptions
-             ^
-  15 |   service:
-  16 |     pipelines:
-  17 |       p1:

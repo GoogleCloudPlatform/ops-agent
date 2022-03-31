@@ -1,0 +1,29 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    rabbitmq:
+      type: rabbitmq
+      username: otelu
+      password: otelp
+  service:
+    pipelines:
+      rabbitmq:
+        receivers:
+        - rabbitmq
+logging:
+  receivers:
+    rabbitmq:
+      type: rabbitmq
+  service:
+    pipelines:
+      rabbitmq:
+        receivers:
+        - rabbitmq
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 30

@@ -1,0 +1,33 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    mysql:
+      type: mysql
+  service:
+    pipelines:
+      mysql:
+        receivers:
+        - mysql
+logging:
+  receivers:
+    mysql_error:
+      type: mysql_error
+    mysql_general:
+      type: mysql_general
+    mysql_slow:
+      type: mysql_slow
+  service:
+    pipelines:
+      mysql:
+        receivers:
+          - mysql_error
+          - mysql_general
+          - mysql_slow
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60

@@ -1,0 +1,26 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    kafka:
+      type: kafka
+  service:
+    pipelines:
+      kafka:
+        receivers:
+          - kafka
+logging:
+  receivers:
+    kafka:
+      type: kafka
+  service:
+    pipelines:
+      kafka:
+        receivers:
+          - kafka
+EOF
+
+sudo service google-cloud-ops-agent restart

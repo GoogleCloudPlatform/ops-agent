@@ -1,0 +1,31 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    postgresql:
+      type: postgresql
+      username: postgres
+      password: abc123
+      insecure: true
+      endpoint: localhost:5432
+  service:
+    pipelines:
+      postgresql:
+        receivers:
+        - postgresql
+logging:
+  receivers:
+    postgresql_general:
+      type: postgresql_general
+  service:
+    pipelines:
+      postgresql:
+        receivers:
+          - postgresql_general
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60

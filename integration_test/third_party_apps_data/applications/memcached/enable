@@ -1,0 +1,16 @@
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    memcached:
+      type: memcached
+  service:
+    pipelines:
+      memcached:
+        receivers:
+          - memcached
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 60

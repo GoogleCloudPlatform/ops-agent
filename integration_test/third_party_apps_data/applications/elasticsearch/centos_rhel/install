@@ -23,3 +23,5 @@ sudo yum install -y --enablerepo=elasticsearch elasticsearch
 
 sudo systemctl daemon-reload
 sudo systemctl enable elasticsearch
+
+sudo systemctl restart elasticsearch

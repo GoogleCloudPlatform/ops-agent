@@ -13,3 +13,5 @@ else
 fi
 
 sudo yum -y install redis
+
+sudo service redis start

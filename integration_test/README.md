@@ -4,16 +4,38 @@ Integration tests are implemented as Kokoko builds that run on each PR. The
 builds first build the Ops Agent and then run tests on that agent. The Kokoro
 builds are split up by distro.
 
-## Ops Agent Test
+## Setup
 
-This test exercises "core" features of the Ops Agent such as watching syslog or
-a custom log file. It is implemented in ops_agent_test.go. It can be run outside
-of Kokoro with some setup.
+You will need a GCP project to run VMs in and a GCS bucket that is used to
+transfer files onto the testing VMs. These are referred to as `${PROJECT}`
+and `${TRANSFERS_BUCKET}` in the following instructions.
 
-### Setup
+You will need gcloud installed. Run `gcloud auth login` if you haven't
+done so already.
 
-You will need a project to run VMs in and a service account with permissions to
-run various operations in the project. You can set up such a service account with
+Next, follow the setup instructions for either User Credentials or
+Service Account Credentials.
+
+### Setup (User Credentials)
+
+To give the tests credentials to be able to access Google APIs as you,
+run the following command and do what it says (it may ask you to run
+a command on a separate machine if your main machine doesn't have the
+ability to open a browser window):
+
+```
+gcloud --billing-project="${PROJECT}" auth application-default login
+```
+
+That's it! Now the test commands should be able to authenticate as you.
+
+NOTE: this way of using user credentials is new and may have unforeseen
+problems.
+
+### Setup (Service Account Credentials)
+
+You will need a service account with permissions to run various
+operations in the project. You can set up such a service account with
 a few commands:
 
 ```
@@ -37,14 +59,14 @@ for ROLE in \
   done
 ```
 
-You will also need a GCS bucket that is used to transfer files onto
-the testing VMs. Store it in env variable `$BUCKET` and add your
-service account as principal with role "Storage Admin" to the bucket:
+You will also need to give your service account read/write permissions on
+`${TRANSFERS_BUCKET}`. To do this, register your service account as principal
+with role "Storage Admin" to the bucket:
 
 ```
 gsutil iam ch \
   "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com:roles/storage.admin" \
-  "gs://${BUCKET}"
+  "gs://${TRANSFERS_BUCKET}"
 ```
 
 Finally, download your credentials as a JSON file:
@@ -55,6 +77,17 @@ gcloud iam service-accounts keys create $HOME/credentials.json \
   --iam-account "service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com"
 ```
 
+When runninng the test commands below, you must also pass the
+environment variable
+`GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json"` to the
+test command.
+
+## Ops Agent Test
+
+This test exercises "core" features of the Ops Agent such as watching syslog or
+a custom log file. It is implemented in ops_agent_test.go. It can be run outside
+of Kokoro with some setup (see above).
+
 ### Testing Command
 
 When the setup steps are complete, you can run ops_agent_test (for Linux)
@@ -62,8 +95,7 @@ like this:
 
 ```
 PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${BUCKET}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
 go test -v ops_agent_test.go \
@@ -73,7 +105,7 @@ go test -v ops_agent_test.go \
 ```
 
 Testing on Windows is tricky because it requires a suitable value of
-WINRM_PAR_PATH, and for now only Goooglers can build winrm.par to supply it at
+WINRM_PAR_PATH, and for now only Googlers can build winrm.par to supply it at
 runtime.
 
 The above command will run the tests against the stable Ops Agent. To test
@@ -113,71 +145,102 @@ the test will:
 1.  Install the application on the VM by running
     `applications/<application>/<platform>/install` on the VM
 1.  Install the Ops Agent (built from the contents of the PR) on the VM
-1.  Configure the application to expose its metrics by running
-    `applications/<application>/<platform>/post` on the VM. This might
-    be a no-op for some applications.
 1.  Configure the the Ops Agent to look for the application's logs/metrics by
-    running `agent/ops-agent/<platform>/enable_<application>` on the VM.
+    running `applications/<application>/enable` on the VM.
 1.  Run `applications/<application>/exercise` script to send some load to
     the application, so that we can get it to generate some logs/metrics
-1.  Wait for up to 7 minutes for logs matching the expectations in 
+1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
-1.  Wait up to 7 minutes for the metric from
-    `applications/<application>/metric_name.txt` to appear in the Google Cloud
+1.  Wait up to 7 minutes for metrics matching the expectations in
+    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
     Monitoring backend.
-
-The code for the test runner is not open source yet, unfortunately.
 
 The test is designed so that simply modifying files in the
 `third_party_apps_data` directory is sufficient to get the test runner to do the
 right thing. But we do expect that we will need to make big changes to both the
 data directory and the test runner before it is really meeting our needs.
 
-NOTE: Currently there are various directories that are included in
-`third_party_apps_data` that are unused, such as everything in the
-`agent/metrics/` directory. These are provided for a few reasons:
-
-1.  To serve as an example for how the directory structure is expected to look
-    as the number of platforms and applications increases,
-1.  because I uploaded our existing data directory mostly as-is, and it is
-    currently being used to test agents besides the Ops Agent, and
-1.  to be a starting point so that nobody has to rewrite our logic for
-    installing, e.g. redis on CentOS 7.
-    
 ### Adding a new third-party application
 
-You will need to add a few files, and possibly change what's there currently,
-since much of it is there only as a starting point and example.
+You will need to add and modify a few files. Start by adding your new
+application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
 
-For now, the test only runs on debian-10, so the list of files to edit can be
-simplified to:
+Then, inside `applications/<application>/`:
 
-1.  `agent/ops-agent/linux/supported_applications.txt`
-1.  `applications/<application>/debian_ubuntu/install` (may already exist) to
-    install the application,
-1.  `applications/<application>/debian_ubuntu/post` (may already exist) to
-    configure the application to expose metrics somewhere. This might be a
-    no-op for some applications. If so, just leave the file empty.
-1.  `agent/ops-agent/linux/enable_<application>` to configure the Ops Agent to
-    read the application's metrics exposed in the previous step.
-1.  (if necessary) `applications/<application>/exercise`. This is only needed
+1.  `<platform>/install` to install the application,
+1.  `enable` to configure the Ops Agent to read the application's metrics
+    exposed in the previous step.
+1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
-1.  (if you want to test logging) `applications/<application>/expected_logs.yaml`
+1.  (if you want to test logging) `expected_logs.yaml`
+1.  (if you want to test metrics) `expected_metrics.yaml`
+
+### expected_metrics.yaml
+
+We use `expected_metrics.yaml` both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+
+A sample `expected_metrics.yaml` snippet looks like:
+
+```yaml
+- type: workload.googleapis.com/apache.current_connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+  representative: true
+```
+
+`type`, `value_type` and `kind` come directly from the metric descriptor for that metric. `monitored_resource` should always be `gce_instance`.
+
+`labels` is an exhaustive list of labels associated with the metric. Each key in `labels` is the label name, and its value is a regular expression. During the test, each label returned by the time series for that metric is checked against `labels`: every label in the time series must be present in `labels`, and its value must match the regular expression.
+
+For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics.yaml` would be as follows:
+
+```yaml
+  labels:
+    operation: read|write
+```
+
+Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
+
+With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
+
+`expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+go run generate_expected_metrics.go \
+ -tags=integration_test
+```
+
+This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
+
+```
+PROJECT="${PROJECT}" \
+GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+SCRIPTS_DIR=third_party_apps_data \
+FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
+go run generate_expected_metrics.go \
+ -tags=integration_test
+```
+
+Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 
 This needs the same setup steps as the Ops Agent test (see above). The command
-is nearly the same, just change the test file and add
-`SCRIPTS_DIR=third_party_apps_data`:
+is nearly the same, just replace `ops_agent_test.go` with
+`third_party_apps_test.go`:
 
 ```
 PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${BUCKET}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
+TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
 ZONE=us-central1-b \
 PLATFORMS=debian-10 \
-SCRIPTS_DIR=third_party_apps_data \
 go test -v third_party_apps_test.go \
  -test.parallel=1000 \
  -tags=integration_test \

@@ -3,16 +3,11 @@
 /*
 Package gce holds various helpers for testing the agents on GCE.
 
-To run a test based on this library, you can use Kokoro by triggering
-automated presubmits on your change.
+To run a test based on this library, you can either:
 
-NOTE: This needs the $HOME/credentials.json file to exist. If it doesn't,
-    please run the commands at go/sdi-service-accounts#setup to generate it.
-    Your service account needs to have "Storage Object Viewer" and
-    "Storage Object Creator" permissions on the GCS bucket TRANSFERS_BUCKET.
-
-NOTE: This requires gcloud login to generate the $HOME/.config/gcloud directory.
-    Run "gcloud auth login" if you have not yet logged in.
+* use Kokoro by triggering automated presubmits on your change, or
+* use "go test" directly, after performing the setup steps described
+  in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
     a project whose firewall allows WinRM connections.
@@ -22,23 +17,21 @@ NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
 NOTE: This command does not actually build the Ops Agent. To test the latest
     Ops Agent code, first build and upload a package to Rapture. Then look up
     the REPO_SUFFIX for that build and add it as an environment variable to the
-    command below; for example: REPO_SUFFIX=20210805-2
+    command below; for example: REPO_SUFFIX=20210805-2. You can also use
+	AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 PROJECT=dev_project \
     ZONE=us-central1-b \
-    GOOGLE_APPLICATION_CREDENTIALS=$HOME/credentials.json \
     PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
     go test -v ops_agent_test.go \
-    -test.parallel=1000 \
-    -timeout=3h
+	-test.parallel=1000 \
+	-tags=integration_test \
+    -timeout=4h
 
 This library needs the following environment variables to be defined:
 
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
-GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
-    some GCP services. All gcloud commands actually use a different set of
-    credentials, those in CLOUDSDK_CONFIG (unfortunately).
 
 The following variables are optional:
 
@@ -139,6 +132,8 @@ const (
 	vmInitBackoffDuration = 10 * time.Second
 
 	sshUserName = "test_user"
+
+	exhaustedRetriesSuffix = "exhausted retries"
 )
 
 func init() {
@@ -364,55 +359,60 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
-// hasNonEmptySeries examines the given iterator, returning true if the
-// lookup succeeded and returned a nonempty time series, and false otherwise.
-// Also returns an error if the lookup failed.
-// A return value of (false, nil) indicates that the lookup succeeded but
-// returned no data.
-func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (bool, error) {
-	// Loop through the iterator, looking for at least one nonempty time series.
+// nonEmptySeries evaluates the given iterator, returning its first non-empty
+// time series. An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+	// Loop through the iterator, looking for at least one non-empty time series.
 	for {
 		series, err := it.Next()
-		logger.Printf("hasNonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			// Either there were no data series in the iterator or all of them were empty.
-			return false, nil
+			return nil, nil
 		}
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		if len(series.Points) == 0 {
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		// Success, we found a timeseries with len(series.Points) > 0.
-		return true, nil
+		// Success, we found a time series with len(series.Points) > 0.
+		return series, nil
 	}
 }
 
-// WaitForMetric looks for the given metric in the backend and returns an error
-// if it does not have data. This function will retry "no data" errors a fixed
-// number of times. This is useful because it takes time for monitoring data to
-// become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) error {
+// WaitForMetric looks for the given metric in the backend and returns it if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
-		found, err := hasNonEmptySeries(logger, it)
-		if found {
+		series, err := nonEmptySeries(logger, it)
+		if series != nil && err == nil {
 			// Success.
-			return nil
+			return series, nil
 		}
 		if err != nil && !isRetriableLookupMetricError(err) {
-			return fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
 		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("hasNonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, found-data=%v, retrying (%d/%d)...",
-			metric, extraFilters, err, found, attempt, QueryMaxAttempts)
+		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+			metric, extraFilters, err, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
+	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// IsExhaustedRetriesMetricError returns true if the given error is an
+// "exhausted retries" error returned from WaitForMetric.
+func IsExhaustedRetriesMetricError(err error) bool {
+	return err != nil && strings.HasSuffix(err.Error(), exhaustedRetriesSuffix)
 }
 
 // AssertMetricMissing looks for data of a metric and returns success if
@@ -421,8 +421,9 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil)
-		found, err := hasNonEmptySeries(logger, it)
-		logger.Printf("hasNonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
+		series, err := nonEmptySeries(logger, it)
+		found := series != nil
+		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
 		if err == nil {
@@ -515,9 +516,19 @@ type CommandOutput struct {
 	Stderr string
 }
 
-// runCommand invokes a binary and waits until it finishes. Returns the combined stdout
-// and stderr in a single string, and an error if the binary had a nonzero
-// exit code.
+type ThreadSafeWriter struct {
+	mu      sync.Mutex
+	guarded io.Writer
+}
+
+func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.guarded.Write(p)
+}
+
+// runCommand invokes a binary and waits until it finishes. Returns the stdout
+// and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
 func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
@@ -544,32 +555,32 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 
 	var stdoutBuilder strings.Builder
 	var stderrBuilder strings.Builder
+	var interleavedBuilder strings.Builder
 
-	cmd.Stdout = &stdoutBuilder
-	cmd.Stderr = &stderrBuilder
+	interleavedWriter := ThreadSafeWriter{guarded: &interleavedBuilder}
+	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
+	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
 	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v\nstdout: %s\nstderr: %s", args, err, stdoutBuilder.String(), stderrBuilder.String())
+		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
 	}
 
 	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
+	logger.Printf("stdout+stderr: %s", interleavedBuilder.String())
+
 	output.Stdout = stdoutBuilder.String()
 	output.Stderr = stderrBuilder.String()
-
-	logger.Printf("stdout: %s", output.Stdout)
-	logger.Printf("stderr: %s", output.Stderr)
 
 	return output, err
 }
 
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
-// Returns the combined stdout and stderr in a single string, and an error if
-// the binary had a nonzero exit code.
-// args is a slice containing the arguments to pass to gcloud.
+// Returns the stdout and stderr and an error if the binary had a nonzero exit
+// code. args is a slice containing the arguments to pass to gcloud.
 //
 // Note: most calls to this function could be replaced by calls to the Compute API
 // (https://cloud.google.com/compute/docs/reference/rest/v1).
-// Various pros/cons of shelling out to gcloud vs using the Compute API are dicussed here:
+// Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
@@ -981,6 +992,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
@@ -1573,6 +1585,9 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If provided, these arguments are appended on to the end
+	// of the "gcloud compute instances create" command.
+	ExtraCreateArguments []string
 }
 
 // SetupVM creates a new VM according to the given options.

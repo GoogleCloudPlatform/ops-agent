@@ -9,3 +9,6 @@ case "${ID}-${VERSION_ID}" in
 debian-9 | ubuntu-18.04)
     sudo apt install -y libhiredis0.13;;
 esac
+
+sudo service redis start
+redis-cli -h localhost ping

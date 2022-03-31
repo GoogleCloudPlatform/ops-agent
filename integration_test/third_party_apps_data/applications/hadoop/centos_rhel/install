@@ -142,3 +142,5 @@ sudo -u hadoop bash -c "source /opt/hadoop/env && hdfs namenode -format"
 
 sudo systemctl daemon-reload
 sudo systemctl enable hadoop
+sudo systemctl restart hadoop 
+sleep 60

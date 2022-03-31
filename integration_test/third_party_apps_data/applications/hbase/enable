@@ -1,0 +1,27 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    hbase:
+      type: hbase
+      endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:10101/jmxrmi
+  service:
+    pipelines:
+      hbase:
+        receivers:
+          - hbase
+logging:
+  receivers:
+    hbase_system:
+      type: hbase_system
+  service:
+    pipelines:
+      hbase_system:
+        receivers:
+          - hbase_system
+EOF
+
+sudo service google-cloud-ops-agent restart

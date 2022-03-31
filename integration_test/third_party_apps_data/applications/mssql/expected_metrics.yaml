@@ -1,0 +1,16 @@
+- type: agent.googleapis.com/mssql/connections/user
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: agent.googleapis.com/mssql/transaction_rate
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: agent.googleapis.com/mssql/write_transaction_rate
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}

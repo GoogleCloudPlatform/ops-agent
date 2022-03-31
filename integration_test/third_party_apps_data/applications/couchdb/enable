@@ -1,0 +1,30 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    couchdb:
+      type: couchdb
+      username: admin
+      password: otelp
+  service:
+    pipelines:
+      couchdb:
+        receivers:
+          - couchdb
+
+logging:
+  receivers:
+    couchdb:
+      type: couchdb
+  service:
+    pipelines:
+      couchdb:
+        receivers:
+          - couchdb
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 30
