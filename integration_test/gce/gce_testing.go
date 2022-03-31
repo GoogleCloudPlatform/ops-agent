@@ -256,10 +256,7 @@ type VM struct {
 	// rationale.
 	IPAddress string
 	// WinRMClient is only populated for Windows VMs.
-	WinRMClient *winrm.Client
-	/// for debugging
-	Password       string
-	Username       string
+	WinRMClient    *winrm.Client
 	AlreadyDeleted bool
 }
 
@@ -610,18 +607,21 @@ func runRemotelyWindows(ctx context.Context, logger *log.Logger, vm *VM, command
 	go io.Copy(&stdoutBuilder, cmd.Stdout)
 	go io.Copy(&stderrBuilder, cmd.Stderr)
 
+	// Our WinRM library doesn't have a way to pass in a Context to use
+	// for cancellation, so set up a background goroutine to call
+	// cmd.Close() if ctx becomes done.
 	cmdDone := make(chan struct{})
 	go func() {
-		cmd.Wait()
-		cmdDone <- struct{}{}
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			cmd.Close()
+		case <-cmdDone:
+		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		err = ctx.Err()
-		cmd.Close()
-	case <-cmdDone:
-	}
+	cmd.Wait()
+	cmdDone <- struct{}{}
 
 	exitCode := cmd.ExitCode()
 	logger.Printf("exit code: %v", exitCode)
@@ -857,14 +857,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
-
 		metadataCopy["windows-startup-script-ps1"] = `
 Enable-PSRemoting  # Might help to diagnose b/185923886.
 
+# Needed to get our WinRM connection settings to work.
 Set-WSManInstance WinRM/Config/Service/Auth -ValueSet @{Basic = $true}
-Set-WSManInstance WinRM/Config/Service -ValueSet @{AllowUnencrypted = $true}
-Set-WSManInstance WinRM/Config/WinRS -ValueSet @{MaxMemoryPerShellMB = 1024}
-Set-WSManInstance WinRM/Config/Client -ValueSet @{TrustedHosts="*"}
 
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
@@ -1066,7 +1063,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	// immediately.
 	// If retriable errors happen quickly, there will be more than 3 attempts.
 	// If retriable errors happen slowly, there will still be at least 3 attempts.
-	ctx, cancel := context.WithTimeout(origCtx, 1*vmInitTimeout) // DO NOT SUBMIT this change
+	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
 	shouldRetry := func(err error) bool {
@@ -1149,7 +1146,6 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 // Doesn't take a Context argument because even if the test has timed out or is
 // cancelled, we still want to delete the VMs.
 func DeleteInstance(logger *log.Logger, vm *VM) error {
-	return nil
 	if vm.AlreadyDeleted {
 		logger.Printf("VM %v was already deleted, skipping delete.", vm.Name)
 		return nil
@@ -1432,7 +1428,6 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	printFoo := func() error {
 		attempt++
 
-		log.Printf("starting attempt #%d", attempt)
 		endpoint := winrm.NewEndpoint(
 			vm.IPAddress,
 			5986,          // port
@@ -1453,10 +1448,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}
 
 	gracePeriod := 3 * time.Minute // I'm not sure what's a good value here.

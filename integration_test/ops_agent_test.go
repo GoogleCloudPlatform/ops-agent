@@ -44,7 +44,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/masterzen/winrm"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -298,88 +297,6 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Error(err)
 		}
 	})
-}
-
-func TestNoop(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-	t.Cleanup(cancel)
-
-	logger := gce.SetupLogger(t)
-
-	vm, err := gce.CreateInstance(ctx, logger.ToMainLog(), gce.VMOptions{Platform: "windows-2019"})
-	log.Printf("vm info 3: %#v", vm)
-
-	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Fatalf("output was: %#v", output)
-}
-
-func TestBackup(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-	t.Cleanup(cancel)
-
-	logger := gce.SetupLogger(t)
-
-	vm := &gce.VM{
-		Name:           "test-20220331-d74a5-70f9d460-01eb-4941-99b9-9be0e9ec796f",
-		Project:        "stackdriver-kubernetes-1337",
-		Network:        "default",
-		Platform:       "windows-2019",
-		Zone:           "us-central1-b",
-		MachineType:    "e2-standard-4",
-		ID:             20124175513973170,
-		IPAddress:      "34.67.251.50",
-		WinRMClient:    nil,
-		AlreadyDeleted: false,
-		Username:       "windows_user",
-		Password:       "{C*v,c&*+RqEP48",
-	}
-
-	//vm, err := gce.CreateInstance(ctx, logger.ToMainLog(), gce.VMOptions{Platform: "windows-2019"})
-	//log.Printf("vm info 3: %#v", vm)
-	//time.Sleep(30 * time.Second)
-
-	for _, ntlm := range []bool{false, true} {
-		if ntlm {
-			winrm.DefaultParameters.TransportDecorator = func() winrm.Transporter { return &winrm.ClientNTLM{} }
-		}
-		for _, port := range []int{5985, 5986} {
-			for _, tls := range []bool{false, true} {
-				log.Printf("params: %v %v %v", ntlm, port, tls)
-
-				endpoint := winrm.NewEndpoint(
-					vm.IPAddress,
-					5986,           // port
-					true,           // use TLS
-					true,           // Allow insecure connection
-					nil,            // CA certificate
-					nil,            // Client Certificate
-					nil,            // Client Key
-					20*time.Second, // Timeout
-				)
-				client, err := winrm.NewClient(endpoint, vm.Username, vm.Password)
-				log.Printf("winrm.NewClient() finished with err=%v", err)
-				if err != nil {
-					t.Error(err)
-					continue
-				}
-				vm.WinRMClient = client
-
-				output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "'wxyz'")
-				if err != nil {
-					t.Error(err)
-					continue
-				}
-				t.Fatalf("output was: %#v", output)
-			}
-		}
-	}
 }
 
 func TestCustomLogFile(t *testing.T) {
