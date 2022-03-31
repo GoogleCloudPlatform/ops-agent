@@ -38,6 +38,7 @@ type LoggingReceiverFiles struct {
 	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -49,6 +50,7 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
+		RecordLogFilePath:       r.RecordLogFilePath,
 	}.Components(tag)
 }
 
@@ -57,6 +59,7 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
+	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -93,12 +96,15 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 		"Mem_Buf_Limit": "10M",
-		"Path_Key": "agent.googleapis.com/log_file_path",
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
 		config["Exclude_Path"] = strings.Join(r.ExcludePaths, ",")
 	}
+	if r.RecordLogFilePath != nil {
+		config["Path_Key"] = "agent.googleapis.com/log_file_path"
+	}
+
 	if r.WildcardRefreshInterval != nil {
 		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
