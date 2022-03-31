@@ -178,7 +178,7 @@ Then, inside `applications/<application>/`:
 
 ### expected_logs
 
-We use `expected_logs` field inside `metadata.yaml` file both as a test artifact and as a source for documentation, e.g. [Apache(httpd) public doc](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache#monitored-logs). All logs ingested from the integration should be documented here.
+We use `expected_logs` inside `metadata.yaml` file both as a test artifact and as a source for documentation, e.g. [Apache(httpd) public doc](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache#monitored-logs). All logs ingested from the integration should be documented here.
 
 A sample `expected_logs` snippet looks like:
 
@@ -191,21 +191,22 @@ expected_logs:
     type: string
     description: HTTP method
   - name: jsonPayload.host
+    value: .*
     type: string
     description: Contents of the Host header
   - name: jsonPayload.user
+    value: .*
     type: string
     description: Authenticated username for the request
 ```
 - `name`: required, it will be used in e2e searching for the matching logs
 - `type`: required, informational
 - `description`: required, informational
-- `value`: optional, the value of the logEntry field will be used in e2e searching for the matching logs
- 
+- `value_regex`: required, the value of the LogEntry field will be used in e2e searching for the matching logs. Use `.*` if it doesn't contain any specific value.
 
 ### expected_metrics.yaml
 
-We use `expected_metrics` field inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+We use `expected_metrics` inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
 
 A sample `expected_metrics` snippet looks like:
 

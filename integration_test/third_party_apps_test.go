@@ -174,35 +174,35 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 
 type logFields struct {
 	Name        string `yaml:"name" validate:"required"`
-	Value       string `yaml:"value" validate:"required"`
+	ValueRegex  string `yaml:"value_regex" validate:"required"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description" validate:"optional,omitempty"`
+	Description string `yaml:"description" validate:"required"`
 }
 
 type expectedLog struct {
-	LogName string       `yaml:"log_name" validate:"required"`
-	Fields  []*logFields `yaml:"fields" validate:"required"`
+	LogName string      `yaml:"log_name" validate:"required"`
+	Fields  []logFields `yaml:"fields" validate:"required"`
 }
 
 type integrationMetadata struct {
-	ExpectedLogs    []*expectedLog          `yaml:"expected_logs"`
+	ExpectedLogs    []expectedLog           `yaml:"expected_logs"`
 	ExpectedMetrics []common.ExpectedMetric `yaml:"expected_metrics"`
 }
 
-// constructQuery converts the given map of:
+// constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []*logFields) string {
+func constructQuery(fields []logFields) string {
 	var parts []string
 	for _, field := range fields {
-		if field.Value != "" {
-			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.Value))
+		if field.ValueRegex != "" {
+			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.ValueRegex))
 		}
 	}
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*expectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []expectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -224,7 +224,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []common.ExpectedMetric) error {
 	var err error
 	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expectedMetrics field failed validation: %v", err)
+		return fmt.Errorf("expected_metrics failed validation: %v", err)
 	}
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
