@@ -90,8 +90,7 @@ of Kokoro with some setup (see above).
 
 ### Testing Command
 
-When the setup steps are complete, you can run ops_agent_test (for Linux)
-like this:
+When the setup steps are complete, you can run ops_agent_test like this:
 
 ```
 PROJECT="${PROJECT}" \
@@ -104,12 +103,9 @@ go test -v ops_agent_test.go \
  -timeout=4h
 ```
 
-Testing on Windows is tricky because it requires a suitable value of
-WINRM_PAR_PATH, and for now only Googlers can build winrm.par to supply it at
-runtime.
-
 The above command will run the tests against the stable Ops Agent. To test
-against a pre-built but unreleased agent, you can use add the
+against a pre-built but unreleased agent, you can
+ add the
 AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
