@@ -83,15 +83,15 @@ expected_logs:
 - log_name: solr_system
   fields:
   - name: jsonPayload.message
-    value: " ___      _       Welcome to Apache Solr\u2122 version 8.11.1"
+    value_regex: " ___      _       Welcome to Apache Solr\u2122 version 8.11.1"
     type: string
     description: Log message
   - name: jsonPayload.thread
-    value: main
+    value_regex: main
     type: string
     description: Thread where the log originated
   - name: jsonPayload.source
-    value: o.a.s.s.SolrDispatchFilter
+    value_regex: o.a.s.s.SolrDispatchFilter
     type: string
     description: Source of where the log originated
   - name: jsonPayload.collection

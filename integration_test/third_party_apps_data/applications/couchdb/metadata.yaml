@@ -48,19 +48,19 @@ expected_logs:
 - log_name: couchdb
   fields:
   - name: jsonPayload.node
-    value: couchdb
+    value_regex: couchdb
     type: string
     description: node instance name
   - name: jsonPayload.path
-    value: /forbidden
+    value_regex: /forbidden
     type: string
     description: request path
   - name: jsonPayload.remote_user
-    value: undefined
+    value_regex: undefined
     type: string
     description: Authenticated username for the request
   - name: jsonPayload.status_message
-    value: ok
+    value_regex: ok
     type: string
     description: status code message
   - name: jsonPayload.pid

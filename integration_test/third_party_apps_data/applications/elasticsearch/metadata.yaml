@@ -107,15 +107,15 @@ expected_logs:
 - log_name: elasticsearch_json
   fields:
   - name: jsonPayload.message
-    value: initialized
+    value_regex: initialized
     type: string
     description: 'Log message'
   - name: jsonPayload.component
-    value: o.e.n.Node
+    value_regex: o.e.n.Node
     type: string
     description: 'The component of Elasticsearch that emitted the log'
   - name: jsonPayload.type
-    value: server
+    value_regex: server
     type: string
     description: 'The type of log, indicating which log the record came from (e.g. *server* indicates this LogEntry came from the server log)'
   - name: jsonPayload.cluster.name
@@ -133,11 +133,11 @@ expected_logs:
 - log_name: elasticsearch_gc
   fields:
   - name: jsonPayload.message
-    value: Using G1
+    value_regex: Using G1
     type: string
     description: 'Log message'
   - name: jsonPayload.type
-    value: gc
+    value_regex: gc
     type: string
     description: 'The type of the log record'
   - name: jsonPayload.gc_run

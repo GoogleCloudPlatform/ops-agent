@@ -104,15 +104,15 @@ expected_logs:
 - log_name: mysql_error
   fields:
   - name: jsonPayload.level
-    value: System
+    value_regex: System
     type: string
     description: 'Log entry level'
   - name: jsonPayload.message
-    value: .*InnoDB initialization has started.*
+    value_regex: .*InnoDB initialization has started.*
     type: string
     description: 'Log message'
   - name: jsonPayload.subsystem
-    value: InnoDB
+    value_regex: InnoDB
     type: string
     description: 'MySQL subsystem where the log originated'
   - name: jsonPayload.tid
@@ -124,11 +124,11 @@ expected_logs:
 - log_name: mysql_general
   fields:
   - name: jsonPayload.message
-    value: .*select table_catalog, table_schema, table_name from information_schema.tables.*
+    value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*
     type: string
     description: 'Log of the database action'
   - name: jsonPayload.command
-    value: Query
+    value_regex: Query
     type: string
     description: 'Type of database action being logged'
   - name: jsonPayload.tid
@@ -137,19 +137,19 @@ expected_logs:
 - log_name: mysql_slow
   fields:
   - name: jsonPayload.message
-    value: .*select table_catalog, table_schema, table_name from information_schema.tables.*
+    value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*
     type: string
     description: 'Full text of the query'
   - name: jsonPayload.user
-    value: root
+    value_regex: root
     type: string
     description: 'User that executed the query'
   - name: jsonPayload.database
-    value: root
+    value_regex: root
     type: string
     description: 'Database where the query was executed'
   - name: jsonPayload.host
-    value: localhost
+    value_regex: localhost
     type: string
     description: 'Host of the database instance'
   - name: jsonPayload.ipAddress

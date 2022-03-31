@@ -60,15 +60,15 @@ expected_logs:
 - log_name: kafka
   fields:
   - name: jsonPayload.message
-    value: .*Waiting until connected.*
+    value_regex: .*Waiting until connected.*
     type: string
     description: ''
   - name: jsonPayload.source
-    value: ZooKeeperClient Kafka server
+    value_regex: ZooKeeperClient Kafka server
     type: string
     description: ''
   - name: jsonPayload.logger
-    value: kafka.zookeeper.ZooKeeperClient
+    value_regex: kafka.zookeeper.ZooKeeperClient
     type: string
     description: ''
   - name: severity

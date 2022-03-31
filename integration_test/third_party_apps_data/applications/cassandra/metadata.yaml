@@ -87,19 +87,19 @@ expected_logs:
 - log_name: cassandra_system
   fields:
   - name: jsonPayload.message
-    value: .*Startup complete.*
+    value_regex: .*Startup complete.*
     type: string
     description: Log message, including detailed stacktrace where provided
   - name: jsonPayload.level
-    value: INFO
+    value_regex: INFO
     type: string
     description: Log entry level
   - name: jsonPayload.module
-    value: main
+    value_regex: main
     type: string
     description: Module of cassandra where the log originated
   - name: jsonPayload.javaClass
-    value: CassandraDaemon.java
+    value_regex: CassandraDaemon.java
     type: string
     description: Java class where the log originated
   - name: jsonPayload.lineNumber
@@ -108,19 +108,19 @@ expected_logs:
 - log_name: cassandra_debug
   fields:
   - name: jsonPayload.message
-    value: .*Loading settings from file.*
+    value_regex: .*Loading settings from file.*
     type: string
     description: Log message
   - name: jsonPayload.level
-    value: DEBUG
+    value_regex: DEBUG
     type: string
     description: Log entry level
   - name: jsonPayload.module
-    value: main
+    value_regex: main
     type: string
     description: Module of cassandra where the log originated
   - name: jsonPayload.javaClass
-    value: YamlConfigurationLoader.java
+    value_regex: YamlConfigurationLoader.java
     type: string
     description: Java class where the log originated
   - name: jsonPayload.lineNumber
@@ -129,7 +129,7 @@ expected_logs:
 - log_name: cassandra_gc
   fields:
   - name: jsonPayload.message
-    value: .*Total time for which application threads were stopped.*
+    value_regex: .*Total time for which application threads were stopped.*
     type: string
     description: Log message
   - name: jsonPayload.uptime

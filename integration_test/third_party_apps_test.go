@@ -174,7 +174,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 
 type logFields struct {
 	Name        string `yaml:"name" validate:"required"`
-	ValueRegex  string `yaml:"value_regex" validate:"required"`
+	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"required"`
 }

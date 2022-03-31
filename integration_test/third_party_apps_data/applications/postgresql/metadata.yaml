@@ -28,11 +28,11 @@ expected_logs:
 - log_name: postgresql_general
   fields:
   - name: jsonPayload.message
-    value: .*starting PostgreSQL.*
+    value_regex: .*starting PostgreSQL.*
     type: string
     description: Log of the database action
   - name: jsonPayload.level
-    value: LOG
+    value_regex: LOG
     type: string
     description: Log severity or type of database interaction type for some logs
   - name: jsonPayload.tid
