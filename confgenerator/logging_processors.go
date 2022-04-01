@@ -17,6 +17,7 @@ package confgenerator
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
@@ -62,6 +63,52 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseJson{} })
 }
 
+// rewriteComplexCaptures translates disallowed capture group names into placeholders and a transformation to rename them back in the log record.
+func rewriteComplexCaptures(regex, tag string) (string, []fluentbit.Component) {
+	// Short-circuit regexes that don't have disallowed capture group names
+	disallowed := regexp.MustCompile(`\(\?P<(?:[A-Za-z0-9_]*[^A-Za-z0-9_>])+(?:[A-Za-z0-9_]*)>`)
+	if !disallowed.MatchString(regex) {
+		return regex, nil
+	}
+	// Maintain a list of rewritten capture group names
+	var rewrites []string
+	captureGroup := regexp.MustCompile(`\(\?P<((?:[^>\\]|\\.)*)>`)
+	// Can't use ReplaceAllStringFunc, since it doesn't support replacing only captured values
+	groupIndexes := captureGroup.FindAllStringSubmatchIndex(regex, -1)
+	l := 0
+	var r []string
+	for _, i := range groupIndexes {
+		g := regex[i[0]:i[1]] // Full match
+		s := regex[i[2]:i[3]] // First capture group
+		r = append(r, regex[l:i[2]])
+		// Also replace any capture group whose name starts with "__"
+		if !disallowed.MatchString(g) && !strings.HasPrefix(s, "__") {
+			r = append(r, s)
+		} else {
+			rewrites = append(rewrites, s)
+			r = append(r, fmt.Sprintf("__%d", len(rewrites)))
+		}
+		l = i[3]
+	}
+	r = append(r, regex[l:])
+	// Reconstruct the regex
+	regex = strings.Join(r, "")
+	// Rename all captured fields
+	oc := make([][2]string, len(rewrites))
+	for i, g := range rewrites {
+		oc = append(oc, [2]string{"Rename", fmt.Sprintf("__%d %q", i+1, g)})
+	}
+	rename := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Match": tag,
+			"Name":  "modify",
+		},
+		OrderedConfig: oc,
+	}
+	return regex, []fluentbit.Component{rename}
+}
+
 // A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
 // This was maintained in addition to the parse_regex_complex to ensure backward compatibility with any existing configurations
 type LoggingProcessorParseRegex struct {
@@ -77,14 +124,16 @@ func (r LoggingProcessorParseRegex) Type() string {
 }
 
 func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
+	regex, transforms := rewriteComplexCaptures(p.Regex, tag)
+
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "regex"
-	parser.Config["Regex"] = p.Regex
+	parser.Config["Regex"] = regex
 
-	return []fluentbit.Component{
+	return append([]fluentbit.Component{
 		parser,
 		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
-	}
+	}, transforms...)
 }
 
 type RegexParser struct {
@@ -103,10 +152,13 @@ func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentb
 	parserNames := []string{}
 
 	for idx, parserConfig := range p.Parsers {
+		regex, transforms := rewriteComplexCaptures(parserConfig.Regex, tag)
+
 		parser, parserName := parserConfig.Parser.Component(tag, fmt.Sprintf("%s.%d", uid, idx))
 		parser.Config["Format"] = "regex"
-		parser.Config["Regex"] = parserConfig.Regex
+		parser.Config["Regex"] = regex
 		components = append(components, parser)
+		components = append(components, transforms...)
 		parserNames = append(parserNames, parserName)
 	}
 
