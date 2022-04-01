@@ -1,0 +1,2 @@
+memcached:
+    metrics receiver: 2.8.0

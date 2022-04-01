@@ -1,0 +1,4 @@
+hadoop:
+    metrics receiver: 2.11.0
+    logging receiver: 2.11.0
+    

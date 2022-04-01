@@ -1,0 +1,4 @@
+couchdb:
+    metrics receiver: 2.10.0
+    logging receiver: 2.11.0
+    

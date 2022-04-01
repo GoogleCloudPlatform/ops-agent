@@ -1,0 +1,4 @@
+cassandra:
+    metrics receiver: 2.6.0
+    logging receiver: 2.5.0
+    

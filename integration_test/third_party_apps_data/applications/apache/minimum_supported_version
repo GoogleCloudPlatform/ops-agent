@@ -1,0 +1,4 @@
+apache:
+    metrics receiver: 2.7.0
+    logging receiver: 2.4.0
+    

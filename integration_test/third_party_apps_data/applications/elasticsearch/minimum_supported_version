@@ -1,0 +1,4 @@
+elasticsearch:
+    metrics receiver: 2.10.0
+    logging receiver: 2.9.0
+    

@@ -1,0 +1,3 @@
+tomcat:
+    metrics receiver: 2.9.0
+    logging receiver: 2.9.0
