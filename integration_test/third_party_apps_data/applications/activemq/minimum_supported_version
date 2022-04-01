@@ -1,3 +1,2 @@
-activemq:
-    metrics receiver: 2.11.0
-    
+minimum_supported_agent_version:
+  metrics: 2.11.0

@@ -1,3 +1,3 @@
-zookeeper:
-    metrics receiver: 2.10.0
-    logging receiver: 2.11.0
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.11.0
