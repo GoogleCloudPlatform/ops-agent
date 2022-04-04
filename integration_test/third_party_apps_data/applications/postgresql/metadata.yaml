@@ -1,0 +1,46 @@
+expected_metrics:
+- type: workload.googleapis.com/postgresql.backends
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+  representative: true
+- type: workload.googleapis.com/postgresql.commits
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.db_size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.rollbacks
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+expected_logs:
+- log_name: postgresql_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*starting PostgreSQL.*
+    type: string
+    description: Log of the database action
+  - name: jsonPayload.level
+    value_regex: LOG
+    type: string
+    description: Log severity or type of database interaction type for some logs
+  - name: jsonPayload.tid
+    type: number
+    description: Thread ID where the log originated
+  - name: jsonPayload.role
+    type: string
+    description: Authenticated role for the action being logged when relevant
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated user for the action being logged when relevant

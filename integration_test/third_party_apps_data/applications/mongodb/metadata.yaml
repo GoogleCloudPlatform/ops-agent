@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/mongodb.cache.operations
   value_type: INT64
   kind: CUMULATIVE
@@ -66,3 +67,21 @@
   monitored_resource: gce_instance
   labels:
     database: .*
+expected_logs:
+- log_name: mongodb
+  fields:
+  - name: jsonPayload.component
+    type: string
+    description: Categorization of the log message. A full list can be found [here](https://docs.mongodb.com/manual/reference/log-messages/#std-label-log-message-components)
+  - name: jsonPayload.ctx
+    type: string
+    description: The name of the thread issuing the log statement
+  - name: jsonPayload.id
+    type: number
+    description: Log ID
+  - name: jsonPayload.message
+    type: string
+    description: Log message
+  - name: jsonPayload.attributes
+    type: object (optional)
+    description: Object containing one or more key-value pairs for any additional attributes provided
