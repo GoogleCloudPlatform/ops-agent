@@ -30,8 +30,8 @@ func setLogNameComponents(tag, logName, receiverType string) []fluentbit.Compone
 			`labels."agent.googleapis.com/receiver_type"`: {
 				StaticValue: &receiverType,
 			},
-			`labels."logging.googleapis.com/log_file_path"`: {
-				MoveFrom: `jsonPayload."logging.googleapis.com/log_file_path"`,
+			`labels."agent.googleapis.com/log_file_path"`: {
+				MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
 			},
 		},
 	}.Components(tag, "setlogname")

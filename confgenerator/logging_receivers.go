@@ -107,7 +107,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 	}
 
 	if r.RecordLogFilePath != nil {
-		config["Path_Key"] = "logging.googleapis.com/log_file_path"
+		config["Path_Key"] = "agent.googleapis.com/log_file_path"
 	}
 
 	c := []fluentbit.Component{}
