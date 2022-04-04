@@ -55,7 +55,7 @@ func (m Target) fluentBitPath() ([]string, error) {
 		}
 	}
 	if fluentBit == nil {
-		return nil, fmt.Errorf("invalid target: %v", strings.Join(m, "."))
+		return nil, fmt.Errorf("field %q not found", strings.Join(m, "."))
 	}
 	return fluentBit, nil
 }

@@ -115,6 +115,7 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			if err = confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
 				// TODO: Move this inside generateConfigs when we can do MergeConfFiles in-memory
 				if _, ok := expectedFiles["error"]; ok || *updateGolden {
+					// Config generation failed, but that might be expected.
 					got = map[string]string{
 						"error": err.Error(),
 					}
@@ -202,7 +203,7 @@ func updateOrCompareGolden(t *testing.T, testName, goos, dir, name, got, want st
 	goldenPath := fmt.Sprintf("%s/%s/%s/%s%s", dir, goos, testName, goldenPrefix, name)
 	diff := cmp.Diff(
 		want, got,
-		// Diff each line separately
+		// Diff each line separately for readability.
 		cmpopts.AcyclicTransformer("multiline", func(s string) []string {
 			return strings.Split(s, "\n")
 		}),

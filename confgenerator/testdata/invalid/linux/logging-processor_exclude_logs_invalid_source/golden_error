@@ -1,4 +1,4 @@
-[7:22] "copy_from": 1:19: error: invalid target: notJsonPayload.bar
+[7:22] "copy_from": 1:19: error: field "notJsonPayload.bar" not found
    4 |       type: modify_fields
    5 |       fields:
    6 |         jsonPayload.foo:

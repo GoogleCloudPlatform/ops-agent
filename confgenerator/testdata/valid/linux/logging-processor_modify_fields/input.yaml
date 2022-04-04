@@ -29,4 +29,3 @@ logging:
         receivers: [sample_logs]
         processors:
         - simple
-        exporters: [google]

@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ type ModifyField struct {
 	CopyFrom    string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
 	StaticValue *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
 
-	// Name of variable with copied value
+	// Name of Lua variable with copied value
 	sourceVar string `yaml:"-"`
 
 	// Operations to perform
