@@ -187,15 +187,13 @@ expected_logs:
 - log_name: apache_access
   fields:
   - name: httpRequest.requestMethod
-    value: GET
+    value_regex: GET
     type: string
     description: HTTP method
   - name: jsonPayload.host
-    value: .*
     type: string
     description: Contents of the Host header
   - name: jsonPayload.user
-    value: .*
     type: string
     description: Authenticated username for the request
 ```
