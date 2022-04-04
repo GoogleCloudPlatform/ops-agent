@@ -43,7 +43,7 @@ The Ops Agent collects the following metrics from your varnish instance.
 | workload.googleapis.com/varnish.thread.operation.count     | cumulative | {operations}  | cache_name, thread_operations       | The thread operation type count                                  |
 | workload.googleapis.com/varnish.session.count              | cumulative | {sessions}    | cache_name, session_type            | The session connection type count                                |
 | workload.googleapis.com/varnish.object.nuked               | cumulative | {objects}     | cache_name                          | The objects that have been forcefully evicted from storage count |
-| workload.googleapis.com/varnish.object.moved.count         | cumulative | {objects}     | cache_name                          | The moved operations done on the LRU list count                  |
+| workload.googleapis.com/varnish.object.moved               | cumulative | {objects}     | cache_name                          | The moved operations done on the LRU list count                  |
 | workload.googleapis.com/varnish.object.expired             | cumulative | {objects}     | cache_name                          | The expired objects from old age count                           |
 | workload.googleapis.com/varnish.object.count               | gauge      | {objects}     | cache_name                          | The HTTP objects in the cache count                              |
 | workload.googleapis.com/varnish.client.request.count       | cumulative | {requests}    | cache_name, state                   | The client request count                                         |
