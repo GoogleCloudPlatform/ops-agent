@@ -104,8 +104,7 @@ go test -v ops_agent_test.go \
 ```
 
 The above command will run the tests against the stable Ops Agent. To test
-against a pre-built but unreleased agent, you can
- add the
+against a pre-built but unreleased agent, you can add the
 AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
