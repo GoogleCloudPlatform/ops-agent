@@ -7,7 +7,6 @@ description: |-
   as well as the number of sessions and backend connections.
   The integration also collects Varnish access logs and parses them
   into a standardized json payload.
-
   For more information about Varnish, see
   [Varnish HTTP Cache](https://varnish-cache.org/).
 supported_app_version: ["6.x", "7.0.x"]
