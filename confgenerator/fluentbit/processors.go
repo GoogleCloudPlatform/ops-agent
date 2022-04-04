@@ -58,11 +58,6 @@ func LuaFilterComponents(tag, function, src string) []Component {
 
 	filename := fmt.Sprintf("%s.lua", hash)
 
-	return NamedLuaFilterComponents(tag, filename, function, src)
-}
-
-// TODO: Combine with LuaFilterComponents when #474 is merged.
-func NamedLuaFilterComponents(tag, filename, function, src string) []Component {
 	return []Component{
 		{
 			Kind: "FILTER",

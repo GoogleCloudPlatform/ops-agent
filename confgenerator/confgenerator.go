@@ -214,7 +214,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
 				if receiver.Type() == "fluent_forward" {
-					components = append(components, fluentbit.NamedLuaFilterComponents(tag, "add_log_name.lua", addLogNameLuaFunction, addLogNameLuaScriptContents)...)
+					components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 				}
 				sources = append(sources, fbSource{tag, components})
 			}
