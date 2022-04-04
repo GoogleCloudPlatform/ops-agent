@@ -174,6 +174,8 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 	}
 }
 
+// readFileContents reads the expected config files for testName on goos in dir.
+// The returned map is the set of expected files and their contents.
 func readFileContents(t *testing.T, testName, goos, dir string) map[string]string {
 	t.Helper()
 	glob := fmt.Sprintf("%s/%s/%s/%s*", dir, goos, testName, goldenPrefix)

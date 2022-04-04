@@ -249,8 +249,8 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		// inequality, case insensitive
 		return nil, fmt.Sprintf(`(string.lower(%s) ~= string.lower(%s))`, lhs, rhsQuoted)
 	}
-	// shouldn't be able to reach here
-	return nil, "false"
+	// This is all the supported operators.
+	panic(fmt.Errorf("unknown operator: %s", r.Operator))
 }
 
 type Expression interface {

@@ -64,7 +64,7 @@ func NewFilter(f string) (*Filter, error) {
 	return nil, fmt.Errorf("not an expression: %+v", out)
 }
 
-// FluentConfig returns components that are intended to be positioned between corresponding nest/lift filters and a Lua expression to evaluate.
+// innerFluentConfig returns components that are intended to be positioned between corresponding nest/lift filters and a Lua expression to evaluate.
 func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, string) {
 	return f.expr.FluentConfig(tag, prefix)
 }
