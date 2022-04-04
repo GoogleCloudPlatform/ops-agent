@@ -1,0 +1,79 @@
+expected_metrics:
+- type: workload.googleapis.com/kafka.isr.operation.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/kafka.message.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/kafka.network.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/kafka.partition.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/kafka.partition.offline
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/kafka.partition.under_replicated
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/kafka.purgatory.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+- type: workload.googleapis.com/kafka.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+- type: workload.googleapis.com/kafka.request.failed
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+- type: workload.googleapis.com/kafka.request.time.total
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+expected_logs:
+- log_name: kafka
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*Waiting until connected.*
+    type: string
+    description: ''
+  - name: jsonPayload.source
+    value_regex: ZooKeeperClient Kafka server
+    type: string
+    description: ''
+  - name: jsonPayload.logger
+    value_regex: kafka.zookeeper.ZooKeeperClient
+    type: string
+    description: ''
+  - name: severity
+    type: string
+    description: ''
+  - name: timestamp
+    type: string
+    description: ''

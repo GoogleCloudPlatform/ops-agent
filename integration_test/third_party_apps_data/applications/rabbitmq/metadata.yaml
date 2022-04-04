@@ -1,0 +1,22 @@
+expected_metrics:
+- type: workload.googleapis.com/rabbitmq.consumer.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/rabbitmq.message.current
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+  representative: true
+expected_logs:
+- log_name: rabbitmq
+  fields:
+  - name: jsonPayload.process_id
+    type: string
+    description: The process ID issuing the log
+  - name: jsonPayload.message
+    type: string
+    description: Log message

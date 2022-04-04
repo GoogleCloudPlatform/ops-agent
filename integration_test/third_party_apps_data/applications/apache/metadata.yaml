@@ -1,0 +1,87 @@
+expected_metrics:
+- type: workload.googleapis.com/apache.current_connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+  representative: true
+- type: workload.googleapis.com/apache.requests
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+- type: workload.googleapis.com/apache.scoreboard
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+    state: .*
+- type: workload.googleapis.com/apache.traffic
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+- type: workload.googleapis.com/apache.workers
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+    state: .*
+expected_logs:
+- log_name: apache_access
+  fields:
+  - name: httpRequest.remoteIp
+    value_regex: ::1
+    type: string
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+  - name: httpRequest.requestUrl
+    value_regex: /forbidden.html
+    type: string
+    description: Request URL (typically just the path part of the URL)
+  - name: httpRequest.protocol
+    value_regex: HTTP/1.1
+    type: string
+    description: Protocol used for the request
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: HTTP method
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated username for the request
+- log_name: apache_error
+  fields:
+  - name: jsonPayload.client
+    value_regex: ::1
+    type: string
+    description: Client IP address (optional)
+  - name: jsonPayload.level
+    value_regex: error
+    type: string
+    description: Log entry level
+  - name: jsonPayload.module
+    value_regex: core
+    type: string
+    description: apache module where the log originated
+  - name: jsonPayload.message
+    value_regex: .*file permissions deny server access.*
+    type: string
+    description: Log message
+  - name: jsonPayload.errorCode
+    value_regex: .*Permission denied.*
+    type: string
+    description: apache error code
+  - name: jsonPayload.pid
+    type: string
+    description: Process ID
+  - name: jsonPayload.tid
+    type: string
+    description: Thread ID

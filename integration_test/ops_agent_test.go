@@ -891,7 +891,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		uptimeWaitGroup.Add(1)
 		go func() {
 			defer uptimeWaitGroup.Done()
-			if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
+			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
 				[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
 			); err != nil {
 				t.Error(err)
@@ -917,7 +917,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
+			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
 				t.Error(err)
 			}
 		}()
@@ -1019,7 +1019,7 @@ metrics:
 		excludedMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
-		if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
+		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
 			t.Error(err)
 		}
 		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
@@ -1109,7 +1109,8 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	// Query for a metric from the last minute. Sleep for 3 minutes first
 	// to make sure we aren't picking up metrics from a previous instance
 	// of the metrics agent.
-	return gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+  _, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+  return err
 }
 
 func TestMetricsAgentCrashRestart(t *testing.T) {

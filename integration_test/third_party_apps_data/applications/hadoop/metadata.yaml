@@ -1,0 +1,62 @@
+expected_metrics:
+- type: workload.googleapis.com/hadoop.name_node.block.corrupt
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.block.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.block.missing
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.capacity.limit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.capacity.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+  representative: true
+- type: workload.googleapis.com/hadoop.name_node.data_node.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+    state: .*
+- type: workload.googleapis.com/hadoop.name_node.file.load
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+- type: workload.googleapis.com/hadoop.name_node.volume.failed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    node_name: .*
+expected_logs:
+- log_name: hadoop
+  fields:
+  - name: jsonPayload.message
+    value_regex: STARTUP_MSG:.*
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.source
+    value_regex: org.apache.hadoop.hdfs.server.namenode.NameNode
+    type: string
+    description: 'The source Java class of the log entry'
