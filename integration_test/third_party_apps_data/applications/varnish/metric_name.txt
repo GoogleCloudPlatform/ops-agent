@@ -1,1 +1,1 @@
-workload.googleapis.com/varnish.backend.connections.count
+workload.googleapis.com/varnish.backend.connection.count
