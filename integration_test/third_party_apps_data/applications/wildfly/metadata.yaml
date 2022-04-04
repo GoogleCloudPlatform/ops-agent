@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/wildfly.session.count
   value_type: INT64
   kind: CUMULATIVE
@@ -80,3 +81,22 @@
   monitored_resource: gce_instance
   labels:
     cause: .*
+expected_logs:
+- log_name: wildfly_system
+  fields:
+  - name: jsonPayload.messageCode
+    value: WFLYSRV0049
+    type: string
+    description: Wildfly specific message code preceding the log, where applicable
+  - name: jsonPayload.message
+    value: .*WildFly Full.*
+    type: string
+    description: Log message
+  - name: jsonPayload.thread
+    value: MSC service thread.*
+    type: string
+    description: Thread where the log originated
+  - name: jsonPayload.source
+    value: org.jboss.as
+    type: string
+    description: Source where the log originated

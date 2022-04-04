@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/hbase.master.region_server.count
   value_type: INT64
   kind: GAUGE
@@ -310,3 +311,18 @@
   monitored_resource: gce_instance
   labels:
     region_server: .*
+expected_logs:
+- log_name: hbase_system
+  fields:
+  - name: jsonPayload.message
+    value: 'master.HMaster: STARTING service HMaster'
+    type: string
+    description: 'Log message, including detailed stacktrace where provided'
+  - name: jsonPayload.module
+    value: main
+    type: string
+    description: 'Module of hbase where the log originated'
+  - name: jsonPayload.source
+    value: master.HMaster
+    type: string
+    description: 'source of where the log originated'

@@ -1,3 +1,29 @@
+expected_metrics:
+- type: workload.googleapis.com/postgresql.backends
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+  representative: true
+- type: workload.googleapis.com/postgresql.commits
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.db_size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.rollbacks
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
 expected_logs:
 - log_name: postgresql_general
   fields:

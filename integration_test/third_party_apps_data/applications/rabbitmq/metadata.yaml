@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/rabbitmq.consumer.count
   value_type: INT64
   kind: GAUGE
@@ -10,3 +11,14 @@
   labels:
     state: .*
   representative: true
+expected_logs:
+- log_name: rabbitmq
+  fields:
+  - name: jsonPayload.process_id
+    value: PLACEHOLDER
+    type: string
+    description: The process ID issuing the log
+  - name: jsonPayload.message
+    value: PLACEHOLDER
+    type: string
+    description: Log message

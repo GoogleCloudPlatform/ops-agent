@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/redis.clients.blocked
   value_type: INT64
   kind: GAUGE
@@ -120,3 +121,26 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+expected_logs:
+- log_name: redis
+  fields:
+  - name: jsonPayload.level
+    value: \*
+    type: string
+    description: Log entry level
+  - name: jsonPayload.message
+    value: Ready to accept connections
+    type: string
+    description: ''
+  - name: jsonPayload.roleChar
+    value: M
+    type: string
+    description: redis role character (X, C, S, M)
+  - name: jsonPayload.role
+    value: master
+    type: string
+    description: translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
+  - name: jsonPayload.pid
+    value: PLACEHOLDER
+    type: number
+    description: Process ID

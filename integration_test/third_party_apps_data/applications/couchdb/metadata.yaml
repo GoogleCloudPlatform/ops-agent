@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/couchdb.average_request_time
   value_type: DOUBLE
   kind: GAUGE
@@ -43,3 +44,38 @@
   monitored_resource: gce_instance
   labels:
     view: .*
+expected_logs:
+- log_name: couchdb
+  fields:
+  - name: jsonPayload.node
+    value: couchdb
+    type: string
+    description: node instance name
+  - name: jsonPayload.path
+    value: /forbidden
+    type: string
+    description: request path
+  - name: jsonPayload.remote_user
+    value: undefined
+    type: string
+    description: Authenticated username for the request
+  - name: jsonPayload.status_message
+    value: ok
+    type: string
+    description: status code message
+  - name: jsonPayload.pid
+    value: PLACEHOLDER
+    type: string
+    description: Process ID
+  - name: jsonPayload.message
+    value: PLACEHOLDER
+    type: string
+    description: Log message
+  - name: jsonPayload.host
+    value: PLACEHOLDER
+    type: string
+    description: host instance name
+  - name: httpRequest
+    value: PLACEHOLDER
+    type: object
+    description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.

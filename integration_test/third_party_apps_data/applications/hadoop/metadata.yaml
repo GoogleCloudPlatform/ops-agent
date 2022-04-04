@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/hadoop.name_node.block.corrupt
   value_type: INT64
   kind: GAUGE
@@ -48,3 +49,14 @@
   monitored_resource: gce_instance
   labels:
     node_name: .*
+expected_logs:
+- log_name: hadoop
+  fields:
+  - name: jsonPayload.message
+    value: STARTUP_MSG:.*
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.source
+    value: org.apache.hadoop.hdfs.server.namenode.NameNode
+    type: string
+    description: 'The source Java class of the log entry'

@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/memcached.bytes
   value_type: INT64
   kind: GAUGE

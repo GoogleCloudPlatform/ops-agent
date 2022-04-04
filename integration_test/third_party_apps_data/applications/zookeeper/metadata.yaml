@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/zookeeper.connection.active
   value_type: INT64
   kind: GAUGE
@@ -67,3 +68,26 @@
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+expected_logs:
+- log_name: zookeeper_general
+  fields:
+  - name: jsonPayload.message
+    value: binding to port 0.0.0.0/0.0.0.0:2181
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.thread
+    value: main
+    type: string
+    description: Thread from which the log originated
+  - name: jsonPayload.source
+    value: NIOServerCnxnFactory
+    type: string
+    description: Source of where the log originated
+  - name: jsonPayload.line
+    value: PLACEHOLDER
+    type: number
+    description: Line number from which the log was generated in source
+  - name: jsonPayload.myid
+    value: PLACEHOLDER
+    type: number
+    description: Numeric ID of the Zookeeper instance

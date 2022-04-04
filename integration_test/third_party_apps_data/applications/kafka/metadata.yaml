@@ -1,3 +1,4 @@
+expected_metrics:
 - type: workload.googleapis.com/kafka.isr.operation.count
   value_type: INT64
   kind: CUMULATIVE
@@ -55,3 +56,26 @@
   monitored_resource: gce_instance
   labels:
     type: .*
+expected_logs:
+- log_name: kafka
+  fields:
+  - name: jsonPayload.message
+    value: .*Waiting until connected.*
+    type: string
+    description: ''
+  - name: jsonPayload.source
+    value: ZooKeeperClient Kafka server
+    type: string
+    description: ''
+  - name: jsonPayload.logger
+    value: kafka.zookeeper.ZooKeeperClient
+    type: string
+    description: ''
+  - name: severity
+    value: PLACEHOLDER
+    type: string
+    description: ''
+  - name: timestamp
+    value: PLACEHOLDER
+    type: string
+    description: ''
