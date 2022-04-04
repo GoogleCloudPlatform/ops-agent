@@ -108,9 +108,10 @@ func ParserFilterComponent(tag string, field string, parserNames []string) Compo
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Match":    tag,
-			"Name":     "parser",
-			"Key_Name": "message", // Required
+			"Match":        tag,
+			"Name":         "parser",
+			"Key_Name":     "message", // Required
+			"Reserve_Data": "true",
 		},
 		OrderedConfig: parsers,
 	}
