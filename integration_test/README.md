@@ -203,7 +203,7 @@ expected_logs:
 - `name`: required, it will be used in e2e searching for the matching logs
 - `type`: required, informational
 - `description`: required, informational
-- `value_regex`: required, the value of the LogEntry field will be used in e2e searching for the matching logs. Use `.*` if it doesn't contain any specific value.
+- `value_regex`: optional, the value of the LogEntry field will be used in e2e searching for the matching logs.
 
 ### expected_metrics.yaml
 
