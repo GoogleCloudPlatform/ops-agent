@@ -1,0 +1,143 @@
+expected_metrics:
+- type: workload.googleapis.com/cassandra.client.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+  representative: true
+- type: workload.googleapis.com/cassandra.client.request.error.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+    status: .*
+- type: workload.googleapis.com/cassandra.client.request.range_slice.latency.50p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.range_slice.latency.99p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.range_slice.latency.max
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.read.latency.50p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.read.latency.99p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.read.latency.max
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.write.latency.50p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.write.latency.99p
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.client.request.write.latency.max
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.compaction.tasks.completed
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.compaction.tasks.pending
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.storage.load.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.storage.total_hints.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/cassandra.storage.total_hints.in_progress.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+expected_logs:
+- log_name: cassandra_system
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*Startup complete.*
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.level
+    value_regex: INFO
+    type: string
+    description: Log entry level
+  - name: jsonPayload.module
+    value_regex: main
+    type: string
+    description: Module of cassandra where the log originated
+  - name: jsonPayload.javaClass
+    value_regex: CassandraDaemon.java
+    type: string
+    description: Java class where the log originated
+  - name: jsonPayload.lineNumber
+    type: string
+    description: Line number of the source file where the log originated
+- log_name: cassandra_debug
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*Loading settings from file.*
+    type: string
+    description: Log message
+  - name: jsonPayload.level
+    value_regex: DEBUG
+    type: string
+    description: Log entry level
+  - name: jsonPayload.module
+    value_regex: main
+    type: string
+    description: Module of cassandra where the log originated
+  - name: jsonPayload.javaClass
+    value_regex: YamlConfigurationLoader.java
+    type: string
+    description: Java class where the log originated
+  - name: jsonPayload.lineNumber
+    type: string
+    description: Line number of the source file where the log originated
+- log_name: cassandra_gc
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*Total time for which application threads were stopped.*
+    type: string
+    description: Log message
+  - name: jsonPayload.uptime
+    type: string
+    description: Seconds the JVM has been active
+  - name: jsonPayload.timeStopped
+    type: string
+    description: Seconds the JVM was stopped for garbage collection
+  - name: jsonPayload.timeStopping
+    type: string
+    description: Seconds the JVM took to stop threads before garbage collection
