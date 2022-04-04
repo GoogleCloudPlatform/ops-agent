@@ -1109,8 +1109,8 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	// Query for a metric from the last minute. Sleep for 3 minutes first
 	// to make sure we aren't picking up metrics from a previous instance
 	// of the metrics agent.
-  _, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
-  return err
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+	return err
 }
 
 func TestMetricsAgentCrashRestart(t *testing.T) {
