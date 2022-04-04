@@ -106,7 +106,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
 	}
 
-	if r.RecordLogFilePath != nil {
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
 		config["Path_Key"] = "agent.googleapis.com/log_file_path"
 	}
 
