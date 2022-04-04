@@ -1,10 +1,5 @@
+expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    kind: .*
-- type: workload.googleapis.com/varnish.backend.connections.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
@@ -15,18 +10,7 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-- type: workload.googleapis.com/varnish.backend.requests.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/varnish.cache.operation.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    operation: .*
-- type: workload.googleapis.com/varnish.cache.operations.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
@@ -44,12 +28,6 @@
   monitored_resource: gce_instance
   labels:
     status_code: .*
-- type: workload.googleapis.com/varnish.client.requests.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
 - type: workload.googleapis.com/varnish.object.count
   value_type: INT64
   kind: GAUGE
@@ -60,27 +38,12 @@
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-- type: workload.googleapis.com/varnish.object.expired.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/varnish.object.moved
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-- type: workload.googleapis.com/varnish.object.moved.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/varnish.object.nuked
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/varnish.object.nuked.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
@@ -92,12 +55,6 @@
   labels:
     kind: .*
 - type: workload.googleapis.com/varnish.thread.operation.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    operation: .*
-- type: workload.googleapis.com/varnish.thread.operations.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
