@@ -199,6 +199,7 @@ expected_logs:
     type: string
     description: Authenticated username for the request
 ```
+
 - `name`: required, it will be used in e2e searching for the matching logs
 - `type`: required, informational
 - `description`: required, informational
