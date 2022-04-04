@@ -184,9 +184,15 @@ type expectedLog struct {
 	Fields  []logFields `yaml:"fields" validate:"required"`
 }
 
+type minimumSupportedAgentVersion struct {
+	Logging string `yaml:"logging"`
+	Metrics string `yaml:"metrics"`
+}
+
 type integrationMetadata struct {
-	ExpectedLogs    []expectedLog           `yaml:"expected_logs"`
-	ExpectedMetrics []common.ExpectedMetric `yaml:"expected_metrics"`
+	ExpectedLogs                 []expectedLog                `yaml:"expected_logs"`
+	ExpectedMetrics              []common.ExpectedMetric      `yaml:"expected_metrics"`
+	MinimumSupportedAgentVersion minimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 }
 
 // constructQuery converts the given struct of:

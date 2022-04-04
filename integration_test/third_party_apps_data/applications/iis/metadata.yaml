@@ -1,3 +1,6 @@
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.10.0
 expected_metrics:
 - type: agent.googleapis.com/iis/current_connections
   value_type: DOUBLE
