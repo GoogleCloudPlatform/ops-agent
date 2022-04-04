@@ -152,8 +152,8 @@ the test will:
 1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
-1.  Wait up to 7 minutes for metrics matching the expectations in
-    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
+1.  Wait up to 7 minutes for metrics matching the expectations in expected_metrics of
+    `applications/<application>/metadata.yaml` to appear in the Google Cloud
     Monitoring backend.
 
 The test is designed so that simply modifying files in the
@@ -203,7 +203,7 @@ expected_logs:
 - `description`: required, informational
 - `value_regex`: optional, the value of the LogEntry field will be used in e2e searching for the matching logs.
 
-### expected_metrics.yaml
+### expected_metrics
 
 We use `expected_metrics` inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
 
@@ -224,18 +224,18 @@ expected_metrics:
 
 `labels` is an exhaustive list of labels associated with the metric. Each key in `labels` is the label name, and its value is a regular expression. During the test, each label returned by the time series for that metric is checked against `labels`: every label in the time series must be present in `labels`, and its value must match the regular expression.
 
-For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics.yaml` would be as follows:
+For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics` would be as follows:
 
 ```yaml
   labels:
     operation: read|write
 ```
 
-Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
+Exactly one metric from each integration's `expected_metrics` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
 
 With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
 
-`expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
+`expected_metrics` can be generated or updated using `generate_expected_metrics.go`:
 
 ```
 PROJECT="${PROJECT}" \
@@ -256,7 +256,7 @@ go run generate_expected_metrics.go \
  -tags=integration_test
 ```
 
-Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
+Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 
