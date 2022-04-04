@@ -1,3 +1,4 @@
+expected_metrics:
 - type: agent.googleapis.com/iis/current_connections
   value_type: DOUBLE
   kind: GAUGE

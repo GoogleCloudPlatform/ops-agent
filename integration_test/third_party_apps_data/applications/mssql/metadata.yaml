@@ -1,3 +1,4 @@
+expected_metrics:
 - type: agent.googleapis.com/mssql/connections/user
   value_type: DOUBLE
   kind: GAUGE
