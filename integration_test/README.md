@@ -173,8 +173,8 @@ Then, inside `applications/<application>/`:
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
-1.  (if you want to test logging) `expected_logs.yaml`
-1.  (if you want to test metrics) `expected_metrics.yaml`
+1.  (if you want to test logging) add `expected_logs` in metadata.yaml
+1.  (if you want to test metrics) add `expected_metrics` in metadata.yaml
 
 ### expected_logs
 
