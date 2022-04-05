@@ -1,3 +1,5 @@
+short_name: activemq
+long_name: Apache ActiveMQ
 minimum_supported_agent_version:
   metrics: 2.11.0
 expected_metrics:

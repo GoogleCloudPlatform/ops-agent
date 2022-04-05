@@ -1,3 +1,7 @@
+short_name: postgresql
+long_name: PostgreSQL
+configure_integration: "The `postgresql` receiver connects by default to a local `postgresql`
+server using a Unix socket and Unix authentication as the `root` user."
 minimum_supported_agent_version:
   metrics: 2.9.0
   logging: 2.9.0

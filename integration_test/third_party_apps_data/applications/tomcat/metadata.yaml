@@ -1,3 +1,22 @@
+short_name: tomcat
+long_name: Apache Tomcat
+configure_integration: "To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
+system property when starting the JVM. We also recommend setting the
+`com.sun.management.jmxremote.rmi.port` system property to the same port. To
+expose a JMX endpoint remotely, you must also set the `java.rmi.server.hostname`
+system property.
+
+By default, these properties are set in a Tomcat deployment's
+`tomcat-env.sh` file.
+
+To set system properties by using command-line arguments, prepend the property
+name with `-D` when starting the JVM. For example, to set
+`com.sun.management.jmxremote.port` to port `8050`, specify the following when
+starting the JVM:
+
+<pre>
+-Dcom.sun.management.jmxremote.port=8050
+</pre>"
 minimum_supported_agent_version:
   metrics: 2.9.0
   logging: 2.9.0

@@ -1,3 +1,5 @@
+short_name: mongodb
+long_name: MongoDB
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.10.0

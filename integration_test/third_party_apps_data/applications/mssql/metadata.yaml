@@ -1,3 +1,5 @@
+short_name: mssql
+long_name: Microsoft SQL Server
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0

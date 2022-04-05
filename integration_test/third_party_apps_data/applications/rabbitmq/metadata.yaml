@@ -1,3 +1,5 @@
+short_name: rabbitmq
+long_name: RabbitMQ
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.12.0

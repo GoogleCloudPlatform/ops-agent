@@ -1,3 +1,5 @@
+short_name: redis
+long_name: Redit
 minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.5.0
