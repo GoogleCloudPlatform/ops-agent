@@ -76,7 +76,7 @@ expected_logs:
     value: PLACEHOLDER
     type: string
     description: Thread ID
-expected_metics:
+expected_metrics:
 - type: workload.googleapis.com/apache.current_connections
   value_type: INT64
   kind: GAUGE
