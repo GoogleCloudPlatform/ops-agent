@@ -220,7 +220,7 @@ func (r AccessLoggingReceiverIis) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverIis{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIis{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverIis{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIis{} }, "windows")
 
 }
