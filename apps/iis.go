@@ -109,6 +109,21 @@ func (*LoggingProcessorIis) Type() string {
 	return "iis_access"
 }
 
+const (
+	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
+	iisMergeRecordFieldsLuaScriptContents = `
+	function iis_merge_fields(tag, timestamp, record)
+	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
+	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
+		record["http_request_requestUrl"] = record["cs_uri_stem"]
+	  else
+		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+	  end
+	  return 2, timestamp, record
+	end
+	`
+)
+
 func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
@@ -145,7 +160,7 @@ func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component 
 		})
 	}
 
-	c = append(c, confgenerator.AddLuaFilter(tag, "iis_merge_fields.lua", "iis_merge_fields")...)
+	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
 	// Remove fields that were merged
 	for _, field := range []string{
