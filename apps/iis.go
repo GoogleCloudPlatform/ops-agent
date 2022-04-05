@@ -23,6 +23,7 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	version                             string `yaml:"version"`
 }
 
 func (r MetricsReceiverIis) Type() string {
@@ -30,6 +31,18 @@ func (r MetricsReceiverIis) Type() string {
 }
 
 func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+	if r.version == "2" {
+		return []otel.Pipeline{{
+			Receiver: otel.Component{
+				Type: "iis",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+				},
+			},
+		}}
+	}
+
+	// Return version 1 if version is anything other than 2
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
@@ -39,18 +52,18 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 					{
 						"object":    "Web Service",
 						"instances": []string{"_Total"},
-						"counters": []string{
-							"Current Connections",
-							"Total Bytes Received",
-							"Total Bytes Sent",
-							"Total Connection Attempts (all instances)",
-							"Total Delete Requests",
-							"Total Get Requests",
-							"Total Head Requests",
-							"Total Options Requests",
-							"Total Post Requests",
-							"Total Put Requests",
-							"Total Trace Requests",
+						"counters": []map[string]string{
+							{"name": "Current Connections"},
+							{"name": "Total Bytes Received"},
+							{"name": "Total Bytes Sent"},
+							{"name": "Total Connection Attempts (all instances)"},
+							{"name": "Total Delete Requests"},
+							{"name": "Total Get Requests"},
+							{"name": "Total Head Requests"},
+							{"name": "Total Options Requests"},
+							{"name": "Total Post Requests"},
+							{"name": "Total Put Requests"},
+							{"name": "Total Trace Requests"},
 						},
 					},
 				},
@@ -92,6 +105,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 			otel.NormalizeSums(),
 		},
 	}}
+
 }
 
 func init() {
