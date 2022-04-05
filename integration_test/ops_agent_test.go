@@ -14,15 +14,7 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. This takes precedence
-    over REPO_SUFFIX. For historical reasons, AGENT_PACKAGES_IN_GCS must point
-    to a directory that contains a directory called "ops-agent" that itself
-    contains the actual .deb/.rpm/.goo files. To illustrate:
-    └── $AGENT_PACKAGES_IN_GCS
-        └── ops-agent
-            ├── ops-agent-google-cloud-1.2.3.deb
-            ├── ops-agent-google-cloud-1.2.3.rpm
-            └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
     version of the Ops Agent to install first, before installing the version
 	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
@@ -157,7 +149,7 @@ func locationFromEnvVars() packageLocation {
 // falls back to location.repoSuffix.
 func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
 	if location.packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, location.packagesInGCS)
+		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
 		suffix := location.repoSuffix
