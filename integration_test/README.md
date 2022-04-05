@@ -116,16 +116,14 @@ AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
 ```
 
-You can obtain such a URI by taking a previous Kokoro run with
-a successful build and getting the "gsutil URI" to `+build_and_test.txt`
-from Pantheon. For example:
+You can obtain such a URI by:
 
-```
-gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt
-```
-
-Then replace `logs/+build_and_test.txt` at the end of the URI with
-`agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+1.  take a previous Kokoro run with a successful build and get the
+    "gsutil URI" to `+build_and_test.txt` from the Google Cloud Storage browser
+    page. For example:
+    `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
+2.  Replace `logs/+build_and_test.txt` at the end of the URI with
+    `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
 
 ## Third Party Apps Test
 
@@ -137,7 +135,7 @@ The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
 it reads `test_config.yaml` and uses that to set some testing options. See the
 "test_config.yaml" section below. Then it reads
-`agent/ops-agent/<platform>/supported_applications.txt` to determine
+`agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -152,8 +150,8 @@ the test will:
 1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
-1.  Wait up to 7 minutes for metrics matching the expectations in
-    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
+1.  Wait up to 7 minutes for metrics matching the expectations in expected_metrics of
+    `applications/<application>/metadata.yaml` to appear in the Google Cloud
     Monitoring backend.
 
 The test is designed so that simply modifying files in the
@@ -164,7 +162,7 @@ data directory and the test runner before it is really meeting our needs.
 ### Adding a new third-party application
 
 You will need to add and modify a few files. Start by adding your new
-application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
+application to `agent/<linux_or_windows>/supported_applications.txt`
 
 Then, inside `applications/<application>/`:
 
@@ -173,8 +171,8 @@ Then, inside `applications/<application>/`:
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
-1.  (if you want to test logging) `expected_logs.yaml`
-1.  (if you want to test metrics) `expected_metrics.yaml`
+1.  (if you want to test logging) add `expected_logs` in metadata.yaml
+1.  (if you want to test metrics) add `expected_metrics` in metadata.yaml
 
 ### expected_logs
 
@@ -203,7 +201,7 @@ expected_logs:
 - `description`: required, informational
 - `value_regex`: optional, the value of the LogEntry field will be used in e2e searching for the matching logs.
 
-### expected_metrics.yaml
+### expected_metrics
 
 We use `expected_metrics` inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
 
@@ -224,18 +222,18 @@ expected_metrics:
 
 `labels` is an exhaustive list of labels associated with the metric. Each key in `labels` is the label name, and its value is a regular expression. During the test, each label returned by the time series for that metric is checked against `labels`: every label in the time series must be present in `labels`, and its value must match the regular expression.
 
-For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics.yaml` would be as follows:
+For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics` would be as follows:
 
 ```yaml
   labels:
     operation: read|write
 ```
 
-Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
+Exactly one metric from each integration's `expected_metrics` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
 
 With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
 
-`expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
+`expected_metrics` can be generated or updated using `generate_expected_metrics.go`:
 
 ```
 PROJECT="${PROJECT}" \
@@ -256,7 +254,7 @@ go run generate_expected_metrics.go \
  -tags=integration_test
 ```
 
-Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
+Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 
@@ -306,9 +304,8 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── fluent_bit_main.conf.txt
 |       └── fluent_bit_parser.conf.txt
 └── agent_packages
-    └── ops-agent
-        ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
-        └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
+    ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
+    └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
 ```
 
 Let's go through each of these files and discuss what they are.
