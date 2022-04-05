@@ -344,7 +344,7 @@ func (r LoggingReceiverSystemd) Type() string {
 }
 
 func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
-	return []fluentbit.Component{{
+	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
@@ -353,6 +353,57 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 			"DB":   DBPath(tag),
 		},
 	}}
+	filters := fluentbit.TranslationComponents(tag, "PRIORITY", "logging.googleapis.com/severity", false,
+		[]struct{ SrcVal, DestVal string }{
+			{"7", "DEBUG"},
+			{"6", "INFO"},
+			{"5", "NOTICE"},
+			{"4", "WARNING"},
+			{"3", "ERROR"},
+			{"2", "CRITICAL"},
+			{"1", "ALERT"},
+			{"0", "EMERGENCY"},
+		})
+	input = append(input, filters...)
+	input = append(input, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":      "modify",
+			"Match":     tag,
+			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FILE"),
+			"Copy":      fmt.Sprintf("CODE_FILE %s", "logging.googleapis.com/sourceLocation/file"),
+		},
+	})
+	input = append(input, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":      "modify",
+			"Match":     tag,
+			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FUNC"),
+			"Copy":      fmt.Sprintf("CODE_FUNC %s", "logging.googleapis.com/sourceLocation/function"),
+		},
+	})
+	input = append(input, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":      "modify",
+			"Match":     tag,
+			"Condition": fmt.Sprintf("Key_exists %s", "CODE_LINE"),
+			"Copy":      fmt.Sprintf("CODE_LINE %s", "logging.googleapis.com/sourceLocation/line"),
+		},
+	})
+	input = append(input, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      "logging.googleapis.com/sourceLocation/*",
+			"Nest_under":    "logging.googleapis.com/sourceLocation",
+			"Remove_prefix": "logging.googleapis.com/sourceLocation/",
+		},
+	})
+	return input
 }
 
 func init() {

@@ -1,0 +1,27 @@
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.10.0
+expected_metrics:
+- type: agent.googleapis.com/iis/current_connections
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: agent.googleapis.com/iis/network/transferred_bytes_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: agent.googleapis.com/iis/new_connection_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: agent.googleapis.com/iis/request_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    http_method: .*
+  representative: true

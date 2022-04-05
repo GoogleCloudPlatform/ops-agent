@@ -1,0 +1,90 @@
+minimum_supported_agent_version:
+  metrics: 2.11.0
+  logging: 2.10.0
+expected_metrics:
+- type: workload.googleapis.com/mongodb.cache.operations
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+- type: workload.googleapis.com/mongodb.collection.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.connection.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    type: .*
+- type: workload.googleapis.com/mongodb.data.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.global_lock.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.index.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.index.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.memory.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    type: .*
+  representative: true
+- type: workload.googleapis.com/mongodb.object.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.operation.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/mongodb.storage.size
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+expected_logs:
+- log_name: mongodb
+  fields:
+  - name: jsonPayload.component
+    type: string
+    description: Categorization of the log message. A full list can be found [here](https://docs.mongodb.com/manual/reference/log-messages/#std-label-log-message-components)
+  - name: jsonPayload.ctx
+    type: string
+    description: The name of the thread issuing the log statement
+  - name: jsonPayload.id
+    type: number
+    description: Log ID
+  - name: jsonPayload.message
+    type: string
+    description: Log message
+  - name: jsonPayload.attributes
+    type: object (optional)
+    description: Object containing one or more key-value pairs for any additional attributes provided

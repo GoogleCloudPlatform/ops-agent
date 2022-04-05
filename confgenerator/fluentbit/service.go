@@ -49,14 +49,3 @@ func (s Service) Component() Component {
 		},
 	}
 }
-
-func (s Service) MetricsComponent() Component {
-	return Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name":            "fluentbit_metrics",
-			"Scrape_On_Start": "True",
-			"Scrape_Interval": "60",
-		},
-	}
-}

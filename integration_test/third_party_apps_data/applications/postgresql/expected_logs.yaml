@@ -1,5 +1,0 @@
-log_entries:
-- log_name: "postgresql_general"
-  field_matchers:
-    jsonPayload.message: '.*starting PostgreSQL.*'
-    jsonPayload.level: "LOG"
