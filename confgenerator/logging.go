@@ -34,21 +34,6 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 	}
 }
 
-// AddLuaFilter generates a component with a Lua filter with the given parameters
-func AddLuaFilter(tag, script, call string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":   "lua",
-				"Match":  tag,
-				"script": script,
-				"call":   call,
-			},
-		},
-	}
-}
-
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
 func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 	return fluentbit.Component{
