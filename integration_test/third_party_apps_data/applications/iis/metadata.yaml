@@ -68,7 +68,7 @@ expected_logs:
     type: number
     description: "The server's IP and port that was requested"
   - name: jsonPayload.time_taken
-    value_regex: "\d+"
+    value_regex: '\d+'
     type: number
     description: "The length of time that the action took, in milliseconds"
   - name: jsonPayload.user
