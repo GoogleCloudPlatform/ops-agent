@@ -1,8 +1,8 @@
-[5:18] "match_any[0]": 1:21: error: expected one of "$", ws, andOp, orOp, dot, less_equals, less_than, greater_equals, greater_than, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "~"
+[5:18] "match_any[0]": 1:35: error: invalid escape sequence: \[
    2 |   processors:
-   3 |     p1:
+   3 |     processor_1:
    4 |       type: exclude_logs
->  5 |       match_any: ['jsonPayload.message!~foo']
+>  5 |       match_any: ['jsonPayload.message = "foo\[bar\]"']
                         ^
    6 |   service:
    7 |     pipelines:
