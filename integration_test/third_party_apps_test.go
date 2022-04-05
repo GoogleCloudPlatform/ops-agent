@@ -184,6 +184,7 @@ type minimumSupportedAgentVersion struct {
 }
 
 type integrationMetadata struct {
+	PublicUrl                    string                       `yaml:"public_url" validate:"required"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
