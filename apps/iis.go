@@ -15,7 +15,10 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -96,4 +99,113 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
+}
+
+type LoggingProcessorIis struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (*LoggingProcessorIis) Type() string {
+	return "iis_access"
+}
+
+func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Documentation:
+		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
+		// sample line: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
+		// sample line: 2022-03-10 17:26:30 ::1 GET / - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 200 0 0 352
+		// sample line: 2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49
+		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)\s(?<time_taken>\d+)$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: " %Y-%m-%d %H:%M:%S",
+			Types: map[string]string{
+				"sc_win32_status":     "integer",
+				"sc_substatus":        "integer",
+				"http_request_status": "integer",
+				"time_taken":          "integer",
+			},
+		},
+	}.Components(tag, uid)
+	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
+	for _, field := range []string{
+		"cs_uri_query",
+		"http_request_referer",
+		"cs_username",
+	} {
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
+				"Remove":    field,
+			},
+		})
+	}
+
+	c = append(c, confgenerator.AddLuaFilter(tag, "iis_merge_fields.lua", "iis_merge_fields")...)
+
+	// Remove fields that were merged
+	for _, field := range []string{
+		"cs_uri_query",
+		"cs_uri_stem",
+		"s_port",
+	} {
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":       "record_modifier",
+				"Match":      tag,
+				"Remove_key": field,
+			},
+		})
+	}
+
+	c = append(c, []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":    "grep",
+				"Match":   tag,
+				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
+			},
+		},
+		// Generate the httpRequest structure.
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":          "nest",
+				"Match":         tag,
+				"Operation":     "nest",
+				"Wildcard":      "http_request_*",
+				"Nest_under":    "logging.googleapis.com/http_request",
+				"Remove_prefix": "http_request_",
+			},
+		},
+	}...)
+	return c
+}
+
+type AccessLoggingReceiverIis struct {
+	LoggingProcessorIis                     `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r AccessLoggingReceiverIis) Components(tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
+			"/inetpub/logs/LogFiles/W3SVC1/u_ex*",
+		}
+	}
+	c := r.LoggingReceiverFilesMixin.Components(tag)
+	c = append(c, r.LoggingProcessorIis.Components(tag, "iis_access")...)
+	return c
+}
+
+func init() {
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverIis{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIis{} })
+
 }

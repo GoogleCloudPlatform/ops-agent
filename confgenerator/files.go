@@ -69,6 +69,10 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 		if err = writeForwardScript(filepath.Join(outDir, "add_log_name.lua")); err != nil {
 			return err
 		}
+		if err = writeIISScript(filepath.Join(outDir, "iis_merge_fields.lua")); err != nil {
+			return err
+		}
+
 	case "otel":
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {

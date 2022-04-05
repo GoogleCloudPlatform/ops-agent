@@ -34,8 +34,8 @@ func setLogNameComponents(tag, logName string) []fluentbit.Component {
 	}
 }
 
-// addLuaFilter generates a component with a Lua filter with the given parameters
-func addLuaFilter(tag, script, call string) []fluentbit.Component {
+// AddLuaFilter generates a component with a Lua filter with the given parameters
+func AddLuaFilter(tag, script, call string) []fluentbit.Component {
 	return []fluentbit.Component{
 		{
 			Kind: "FILTER",

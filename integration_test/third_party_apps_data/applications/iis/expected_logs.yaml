@@ -1,0 +1,12 @@
+log_entries:
+- log_name: "iis_access"
+  field_matchers:
+    httpRequest.serverIp: "127.0.0.1:80"
+    httpRequest.remoteIp: "127.0.0.1"
+    httpRequest.requestUrl: "/forbidden?something=something"
+    httpRequest.protocol: "HTTP/1.1"
+    httpRequest.requestMethod: "GET"
+    httpRequest.status: 404
+    httpRequest.userAgent: "curl/.*"
+    jsonPayload.sc_substatus: 0
+    jsonPayload.sc_win32_status: 2

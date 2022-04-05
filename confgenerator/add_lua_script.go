@@ -71,3 +71,31 @@ func writeForwardScript(path string) error {
 	}
 	return nil
 }
+
+const iisMergeRecordFieldsLuaScriptContents string = `
+function iis_merge_fields(tag, timestamp, record)
+  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
+  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
+    record["http_request_requestUrl"] = record["cs_uri_stem"]
+  else
+    record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+  end
+  return 2, timestamp, record
+end
+`
+
+// writeIISScript writes the above Lua script to the given path so it can be
+// used by the logging subagent.
+//
+// TODO(ridwanmsharif): Replace this with in-config script when
+//   fluent/fluent-bit#4634 is supported.
+func writeIISScript(path string) error {
+	// Make sure the directory exists before writing the file.
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %q: %w", path, err)
+	}
+	if err := ioutil.WriteFile(path, []byte(iisMergeRecordFieldsLuaScriptContents), 0644); err != nil {
+		return fmt.Errorf("failed to write file to %q: %w", path, err)
+	}
+	return nil
+}

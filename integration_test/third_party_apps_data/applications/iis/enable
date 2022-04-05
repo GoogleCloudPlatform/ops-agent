@@ -1,1 +1,11 @@
-'Noop; IIS monitoring is on by default.'
+Add-Content 'C:\Program Files/Google/Cloud Operations/Ops Agent\config\config.yaml' "
+logging:
+  receivers:
+    iis_access:
+      type: iis_access
+  service:
+    pipelines:
+      iis:
+        receivers:
+        - iis_access
+"

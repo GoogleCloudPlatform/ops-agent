@@ -1,0 +1,4 @@
+set -e
+
+# generate log
+curl http://localhost:80//forbidden?something=something
