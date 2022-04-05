@@ -125,7 +125,7 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			}
 
 			defer func() {
-				// Ignore errors because we don't know if MergeConfFiles generated them.
+				// Ignore ENOENT errors because we don't know if MergeConfFiles successfully generated these files.
 				os.Remove(builtInConfPath)
 				os.Remove(mergedConfPath)
 			}()
@@ -163,7 +163,7 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 
 			for f := range expectedFiles {
 				if *updateGolden {
-					t.Logf("Detected -update_golden flag. Removing the %q golden file that no longer exists", f)
+					t.Logf("Detected -update_golden flag. Removing obsolete golden file %q.", f)
 					if err := os.Remove(fmt.Sprintf("%s/%s/%s/%s%s", dir, platform.OS, testName, goldenPrefix, f)); err != nil {
 						t.Error(err)
 					}
