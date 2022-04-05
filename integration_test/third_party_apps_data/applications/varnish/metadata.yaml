@@ -5,6 +5,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     kind: .*
+  representative: true
 - type: workload.googleapis.com/varnish.backend.request.count
   value_type: INT64
   kind: CUMULATIVE
