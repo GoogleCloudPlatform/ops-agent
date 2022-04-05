@@ -16,6 +16,8 @@
 package fluentbit
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
@@ -44,6 +46,30 @@ func TranslationComponents(tag, src, dest string, removeSrc bool, translations [
 	}
 
 	return c
+}
+
+// LuaFilterComponents returns components that execute the Lua script given in src on records that match tag.
+// TODO(ridwanmsharif): Replace this with in-config script when
+//   fluent/fluent-bit#4634 is supported.
+func LuaFilterComponents(tag, function, src string) []Component {
+	hasher := md5.New()
+	hasher.Write([]byte(src))
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	filename := fmt.Sprintf("%s.lua", hash)
+
+	return []Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":   "lua",
+				"Match":  tag,
+				"script": filename,
+				"call":   function,
+			},
+		},
+		outputFileComponent(filename, src),
+	}
 }
 
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
