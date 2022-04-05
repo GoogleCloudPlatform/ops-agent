@@ -68,7 +68,30 @@ type ModularConfig struct {
 	Components []Component
 }
 
-func (c ModularConfig) Generate() (string, string, error) {
+const (
+	outputFileKind     = "OPSAGENTOUTPUTFILE"
+	outputFileName     = "filename"
+	outputFileContents = "contents"
+)
+
+const (
+	MainConfigFileName   = "fluent_bit_main.conf"
+	ParserConfigFileName = "fluent_bit_parser.conf"
+)
+
+func outputFileComponent(name, contents string) Component {
+	return Component{
+		Kind: outputFileKind,
+		Config: map[string]string{
+			outputFileName:     name,
+			outputFileContents: contents,
+		},
+	}
+}
+
+func (c ModularConfig) Generate() (map[string]string, error) {
+	files := make(map[string]string)
+
 	var parts []string
 	for k, v := range c.Variables {
 		parts = append(parts, fmt.Sprintf("@SET %s=%s", k, v))
@@ -80,6 +103,10 @@ func (c ModularConfig) Generate() (string, string, error) {
 	// TODO: Consider removing this sorting and just outputting the components in native order.
 	sectionsByKind := map[string][]string{}
 	for _, c := range c.Components {
+		if c.Kind == outputFileKind {
+			files[c.Config[outputFileName]] = c.Config[outputFileContents]
+			continue
+		}
 		out := c.generateSection()
 		sectionsByKind[c.Kind] = append(sectionsByKind[c.Kind], out)
 	}
@@ -91,7 +118,9 @@ func (c ModularConfig) Generate() (string, string, error) {
 		delete(sectionsByKind, k)
 	}
 	if len(sectionsByKind) > 0 {
-		return "", "", fmt.Errorf("unknown fluentbit config sections %+v", sectionsByKind)
+		return nil, fmt.Errorf("unknown fluentbit config sections %+v", sectionsByKind)
 	}
-	return strings.Join(parts, "\n"), strings.Join(parserParts, "\n"), nil
+	files[MainConfigFileName] = strings.Join(parts, "\n")
+	files[ParserConfigFileName] = strings.Join(parserParts, "\n")
+	return files, nil
 }
