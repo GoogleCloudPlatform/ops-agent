@@ -50,8 +50,8 @@ Access logs contain the [`httpRequest` field](https://cloud.google.com/logging/d
 | `httpRequest.requestMethod` | string | HTTP method |
 | `httpRequest.serverIp` | string | The server's IP and port that was requested |
 | `httpRequest.remoteIp` | string | IP of the client that made the request |
+| `httpRequest.protocol` | string | Protocol used for the request |
 | `httpRequest.requestUrl` | string | Request URL (typically just the path part of the URL) |
-| `httpRequest.responseSize` | string (`int64`) | Response size |
 | `httpRequest.status` | number | HTTP status code |
 | `httpRequest.userAgent` | string | Contents of the `User-Agent` header |
 | `jsonPayload.user` | string | Authenticated username for the request |

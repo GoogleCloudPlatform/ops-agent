@@ -25,3 +25,52 @@ expected_metrics:
   labels:
     http_method: .*
   representative: true
+expected_logs:
+- log_name: iis_access
+  fields:
+  - name: httpRequest.serverIp
+    value_regex: "127.0.0.1:80"
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: httpRequest.remoteIp
+    value_regex: "127.0.0.1"
+    type: string
+    description: "IP of the client that made the requestb v"
+  - name: httpRequest.requestUrl
+    value_regex: "/forbidden?something=something"
+    type: string
+    description: "Request URL (typically just the path part of the URL)"
+  - name: httpRequest.protocol
+    value_regex: "HTTP/1.1"
+    type: string
+    description: "Protocol used for the request"
+  - name: httpRequest.requestMethod
+    value_regex: GET"
+    type: string
+    description: "HTTP method"
+  - name: httpRequest.status
+    value_regex: 404
+    type: number
+    description: "HTTP status code"
+  - name: httpRequest.userAgent
+    value_regex: "curl/.*"
+    type: string
+    description:  "Contents of the `User-Agent` header"
+  - name: httpRequest.referer
+    type: string
+    description:  "Contents of the `Referer` header"
+  - name: jsonPayload.sc_substatus
+    value_regex: 0
+    type: number
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.sc_win32_status
+    value_regex: 2
+    type: number
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.time_taken
+    value_regex: "\d+"
+    type: number
+    description: "The length of time that the action took, in milliseconds"
+  - name: jsonPayload.user
+    type: number
+    description: "Authenticated username for the request"
