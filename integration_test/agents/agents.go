@@ -718,20 +718,10 @@ func globForAgentPackage(platform string) (string, error) {
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
-// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs. Each agent
-// must have its own subdirectory. For example this would be
-// a valid structure inside AGENT_PACKAGES_IN_GCS when testing metrics & ops-agent:
-// ├── metrics
-// │   ├── collectd-4.5.6.deb
-// │   ├── collectd-4.5.6.rpm
-// │   └── otel-collector-0.1.2.goo
-// └── ops-agent
-//     ├── ops-agent-google-cloud-1.2.3.deb
-//     ├── ops-agent-google-cloud-1.2.3.rpm
-//     └── ops-agent-google-cloud-1.2.3.goo
-func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
-		return installWindowsPackageFromGCS(ctx, logger, vm, agentType, gcsPath)
+		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
@@ -744,7 +734,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s/%s /tmp/agentUpload", gcsPath, agentType, glob)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s /tmp/agentUpload", gcsPath, glob)); err != nil {
 		logger.ToMainLog().Printf("picking agent package using glob %q", glob)
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
@@ -761,11 +751,11 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
-func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/%s/*.goo C:\\agentUpload", gcsPath, agentType)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm install (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
