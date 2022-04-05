@@ -116,16 +116,14 @@ AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
 ```
 
-You can obtain such a URI by taking a previous Kokoro run with
-a successful build and getting the "gsutil URI" to `+build_and_test.txt`
-from Pantheon. For example:
+You can obtain such a URI by:
 
-```
-gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt
-```
-
-Then replace `logs/+build_and_test.txt` at the end of the URI with
-`agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+1.  take a previous Kokoro run with a successful build and get the
+    "gsutil URI" to `+build_and_test.txt` from the Google Cloud Storage browser
+    page. For example:
+    `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
+2.  Replace `logs/+build_and_test.txt` at the end of the URI with
+    `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
 
 ## Third Party Apps Test
 
@@ -137,7 +135,7 @@ The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
 it reads `test_config.yaml` and uses that to set some testing options. See the
 "test_config.yaml" section below. Then it reads
-`agent/ops-agent/<platform>/supported_applications.txt` to determine
+`agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -164,7 +162,7 @@ data directory and the test runner before it is really meeting our needs.
 ### Adding a new third-party application
 
 You will need to add and modify a few files. Start by adding your new
-application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
+application to `agent/<linux_or_windows>/supported_applications.txt`
 
 Then, inside `applications/<application>/`:
 
@@ -306,9 +304,8 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── fluent_bit_main.conf.txt
 |       └── fluent_bit_parser.conf.txt
 └── agent_packages
-    └── ops-agent
-        ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
-        └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
+    ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
+    └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
 ```
 
 Let's go through each of these files and discuss what they are.
