@@ -27,6 +27,7 @@ enabled."
 minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.4.0
+supported_app_version: ["2.4"]
 expected_metrics:
 - type: workload.googleapis.com/apache.current_connections
   value_type: INT64

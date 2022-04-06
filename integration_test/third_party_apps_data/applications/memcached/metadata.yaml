@@ -4,6 +4,7 @@ long_name: Memcached
 minimum_supported_agent_version:
   metrics: 2.8.0
 expected_metrics:
+supported_app_version: ["1.6"]
 - type: workload.googleapis.com/memcached.bytes
   value_type: INT64
   kind: GAUGE

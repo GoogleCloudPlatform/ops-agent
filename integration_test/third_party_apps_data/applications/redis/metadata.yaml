@@ -4,6 +4,7 @@ long_name: Redit
 minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.5.0
+supported_app_version: ["6.2"]
 expected_metrics:
 - type: workload.googleapis.com/redis.clients.blocked
   value_type: INT64
