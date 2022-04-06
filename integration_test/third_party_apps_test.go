@@ -184,6 +184,10 @@ type minimumSupportedAgentVersion struct {
 }
 
 type integrationMetadata struct {
+	PublicUrl                    string                       `yaml:"public_url"`
+	ShortName                    string                       `yaml:"short_name" validate:"required"`
+	LongName                     string                       `yaml:"long_name" validate:"required"`
+	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []expectedLog                `yaml:"expected_logs"`
 	ExpectedMetrics              []common.ExpectedMetric      `yaml:"expected_metrics"`
 	MinimumSupportedAgentVersion minimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`

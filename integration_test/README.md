@@ -171,6 +171,9 @@ Then, inside `applications/<application>/`:
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
+1.  Inside `metadata.yaml`, add `short_name`, e.g. `solr` and `long_name`, e.g.
+    `Apache Solr`.
+1.  Some integration will have steps for configuring instance, e.g. [Apache Hadoop](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/hadoop#configure-instance).
 1.  (if you want to test logging) add `expected_logs` in metadata.yaml
 1.  (if you want to test metrics) add `expected_metrics` in metadata.yaml
 
