@@ -1,3 +1,5 @@
+short_name: varnish
+long_name: Varnish HTTP Cache
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64
