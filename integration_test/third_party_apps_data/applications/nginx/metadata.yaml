@@ -1,3 +1,91 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx"
+short_name: nginx
+long_name: Nginx
+configure_integration: "You must enable the `stub_status` module in the nginx configuration file to set
+up a locally reachable URL, for example, `http://www.example.com/status` for the
+status page. To enable the `stub_status` module, complete the following steps:
+
+1. Edit the `status.conf` file, or create the file if it doesn't exist. You can
+   find this file in the nginx configuration directory, typically found at
+   `/etc/nginx/conf.d`.
+
+1. Add the following lines to the `server` section:
+
+   ```none
+   location /status {
+       stub_status on;
+       access_log off;
+       allow 127.0.0.1;
+       deny all;
+   }
+   ```
+
+   Your configuration file might look like the following example
+
+   <pre>
+   server {
+       listen 80;
+       server_name 127.0.0.1;
+       location /status {
+           stub_status on;
+           access_log off;
+           allow 127.0.0.1;
+           deny all;
+       }
+       location / {
+           root /dev/null;
+       }
+   }
+   </pre>
+
+1. Reload the nginx configuration.
+
+   ```
+   sudo service nginx reload
+   ```
+
+You can run the following command to automate the previous steps. It creates
+a `status.conf` file if it doesn't exist or overwrites the existing one if it
+does exist. The command turns on `stub_status`, reloads nginx, and verifies
+that the expected information is exposed through the endpoint.
+
+```bash
+sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
+server {
+    listen 80;
+    server_name 127.0.0.1;
+    location /status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+    location / {
+       root /dev/null;
+    }
+}
+EOF
+sudo service nginx reload
+curl http://127.0.0.1:80/status
+```
+
+The sample output is:
+
+<pre>
+Active connections: 1
+server accepts handled requests
+ 23 23 74
+Reading: 0 Writing: 1 Waiting: 0
+</pre>
+
+Note: `127.0.0.1` can be replaced with the real server name, for example,
+`server_name mynginx.domain.com`. The curl command to verify would be
+`curl http://mynginx.domain.com:80/status`.
+
+Alternately, instead of using a separate `status.conf` file, you can also
+directly embed the lines to the main `nginx.conf` file, which
+is typically located in one of the following directories: `/etc/nginx`,
+`/usr/local/nginx/conf`, or `/usr/local/etc/nginx`."
 minimum_supported_agent_version:
   metrics: 2.1.0
   logging: 2.1.0
