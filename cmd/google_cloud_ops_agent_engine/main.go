@@ -51,7 +51,10 @@ func run() error {
 	log.Printf("Built-in config:\n%s", builtInConfig)
 	log.Printf("Merged config:\n%s", mergedConfig)
 
-	hostInfo, _ := host.Info()
+	hostInfo, err := host.Info()
+	if err != nil {
+		return err
+	}
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
 	if err != nil {
 		return err

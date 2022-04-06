@@ -106,36 +106,13 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			// Retrieve the expected golden conf files.
 			expectedFiles := readFileContents(t, testName, platform.OS, dir)
 
-			var got map[string]string
-			var mergedConfBytes, builtInConfBytes []byte
-
 			confDebugFolder := filepath.Join(dirPath, testName)
 			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
-			if builtInConfBytes, mergedConfBytes, err = confgenerator.MergeConfFiles(userSpecifiedConfPath, platform.OS, apps.BuiltInConfStructs); err != nil {
-				// TODO: Move this inside generateConfigs when we can do MergeConfFiles in-memory
-				if _, ok := expectedFiles["error"]; ok || *updateGolden {
-					// Config generation failed, but that might be expected.
-					got = map[string]string{
-						"error": err.Error(),
-					}
-				} else {
-					t.Fatalf("MergeConfFiles(%q) got: %v", userSpecifiedConfPath, err)
-				}
-			}
 
-			if got == nil {
-				t.Logf("merged config:\n%s", mergedConfBytes)
-
-				// Generate the actual conf files.
-				got, err = generateConfigs(mergedConfBytes, platform)
-
-				if err != nil {
-					t.Logf("config generation returned %v", err)
-				}
-
-				if testName == builtInConfTestName {
-					got["built-in-config.yaml"] = string(builtInConfBytes)
-				}
+			// Generate the actual conf files.
+			got, err := generateConfigs(testName, userSpecifiedConfPath, apps.BuiltInConfStructs, platform)
+			if err != nil {
+				t.Logf("config generation returned %v", err)
 			}
 
 			// Compare the expected and actual and error out in case of diff.
@@ -212,9 +189,15 @@ func updateOrCompareGolden(t *testing.T, testName, goos, dir, name, got, want st
 // 1. Parsing phase of the agent config when the config is not YAML.
 // 2. Config generation phase when the config is invalid.
 // If at any point, an error is generated, immediately return it for validation.
-func generateConfigs(configInput []byte, platform platformConfig) (got map[string]string, err error) {
+func generateConfigs(testName, userSpecifiedConfPath string, builtInConfStructs map[string]*confgenerator.UnifiedConfig, platform platformConfig) (got map[string]string, err error) {
 	got = make(map[string]string)
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(configInput, platform.OS)
+	builtInConfBytes, mergedConfBytes, err := confgenerator.MergeConfFiles(userSpecifiedConfPath, platform.OS, apps.BuiltInConfStructs)
+	if err != nil {
+		got["error"] = err.Error()
+		return
+	}
+
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfBytes, platform.OS)
 	if err != nil {
 		got["error"] = err.Error()
 		return
@@ -228,12 +211,18 @@ func generateConfigs(configInput []byte, platform platformConfig) (got map[strin
 	for k, v := range fbConfs {
 		got[k] = v
 	}
+
 	otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
 	if err != nil {
 		got["error"] = err.Error()
 		return
 	} else {
 		got["otel.conf"] = otelConf
+	}
+
+	// Test that the built-in config file is as expected.
+	if testName == builtInConfTestName {
+		got["built-in-config.yaml"] = string(builtInConfBytes)
 	}
 
 	return
