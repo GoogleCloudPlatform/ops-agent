@@ -51,9 +51,9 @@ expected_logs:
     value_regex: GET"
     type: string
     description: "HTTP method"
-  - name: httpRequest.status
-    type: number
-    description: "HTTP status code"
+  # - name: httpRequest.status
+  #   type: number
+  #   description: "HTTP status code"
   - name: httpRequest.userAgent
     value_regex: "curl/.*"
     type: string
@@ -62,15 +62,15 @@ expected_logs:
     type: string
     description:  "Contents of the `Referer` header"
   - name: jsonPayload.sc_substatus
-    type: number
+    type: string
     description: "The server's IP and port that was requested"
   - name: jsonPayload.sc_win32_status
-    type: number
+    type: string
     description: "The server's IP and port that was requested"
   - name: jsonPayload.time_taken
     value_regex: '\d+'
-    type: number
+    type: string
     description: "The length of time that the action took, in milliseconds"
   - name: jsonPayload.user
-    type: number
+    type: string
     description: "Authenticated username for the request"

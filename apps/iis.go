@@ -136,10 +136,7 @@ func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component 
 			TimeKey:    "timestamp",
 			TimeFormat: " %Y-%m-%d %H:%M:%S",
 			Types: map[string]string{
-				"sc_win32_status":     "integer",
-				"sc_substatus":        "integer",
 				"http_request_status": "integer",
-				"time_taken":          "integer",
 			},
 		},
 	}.Components(tag, uid)
