@@ -49,7 +49,6 @@ expected_logs:
     type: string
     description: "HTTP method"
   - name: httpRequest.status
-    value_regex: 404
     type: number
     description: "HTTP status code"
   - name: httpRequest.userAgent
@@ -60,11 +59,9 @@ expected_logs:
     type: string
     description:  "Contents of the `Referer` header"
   - name: jsonPayload.sc_substatus
-    value_regex: 0
     type: number
     description: "The server's IP and port that was requested"
   - name: jsonPayload.sc_win32_status
-    value_regex: 2
     type: number
     description: "The server's IP and port that was requested"
   - name: jsonPayload.time_taken
