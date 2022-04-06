@@ -1,3 +1,17 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/wildfly"
+short_name: wildfly
+long_name: WildFly
+configure_integration: "To expose the JMX endpoint remotely, you must set the
+`jboss.bind.address.management` system property. By default, this property is
+set in WildFly's configuration. The default WildFly installation requires no JMX
+authentication with JMX exposed locally on `127.0.0.1:9990`.
+
+To collect session metrics, you must enable statistics on the undertow
+subsystem by running the following command using the JBoss CLI:
+
+```none
+/subsystem=undertow:write-attribute(name=statistics-enabled,value=true)
+```"
 minimum_supported_agent_version:
   metrics: 2.12.0
   logging: 2.11.0
