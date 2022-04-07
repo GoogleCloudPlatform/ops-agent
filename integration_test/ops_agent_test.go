@@ -618,6 +618,12 @@ func TestModifyFields(t *testing.T) {
           default_value: default
         jsonPayload.default_absent:
           default_value: default
+        jsonPayload.integer:
+          static_value: 15
+          type: integer
+        jsonPayload.float:
+          static_value: 10.5
+          type: float
     json:
       type: parse_json
   exporters:
@@ -641,7 +647,7 @@ func TestModifyFields(t *testing.T) {
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5`); err != nil {
 			t.Error(err)
 		}
 	})
