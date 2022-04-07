@@ -191,6 +191,7 @@ type integrationMetadata struct {
 	ExpectedLogs                 []expectedLog                `yaml:"expected_logs"`
 	ExpectedMetrics              []common.ExpectedMetric      `yaml:"expected_metrics"`
 	MinimumSupportedAgentVersion minimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
 }
 
 // constructQuery converts the given struct of:
