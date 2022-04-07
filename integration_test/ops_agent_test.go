@@ -614,6 +614,10 @@ func TestModifyFields(t *testing.T) {
           static_value: WARNING
         jsonPayload.field2:
           move_from: jsonPayload.field
+        jsonPayload.default_present:
+          default_value: default
+        jsonPayload.default_absent:
+          default_value: default
     json:
       type: parse_json
   exporters:
@@ -631,13 +635,13 @@ func TestModifyFields(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value"}` + "\n"
+		line := `{"field":"value", "default_present":"original"}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:*`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default"`); err != nil {
 			t.Error(err)
 		}
 	})

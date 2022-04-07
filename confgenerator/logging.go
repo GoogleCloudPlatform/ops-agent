@@ -25,7 +25,7 @@ func setLogNameComponents(tag, logName, receiverType string) []fluentbit.Compone
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
-				StaticValue: &logName,
+				DefaultValue: &logName,
 			},
 			`labels."agent.googleapis.com/receiver_type"`: {
 				StaticValue: &receiverType,

@@ -25,9 +25,10 @@ import (
 
 type ModifyField struct {
 	// Source of value for this field
-	MoveFrom    string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue"`
-	CopyFrom    string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
-	StaticValue *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
+	MoveFrom     string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue"`
+	CopyFrom     string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
+	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom DefaultValue"`
+	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue"`
 
 	// Name of Lua variable with copied value
 	sourceVar string `yaml:"-"`
@@ -128,6 +129,10 @@ function process(tag, timestamp, record)
 		}
 
 		fmt.Fprintf(&lua, "local v = %s;\n", src)
+
+		if field.DefaultValue != nil {
+			fmt.Fprintf(&lua, "if v == nil then v = %s end;\n", filter.LuaQuote(*field.DefaultValue))
+		}
 
 		// Process MapValues
 

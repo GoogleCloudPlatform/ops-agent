@@ -23,6 +23,8 @@ logging:
             W: WARNING
             CAUTION: WARNING
             I: INFO
+        jsonPayload.default:
+          default_value: this field was missing
   service:
     pipelines:
       p1:
