@@ -169,7 +169,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []logFields) string {
+func constructQuery(fields []common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
@@ -179,7 +179,7 @@ func constructQuery(fields []logFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []expectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []common.ExpectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
