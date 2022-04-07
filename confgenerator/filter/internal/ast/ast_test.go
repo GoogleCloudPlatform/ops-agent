@@ -17,7 +17,7 @@ func TestUnquoteString(t *testing.T) {
 	} {
 		in, out := in, out
 		t.Run(in, func(t *testing.T) {
-			got, err := Unquote(in)
+			got, err := UnquoteString(in)
 			if got != out {
 				t.Errorf("got %q, want %q", got, out)
 			}

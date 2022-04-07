@@ -1,8 +1,8 @@
 
 function process(tag, timestamp, record)
 local match = ((string.lower((function()
-return record["message"]
-end)()) == string.lower("a`~!@#$%^&*()-_=+\|]}[{<.>/?;:,b")))
+return record["a:=<>+~\\.*\7\8\12\9\11b"]
+end)()) == string.lower("foo")))
 
   if match then
     return -1, 0, 0

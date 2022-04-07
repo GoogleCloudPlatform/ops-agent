@@ -25,7 +25,22 @@ import (
 
 type Attrib interface{}
 
+// Cloud Logging's filter syntax has extremely weird rules around quoting/escaping
+//
+// A "text" is a literal that is not surrounded by double quotes. A
+// test may contain a small number of special characters, must start
+// with a non-digit, and can contain some but not all escape
+// sequences. However, if it does contain escape sequences, they are
+// NOT unescaped before matching.
+//
+// A "string" is a literal that IS surrounded by double quotes. A
+// string can contain a larger number of special characters and escape
+// sequences, and the escape sequences ARE unescaped. However, if it
+// is used for a regex, the escape sequences are unescaped by the
+// regex engine, not separately as part of filter parsing.
+
 // Target represents member from the filter BNF, and represents either a value or a dotted field path.
+// Each element of the slice is not yet unescaped (if needed).
 type Target []string
 
 var logEntryRootValueMapToFluentBit = map[string]string{
@@ -41,17 +56,21 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 }
 
 func (m Target) fluentBitPath() ([]string, error) {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return nil, err
+	}
 	var fluentBit []string
-	if len(m) == 1 {
-		if v, ok := logEntryRootValueMapToFluentBit[m[0]]; ok {
+	if len(unquoted) == 1 {
+		if v, ok := logEntryRootValueMapToFluentBit[unquoted[0]]; ok {
 			fluentBit = []string{v}
 		}
 	} else if len(m) > 1 {
-		if v, ok := logEntryRootStructMapToFluentBit[m[0]]; ok {
-			fluentBit = prepend(v, m[1:])
-		} else if m[0] == "jsonPayload" {
+		if v, ok := logEntryRootStructMapToFluentBit[unquoted[0]]; ok {
+			fluentBit = prepend(v, unquoted[1:])
+		} else if unquoted[0] == "jsonPayload" {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
-			fluentBit = m[1:]
+			fluentBit = unquoted[1:]
 		}
 	}
 	if fluentBit == nil {
@@ -68,17 +87,13 @@ func (m Target) RecordAccessor() (string, error) {
 	}
 	recordAccessor := "$record"
 	for _, part := range fluentBit {
-		unquoted, err := Unquote(part)
-		if err != nil {
-			return "", err
-		}
 		// Disallowed characters because they cannot be encoded in a Record Accessor.
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
-		if strings.ContainsAny(unquoted, "\n\r\", ") {
+		if strings.ContainsAny(part, "\n\r\", ") {
 			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %s", part)
 		}
-		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(unquoted, `'`, `''`))
+		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
 	return recordAccessor, nil
 }
@@ -174,10 +189,26 @@ func escapeFilterString(in string) string {
 	return b.String()
 }
 
+func (m Target) Unquote() ([]string, error) {
+	var unquoted []string
+	for _, part := range m {
+		p, err := UnquoteTextOrString(part)
+		if err != nil {
+			return nil, err
+		}
+		unquoted = append(unquoted, p)
+	}
+	return unquoted, nil
+}
+
 // String formats a target as a valid expression
 func (m Target) String() string {
 	var out []string
-	for _, s := range m {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return fmt.Sprintf("UNPARSABLE TARGET %#v", m)
+	}
+	for _, s := range unquoted {
 		out = append(out, escapeFilterString(s))
 	}
 	return strings.Join(out, ".")
@@ -189,8 +220,10 @@ func prepend(value string, slice []string) []string {
 
 type Restriction struct {
 	Operator string
-	LHS      Target
-	RHS      string
+	// LHS contains the field being matched
+	LHS Target
+	// RHS contains the string to match against; for regexes, this is a raw string including escape sequences (but always without double quotes).
+	RHS string
 }
 
 func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
@@ -221,15 +254,22 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 		if len(rhs) != 1 {
 			return nil, fmt.Errorf("unexpected rhs: %v", rhs)
 		}
-		// Eager validation
+		// Perform the appropriate unquoting depending on what operator is being used.
 		switch r.Operator {
-		case ":", "=", "!=":
-			_, err := Unquote(rhs[0])
+		case "=~", "!~":
+			rhs := rhs[0]
+			// Regular expressions must be string, not text, and we need to preserve the original escaped text for the regex engine.
+			if rhs[0] != byte('"') || rhs[len(rhs)-1] != byte('"') {
+				return nil, fmt.Errorf("regular expressions must begin and end with '\"', token %q", rhs)
+			}
+			r.RHS = rhs[1 : len(rhs)-1]
+		default:
+			rhs, err := UnquoteTextOrString(rhs[0])
 			if err != nil {
 				return nil, err
 			}
+			r.RHS = rhs
 		}
-		r.RHS = rhs[0]
 	default:
 		return nil, fmt.Errorf("unknown rhs: %v", rhs)
 	}
@@ -242,7 +282,11 @@ func (r Restriction) Simplify() Expression {
 
 func (r Restriction) String() string {
 	if r.Operator == "GLOBAL" {
-		return r.LHS.String()
+		return escapeFilterString(r.RHS)
+	}
+	switch r.Operator {
+	case "=~", "!~":
+		return fmt.Sprintf(`%s %s "%s"`, r.LHS, r.Operator, r.RHS)
 	}
 	return fmt.Sprintf(`%s %s %s`, r.LHS, r.Operator, escapeFilterString(r.RHS))
 }
@@ -262,7 +306,7 @@ func cond(ctype string, values ...string) string {
 	return fmt.Sprintf("%s %s", ctype, strings.Join(values, " "))
 }
 
-func escapeWhitespace(s string) string {
+func escapeWhitespaceFluentBit(s string) string {
 	s = strings.ReplaceAll(s, "\a", `\a`)
 	s = strings.ReplaceAll(s, "\b", `\x08`)
 	s = strings.ReplaceAll(s, "\f", `\f`)
@@ -276,9 +320,8 @@ func escapeWhitespace(s string) string {
 
 func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	lhs, _ := r.LHS.LuaAccessor(false)
-	rhsLiteral, _ := Unquote(r.RHS)
-	rhsQuoted := LuaQuote(rhsLiteral)
-	rhsRegex := escapeWhitespace(r.RHS)
+	rhsQuoted := LuaQuote(r.RHS)
+	rhsRegex := escapeWhitespaceFluentBit(r.RHS)
 
 	// TODO: Add support for numeric comparisons
 
@@ -450,14 +493,24 @@ func (n Negation) String() string {
 	return fmt.Sprintf("NOT %s", n.Expression.String())
 }
 
-// Unquote replaces all escape sequences with their respective characters that they represent.
+// UnquoteTextOrString returns text literals as-is and unquotes string literals.
+func UnquoteTextOrString(in string) (string, error) {
+	if in[0] == byte('"') {
+		return UnquoteString(in[1 : len(in)-1])
+	}
+	return in, nil
+}
+
+// UnquoteString replaces all escape sequences with their respective characters that they represent.
+//
+// It assumes the leading and trailing double-quotes have been removed.
 //
 // Escape sequences are replaced if and only if they are defined in our grammar: confgenerator/filter/internal/filter.bnf.
 // An error is returned if an unrecognized escape sequence is encountered.
 //
 // This is a compatibility layer to maintain parity with Cloud Logging query strings. strconv.Unquote cannot be used here
 // because it follows escape rules for Go strings, and Cloud Logging strings are not Go strings.
-func Unquote(in string) (string, error) {
+func UnquoteString(in string) (string, error) {
 	var buf strings.Builder
 	buf.Grow(3 * len(in) / 2)
 
@@ -555,14 +608,9 @@ func Unquote(in string) (string, error) {
 	return buf.String(), nil
 }
 
-func ParseText(a Attrib) (string, error) {
+func ParseTextOrString(a Attrib) (string, error) {
 	str := string(a.(*token.Token).Lit)
 	return str, nil
-}
-func ParseString(a Attrib) (string, error) {
-	str := string(a.(*token.Token).Lit)
-	// TODO: Support all escape sequences
-	return str[1 : len(str)-1], nil
 }
 
 func LuaQuote(in string) string {

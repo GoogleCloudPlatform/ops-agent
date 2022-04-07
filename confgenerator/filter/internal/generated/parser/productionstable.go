@@ -317,13 +317,13 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : text	<< ast.ParseText(X[0]) >>`,
+		String: `Value : text	<< ast.ParseTextOrString(X[0]) >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      28,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return ast.ParseText(X[0])
+			return ast.ParseTextOrString(X[0])
 		},
 	},
 	ProdTabEntry{
@@ -367,13 +367,13 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Phrase : string	<< ast.ParseString(X[0]) >>`,
+		String: `Phrase : string	<< ast.ParseTextOrString(X[0]) >>`,
 		Id:         "Phrase",
 		NTType:     14,
 		Index:      33,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
-			return ast.ParseString(X[0])
+			return ast.ParseTextOrString(X[0])
 		},
 	},
 	ProdTabEntry{
