@@ -327,10 +327,40 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : Phrase	<<  >>`,
+		String: `Value : orOp	<< "OR", nil >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      29,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return "OR", nil
+		},
+	},
+	ProdTabEntry{
+		String: `Value : andOp	<< "AND", nil >>`,
+		Id:         "Value",
+		NTType:     13,
+		Index:      30,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return "AND", nil
+		},
+	},
+	ProdTabEntry{
+		String: `Value : not	<< "NOT", nil >>`,
+		Id:         "Value",
+		NTType:     13,
+		Index:      31,
+		NumSymbols: 1,
+		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
+			return "NOT", nil
+		},
+	},
+	ProdTabEntry{
+		String: `Value : Phrase	<<  >>`,
+		Id:         "Value",
+		NTType:     13,
+		Index:      32,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -340,7 +370,7 @@ var productionsTable = ProdTab{
 		String: `Phrase : string	<< ast.ParseString(X[0]) >>`,
 		Id:         "Phrase",
 		NTType:     14,
-		Index:      30,
+		Index:      33,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return ast.ParseString(X[0])
@@ -350,7 +380,7 @@ var productionsTable = ProdTab{
 		String: `ItemKeyword : Item	<<  >>`,
 		Id:         "ItemKeyword",
 		NTType:     15,
-		Index:      31,
+		Index:      34,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -360,7 +390,7 @@ var productionsTable = ProdTab{
 		String: `ItemKeyword : Keyword	<< string(X[0].(*token.Token).Lit), nil >>`,
 		Id:         "ItemKeyword",
 		NTType:     15,
-		Index:      32,
+		Index:      35,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return string(X[0].(*token.Token).Lit), nil
@@ -370,7 +400,7 @@ var productionsTable = ProdTab{
 		String: `Keyword : or	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
-		Index:      33,
+		Index:      36,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -380,7 +410,7 @@ var productionsTable = ProdTab{
 		String: `Keyword : and	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
-		Index:      34,
+		Index:      37,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -390,7 +420,7 @@ var productionsTable = ProdTab{
 		String: `Keyword : not	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
-		Index:      35,
+		Index:      38,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -400,7 +430,7 @@ var productionsTable = ProdTab{
 		String: `Comparator : Comparison	<<  >>`,
 		Id:         "Comparator",
 		NTType:     17,
-		Index:      36,
+		Index:      39,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -410,7 +440,7 @@ var productionsTable = ProdTab{
 		String: `Comparator : ws Comparison	<< X[1], nil >>`,
 		Id:         "Comparator",
 		NTType:     17,
-		Index:      37,
+		Index:      40,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[1], nil
@@ -420,7 +450,7 @@ var productionsTable = ProdTab{
 		String: `Comparator : Comparison ws	<<  >>`,
 		Id:         "Comparator",
 		NTType:     17,
-		Index:      38,
+		Index:      41,
 		NumSymbols: 2,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -430,7 +460,7 @@ var productionsTable = ProdTab{
 		String: `Comparator : ws Comparison ws	<< X[1], nil >>`,
 		Id:         "Comparator",
 		NTType:     17,
-		Index:      39,
+		Index:      42,
 		NumSymbols: 3,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[1], nil
@@ -440,7 +470,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : less_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      40,
+		Index:      43,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -450,7 +480,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : less_than	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      41,
+		Index:      44,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -460,7 +490,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : greater_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      42,
+		Index:      45,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -470,7 +500,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : greater_than	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      43,
+		Index:      46,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -480,7 +510,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : not_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      44,
+		Index:      47,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -490,7 +520,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      45,
+		Index:      48,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -500,7 +530,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : has	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      46,
+		Index:      49,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -510,7 +540,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : matches_regexp	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      47,
+		Index:      50,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil
@@ -520,7 +550,7 @@ var productionsTable = ProdTab{
 		String: `Comparison : not_matches_regexp	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
-		Index:      48,
+		Index:      51,
 		NumSymbols: 1,
 		ReduceFunc: func(X []Attrib, C interface{}) (Attrib, error) {
 			return X[0], nil

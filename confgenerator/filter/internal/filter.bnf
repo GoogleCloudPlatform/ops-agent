@@ -217,6 +217,9 @@ Item
 
 Value
 : text << ast.ParseText($0) >>
+| orOp << "OR", nil >>
+| andOp << "AND", nil >>
+| not << "NOT", nil >>
 | Phrase
 ;
 
