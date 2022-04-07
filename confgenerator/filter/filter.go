@@ -69,6 +69,10 @@ func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, s
 	return f.expr.FluentConfig(tag, prefix)
 }
 
+func (f Filter) String() string {
+	return f.expr.String()
+}
+
 // MatchesAny returns a single Filter that matches if any of the child filters match.
 func MatchesAny(filters []*Filter) *Filter {
 	d := ast.Disjunction{}

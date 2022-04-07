@@ -126,6 +126,63 @@ end)()`, p)
 	return out.String(), nil
 }
 
+const (
+	filterStartChar  = `#$%&'*/;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_` + "`" + `abcdefghijklmnopqrstuvwxyz{|}`
+	filterMidChar    = filterStartChar + `0123456789+-`
+	filterStringChar = filterMidChar + `!(),.:<=>~`
+)
+
+func escapeFilterString(in string) string {
+	var needQuotes bool
+	var b strings.Builder
+	for i, c := range in {
+		if i == 0 {
+			if strings.ContainsRune(filterStartChar, c) {
+				b.WriteRune(c)
+				continue
+			}
+			needQuotes = true
+		}
+		if strings.ContainsRune(filterMidChar, c) {
+			b.WriteRune(c)
+			continue
+		}
+		needQuotes = true
+		if strings.ContainsRune(filterStringChar, c) {
+			b.WriteRune(c)
+		} else if c == '\a' {
+			b.WriteString(`\a`)
+		} else if c == '\b' {
+			b.WriteString(`\b`)
+		} else if c == '\f' {
+			b.WriteString(`\f`)
+		} else if c == '\n' {
+			b.WriteString(`\n`)
+		} else if c == '\r' {
+			b.WriteString(`\r`)
+		} else if c == '\t' {
+			b.WriteString(`\t`)
+		} else if c == '\v' {
+			b.WriteString(`\v`)
+		} else {
+			fmt.Fprintf(&b, `\u%04X`, c)
+		}
+	}
+	if needQuotes {
+		return fmt.Sprintf(`"%s"`, b.String())
+	}
+	return b.String()
+}
+
+// String formats a target as a valid expression
+func (m Target) String() string {
+	var out []string
+	for _, s := range m {
+		out = append(out, escapeFilterString(s))
+	}
+	return strings.Join(out, ".")
+}
+
 func prepend(value string, slice []string) []string {
 	return append([]string{value}, slice...)
 }
@@ -181,6 +238,13 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 
 func (r Restriction) Simplify() Expression {
 	return r
+}
+
+func (r Restriction) String() string {
+	if r.Operator == "GLOBAL" {
+		return r.LHS.String()
+	}
+	return fmt.Sprintf(`%s %s %s`, r.LHS, r.Operator, escapeFilterString(r.RHS))
 }
 
 func modify(tag, key string) fluentbit.Component {
@@ -259,6 +323,8 @@ type Expression interface {
 
 	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record.
 	FluentConfig(tag, key string) ([]fluentbit.Component, string)
+
+	fmt.Stringer
 }
 
 func Simplify(a Attrib) (Expression, error) {
@@ -316,8 +382,20 @@ func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Componen
 	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
 }
 
+func (s exprSlice) String(operator string) string {
+	var out []string
+	for _, e := range s {
+		out = append(out, e.String())
+	}
+	return fmt.Sprintf("(%s)", strings.Join(out, ") "+operator+" ("))
+}
+
 func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	return exprSlice(c).FluentConfig(tag, key, " and ")
+}
+
+func (c Conjunction) String() string {
+	return exprSlice(c).String("AND")
 }
 
 func NewDisjunction(a Attrib) (Disjunction, error) {
@@ -351,6 +429,10 @@ func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(d).FluentConfig(tag, key, " or ")
 }
 
+func (d Disjunction) String() string {
+	return exprSlice(d).String("OR")
+}
+
 type Negation struct {
 	Expression
 }
@@ -362,6 +444,10 @@ func (n Negation) Simplify() Expression {
 func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	c, expr := n.Expression.FluentConfig(tag, key)
 	return c, fmt.Sprintf("(not %s)", expr)
+}
+
+func (n Negation) String() string {
+	return fmt.Sprintf("NOT %s", n.Expression.String())
 }
 
 // Unquote replaces all escape sequences with their respective characters that they represent.

@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/google/go-cmp/cmp"
 )
 
 var validFilters = []string{
@@ -59,6 +60,10 @@ func TestShouldParse(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+			t.Logf("parsed filter = %s", filter)
+			if filter == nil {
+				t.Fatal("got nil filter")
+			}
 			components, expr := AllFluentConfig("logname", map[string]*Filter{"filter": filter})
 			t.Logf("components = %+v", components)
 			t.Logf("expression =\n%s", expr)
@@ -67,6 +72,46 @@ func TestShouldParse(t *testing.T) {
 				t.Error(err)
 			}
 			t.Logf("generated config:\n%v", files)
+		})
+	}
+}
+
+func TestInvalidFilters(t *testing.T) {
+	for _, test := range []string{
+		`"missing operator"`,
+		`invalid/characters*here`,
+	} {
+		test := test
+		t.Run(test, func(t *testing.T) {
+			filter, err := NewFilter(test)
+			if err != nil {
+				t.Logf("got expected error %v", err)
+				return
+			}
+			t.Errorf("invalid filter %q unexpectedly parsed: %v", test, filter)
+		})
+	}
+}
+
+func TestValidMembers(t *testing.T) {
+	for _, test := range []struct {
+		in   string
+		want []string
+	}{
+		{`jsonPayload.foo`, []string{"jsonPayload", "foo"}},
+		{`labels."logging.googleapis.com/foo"`, []string{"labels", "logging.googleapis.com/foo"}},
+		{`severity`, []string{"severity"}},
+	} {
+		test := test
+		t.Run(test.in, func(t *testing.T) {
+			member, err := NewMember(test.in)
+			if err != nil {
+				t.Error(err)
+			}
+			got := []string(member.Target)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("got %+v, want %+v", got, test.want)
+			}
 		})
 	}
 }
