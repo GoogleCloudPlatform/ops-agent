@@ -572,7 +572,11 @@ func LuaQuote(in string) string {
 	for i := 0; i < len(in); i++ {
 		// N.B. slicing a string gives bytes, not runes
 		c := in[i]
-		if c >= 32 && c < 127 {
+		if c == 92 {
+			b.WriteString(`\\`)
+		} else if c == 34 {
+			b.WriteString(`\"`)
+		} else if c >= 32 && c < 127 {
 			// printable character
 			b.WriteByte(c)
 		} else {
