@@ -18,9 +18,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -168,32 +166,37 @@ func toExpectedMetric(metric metric.MetricDescriptor) common.ExpectedMetric {
 	}
 }
 
-func expectedMetricsFilename(app string) string {
-	return path.Join(scriptsDir, "applications", app, "expected_metrics.yaml")
+func metadataFilename(app string) string {
+	return path.Join(scriptsDir, "applications", app, "metadata.yaml")
 }
 
-// readExpectedMetrics reads in the existing expected_metrics.yaml
-// file for the given app as a map keyed on metric type. If no file
-// exists, an empty map is returned.
+func readMetadata(app string) (common.IntegrationMetadata, error) {
+	file := metadataFilename(app)
+	serialized, err := os.ReadFile(file)
+	var metadata common.IntegrationMetadata
+	if err != nil {
+		return metadata, err
+	}
+	err = yaml.Unmarshal(serialized, &metadata)
+	return metadata, err
+}
+
+// readExpectedMetrics reads in metrics from the existing metadata.yaml
+// file for the given app as a map keyed on metric type. If no metrics
+// exist, an empty map is returned.
 // Otherwise, its contents are returned, or an error if it could
 // not be unmarshaled.
 func readExpectedMetrics(app string) (expectedMetricsMap, error) {
-	file := expectedMetricsFilename(app)
-	serialized, err := os.ReadFile(file)
+	metadata, err := readMetadata(app)
+	if err != nil {
+		return nil, err
+	}
 	metricsByType := make(expectedMetricsMap)
-	if errors.Is(err, fs.ErrNotExist) {
-		return metricsByType, nil
-	} else if err != nil {
-		return nil, err
-	}
-	var metrics []common.ExpectedMetric
-	if err = yaml.Unmarshal(serialized, &metrics); err != nil {
-		return nil, err
-	}
-	for _, m := range metrics {
+	expectedMetrics := metadata.ExpectedMetrics
+	for _, m := range expectedMetrics {
 		m := m
 		if _, ok := metricsByType[m.Type]; ok {
-			return nil, fmt.Errorf("duplicate metric type in %s/expected_metrics.yaml: %s", app, m.Type)
+			return nil, fmt.Errorf("duplicate expected_metrics type in %s/metadata.yaml: %s", app, m.Type)
 		}
 		metricsByType[m.Type] = m
 	}
@@ -201,20 +204,24 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 }
 
 // writeExpectedMetrics writes the given map's values as a slice
-// to the expected_metrics.yaml associated with the given app. Metrics
+// to the metadata.yaml associated with the given app. Metrics
 // are written in alphabetical order by type.
 func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
-	metricsSlice := make([]common.ExpectedMetric, 0)
-	for _, m := range metrics {
-		metricsSlice = append(metricsSlice, m)
-	}
-	sort.Slice(metricsSlice, func(i, j int) bool { return metricsSlice[i].Type < metricsSlice[j].Type })
-	serialized, err := yaml.Marshal(metricsSlice)
+	metadata, err := readMetadata(app)
 	if err != nil {
 		return err
 	}
-	file := expectedMetricsFilename(app)
-	return os.WriteFile(file, serialized, 0644)
+	expectedMetrics := make([]common.ExpectedMetric, 0)
+	for _, m := range metrics {
+		expectedMetrics = append(expectedMetrics, m)
+	}
+	sort.Slice(expectedMetrics, func(i, j int) bool { return expectedMetrics[i].Type < expectedMetrics[j].Type })
+	metadata.ExpectedMetrics = expectedMetrics
+	serialized, err := yaml.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(metadataFilename(app), serialized, 0644)
 }
 
 // updateMetric returns the given metric with updates applied from withValuesFrom.
@@ -230,28 +237,27 @@ func updateMetric(toUpdate common.ExpectedMetric, withValuesFrom common.Expected
 	if toUpdate.Type != withValuesFrom.Type {
 		panic(fmt.Errorf("updateMetric: attempted to update metric with mismatched type: %s, %s", toUpdate.Type, withValuesFrom.Type))
 	}
-	toUpdate.Kind = withValuesFrom.Kind
-	toUpdate.ValueType = withValuesFrom.ValueType
-	toUpdate.MonitoredResource = withValuesFrom.MonitoredResource
+	result := toUpdate
+	result.Kind = withValuesFrom.Kind
+	result.ValueType = withValuesFrom.ValueType
+	result.MonitoredResource = withValuesFrom.MonitoredResource
+	result.Labels = make(map[string]string)
 
 	// TODO: Refactor to a simple map copy once we improve listMetrics to fetch
 	// label patterns automatically.
 
-	// Copy new label keys
+	// The keys of result.Labels should be the same as withValuesFrom.Labels,
+	// except that existing values/patterns are preserved.
 	for k, v := range withValuesFrom.Labels {
-		// Don't overwrite existing patterns
-		if _, ok := toUpdate.Labels[k]; !ok {
-			toUpdate.Labels[k] = v
-		}
-	}
-	// Remove dropped label keys
-	for k := range toUpdate.Labels {
-		if _, ok := withValuesFrom.Labels[k]; !ok {
-			delete(toUpdate.Labels, k)
+		existingPattern, ok := toUpdate.Labels[k]
+		if ok {
+			result.Labels[k] = existingPattern
+		} else {
+			result.Labels[k] = v
 		}
 	}
 
-	return toUpdate
+	return result
 }
 
 func init() {

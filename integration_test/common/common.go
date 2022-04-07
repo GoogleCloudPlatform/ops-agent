@@ -30,6 +30,34 @@ type ExpectedMetric struct {
 	Representative bool `yaml:"representative,omitempty" validate:"necsfield=Optional"`
 }
 
+type LogFields struct {
+	Name        string `yaml:"name" validate:"required"`
+	ValueRegex  string `yaml:"value_regex"`
+	Type        string `yaml:"type" validate:"required"`
+	Description string `yaml:"description" validate:"required"`
+}
+
+type ExpectedLog struct {
+	LogName string      `yaml:"log_name" validate:"required"`
+	Fields  []LogFields `yaml:"fields" validate:"required"`
+}
+
+type MinimumSupportedAgentVersion struct {
+	Logging string `yaml:"logging"`
+	Metrics string `yaml:"metrics"`
+}
+
+type IntegrationMetadata struct {
+	PublicUrl                    string                       `yaml:"public_url"`
+	ShortName                    string                       `yaml:"short_name" validate:"required"`
+	LongName                     string                       `yaml:"long_name" validate:"required"`
+	ConfigureIntegration         string                       `yaml:"configure_integration"`
+	ExpectedLogs                 []ExpectedLog                `yaml:"expected_logs"`
+	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics"`
+	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
+}
+
 // ValidateMetrics checks that all enum fields have valid values and that
 // there is exactly one representative metric in the slice.
 func ValidateMetrics(metrics []ExpectedMetric) error {
