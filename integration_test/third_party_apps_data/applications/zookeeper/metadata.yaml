@@ -1,10 +1,27 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper
 short_name: zookeeper
 long_name: Apache Zookeeper
-minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.11.0
-supported_app_version: ["3.5", "3.6", "3.7"]
+expected_logs:
+- log_name: zookeeper_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: binding to port 0.0.0.0/0.0.0.0:2181
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.thread
+    value_regex: main
+    type: string
+    description: Thread from which the log originated
+  - name: jsonPayload.source
+    value_regex: NIOServerCnxnFactory
+    type: string
+    description: Source of where the log originated
+  - name: jsonPayload.line
+    type: number
+    description: Line number from which the log was generated in source
+  - name: jsonPayload.myid
+    type: number
+    description: Numeric ID of the Zookeeper instance
 expected_metrics:
 - type: workload.googleapis.com/zookeeper.connection.active
   value_type: INT64
@@ -33,17 +50,17 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 - type: workload.googleapis.com/zookeeper.fsync.exceeded_threshold.count
-  optional: true
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
-- type: workload.googleapis.com/zookeeper.latency.avg
   optional: true
+- type: workload.googleapis.com/zookeeper.latency.avg
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+  optional: true
 - type: workload.googleapis.com/zookeeper.latency.max
   value_type: INT64
   kind: GAUGE
@@ -75,24 +92,10 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-expected_logs:
-- log_name: zookeeper_general
-  fields:
-  - name: jsonPayload.message
-    value_regex: binding to port 0.0.0.0/0.0.0.0:2181
-    type: string
-    description: Log message, including detailed stacktrace where provided
-  - name: jsonPayload.thread
-    value_regex: main
-    type: string
-    description: Thread from which the log originated
-  - name: jsonPayload.source
-    value_regex: NIOServerCnxnFactory
-    type: string
-    description: Source of where the log originated
-  - name: jsonPayload.line
-    type: number
-    description: Line number from which the log was generated in source
-  - name: jsonPayload.myid
-    type: number
-    description: Numeric ID of the Zookeeper instance
+minimum_supported_agent_version:
+  logging: 2.11.0
+  metrics: 2.10.0
+supported_app_version:
+- "3.5"
+- "3.6"
+- "3.7"

@@ -1,10 +1,29 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/redis"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/redis
 short_name: redis
 long_name: Redis
-minimum_supported_agent_version:
-  metrics: 2.7.0
-  logging: 2.5.0
-supported_app_version: ["6.2"]
+expected_logs:
+- log_name: redis
+  fields:
+  - name: jsonPayload.level
+    value_regex: \*
+    type: string
+    description: Log entry level
+  - name: jsonPayload.message
+    value_regex: Ready to accept connections
+    type: string
+    description: ""
+  - name: jsonPayload.roleChar
+    value_regex: M
+    type: string
+    description: redis role character (X, C, S, M)
+  - name: jsonPayload.role
+    value_regex: master
+    type: string
+    description: translated from redis role character (sentinel, RDB/AOF_writing_child,
+      slave, master)
+  - name: jsonPayload.pid
+    type: number
+    description: Process ID
 expected_metrics:
 - type: workload.googleapis.com/redis.clients.blocked
   value_type: INT64
@@ -128,25 +147,8 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-expected_logs:
-- log_name: redis
-  fields:
-  - name: jsonPayload.level
-    value_regex: \*
-    type: string
-    description: Log entry level
-  - name: jsonPayload.message
-    value_regex: Ready to accept connections
-    type: string
-    description: ''
-  - name: jsonPayload.roleChar
-    value_regex: M
-    type: string
-    description: redis role character (X, C, S, M)
-  - name: jsonPayload.role
-    value_regex: master
-    type: string
-    description: translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
-  - name: jsonPayload.pid
-    type: number
-    description: Process ID
+minimum_supported_agent_version:
+  logging: 2.5.0
+  metrics: 2.7.0
+supported_app_version:
+- "6.2"
