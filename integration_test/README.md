@@ -242,8 +242,7 @@ With `optional: true`, the metric will be skipped during the test. This can be u
 PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run ./cmd/generate_expected_metrics
 ```
 
 This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
@@ -253,8 +252,7 @@ PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run ./cmd/generate_expected_metrics
 ```
 
 Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
