@@ -155,14 +155,17 @@ function process(tag, timestamp, record)
 		var conv string
 		switch field.Type {
 		case "integer":
-			conv = "math.tointeger"
+			// Fluent-bit currently targets Lua 5.1, which uses the same type for numbers and integers.
+			// When converting back to msgpack, if a number can be represented as an integer, fluent-bit does so, otherwise it uses a float.
+			// If fluent-bit ever supports Lua 5.3, we can switch this to math.tointeger and use proper integers.
+			conv = "math.floor(tonumber(v))"
 		case "float":
-			conv = "tonumber"
+			conv = "tonumber(v)"
 		}
 		if conv != "" {
 			// Leave existing string value if not convertible
 			fmt.Fprintf(&lua, `
-local v2 = %s(v)
+local v2 = %s
 if v2 ~= fail then v = v2
 end
 `, conv)

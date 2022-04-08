@@ -47,7 +47,7 @@ record["hello"] = value
 end)(v)
 local v = __field_3;
 
-local v2 = math.tointeger(v)
+local v2 = math.floor(tonumber(v))
 if v2 ~= fail then v = v2
 end
 (function(value)
