@@ -429,3 +429,31 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 func init() {
 	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverSystemd{} }, "linux")
 }
+
+// A LoggingReceiverFluentExec represents the configuration for a Exec Protocol receiver.
+type LoggingReceiverFluentExec struct {
+	Command []string `yaml:"command,omitempty"`
+}
+
+func (r LoggingReceiverFluentExec) Type() string {
+	return "fluent_exec"
+}
+
+func (r LoggingReceiverFluentExec) Components(tag string) []fluentbit.Component {
+	return []fluentbit.Component{{
+		Kind: "INPUT",
+		Config: map[string]string{
+			// https://docs.fluentbit.io/manual/pipeline/inputs/exec
+			"Name":          "exec",
+			"Tag":           tag,
+			"Command":       strings.Join(r.Command, " "),
+			"Interval_Sec":  "60",
+			"Interval_NSec": "0",
+			"Buf_Size":      "8mb",
+		},
+	}}
+}
+
+func init() {
+	LoggingReceiverTypes.RegisterType(func() Component { return &LoggingReceiverFluentExec{} })
+}

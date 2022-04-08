@@ -49,3 +49,20 @@ The Ops Agent collects the following metrics from your varnish instance.
 | workload.googleapis.com/varnish.client.request.count       | cumulative | {requests}    | cache_name, state                   | The client request count                                         |
 | workload.googleapis.com/varnish.client.request.error.count | cumulative | {requests}    | cache_name, http.status_code        | The client requests errors received by status code.              |
 | workload.googleapis.com/varnish.backend.request.count      | cumulative | {requests}    | cache_name                          | The backend requests count                                       |
+
+## Logs
+
+Varnish logs contain the [`httpRequest` field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest):
+
+| Field                       | Type                                                                                                                            | Description                                                      |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `httpRequest.serverIp`      | string                                                                                                                          | The IP address of the origin server that the request was sent to |
+| `httpRequest.remoteIp`      | string                                                                                                                          | The IP address of the client that issued the HTTP request        |
+| `timestamp`                 | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received                                    |
+| `httpRequest.requestMethod` | string                                                                                                                          | HTTP method                                                      |
+| `httpRequest.requestUrl`    | string                                                                                                                          | Request URL (typically just the path part of the URL)            |
+| `httpRequest.protocol`      | string                                                                                                                          | Protocol used for the request                                    |
+| `httpRequest.status`        | number                                                                                                                          | HTTP status code                                                 |
+| `httpRequest.responseSize`  | string (`int64`)                                                                                                                | Response size                                                    |
+| `httpRequest.referer`       | string                                                                                                                          | Contents of the `Referer` header                                 |
+| `httpRequest.userAgent`     | string                                                                                                                          | Contents of the `User-Agent` header                              |

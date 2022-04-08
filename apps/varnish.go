@@ -16,6 +16,7 @@ package apps
 
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -51,4 +52,47 @@ func (r MetricsReceiverVarnish) Pipelines() []otel.Pipeline {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverVarnish{} })
+}
+
+type LoggingProcessorVarnish struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (LoggingProcessorVarnish) Type() string {
+	return "varnish"
+}
+
+func (p LoggingProcessorVarnish) Components(tag string, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Logging documentation: https://github.com/varnishcache/varnish-cache/blob/04455d6c3d8b2d810007239cb1cb2b740d7ec8ab/doc/sphinx/reference/varnishncsa.rst#format
+		// Sample line: 127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
+		Regex: `^(?<serverIp>[^ ]*) ([^ ]*) (?<remoteIp>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:H%M%S ZZ",
+		},
+	}.Components(tag, uid)
+
+	return c
+}
+
+type LoggingReceiverVarnish struct {
+	LoggingProcessorVarnish                 `yaml:",inline"`
+	confgenerator.LoggingReceiverFluentExec `yaml:",inline" validate:"structonly"`
+}
+
+func (LoggingReceiverVarnish) Type() string {
+	return "varnish"
+}
+
+func (r LoggingReceiverVarnish) Components(tag string) []fluentbit.Component {
+	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishcsa", "-d"}
+	c := r.LoggingReceiverFluentExec.Components(tag)
+	c = append(c, r.LoggingProcessorVarnish.Components(tag, "varnish")...)
+	return c
+}
+
+func init() {
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorVarnish{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVarnish{} })
 }
