@@ -162,6 +162,8 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
+	gce.RunRemotely(ctx, logger.ToMainFile(), vm, "", "ls /run/google-cloud-ops-agent-fluent-bit")
+
 	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "", "sudo journalctl -xe")
