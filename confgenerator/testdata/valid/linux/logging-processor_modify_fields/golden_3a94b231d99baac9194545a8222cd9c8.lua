@@ -36,7 +36,7 @@ end)(v)
 local v = __field_2;
 
 local v2 = tonumber(v)
-if v2 != fail then v = v2
+if v2 ~= fail then v = v2
 end
 (function(value)
 record["float"] = value
@@ -48,7 +48,7 @@ end)(v)
 local v = __field_3;
 
 local v2 = math.tointeger(v)
-if v2 != fail then v = v2
+if v2 ~= fail then v = v2
 end
 (function(value)
 record["integer"] = value

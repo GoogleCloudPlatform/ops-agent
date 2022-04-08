@@ -163,7 +163,7 @@ function process(tag, timestamp, record)
 			// Leave existing string value if not convertible
 			fmt.Fprintf(&lua, `
 local v2 = %s(v)
-if v2 != fail then v = v2
+if v2 ~= fail then v = v2
 end
 `, conv)
 		}
