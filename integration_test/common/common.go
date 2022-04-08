@@ -23,11 +23,11 @@ type ExpectedMetric struct {
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels"`
 	// If Optional is true, the test for this metric will be skipped.
-	Optional bool `yaml:"optional,omitempty" validate:"necsfield=Representative"`
+	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool `yaml:"representative,omitempty" validate:"necsfield=Optional"`
+	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional"`
 }
 
 type LogFields struct {
@@ -58,20 +58,26 @@ type IntegrationMetadata struct {
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
 }
 
+var validate *validator.Validate
+
 // ValidateMetrics checks that all enum fields have valid values and that
 // there is exactly one representative metric in the slice.
 func ValidateMetrics(metrics []ExpectedMetric) error {
-	// Field validation
-	v := validator.Validate{}
-	err := v.Struct(metrics)
+	var err error
+
+	// Field validation, one-by-one for better error messages
+	for _, m := range metrics {
+		vErr := validate.Struct(m)
+		if vErr != nil {
+			err = multierr.Append(err, fmt.Errorf("%s: %v", m.Type, vErr))
+		}
+	}
+
 	// Representative validation
 	representativeCount := 0
-	for _, metric := range metrics {
-		if metric.Representative {
+	for _, m := range metrics {
+		if m.Representative {
 			representativeCount += 1
-			if metric.Optional {
-				err = multierr.Append(err, fmt.Errorf("%s: metric cannot be both representative and optional", metric.Type))
-			}
 		}
 	}
 	if representativeCount != 1 {
@@ -87,4 +93,8 @@ func SliceContains(slice []string, toFind string) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	validate = validator.New()
 }
