@@ -32,6 +32,8 @@ type ModifyField struct {
 
 	// Name of Lua variable with copied value
 	sourceVar string `yaml:"-"`
+	// Name of Lua variable with omit boolean
+	omitVar string `yaml:"-"`
 
 	// Operations to perform
 	MapValues map[string]string `yaml:"map_values"`
@@ -63,7 +65,6 @@ function process(tag, timestamp, record)
 `)
 	var components []fluentbit.Component
 	// Step 1: Obtain any source values needed for move or copy
-	var i int
 	fieldMappings := map[string]string{}
 	moveFromFields := map[string]bool{}
 	var dests []string
@@ -71,7 +72,8 @@ function process(tag, timestamp, record)
 		dests = append(dests, dest)
 	}
 	sort.Strings(dests)
-	for _, dest := range dests {
+	omitFilters := map[string]*filter.Filter{}
+	for i, dest := range dests {
 		field := p.Fields[dest]
 		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil {
 			// Default to modifying field in place
@@ -92,7 +94,6 @@ function process(tag, timestamp, record)
 			if _, ok := fieldMappings[key]; !ok {
 				new := fmt.Sprintf("__field_%d", i)
 				fieldMappings[key] = new
-				i++
 				fmt.Fprintf(&lua, "local %s = %s;\n", new, key)
 			}
 			field.sourceVar = fieldMappings[key]
@@ -104,14 +105,28 @@ function process(tag, timestamp, record)
 				moveFromFields[ra] = true
 			}
 		}
+		if field.OmitIf != "" {
+			f, err := filter.NewFilter(field.OmitIf)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse filter %q: %w", field.OmitIf, err)
+			}
+			field.omitVar = fmt.Sprintf("omit%d", i)
+			omitFilters[field.omitVar] = f
+		}
 	}
-	// Step 2: Remove any MoveFrom fields
+
+	// Step 2: OmitIf conditions
+	if len(omitFilters) > 0 {
+		fcomponents, flua := filter.AllFluentConfig(tag, omitFilters)
+		components = append(components, fcomponents...)
+		lua.WriteString(flua)
+	}
+
+	// Step 3: Remove any MoveFrom fields
 	for ra := range moveFromFields {
 		fmt.Fprintf(&lua, `%s(nil)
 `, ra)
 	}
-	// Step 3: Evaluate any OmitIf conditions
-	// XXX
 	// Step 4: Assign values
 	for _, dest := range dests {
 		field := p.Fields[dest]
@@ -169,6 +184,11 @@ local v2 = %s
 if v2 ~= fail then v = v2
 end
 `, conv)
+		}
+
+		// Omit if
+		if field.omitVar != "" {
+			fmt.Fprintf(&lua, "if %s then v = nil end;\n", field.omitVar)
 		}
 
 		ra, err := outM.LuaAccessor(true)

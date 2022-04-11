@@ -27,6 +27,8 @@ logging:
             I: INFO
         jsonPayload.default:
           default_value: this field was missing
+        jsonPayload.omitted:
+          omit_if: jsonPayload.omitted = "-"
   service:
     pipelines:
       p1:
