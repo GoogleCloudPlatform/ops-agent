@@ -171,6 +171,9 @@ Then, inside `applications/<application>/`:
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
+1.  Inside `metadata.yaml`, add `short_name`, e.g. `solr` and `long_name`, e.g.
+    `Apache Solr`.
+1.  Some integration will have steps for configuring instance, e.g. [Apache Hadoop](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/hadoop#configure-instance).
 1.  (if you want to test logging) add `expected_logs` in metadata.yaml
 1.  (if you want to test metrics) add `expected_metrics` in metadata.yaml
 
@@ -239,8 +242,8 @@ With `optional: true`, the metric will be skipped during the test. This can be u
 PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run ./cmd/generate_expected_metrics \
+-tags=integration_test
 ```
 
 This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
@@ -250,8 +253,8 @@ PROJECT="${PROJECT}" \
 GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run ./cmd/generate_expected_metrics \
+-tags=integration_test
 ```
 
 Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
