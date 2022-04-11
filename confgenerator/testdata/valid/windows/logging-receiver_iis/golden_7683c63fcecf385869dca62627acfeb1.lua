@@ -7,5 +7,6 @@
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
 	  return 2, timestamp, record
+	  
 	end
 	
