@@ -32,30 +32,30 @@ expected_logs:
 - log_name: iis_access
   fields:
   - name: httpRequest.serverIp
-    value_regex: "127\.0\.0\.1:80"
+    value_regex: 127.0.0.1:80
     type: string
     description: "The server's IP and port that was requested"
   - name: httpRequest.remoteIp
-    value_regex: "127\.0\.0\.1:80"
+    value_regex: 127.0.0.1:80
     type: string
     description: "IP of the client that made the requestb v"
   - name: httpRequest.requestUrl
-    value_regex: "/forbidden?something=something"
+    value_regex: /forbidden?something=something
     type: string
     description: "Request URL (typically just the path part of the URL)"
   - name: httpRequest.protocol
-    value_regex: "HTTP/1\.1"
+    value_regex: HTTP/1.1
     type: string
     description: "Protocol used for the request"
   - name: httpRequest.requestMethod
-    value_regex: "GET"
+    value_regex: GET
     type: string
     description: "HTTP method"
   # - name: httpRequest.status
   #   type: number
   #   description: "HTTP status code"
   - name: httpRequest.userAgent
-    value_regex: "curl/.*"
+    value_regex: curl/.*
     type: string
     description:  "Contents of the `User-Agent` header"
   - name: httpRequest.referer
