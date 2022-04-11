@@ -65,7 +65,6 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 				return err
 			}
 		}
-
 	case "otel":
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
