@@ -101,11 +101,11 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
 }
 
-type LoggingProcessorIis struct {
+type LoggingReceiverIisAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (*LoggingProcessorIis) Type() string {
+func (*LoggingReceiverIisAccess) Type() string {
 	return "iis_access"
 }
 
@@ -120,11 +120,12 @@ const (
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
 	  return 2, timestamp, record
+	  
 	end
 	`
 )
 
-func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingReceiverIisAccess) Components(tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
@@ -159,23 +160,13 @@ func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component 
 
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
-	// Remove fields that were merged
-	for _, field := range []string{
-		"cs_uri_query",
-		"cs_uri_stem",
-		"s_port",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":       "record_modifier",
-				"Match":      tag,
-				"Remove_key": field,
-			},
-		})
-	}
-
 	c = append(c, []fluentbit.Component{
+		// This is used to exlude the header lines above the logs
+
+		// EXAMPLE LINES:
+		// #Software: Microsoft Internet Information Services 10.0
+		// #Version: 1.0
+		// #Date: 2022-04-11 12:53:50
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
@@ -184,6 +175,7 @@ func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component 
 				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
 			},
 		},
+
 		// Generate the httpRequest structure.
 		{
 			Kind: "FILTER",
@@ -201,23 +193,23 @@ func (p *LoggingProcessorIis) Components(tag, uid string) []fluentbit.Component 
 }
 
 type AccessLoggingReceiverIis struct {
-	LoggingProcessorIis                     `yaml:",inline"`
+	LoggingReceiverIisAccess                `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r AccessLoggingReceiverIis) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			"/inetpub/logs/LogFiles/W3SVC1/u_ex*",
+			"\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorIis.Components(tag, "iis_access")...)
+	c = append(c, r.LoggingReceiverIisAccess.Components(tag, "iis_access")...)
 	return c
 }
 
 func init() {
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverIis{} }, "windows")
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIis{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
 
 }

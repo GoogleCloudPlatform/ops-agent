@@ -17,7 +17,7 @@ The following table provides the list of metrics that the Ops Agent collects fro
 
 ## Configuration
 
-To configure a receiver for your iis system logs, specify the following fields:
+To configure a receiver for your IIS system logs, specify the following fields:
 
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
@@ -25,6 +25,8 @@ To configure a receiver for your iis system logs, specify the following fields:
 | `include_paths`       | `[/inetpub/logs/LogFiles/W3SVC1/u_ex*]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/inetpub/logs/LogFiles/W3SVC1/u_ex*`. |
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 | `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in `include_paths` are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
+
+This receiver currently only supports the default W3C format
 
 Example Configuration:
 

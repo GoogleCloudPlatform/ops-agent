@@ -32,11 +32,11 @@ expected_logs:
 - log_name: iis_access
   fields:
   - name: httpRequest.serverIp
-    value_regex: "127.0.0.1:80"
+    value_regex: "127\.0\.0\.1:80"
     type: string
     description: "The server's IP and port that was requested"
   - name: httpRequest.remoteIp
-    value_regex: "127.0.0.1"
+    value_regex: "127\.0\.0\.1:80"
     type: string
     description: "IP of the client that made the requestb v"
   - name: httpRequest.requestUrl
@@ -44,11 +44,11 @@ expected_logs:
     type: string
     description: "Request URL (typically just the path part of the URL)"
   - name: httpRequest.protocol
-    value_regex: "HTTP/1.1"
+    value_regex: "HTTP/1\.1"
     type: string
     description: "Protocol used for the request"
   - name: httpRequest.requestMethod
-    value_regex: GET"
+    value_regex: "GET"
     type: string
     description: "HTTP method"
   # - name: httpRequest.status
@@ -68,7 +68,6 @@ expected_logs:
     type: string
     description: "The server's IP and port that was requested"
   - name: jsonPayload.time_taken
-    value_regex: '\d+'
     type: string
     description: "The length of time that the action took, in milliseconds"
   - name: jsonPayload.user
