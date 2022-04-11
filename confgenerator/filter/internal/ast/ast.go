@@ -91,7 +91,7 @@ func (m Target) RecordAccessor() (string, error) {
 		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
 		// (interestingly, \f and \v work fine...)
 		if strings.ContainsAny(part, "\n\r\", ") {
-			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %s", part)
+			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
 		}
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
