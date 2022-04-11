@@ -124,7 +124,7 @@ function process(tag, timestamp, record)
 
 	// Step 3: Remove any MoveFrom fields
 	for ra := range moveFromFields {
-		fmt.Fprintf(&lua, `%s(nil)
+		fmt.Fprintf(&lua, `%s(nil);
 `, ra)
 	}
 	// Step 4: Assign values

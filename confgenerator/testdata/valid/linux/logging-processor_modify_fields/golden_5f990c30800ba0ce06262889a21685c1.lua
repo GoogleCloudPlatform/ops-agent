@@ -26,10 +26,10 @@ return record["level"]
 end)();
 local omit7 = (string.lower((function()
 return record["omitted"]
-end)()) == string.lower("-"))
+end)()) == string.lower("-"));
 (function(value)
 record["move_source"] = value
-end)(nil)
+end)(nil);
 local v = __field_0;
 (function(value)
 record["copied"] = value

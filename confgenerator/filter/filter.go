@@ -96,7 +96,7 @@ func AllFluentConfig(tag string, filters map[string]*Filter) ([]fluentbit.Compon
 		filter := filters[k]
 		filterComponents, filterExpr := filter.innerFluentConfig(tag, prefix)
 		c = append(c, filterComponents...)
-		lua.WriteString(fmt.Sprintf("local %s = %s\n", k, filterExpr))
+		lua.WriteString(fmt.Sprintf("local %s = %s;\n", k, filterExpr))
 	}
 	if len(c) == 0 {
 		// If we didn't need any filters, just return the Lua code.
