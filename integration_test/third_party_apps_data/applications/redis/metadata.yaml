@@ -1,9 +1,10 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/redis"
 short_name: redis
-long_name: Redit
+long_name: Redis
 minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.5.0
+supported_app_version: ["6.2"]
 expected_metrics:
 - type: workload.googleapis.com/redis.clients.blocked
   value_type: INT64
