@@ -158,11 +158,11 @@ var (
 // All the commands run and their output are dumped to various files in the
 // directory managed by the given DirectoryLogger.
 func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
+	logger.ToMainLog().Print("Collecting dignostic files (logs etc) for the Ops Agent...")
 	if gce.IsWindows(vm.Platform) {
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
-	gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /run/google-cloud-ops-agent-fluent-bit")
 
 	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
 
@@ -172,12 +172,20 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		gce.SyslogLocation(vm.Platform),
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 	} {
 		_, basename := path.Split(log)
 		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", "sudo cat "+log)
+	}
+
+	// Capture all files beneath /run/google-cloud-ops-agent-fluent-bit
+	fluentBitDir := "/run/google-cloud-ops-agent-fluent-bit"
+	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("ls '%s'", fluentBitDir))
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(strings.TrimSpace(output.Stdout), "\n") {
+		gce.RunRemotely(ctx, logger.ToFile(path.Join("fluent-bit", line+txtSuffix)), vm, "", fmt.Sprintf("sudo cat '%s/%s'", fluentBitDir, line))
 	}
 }
 
@@ -188,19 +196,30 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
-	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`,
 		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`,
 	} {
 		pathParts := strings.Split(conf, `\`)
 		basename := pathParts[len(pathParts)-1]
 		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
 	}
+
+	// Directory to hold Fluent-Bit logs and generated files.
+	localFluentBitDir := "fluent-bit"
+
+	// Capture Fluent-Bit generated files.
+	fluentBitDir := `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit`
+	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf(`Get-ChildItem -Path '%s' -Name`, fluentBitDir))
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(strings.TrimSpace(output.Stdout), "\r\n") {
+		gce.RunRemotely(ctx, logger.ToFile(path.Join(localFluentBitDir, line+txtSuffix)), vm, "", fmt.Sprintf(`Get-Content -Path '%s\%s' -Raw`, fluentBitDir, line))
+	}
+	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
+	gce.RunRemotely(ctx, logger.ToFile("logging-module.log.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
 }
 
 // WaitForUptimeMetrics waits for the given uptime metrics to be visible in
