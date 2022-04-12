@@ -43,7 +43,7 @@ type ModifyField struct {
 
 type LoggingProcessorModifyFields struct {
 	ConfigComponent `yaml:",inline"`
-	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,endkeys"`
+	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,distinctfield,endkeys"`
 }
 
 func (p LoggingProcessorModifyFields) Type() string {
@@ -68,7 +68,11 @@ function process(tag, timestamp, record)
 	fieldMappings := map[string]string{}
 	moveFromFields := map[string]bool{}
 	var dests []string
-	for dest := range p.Fields {
+	for dest, field := range p.Fields {
+		if field == nil {
+			// Nothing to do for this field
+			continue
+		}
 		dests = append(dests, dest)
 	}
 	sort.Strings(dests)

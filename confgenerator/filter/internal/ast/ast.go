@@ -79,6 +79,28 @@ func (m Target) fluentBitPath() ([]string, error) {
 	return fluentBit, nil
 }
 
+// Equals checks if two valid targets are equal.
+// Invalid targets are never equal.
+func (m Target) Equals(m2 Target) bool {
+	s1, err := m.fluentBitPath()
+	if err != nil {
+		return false
+	}
+	s2, err := m2.fluentBitPath()
+	if err != nil {
+		return false
+	}
+	if len(s1) != len(s2) {
+		return false
+	}
+	for i := range s1 {
+		if s1[i] != s2[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // RecordAccessor returns a string that can be used as a key in a FluentBit config
 func (m Target) RecordAccessor() (string, error) {
 	fluentBit, err := m.fluentBitPath()

@@ -45,6 +45,12 @@ func NewMember(m string) (*Member, error) {
 	return &Member{r.LHS}, nil
 }
 
+// Equals checks if two valid members are equal.
+// Invalid members are never equal.
+func (m Member) Equals(m2 Member) bool {
+	return m.Target.Equals(m2.Target)
+}
+
 var LuaQuote = ast.LuaQuote
 
 type Filter struct {

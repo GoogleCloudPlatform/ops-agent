@@ -118,6 +118,8 @@ func (ve validationError) Error() string {
 	case "field":
 		_, err := filter.NewMember(ve.Value().(string))
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
+	case "distinctfield":
+		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
 	}
 
 	return ve.FieldError.Error()
@@ -182,6 +184,40 @@ func newValidator() *validator.Validate {
 		_, err := filter.NewMember(fl.Field().String())
 		// TODO: Disallow specific target fields?
 		return err == nil
+	})
+	// distinctfield validates that a key in a map refers to different fields from the other keys in the map.
+	// Use this as keys,distinctfield,endkeys
+	v.RegisterValidation("distinctfield", func(fl validator.FieldLevel) bool {
+		// Get the map that contains this key.
+		parent, parentkind, found := fl.GetStructFieldOKAdvanced(fl.Parent(), fl.StructFieldName()[:strings.Index(fl.StructFieldName(), "[")])
+		if !found {
+			return false
+		}
+		if parentkind != reflect.Map {
+			fmt.Printf("not map\n")
+			return false
+		}
+		k1 := fl.Field().String()
+		field, err := filter.NewMember(k1)
+		if err != nil {
+			fmt.Printf("newmember %q: %v", fl.Field().String(), err)
+			return false
+		}
+		for _, key := range parent.MapKeys() {
+			k2 := key.String()
+			if k1 == k2 {
+				// Skip itself
+				continue
+			}
+			field2, err := filter.NewMember(k2)
+			if err != nil {
+				continue
+			}
+			if field2.Equals(*field) {
+				return false
+			}
+		}
+		return true
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
