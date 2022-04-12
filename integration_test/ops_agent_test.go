@@ -642,6 +642,7 @@ func TestModifyFields(t *testing.T) {
           copy_from: jsonPayload.field
           map_values:
             value: new_value
+            value2: wrong_value
         jsonPayload.omitted:
           static_value: broken
           omit_if: jsonPayload.field = "value"

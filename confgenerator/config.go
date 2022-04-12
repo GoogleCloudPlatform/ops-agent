@@ -72,6 +72,7 @@ func (ve validationErrors) Error() string {
 	for _, err := range ve {
 		out = append(out, err.Error())
 	}
+	sort.Strings(out)
 	return strings.Join(out, ",")
 }
 
