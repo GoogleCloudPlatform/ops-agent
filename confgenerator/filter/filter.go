@@ -45,12 +45,18 @@ func NewFilter(f string) (*Filter, error) {
 	return nil, fmt.Errorf("not an expression: %+v", out)
 }
 
+// tagHash returns a hash string of the input string tag
+func tagHash(tag string) string {
+	tagHash := sha256.New()
+	tagHash.Write([]byte(tag))
+	match := fmt.Sprintf("__match_%x", tagHash.Sum(nil))
+	return match
+}
+
 // innerComponents returns only the logical modify filters that are intended to be
 // positioned between corresponding nest/grep/lift filters.
 func (f *Filter) innerComponents(tag string) []fluentbit.Component {
-	tagHash := sha256.New()
-	tagHash.Write([]byte(tag))
-	match := fmt.Sprintf("__match_%s", tagHash.Sum(nil))
+	match := tagHash(tag)
 	return f.expr.Components(tag, match)
 }
 
@@ -81,7 +87,7 @@ func AllComponents(tag string, filters []*Filter, isExclusionFilter bool) []flue
 			"Wildcard":   "*",
 		},
 	}}
-	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
+	match := tagHash(tag)
 	for _, filter := range filters {
 		c = append(c, filter.innerComponents(tag)...)
 	}
