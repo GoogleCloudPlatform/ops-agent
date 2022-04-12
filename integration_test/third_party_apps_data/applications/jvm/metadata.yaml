@@ -1,4 +1,4 @@
-public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/jvm
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/jvm"
 short_name: jvm
 long_name: JVM
 configure_integration: |-
@@ -18,6 +18,9 @@ configure_integration: |-
   <pre>
   -Dcom.sun.management.jmxremote.port=9999
   </pre>
+minimum_supported_agent_version:
+  metrics: 2.2.0
+supported_app_version: ["Java 16", "Java 11"]
 expected_metrics:
 - type: workload.googleapis.com/jvm.classes.loaded
   value_type: INT64
@@ -106,8 +109,3 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-minimum_supported_agent_version:
-  metrics: 2.2.0
-supported_app_version:
-- Java 16
-- Java 11

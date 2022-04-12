@@ -1,4 +1,4 @@
-public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache"
 short_name: apache
 long_name: Apache Web Server (httpd)
 configure_integration: |-
@@ -25,14 +25,51 @@ configure_integration: |-
 
   If you get a `404 Not Found` page instead, then the `mod_status` plugin is not
   enabled.
+minimum_supported_agent_version:
+  metrics: 2.7.0
+  logging: 2.4.0
+supported_app_version: ["2.4"]
+expected_metrics:
+- type: workload.googleapis.com/apache.current_connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+  representative: true
+- type: workload.googleapis.com/apache.requests
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+- type: workload.googleapis.com/apache.scoreboard
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+    state: .*
+- type: workload.googleapis.com/apache.traffic
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+- type: workload.googleapis.com/apache.workers
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    server_name: .*
+    state: .*
 expected_logs:
 - log_name: apache_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: ::1
     type: string
-    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP
-      request
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestUrl
     value_regex: /forbidden.html
     type: string
@@ -79,42 +116,3 @@ expected_logs:
   - name: jsonPayload.tid
     type: string
     description: Thread ID
-expected_metrics:
-- type: workload.googleapis.com/apache.current_connections
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-  representative: true
-- type: workload.googleapis.com/apache.requests
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-- type: workload.googleapis.com/apache.scoreboard
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-    state: .*
-- type: workload.googleapis.com/apache.traffic
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-- type: workload.googleapis.com/apache.workers
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-    state: .*
-minimum_supported_agent_version:
-  logging: 2.4.0
-  metrics: 2.7.0
-supported_app_version:
-- "2.4"

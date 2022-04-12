@@ -1,6 +1,9 @@
-public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/activemq
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/activemq"
 short_name: activemq
 long_name: Apache ActiveMQ
+minimum_supported_agent_version:
+  metrics: 2.11.0
+supported_app_version: ["Classic 5.8.x-5.16.x", "Artemis 2.x"]
 expected_metrics:
 - type: workload.googleapis.com/activemq.connection.count
   value_type: INT64
@@ -74,8 +77,3 @@ expected_metrics:
   labels:
     broker: .*
     destination: .*
-minimum_supported_agent_version:
-  metrics: 2.11.0
-supported_app_version:
-- Classic 5.8.x-5.16.x
-- Artemis 2.x

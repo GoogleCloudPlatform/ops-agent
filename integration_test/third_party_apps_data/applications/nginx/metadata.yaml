@@ -1,4 +1,4 @@
-public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx"
 short_name: nginx
 long_name: Nginx
 configure_integration: |-
@@ -87,20 +87,44 @@ configure_integration: |-
   directly embed the lines to the main `nginx.conf` file, which
   is typically located in one of the following directories: `/etc/nginx`,
   `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
+minimum_supported_agent_version:
+  metrics: 2.1.0
+  logging: 2.1.0
+supported_app_version: ["1.18", "1.20"]
+expected_metrics:
+- type: workload.googleapis.com/nginx.connections_accepted
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/nginx.connections_current
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/nginx.connections_handled
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/nginx.requests
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
 expected_logs:
 - log_name: nginx_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: ::1
     type: string
-    description: 'The IP address (IPv4 or IPv6) of the client that issued the HTTP
-      request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80,
-      FE80::0202:B3FF:FE1E:8329.'
+    description: "The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80, FE80::0202:B3FF:FE1E:8329."
   - name: httpRequest.requestUrl
     value_regex: /forbidden.html
     type: string
-    description: 'The scheme (http, https), the host name, the path and the query
-      portion of the URL that was requested. Example: http://example.com/some/info?color=red.'
+    description: "The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: http://example.com/some/info?color=red."
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header (usually not reported by nginx)
@@ -149,32 +173,3 @@ expected_logs:
   - name: jsonPayload.referer
     type: string
     description: Referer header (optional)
-expected_metrics:
-- type: workload.googleapis.com/nginx.connections_accepted
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/nginx.connections_current
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
-- type: workload.googleapis.com/nginx.connections_handled
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/nginx.requests
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-  representative: true
-minimum_supported_agent_version:
-  logging: 2.1.0
-  metrics: 2.1.0
-supported_app_version:
-- "1.18"
-- "1.20"
