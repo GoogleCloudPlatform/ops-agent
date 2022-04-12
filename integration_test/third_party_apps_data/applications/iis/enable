@@ -9,3 +9,6 @@ logging:
         receivers:
         - iis_access
 "
+
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent* 
