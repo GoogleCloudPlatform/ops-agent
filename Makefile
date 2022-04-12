@@ -1,3 +1,7 @@
+# IMPORTANT: This Makefile is intended for development use only. Its targets
+# are meant for convenience in common development tasks. Please do not build
+# any dependencies on this file as everything is subject to change.
+
 test:
 	go test ./...
 
