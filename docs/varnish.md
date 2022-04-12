@@ -14,7 +14,7 @@ To configure a receiver for your Varnish metrics, specify the following fields:
 | Field                 | Required | Default | Description                                                                                                                                                                 |
 |-----------------------|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `type`                | required |         | Must be `varnish`.                                                                                                                                                          |
-| `collection_interval` | required |         | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                      |
+| `collection_interval` | optional |         | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                      |
 | `cache_dir`           | optional |         | Optional. This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host name.                                  |
 | `exec_dir`            | optional |         | Optional. The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH. |
 

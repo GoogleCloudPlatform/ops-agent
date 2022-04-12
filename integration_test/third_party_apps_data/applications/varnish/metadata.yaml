@@ -63,3 +63,4 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     operation: .*
+expected_logs:
