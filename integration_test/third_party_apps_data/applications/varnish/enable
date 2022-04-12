@@ -13,6 +13,16 @@ metrics:
         receivers:
           - varnish
 
+logging:
+  receivers:
+    varnish:
+      type: varnish
+  service:
+    pipelines:
+      varnish:
+        receivers:
+          - varnish
+
 EOF
 
 sudo service google-cloud-ops-agent restart

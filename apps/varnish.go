@@ -17,6 +17,7 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -69,7 +70,7 @@ func (p LoggingProcessorVarnish) Components(tag string, uid string) []fluentbit.
 		Regex: `^(?<serverIp>[^ ]*) ([^ ]*) (?<remoteIp>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:H%M%S ZZ",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
 		},
 	}.Components(tag, uid)
 
@@ -86,8 +87,10 @@ func (LoggingReceiverVarnish) Type() string {
 }
 
 func (r LoggingReceiverVarnish) Components(tag string) []fluentbit.Component {
-	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishcsa", "-d"}
+	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishncsa", "-d"}
 	c := r.LoggingReceiverFluentExec.Components(tag)
+	rename := modify.NewRenameOptions("exec", "message")
+	c = append(c, rename.Component(tag))
 	c = append(c, r.LoggingProcessorVarnish.Components(tag, "varnish")...)
 	return c
 }
