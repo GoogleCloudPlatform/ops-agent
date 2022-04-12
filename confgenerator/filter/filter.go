@@ -20,6 +20,7 @@ package filter
 import (
 	"fmt"
 	"strings"
+	"crypto/sha256"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
@@ -47,7 +48,9 @@ func NewFilter(f string) (*Filter, error) {
 // innerComponents returns only the logical modify filters that are intended to be
 // positioned between corresponding nest/grep/lift filters.
 func (f *Filter) innerComponents(tag string) []fluentbit.Component {
-	match := fmt.Sprintf("__match_%s", strings.ReplaceAll(tag, ".", "_"))
+	tagHash := sha256.New()
+	tagHash.Write([]byte(tag))
+	match := fmt.Sprintf("__match_%s", tagHash.Sum(nil))
 	return f.expr.Components(tag, match)
 }
 
