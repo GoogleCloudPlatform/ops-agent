@@ -15,7 +15,7 @@ To configure a receiver for your CouchDB metrics, specify the following fields:
 | ---                     | ---      | ---                             | ---         |
 | `type`                  | required |                                 | Must be `couchdb`. |
 | `endpoint`              | optional | `http://localhost:5984`        | URL of node to be monitored |
-| `collection_interval`   | required |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+| `collection_interval`   | optional |                                 | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `username`              | required |                                 | The username used to connect to the server. |
 | `password`              | required |                                 | The password used to connect to the server. |
 

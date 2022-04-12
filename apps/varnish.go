@@ -87,7 +87,7 @@ func (LoggingReceiverVarnish) Type() string {
 }
 
 func (r LoggingReceiverVarnish) Components(tag string) []fluentbit.Component {
-	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishncsa", "-d"}
+	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishncsa"}
 	c := r.LoggingReceiverFluentExec.Components(tag)
 	rename := modify.NewRenameOptions("exec", "message")
 	c = append(c, rename.Component(tag))
