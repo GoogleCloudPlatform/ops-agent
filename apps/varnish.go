@@ -17,7 +17,6 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -77,25 +76,6 @@ func (p LoggingProcessorVarnish) Components(tag string, uid string) []fluentbit.
 	return c
 }
 
-type LoggingReceiverVarnish struct {
-	LoggingProcessorVarnish                 `yaml:",inline"`
-	confgenerator.LoggingReceiverFluentExec `yaml:",inline" validate:"structonly"`
-}
-
-func (LoggingReceiverVarnish) Type() string {
-	return "varnish"
-}
-
-func (r LoggingReceiverVarnish) Components(tag string) []fluentbit.Component {
-	r.LoggingReceiverFluentExec.Command = []string{"sudo", "varnishncsa"}
-	c := r.LoggingReceiverFluentExec.Components(tag)
-	rename := modify.NewRenameOptions("exec", "message")
-	c = append(c, rename.Component(tag))
-	c = append(c, r.LoggingProcessorVarnish.Components(tag, "varnish")...)
-	return c
-}
-
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorVarnish{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVarnish{} })
 }

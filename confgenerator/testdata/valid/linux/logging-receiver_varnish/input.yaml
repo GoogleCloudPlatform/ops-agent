@@ -14,10 +14,17 @@
 
 logging:
   receivers:
+    log_source_id1:
+      type: files
+      include_paths:
+      - /path/to/log/1/*
+
+  processors:
     varnish:
       type: varnish
+
   service:
     pipelines:
       varnish:
-        receivers:
-          - varnish
+        receivers: [log_source_id1]
+        processors: [varnish]

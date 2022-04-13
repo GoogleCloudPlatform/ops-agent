@@ -20,7 +20,7 @@ end
 record["logging.googleapis.com/labels"]["compute.googleapis.com/resource_name"] = value
 end)(v)
 local v = __field_1;
-if v == nil then v = "varnish" end;
+if v == nil then v = "log_source_id1" end;
 (function(value)
 record["logging.googleapis.com/logName"] = value
 end)(v)
