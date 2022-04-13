@@ -10,6 +10,8 @@ description: |-
   For more information about Varnish, see
   [Varnish HTTP Cache](https://varnish-cache.org/).
 supported_app_version: ["6.x", "7.0.x"]
+configure_integration: |-
+  The Varnish logging processor processes access logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging and add log queries to customize logs received by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os.
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64
