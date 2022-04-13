@@ -1,0 +1,14 @@
+Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
+metrics:
+  receivers:
+    sqlserver:
+      type: sqlserver
+  service:
+    pipelines:
+      sqlserver:
+        receivers:
+        - sqlserver
+"
+
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent* 

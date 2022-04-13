@@ -113,6 +113,7 @@ func appsToTest(platform string) ([]string, error) {
 	}
 	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
 		apps = removeFromSlice(apps, "mssql")
+		apps = removeFromSlice(apps, "sqlserver")
 	}
 	return apps, nil
 }
