@@ -145,7 +145,7 @@ func (p *LoggingReceiverIisAccess) Components(tag, uid string) []fluentbit.Compo
 	for _, field := range []string{
 		"cs_uri_query",
 		"http_request_referer",
-		"cs_username",
+		"user",
 	} {
 		c = append(c, fluentbit.Component{
 			Kind: "FILTER",

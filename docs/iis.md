@@ -26,7 +26,7 @@ To configure a receiver for your IIS system logs, specify the following fields:
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 | `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in `include_paths` are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
-This receiver currently only supports the default W3C format
+This receiver currently only supports the default W3C format.
 
 Example Configuration:
 
@@ -52,7 +52,6 @@ Access logs contain the [`httpRequest` field](https://cloud.google.com/logging/d
 | `httpRequest.requestMethod` | string | HTTP method |
 | `httpRequest.serverIp` | string | The server's IP and port that was requested |
 | `httpRequest.remoteIp` | string | IP of the client that made the request |
-| `httpRequest.protocol` | string | Protocol used for the request |
 | `httpRequest.requestUrl` | string | Request URL (typically just the path part of the URL) |
 | `httpRequest.status` | number | HTTP status code |
 | `httpRequest.userAgent` | string | Contents of the `User-Agent` header |
