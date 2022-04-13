@@ -52,6 +52,8 @@ The Ops Agent collects the following metrics from your varnish instance.
 
 ## Logs
 
+The Varnish logging processor processes access logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging and add log queries to customize logs received by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os.
+
 Varnish logs contain the [`httpRequest` field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest):
 
 | Field                       | Type                                                                                                                            | Description                                                      |
