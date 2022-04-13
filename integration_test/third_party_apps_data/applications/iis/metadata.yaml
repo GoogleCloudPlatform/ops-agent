@@ -38,7 +38,7 @@ expected_logs:
   - name: httpRequest.remoteIp
     value_regex: "::1"
     type: string
-    description: "IP of the client that made the requestb v"
+    description: "IP of the client that made the request"
   - name: httpRequest.requestUrl
     value_regex: '/forbidden\?something=something'
     type: string
