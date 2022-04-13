@@ -91,3 +91,36 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
 minimum_supported_agent_version:
   metrics: 2.15.0
+expected_logs:
+- log_name: varnish
+  fields:
+  - name: httpRequest.serverIp
+    type: string
+    description: The IP address of the origin server that the request was sent to
+  - name: httpRequest.remoteIp
+    type: string
+    description: The IP address of the client that issued the HTTP request
+  - name: timestamp`
+    type: string
+    description: Time the request was received
+  - name: httpRequest.requestMethod
+    type: string
+    description: HTTP method
+  - name: httpRequest.requestUrl
+    type: string
+    description: Request URL (typically just the path part of the URL
+  - name: httpRequest.protocol
+    type: string
+    description: Protocol used for the request
+  - name: httpRequest.status
+    type: string
+    description: HTTP status code
+  - name: httpRequest.responseSize
+    type: string
+    description: Response size
+  - name: httpRequest.referer
+    type: string
+    description: Contents of the `Referer` header
+  - name: httpRequest.userAgent
+    type: string
+    description: Contents of the `User-Agent` header
