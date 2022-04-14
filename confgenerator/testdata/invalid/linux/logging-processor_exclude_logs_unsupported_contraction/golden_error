@@ -1,4 +1,4 @@
-[5:18] "match_any[0]": 1:23: error: expected either text or string; got: "("
+[5:18] "match_any[0]": 1:23: error: expected one of andOp, orOp, not, text, or string; got: "("
    2 |   processors:
    3 |     processor_1:
    4 |       type: exclude_logs
