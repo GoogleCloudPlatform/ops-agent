@@ -28,7 +28,7 @@ type Attrib interface{}
 // Cloud Logging's filter syntax has extremely weird rules around quoting/escaping
 //
 // A "text" is a literal that is not surrounded by double quotes. A
-// test may contain a small number of special characters, must start
+// text may contain a small number of special characters, must start
 // with a non-digit, and can contain some but not all escape
 // sequences. However, if it does contain escape sequences, they are
 // NOT unescaped before matching.
