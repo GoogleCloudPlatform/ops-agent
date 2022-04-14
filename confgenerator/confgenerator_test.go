@@ -112,7 +112,7 @@ func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig
 			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
 			builtInConfPath := filepath.Join(confDebugFolder, "/built-in-config.yaml")
 			mergedConfPath := filepath.Join(confDebugFolder, "/merged-config.yaml")
-			if err = confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
+			if err := confgenerator.MergeConfFiles(userSpecifiedConfPath, confDebugFolder, platform.OS, apps.BuiltInConfStructs); err != nil {
 				// TODO: Move this inside generateConfigs when we can do MergeConfFiles in-memory
 				if _, ok := expectedFiles["error"]; ok || *updateGolden {
 					// Config generation failed, but that might be expected.

@@ -1,0 +1,10 @@
+[6:24] "jsonPayload.\"foo\"" specified multiple times,"jsonPayload.foo" specified multiple times
+   3 |     processor_1:
+   4 |       type: modify_fields
+   5 |       fields:
+>  6 |         jsonPayload.foo:
+                              ^
+   7 |           type: integer
+   8 |         jsonPayload."foo":
+   9 |           static_value: hello
+  10 |   

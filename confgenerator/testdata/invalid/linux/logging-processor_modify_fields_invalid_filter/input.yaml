@@ -1,0 +1,11 @@
+logging:
+  processors:
+    processor_1:
+      type: modify_fields
+      fields:
+        jsonPayload.missing:
+          omit_if: notJsonPayload.foo = bar
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]
