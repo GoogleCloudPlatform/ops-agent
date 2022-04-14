@@ -6,7 +6,10 @@
 	  else
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
-	  return 2, timestamp, record
 	  
+	  record["cs_uri_query"] = nil
+	  record["cs_uri_stem"] = nil
+	  record["s_port"] = nil
+	  return 2, timestamp, record 
 	end
 	
