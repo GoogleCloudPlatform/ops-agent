@@ -28,3 +28,44 @@ expected_metrics:
   labels:
     http_method: .*
   representative: true
+expected_logs:
+- log_name: iis_access
+  fields:
+  - name: httpRequest.serverIp
+    value_regex: "::1:80"
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: httpRequest.remoteIp
+    value_regex: "::1"
+    type: string
+    description: "IP of the client that made the request"
+  - name: httpRequest.requestUrl
+    value_regex: '/forbidden\?something=something'
+    type: string
+    description: "Request URL (typically just the path part of the URL)"
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: "HTTP method"
+  - name: httpRequest.status
+    type: number
+    description: "HTTP status code"
+  - name: httpRequest.userAgent
+    value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
+    type: string
+    description:  "Contents of the `User-Agent` header"
+  - name: httpRequest.referer
+    type: string
+    description:  "Contents of the `Referer` header"
+  - name: jsonPayload.sc_substatus
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.sc_win32_status
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.time_taken
+    type: string
+    description: "The length of time that the action took, in milliseconds"
+  - name: jsonPayload.user
+    type: string
+    description: "Authenticated username for the request"
