@@ -1,4 +1,4 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis
 short_name: iis
 long_name: IIS
 minimum_supported_agent_version:
@@ -32,40 +32,40 @@ expected_logs:
 - log_name: iis_access
   fields:
   - name: httpRequest.serverIp
-    value_regex: "::1:80"
+    value_regex: ::1:80
     type: string
-    description: "The server's IP and port that was requested"
+    description: The server's IP and port that was requested
   - name: httpRequest.remoteIp
-    value_regex: "::1"
+    value_regex: ::1
     type: string
-    description: "IP of the client that made the request"
+    description: IP of the client that made the request
   - name: httpRequest.requestUrl
-    value_regex: '/forbidden\?something=something'
+    value_regex: /forbidden\?something=something
     type: string
-    description: "Request URL (typically just the path part of the URL)"
+    description: Request URL (typically just the path part of the URL)
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
-    description: "HTTP method"
+    description: HTTP method
   - name: httpRequest.status
     type: number
-    description: "HTTP status code"
+    description: HTTP status code
   - name: httpRequest.userAgent
-    value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
+    value_regex: Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+
     type: string
-    description:  "Contents of the `User-Agent` header"
+    description: Contents of the `User-Agent` header
   - name: httpRequest.referer
     type: string
-    description:  "Contents of the `Referer` header"
+    description: Contents of the `Referer` header
   - name: jsonPayload.sc_substatus
     type: string
-    description: "The server's IP and port that was requested"
+    description: The server's IP and port that was requested
   - name: jsonPayload.sc_win32_status
     type: string
-    description: "The server's IP and port that was requested"
+    description: The server's IP and port that was requested
   - name: jsonPayload.time_taken
     type: string
-    description: "The length of time that the action took, in milliseconds"
+    description: The length of time that the action took, in milliseconds
   - name: jsonPayload.user
     type: string
-    description: "Authenticated username for the request"
+    description: Authenticated username for the request
