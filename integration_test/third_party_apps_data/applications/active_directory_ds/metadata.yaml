@@ -7,72 +7,50 @@ expected_logs:
 - log_name: active_directory_ds
   fields:
   - name: jsonPayload.Message
-    value_regex: '^Microsoft Active Directory Domain Services startup complete, version.*'
+    value_regex: '^Microsoft Active Directory Domain Services startup complete.*'
     type: string
+    description: "The log message."
   - name: jsonPayload.RecordNumber
     type: number
+    description: "The sequence number of the event log."
   - name: jsonPayload.TimeGenerated
     value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
     type: string
+    description: "A timestamp representing when the record was generated."
   - name: jsonPayload.TimeWritten
     value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
     type: string
+    description: "A timestamp representing when the record was written to the event log."
   - name: jsonPayload.EventID
     type: number
+    description: "An ID identifying the type of the event."
   - name: jsonPayload.EventType
     type: string
+    description: "The type of event."
   - name: jsonPayload.Qualifiers
     type: number
+    description: "A qualifier number that is used for event identification."
   - name: jsonPayload.EventCategory
     type: number
+    description: "The category of the event."
   - name: jsonPayload.Channel
     value_regex: '^Directory Service$'
     type: string
+    description: "The event log channel where the log was logged."
   - name: jsonPayload.Sid
     type: string
+    description: "The security identifier identifying a security principal or security group of the process that logged this message."
   - name: jsonPayload.SourceName
     value_regex: '^NTDS General$'
     type: string
+    description: "The source component that logged this message."
   - name: jsonPayload.ComputerName
     type: string
+    description: "The name of the computer from which this log originates."
   - name: jsonPayload.Data
     value_regex: '^$'
     type: string
+    description: "Extra event-specific data included with the log."
   - name: jsonPayload.StringInserts
     type: "[]string"
-- log_name: active_directory_ds
-  fields:
-  - name: jsonPayload.Message
-    value_regex: '^Active Directory Web Services has successfully started and is now accepting requests\..*'
-    type: string
-  - name: jsonPayload.RecordNumber
-    type: number
-  - name: jsonPayload.TimeGenerated
-    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
-    type: string
-  - name: jsonPayload.TimeWritten
-    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
-    type: string
-  - name: jsonPayload.EventID
-    type: number
-  - name: jsonPayload.EventType
-    type: string
-  - name: jsonPayload.Qualifiers
-    type: number
-  - name: jsonPayload.EventCategory
-    type: number
-  - name: jsonPayload.Channel
-    value_regex: "^Active Directory Web Services$"
-    type: string
-  - name: jsonPayload.Sid
-    type: string
-  - name: jsonPayload.SourceName
-    value_regex: "^ADWS$"
-    type: string
-  - name: jsonPayload.ComputerName
-    type: string
-  - name: jsonPayload.Data
-    value_regex: "^$"
-    type: string
-  - name: jsonPayload.StringInserts
-    type: "[]string"
+    description: "Dynamic string data that was used to construct the log message."

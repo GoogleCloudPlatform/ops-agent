@@ -1,4 +1,4 @@
-Add-Content 'C:\Program Files/Google\Cloud Operations\Ops Agent\config\config.yaml' "
+Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 logging:
   receivers:
     active_directory_ds:
