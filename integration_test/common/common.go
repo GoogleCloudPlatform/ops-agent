@@ -48,7 +48,7 @@ type ExpectedMetric struct {
 
 type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
-	ValueRegex  string `yaml:"value_regex"`
+	ValueRegex  string `yaml:"value_regex,omitempty"`
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"required"`
 }
@@ -59,18 +59,18 @@ type ExpectedLog struct {
 }
 
 type MinimumSupportedAgentVersion struct {
-	Logging string `yaml:"logging"`
-	Metrics string `yaml:"metrics"`
+	Logging string `yaml:"logging,omitempty"`
+	Metrics string `yaml:"metrics,omitempty"`
 }
 
 type IntegrationMetadata struct {
-	PublicUrl                    string                       `yaml:"public_url"`
+	PublicUrl                    string                       `yaml:"public_url,omitempty"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
-	ConfigureIntegration         string                       `yaml:"configure_integration"`
-	ExpectedLogs                 []ExpectedLog                `yaml:"expected_logs"`
-	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics"`
-	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	ConfigureIntegration         string                       `yaml:"configure_integration,omitempty"`
+	ExpectedLogs                 []ExpectedLog                `yaml:"expected_logs,omitempty"`
+	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics,omitempty"`
+	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version,omitempty"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
 }
 
