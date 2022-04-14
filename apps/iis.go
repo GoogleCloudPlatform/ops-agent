@@ -101,11 +101,11 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
 }
 
-type LoggingReceiverIisAccess struct {
+type LoggingProcessorIisAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (*LoggingReceiverIisAccess) Type() string {
+func (*LoggingProcessorIisAccess) Type() string {
 	return "iis_access"
 }
 
@@ -119,13 +119,16 @@ const (
 	  else
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
-	  return 2, timestamp, record
 	  
+	  record["cs_uri_query"] = nil
+	  record["cs_uri_stem"] = nil
+	  record["s_port"] = nil
+	  return 2, timestamp, record 
 	end
 	`
 )
 
-func (p *LoggingReceiverIisAccess) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
@@ -192,24 +195,23 @@ func (p *LoggingReceiverIisAccess) Components(tag, uid string) []fluentbit.Compo
 	return c
 }
 
-type AccessLoggingReceiverIis struct {
-	LoggingReceiverIisAccess                `yaml:",inline"`
+type LoggingReceiverIisAccess struct {
+	LoggingProcessorIisAccess               `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r AccessLoggingReceiverIis) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			"\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*",
+			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingReceiverIisAccess.Components(tag, "iis_access")...)
+	c = append(c, r.LoggingProcessorIisAccess.Components(tag, "iis_access")...)
 	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessLoggingReceiverIis{} }, "windows")
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
-
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIisAccess{} }, "windows")
 }
