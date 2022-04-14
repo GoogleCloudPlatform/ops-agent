@@ -79,7 +79,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 					"prefix": "",
 					// OT calls CreateMetricDescriptor by default. Skip because we
 					// want descriptors to be created implicitly with new time series.
-					"skip_create_descriptor": "true",
+					"skip_create_descriptor": true,
 				},
 			},
 		},
