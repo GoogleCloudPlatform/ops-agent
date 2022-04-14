@@ -346,7 +346,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			{"SuccessAudit", "NOTICE"},
 			{"FailureAudit", "NOTICE"},
 		})
-	
+
 	return append(input, filters...)
 }
 
