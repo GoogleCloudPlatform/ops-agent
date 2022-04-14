@@ -1222,7 +1222,7 @@ func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *V
 		return fmt.Errorf("Failed to stop instance: %w", err)
 	}
 
-	return StopInstance(ctx, logger.ToMainLog(), vm)
+	return StartInstance(ctx, logger.ToMainLog(), vm)
 }
 
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
