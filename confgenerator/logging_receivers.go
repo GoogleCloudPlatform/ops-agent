@@ -318,6 +318,26 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
+
+	// Parser for parsing TimeGenerated field as log record timestamp
+	timestampParserName :=fmt.Sprintf("%s.timestamp_parser", tag)
+	timestampParser := fluentbit.Component{
+		Kind: "PARSER",
+		Config: map[string]string{
+			"Name": timestampParserName,
+			"Format": "regex",
+			"Time_Format": "%Y-%m-%d %H:%M:%S %z",
+			"Time_Key": "timestamp",
+			"Regex": `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4})`,
+		},
+	}
+
+	timestampParserFilter := fluentbit.ParserFilterComponent(tag, "TimeGenerated", []string{timestampParserName})
+	timestampParserFilter.Config["Preserve_Key"] = "True"
+	timestampParserFilter.Config["Reserve_Data"] = "True"
+
+	input = append(input, timestampParser, timestampParserFilter)
+
 	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
 			{"Error", "ERROR"},
@@ -326,7 +346,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			{"SuccessAudit", "NOTICE"},
 			{"FailureAudit", "NOTICE"},
 		})
-
+	
 	return append(input, filters...)
 }
 

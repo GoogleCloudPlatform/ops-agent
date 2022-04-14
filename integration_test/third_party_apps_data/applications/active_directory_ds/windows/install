@@ -1,0 +1,10 @@
+$ProgressPreference = 'SilentlyContinue'
+
+Install-windowsfeature -name AD-Domain-Services -IncludeManagementTools
+
+# Local administrator requires a password for installation, otherwise the next step will fail
+net user Administrator P@ssw0rd!
+
+Install-ADDSForest -InstallDns -DomainName test.example.com -DomainNetBIOSName TEST -SafeModeAdministratorPassword (ConvertTo-SecureString -String "P@ssw0rd!" -AsPlainText -Force) -NoRebootOnCompletion -Force
+
+# Note: The forest, dns server, and domain controller are all installed, but a restart of the server must take place for them to actually work.

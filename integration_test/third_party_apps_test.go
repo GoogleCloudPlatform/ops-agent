@@ -367,6 +367,27 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
+	var metadata common.IntegrationMetadata
+	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
+		logger.ToMainLog().Println("found metadata.yaml, parsing...")
+		
+		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+		}
+		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
+	}
+
+	if metadata.RestartAfterInstall {
+		logger.ToMainLog().Printf("Restarting vm instance...")
+		err := gce.RestartInstance(ctx, logger, vm)
+		if err != nil {
+			return nonRetryable, err
+		}
+		logger.ToMainLog().Printf("vm instance restarted")
+	}
+
 	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
@@ -384,26 +405,17 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	// Check if metadata.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
-		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-		var metadata common.IntegrationMetadata
-		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+	if metadata.ExpectedLogs != nil {
+		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
+		if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
+			return nonRetryable, err
 		}
-		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
-		if metadata.ExpectedLogs != nil {
-			logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-			if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
-				return nonRetryable, err
-			}
-		}
-		if metadata.ExpectedMetrics != nil {
-			logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-			if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
-				return nonRetryable, err
-			}
+	}
+
+	if metadata.ExpectedMetrics != nil {
+		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+			return nonRetryable, err
 		}
 	}
 

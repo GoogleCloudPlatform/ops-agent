@@ -1,0 +1,78 @@
+short_name: AD DS
+long_name: Active Directory Domain Services
+configure_integration: |-
+  By default, Active Directory Windows event logs and performance counters are enabled.
+restart_after_install: true
+expected_logs:
+- log_name: active_directory_ds
+  fields:
+  - name: jsonPayload.Message
+    value_regex: '^Microsoft Active Directory Domain Services startup complete, version.*'
+    type: string
+  - name: jsonPayload.RecordNumber
+    type: number
+  - name: jsonPayload.TimeGenerated
+    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
+    type: string
+  - name: jsonPayload.TimeWritten
+    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
+    type: string
+  - name: jsonPayload.EventID
+    type: number
+  - name: jsonPayload.EventType
+    type: string
+  - name: jsonPayload.Qualifiers
+    type: number
+  - name: jsonPayload.EventCategory
+    type: number
+  - name: jsonPayload.Channel
+    value_regex: '^Directory Service$'
+    type: string
+  - name: jsonPayload.Sid
+    type: string
+  - name: jsonPayload.SourceName
+    value_regex: '^NTDS General$'
+    type: string
+  - name: jsonPayload.ComputerName
+    type: string
+  - name: jsonPayload.Data
+    value_regex: '^$'
+    type: string
+  - name: jsonPayload.StringInserts
+    type: "[]string"
+- log_name: active_directory_ds
+  fields:
+  - name: jsonPayload.Message
+    value_regex: '^Active Directory Web Services has successfully started and is now accepting requests\..*'
+    type: string
+  - name: jsonPayload.RecordNumber
+    type: number
+  - name: jsonPayload.TimeGenerated
+    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
+    type: string
+  - name: jsonPayload.TimeWritten
+    value_regex: '^\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4}$'
+    type: string
+  - name: jsonPayload.EventID
+    type: number
+  - name: jsonPayload.EventType
+    type: string
+  - name: jsonPayload.Qualifiers
+    type: number
+  - name: jsonPayload.EventCategory
+    type: number
+  - name: jsonPayload.Channel
+    value_regex: "^Active Directory Web Services$"
+    type: string
+  - name: jsonPayload.Sid
+    type: string
+  - name: jsonPayload.SourceName
+    value_regex: "^ADWS$"
+    type: string
+  - name: jsonPayload.ComputerName
+    type: string
+  - name: jsonPayload.Data
+    value_regex: "^$"
+    type: string
+  - name: jsonPayload.StringInserts
+    type: "[]string"
