@@ -27,17 +27,17 @@ import (
 // to see in the metrics backend.
 type ExpectedMetric struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
-	Type string `yaml:"type"`
+	Type string `yaml:"type" validate:"required"`
 	// The value type, for example INT64.
-	ValueType string `yaml:"value_type" validate:"oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
+	ValueType string `yaml:"value_type" validate:"required,oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
 	// The kind, for example GAUGE.
-	Kind string `yaml:"kind" validate:"oneof=GAUGE DELTA CUMULATIVE"`
+	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance.
-	MonitoredResource string `yaml:"monitored_resource" validate:"oneof=gce_instance"`
+	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels"`
+	Labels map[string]string `yaml:"labels" validate:"required"`
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
