@@ -22,7 +22,7 @@ To configure a receiver for your IIS system logs, specify the following fields:
 | Field                 | Default                           | Description |
 | ---                   | ---                               | ---         |
 | `type`                | required                          | Must be `iis_access`. |
-| `include_paths`       | `[C:\inetpub\logs\LogFiles\W3SVC1\u_ex*]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`. |
+| `include_paths`       | `['C:\inetpub\logs\LogFiles\W3SVC1\u_ex*']` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`. |
 | `exclude_paths`       | `[]`                              | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 | `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in `include_paths` are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
 
