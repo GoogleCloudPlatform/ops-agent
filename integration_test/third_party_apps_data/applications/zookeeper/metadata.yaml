@@ -1,0 +1,98 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper"
+short_name: zookeeper
+long_name: Apache Zookeeper
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.11.0
+supported_app_version: ["3.5", "3.6", "3.7"]
+expected_metrics:
+- type: workload.googleapis.com/zookeeper.connection.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.data_tree.ephemeral_node.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.data_tree.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.file_descriptor.limit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/zookeeper.file_descriptor.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.fsync.exceeded_threshold.count
+  optional: true
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.avg
+  optional: true
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.min
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.packet.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/zookeeper.request.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.watch.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.znode.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+expected_logs:
+- log_name: zookeeper_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: binding to port 0.0.0.0/0.0.0.0:2181
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.thread
+    value_regex: main
+    type: string
+    description: Thread from which the log originated
+  - name: jsonPayload.source
+    value_regex: NIOServerCnxnFactory
+    type: string
+    description: Source of where the log originated
+  - name: jsonPayload.line
+    type: number
+    description: Line number from which the log was generated in source
+  - name: jsonPayload.myid
+    type: number
+    description: Numeric ID of the Zookeeper instance

@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -134,6 +148,8 @@ const (
 	vmInitBackoffDuration = 10 * time.Second
 
 	sshUserName = "test_user"
+
+	exhaustedRetriesSuffix = "exhausted retries"
 )
 
 func init() {
@@ -369,55 +385,60 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
-// hasNonEmptySeries examines the given iterator, returning true if the
-// lookup succeeded and returned a nonempty time series, and false otherwise.
-// Also returns an error if the lookup failed.
-// A return value of (false, nil) indicates that the lookup succeeded but
-// returned no data.
-func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (bool, error) {
-	// Loop through the iterator, looking for at least one nonempty time series.
+// nonEmptySeries evaluates the given iterator, returning its first non-empty
+// time series. An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+	// Loop through the iterator, looking for at least one non-empty time series.
 	for {
 		series, err := it.Next()
-		logger.Printf("hasNonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			// Either there were no data series in the iterator or all of them were empty.
-			return false, nil
+			return nil, nil
 		}
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		if len(series.Points) == 0 {
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		// Success, we found a timeseries with len(series.Points) > 0.
-		return true, nil
+		// Success, we found a time series with len(series.Points) > 0.
+		return series, nil
 	}
 }
 
-// WaitForMetric looks for the given metric in the backend and returns an error
-// if it does not have data. This function will retry "no data" errors a fixed
-// number of times. This is useful because it takes time for monitoring data to
-// become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) error {
+// WaitForMetric looks for the given metric in the backend and returns it if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
-		found, err := hasNonEmptySeries(logger, it)
-		if found {
+		series, err := nonEmptySeries(logger, it)
+		if series != nil && err == nil {
 			// Success.
-			return nil
+			return series, nil
 		}
 		if err != nil && !isRetriableLookupMetricError(err) {
-			return fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
 		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("hasNonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, found-data=%v, retrying (%d/%d)...",
-			metric, extraFilters, err, found, attempt, QueryMaxAttempts)
+		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+			metric, extraFilters, err, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
+	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// IsExhaustedRetriesMetricError returns true if the given error is an
+// "exhausted retries" error returned from WaitForMetric.
+func IsExhaustedRetriesMetricError(err error) bool {
+	return err != nil && strings.HasSuffix(err.Error(), exhaustedRetriesSuffix)
 }
 
 // AssertMetricMissing looks for data of a metric and returns success if
@@ -426,8 +447,9 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil)
-		found, err := hasNonEmptySeries(logger, it)
-		logger.Printf("hasNonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
+		series, err := nonEmptySeries(logger, it)
+		found := series != nil
+		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
 		if err == nil {
@@ -527,7 +549,7 @@ type ThreadSafeWriter struct {
 	guarded io.Writer
 }
 
-func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
+func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 	writer.mu.Lock()
 	defer writer.mu.Unlock()
 	return writer.guarded.Write(p)
@@ -580,7 +602,7 @@ func runCommand(ctx context.Context, stdin string, args []string) (CommandOutput
 	var stderrBuilder strings.Builder
 	var interleavedBuilder strings.Builder
 
-	interleavedWriter := ThreadSafeWriter{guarded: &interleavedBuilder}
+	interleavedWriter := &ThreadSafeWriter{guarded: &interleavedBuilder}
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
@@ -601,7 +623,7 @@ func runCommand(ctx context.Context, stdin string, args []string) (CommandOutput
 //
 // Note: most calls to this function could be replaced by calls to the Compute API
 // (https://cloud.google.com/compute/docs/reference/rest/v1).
-// Various pros/cons of shelling out to gcloud vs using the Compute API are dicussed here:
+// Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	return runAndLog(ctx, logger, stdin, append([]string{gcloudPath}, args...))

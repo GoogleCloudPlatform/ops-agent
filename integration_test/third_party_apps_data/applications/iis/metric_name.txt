@@ -1,1 +1,0 @@
-agent.googleapis.com/iis/request_count

@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -216,9 +230,10 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 				c <- nil
 				return
 			}
-			c <- gce.WaitForMetric(
+			_, err := gce.WaitForMetric(
 				ctx, logger, vm, "agent.googleapis.com/agent/uptime", TrailingQueryWindow,
 				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)})
+			c <- err
 		}()
 	}
 	for range services {
@@ -717,20 +732,10 @@ func globForAgentPackage(platform string) (string, error) {
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
-// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs. Each agent
-// must have its own subdirectory. For example this would be
-// a valid structure inside AGENT_PACKAGES_IN_GCS when testing metrics & ops-agent:
-// ├── metrics
-// │   ├── collectd-4.5.6.deb
-// │   ├── collectd-4.5.6.rpm
-// │   └── otel-collector-0.1.2.goo
-// └── ops-agent
-//     ├── ops-agent-google-cloud-1.2.3.deb
-//     ├── ops-agent-google-cloud-1.2.3.rpm
-//     └── ops-agent-google-cloud-1.2.3.goo
-func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
-		return installWindowsPackageFromGCS(ctx, logger, vm, agentType, gcsPath)
+		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
@@ -743,31 +748,36 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s/%s /tmp/agentUpload", gcsPath, agentType, glob)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s /tmp/agentUpload", gcsPath, glob)); err != nil {
 		logger.ToMainLog().Printf("picking agent package using glob %q", glob)
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if IsRPMBased(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm -i /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}
 		return nil
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install /tmp/agentUpload/*"); err != nil {
+	// --allow-downgrades is marked as dangerous, but I don't see another way
+	// to get the following sequence to work (from TestUpgradeOpsAgent):
+	// 1. install stable package from Rapture
+	// 2. install just-built package from GCS
+	// Nor do I know why apt considers that sequence to be a downgrade.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
-func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/%s/*.goo C:\\agentUpload", gcsPath, agentType)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm install (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
