@@ -1,4 +1,4 @@
-[5:18] "match_any[0]": 1:19: error: invalid target: invalid.path
+[5:18] "match_any[0]": 1:19: error: field "invalid.path" not found
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs

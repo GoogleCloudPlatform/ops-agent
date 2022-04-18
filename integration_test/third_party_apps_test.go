@@ -187,7 +187,7 @@ func constructQuery(fields []common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
-			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.ValueRegex))
+			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
 		}
 	}
 	return strings.Join(parts, " AND ")
