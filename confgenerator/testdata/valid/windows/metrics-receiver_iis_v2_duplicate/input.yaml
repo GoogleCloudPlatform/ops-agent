@@ -14,11 +14,11 @@
 
 metrics:
   receivers:
-    iismetrics:
+    iis_v2:
       type: iis
-      version: "2"
+      receiver_version: "2"
   service:
     pipelines:
       iispipeline:
         receivers:
-          - iismetrics
+          - iis_v2
