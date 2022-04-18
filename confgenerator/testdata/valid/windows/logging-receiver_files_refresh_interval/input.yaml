@@ -16,9 +16,11 @@ logging:
   receivers:
     log_source_id1:
       type: files
-      wildcard_refresh_interval: 10s
       include_paths:
-      - /path/to/log/1/a
+      - /path/to/log/1/*
+      - \path\to\log\2\*
+      - \path/to\log/3\*
+      wildcard_refresh_interval: 10s
   service:
     pipelines:
       pipeline1:
