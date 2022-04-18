@@ -9,7 +9,7 @@ description: |-
   level, and message.
 
   For more information about Solr, see
-  [solr.apache.org/](https://solr.apache.org/){:class="external"}.
+  [solr.apache.org/](https://solr.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the

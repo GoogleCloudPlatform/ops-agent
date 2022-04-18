@@ -9,7 +9,7 @@ description: |-
   and message.
 
   For more information about HBase, see
-  [hbase.apache.org/](https://hbase.apache.org/){:class="external"}.
+  [hbase.apache.org/](https://hbase.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the

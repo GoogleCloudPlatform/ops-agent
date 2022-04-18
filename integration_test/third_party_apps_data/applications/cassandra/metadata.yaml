@@ -10,7 +10,7 @@ description: |-
   class, and line number.
 
   For more information about Cassandra, see
-  [http://cassandra.apache.org/](http://cassandra.apache.org/){:class="external"}.
+  [http://cassandra.apache.org/](http://cassandra.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the

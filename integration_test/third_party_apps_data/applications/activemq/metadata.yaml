@@ -7,7 +7,7 @@ description: -|
   waiting messages, average wait time, and expired messages.
 
   For more information about ActiveMQ, see
-  [activemq.apache.org/](https://activemq.apache.org/){:class="external"}.
+  [activemq.apache.org/](https://activemq.apache.org/).
 minimum_supported_agent_version:
   metrics: 2.11.0
 supported_app_version: ["Classic 5.8.x-5.16.x", "Artemis 2.x"]

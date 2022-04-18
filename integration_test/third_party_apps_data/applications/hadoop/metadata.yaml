@@ -8,7 +8,7 @@ description: |-
   fields for source, level, and message.
 
   For more information about Hadoop, see
-  [hadoop.apache.org/](https://hadoop.apache.org/){:class="external"}.
+  [hadoop.apache.org/](https://hadoop.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the

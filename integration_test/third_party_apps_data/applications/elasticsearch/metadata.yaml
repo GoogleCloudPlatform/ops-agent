@@ -7,12 +7,12 @@ description: |-
   machine on top of a number of operating systems. The `elasticsearch` receiver
   collects node- and cluster-level telemetry from your Elasticsearch instances.
   For more information, see
-  [elasticsearch.org](http://elasticsearch.org/){: .external}.
+  [elasticsearch.org](http://elasticsearch.org/).
 configure_integration: |-
   If you enable [Elasticsearch security
-  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html){: .external},
+  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html),
   you must configure a user with the `monitor` or `manage` [cluster
-  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster){: .external}.
+  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster).
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.9.0

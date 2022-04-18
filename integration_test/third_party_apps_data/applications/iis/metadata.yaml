@@ -10,7 +10,7 @@ description: |-
   collects IIS metrics. No additional configuration is required.
 
   For more information on IIS, see the
-  [IIS](https://www.iis.net/){:class="external"} documentation.
+  [IIS](https://www.iis.net/) documentation.
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0

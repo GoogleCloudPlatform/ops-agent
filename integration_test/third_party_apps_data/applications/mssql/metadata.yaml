@@ -7,7 +7,7 @@ description: |-
   open connections.
 
   For more information on SQL Server, see the
-  [SQL Server](https://docs.microsoft.com/en-us/sql/sql-server){:class="external"}
+  [SQL Server](https://docs.microsoft.com/en-us/sql/sql-server)
   documentation.
 minimum_supported_agent_version:
   metrics: 2.10.0

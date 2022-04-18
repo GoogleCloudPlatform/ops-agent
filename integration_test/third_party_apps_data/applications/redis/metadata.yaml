@@ -9,7 +9,7 @@ description: |-
   symbols for role and level are transformed into a human readable format.
 
   For more information about Redis, see
-  [redis.io](http://redis.io/){:class="external"}.
+  [redis.io](http://redis.io/).
 minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.5.0

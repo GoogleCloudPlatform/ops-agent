@@ -11,9 +11,9 @@ description: |-
 
   For more information about {{ plugin_name }}, see
   {% if plugin_name =="MySQL" %}
-  [mysql.com](http://www.mysql.com/){:class="external"}
+  [mysql.com](http://www.mysql.com/)
   {% else %}
-  [mariadb.org](https://mariadb.org/){:class="external"}
+  [mariadb.org](https://mariadb.org/)
   {% endif %}.
 configure_integration: |-
   {% if plugin_name =="MariaDB" %}

@@ -8,7 +8,7 @@ description: |-
   request details, and error logs are parsed for their error code and message.
 
   For more information about Apache Web Server, see
-  [http://httpd.apache.org/](http://httpd.apache.org/){:class="external"}.
+  [http://httpd.apache.org/](http://httpd.apache.org/).
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the

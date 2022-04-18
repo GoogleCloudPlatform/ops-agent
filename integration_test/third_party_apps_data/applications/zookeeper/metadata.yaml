@@ -8,7 +8,7 @@ description: |-
   for node ID, source, level, and message.
 
   For more information about ZooKeeper, see
-  [zookeeper.apache.org](https://zookeeper.apache.org/){:class="external"}.
+  [zookeeper.apache.org](https://zookeeper.apache.org/).
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0

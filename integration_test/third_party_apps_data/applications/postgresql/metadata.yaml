@@ -8,7 +8,7 @@ description: |-
   includes fields for role, user, level, and message.
 
   For more information about PostgreSQL, see
-  [postgresql.org](http://www.postgresql.org/){: .external}.
+  [postgresql.org](http://www.postgresql.org/).
 configure_integration: |-
   The `postgresql` receiver connects by default to a local `postgresql`
   server using a Unix socket and Unix authentication as the `root` user.

@@ -8,7 +8,7 @@ description: |-
   fields mapped to request, client, server, and message.
 
   For more information about nginx, see
-  [nginx.org](http://nginx.org/){:class="external"}.
+  [nginx.org](http://nginx.org/).
 configure_integration: |-
   You must enable the `stub_status` module in the nginx configuration file to set
   up a locally reachable URL, for example, `http://www.example.com/status` for the

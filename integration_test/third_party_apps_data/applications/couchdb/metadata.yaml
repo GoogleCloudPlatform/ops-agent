@@ -9,7 +9,7 @@ description: |-
   payload. The result includes fields for user, host, level, and message.
 
   For more information about Apache CouchDB, see
-  [couchdb.apache.org/](https://couchdb.apache.org/){:class="external"}.
+  [couchdb.apache.org/](https://couchdb.apache.org/).
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0

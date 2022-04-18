@@ -6,7 +6,7 @@ description: |-
   payload. The result includes source, message code, level, and message.
 
   For more information about WildFly, see
-  [wildfly.org/](https://www.wildfly.org/){:class="external"}.
+  [wildfly.org/](https://www.wildfly.org/).
 configure_integration: |-
   To collect and ingest WildFly logs, you must
   [install Ops Agent]({{install_path}}/install-index) version 2.12.0 or higher.

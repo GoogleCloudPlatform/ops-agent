@@ -8,7 +8,7 @@ description: |-
   ID, level, and message.
 
   For more information about RabbitMQ, see
-  [rabbitmq.com/](https://www.rabbitmq.com/){:class="external"}.
+  [rabbitmq.com/](https://www.rabbitmq.com/).
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.12.0
