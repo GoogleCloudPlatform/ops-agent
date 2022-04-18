@@ -1,6 +1,14 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/rabbitmq"
 short_name: rabbitmq
 long_name: RabbitMQ
+description: |-
+  The RabbitMQ integration collects message metrics, such as the number of
+  delivered, published, and dropped messages. The integration also collects
+  RabbitMQ logs and parses them into a JSON payload. The result includes process
+  ID, level, and message.
+
+  For more information about RabbitMQ, see
+  [rabbitmq.com/](https://www.rabbitmq.com/){:class="external"}.
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.12.0
