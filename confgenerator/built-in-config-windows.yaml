@@ -15,6 +15,7 @@ metrics:
     iis:
       type: iis
       collection_interval: 60s
+      version: ""
     mssql:
       type: mssql
       collection_interval: 60s
