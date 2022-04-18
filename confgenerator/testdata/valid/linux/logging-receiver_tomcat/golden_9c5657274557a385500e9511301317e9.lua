@@ -40,9 +40,6 @@ local omit9 = (string.lower((function()
 return record["user"]
 end)()) == string.lower("-"));
 (function(value)
-record["http_request_userAgent"] = value
-end)(nil);
-(function(value)
 record["http_request_protocol"] = value
 end)(nil);
 (function(value)
@@ -62,6 +59,9 @@ record["http_request_responseSize"] = value
 end)(nil);
 (function(value)
 record["http_request_status"] = value
+end)(nil);
+(function(value)
+record["http_request_userAgent"] = value
 end)(nil);
 local v = __field_0;
 (function(value)

@@ -30,14 +30,14 @@ end)();
 local __field_9 = (function()
 return record["user"]
 end)();
-local omit9 = (string.lower((function()
-return record["user"]
-end)()) == string.lower("-"));
 local omit1 = (string.lower((function()
 return record["http_request_%s"]
 end)()) == string.lower("-"));
 local omit8 = (string.lower((function()
 return record["host"]
+end)()) == string.lower("-"));
+local omit9 = (string.lower((function()
+return record["user"]
 end)()) == string.lower("-"));
 (function(value)
 record["http_request_protocol"] = value
