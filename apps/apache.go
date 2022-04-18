@@ -93,26 +93,31 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"emerg", "EMERGENCY"},
-				{"alert", "ALERT"},
-				{"crit", "CRITICAL"},
-				{"error", "ERROR"},
-				{"warn", "WARNING"},
-				{"notice", "NOTICE"},
-				{"info", "INFO"},
-				{"debug", "DEBUG"},
-				{"trace1", "DEBUG"},
-				{"trace2", "DEBUG"},
-				{"trace3", "DEBUG"},
-				{"trace4", "DEBUG"},
-				{"trace5", "DEBUG"},
-				{"trace6", "DEBUG"},
-				{"trace7", "DEBUG"},
-				{"trace8", "DEBUG"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"emerg":  "EMERGENCY",
+						"alert":  "ALERT",
+						"crit":   "CRITICAL",
+						"error":  "ERROR",
+						"warn":   "WARNING",
+						"notice": "NOTICE",
+						"info":   "INFO",
+						"debug":  "DEBUG",
+						"trace1": "DEBUG",
+						"trace2": "DEBUG",
+						"trace3": "DEBUG",
+						"trace4": "DEBUG",
+						"trace5": "DEBUG",
+						"trace6": "DEBUG",
+						"trace7": "DEBUG",
+						"trace8": "DEBUG",
+					},
+				},
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c
