@@ -15,7 +15,10 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -110,4 +113,119 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
+}
+
+type LoggingProcessorIisAccess struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (*LoggingProcessorIisAccess) Type() string {
+	return "iis_access"
+}
+
+const (
+	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
+	iisMergeRecordFieldsLuaScriptContents = `
+	function iis_merge_fields(tag, timestamp, record)
+	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
+	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
+		record["http_request_requestUrl"] = record["cs_uri_stem"]
+	  else
+		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+	  end
+	  
+	  record["cs_uri_query"] = nil
+	  record["cs_uri_stem"] = nil
+	  record["s_port"] = nil
+	  return 2, timestamp, record 
+	end
+	`
+)
+
+func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Documentation:
+		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
+		// sample line: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
+		// sample line: 2022-03-10 17:26:30 ::1 GET / - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 200 0 0 352
+		// sample line: 2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49
+		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)\s(?<time_taken>\d+)$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: " %Y-%m-%d %H:%M:%S",
+			Types: map[string]string{
+				"http_request_status": "integer",
+			},
+		},
+	}.Components(tag, uid)
+	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
+	for _, field := range []string{
+		"cs_uri_query",
+		"http_request_referer",
+		"user",
+	} {
+		c = append(c, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":      "modify",
+				"Match":     tag,
+				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
+				"Remove":    field,
+			},
+		})
+	}
+
+	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
+
+	c = append(c, []fluentbit.Component{
+		// This is used to exlude the header lines above the logs
+
+		// EXAMPLE LINES:
+		// #Software: Microsoft Internet Information Services 10.0
+		// #Version: 1.0
+		// #Date: 2022-04-11 12:53:50
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":    "grep",
+				"Match":   tag,
+				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
+			},
+		},
+
+		// Generate the httpRequest structure.
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":          "nest",
+				"Match":         tag,
+				"Operation":     "nest",
+				"Wildcard":      "http_request_*",
+				"Nest_under":    "logging.googleapis.com/http_request",
+				"Remove_prefix": "http_request_",
+			},
+		},
+	}...)
+	return c
+}
+
+type LoggingReceiverIisAccess struct {
+	LoggingProcessorIisAccess               `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
+			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
+		}
+	}
+	c := r.LoggingReceiverFilesMixin.Components(tag)
+	c = append(c, r.LoggingProcessorIisAccess.Components(tag, "iis_access")...)
+	return c
+}
+
+func init() {
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIisAccess{} }, "windows")
 }

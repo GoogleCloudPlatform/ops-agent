@@ -114,12 +114,13 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
-// GenerateFluentBitConfigs generates a main and parser configuration file for Fluent Bit.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (main string, parser string, err error) {
+// GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
+// It returns a map of filenames to file contents.
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (map[string]string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	c := fluentbit.ModularConfig{
@@ -208,12 +209,12 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					}
 					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
 				}
-				components = append(components, setLogNameComponents(tag, rID)...)
+				components = append(components, setLogNameComponents(tag, rID, receiver.Type())...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
 				if receiver.Type() == "fluent_forward" {
-					components = append(components, addLuaFilter(tag, "add_log_name.lua", "add_log_name")...)
+					components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 				}
 				sources = append(sources, fbSource{tag, components})
 			}

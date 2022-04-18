@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -12,13 +26,7 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 The following variables are optional:
 
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. They must be inside
-    a directory called ops-agent. For example, this would be a valid structure
-    inside AGENT_PACKAGES_IN_GCS:
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */
@@ -169,7 +177,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	if packagesInGCS == "" {
 		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
 type logFields struct {
@@ -190,9 +198,14 @@ type minimumSupportedAgentVersion struct {
 }
 
 type integrationMetadata struct {
+	PublicUrl                    string                       `yaml:"public_url"`
+	ShortName                    string                       `yaml:"short_name" validate:"required"`
+	LongName                     string                       `yaml:"long_name" validate:"required"`
+	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []expectedLog                `yaml:"expected_logs"`
 	ExpectedMetrics              []common.ExpectedMetric      `yaml:"expected_metrics"`
 	MinimumSupportedAgentVersion minimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
 }
 
 // constructQuery converts the given struct of:
@@ -202,7 +215,7 @@ func constructQuery(fields []logFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
-			parts = append(parts, fmt.Sprintf("%s=~%q", field.Name, field.ValueRegex))
+			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
 		}
 	}
 	return strings.Join(parts, " AND ")

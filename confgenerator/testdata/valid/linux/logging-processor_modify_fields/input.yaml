@@ -1,0 +1,38 @@
+logging:
+  receivers:
+    sample_logs:
+      type: files
+      include_paths: [/tmp/*.log]
+  processors:
+    simple:
+      type: modify_fields
+      fields:
+        jsonPayload.hello:
+          static_value: world
+        jsonPayload.moved:
+          move_from: jsonPayload.move_source
+        jsonPayload.copied:
+          copy_from: jsonPayload.source
+        jsonPayload.integer:
+          type: integer
+        jsonPayload.float:
+          type: float
+        jsonPayload.nested.structure.field:
+          copy_from: jsonPayload.unnested
+        severity:
+          copy_from: jsonPayload.level
+          map_values:
+            W: WARNING
+            CAUTION: WARNING
+            I: INFO
+        jsonPayload.default:
+          default_value: this field was missing
+        jsonPayload.omitted:
+          omit_if: jsonPayload.omitted = "-"
+        jsonPayload.untouched:
+  service:
+    pipelines:
+      p1:
+        receivers: [sample_logs]
+        processors:
+        - simple
