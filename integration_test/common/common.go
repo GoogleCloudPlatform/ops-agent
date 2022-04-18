@@ -67,6 +67,7 @@ type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url,omitempty"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
+	Description                  string                       `yaml:"description" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration,omitempty"`
 	ExpectedLogs                 []ExpectedLog                `yaml:"expected_logs,omitempty"`
 	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics,omitempty"`
