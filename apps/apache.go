@@ -115,6 +115,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 						"trace7": "DEBUG",
 						"trace8": "DEBUG",
 					},
+					MapValuesExclusive: true,
 				},
 			},
 		}.Components(tag, uid)...,

@@ -20,6 +20,7 @@ elseif v == "trace6" then v = "DEBUG"
 elseif v == "trace7" then v = "DEBUG"
 elseif v == "trace8" then v = "DEBUG"
 elseif v == "warn" then v = "WARNING"
+else v = nil
 end
 (function(value)
 record["logging.googleapis.com/severity"] = value

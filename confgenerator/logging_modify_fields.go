@@ -36,9 +36,10 @@ type ModifyField struct {
 	omitVar string `yaml:"-"`
 
 	// Operations to perform
-	MapValues map[string]string `yaml:"map_values"`
-	Type      string            `yaml:"type" validate:"omitempty,oneof=integer float"`
-	OmitIf    string            `yaml:"omit_if" validate:"omitempty,filter"`
+	MapValues          map[string]string `yaml:"map_values"`
+	MapValuesExclusive bool              `yaml:"map_values_exclusive" validate:"excluded_without=MapValues"`
+	Type               string            `yaml:"type" validate:"omitempty,oneof=integer float"`
+	OmitIf             string            `yaml:"omit_if" validate:"omitempty,filter"`
 }
 
 type LoggingProcessorModifyFields struct {
@@ -172,6 +173,9 @@ function process(tag, timestamp, record)
 			fmt.Fprintf(&lua, "if v == %s then v = %s\n", filter.LuaQuote(k), filter.LuaQuote(field.MapValues[k]))
 		}
 		if len(keys) > 0 {
+			if field.MapValuesExclusive {
+				lua.WriteString("else v = nil\n")
+			}
 			lua.WriteString("end\n")
 		}
 
