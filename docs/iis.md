@@ -2,16 +2,50 @@
 
 Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis) for instructions to collect metrics from this application using Ops Agent.
 
+Additionally, specify `receiver_version` as `v2` to enable new metrics gathering. 
+
+Example `v2` Configuration
+```yaml
+metrics:
+  receivers:
+    iis:
+      type: iis
+      receiver_version: "2"
+  service:
+    pipelines:
+      iispipeline:
+        receivers:
+          - iis
+```
+
 ## Metrics
 
-The following table provides the list of metrics that the Ops Agent collects from this application.
+The following table provides the list of metrics that the Ops Agent collects from this application for `v1` of this receiver.
 
+### v1
 | Metric                                                   | Data Type  | Unit | Labels | Description |
 | ---                                                      | ---        | ---  | ---    | ---         | 
 | agent.googleapis.com/iis/current_connections             | gauge      | 1    |        | Currently open connections to IIS. |
 | agent.googleapis.com/iis/network/transferred_bytes_count | cumulative | By   |        | Network bytes transferred by IIS. |
 | agent.googleapis.com/iis/new_connection_count            | cumulative | 1    |        | Connections opened to IIS. |
 | agent.googleapis.com/iis/request_count                   | cumulative | 1    | state  | Requests made to IIS. |
+
+
+### v2
+| Metric                                                   | Data Type  | Unit | Labels | Description |
+| ---                                                      | ---        | ---  | ---    | ---         | 
+| iis.connection.active | gauge | {connections} | <ul> </ul>  |Number of active connections. |
+| iis.connection.anonymous | cumulative | {connections} | <ul> </ul>  |Number of connections established anonymously. |
+| iis.connection.attempt.count | cumulative | {attempts} | <ul> </ul>  |Total number of attempts to connect to the server. |
+| iis.network.blocked | cumulative | By | <ul> </ul>  |Number of bytes blocked due to bandwidth throttling. |
+| iis.network.file.count | cumulative | {files} | <ul> <li>direction</li> </ul>  |Number of transmitted files. |
+| iis.network.io | cumulative | By | <ul> <li>direction</li> </ul>  |Total amount of bytes sent and received. |
+| iis.request.count | cumulative | {requests} | <ul> <li>request</li> </ul>  |Total number of requests of a given type. |
+| iis.request.queue.age.max | gauge | ms | <ul> </ul>  |Age of oldest request in the queue. |
+| iis.request.queue.count | gauge | {requests} | <ul> </ul>  |Current number of requests in the queue. |
+| iis.request.rejected | cumulative | {requests} | <ul> </ul>  |Total number of requests rejected. |
+| iis.thread.active | gauge | {threads} | <ul> </ul>  |Current number of active threads. |
+| iis.uptime | gauge | s | <ul> </ul>  |The amount of time the server has been up. |
 
 # `iis_access` Logging Receiver
 

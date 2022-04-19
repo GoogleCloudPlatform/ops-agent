@@ -8,6 +8,16 @@ logging:
       iis:
         receivers:
         - iis_access
+metrics:
+  receivers:
+    iis_v2:
+      type: iis
+      receiver_version: "2"
+  service:
+    pipelines:
+      iispipeline:
+        receivers:
+          - iis_v2
 "
 
 Stop-Service google-cloud-ops-agent -Force
