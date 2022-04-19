@@ -30,15 +30,15 @@ end)();
 local __field_9 = (function()
 return record["user"]
 end)();
-local omit1 = (string.lower((function()
+local omit1 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["http_request_%s"]
-end)()) == string.lower("-"));
-local omit8 = (string.lower((function()
+end)());
+local omit8 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["host"]
-end)()) == string.lower("-"));
-local omit9 = (string.lower((function()
+end)());
+local omit9 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["user"]
-end)()) == string.lower("-"));
+end)());
 (function(value)
 record["http_request_protocol"] = value
 end)(nil);
