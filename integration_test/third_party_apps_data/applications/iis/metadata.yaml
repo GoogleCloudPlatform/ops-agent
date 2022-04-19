@@ -62,6 +62,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+  optional: true
 - type: workload.googleapis.com/iis.network.file.count
   value_type: INT64
   kind: CUMULATIVE
