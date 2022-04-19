@@ -347,12 +347,14 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 
 	// TODO: Add support for numeric comparisons
 
+	var expr string
+
 	switch r.Operator {
 	case "GLOBAL", "<", "<=", ">", ">=":
 		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
 	case ":":
 		// substring match, case insensitive
-		return nil, fmt.Sprintf(`(string.find(string.lower(%s), string.lower(%s), 1, false) != nil)`, lhs, rhsQuoted)
+		expr = fmt.Sprintf(`(string.find(string.lower(tostring(v)), string.lower(%s), 1, false) != nil)`, rhsQuoted)
 	case "=~", "!~":
 		// regex match, case sensitive
 
@@ -373,10 +375,14 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		return []fluentbit.Component{c}, fmt.Sprintf(`(record[%s] ~= nil)`, LuaQuote(key))
 	case "=":
 		// equality, case insensitive
-		return nil, fmt.Sprintf(`(string.lower(%s) == string.lower(%s))`, lhs, rhsQuoted)
+		expr = fmt.Sprintf(`(string.lower(tostring(v)) == string.lower(%s))`, rhsQuoted)
 	case "!=":
 		// inequality, case insensitive
-		return nil, fmt.Sprintf(`(string.lower(%s) ~= string.lower(%s))`, lhs, rhsQuoted)
+		expr = fmt.Sprintf(`(string.lower(tostring(v)) ~= string.lower(%s))`, rhsQuoted)
+	}
+	if expr != "" {
+		// All comparisons involving a missing field are false
+		return nil, fmt.Sprintf(`(function(v) if v == nil then return false end return %s end)(%s)`, expr, lhs)
 	}
 	// This is all the supported operators.
 	panic(fmt.Errorf("unknown operator: %s", r.Operator))

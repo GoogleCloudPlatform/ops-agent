@@ -24,9 +24,9 @@ end)();
 local __field_8 = (function()
 return record["level"]
 end)();
-local omit7 = (string.lower((function()
+local omit7 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["omitted"]
-end)()) == string.lower("-"));
+end)());
 (function(value)
 record["move_source"] = value
 end)(nil);
