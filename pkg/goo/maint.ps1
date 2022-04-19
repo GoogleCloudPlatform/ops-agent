@@ -44,6 +44,8 @@ if ($Action -eq "install") {
      else {
          Write-Host "Keep [$configFilePath] as-is because a file with that name already exists."
      }
+     # Sleep for 20s before installing services to allow previous service deletion to complete.
+     Start-Sleep -s 20
 }
 
 & "$InstallDir\bin\google-cloud-ops-agent.exe" "--$Action"
