@@ -63,9 +63,9 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 		"userAgent",
 	} {
 		dest := fmt.Sprintf("httpRequest.%s", field)
-		src := "jsonPayload.http_request_%s"
+		src := fmt.Sprintf("jsonPayload.http_request_%s", field)
 		mf.Fields[dest] = &confgenerator.ModifyField{
-			MoveFrom: fmt.Sprintf(src, field),
+			MoveFrom: src,
 		}
 		if field == "referer" {
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
