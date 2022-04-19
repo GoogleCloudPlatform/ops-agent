@@ -31,7 +31,7 @@ local __field_9 = (function()
 return record["user"]
 end)();
 local omit1 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
-return record["http_request_%s"]
+return record["http_request_referer"]
 end)());
 local omit8 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["host"]
