@@ -1,21 +1,27 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/postgresql"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/postgresql
 short_name: postgresql
 long_name: PostgreSQL
-description: |-
-  The PostgreSQL integration collects database-usage metrics, such as the database
+description: 'The PostgreSQL integration collects database-usage metrics, such as
+  the database
+
   size, the number of backends, or the number of operations. The integration also
+
   collects PostgreSQL logs and parses them into a JSON payload. This result
+
   includes fields for role, user, level, and message.
 
+
   For more information about PostgreSQL, see
-  [postgresql.org](http://www.postgresql.org/).
-configure_integration: |-
-  The `postgresql` receiver connects by default to a local `postgresql`
-  server using a Unix socket and Unix authentication as the `root` user.
+
+  [postgresql.org](http://www.postgresql.org/).'
+configure_integration: 'The `postgresql` receiver connects by default to a local `postgresql`
+
+  server using a Unix socket and Unix authentication as the `root` user.'
 minimum_supported_agent_version:
   metrics: 2.9.0
   logging: 2.9.0
-supported_app_version: ["10.18+"]
+supported_app_version:
+- 10.18+
 expected_metrics:
 - type: workload.googleapis.com/postgresql.backends
   value_type: INT64

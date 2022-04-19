@@ -1,18 +1,26 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper
 short_name: zookeeper
 long_name: Apache Zookeeper
-description: |-
-  The Apache ZooKeeper integration collects traffic metrics for nodes, such as
+description: 'The Apache ZooKeeper integration collects traffic metrics for nodes,
+  such as
+
   latency, active requests, and active connections. The integration also collects
+
   ZooKeeper logs and parses them into a JSON payload. The result includes fields
+
   for node ID, source, level, and message.
 
+
   For more information about ZooKeeper, see
-  [zookeeper.apache.org](https://zookeeper.apache.org/).
+
+  [zookeeper.apache.org](https://zookeeper.apache.org/).'
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0
-supported_app_version: ["3.5", "3.6", "3.7"]
+supported_app_version:
+- '3.5'
+- '3.6'
+- '3.7'
 expected_metrics:
 - type: workload.googleapis.com/zookeeper.connection.active
   value_type: INT64

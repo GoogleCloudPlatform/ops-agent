@@ -1,104 +1,53 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx"
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx
 short_name: nginx
 long_name: Nginx
-description: |-
-  The nginx integration collects connection metrics and access logs. Connection
+description: 'The nginx integration collects connection metrics and access logs. Connection
+
   metrics capture the current state of the connection: active, reading, or
+
   waiting. Access logs are parsed for their connection details, which include
+
   fields mapped to request, client, server, and message.
 
+
   For more information about nginx, see
-  [nginx.org](http://nginx.org/).
-configure_integration: |-
-  You must enable the `stub_status` module in the nginx configuration file to set
-  up a locally reachable URL, for example, `http://www.example.com/status` for the
-  status page. To enable the `stub_status` module, complete the following steps:
 
-  1. Edit the `status.conf` file, or create the file if it doesn't exist. You can
-     find this file in the nginx configuration directory, typically found at
-     `/etc/nginx/conf.d`.
-
-  1. Add the following lines to the `server` section:
-
-     ```none
-     location /status {
-         stub_status on;
-         access_log off;
-         allow 127.0.0.1;
-         deny all;
-     }
-     ```
-
-     Your configuration file might look like the following example:
-
-     <pre>
-     server {
-         listen 80;
-         server_name 127.0.0.1;
-         location /status {
-             stub_status on;
-             access_log off;
-             allow 127.0.0.1;
-             deny all;
-         }
-         location / {
-             root /dev/null;
-         }
-     }
-     </pre>
-
-  1. Reload the nginx configuration.
-
-     ```
-     sudo service nginx reload
-     ```
-
-  You can run the following command to automate the previous steps. It creates
-  a `status.conf` file if it doesn't exist or overwrites the existing one if it
-  does exist. The command turns on `stub_status`, reloads nginx, and verifies
-  that the expected information is exposed through the endpoint.
-
-  ```bash
-  sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
-  server {
-      listen 80;
-      server_name 127.0.0.1;
-      location /status {
-          stub_status on;
-          access_log off;
-          allow 127.0.0.1;
-          deny all;
-      }
-      location / {
-         root /dev/null;
-      }
-  }
-  EOF
-  sudo service nginx reload
-  curl http://127.0.0.1:80/status
-  ```
-
-  The sample output is:
-
-  <pre>
-  Active connections: 1
-  server accepts handled requests
-   23 23 74
-  Reading: 0 Writing: 1 Waiting: 0
-  </pre>
-
-  Note: `127.0.0.1` can be replaced with the real server name, for example,
-  `server_name mynginx.domain.com`. The curl command to verify would be
-  `curl http://mynginx.domain.com:80/status`.
-
-  Alternately, instead of using a separate `status.conf` file, you can also
-  directly embed the lines to the main `nginx.conf` file, which
-  is typically located in one of the following directories: `/etc/nginx`,
-  `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
+  [nginx.org](http://nginx.org/).'
+configure_integration: "You must enable the `stub_status` module in the nginx configuration\
+  \ file to set\nup a locally reachable URL, for example, `http://www.example.com/status`\
+  \ for the\nstatus page. To enable the `stub_status` module, complete the following\
+  \ steps:\n\n1. Edit the `status.conf` file, or create the file if it doesn't exist.\
+  \ You can\n   find this file in the nginx configuration directory, typically found\
+  \ at\n   `/etc/nginx/conf.d`.\n\n1. Add the following lines to the `server` section:\n\
+  \n   ```none\n   location /status {\n       stub_status on;\n       access_log off;\n\
+  \       allow 127.0.0.1;\n       deny all;\n   }\n   ```\n\n   Your configuration\
+  \ file might look like the following example:\n\n   <pre>\n   server {\n       listen\
+  \ 80;\n       server_name 127.0.0.1;\n       location /status {\n           stub_status\
+  \ on;\n           access_log off;\n           allow 127.0.0.1;\n           deny\
+  \ all;\n       }\n       location / {\n           root /dev/null;\n       }\n  \
+  \ }\n   </pre>\n\n1. Reload the nginx configuration.\n\n   ```\n   sudo service\
+  \ nginx reload\n   ```\n\nYou can run the following command to automate the previous\
+  \ steps. It creates\na `status.conf` file if it doesn't exist or overwrites the\
+  \ existing one if it\ndoes exist. The command turns on `stub_status`, reloads nginx,\
+  \ and verifies\nthat the expected information is exposed through the endpoint.\n\
+  \n```bash\nsudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF\nserver {\n\
+  \    listen 80;\n    server_name 127.0.0.1;\n    location /status {\n        stub_status\
+  \ on;\n        access_log off;\n        allow 127.0.0.1;\n        deny all;\n  \
+  \  }\n    location / {\n       root /dev/null;\n    }\n}\nEOF\nsudo service nginx\
+  \ reload\ncurl http://127.0.0.1:80/status\n```\n\nThe sample output is:\n\n<pre>\n\
+  Active connections: 1\nserver accepts handled requests\n 23 23 74\nReading: 0 Writing:\
+  \ 1 Waiting: 0\n</pre>\n\nNote: `127.0.0.1` can be replaced with the real server\
+  \ name, for example,\n`server_name mynginx.domain.com`. The curl command to verify\
+  \ would be\n`curl http://mynginx.domain.com:80/status`.\n\nAlternately, instead\
+  \ of using a separate `status.conf` file, you can also\ndirectly embed the lines\
+  \ to the main `nginx.conf` file, which\nis typically located in one of the following\
+  \ directories: `/etc/nginx`,\n`/usr/local/nginx/conf`, or `/usr/local/etc/nginx`."
 minimum_supported_agent_version:
   metrics: 2.1.0
   logging: 2.1.0
-supported_app_version: ["1.18", "1.20"]
+supported_app_version:
+- '1.18'
+- '1.20'
 expected_metrics:
 - type: workload.googleapis.com/nginx.connections_accepted
   value_type: INT64
@@ -128,11 +77,14 @@ expected_logs:
   - name: httpRequest.remoteIp
     value_regex: ::1
     type: string
-    description: "The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80, FE80::0202:B3FF:FE1E:8329."
+    description: 'The IP address (IPv4 or IPv6) of the client that issued the HTTP
+      request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80,
+      FE80::0202:B3FF:FE1E:8329.'
   - name: httpRequest.requestUrl
     value_regex: /forbidden.html
     type: string
-    description: "The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: http://example.com/some/info?color=red."
+    description: 'The scheme (http, https), the host name, the path and the query
+      portion of the URL that was requested. Example: http://example.com/some/info?color=red.'
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header (usually not reported by nginx)
