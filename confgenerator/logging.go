@@ -21,11 +21,14 @@ import (
 )
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(tag, logName, receiverType string) []fluentbit.Component {
+func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
 				DefaultValue: &logName,
+			},
+			`labels."agent.googleapis.com/resource_name"`: {
+				StaticValue: &hostName,
 			},
 			// `labels."agent.googleapis.com/receiver_type"`: {
 			// 	StaticValue: &receiverType,
