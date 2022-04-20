@@ -145,14 +145,14 @@ expected_logs:
     description: Exception related to the log, including detailed stacktrace where provided
 configuration_options:
   logs:
-  - type: ""
+  - type: solr_system
     fields:
     - name: type
       default: null
-      description: ""
+      description: The value must be solr_system.
     - name: include_paths
-      default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+      default: '[/var/solr/logs/solr.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
@@ -160,15 +160,20 @@ configuration_options:
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
-  - type: apache
+  - type: solr
     fields:
     - name: type
       default: null
-      description: This value must be apache.
-    - name: server_status_url
-      default: http://localhost:80/server-status?auto
-      description: The URL exposed by the mod_status module.
+      description: This value must be solr.
+    - name: endpoint
+      default: localhost:18983
+      description: The JMX Service URL or host and port used to construct the Service URL. Must be in the form of host:port. Values in host:port form will be used to create a Service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication..
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
-
