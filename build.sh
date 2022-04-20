@@ -68,7 +68,8 @@ function build_fluentbit() {
   # Additionally, -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so
   cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit \
     -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF
+    -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF \
+    -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service or configuration, but there are no cmake
