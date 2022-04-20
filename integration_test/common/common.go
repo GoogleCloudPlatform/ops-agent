@@ -75,8 +75,8 @@ type InputConfiguration struct {
 }
 
 type ConfigurationOptions struct {
-	LogsConfiguration    InputConfiguration `yaml:"logs"`
-	MetricsConfiguration InputConfiguration `yaml:"metrics"`
+	LogsConfiguration    []InputConfiguration `yaml:"logs"`
+	MetricsConfiguration []InputConfiguration `yaml:"metrics"`
 }
 
 type IntegrationMetadata struct {
