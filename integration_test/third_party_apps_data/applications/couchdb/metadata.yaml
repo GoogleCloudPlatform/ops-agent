@@ -93,11 +93,11 @@ expected_logs:
     description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.
 configuration_options:
   logs:
-  - type: "couchdb"
+  - type: couchdb
     fields:
     - name: type
       default: null
-      description: "The value must be couchdb."
+      description: The value must be couchdb.
     - name: include_paths
       default: '[/var/log/couchdb/couchdb.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/couchdb*/*.log.

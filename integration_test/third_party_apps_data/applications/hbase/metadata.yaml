@@ -362,11 +362,11 @@ expected_logs:
     description: 'source of where the log originated'
 configuration_options:
   logs:
-  - type: "hbase_system"
+  - type: hbase_system
     fields:
     - name: type
       default: null
-      description: "This value must be hbase_system."
+      description: This value must be hbase_system.
     - name: include_paths
       default: '[/opt/hbase/logs/hbase-*-regionserver-*.log, /opt/hbase/logs/hbase-*-master-*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/hbase*/*.log.

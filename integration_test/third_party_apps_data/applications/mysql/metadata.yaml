@@ -261,11 +261,11 @@ expected_logs:
     description: 'The statement execution end time'
 configuration_options:
   logs:
-  - type: "mysql_error"
+  - type: mysql_error
     fields:
     - name: type
       default: null
-      description: "This value must be mysql_error."
+      description: This value must be mysql_error.
     - name: include_paths
       default: '[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mysql/*.log.
@@ -275,11 +275,11 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: "mysql_general"
+  - type: mysql_general
     fields:
     - name: type
       default: null
-      description: "This value must be mysql_general."
+      description: This value must be mysql_general.
     - name: include_paths
       default: '[/var/lib/mysql/${HOSTNAME}.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
@@ -289,11 +289,11 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: "mysql_slow"
+  - type: mysql_slow
     fields:
     - name: type
       default: null
-      description: "This value must be mysql_slow."
+      description: This value must be mysql_slow.
     - name: include_paths
       default: '[/var/lib/mysql/${HOSTNAME}-slow.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.

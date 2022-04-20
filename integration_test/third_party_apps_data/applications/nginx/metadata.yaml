@@ -183,11 +183,11 @@ expected_logs:
     description: Referer header (optional)
 configuration_options:
   logs:
-  - type: "nginx_access"
+  - type: nginx_access
     fields:
     - name: type
       default: null
-      description: "The value must be nginx_access."
+      description: The value must be nginx_access.
     - name: include_paths
       default: '[/var/log/nginx/access.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
@@ -201,7 +201,7 @@ configuration_options:
     fields:
     - name: type
       default: null
-      description: "The value must be nginx_error."
+      description: The value must be nginx_error.
     - name: include_paths
       default: '[/var/log/nginx/error.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.

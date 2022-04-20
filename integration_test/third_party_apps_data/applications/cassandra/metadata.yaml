@@ -178,11 +178,11 @@ expected_logs:
     description: Seconds the JVM took to stop threads before garbage collection
 configuration_options:
   logs:
-  - type: "cassandra_system"
+  - type: cassandra_system
     fields:
     - name: type
       default: null
-      description: "The value must be cassandra_system."
+      description: The value must be cassandra_system.
     - name: include_paths
       default: '[/var/log/cassandra/system*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.
@@ -192,11 +192,11 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: "cassandra_debug"
+  - type: cassandra_debug
     fields:
     - name: type
       default: null
-      description: "The value must be cassandra_debug."
+      description: The value must be cassandra_debug.
     - name: include_paths
       default: '[/var/log/cassandra/debug*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.
@@ -206,11 +206,11 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: "cassandra_gc"
+  - type: cassandra_gc
     fields:
     - name: type
       default: null
-      description: "The value must be cassandra_gc."
+      description: The value must be cassandra_gc.
     - name: include_paths
       default: '[/var/log/cassandra/gc.log.*.current]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.

@@ -112,11 +112,11 @@ expected_logs:
     description: ''
 configuration_options:
   logs:
-  - type: "kafka"
+  - type: kafka
     fields:
     - name: type
       default: null
-      description: "The value must be kafka."
+      description: The value must be kafka.
     - name: include_paths
       default: '[/var/log/kafka/*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/kafka*/*.log.

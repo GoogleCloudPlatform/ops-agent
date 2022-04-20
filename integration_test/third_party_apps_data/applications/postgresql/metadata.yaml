@@ -64,11 +64,11 @@ expected_logs:
     description: Authenticated user for the action being logged when relevant
 configuration_options:
   logs:
-  - type: "postgresql_general"
+  - type: postgresql_general
     fields:
     - name: type
       default: null
-      description: "The value must be postgresql_general."
+      description: The value must be postgresql_general.
     - name: include_paths
       default: '[/var/log/postgresql/postgresql*.log, /var/lib/pgsql/data/log/postgresql*.log, /var/lib/pgsql/*/data/log/postgresql*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.

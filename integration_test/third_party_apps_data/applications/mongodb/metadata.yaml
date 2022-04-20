@@ -102,11 +102,11 @@ expected_logs:
     description: Object containing one or more key-value pairs for any additional attributes provided
 configuration_options:
   logs:
-  - type: "mongodb"
+  - type: mongodb
     fields:
     - name: type
       default: null
-      description: "This value must be mongodb."
+      description: This value must be mongodb.
     - name: include_paths
       default: '[/var/log/mongodb/mongod.log*]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mongodb/*.log.

@@ -95,11 +95,11 @@ expected_logs:
     description: 'The source Java class of the log entry'
 configuration_options:
   logs:
-  - type: "hadoop"
+  - type: hadoop
     fields:
     - name: type
       default: null
-      description: "This value must be hadoop."
+      description: This value must be hadoop.
     - name: include_paths
       default: '[/opt/hadoop/logs/hadoop-*.log, /opt/hadoop/logs/yarn-*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
