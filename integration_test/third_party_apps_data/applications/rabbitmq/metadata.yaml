@@ -35,3 +35,32 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: Log message
+configuration_options:
+  logs:
+  - type: ""
+    fields:
+    - name: type
+      default: null
+      description: ""
+    - name: include_paths
+      default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: apache
+    fields:
+    - name: type
+      default: null
+      description: This value must be apache.
+    - name: server_status_url
+      default: http://localhost:80/server-status?auto
+      description: The URL exposed by the mod_status module.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+
