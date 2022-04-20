@@ -15,17 +15,17 @@ var gotoTab = gotoTable{
 		1,  // Filter
 		2,  // Expression
 		4,  // AmbiguousSequence
-		5,  // AmbiguousFactor
-		6,  // Term
-		7,  // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		6,  // AmbiguousFactor
+		7,  // Term
+		9,  // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -76,19 +76,19 @@ var gotoTab = gotoTable{
 	gotoRow{ // S3
 		-1, // S'
 		-1, // Filter
-		22, // Expression
+		24, // Expression
 		4,  // AmbiguousSequence
-		5,  // AmbiguousFactor
-		6,  // Term
-		7,  // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		6,  // AmbiguousFactor
+		7,  // Term
+		9,  // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -185,15 +185,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		26, // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -206,15 +206,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		27, // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -227,15 +227,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		28, // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -248,15 +248,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		30, // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -280,8 +280,8 @@ var gotoTab = gotoTable{
 		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
-		29, // Comparator
-		30, // Comparison
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S13
 		-1, // S'
@@ -322,25 +322,25 @@ var gotoTab = gotoTable{
 		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		32, // Comparator
+		33, // Comparison
 	},
 	gotoRow{ // S15
 		-1, // S'
 		-1, // Filter
-		41, // Expression
-		43, // AmbiguousSequence
-		44, // AmbiguousFactor
-		45, // Term
-		46, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -370,19 +370,19 @@ var gotoTab = gotoTable{
 	gotoRow{ // S17
 		-1, // S'
 		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		44, // Expression
+		46, // AmbiguousSequence
+		48, // AmbiguousFactor
+		49, // Term
+		51, // Primitive
+		54, // Restriction
+		56, // Comparable
+		57, // Member
+		55, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		58, // Item
+		60, // Value
+		62, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -455,18 +455,18 @@ var gotoTab = gotoTable{
 		-1, // S'
 		-1, // Filter
 		-1, // Expression
-		59, // AmbiguousSequence
-		5,  // AmbiguousFactor
-		6,  // Term
-		7,  // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -497,66 +497,24 @@ var gotoTab = gotoTable{
 		-1, // S'
 		-1, // Filter
 		-1, // Expression
-		-1, // AmbiguousSequence
-		61, // AmbiguousFactor
-		6,  // Term
-		7,  // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
+		64, // AmbiguousSequence
+		6,  // AmbiguousFactor
+		7,  // Term
+		9,  // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
 		-1, // Comparison
 	},
 	gotoRow{ // S24
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		62, // Term
-		7,  // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
-		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
-	},
-	gotoRow{ // S25
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		63, // Primitive
-		10, // Restriction
-		12, // Comparable
-		13, // Member
-		11, // Composite
-		-1, // Arg
-		14, // Item
-		16, // Value
-		18, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
-	},
-	gotoRow{ // S26
 		-1, // S'
 		-1, // Filter
 		-1, // Expression
@@ -572,6 +530,48 @@ var gotoTab = gotoTable{
 		-1, // Item
 		-1, // Value
 		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S25
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		66, // AmbiguousFactor
+		7,  // Term
+		9,  // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
+		-1, // Arg
+		16, // Item
+		18, // Value
+		20, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S26
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		67, // Term
+		9,  // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
+		-1, // Arg
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -584,15 +584,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		68, // Primitive
+		12, // Restriction
+		14, // Comparable
+		15, // Member
+		13, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		16, // Item
+		18, // Value
+		20, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -617,7 +617,7 @@ var gotoTab = gotoTable{
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
-		64, // Comparison
+		-1, // Comparison
 	},
 	gotoRow{ // S29
 		-1, // S'
@@ -628,13 +628,13 @@ var gotoTab = gotoTable{
 		-1, // Term
 		-1, // Primitive
 		-1, // Restriction
-		65, // Comparable
-		67, // Member
+		-1, // Comparable
+		-1, // Member
 		-1, // Composite
-		66, // Arg
-		68, // Item
-		69, // Value
-		71, // Phrase
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -680,7 +680,7 @@ var gotoTab = gotoTable{
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
-		-1, // Comparison
+		69, // Comparison
 	},
 	gotoRow{ // S32
 		-1, // S'
@@ -691,13 +691,13 @@ var gotoTab = gotoTable{
 		-1, // Term
 		-1, // Primitive
 		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
+		73, // Comparable
+		75, // Member
 		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		74, // Arg
+		76, // Item
+		77, // Value
+		79, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -863,11 +863,11 @@ var gotoTab = gotoTable{
 		-1, // Member
 		-1, // Composite
 		-1, // Arg
-		75, // Item
-		16, // Value
-		18, // Phrase
-		76, // ItemKeyword
-		77, // Keyword
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
 		-1, // Comparator
 		-1, // Comparison
 	},
@@ -895,19 +895,19 @@ var gotoTab = gotoTable{
 	gotoRow{ // S42
 		-1, // S'
 		-1, // Filter
-		83, // Expression
-		43, // AmbiguousSequence
-		44, // AmbiguousFactor
-		45, // Term
-		46, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -926,11 +926,11 @@ var gotoTab = gotoTable{
 		-1, // Member
 		-1, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
+		83, // Item
+		18, // Value
+		20, // Phrase
+		84, // ItemKeyword
+		85, // Keyword
 		-1, // Comparator
 		-1, // Comparison
 	},
@@ -958,19 +958,19 @@ var gotoTab = gotoTable{
 	gotoRow{ // S45
 		-1, // S'
 		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		91, // Expression
+		46, // AmbiguousSequence
+		48, // AmbiguousFactor
+		49, // Term
+		51, // Primitive
+		54, // Restriction
+		56, // Comparable
+		57, // Member
+		55, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		58, // Item
+		60, // Value
+		62, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1004,15 +1004,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		87, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1025,15 +1025,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		88, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1099,8 +1099,8 @@ var gotoTab = gotoTable{
 		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
-		89, // Comparator
-		30, // Comparison
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S52
 		-1, // S'
@@ -1109,15 +1109,15 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
+		95, // Primitive
+		54, // Restriction
+		56, // Comparable
+		57, // Member
+		55, // Composite
 		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
+		58, // Item
+		60, // Value
+		62, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1130,6 +1130,27 @@ var gotoTab = gotoTable{
 		-1, // AmbiguousSequence
 		-1, // AmbiguousFactor
 		-1, // Term
+		97, // Primitive
+		54, // Restriction
+		56, // Comparable
+		57, // Member
+		55, // Composite
+		-1, // Arg
+		58, // Item
+		60, // Value
+		62, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S54
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
 		-1, // Primitive
 		-1, // Restriction
 		-1, // Comparable
@@ -1139,27 +1160,6 @@ var gotoTab = gotoTable{
 		-1, // Item
 		-1, // Value
 		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
-	},
-	gotoRow{ // S54
-		-1, // S'
-		-1, // Filter
-		91, // Expression
-		43, // AmbiguousSequence
-		44, // AmbiguousFactor
-		45, // Term
-		46, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
-		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1204,8 +1204,8 @@ var gotoTab = gotoTable{
 		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		98, // Comparator
+		33, // Comparison
 	},
 	gotoRow{ // S57
 		-1, // S'
@@ -1250,25 +1250,25 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S59
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		100, // Expression
+		46,  // AmbiguousSequence
+		48,  // AmbiguousFactor
+		49,  // Term
+		51,  // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
+		-1,  // Arg
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
+		-1,  // ItemKeyword
+		-1,  // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S60
 		-1, // S'
@@ -1715,18 +1715,18 @@ var gotoTab = gotoTable{
 		-1, // S'
 		-1, // Filter
 		-1, // Expression
-		96, // AmbiguousSequence
-		44, // AmbiguousFactor
-		45, // Term
-		46, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
@@ -1779,63 +1779,63 @@ var gotoTab = gotoTable{
 		-1, // Filter
 		-1, // Expression
 		-1, // AmbiguousSequence
-		99, // AmbiguousFactor
-		45, // Term
-		46, // Primitive
-		49, // Restriction
-		51, // Comparable
-		52, // Member
-		50, // Composite
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
 		-1, // Arg
-		53, // Item
-		55, // Value
-		57, // Phrase
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
 		-1, // ItemKeyword
 		-1, // Keyword
 		-1, // Comparator
 		-1, // Comparison
 	},
 	gotoRow{ // S85
-		-1,  // S'
-		-1,  // Filter
-		-1,  // Expression
-		-1,  // AmbiguousSequence
-		-1,  // AmbiguousFactor
-		100, // Term
-		46,  // Primitive
-		49,  // Restriction
-		51,  // Comparable
-		52,  // Member
-		50,  // Composite
-		-1,  // Arg
-		53,  // Item
-		55,  // Value
-		57,  // Phrase
-		-1,  // ItemKeyword
-		-1,  // Keyword
-		-1,  // Comparator
-		-1,  // Comparison
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S86
-		-1,  // S'
-		-1,  // Filter
-		-1,  // Expression
-		-1,  // AmbiguousSequence
-		-1,  // AmbiguousFactor
-		-1,  // Term
-		101, // Primitive
-		49,  // Restriction
-		51,  // Comparable
-		52,  // Member
-		50,  // Composite
-		-1,  // Arg
-		53,  // Item
-		55,  // Value
-		57,  // Phrase
-		-1,  // ItemKeyword
-		-1,  // Keyword
-		-1,  // Comparator
-		-1,  // Comparison
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S87
 		-1, // S'
@@ -1883,43 +1883,43 @@ var gotoTab = gotoTable{
 		-1,  // S'
 		-1,  // Filter
 		-1,  // Expression
-		-1,  // AmbiguousSequence
-		-1,  // AmbiguousFactor
-		-1,  // Term
-		-1,  // Primitive
-		-1,  // Restriction
-		102, // Comparable
-		104, // Member
-		-1,  // Composite
-		103, // Arg
-		105, // Item
-		106, // Value
-		108, // Phrase
+		105, // AmbiguousSequence
+		48,  // AmbiguousFactor
+		49,  // Term
+		51,  // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
+		-1,  // Arg
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
 		-1,  // ItemKeyword
 		-1,  // Keyword
 		-1,  // Comparator
 		-1,  // Comparison
 	},
 	gotoRow{ // S90
-		-1,  // S'
-		-1,  // Filter
-		-1,  // Expression
-		-1,  // AmbiguousSequence
-		-1,  // AmbiguousFactor
-		-1,  // Term
-		-1,  // Primitive
-		-1,  // Restriction
-		-1,  // Comparable
-		-1,  // Member
-		-1,  // Composite
-		-1,  // Arg
-		111, // Item
-		55,  // Value
-		57,  // Phrase
-		112, // ItemKeyword
-		113, // Keyword
-		-1,  // Comparator
-		-1,  // Comparison
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S91
 		-1, // S'
@@ -1945,44 +1945,44 @@ var gotoTab = gotoTable{
 	gotoRow{ // S92
 		-1,  // S'
 		-1,  // Filter
-		118, // Expression
-		43,  // AmbiguousSequence
-		44,  // AmbiguousFactor
-		45,  // Term
-		46,  // Primitive
-		49,  // Restriction
-		51,  // Comparable
-		52,  // Member
-		50,  // Composite
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		108, // AmbiguousFactor
+		49,  // Term
+		51,  // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
 		-1,  // Arg
-		53,  // Item
-		55,  // Value
-		57,  // Phrase
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
 		-1,  // ItemKeyword
 		-1,  // Keyword
 		-1,  // Comparator
 		-1,  // Comparison
 	},
 	gotoRow{ // S93
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		-1,  // AmbiguousFactor
+		109, // Term
+		51,  // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
+		-1,  // Arg
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
+		-1,  // ItemKeyword
+		-1,  // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S94
 		-1,  // S'
@@ -1991,17 +1991,17 @@ var gotoTab = gotoTable{
 		-1,  // AmbiguousSequence
 		-1,  // AmbiguousFactor
 		-1,  // Term
-		-1,  // Primitive
-		-1,  // Restriction
-		-1,  // Comparable
-		-1,  // Member
-		-1,  // Composite
+		110, // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
 		-1,  // Arg
-		120, // Item
-		69,  // Value
-		71,  // Phrase
-		121, // ItemKeyword
-		122, // Keyword
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
+		-1,  // ItemKeyword
+		-1,  // Keyword
 		-1,  // Comparator
 		-1,  // Comparison
 	},
@@ -2069,46 +2069,46 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S98
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		-1,  // AmbiguousFactor
+		-1,  // Term
+		-1,  // Primitive
+		-1,  // Restriction
+		114, // Comparable
+		116, // Member
+		-1,  // Composite
+		115, // Arg
+		117, // Item
+		118, // Value
+		120, // Phrase
+		-1,  // ItemKeyword
+		-1,  // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S99
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		-1,  // AmbiguousFactor
+		-1,  // Term
+		-1,  // Primitive
+		-1,  // Restriction
+		-1,  // Comparable
+		-1,  // Member
+		-1,  // Composite
+		-1,  // Arg
+		123, // Item
+		60,  // Value
+		62,  // Phrase
+		124, // ItemKeyword
+		125, // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S100
 		-1, // S'
@@ -2132,25 +2132,25 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S101
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		130, // Expression
+		46,  // AmbiguousSequence
+		48,  // AmbiguousFactor
+		49,  // Term
+		51,  // Primitive
+		54,  // Restriction
+		56,  // Comparable
+		57,  // Member
+		55,  // Composite
+		-1,  // Arg
+		58,  // Item
+		60,  // Value
+		62,  // Phrase
+		-1,  // ItemKeyword
+		-1,  // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S102
 		-1, // S'
@@ -2174,25 +2174,25 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S103
-		-1, // S'
-		-1, // Filter
-		-1, // Expression
-		-1, // AmbiguousSequence
-		-1, // AmbiguousFactor
-		-1, // Term
-		-1, // Primitive
-		-1, // Restriction
-		-1, // Comparable
-		-1, // Member
-		-1, // Composite
-		-1, // Arg
-		-1, // Item
-		-1, // Value
-		-1, // Phrase
-		-1, // ItemKeyword
-		-1, // Keyword
-		-1, // Comparator
-		-1, // Comparison
+		-1,  // S'
+		-1,  // Filter
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		-1,  // AmbiguousFactor
+		-1,  // Term
+		-1,  // Primitive
+		-1,  // Restriction
+		-1,  // Comparable
+		-1,  // Member
+		-1,  // Composite
+		-1,  // Arg
+		132, // Item
+		77,  // Value
+		79,  // Phrase
+		133, // ItemKeyword
+		134, // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
 	},
 	gotoRow{ // S104
 		-1, // S'
@@ -2657,25 +2657,25 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S126
-		-1,  // S'
-		-1,  // Filter
-		-1,  // Expression
-		-1,  // AmbiguousSequence
-		-1,  // AmbiguousFactor
-		-1,  // Term
-		-1,  // Primitive
-		-1,  // Restriction
-		-1,  // Comparable
-		-1,  // Member
-		-1,  // Composite
-		-1,  // Arg
-		131, // Item
-		106, // Value
-		108, // Phrase
-		132, // ItemKeyword
-		133, // Keyword
-		-1,  // Comparator
-		-1,  // Comparison
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
 	},
 	gotoRow{ // S127
 		-1, // S'
@@ -2867,6 +2867,258 @@ var gotoTab = gotoTable{
 		-1, // Comparison
 	},
 	gotoRow{ // S136
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S137
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S138
+		-1,  // S'
+		-1,  // Filter
+		-1,  // Expression
+		-1,  // AmbiguousSequence
+		-1,  // AmbiguousFactor
+		-1,  // Term
+		-1,  // Primitive
+		-1,  // Restriction
+		-1,  // Comparable
+		-1,  // Member
+		-1,  // Composite
+		-1,  // Arg
+		143, // Item
+		118, // Value
+		120, // Phrase
+		144, // ItemKeyword
+		145, // Keyword
+		-1,  // Comparator
+		-1,  // Comparison
+	},
+	gotoRow{ // S139
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S140
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S141
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S142
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S143
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S144
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S145
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S146
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S147
+		-1, // S'
+		-1, // Filter
+		-1, // Expression
+		-1, // AmbiguousSequence
+		-1, // AmbiguousFactor
+		-1, // Term
+		-1, // Primitive
+		-1, // Restriction
+		-1, // Comparable
+		-1, // Member
+		-1, // Composite
+		-1, // Arg
+		-1, // Item
+		-1, // Value
+		-1, // Phrase
+		-1, // ItemKeyword
+		-1, // Keyword
+		-1, // Comparator
+		-1, // Comparison
+	},
+	gotoRow{ // S148
 		-1, // S'
 		-1, // Filter
 		-1, // Expression

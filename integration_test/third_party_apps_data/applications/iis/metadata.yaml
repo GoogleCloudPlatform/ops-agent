@@ -1,6 +1,16 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
-short_name: iis
+short_name: IIS
 long_name: IIS
+description: |-
+  The Internet Information Services (IIS) integration collects metrics from your
+  IIS web servers. The metrics provide connection information and also data on
+  transferred bytes.
+
+  When using the Ops Agent on a Microsoft Windows VM, the agent automatically
+  collects IIS metrics. No additional configuration is required.
+
+  For more information on IIS, see the
+  [IIS](https://www.iis.net/) documentation.
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0

@@ -276,7 +276,19 @@ func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Com
 		}
 		filters = append(filters, filter)
 	}
-	return filter.AllComponents(tag, filters, true)
+	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
+		"match": filter.MatchesAny(filters),
+	})
+	components = append(components, fluentbit.LuaFilterComponents(
+		tag, "process", fmt.Sprintf(`
+function process(tag, timestamp, record)
+%s
+  if match then
+    return -1, 0, 0
+  end
+  return 0, 0, 0
+end`, lua))...)
+	return components
 }
 
 func init() {
