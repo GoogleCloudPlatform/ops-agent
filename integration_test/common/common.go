@@ -63,6 +63,22 @@ type MinimumSupportedAgentVersion struct {
 	Metrics string `yaml:"metrics,omitempty"`
 }
 
+type ConfigurationFields struct {
+	Name        string `yaml:"name" validate:"required"`
+	Default     string `yaml:"default" validate:"required"`
+	Description string `yaml:"description" validate:"required"`
+}
+
+type InputConfiguration struct {
+	Type   string                `yaml:"type" validate:"required"`
+	Fields []ConfigurationFields `yaml:"fields" validate:"required"`
+}
+
+type ConfigurationOptions struct {
+	LogsConfiguration    InputConfiguration `yaml:"logs"`
+	MetricsConfiguration InputConfiguration `yaml:"metrics"`
+}
+
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url,omitempty"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
@@ -73,6 +89,7 @@ type IntegrationMetadata struct {
 	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics,omitempty"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version,omitempty"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
+	ConfigurationOptions         ConfigurationOptions         `yaml:"configuration_options" validate:"required"`
 }
 
 var validate *validator.Validate
