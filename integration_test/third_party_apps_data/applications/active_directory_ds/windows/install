@@ -2,8 +2,8 @@ $ProgressPreference = 'SilentlyContinue'
 
 Install-windowsfeature -name AD-Domain-Services -IncludeManagementTools
 
-$newPass = (-join ((65..90) + (97..122) | Get-Random -Count 15 | ForEach-Object {[char]$_}))
 # Local administrator requires a password for installation, otherwise the next step will fail
+$newPass = (-join ((65..90) + (97..122) | Get-Random -Count 15 | ForEach-Object {[char]$_}))
 net user Administrator "${newPass}A1!"
 
 Install-ADDSForest -InstallDns -DomainName test.example.com -DomainNetBIOSName TEST -SafeModeAdministratorPassword (ConvertTo-SecureString -String "P@ssw0rd!" -AsPlainText -Force) -NoRebootOnCompletion -Force
