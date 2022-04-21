@@ -63,10 +63,10 @@ expected_logs:
   - name: httpRequest.userAgent
     value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
     type: string
-    description:  "Contents of the `User-Agent` header"
+    description: "Contents of the `User-Agent` header"
   - name: httpRequest.referer
     type: string
-    description:  "Contents of the `Referer` header"
+    description: "Contents of the `Referer` header"
   - name: jsonPayload.sc_substatus
     type: string
     description: "The server's IP and port that was requested"
