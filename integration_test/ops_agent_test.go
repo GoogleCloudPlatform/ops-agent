@@ -692,6 +692,7 @@ func TestResourceNameLabel(t *testing.T) {
       type: files
       include_paths:
       - %s
+  processors:
     json:
       type: parse_json
   exporters:
@@ -701,7 +702,7 @@ func TestResourceNameLabel(t *testing.T) {
     pipelines:
       p1:
         receivers: [f1]
-        processors: [json, modify]
+        processors: [json]
         exporters: [google]
 `, file1)
 
@@ -709,13 +710,13 @@ func TestResourceNameLabel(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{default_present":"original"}` + "\n"
+		line := `{"default_present":"original"}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		check := fmt.Sprintf(`labels."agent.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
 			t.Error(err)
 		}
