@@ -1,5 +1,5 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/solr"
-short_name: solr
+short_name: Solr
 long_name: Apache Solr
 description: |-
   The Apache Solr integration collects core and cache metrics. Core metrics focus
@@ -117,7 +117,7 @@ expected_logs:
 - log_name: solr_system
   fields:
   - name: jsonPayload.message
-    value_regex: " ___      _       Welcome to Apache Solr\u2122 version 8.11.1"
+    value_regex: " ___      _       Welcome to Apache Solr™ version 8.11.1"
     type: string
     description: Log message
   - name: jsonPayload.thread
