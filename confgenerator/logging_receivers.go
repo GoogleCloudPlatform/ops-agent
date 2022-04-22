@@ -320,15 +320,15 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 	}}
 
 	// Parser for parsing TimeGenerated field as log record timestamp
-	timestampParserName :=fmt.Sprintf("%s.timestamp_parser", tag)
+	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
 	timestampParser := fluentbit.Component{
 		Kind: "PARSER",
 		Config: map[string]string{
-			"Name": timestampParserName,
-			"Format": "regex",
+			"Name":        timestampParserName,
+			"Format":      "regex",
 			"Time_Format": "%Y-%m-%d %H:%M:%S %z",
-			"Time_Key": "timestamp",
-			"Regex": `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4})`,
+			"Time_Key":    "timestamp",
+			"Regex":       `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4})`,
 		},
 	}
 
