@@ -122,13 +122,13 @@ configuration_options:
   - type: tomcat_system
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be tomcat_system.
     - name: include_paths
       default: '[/opt/tomcat/logs/catalina.out]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -136,13 +136,13 @@ configuration_options:
   - type: tomcat_access
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be tomcat_access.
     - name: include_paths
       default: '[/opt/tomcat/logs/localhost_access_log.*.txt]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -151,7 +151,7 @@ configuration_options:
   - type: tomcat
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be tomcat.
     - name: endpoint
       default: localhost:8050
@@ -160,10 +160,10 @@ configuration_options:
       default: true
       description: Configures the receiver to also collect the supported JVM metrics.
     - name: username
-      default: null
+      default:
       description: The configured username if JMX is configured to require authentication.
     - name: password
-      default: null
+      default:
       description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s

@@ -109,13 +109,13 @@ configuration_options:
   - type: zookeeper_general
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be zookeeper_general.
     - name: include_paths
       default: '[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/zookeeper*/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -124,7 +124,7 @@ configuration_options:
   - type: zookeeper
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be zookeeper.
     - name: endpoint
       default: localhost:2181

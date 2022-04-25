@@ -264,13 +264,13 @@ configuration_options:
   - type: mysql_error
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be mysql_error.
     - name: include_paths
       default: '[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mysql/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -278,13 +278,13 @@ configuration_options:
   - type: mysql_general
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be mysql_general.
     - name: include_paths
       default: '[/var/lib/mysql/${HOSTNAME}.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -292,13 +292,13 @@ configuration_options:
   - type: mysql_slow
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be mysql_slow.
     - name: include_paths
       default: '[/var/lib/mysql/${HOSTNAME}-slow.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -307,16 +307,16 @@ configuration_options:
   - type: mysql
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be mysql.
     - name: stub_status_url
       default: localhost:3306
       description: The url exposed by MySQL.
     - name: username
-      default: null
+      default:
       description: The username used to connect to the server.
     - name: password
-      default: null
+      default:
       description: The password used to connect to the server.
     - name: collection_interval
       default: 60s
