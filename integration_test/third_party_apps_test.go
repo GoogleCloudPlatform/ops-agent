@@ -371,7 +371,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
 	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
 		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-		
+
 		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
 		if err != nil {
 			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
