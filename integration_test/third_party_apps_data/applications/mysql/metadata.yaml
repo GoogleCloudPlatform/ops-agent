@@ -308,7 +308,7 @@ configuration_options:
     fields:
     - name: type
       default: null
-      description: 	This value must be mysql.
+      description: This value must be mysql.
     - name: stub_status_url
       default: localhost:3306
       description: The url exposed by MySQL.
