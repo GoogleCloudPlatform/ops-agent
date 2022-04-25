@@ -114,7 +114,7 @@ configuration_options:
       default: null
       description: The value must be couchdb.
     - name: server_status_url
-      default: 	http://localhost:5984
+      default: http://localhost:5984
       description: The URL exposed by couchdb.
     - name: username
       default: null

@@ -199,7 +199,7 @@ configuration_options:
       default: null
       description: This value must be elasticsearch.
     - name: endpoint
-      default: 	http://localhost:92002
+      default: http://localhost:92002
       description: The base URL for the Elasticsearch REST API.
     - name: collection_interval
       default: 60s
