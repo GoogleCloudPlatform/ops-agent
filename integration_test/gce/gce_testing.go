@@ -857,8 +857,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		metadataCopy["windows-startup-script-ps1"] = `
-Enable-PSRemoting  # Might help to diagnose b/185923886.
-
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
 $port.WriteLine("STARTUP_SCRIPT_DONE")
