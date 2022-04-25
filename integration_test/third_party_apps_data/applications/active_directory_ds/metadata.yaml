@@ -7,6 +7,13 @@ description: |-
 configure_integration: |-
   By default, Active Directory Windows event logs and performance counters are enabled.
 restart_after_install: true
+configuration_options:
+  logs:
+    - type: active_directory_ds
+      fields:
+      - name: type
+        default: null
+        description: The value must be active_directory_ds.
 expected_logs:
 - log_name: active_directory_ds
   fields:
