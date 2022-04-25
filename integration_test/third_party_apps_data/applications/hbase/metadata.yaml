@@ -360,3 +360,40 @@ expected_logs:
     value_regex: master.HMaster
     type: string
     description: 'source of where the log originated'
+configuration_options:
+  logs:
+  - type: hbase_system
+    fields:
+    - name: type
+      default: null
+      description: This value must be hbase_system.
+    - name: include_paths
+      default: '[/opt/hbase/logs/hbase-*-regionserver-*.log, /opt/hbase/logs/hbase-*-master-*.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/hbase*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: hbase
+    fields:
+    - name: type
+      default: null
+      description: 	This value must be hbase.
+    - name: endpoint
+      default: localhost:10101
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: collect_jvm_metrics
+      default: true
+      description: Configures the receiver to also collect the supported JVM metrics.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
