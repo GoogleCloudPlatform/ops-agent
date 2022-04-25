@@ -381,7 +381,7 @@ configuration_options:
     fields:
     - name: type
       default: null
-      description: 	This value must be hbase.
+      description: This value must be hbase.
     - name: endpoint
       default: localhost:10101
       description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
