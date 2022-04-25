@@ -69,3 +69,17 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+configuration_options:
+  metrics:
+  - type: memcached
+    fields:
+    - name: type
+      default: null
+      description: memcached.
+    - name: endpoint
+      default: localhost:3306
+      description: The URL, or Unix socket file path, for your Memcached server.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+
