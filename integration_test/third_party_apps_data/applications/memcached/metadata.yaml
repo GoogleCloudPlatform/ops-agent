@@ -74,7 +74,7 @@ configuration_options:
   - type: memcached
     fields:
     - name: type
-      default: null
+      default:
       description: memcached.
     - name: endpoint
       default: localhost:3306

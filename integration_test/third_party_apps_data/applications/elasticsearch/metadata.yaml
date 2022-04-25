@@ -167,13 +167,13 @@ configuration_options:
   - type: elasticsearch_json
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be elasticsearch_json.
     - name: include_paths
       default: '[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -181,13 +181,13 @@ configuration_options:
   - type: elasticsearch_gc
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be elasticsearch_gc.
     - name: include_paths
       default: '[/var/log/elasticsearch/gc.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -196,7 +196,7 @@ configuration_options:
   - type: elasticsearch
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be elasticsearch.
     - name: endpoint
       default: http://localhost:92002
@@ -205,10 +205,10 @@ configuration_options:
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
     - name: username
-      default: null
+      default:
       description: Username for authentication with Elasticsearch. Required if password is set.
     - name: password
-      default: null
+      default:
       description: Password for authentication with Elasticsearch. Required if username is set.
     - name: insecure
       default: true
@@ -217,11 +217,11 @@ configuration_options:
       default: false
       description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
     - name: cert_file
-      default: null
+      default:
       description: Path to the TLS certificate to use for mTLS-required connections.
     - name: key_file
-      default: null
+      default:
       description: Path to the TLS key to use for mTLS-required connections.
     - name: ca_file
-      default: null
+      default:
       description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

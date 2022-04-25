@@ -365,13 +365,13 @@ configuration_options:
   - type: hbase_system
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be hbase_system.
     - name: include_paths
       default: '[/opt/hbase/logs/hbase-*-regionserver-*.log, /opt/hbase/logs/hbase-*-master-*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/hbase*/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -380,7 +380,7 @@ configuration_options:
   - type: hbase
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be hbase.
     - name: endpoint
       default: localhost:10101
@@ -389,10 +389,10 @@ configuration_options:
       default: true
       description: Configures the receiver to also collect the supported JVM metrics.
     - name: username
-      default: null
+      default:
       description: The configured username if JMX is configured to require authentication.
     - name: password
-      default: null
+      default:
       description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s

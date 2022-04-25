@@ -129,13 +129,13 @@ configuration_options:
   - type: apache_access
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be apache_access.
     - name: include_paths
       default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -143,13 +143,13 @@ configuration_options:
   - type: apache_error
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be apache_error.
     - name: include_paths
       default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -158,7 +158,7 @@ configuration_options:
   - type: apache
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be apache.
     - name: server_status_url
       default: http://localhost:80/server-status?auto

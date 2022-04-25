@@ -186,13 +186,13 @@ configuration_options:
   - type: nginx_access
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be nginx_access.
     - name: include_paths
       default: '[/var/log/nginx/access.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -200,13 +200,13 @@ configuration_options:
   - type: "nginx_error"
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be nginx_error.
     - name: include_paths
       default: '[/var/log/nginx/error.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
@@ -215,7 +215,7 @@ configuration_options:
   - type: nginx
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be nginx.
     - name: server_status_url
       default: http://localhost/status
