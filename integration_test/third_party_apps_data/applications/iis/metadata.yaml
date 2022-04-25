@@ -87,7 +87,7 @@ configuration_options:
       default: null
       description: This value must be iis_access.
     - name: include_paths
-      default: "['C:\inetpub\logs\LogFiles\W3SVC1\u_ex*]"
+      default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
       description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
     - name: exclude_paths
       default: null
