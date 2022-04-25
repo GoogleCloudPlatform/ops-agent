@@ -123,7 +123,7 @@ configuration_options:
       default: null
       description: This value must be mongodb.
     - name: endpoint
-      default: 	http://localhost:27017
+      default: http://localhost:27017
       description: The hostname, IP address, or UNIX domain socket. A port can be specified like <hostname>:<port>. If no port is specified the default 27017 will be used.
     - name: collection_interval
       default: 60s
