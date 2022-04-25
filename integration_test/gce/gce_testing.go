@@ -857,8 +857,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		metadataCopy["windows-startup-script-ps1"] = `
-Enable-PSRemoting  # Might help to diagnose b/185923886.
-
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
 $port.WriteLine("STARTUP_SCRIPT_DONE")
@@ -1219,7 +1217,7 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // It also waits for the instance to be reachable over ssh post-restart.
 func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
 	fileLogger := logger.ToFile("VM_Restart.txt")
-	
+
 	if err := StopInstance(ctx, fileLogger, vm); err != nil {
 		return fmt.Errorf("Failed to stop instance: %w", err)
 	}
