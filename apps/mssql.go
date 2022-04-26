@@ -39,14 +39,14 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					{
 						"object":    "SQLServer:General Statistics",
 						"instances": []string{"_Total"},
-						"counters":  []string{"User Connections"},
+						"counters":  []map[string]string{{"name": "User Connections"}},
 					},
 					{
 						"object":    "SQLServer:Databases",
 						"instances": []string{"_Total"},
-						"counters": []string{
-							"Transactions/sec",
-							"Write Transactions/sec",
+						"counters": []map[string]string{
+							{"name": "Transactions/sec"},
+							{"name": "Write Transactions/sec"},
 						},
 					},
 				},
