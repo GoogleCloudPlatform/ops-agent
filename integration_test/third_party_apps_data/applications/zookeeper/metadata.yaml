@@ -1,6 +1,6 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper"
-short_name: zookeeper
-long_name: Apache Zookeeper
+short_name: ZooKeeper
+long_name: Apache ZooKeeper
 description: |-
   The Apache ZooKeeper integration collects traffic metrics for nodes, such as
   latency, active requests, and active connections. The integration also collects
@@ -104,3 +104,32 @@ expected_logs:
   - name: jsonPayload.myid
     type: number
     description: Numeric ID of the Zookeeper instance
+configuration_options:
+  logs:
+  - type: zookeeper_general
+    fields:
+    - name: type
+      default: null
+      description: The value must be zookeeper_general.
+    - name: include_paths
+      default: '[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/zookeeper*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: zookeeper
+    fields:
+    - name: type
+      default: null
+      description: This value must be zookeeper.
+    - name: endpoint
+      default: localhost:2181
+      description: The URL exposed by ZooKeeper.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+

@@ -66,7 +66,7 @@ function process(tag, timestamp, record)
 	var components []fluentbit.Component
 	// Step 1: Obtain any source values needed for move or copy
 	fieldMappings := map[string]string{}
-	moveFromFields := map[string]bool{}
+	moveFromFields := []string{}
 	var dests []string
 	for dest, field := range p.Fields {
 		if field == nil {
@@ -106,7 +106,7 @@ function process(tag, timestamp, record)
 				if err != nil {
 					return nil, fmt.Errorf("failed to convert %v to Lua accessor: %w", m, err)
 				}
-				moveFromFields[ra] = true
+				moveFromFields = append(moveFromFields, ra)
 			}
 		}
 		if field.OmitIf != "" {
@@ -127,9 +127,14 @@ function process(tag, timestamp, record)
 	}
 
 	// Step 3: Remove any MoveFrom fields
-	for ra := range moveFromFields {
-		fmt.Fprintf(&lua, `%s(nil);
+	sort.Strings(moveFromFields)
+	last := ""
+	for _, ra := range moveFromFields {
+		if last != ra {
+			fmt.Fprintf(&lua, `%s(nil);
 `, ra)
+		}
+		last = ra
 	}
 	// Step 4: Assign values
 	for _, dest := range dests {

@@ -1,5 +1,5 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/redis"
-short_name: redis
+short_name: Redis
 long_name: Redis
 description: |-
   The Redis integration collects metrics related to performance and usage.
@@ -159,3 +159,49 @@ expected_logs:
   - name: jsonPayload.pid
     type: number
     description: Process ID
+configuration_options:
+  logs:
+  - type: redis
+    fields:
+    - name: type
+      default: null
+      description: This value must be redis.
+    - name: include_paths
+      default: '[/var/log/redis/redis-server.log, /var/log/redis_6379.log, /var/log/redis/redis.log, /var/log/redis/default.log, /var/log/redis/redis_6379.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/redis/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: redis
+    fields:
+    - name: type
+      default: null
+      description: This value must be redis.
+    - name: address
+      default: localhost:6379
+      description: The URL exposed by Redis.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: password
+      default: null
+      description: The password used to connect to the server.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

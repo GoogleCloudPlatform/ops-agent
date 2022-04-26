@@ -1,5 +1,5 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
-short_name: iis
+short_name: IIS
 long_name: IIS
 description: |-
   The Internet Information Services (IIS) integration collects metrics from your
@@ -63,10 +63,10 @@ expected_logs:
   - name: httpRequest.userAgent
     value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
     type: string
-    description:  "Contents of the `User-Agent` header"
+    description: "Contents of the `User-Agent` header"
   - name: httpRequest.referer
     type: string
-    description:  "Contents of the `Referer` header"
+    description: "Contents of the `Referer` header"
   - name: jsonPayload.sc_substatus
     type: string
     description: "The server's IP and port that was requested"
@@ -79,3 +79,28 @@ expected_logs:
   - name: jsonPayload.user
     type: string
     description: "Authenticated username for the request"
+configuration_options:
+  logs:
+  - type: iis_access
+    fields:
+    - name: type
+      default: null
+      description: This value must be iis_access.
+    - name: include_paths
+      default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+      description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: iis
+    fields:
+    - name: type
+      default: null
+      description: This value must be iis.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
