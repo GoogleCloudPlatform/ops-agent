@@ -18,6 +18,8 @@
 Package agents holds various helpers for interacting with the agents on GCE
 instances.
 
+FOO BLAH BLAH DO_NOT_SUBMIT
+
 Note: This file contains various things that appear unused, but in the future
 we would like them to be used for a few tests inside Google's code silo. So
 please don't delete things just because they are unused within the Ops Agent
