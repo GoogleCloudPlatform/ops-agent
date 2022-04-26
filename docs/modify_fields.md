@@ -25,11 +25,18 @@ The top-level configuration for this processor contains a single field,
 `fields`, which contains a map of output field names and corresponding
 translations.
 
+All field names use [the dot-separated
+syntax](https://cloud.google.com/logging/docs/view/logging-query-language#comparisons)
+from the Cloud Logging query language. Filters use the Cloud Logging query
+language.
+
 All transformations are applied in parallel, which means that sources and
 filters operate on the original input log entry and may not reference the new
 value of any other fields being modified by the same processor.
 
 ### Source options
+
+At most one source specified is allowed.
 
 #### No source specified
 
@@ -93,30 +100,65 @@ httpRequest.referer:
 
 ## Sample Configurations
 
+The `parse_json` processor would transform a JSON file containing
+
+```json
+{
+  "http_status": "400",
+  "path": "/index.html",
+  "referer": "-"
+}
+```
+
+into a [LogEntry structure](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) that looks like this:
+
+```json
+{
+  "jsonPayload": {
+    "http_status": "400",
+    "path": "/index.html",
+    "referer": "-"
+  }
+}
+```
+
+This could then be transformed with `modify_fields` into this `LogEntry`:
+```json
+{
+  "httpRequest": {
+    "status": 400,
+    "requestUrl": "/index.html",
+  }
+}
+```
+
+using this Ops agent configuration:
+
 ```yaml
-receivers:
-  in:
-    type: files
-    include_paths:
-    - /var/log/http.json
-processors:
-  parse_json:
-    type: parse_json
-  set_http_request:
-    type: modify_fields
-    fields:
-      httpRequest.status:
-        move_from: jsonPayload.http_status
-        type: integer
-      httpRequest.requestUrl:
-        move_from: jsonPayload.path
-      httpRequest.referer:
-        move_from: jsonPayload.referer
-        omit_if: jsonPayload.referer = "-"
-pipelines:
-  pipeline:
-    receivers: [in]
-    processors: [parse_json, set_http_request]
+logging:
+  receivers:
+    in:
+      type: files
+      include_paths:
+      - /var/log/http.json
+  processors:
+    parse_json:
+      type: parse_json
+    set_http_request:
+      type: modify_fields
+      fields:
+        httpRequest.status:
+          move_from: jsonPayload.http_status
+          type: integer
+        httpRequest.requestUrl:
+          move_from: jsonPayload.path
+        httpRequest.referer:
+          move_from: jsonPayload.referer
+          omit_if: jsonPayload.referer = "-"
+  pipelines:
+    pipeline:
+      receivers: [in]
+      processors: [parse_json, set_http_request]
 ```
 
 This configuration reads JSON-formatted logs from `/var/log/http.json` and
