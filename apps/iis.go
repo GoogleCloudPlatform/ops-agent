@@ -26,7 +26,7 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
-	Version                             string `yaml:"receiver_version"`
+	Version                             string `yaml:"receiver_version" validate:"omitempty"`
 }
 
 func (r MetricsReceiverIis) Type() string {
