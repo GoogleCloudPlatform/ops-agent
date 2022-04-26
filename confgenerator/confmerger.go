@@ -18,33 +18,10 @@ package confgenerator
 import (
 	"fmt"
 	"os"
-
-	yaml "github.com/goccy/go-yaml"
 )
 
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-// It returns the built-in config for the platform and the merged config.
-func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) ([]byte, []byte, error) {
-	mergedConf, err := mergeConfFiles(userConfPath, platform, builtInConfStructs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	builtInStruct := builtInConfStructs[platform]
-	builtInYaml, err := yaml.Marshal(builtInStruct)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert the built-in config for %s to yaml: %w \n", platform, err)
-	}
-
-	mergedConfigYaml, err := yaml.Marshal(mergedConf)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert the merged config %+v to yaml: %w \n", mergedConf, err)
-	}
-
-	return builtInYaml, mergedConfigYaml, nil
-}
-
-func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
+func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
 
 	// Read the built-in config file.

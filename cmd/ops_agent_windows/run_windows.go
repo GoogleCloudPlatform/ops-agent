@@ -125,18 +125,18 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 
 func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
 
-	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
-	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
+	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", apps.BuiltInConfStructs["windows"]))
+	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", uc))
+	err = uc.Validate("windows")
 	if err != nil {
 		return err
 	}
-	if err := s.checkForStandaloneAgents(&uc); err != nil {
+	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
@@ -145,7 +145,7 @@ func (s *service) generateConfigs() error {
 		"fluentbit",
 	} {
 		if err := confgenerator.GenerateFilesFromConfig(
-			&uc,
+			uc,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),

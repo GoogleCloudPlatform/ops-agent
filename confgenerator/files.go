@@ -35,6 +35,10 @@ func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
 	if err != nil {
 		return uc, err
 	}
+	if err = uc.Validate(platform); err != nil {
+		return uc, err
+	}
+
 	return uc, nil
 }
 

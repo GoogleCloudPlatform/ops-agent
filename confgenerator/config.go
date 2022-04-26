@@ -66,6 +66,15 @@ func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
 	return fromYaml, nil
 }
 
+func (uc *UnifiedConfig) String() string {
+	marshalledConfig, err := yaml.Marshal(uc)
+	if err != nil {
+		return fmt.Sprintf("failed to convert Unified config to yaml %v", err)
+	}
+
+	return string(marshalledConfig)
+}
+
 type Combined struct {
 	Receivers combinedReceiverMap `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 }
@@ -275,17 +284,6 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
 		return UnifiedConfig{}, err
-	}
-	return config, nil
-}
-
-func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig, error) {
-	config, err := UnmarshalYamlToUnifiedConfig(input, platform)
-	if err != nil {
-		return UnifiedConfig{}, err
-	}
-	if err = config.Validate(platform); err != nil {
-		return config, err
 	}
 	return config, nil
 }

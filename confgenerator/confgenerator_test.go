@@ -174,8 +174,8 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 			got["error"] = err.Error()
 		}
 	}()
-	// Merge Config
-	builtInConfBytes, confBytes, err := confgenerator.MergeConfFiles(
+
+	uc, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
 		apps.BuiltInConfStructs,
@@ -183,9 +183,9 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	if err != nil {
 		return
 	}
-	got[builtinConfigFileName] = string(builtInConfBytes)
+	got[builtinConfigFileName] = apps.BuiltInConfStructs[platform.OS].String()
 
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
+	err = uc.Validate(platform.OS)
 	if err != nil {
 		return
 	}
