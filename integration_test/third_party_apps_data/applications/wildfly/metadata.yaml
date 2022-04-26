@@ -132,3 +132,40 @@ expected_logs:
     value_regex: org.jboss.as
     type: string
     description: Source where the log originated
+configuration_options:
+  logs:
+  - type: wildfly_system
+    fields:
+    - name: type
+      default: null
+      description: The value must be wildfly_system.
+    - name: include_paths
+      default: '[/opt/wildfly/standalone/log/server.log, /opt/wildfly/domain/servers/*/log/server.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/wildfly*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: wildfly
+    fields:
+    - name: type
+      default: null
+      description: This value must be wildfly.
+    - name: endpoint
+      default: service:jmx:remote+http://localhost:9990
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: additional_jars
+      default: /opt/wildfly/bin/client/jboss-client.jar
+      description: The path to the jboss-client.jar file, which is required to monitor WildFly through JMX.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
