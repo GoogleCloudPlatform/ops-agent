@@ -23,7 +23,8 @@ fields:
 
 The top-level configuration for this processor contains a single field,
 `fields`, which contains a map of output field names and corresponding
-translations.
+translations. For each output field, an optional source and zero or more
+mutation operations are applied.
 
 All field names use [the dot-separated
 syntax](https://cloud.google.com/logging/docs/view/logging-query-language#comparisons)
