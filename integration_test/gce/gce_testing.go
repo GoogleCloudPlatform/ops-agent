@@ -143,8 +143,9 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
-	vmInitTimeout         = 20 * time.Minute
-	vmInitBackoffDuration = 10 * time.Second
+	vmInitTimeout                     = 20 * time.Minute
+	vmInitBackoffDuration             = 10 * time.Second
+	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	sshUserName = "test_user"
 
@@ -1213,6 +1214,18 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return waitForStart(ctx, logger, vm)
 }
 
+// RestartInstance stops and starts the instance.
+// It also waits for the instance to be reachable over ssh post-restart.
+func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
+	fileLogger := logger.ToFile("VM_restart.txt")
+
+	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+		return fmt.Errorf("failed to stop instance: %w", err)
+	}
+
+	return StartInstance(ctx, fileLogger, vm)
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1412,11 +1425,19 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
 	}
 
-	creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
-	if err != nil {
-		return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+	resetCredentials := func() error {
+		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
+		if err != nil {
+			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+		}
+		vm.WindowsCredentials = creds
+		return nil
 	}
-	vm.WindowsCredentials = creds
+
+	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
+	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
+		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
+	}
 
 	// Now, make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
