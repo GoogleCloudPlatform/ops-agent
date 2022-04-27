@@ -1266,6 +1266,83 @@ func TestWindowsMonitoringAgentConflict(t *testing.T) {
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
 }
 
+func TestWindowsWildcards(t *testing.T) {
+	t.Parallel()
+	logPath := `C:/a/b/c/d/e/mylog`
+	logPatterns := map[string]map[string]string{
+		"no wildcards": {
+			"backslashes":     `C:\a\b\c\d\e\mylog`,
+			"forward slashes": `C:/a/b/c/d/e/mylog`,
+			"mixed slashes":   `C:/a\b/c\d/e\mylog`,
+		},
+		"file wildcard": {
+			"backslashes":     `C:\a\b\c\d\e\m*log`,
+			"forward slashes": `C:/a/b/c/d/e/m*log`,
+			"mixed slashes":   `C:\a/b\c/d\e/m*log`,
+		},
+		"directory wildcard": {
+			"backslashes":     `C:\a\b\c\*\e\mylog`,
+			"forward slashes": `C:/a/b/c/*/e/mylog`,
+			"mixed slashes":   `C:/a\b/c\*/e\mylog`,
+		},
+		"multiple wildcards": {
+			"backslashes":     `C:\a\*\c\*\e\m*log`,
+			"forward slashes": `C:/a/*/c/*/e/m*log`,
+			"mixed slashes":   `C:\a/*\c/*\e/m*log`,
+		},
+		"recursive wildcard": {
+			"backslashes":     `C:\a\**\e\m*log`,
+			"forward slashes": `C:/a/**/e/m*log`,
+			"mixed slashes":   `C:\a/**/e\m*log`,
+		},
+	}
+	for testGroupName, testGroup := range logPatterns {
+		testGroup := testGroup // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(testGroupName, func(t *testing.T) {
+			for testName, logPattern := range testGroup {
+				logPattern := logPattern // https://golang.org/doc/faq#closures_and_goroutines
+				t.Run(testName, func(t *testing.T) {
+					t.Parallel()
+					config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        exporters: [google]
+`, logPattern)
+					gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+						t.Parallel()
+						if !gce.IsWindows(platform) {
+							t.SkipNow()
+						}
+						ctx, logger, vm := agents.CommonSetup(t, platform)
+
+						if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+							t.Fatal(err)
+						}
+
+						if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+							t.Fatalf("error writing dummy log line: %v", err)
+						}
+
+						if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+							t.Error(err)
+						}
+					})
+				})
+			}
+		})
+	}
+}
+
 func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	return multierr.Append(
 		loggingLivenessChecker(ctx, logger, vm),
