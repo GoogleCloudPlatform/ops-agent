@@ -90,7 +90,7 @@ expected_logs:
     description: host instance name
   - name: httpRequest
     type: object
-    description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.
+    description: Information about the HTTP request associated with this log entry, if applicable. It's available in access logs.
 configuration_options:
   logs:
   - type: couchdb
