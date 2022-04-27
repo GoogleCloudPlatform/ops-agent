@@ -15,3 +15,21 @@ logging:
         receivers:
         - active_directory_ds
 ```
+
+# The `active_directory_ds` Metrics Receiver
+
+The `active_directory_ds` metrics receiver collects performance metrics for an Active Directory Domain Services domain controller.
+
+## Example Configuration
+
+```yaml
+metrics:
+  receivers:
+    active_directory_ds:
+      type: active_directory_ds
+  service:
+    pipelines:
+      active_directory_ds:
+        receivers:
+        - active_directory_ds
+```
