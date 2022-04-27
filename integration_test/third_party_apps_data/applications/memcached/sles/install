@@ -13,5 +13,5 @@ fi
 sudo zypper -n refresh
 
 sudo zypper -n install memcached
-sudo bash -c 'echo "-vv" >> /etc/memcached.conf'
+sudo sed -i 's/MEMCACHED_PARAMS.*/MEMCACHED_PARAMS="-vv -l 127.0.0.1"/' /etc/sysconfig/memcached
 sudo systemctl restart memcached
