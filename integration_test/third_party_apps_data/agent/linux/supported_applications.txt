@@ -16,5 +16,6 @@ rabbitmq
 redis
 solr
 tomcat
+varnish
 wildfly
 zookeeper
