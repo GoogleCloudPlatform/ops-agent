@@ -1,0 +1,19 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    varnish:
+      type: varnish
+  service:
+    pipelines:
+      varnish:
+        receivers:
+          - varnish
+
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 30
