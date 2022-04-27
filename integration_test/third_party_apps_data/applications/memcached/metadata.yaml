@@ -69,6 +69,13 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+expected_logs:
+- log_name: syslog
+  fields:
+  - name: jsonPayload.message
+    value_regex: systemd-memcached-wrapper\[[0-9]+\]
+    type: string
+    description: null
 configuration_options:
   metrics:
   - type: memcached

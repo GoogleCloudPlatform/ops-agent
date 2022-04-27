@@ -1,5 +1,5 @@
 set -e
 
 sudo yum -y install memcached
-
-sudo service memcached start
+sudo bash -c 'echo "-vv" >> /etc/memcached.conf'
+sudo systemctl restart memcached
