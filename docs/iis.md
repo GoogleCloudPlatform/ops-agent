@@ -20,7 +20,7 @@ metrics:
 
 ## Metrics
 
-The following tables provides the lists of metrics that the Ops Agent collects from this application for each supported version of this receiver.
+The following tables provide the lists of metrics that the Ops Agent collects from this application for each supported version of this receiver.
 ### v1
 | Metric                                                   | Data Type  | Unit | Labels | Description |
 | ---                                                      | ---        | ---  | ---    | ---         | 
