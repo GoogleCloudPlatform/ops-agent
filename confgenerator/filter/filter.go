@@ -19,6 +19,7 @@ package filter
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
@@ -96,6 +97,7 @@ func AllFluentConfig(tag string, filters map[string]*Filter) ([]fluentbit.Compon
 	for k := range filters {
 		vars = append(vars, k)
 	}
+	sort.Strings(vars)
 
 	for i, k := range vars {
 		prefix := fmt.Sprintf("__match_%d", i)

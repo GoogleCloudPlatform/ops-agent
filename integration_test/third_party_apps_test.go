@@ -180,38 +180,10 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
-type logFields struct {
-	Name        string `yaml:"name" validate:"required"`
-	ValueRegex  string `yaml:"value_regex"`
-	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description" validate:"required"`
-}
-
-type expectedLog struct {
-	LogName string      `yaml:"log_name" validate:"required"`
-	Fields  []logFields `yaml:"fields" validate:"required"`
-}
-
-type minimumSupportedAgentVersion struct {
-	Logging string `yaml:"logging"`
-	Metrics string `yaml:"metrics"`
-}
-
-type integrationMetadata struct {
-	PublicUrl                    string                       `yaml:"public_url"`
-	ShortName                    string                       `yaml:"short_name" validate:"required"`
-	LongName                     string                       `yaml:"long_name" validate:"required"`
-	ConfigureIntegration         string                       `yaml:"configure_integration"`
-	ExpectedLogs                 []expectedLog                `yaml:"expected_logs"`
-	ExpectedMetrics              []common.ExpectedMetric      `yaml:"expected_metrics"`
-	MinimumSupportedAgentVersion minimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
-	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
-}
-
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []logFields) string {
+func constructQuery(fields []common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
@@ -221,7 +193,7 @@ func constructQuery(fields []logFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []expectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []common.ExpectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -415,7 +387,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	// Check if metadata.yaml exists, and run the test cases if it does.
 	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
 		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-		var metadata integrationMetadata
+		var metadata common.IntegrationMetadata
 		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
 		if err != nil {
 			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)

@@ -247,6 +247,7 @@ func TestCustomLogFile(t *testing.T) {
     my_exclude:
       type: exclude_logs
       match_any:
+      - jsonPayload.missing_field = "value"
       - jsonPayload.message =~ "test pattern"
   service:
     pipelines:
@@ -628,6 +629,7 @@ func TestModifyFields(t *testing.T) {
           static_value: WARNING
         jsonPayload.field2:
           move_from: jsonPayload.field
+          omit_if: jsonPayload.missing_field = "present"
         jsonPayload.default_present:
           default_value: default
         jsonPayload.default_absent:
