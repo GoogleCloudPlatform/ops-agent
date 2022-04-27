@@ -90,6 +90,7 @@ type IntegrationMetadata struct {
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version,omitempty"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
 	ConfigurationOptions         ConfigurationOptions         `yaml:"configuration_options" validate:"required"`
+	RestartAfterInstall          bool                         `yaml:"restart_after_install,omitempty"`
 }
 
 var validate *validator.Validate
