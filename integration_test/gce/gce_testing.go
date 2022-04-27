@@ -1217,13 +1217,11 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // RestartInstance stops and starts the instance.
 // It also waits for the instance to be reachable over ssh post-restart.
 func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
-	fileLogger := logger.ToFile("VM_Restart.txt")
+	fileLogger := logger.ToFile("VM_restart.txt")
 
 	if err := StopInstance(ctx, fileLogger, vm); err != nil {
-		return fmt.Errorf("Failed to stop instance: %w", err)
+		return fmt.Errorf("failed to stop instance: %w", err)
 	}
-
-	time.Sleep(30 * time.Second)
 
 	return StartInstance(ctx, fileLogger, vm)
 }
