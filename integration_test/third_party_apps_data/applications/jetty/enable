@@ -1,0 +1,26 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+logging:
+  receivers:
+    jetty_access:
+      type: jetty_access
+    jetty_system:
+      type: files
+      include_paths:
+      - /opt/logs/*.jetty.log
+  processors:
+    jetty_system:
+      type: jetty_system
+  service:
+    pipelines:
+      jetty:
+        receivers:
+          - jetty_access
+          - jetty_system
+        processors: [jetty_system]
+EOF
+
+sudo service google-cloud-ops-agent restart
