@@ -3,35 +3,6 @@
 Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/varnish)
 for instructions to collect logs and metrics from this application using Ops Agent.
 
-# `varnish` Metrics Receiver
-
-## Configuration
-
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your varnish instance configuration.
-
-To configure a receiver for your Varnish metrics, specify the following fields:
-
-| Field                 | Required | Default | Description                                                                                                                                                                 |
-|-----------------------|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `type`                | required |         | Must be `varnish`.                                                                                                                                                          |
-| `collection_interval` | optional |         | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                      |
-| `cache_dir`           | optional |         | Optional. This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host name.                                  |
-| `exec_dir`            | optional |         | Optional. The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH. |
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    varnish:
-      type: varnish
-  service:
-    pipelines:
-      varnish:
-        receivers:
-          - varnish
-```
-
 ## Metrics
 
 The Ops Agent collects the following metrics from your varnish instance.
@@ -51,8 +22,6 @@ The Ops Agent collects the following metrics from your varnish instance.
 | workload.googleapis.com/varnish.backend.request.count      | cumulative | {requests}    | cache_name                          | The backend requests count                                       |
 
 ## Logs
-
-The Varnish logging processor processes access logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging and add log queries to customize logs received by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os.
 
 Varnish logs contain the [`httpRequest` field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest):
 
