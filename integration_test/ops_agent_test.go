@@ -940,10 +940,9 @@ func metricsForPlatform(platform string) []string {
 		"agent.googleapis.com/agent/memory_usage",
 		"agent.googleapis.com/agent/monitoring/point_count",
 
-		// TODO(b/170138116): Enable these metrics once they are being collected.
-		//"agent.googleapis.com/agent/log_entry_count",
-		//"agent.googleapis.com/agent/log_entry_retry_count",
-		//"agent.googleapis.com/agent/request_count",
+		"agent.googleapis.com/agent/log_entry_count",
+		"agent.googleapis.com/agent/log_entry_retry_count",
+		"agent.googleapis.com/agent/request_count",
 
 		"agent.googleapis.com/cpu/load_1m",
 		"agent.googleapis.com/cpu/load_5m",
