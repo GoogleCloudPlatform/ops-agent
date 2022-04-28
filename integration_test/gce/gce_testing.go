@@ -1252,7 +1252,7 @@ sudo zypper --non-interactive refresh test-vendor`
 	installCmd := `set -ex
 
 ` + repoSetupCmd + `
-sudo zypper --non-interactive install --capability 'python>=3.6'
+sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
 sudo zypper --non-interactive install python3-certifi
 
 # On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
