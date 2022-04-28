@@ -84,6 +84,13 @@ expected_metrics:
   labels:
     broker: .*
     destination: .*
+expected_logs:
+- log_name: syslog
+  fields:
+  - name: jsonPayload.message
+    value_regex: '(activemq\[[0-9]+\]|activemq):'
+    type: string
+    description: null
 configuration_options:
   metrics:
   - type: activemq
