@@ -64,3 +64,20 @@ expected_metrics:
   labels:
     operation: .*
 expected_logs:
+configuration_options:
+  metrics:
+  - type: varnish
+    fields:
+    - name: type
+      default: null
+      description: This value must be varnish.
+    - name: cache_dir
+      default: null
+      description: This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host. 
+    - name: exec_dir
+      default: null
+      description: The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+
