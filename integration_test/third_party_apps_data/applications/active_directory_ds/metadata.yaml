@@ -202,7 +202,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    result: success|schema_mismatch|others
+    result: success|schema_mismatch|other
 - type: workload.googleapis.com/active_directory.ds.replication.value.rate
   value_type: DOUBLE
   kind: GAUGE
