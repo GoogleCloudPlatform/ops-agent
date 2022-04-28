@@ -50,7 +50,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
-	"github.com/go-playground/validator/v10"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -378,12 +377,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
 		}
 		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
-	}
-
-	// Validate the metadata.
-	validate := validator.New()
-	if err = validate.Struct(metadata); err != nil {
-		return nonRetryable, err
 	}
 
 	if metadata.RestartAfterInstall {
