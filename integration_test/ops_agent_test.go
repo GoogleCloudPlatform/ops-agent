@@ -1313,6 +1313,7 @@ func TestWindowsWildcards(t *testing.T) {
     google:
       type: google_cloud_logging
   service:
+    log_level: debug
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
