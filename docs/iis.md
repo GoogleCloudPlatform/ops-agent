@@ -2,7 +2,7 @@
 
 Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis) for instructions to collect metrics from this application using Ops Agent.
 
-Additionally, specify `version` as `v2` to enable new metrics gathering. 
+Additionally, specify `receiver_version` as `v2` to enable new metrics gathering. 
 
 Example `v2` Configuration
 ```yaml
