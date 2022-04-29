@@ -1274,26 +1274,29 @@ func TestWindowsWildcards(t *testing.T) {
 			"backslashes":     `C:\a\b\c\d\e\mylog`,
 			"forward slashes": `C:/a/b/c/d/e/mylog`,
 			"mixed slashes":   `C:/a\b/c\d/e\mylog`,
+			"dos backslashes": `\\.\C:\a\b\c\d\e\mylog`,
+			"dos forward":     `\\.\C:\a/b\c\d\e\mylog`,
 		},
 		"file wildcard": {
 			"backslashes":     `C:\a\b\c\d\e\m*log`,
 			"forward slashes": `C:/a/b/c/d/e/m*log`,
 			"mixed slashes":   `C:\a/b\c/d\e/m*log`,
+			"dos backslashes": `\\.\C:\a\b\c\d\e\m*log`,
+			"dos forward":     `\\.\C:\a/b\c\d\e\m*log`,
 		},
 		"directory wildcard": {
 			"backslashes":     `C:\a\b\c\*\e\mylog`,
 			"forward slashes": `C:/a/b/c/*/e/mylog`,
 			"mixed slashes":   `C:/a\b/c\*/e\mylog`,
+			"dos backslashes": `\\.\C:\a\b\c\*\e\mylog`,
+			"dos forward":     `\\.\C:\a\b\c\*\e\mylog`,
 		},
 		"multiple wildcards": {
 			"backslashes":     `C:\a\*\c\*\e\m*log`,
 			"forward slashes": `C:/a/*/c/*/e/m*log`,
 			"mixed slashes":   `C:\a/*\c/*\e/m*log`,
-		},
-		"recursive wildcard": {
-			"backslashes":     `C:\a\**\e\m*log`,
-			"forward slashes": `C:/a/**/e/m*log`,
-			"mixed slashes":   `C:\a/**/e\m*log`,
+			"dos backslashes": `\\.\C:\a\*\c\*\e\m*log`,
+			"dos forward":     `\\.\C:\a/*\c\*\e\m*log`,
 		},
 	}
 	for testGroupName, testGroup := range logPatterns {
