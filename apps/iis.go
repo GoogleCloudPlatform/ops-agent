@@ -26,7 +26,7 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
-	Version                             string `yaml:"receiver_version,omitempty"`
+	ReceiverVersion                     string `yaml:"receiver_version,omitempty"`
 }
 
 func (r MetricsReceiverIis) Type() string {
@@ -34,7 +34,7 @@ func (r MetricsReceiverIis) Type() string {
 }
 
 func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
-	if r.Version == "2" {
+	if r.ReceiverVersion == "2" {
 		return []otel.Pipeline{{
 			Receiver: otel.Component{
 				Type: "iis",
@@ -114,7 +114,6 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 			otel.NormalizeSums(),
 		},
 	}}
-
 }
 
 func init() {

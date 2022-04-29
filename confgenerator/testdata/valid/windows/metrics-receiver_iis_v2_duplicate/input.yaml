@@ -16,7 +16,7 @@ metrics:
   receivers:
     iis_v2:
       type: iis
-      receiver_version: "2"
+      receiver_version: 2
   service:
     pipelines:
       iispipeline:

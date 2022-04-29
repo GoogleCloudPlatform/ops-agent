@@ -47,6 +47,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     request: .*
+  # representative: true
 - type: workload.googleapis.com/iis.request.rejected
   value_type: INT64
   kind: CUMULATIVE
@@ -172,6 +173,6 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
-    - name: receiver_version
+    - name: version
       default: null
       description: establishes which version of metrics to collect.

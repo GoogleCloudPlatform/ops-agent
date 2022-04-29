@@ -2,7 +2,7 @@
 
 Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis) for instructions to collect metrics from this application using Ops Agent.
 
-Additionally, specify `receiver_version` as `v2` to enable new metrics gathering. 
+Additionally, specify `version` as `v2` to enable new metrics gathering. 
 
 Example `v2` Configuration
 ```yaml
@@ -10,7 +10,7 @@ metrics:
   receivers:
     iis:
       type: iis
-      receiver_version: "2"
+      receiver_version: 2
   service:
     pipelines:
       iispipeline:
@@ -21,6 +21,7 @@ metrics:
 ## Metrics
 
 The following tables provide the lists of metrics that the Ops Agent collects from this application for each supported version of this receiver.
+
 ### v1
 | Metric                                                   | Data Type  | Unit | Labels | Description |
 | ---                                                      | ---        | ---  | ---    | ---         | 
