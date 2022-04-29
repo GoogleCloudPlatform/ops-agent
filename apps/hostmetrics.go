@@ -299,6 +299,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
+		Exporter: otel.ExporterKindSystem,
 	}}
 }
 

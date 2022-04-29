@@ -57,6 +57,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
+		Exporter: otel.ExporterKindCustom,
 	}}
 }
 

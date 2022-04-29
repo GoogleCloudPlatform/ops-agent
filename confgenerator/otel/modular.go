@@ -24,10 +24,12 @@ import (
 
 const MetricsPort = 20201
 
-// Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+// Pipeline represents a single OT receiver, zero or more processors that must be chained after that receiver,
+// and the intended exporter.
 type Pipeline struct {
 	Receiver   Component
 	Processors []Component
+	Exporter   ExporterKind
 }
 
 // Component represents a single OT component (receiver, processor, exporter, etc.)
@@ -38,6 +40,13 @@ type Component struct {
 	// This can either be a map[string]interface{} or a Config struct from OT.
 	Config interface{}
 }
+
+type ExporterKind string
+
+const (
+	ExporterKindSystem ExporterKind = "system"
+	ExporterKindCustom ExporterKind = "custom"
+)
 
 func (c Component) name(suffix string) string {
 	if suffix != "" {
@@ -60,10 +69,11 @@ func configToYaml(config interface{}) ([]byte, error) {
 type ModularConfig struct {
 	LogLevel  string
 	Pipelines map[string]Pipeline
-	// GlobalProcessors and Exporter are added at the end of every pipeline.
+	// GlobalProcessors and Exporters are added at the end of every pipeline.
+	// Only the Exporter corresponding to the Pipeline is added.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
 	GlobalProcessors []Component
-	Exporter         Component
+	Exporters        map[ExporterKind]Component
 }
 
 // Generate an OT YAML config file for c.
@@ -98,8 +108,11 @@ func (c ModularConfig) Generate() (string, error) {
 		"exporters":  exporters,
 		"service":    service,
 	}
-	exporterName := c.Exporter.name("")
-	exporters[exporterName] = c.Exporter.Config
+
+	for suffix, exporter := range c.Exporters {
+		exporterName := exporter.name(string(suffix))
+		exporters[exporterName] = exporter.Config
+	}
 
 	var globalProcessorNames []string
 	for i, processor := range c.GlobalProcessors {
@@ -118,6 +131,12 @@ func (c ModularConfig) Generate() (string, error) {
 			processors[name] = processor.Config
 		}
 		processorNames = append(processorNames, globalProcessorNames...)
+		exporterKind := pipeline.Exporter
+		if exporterKind == "" {
+			exporterKind = ExporterKindCustom
+		}
+		exporter := c.Exporters[exporterKind]
+		exporterName := exporter.name(string(exporterKind))
 		// For now, we always generate pipelines of type "metrics".
 		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},

@@ -68,22 +68,33 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 				"detectors": []string{"gce"},
 			},
 		}},
-		Exporter: otel.Component{
-			Type: "googlecloud",
-			Config: map[string]interface{}{
-				"user_agent": userAgent,
-				"metric": map[string]interface{}{
-					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
-					// TODO(b/197129428): Write a test to make sure this doesn't happen.
-					"prefix": "",
-					// OT calls CreateMetricDescriptor by default. Skip because we want
-					// descriptors to be created implicitly with new time series.
-					"skip_create_descriptor": true,
-					// Omit instrumentation labels, which break agent metrics.
-					"instrumentation_library_labels": false,
-					// Omit service labels, which break agent metrics.
-					"service_resource_labels": false,
+		Exporters: map[otel.ExporterKind]otel.Component{
+			otel.ExporterKindSystem: {
+				Type: "googlecloud",
+				Config: map[string]interface{}{
+					"user_agent": userAgent,
+					"metric": map[string]interface{}{
+						// Receivers are responsible for sending fully-qualified metric names.
+						// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
+						// TODO(b/197129428): Write a test to make sure this doesn't happen.
+						"prefix": "",
+						// OT calls CreateMetricDescriptor by default. Skip because we want
+						// descriptors to be created implicitly with new time series.
+						"skip_create_descriptor": true,
+						// Omit instrumentation labels, which break agent metrics.
+						"instrumentation_library_labels": false,
+						// Omit service labels, which break agent metrics.
+						"service_resource_labels": false,
+					},
+				},
+			},
+			otel.ExporterKindCustom: {
+				Type: "googlecloud",
+				Config: map[string]interface{}{
+					"user_agent": userAgent,
+					"metric": map[string]interface{}{
+						"prefix": "",
+					},
 				},
 			},
 		},
