@@ -176,4 +176,4 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
     - name: receiver_version
       default: null
-      description: Establishes which version of metrics to collect.
+      description: Establishes the version of the metric collection implementation.
