@@ -78,9 +78,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 						// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
 						// TODO(b/197129428): Write a test to make sure this doesn't happen.
 						"prefix": "",
-						// OT calls CreateMetricDescriptor by default. Skip because we want
-						// descriptors to be created implicitly with new time series.
-						"skip_create_descriptor": true,
+						// Treat system metrics as service timeseries. This also skips the call to CreateMetricDescriptor.
+						"create_service_timeseries": true,
 						// Omit instrumentation labels, which break agent metrics.
 						"instrumentation_library_labels": false,
 						// Omit service labels, which break agent metrics.
