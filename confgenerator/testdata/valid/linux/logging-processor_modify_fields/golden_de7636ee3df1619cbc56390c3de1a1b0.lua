@@ -22,6 +22,20 @@ local __field_7 = (function()
 return record["omitted"]
 end)();
 local __field_8 = (function()
+if record["logging.googleapis.com/labels"] == nil
+then
+return nil
+end
+return record["logging.googleapis.com/labels"]["label1"]
+end)();
+local __field_9 = (function()
+if record["logging.googleapis.com/labels"] == nil
+then
+return nil
+end
+return record["logging.googleapis.com/labels"]["label3"]
+end)();
+local __field_10 = (function()
 return record["level"]
 end)();
 local omit7 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
@@ -81,6 +95,23 @@ if omit7 then v = nil end;
 record["omitted"] = value
 end)(v)
 local v = __field_8;
+(function(value)
+if record["logging.googleapis.com/labels"] == nil
+then
+record["logging.googleapis.com/labels"] = {}
+end
+record["logging.googleapis.com/labels"]["label2"] = value
+end)(v)
+local v = __field_9;
+if v == nil then v = "default" end;
+(function(value)
+if record["logging.googleapis.com/labels"] == nil
+then
+record["logging.googleapis.com/labels"] = {}
+end
+record["logging.googleapis.com/labels"]["label3"] = value
+end)(v)
+local v = __field_10;
 if v == "CAUTION" then v = "WARNING"
 elseif v == "I" then v = "INFO"
 elseif v == "W" then v = "WARNING"
