@@ -36,7 +36,7 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverCouchdb) Pipelines(platform string) []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
@@ -71,7 +71,7 @@ func (LoggingProcessorCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorCouchdb) Components(tag string, uid string, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -102,7 +102,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// Generate the httpRequest structure.
 	c = append(c, fluentbit.Component{
@@ -144,7 +144,7 @@ type LoggingReceiverCouchdb struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCouchdb) Components(tag string, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file
@@ -164,8 +164,8 @@ func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCouchdb.Components(tag, "couchdb")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorCouchdb.Components(tag, "couchdb", platform)...)
 	return c
 }
 

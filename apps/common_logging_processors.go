@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
+func genericAccessLogParser(tag string, uid string, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -38,7 +38,7 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 	// apache/nginx logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{
 		"host",

@@ -44,7 +44,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMongoDB) Pipelines(platform string) []otel.Pipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint
@@ -96,11 +96,11 @@ func (*LoggingProcessorMongodb) Type() string {
 	return "mongodb"
 }
 
-func (p *LoggingProcessorMongodb) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) Components(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
-	c = append(c, p.JsonLogComponents(tag, uid)...)
-	c = append(c, p.RegexLogComponents(tag, uid)...)
+	c = append(c, p.JsonLogComponents(tag, uid, platform)...)
+	c = append(c, p.RegexLogComponents(tag, uid, platform)...)
 	c = append(c, p.severityParser(tag, uid)...)
 
 	return c
@@ -109,8 +109,8 @@ func (p *LoggingProcessorMongodb) Components(tag, uid string) []fluentbit.Compon
 // JsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
 // documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
-func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit.Component {
-	c := p.jsonParserWithTimeKey(tag, uid)
+func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid, platform string) []fluentbit.Component {
+	c := p.jsonParserWithTimeKey(tag, uid, platform)
 
 	c = append(c, p.promoteWiredTiger(tag, uid)...)
 	c = append(c, p.renames(tag, uid)...)
@@ -120,7 +120,7 @@ func (p *LoggingProcessorMongodb) JsonLogComponents(tag, uid string) []fluentbit
 
 // jsonParserWithTimeKey requires promotion of the nested timekey for the json parser so we must
 // first promote the $date field from the "t" field before declaring the parser
-func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	jsonParser := &confgenerator.LoggingProcessorParseJson{
@@ -133,7 +133,7 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 			},
 		},
 	}
-	jpComponents := jsonParser.Components(tag, uid)
+	jpComponents := jsonParser.Components(tag, uid, platform)
 
 	parserComponent, filterComponent := jpComponents[0], jpComponents[1]
 
@@ -270,7 +270,7 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 	return []fluentbit.Component{upNest, wiredTigerRename, renameRemainingAttributes}
 }
 
-func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
 		"message":   "string",
@@ -302,15 +302,15 @@ type LoggingReceiverMongodb struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r *LoggingReceiverMongodb) Components(tag string) []fluentbit.Component {
+func (r *LoggingReceiverMongodb) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// default logging location
 			"/var/log/mongodb/mongod.log*",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMongodb.Components(tag, "mongodb")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorMongodb.Components(tag, "mongodb", platform)...)
 	return c
 }
 

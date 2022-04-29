@@ -38,7 +38,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRedis) Pipelines(platform string) []otel.Pipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -88,7 +88,7 @@ func (LoggingProcessorRedis) Type() string {
 	return "redis"
 }
 
-func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorRedis) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://github.com/redis/redis/blob/6.2/src/server.c#L1122
 		// Sample line (Redis 3+): 534:M 28 Apr 2020 11:30:29.988 * DB loaded from disk: 0.002 seconds
@@ -101,7 +101,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 				"pid": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 	c = append(c,
@@ -135,7 +135,7 @@ type LoggingReceiverRedis struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRedis) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
@@ -150,8 +150,8 @@ func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 			"/var/log/redis/redis_6379.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis", platform)...)
 	return c
 }
 

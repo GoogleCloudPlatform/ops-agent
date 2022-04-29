@@ -28,7 +28,7 @@ func (*LoggingProcessorRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorRabbitmq) Components(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 	regexParser := confgenerator.LoggingProcessorParseRegex{
 		// Sample log line:
@@ -39,7 +39,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 			TimeFormat: "%Y-%m-%d %H:%M:%S.%L+%Z",
 		},
 	}
-	c = append(c, regexParser.Components(tag, uid)...)
+	c = append(c, regexParser.Components(tag, uid, platform)...)
 
 	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 	c = append(c, fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", true, []struct {
@@ -60,7 +60,7 @@ type LoggingReceiverRabbitmq struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRabbitmq) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
@@ -85,8 +85,8 @@ func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
 			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRabbitmq.Components(tag, "rabbitmq")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorRabbitmq.Components(tag, "rabbitmq", platform)...)
 	return c
 }
 
@@ -111,7 +111,7 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRabbitmq) Pipelines(platform string) []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}

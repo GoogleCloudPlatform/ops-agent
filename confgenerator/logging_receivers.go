@@ -24,11 +24,29 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-// DBPath returns the database path for the given log tag
-func DBPath(tag string) string {
+// dBPath returns the database path for the given log tag.
+func dBPath(tag string) string {
 	// TODO: More sanitization?
 	dir := strings.ReplaceAll(strings.ReplaceAll(tag, ".", "_"), "/", "_")
 	return path.Join("${buffers_dir}", dir)
+}
+
+// normalizePath replaces all occurrences of `/` in the path with the system path separator.
+// This is a no-op on Linux, but will normalize everything to use `\` on Windows.
+func normalizePath(path string, platform string) string {
+	if platform != "windows" {
+		return path
+	}
+	return strings.ReplaceAll(path, `/`, `\`)
+}
+
+// normalizePaths normalizes each path in a slice, as per normalizePath.
+func normalizePaths(paths []string, platform string) []string {
+	var r []string
+	for _, p := range paths {
+		r = append(r, normalizePath(p, platform))
+	}
+	return r
 }
 
 // A LoggingReceiverFiles represents the user configuration for a file receiver (fluentbit's tail plugin).
@@ -44,12 +62,12 @@ func (r LoggingReceiverFiles) Type() string {
 	return "files"
 }
 
-func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFiles) Components(tag string, platform string) []fluentbit.Component {
 	return LoggingReceiverFilesMixin{
-		IncludePaths:            r.IncludePaths,
-		ExcludePaths:            r.ExcludePaths,
+		IncludePaths:            normalizePaths(r.IncludePaths, platform),
+		ExcludePaths:            normalizePaths(r.ExcludePaths, platform),
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
-	}.Components(tag)
+	}.Components(tag, platform)
 }
 
 type LoggingReceiverFilesMixin struct {
@@ -59,7 +77,7 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 }
 
-func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFilesMixin) Components(tag string, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// No files -> no input.
 		return nil
@@ -70,7 +88,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		"Tag":  tag,
 		// TODO: Escaping?
 		"Path":           strings.Join(r.IncludePaths, ","),
-		"DB":             DBPath(tag),
+		"DB":             dBPath(tag),
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
@@ -164,7 +182,7 @@ func (r LoggingReceiverSyslog) Type() string {
 	return "syslog"
 }
 
-func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSyslog) Components(tag string, platform string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -214,7 +232,7 @@ func (r LoggingReceiverTCP) Type() string {
 	return "tcp"
 }
 
-func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverTCP) Components(tag string, platform string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -261,7 +279,7 @@ func (r LoggingReceiverFluentForward) Type() string {
 	return "fluent_forward"
 }
 
-func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFluentForward) Components(tag string, platform string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -306,7 +324,7 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 	return "windows_event_log"
 }
 
-func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverWindowsEventLog) Components(tag string, platform string) []fluentbit.Component {
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -315,7 +333,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"Tag":          tag,
 			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
-			"DB":           DBPath(tag),
+			"DB":           dBPath(tag),
 		},
 	}}
 
@@ -363,14 +381,14 @@ func (r LoggingReceiverSystemd) Type() string {
 	return "systemd_journald"
 }
 
-func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSystemd) Components(tag string, platform string) []fluentbit.Component {
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/systemd
 			"Name": "systemd",
 			"Tag":  tag,
-			"DB":   DBPath(tag),
+			"DB":   dBPath(tag),
 		},
 	}}
 	filters := fluentbit.TranslationComponents(tag, "PRIORITY", "logging.googleapis.com/severity", false,

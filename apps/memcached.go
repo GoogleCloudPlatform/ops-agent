@@ -19,7 +19,7 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMemcached) Pipelines(platform string) []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}

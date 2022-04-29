@@ -49,7 +49,7 @@ func (r LoggingProcessorParseJson) Type() string {
 	return "parse_json"
 }
 
-func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseJson) Components(tag, uid string, platform string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "json"
 	return []fluentbit.Component{
@@ -76,7 +76,7 @@ func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
 }
 
-func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseRegex) Components(tag, uid string, platform string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = p.Regex
@@ -98,7 +98,7 @@ type LoggingProcessorParseRegexComplex struct {
 	Parsers []RegexParser
 }
 
-func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseRegexComplex) Components(tag, uid string, platform string) []fluentbit.Component {
 	components := []fluentbit.Component{}
 	parserNames := []string{}
 
@@ -144,7 +144,7 @@ type LoggingProcessorParseMultilineRegex struct {
 	Rules []MultilineRule
 }
 
-func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string, platform string) []fluentbit.Component {
 	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
 	rules := [][2]string{}
 	for _, rule := range p.Rules {
@@ -174,7 +174,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 		OrderedConfig: rules,
 	}
 
-	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(tag, uid)...)
+	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(tag, uid, platform)...)
 }
 
 func init() {
@@ -187,7 +187,7 @@ type LoggingProcessorNestWildcard struct {
 	RemovePrefix string
 }
 
-func (p LoggingProcessorNestWildcard) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorNestWildcard) Components(tag, uid string, platform string) []fluentbit.Component {
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -266,7 +266,7 @@ func (r LoggingProcessorExcludeLogs) Type() string {
 	return "exclude_logs"
 }
 
-func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorExcludeLogs) Components(tag, uid string, platform string) []fluentbit.Component {
 	filters := make([]*filter.Filter, 0, len(p.MatchAny))
 	for _, condition := range p.MatchAny {
 		filter, err := filter.NewFilter(condition)

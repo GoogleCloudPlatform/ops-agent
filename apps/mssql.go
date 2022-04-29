@@ -29,7 +29,7 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverMssql) Pipelines(platform string) []otel.Pipeline {
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",

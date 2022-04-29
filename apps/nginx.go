@@ -34,7 +34,7 @@ func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverNginx) Pipelines(platform string) []otel.Pipeline {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
@@ -67,8 +67,8 @@ func (LoggingProcessorNginxAccess) Type() string {
 	return "nginx_access"
 }
 
-func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+func (p LoggingProcessorNginxAccess) Components(tag string, uid, platform string) []fluentbit.Component {
+	return genericAccessLogParser(tag, uid, platform)
 }
 
 type LoggingProcessorNginxError struct {
@@ -79,7 +79,7 @@ func (LoggingProcessorNginxError) Type() string {
 	return "nginx_error"
 }
 
-func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorNginxError) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
@@ -95,7 +95,7 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 				"connection": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
 	c = append(c,
@@ -120,12 +120,12 @@ type LoggingReceiverNginxAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxAccess) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/access.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorNginxAccess.Components(tag, "nginx_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorNginxAccess.Components(tag, "nginx_access", platform)...)
 	return c
 }
 
@@ -134,12 +134,12 @@ type LoggingReceiverNginxError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxError) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/error.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorNginxError.Components(tag, "nginx_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorNginxError.Components(tag, "nginx_error", platform)...)
 	return c
 }
 

@@ -38,7 +38,7 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverZookeeper) Pipelines(platform string) []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
 	}
@@ -68,7 +68,7 @@ func (LoggingProcessorZookeeperGeneral) Type() string {
 	return "zookeeper_general"
 }
 
-func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorZookeeperGeneral) Components(tag, uid, platform string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	complexRegex := confgenerator.LoggingProcessorParseRegexComplex{
@@ -119,7 +119,7 @@ func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbi
 		},
 	}
 
-	c = append(c, complexRegex.Components(tag, uid)...)
+	c = append(c, complexRegex.Components(tag, uid, platform)...)
 	c = append(c, severityParser(tag, uid)...)
 
 	return c
@@ -130,7 +130,7 @@ type LoggingReceiverZookeeperGeneral struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverZookeeperGeneral) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default log for Zookeeper.
 		r.IncludePaths = []string{
@@ -152,8 +152,8 @@ func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Comp
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorZookeeperGeneral.Components(tag, "zookeeper_general")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	return append(c, r.LoggingProcessorZookeeperGeneral.Components(tag, "zookeeper_general", platform)...)
 }
 
 func severityParser(tag, uid string) []fluentbit.Component {

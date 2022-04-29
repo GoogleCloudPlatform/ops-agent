@@ -43,7 +43,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverPostgresql) Pipelines(platform string) []otel.Pipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -92,7 +92,7 @@ func (LoggingProcessorPostgresql) Type() string {
 	return "postgresql_general"
 }
 
-func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorPostgresql) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -126,7 +126,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
@@ -158,7 +158,7 @@ type LoggingReceiverPostgresql struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverPostgresql) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log paths for Debain / Ubuntu
@@ -169,8 +169,8 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorPostgresql.Components(tag, "postgresql")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorPostgresql.Components(tag, "postgresql", platform)...)
 	return c
 }
 

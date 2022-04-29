@@ -32,7 +32,7 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverIis) Pipelines(platform string) []otel.Pipeline {
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
@@ -128,7 +128,7 @@ const (
 	`
 )
 
-func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorIisAccess) Components(tag, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
@@ -143,7 +143,7 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 				"http_request_status": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{
 		"cs_uri_query",
@@ -200,14 +200,14 @@ type LoggingReceiverIisAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverIisAccess) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(tag, "iis_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorIisAccess.Components(tag, "iis_access", platform)...)
 	return c
 }
 

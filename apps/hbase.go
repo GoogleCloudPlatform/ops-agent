@@ -34,7 +34,7 @@ func (r MetricsReceiverHbase) Type() string {
 	return "hbase"
 }
 
-func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverHbase) Pipelines(platform string) []otel.Pipeline {
 	targetSystem := "hbase"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -68,7 +68,7 @@ func (LoggingProcessorHbaseSystem) Type() string {
 	return "hbase_system"
 }
 
-func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorHbaseSystem) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -97,7 +97,7 @@ func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluent
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
 	c = append(c,
@@ -120,15 +120,15 @@ type SystemLoggingReceiverHbase struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r SystemLoggingReceiverHbase) Components(tag string) []fluentbit.Component {
+func (r SystemLoggingReceiverHbase) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/hbase/logs/hbase-*-regionserver-*.log",
 			"/opt/hbase/logs/hbase-*-master-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorHbaseSystem.Components(tag, "hbase_system")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorHbaseSystem.Components(tag, "hbase_system", platform)...)
 	return c
 }
 

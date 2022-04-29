@@ -33,7 +33,7 @@ func (r MetricsReceiverKafka) Type() string {
 	return "kafka"
 }
 
-func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverKafka) Pipelines(platform string) []otel.Pipeline {
 	targetSystem := "kafka"
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultKafkaEndpoint).
@@ -77,7 +77,7 @@ func (LoggingProcessorKafka) Type() string {
 	return "kafka"
 }
 
-func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorKafka) Components(tag string, uid, platform string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -113,7 +113,7 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 				Regex:     `^(?!\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\])`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(tag, uid, platform)
 
 	// Log levels are just log4j log levels
 	// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
@@ -138,7 +138,7 @@ type LoggingReceiverKafka struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverKafka) Components(tag, platform string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// No default package installers, these are common log paths from installs online
@@ -147,8 +147,8 @@ func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
 			"/opt/kafka/logs/controller.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorKafka.Components(tag, "kafka")...)
+	c := r.LoggingReceiverFilesMixin.Components(tag, platform)
+	c = append(c, r.LoggingProcessorKafka.Components(tag, "kafka", platform)...)
 	return c
 }
 
