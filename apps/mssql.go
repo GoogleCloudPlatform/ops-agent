@@ -69,6 +69,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
+		Exporter: otel.ExporterKindSystem,
 	}}
 }
 

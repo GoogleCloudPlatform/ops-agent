@@ -284,6 +284,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
+    // Exporters: TODO let's change this example to something that uses workload metrics
 	}}
 }
 

@@ -94,6 +94,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 			),
 			otel.NormalizeSums(),
 		},
+		Exporter: otel.ExporterKindSystem,
 	}}
 }
 

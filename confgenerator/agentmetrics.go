@@ -87,6 +87,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
+		Exporter: otel.ExporterKindSystem,
 	}
 }
 
@@ -125,6 +126,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
+		Exporter: otel.ExporterKindSystem,
 	}
 }
 
