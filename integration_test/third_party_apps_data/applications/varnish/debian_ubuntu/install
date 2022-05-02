@@ -1,8 +1,6 @@
 set -e
 
-# Debian 9:  5.0.0
 # Debian 11: 6.5.1
-# Ubuntu 18: 5.2.1
 # Ubuntu 20: 6.2.1
 
 sudo apt-get update

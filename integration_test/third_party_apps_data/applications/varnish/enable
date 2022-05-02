@@ -13,6 +13,20 @@ metrics:
         receivers:
           - varnish
 
+logging:
+  receivers:
+    varnishncsa_file:
+      type: files
+      include_paths:
+      - /var/log/varnish/varnishncsa.log
+  processors:
+    varnish:
+      type: varnish
+  service:
+    pipelines:
+      varnish:
+        receivers: [varnishncsa_file]
+        processors: [varnish]
 EOF
 
 sudo service google-cloud-ops-agent restart
