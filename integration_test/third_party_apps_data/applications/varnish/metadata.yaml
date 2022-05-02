@@ -89,3 +89,5 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
+minimum_supported_agent_version: !!omap
+- metrics: master
