@@ -148,7 +148,7 @@ then
 			fmt.Fprintf(&out, `record[%s] = {}
 `, p)
 		} else {
-			fmt.Fprintf(&out, `return nil`)
+			fmt.Fprintf(&out, "return nil\n")
 		}
 		fmt.Fprintf(&out, "end\n")
 	}

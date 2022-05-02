@@ -625,6 +625,8 @@ func TestModifyFields(t *testing.T) {
           copy_from: jsonPayload.field
         labels."static":
           static_value: hello world
+        labels."label2":
+          move_from: labels."label1"
         severity:
           static_value: WARNING
         jsonPayload.field2:
@@ -665,13 +667,53 @@ func TestModifyFields(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value", "default_present":"original"}` + "\n"
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestResourceNameLabel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
 			t.Error(err)
 		}
 	})

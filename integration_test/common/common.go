@@ -19,7 +19,6 @@ package common
 import (
 	"fmt"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 )
 
@@ -39,28 +38,28 @@ type ExpectedMetric struct {
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels" validate:"required"`
 	// If Optional is true, the test for this metric will be skipped.
-	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
+	Optional bool `yaml:"optional" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional"`
+	Representative bool `yaml:"representative" validate:"excluded_with=Optional"`
 }
 
 type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
-	ValueRegex  string `yaml:"value_regex,omitempty"`
+	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"required"`
 }
 
 type ExpectedLog struct {
-	LogName string      `yaml:"log_name" validate:"required"`
-	Fields  []LogFields `yaml:"fields" validate:"required"`
+	LogName string       `yaml:"log_name" validate:"required"`
+	Fields  []*LogFields `yaml:"fields" validate:"required"`
 }
 
 type MinimumSupportedAgentVersion struct {
-	Logging string `yaml:"logging,omitempty"`
-	Metrics string `yaml:"metrics,omitempty"`
+	Logging string `yaml:"logging"`
+	Metrics string `yaml:"metrics"`
 }
 
 type ConfigurationFields struct {
@@ -70,42 +69,33 @@ type ConfigurationFields struct {
 }
 
 type InputConfiguration struct {
-	Type   string                `yaml:"type" validate:"required"`
-	Fields []ConfigurationFields `yaml:"fields" validate:"required"`
+	Type   string                 `yaml:"type" validate:"required"`
+	Fields []*ConfigurationFields `yaml:"fields" validate:"required"`
 }
 
 type ConfigurationOptions struct {
-	LogsConfiguration    []InputConfiguration `yaml:"logs"`
-	MetricsConfiguration []InputConfiguration `yaml:"metrics"`
+	LogsConfiguration    []*InputConfiguration `yaml:"logs" validate:"required_without=MetricsConfiguration"`
+	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration"`
 }
 
 type IntegrationMetadata struct {
-	PublicUrl                    string                       `yaml:"public_url,omitempty"`
+	PublicUrl                    string                       `yaml:"public_url"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
 	Description                  string                       `yaml:"description" validate:"required"`
-	ConfigureIntegration         string                       `yaml:"configure_integration,omitempty"`
-	ExpectedLogs                 []ExpectedLog                `yaml:"expected_logs,omitempty"`
-	ExpectedMetrics              []ExpectedMetric             `yaml:"expected_metrics,omitempty"`
-	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version,omitempty"`
-	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required"`
-	ConfigurationOptions         ConfigurationOptions         `yaml:"configuration_options" validate:"required"`
+	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
+	ConfigureIntegration         string                       `yaml:"configure_integration"`
+	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics"`
+	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
+	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 }
-
-var validate *validator.Validate
 
 // ValidateMetrics checks that all enum fields have valid values and that
 // there is exactly one representative metric in the slice.
-func ValidateMetrics(metrics []ExpectedMetric) error {
+func ValidateMetrics(metrics []*ExpectedMetric) error {
 	var err error
-
-	// Field validation, one-by-one for better error messages
-	for _, m := range metrics {
-		vErr := validate.Struct(m)
-		if vErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %v", m.Type, vErr))
-		}
-	}
 
 	// Representative validation
 	representativeCount := 0
@@ -127,8 +117,4 @@ func SliceContains(slice []string, toFind string) bool {
 		}
 	}
 	return false
-}
-
-func init() {
-	validate = validator.New()
 }

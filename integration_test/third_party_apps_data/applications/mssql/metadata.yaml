@@ -12,6 +12,7 @@ description: |-
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0
+supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x"]
 expected_metrics:
 - type: agent.googleapis.com/mssql/connections/user
   value_type: DOUBLE
