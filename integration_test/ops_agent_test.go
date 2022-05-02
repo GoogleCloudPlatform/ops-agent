@@ -695,15 +695,11 @@ func TestResourceNameLabel(t *testing.T) {
   processors:
     json:
       type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       p1:
         receivers: [f1]
         processors: [json]
-        exporters: [google]
 `, file1)
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
