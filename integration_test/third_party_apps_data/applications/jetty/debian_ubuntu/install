@@ -16,7 +16,8 @@ fi
 sudo apt-get update
 sudo apt-get install -y wget default-jre
 sudo wget -O jetty.tar.gz $jetty_download_url
-sudo mkdir -p /opt/jetty
+sudo mkdir -p /opt/jetty/webapps/ROOT
+sudo touch /opt/jetty/webapps/ROOT/index.html
 sudo tar -xvf jetty.tar.gz -C /opt/jetty --strip 1
 
 # to create the remote jmx configuration file
