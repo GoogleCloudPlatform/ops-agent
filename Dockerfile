@@ -77,8 +77,8 @@ RUN ./pkg/deb/build.sh
 
 FROM ubuntu:jammy AS jammy-build
 
-RUN set -x; sudo apt-get update && \
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y install git systemd \
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk
