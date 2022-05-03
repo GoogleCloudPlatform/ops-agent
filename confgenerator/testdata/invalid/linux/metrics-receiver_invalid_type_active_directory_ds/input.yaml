@@ -1,0 +1,9 @@
+metrics:
+  receivers:
+    active_directory_ds:
+      type: active_directory_ds
+  service:
+    pipelines:
+      active_directory_ds:
+        receivers:
+        - active_directory_ds

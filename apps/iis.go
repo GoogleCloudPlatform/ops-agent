@@ -26,6 +26,7 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	ReceiverVersion                     string `yaml:"receiver_version,omitempty"`
 }
 
 func (r MetricsReceiverIis) Type() string {
@@ -33,6 +34,24 @@ func (r MetricsReceiverIis) Type() string {
 }
 
 func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+	if r.ReceiverVersion == "2" {
+		return []otel.Pipeline{{
+			Receiver: otel.Component{
+				Type: "iis",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+				},
+			},
+			Processors: []otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		}}
+	}
+
+	// Return version 1 if version is anything other than 2
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
