@@ -7,7 +7,7 @@ sudo mkdir -p \
     /opt/volume/datanode \
     /opt/volume/namenode
 
-wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
+wget --no-verbose https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
 sudo tar -xf hadoop-3.3.1.tar.gz -C /opt/hadoop --strip 1
 
 JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
