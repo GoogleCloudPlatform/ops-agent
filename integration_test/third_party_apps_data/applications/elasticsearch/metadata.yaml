@@ -1,6 +1,7 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch"
 short_name: Elasticsearch
 long_name: Elasticsearch
+logo_path: /stackdriver/images/elasticsearch.png
 description: |-
   Elasticsearch is an open-source search server, based on the
   [Lucene](https://lucene.apache.org/) search library. It runs in a Java virtual
