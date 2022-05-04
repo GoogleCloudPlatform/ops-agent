@@ -116,6 +116,7 @@ expected_logs:
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestMethod
+    value_regex: GET
     type: string
     description: HTTP method
   - name: jsonPayload.host
@@ -125,7 +126,7 @@ expected_logs:
     type: string
     description: Authenticated username for the request
   - name: httpRequest.requestUrl
-    value_regex: http://localhost:6081/forbidden.html
+    value_regex: /forbidden.html
     type: string
     description: Request URL (typically just the path part of the URL
   - name: httpRequest.protocol

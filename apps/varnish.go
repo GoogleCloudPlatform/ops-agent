@@ -73,10 +73,7 @@ type LoggingReceiverVarnishAccess struct {
 
 func (r LoggingReceiverVarnishAccess) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
-			// Default varnishncsa log file
-			"/var/log/varnish/varnishncsa.log",
-		}
+		r.IncludePaths = []string{"/var/log/varnish/varnishncsa.log"}
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
