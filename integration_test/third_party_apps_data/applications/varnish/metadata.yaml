@@ -112,11 +112,9 @@ expected_logs:
 - log_name: varnishncsa_file
   fields:
   - name: httpRequest.serverIp
-    value_regex: -
     type: string
     description: The IP address of the origin server that the request was sent to
   - name: httpRequest.remoteIp
-    value_regex: -
     type: string
     description: The IP address of the client that issued the HTTP request
   - name: httpRequest.requestMethod
@@ -138,7 +136,6 @@ expected_logs:
     type: string
     description: Response size
   - name: httpRequest.referer
-    value_regex: -
     type: string
     description: Contents of the `Referer` header
   - name: httpRequest.userAgent
