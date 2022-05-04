@@ -12,7 +12,7 @@ logging:
       type: parse_multiline
       match_any:
       - type: language_exceptions
-        languages: [japa]
+        language: japa
   service:
     pipelines:
       p1:

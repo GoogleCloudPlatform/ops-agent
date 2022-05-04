@@ -4,6 +4,7 @@
   12 |       match_any:
 > 13 |       - type: language_exceptions
              ^
-  14 |         languages: [java]
+  14 |         language: java
   15 |       - type: language_exceptions
-  16 |         languages: [java]
+  16 |         language: java
+  17 |   

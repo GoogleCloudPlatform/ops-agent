@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
@@ -25,9 +24,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 )
 
+// TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
 type ParseMultilineGroup struct {
-	Type      string   `yaml:"type" validate:"required,oneof=language_exceptions"`
-	Languages []string `yaml:"languages" validate:"required,unique,min=1,dive,oneof=java"`
+	Type     string `yaml:"type" validate:"required,oneof=language_exceptions"`
+	Language string `yaml:"language" validate:"required,oneof=java"`
 }
 
 type ParseMultiline struct {
@@ -59,13 +59,11 @@ func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
 	var components []fluentbit.Component
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
-			for i, l := range g.Languages {
-				component := fluentbit.ParseMultilineComponent(tag, fmt.Sprintf("%s_%s", uid, strconv.Itoa(i)), multilineRulesLanguageMap[l])
-				// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-				renameLogToMessage := modify.NewRenameOptions("log", "message")
-				components = append(components, renameLogToMessage.Component(tag))
-				components = append(components, component...)
-			}
+			component := fluentbit.ParseMultilineComponent(tag, uid, multilineRulesLanguageMap[g.Language])
+			// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+			renameLogToMessage := modify.NewRenameOptions("log", "message")
+			components = append(components, renameLogToMessage.Component(tag))
+			components = append(components, component...)
 		}
 	}
 
