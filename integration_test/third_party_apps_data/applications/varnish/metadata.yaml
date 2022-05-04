@@ -11,7 +11,7 @@ description: |-
   [Varnish HTTP Cache](https://varnish-cache.org/).
 supported_app_version: ["6.x", "7.0.x"]
 configure_integration: |-
-  The Varnish logging processor processes access logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging and add log queries to customize logs received by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os.
+  The Varnish logging processor processes access logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os. Logs are expected to be in the default format and a logrotation should be setup.
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64
@@ -76,6 +76,21 @@ expected_metrics:
   labels:
     operation: .*
 configuration_options:
+  logs:
+  - type: varnish
+    fields:
+    - name: type
+      default: null
+      description: This value must be varnish.
+    - name: include_paths
+      default: '[/var/log/varnish/varnishncsa.log]'
+      description: A varnishncsa default log path to read by tailing each file. 
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - type: varnish
     fields:
