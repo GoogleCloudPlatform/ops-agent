@@ -14,13 +14,14 @@ metrics:
           - varnish
 logging:
   receivers:
-    varnish:
-      type: varnish
+    varnish_access:
+      type: varnish_access
   service:
     pipelines:
       varnish:
         receivers:
-          - varnish
+          - varnish_access
+
 EOF
 
 sudo service google-cloud-ops-agent restart

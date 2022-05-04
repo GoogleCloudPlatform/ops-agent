@@ -77,11 +77,11 @@ expected_metrics:
     operation: .*
 configuration_options:
   logs:
-  - type: varnish
+  - type: varnish_access
     fields:
     - name: type
       default: null
-      description: This value must be varnish.
+      description: This value must be varnish_access.
     - name: include_paths
       default: '[/var/log/varnish/varnishncsa.log]'
       description: A varnishncsa default log path to read by tailing each file. 
@@ -109,19 +109,23 @@ configuration_options:
 minimum_supported_agent_version:
   metrics: 2.15.0
 expected_logs:
-- log_name: varnishncsa_file
+- log_name: varnish_access
   fields:
-  - name: httpRequest.serverIp
-    type: string
-    description: The IP address of the origin server that the request was sent to
   - name: httpRequest.remoteIp
+    value_regex: 127.0.0.1
     type: string
-    description: The IP address of the client that issued the HTTP request
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestMethod
     type: string
     description: HTTP method
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated username for the request
   - name: httpRequest.requestUrl
-    value_regex: http://localhost:6081/
+    value_regex: http://localhost:6081/forbidden.html
     type: string
     description: Request URL (typically just the path part of the URL
   - name: httpRequest.protocol
@@ -129,7 +133,6 @@ expected_logs:
     type: string
     description: Protocol used for the request
   - name: httpRequest.status
-    value_regex: 200
     type: string
     description: HTTP status code
   - name: httpRequest.responseSize

@@ -54,34 +54,24 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverVarnish{} })
 }
 
-type LoggingProcessorVarnish struct {
+type LoggingProcessorVarnishAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (LoggingProcessorVarnish) Type() string {
-	return "varnish"
+func (LoggingProcessorVarnishAccess) Type() string {
+	return "varnish_access"
 }
 
-func (p LoggingProcessorVarnish) Components(tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Logging documentation: https://github.com/varnishcache/varnish-cache/blob/04455d6c3d8b2d810007239cb1cb2b740d7ec8ab/doc/sphinx/reference/varnishncsa.rst#format
-		// Sample line: 127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
-		Regex: `^(?<http_request_serverIp>[^ ]*) ([^ ]*) (?<http_request_remoteIp>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
-		},
-	}.Components(tag, uid)
-
-	return c
+func (p LoggingProcessorVarnishAccess) Components(tag string, uid string) []fluentbit.Component {
+	return genericAccessLogParser(tag, uid)
 }
 
-type LoggingReceivervarnish struct {
-	LoggingProcessorVarnish                 `yaml:",inline"`
+type LoggingReceiverVarnishAccess struct {
+	LoggingProcessorVarnishAccess           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceivervarnish) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverVarnishAccess) Components(tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default varnishncsa log file
@@ -90,11 +80,11 @@ func (r LoggingReceivervarnish) Components(tag string) []fluentbit.Component {
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorVarnish.Components(tag, "varnish")...)
+	c = append(c, r.LoggingProcessorVarnishAccess.Components(tag, "varnish_access")...)
 	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorVarnish{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceivervarnish{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorVarnishAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVarnishAccess{} })
 }
