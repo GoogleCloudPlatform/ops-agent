@@ -58,7 +58,7 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 # Install OpenSSL
 # This must be done after installing Visual Studio
-ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1n.msi
+ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1o.msi
 # SHA256 hash from win32_openssl_hashes.json in https://github.com/slproweb/opensslhashes.
 # DO NOT FORGET to change this hash when changing the MSI.
 ARG OPENSSL_SHA256=66dc0e2536d688255247d90644acb8cf3d55c80b8a9d393aa5f03229e891949b
