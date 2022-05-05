@@ -82,6 +82,7 @@ type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
+	LogoPath                     string                       `yaml:"logo_path"`
 	Description                  string                       `yaml:"description" validate:"required"`
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
