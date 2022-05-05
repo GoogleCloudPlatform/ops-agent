@@ -6,81 +6,24 @@ builds are split up by distro.
 
 ## Setup
 
-You will need a GCP project to run VMs in and a GCS bucket that is used to
-transfer files onto the testing VMs. These are referred to as `${PROJECT}`
-and `${TRANSFERS_BUCKET}` in the following instructions.
+You will need:
 
-You will need gcloud installed. Run `gcloud auth login` if you haven't
-done so already.
+1.  A GCP project to run VMs in. This is referred to as `${PROJECT}` in the
+    following instructions.
+2.  A GCS bucket that is used to transfer files onto the testing VMs. This is
+    referred to as `${TRANSFERS_BUCKET}`.
+3.  `gcloud` to be installed. Run `gcloud auth login` to set up `gcloud`
+    authentication (if you haven't done that already).
+4.  To give the tests credentials to be able to access Google APIs as you,
+    run the following command and do what it says (it may ask you to run
+    a command on a separate machine if your main machine doesn't have the
+    ability to open a browser window):
 
-Next, follow the setup instructions for either User Credentials or
-Service Account Credentials.
+    ```
+    gcloud --billing-project="${PROJECT}" auth application-default login
+    ```
 
-### Setup (User Credentials)
-
-To give the tests credentials to be able to access Google APIs as you,
-run the following command and do what it says (it may ask you to run
-a command on a separate machine if your main machine doesn't have the
-ability to open a browser window):
-
-```
-gcloud --billing-project="${PROJECT}" auth application-default login
-```
-
-That's it! Now the test commands should be able to authenticate as you.
-
-NOTE: this way of using user credentials is new and may have unforeseen
-problems.
-
-### Setup (Service Account Credentials)
-
-You will need a service account with permissions to run various
-operations in the project. You can set up such a service account with
-a few commands:
-
-```
-gcloud iam service-accounts create "service-account-$(whoami)" \
-  --project "${PROJECT}" \
-  --display-name "service-account-$(whoami)"  
-```
-
-```
-for ROLE in \
-    logging.logWriter \
-    monitoring.metricWriter \
-    stackdriver.resourceMetadata.writer \
-    logging.viewer \
-    monitoring.viewer \
-    stackdriver.resourceMetadata.viewer \
-  ; do
-      gcloud projects add-iam-policy-binding "${PROJECT}" \
-          --member "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com" \
-          --role "roles/${ROLE}" > /dev/null
-  done
-```
-
-You will also need to give your service account read/write permissions on
-`${TRANSFERS_BUCKET}`. To do this, register your service account as principal
-with role "Storage Admin" to the bucket:
-
-```
-gsutil iam ch \
-  "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com:roles/storage.admin" \
-  "gs://${TRANSFERS_BUCKET}"
-```
-
-Finally, download your credentials as a JSON file:
-
-```
-gcloud iam service-accounts keys create $HOME/credentials.json \
-  --project "${PROJECT}" \
-  --iam-account "service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com"
-```
-
-When runninng the test commands below, you must also pass the
-environment variable
-`GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json"` to the
-test command.
+Once these steps are complete, you should be able to run the below commands.
 
 ## Ops Agent Test
 
@@ -240,7 +183,6 @@ With `optional: true`, the metric will be skipped during the test. This can be u
 
 ```
 PROJECT="${PROJECT}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 go run -tags=integration_test \
 ./cmd/generate_expected_metrics
@@ -250,7 +192,6 @@ This queries all metric descriptors under `workload.googleapis.com/`, `agent.goo
 
 ```
 PROJECT="${PROJECT}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
 go run -tags=integration_test \
