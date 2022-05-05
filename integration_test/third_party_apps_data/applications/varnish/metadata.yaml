@@ -1,5 +1,6 @@
 short_name: varnish
 long_name: Varnish HTTP Cache
+logo_path: /images/partners/varnish-logo.png # supplied by google technical writer
 description: |-
   The Varnish integration collects cache and session metrics.
   It monitors the number of objects entering and exiting the cache,
