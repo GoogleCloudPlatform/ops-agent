@@ -13,7 +13,7 @@ The project needs sufficient quota to run many tests in parallel. It also needs
 (when testing Windows) a firewall that allows connections over port 5986. In the
 case of Google-owned projects, such a firewall is difficult to obtain, so for this
 reason and quota reasons it is recommended for Googlers to use our prebuilt testing
-project. Ask a teammate for the project ID.
+project. Ask a teammate (e.g. martijnvs@) for the project ID.
 
 You will also need a GCS bucket that is used to transfer files onto the 
 testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
