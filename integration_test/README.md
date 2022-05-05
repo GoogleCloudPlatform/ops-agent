@@ -6,22 +6,30 @@ builds are split up by distro.
 
 ## Setup
 
-You will need:
+You will need a GCP project to run VMs in. This is referred to as `${PROJECT}` in
+the following instructions.
 
-1.  A GCP project to run VMs in. This is referred to as `${PROJECT}` in the
-    following instructions.
-2.  A GCS bucket that is used to transfer files onto the testing VMs. This is
-    referred to as `${TRANSFERS_BUCKET}`.
-3.  `gcloud` to be installed. Run `gcloud auth login` to set up `gcloud`
+The project needs sufficient quota to run many tests in parallel. It also needs
+(when testing Windows) a firewall that allows connections over port 5986. In the
+case of Google-owned projects, such a firewall is difficult to obtain, so for this
+reason and quota reasons it is recommended for Googlers to use our prebuilt testing
+project. Ask a teammate for the project ID.
+
+You will also need a GCS bucket that is used to transfer files onto the 
+testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
+`stackdriver-test-143416-untrusted-file-transfers` is recommended.
+
+You will need `gcloud` to be installed. Run `gcloud auth login` to set up `gcloud`
     authentication (if you haven't done that already).
-4.  To give the tests credentials to be able to access Google APIs as you,
-    run the following command and do what it says (it may ask you to run
-    a command on a separate machine if your main machine doesn't have the
-    ability to open a browser window):
 
-    ```
-    gcloud --billing-project="${PROJECT}" auth application-default login
-    ```
+To give the tests credentials to be able to access Google APIs as you,
+run the following command and do what it says (it may ask you to run
+a command on a separate machine if your main machine doesn't have the
+ability to open a browser window):
+
+```
+gcloud --billing-project="${PROJECT}" auth application-default login
+```
 
 Once these steps are complete, you should be able to run the below commands.
 
