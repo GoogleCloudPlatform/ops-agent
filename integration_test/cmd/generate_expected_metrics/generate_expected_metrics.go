@@ -208,7 +208,7 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 	metricsByType := make(expectedMetricsMap)
 	expectedMetrics := metadata.ExpectedMetrics
 	for _, m := range expectedMetrics {
-		m := m
+		m := *m
 		if _, ok := metricsByType[m.Type]; ok {
 			return nil, fmt.Errorf("duplicate expected_metrics type in %s/metadata.yaml: %s", app, m.Type)
 		}
@@ -225,9 +225,9 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 	if err != nil {
 		return err
 	}
-	expectedMetrics := make([]common.ExpectedMetric, 0)
+	expectedMetrics := make([]*common.ExpectedMetric, 0)
 	for _, m := range metrics {
-		expectedMetrics = append(expectedMetrics, m)
+		expectedMetrics = append(expectedMetrics, &m)
 	}
 	sort.Slice(expectedMetrics, func(i, j int) bool { return expectedMetrics[i].Type < expectedMetrics[j].Type })
 	metadata.ExpectedMetrics = expectedMetrics

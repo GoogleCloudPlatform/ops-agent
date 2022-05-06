@@ -1,6 +1,7 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/couchdb"
 short_name: CouchDB
 long_name: Apache CouchDB
+logo_path: /stackdriver/images/couchdb.png # supplied by google technical writer
 description: |-
   The Apache CouchDB integration collects traffic-related metrics, such as the
   number of requests to a node and responses from the node. It also collects
@@ -90,7 +91,7 @@ expected_logs:
     description: host instance name
   - name: httpRequest
     type: object
-    description: Information about the HTTP request associated with this log entry, if applicable. It's availble in access logs.
+    description: Information about the HTTP request associated with this log entry, if applicable. It's available in access logs.
 configuration_options:
   logs:
   - type: couchdb

@@ -1,0 +1,19 @@
+set -e
+
+# Centos / RHEL 7:        Varnish 4.0.5
+# Centos Stream / RHEL 8: Varnish 6.0.8
+
+sudo yum install -y varnish nginx curl
+sudo systemctl enable --now varnish
+sudo systemctl enable --now nginx
+
+# point varnish to nginx on port 80
+sudo tee /etc/varnish/default.vcl > /dev/null <<-EOF
+vcl 4.0;
+backend default {
+    .host = "127.0.0.1";
+    .port = "80";
+}
+EOF
+
+sudo systemctl restart varnish

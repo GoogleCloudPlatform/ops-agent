@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -112,15 +111,14 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 
 func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	confDebugFolder := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "conf", "debug")
-	if err := confgenerator.MergeConfFiles(s.userConf, confDebugFolder, "windows", apps.BuiltInConfStructs); err != nil {
-		return err
-	}
-	data, err := ioutil.ReadFile(filepath.Join(confDebugFolder, "merged-config.yaml"))
+	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(data, "windows")
+
+	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
+	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
 	if err != nil {
 		return err
 	}

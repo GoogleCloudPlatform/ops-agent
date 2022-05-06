@@ -1,6 +1,7 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
 short_name: IIS
 long_name: IIS
+logo_path: /stackdriver/images/iis.png # supplied by google technical writer
 description: |-
   The Internet Information Services (IIS) integration collects metrics from your
   IIS web servers. The metrics provide connection information and also data on
@@ -14,7 +15,9 @@ description: |-
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0
+supported_app_version: [ "8.5", "10.0" ]
 expected_metrics:
+# v1 metrics
 - type: agent.googleapis.com/iis/current_connections
   value_type: DOUBLE
   kind: GAUGE
@@ -38,6 +41,74 @@ expected_metrics:
   labels:
     http_method: .*
   representative: true
+
+# v2 metrics
+- type: workload.googleapis.com/iis.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    request: .*
+  # representative: true
+- type: workload.googleapis.com/iis.request.rejected
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.request.queue.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.request.queue.age.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/iis.network.file.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: 
+    direction: .*
+- type: workload.googleapis.com/iis.network.blocked
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.network.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: 
+    direction: .*
+- type: workload.googleapis.com/iis.connection.attempt.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.connection.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.connection.anonymous
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.thread.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.uptime
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+
 expected_logs:
 - log_name: iis_access
   fields:
@@ -104,3 +175,6 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
+    - name: receiver_version
+      default: null
+      description: Establishes the version of the metric collection implementation.

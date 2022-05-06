@@ -51,6 +51,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -63,6 +64,8 @@ var (
 
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
+
+var validate = validator.New()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -183,7 +186,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []common.LogFields) string {
+func constructQuery(fields []*common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
@@ -193,7 +196,7 @@ func constructQuery(fields []common.LogFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []common.ExpectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*common.ExpectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -212,7 +215,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []common.ExpectedMetric) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
 	if err = common.ValidateMetrics(metrics); err != nil {
 		return fmt.Errorf("expected_metrics failed validation: %v", err)
@@ -242,7 +245,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
 	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
-	var requiredMetrics []common.ExpectedMetric
+	var requiredMetrics []*common.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
@@ -263,7 +266,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric common.ExpectedMetric) error {
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *common.ExpectedMetric) error {
 	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err != nil {
 		// Optional metrics can be missing
@@ -288,7 +291,7 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nil
 }
 
-func assertMetricLabels(metric common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
+func assertMetricLabels(metric *common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	// All present labels must be expected
 	var err error
 	for actualLabel := range series.Metric.Labels {
@@ -362,9 +365,34 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if err != nil {
 		return nonRetryable, err
 	}
+
+	var metadata common.IntegrationMetadata
+	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
+		logger.ToMainLog().Println("found metadata.yaml, parsing...")
+
+		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+		}
+		if err = validate.Struct(&metadata); err != nil {
+			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
+		}
+		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
+	}
+
 	if _, err = runScriptFromScriptsDir(
 		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
+	}
+
+	if metadata.RestartAfterInstall {
+		logger.ToMainLog().Printf("Restarting vm instance...")
+		err := gce.RestartInstance(ctx, logger, vm)
+		if err != nil {
+			return nonRetryable, err
+		}
+		logger.ToMainLog().Printf("vm instance restarted")
 	}
 
 	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
@@ -384,26 +412,17 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	// Check if metadata.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
-		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-		var metadata common.IntegrationMetadata
-		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+	if metadata.ExpectedLogs != nil {
+		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
+		if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
+			return nonRetryable, err
 		}
-		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
-		if metadata.ExpectedLogs != nil {
-			logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-			if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
-				return nonRetryable, err
-			}
-		}
-		if metadata.ExpectedMetrics != nil {
-			logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-			if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
-				return nonRetryable, err
-			}
+	}
+
+	if metadata.ExpectedMetrics != nil {
+		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+			return nonRetryable, err
 		}
 	}
 
@@ -570,4 +589,5 @@ func TestThirdPartyApps(t *testing.T) {
 			t.Errorf("Final attempt failed: %v", err)
 		})
 	}
+
 }
