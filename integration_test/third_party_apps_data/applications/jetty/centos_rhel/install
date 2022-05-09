@@ -6,9 +6,12 @@ set -e
 
 sudo yum install -y wget java-17-openjdk
 sudo wget -O jetty.tar.gz https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz
-sudo mkdir -p /opt/jetty/webapps/ROOT
-sudo touch /opt/jetty/webapps/ROOT/index.html
+sudo mkdir -p /opt/jetty
+
 sudo tar -xvf jetty.tar.gz -C /opt/jetty --strip 1
+
+sudo mkdir -p /opt/webapps/ROOT
+sudo touch /opt/webapps/ROOT/index.html
 
 # to create the remote jmx configuration file
 # set jetty.home and jetty.base
@@ -30,3 +33,7 @@ ExecStart=/usr/bin/java -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxr
 [Install]
 WantedBy=multi-user.target
 EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable jetty
+sudo systemctl restart jetty

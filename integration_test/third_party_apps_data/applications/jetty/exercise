@@ -1,2 +1,2 @@
-sleep 30
-curl http://localhost:8080/?something=something
+
+curl http://localhost:8080/forbidden.html?something=something

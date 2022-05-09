@@ -1,5 +1,0 @@
-set -e
-
-sudo systemctl daemon-reload
-sudo systemctl enable jetty
-sudo systemctl restart jetty
