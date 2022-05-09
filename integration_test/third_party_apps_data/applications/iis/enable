@@ -1,8 +1,4 @@
-# This config gets merged with the built-in Ops Agent config, which already
-# includes the v1 receiver in the default pipeline.
-# Because the v2 receiver here uses a unique ID, it does not overwrite
-# the default receiver and so both receivers will be active simultaneously
-# during the test.
+# Replace {$version} with '1' or '2'
 
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 metrics:
