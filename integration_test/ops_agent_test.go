@@ -248,7 +248,7 @@ func TestParseMultilineFile(t *testing.T) {
       type: parse_multiline
       match_any:
       - type: language_exceptions
-        languages: [java]
+        language: java
   service:
     pipelines:
       p1:
