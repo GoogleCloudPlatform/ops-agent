@@ -29,8 +29,8 @@ configure_integration: |-
   -Dcom.sun.management.jmxremote.port=10101
   </pre>
 minimum_supported_agent_version:
-  metrics: 2.11.0
-  logging: 2.11.0
+  metrics: 2.15.0
+  logging: 2.15.0
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:
 - type: workload.googleapis.com/hbase.master.region_server.count
