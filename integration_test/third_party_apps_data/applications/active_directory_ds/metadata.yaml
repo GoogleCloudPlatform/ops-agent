@@ -10,20 +10,20 @@ configure_integration: |-
 restart_after_install: true
 configuration_options:
   logs:
-    - type: active_directory_ds
-      fields:
-      - name: type
-        default: null
-        description: The value must be active_directory_ds.
+  - type: active_directory_ds
+    fields:
+    - name: type
+      default: null
+      description: The value must be active_directory_ds.
   metrics:
-    - type: active_directory_ds
-      fields:
-      - name: type
-        default: null
-        description: The value must be active_directory_ds.
-      - name: collection_interval
-        default: 60s
-        description: A time.Duration value, such as 30s or 5m.
+  - type: active_directory_ds
+    fields:
+    - name: type
+      default: null
+      description: The value must be active_directory_ds.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
 expected_logs:
 - log_name: active_directory_ds
   fields:
@@ -227,3 +227,6 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+minimum_supported_agent_version: !!omap
+- metrics: 2.15.0
+- logging: 2.15.0
