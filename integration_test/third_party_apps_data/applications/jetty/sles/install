@@ -1,0 +1,39 @@
+set -e
+
+# the other available stable versions of jetty
+# wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
+# wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/10.0.9/jetty-home-10.0.9.tar.gz
+
+sudo zypper install -y wget java
+sudo wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz
+sudo mkdir -p /opt/jetty
+
+sudo tar -xvf jetty-home-11.0.9.tar.gz -C /opt/jetty --strip 1
+
+sudo mkdir -p /opt/webapps/ROOT
+sudo touch /opt/webapps/ROOT/index.html
+
+# to create the remote jmx configuration file
+# set jetty.home and jetty.base
+# add http module
+sudo /usr/bin/java -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1099 -jar /opt/jetty/start.jar jetty.home=/opt/jetty jetty.base=/opt --add-module=http,requestlog,console-capture
+
+cat << EOF | sudo tee /etc/systemd/system/jetty.service
+[Unit]
+Description=Jetty Server
+After=syslog.target network.target
+
+[Service]
+WorkingDirectory=/opt
+User=root
+Group=root
+
+ExecStart=/usr/bin/java -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1099 -jar /opt/jetty/start.jar
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable jetty
+sudo systemctl restart jetty
