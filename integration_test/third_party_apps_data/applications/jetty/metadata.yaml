@@ -16,7 +16,6 @@ expected_logs:
 - log_name: jetty_access
   fields:
   - name: httpRequest.remoteIp
-    value_regex: 127.0.0.1
     type: string
     description: ''
   - name: httpRequest.requestUrl
@@ -32,13 +31,22 @@ expected_logs:
     type: string
     description: ''
   - name: httpRequest.userAgent
-    value_regex: curl\/*
+    value_regex: curl\/.*
+    type: string
+    description: ''
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+  - name: httpRequest.status
     type: string
     description: ''
 - log_name: jetty_system
   fields:
   - name: jsonPayload.message
-    value_regex: 'Started Server\@.*'
+    value_regex: Started Server\@.*
     type: string
     description: 'Log message, including detailed stacktrace where provided'
   - name: jsonPayload.module
@@ -46,7 +54,7 @@ expected_logs:
     type: string
     description: 'Module of jetty where the log originated'
   - name: jsonPayload.source
-    value_regex: oejs.Server
+    value_regex: oejs\.Server
     type: string
     description: 'source of where the log originated'
 configuration_options:
