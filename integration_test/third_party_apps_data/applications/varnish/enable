@@ -14,13 +14,13 @@ metrics:
           - varnish
 logging:
   receivers:
-    varnish_access:
-      type: varnish_access
+    varnish:
+      type: varnish
   service:
     pipelines:
       varnish:
         receivers:
-          - varnish_access
+          - varnish
 
 EOF
 
