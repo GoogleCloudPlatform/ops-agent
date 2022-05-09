@@ -7,14 +7,14 @@
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 metrics:
   receivers:
-    iis_v2:
+    iis_v{$version}:
       type: iis
-      receiver_version: 2
+      receiver_version: ($version}
   service:
     pipelines:
       iispipeline:
         receivers:
-          - iis_v2
+          - iis_v{$version}
 logging:
   receivers:
     iis_access:
