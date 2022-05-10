@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"crypto/sha256"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/ast"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
