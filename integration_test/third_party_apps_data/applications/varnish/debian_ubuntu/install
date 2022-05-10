@@ -1,0 +1,22 @@
+set -e
+
+# Debian 9:  5.0.0
+# Debian 11: 6.5.1
+# Ubuntu 18: 5.2.1
+# Ubuntu 20: 6.2.1
+
+sudo apt-get update
+sudo apt-get install -y varnish nginx curl
+sudo systemctl enable --now varnish
+sudo systemctl enable --now nginx
+
+# point varnish to nginx on port 80
+sudo tee /etc/varnish/default.vcl > /dev/null <<-EOF
+vcl 4.0;
+backend default {
+    .host = "127.0.0.1";
+    .port = "80";
+}
+EOF
+
+sudo systemctl restart varnish

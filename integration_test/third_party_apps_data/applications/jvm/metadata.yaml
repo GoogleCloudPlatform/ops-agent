@@ -1,6 +1,13 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/jvm"
-short_name: jvm
+short_name: JVM
 long_name: JVM
+logo_path: /stackdriver/images/java.png # supplied by google technical writer
+description: |-
+  The JVM integration collects JVM metrics exposed through [Java Management
+  Extensions (JMX)](https://www.oracle.com/java/technologies/javase/javamanagement.html).
+  The integration primarily collects metrics on memory and garbage collection.
+  Additional runtime metrics, such as thread count and classes loaded, are also
+  available.
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the
@@ -109,3 +116,23 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
+configuration_options:
+  metrics:
+  - type: jvm
+    fields:
+    - name: type
+      default: null
+      description: This value must be jvm.
+    - name: endpoint
+      default: localhost:9999
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+

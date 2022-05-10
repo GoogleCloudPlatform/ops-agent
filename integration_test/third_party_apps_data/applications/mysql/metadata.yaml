@@ -1,6 +1,21 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql"
-short_name: mysql
+short_name: MySQL
 long_name: MySQL
+logo_path: /images/launcher/logos/mysql.png # supplied by google technical writer
+description: |-
+  The {{ plugin_name }} integration collects performance metrics related to
+  InnoDB, the buffer pool, and various other operations. It also collects general,
+  error, and slow-query logs and parses them into a JSON payload. Error logs are
+  parsed for their error code and subsystem. Slow-query logs are parsed into
+  key-value pairs that describe the performance of a query, including query time
+  and rows examined.
+
+  For more information about {{ plugin_name }}, see
+  {% if plugin_name =="MySQL" %}
+  [mysql.com](http://www.mysql.com/)
+  {% else %}
+  [mariadb.org](https://mariadb.org/)
+  {% endif %}.
 configure_integration: |-
   {% if plugin_name =="MariaDB" %}
 
@@ -245,3 +260,65 @@ expected_logs:
   - name: jsonPayload.endTime
     type: string
     description: 'The statement execution end time'
+configuration_options:
+  logs:
+  - type: mysql_error
+    fields:
+    - name: type
+      default: null
+      description: This value must be mysql_error.
+    - name: include_paths
+      default: '[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mysql/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  - type: mysql_general
+    fields:
+    - name: type
+      default: null
+      description: This value must be mysql_general.
+    - name: include_paths
+      default: '[/var/lib/mysql/${HOSTNAME}.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  - type: mysql_slow
+    fields:
+    - name: type
+      default: null
+      description: This value must be mysql_slow.
+    - name: include_paths
+      default: '[/var/lib/mysql/${HOSTNAME}-slow.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: mysql
+    fields:
+    - name: type
+      default: null
+      description: This value must be mysql.
+    - name: stub_status_url
+      default: localhost:3306
+      description: The url exposed by MySQL.
+    - name: username
+      default: null
+      description: The username used to connect to the server.
+    - name: password
+      default: null
+      description: The password used to connect to the server.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.

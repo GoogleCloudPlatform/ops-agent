@@ -1,0 +1,7 @@
+set -e
+
+# initial curl request
+curl localhost:6081
+
+# curl the varnish process every minute
+(crontab -l 2>/dev/null; echo "* * * * * curl localhost:6081") | crontab -

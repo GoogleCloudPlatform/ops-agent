@@ -1,6 +1,16 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/solr"
-short_name: solr
+short_name: Solr
 long_name: Apache Solr
+logo_path: /stackdriver/images/solr.png # supplied by google technical writer
+description: |-
+  The Apache Solr integration collects core and cache metrics. Core metrics focus
+  on requests, document count, and index size. Cache metrics focus on cache
+  utilization. The integration also collects Solr logs and parses them into a
+  JSON payload. The result includes fields for shard, replica, core,
+  level, and message.
+
+  For more information about Solr, see
+  [solr.apache.org/](https://solr.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the
@@ -108,7 +118,7 @@ expected_logs:
 - log_name: solr_system
   fields:
   - name: jsonPayload.message
-    value_regex: " ___      _       Welcome to Apache Solr\u2122 version 8.11.1"
+    value_regex: " ___      _       Welcome to Apache Solr™ version 8.11.1"
     type: string
     description: Log message
   - name: jsonPayload.thread
@@ -134,3 +144,37 @@ expected_logs:
   - name: jsonPayload.exception
     type: string
     description: Exception related to the log, including detailed stacktrace where provided
+configuration_options:
+  logs:
+  - type: solr_system
+    fields:
+    - name: type
+      default: null
+      description: The value must be solr_system.
+    - name: include_paths
+      default: '[/var/solr/logs/solr.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: solr
+    fields:
+    - name: type
+      default: null
+      description: This value must be solr.
+    - name: endpoint
+      default: localhost:18983
+      description: The JMX Service URL or host and port used to construct the Service URL. Must be in the form of host:port. Values in host:port form will be used to create a Service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication..
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
