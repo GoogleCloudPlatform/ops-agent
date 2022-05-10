@@ -1425,6 +1425,10 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		// a default value of "", which means stable.
 		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
 		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
+			// Installation from stable may fail before the first release.
+			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+				return
+			}
 			t.Fatal(err)
 		}
 
