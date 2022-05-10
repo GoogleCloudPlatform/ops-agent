@@ -75,6 +75,22 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
+FROM ubuntu:jammy AS jammy-build
+
+RUN set -x; apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+    autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+    build-essential cmake bison flex file libsystemd-dev \
+    devscripts cdbs pkg-config openjdk-11-jdk
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/deb/build.sh
+
 FROM ubuntu:impish AS impish-build
 
 RUN set -x; apt-get update && \
@@ -224,6 +240,10 @@ COPY --from=buster-build /google-cloud-ops-agent*.deb /
 FROM scratch AS stretch
 COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
 COPY --from=stretch-build /google-cloud-ops-agent*.deb /
+
+FROM scratch AS jammy
+COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
+COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 
 FROM scratch AS impish
 COPY --from=impish-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-impish.tgz
