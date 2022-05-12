@@ -6,7 +6,7 @@ description: |-
   access logs. Access logs are parsed into a JSON payload
   focused on request details. 
 
-  For more information about Apache Jetty, see
+  For more information about Jetty, see
   [The Jetty Docs](https://www.eclipse.org/jetty/documentation/jetty-11/operations-guide/index.html).
 minimum_supported_agent_version:
   metrics: 2.9.0
@@ -43,20 +43,6 @@ expected_logs:
   - name: httpRequest.status
     type: string
     description: ''
-- log_name: jetty_system
-  fields:
-  - name: jsonPayload.message
-    value_regex: Started Server\@.*
-    type: string
-    description: 'Log message, including detailed stacktrace where provided'
-  - name: jsonPayload.module
-    value_regex: main
-    type: string
-    description: 'Module of jetty where the log originated'
-  - name: jsonPayload.source
-    value_regex: oejs\.Server
-    type: string
-    description: 'source of where the log originated'
 configuration_options:
   logs:
   - type: jetty_access

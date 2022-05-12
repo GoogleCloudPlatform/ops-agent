@@ -52,46 +52,6 @@ Any fields that are blank or missing will not be present in the log entry.
 | `jsonPayload.user` | string | Authenticated username for the request |
 | `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received |
 
-# `jetty_system` Logging Receiver
-
-## Prerequisites
-System logs are logged to Stdout and is picked up by the journald receiver by default. However, system logs can be configured to log to file. See [documentation](https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging)
-
-
 ### System Logs
 
-System Logs are logged to Stdout by default but can be [configured](https://www.eclipse.org/jetty/documentation/jetty-11/operations-guide/index.html#og-logging-server) to log to a file. 
-
-There is no default path for logs, So there is no Jetty system logging receiver. However, there is a Jetty system log processor to parse the logs.
-
-Example configuration:
-```yaml
-logging:
-  receivers:
-    jetty_system:
-      type: files
-      include_paths:
-      - /path/to/log/1/*.jetty.log
-  proessors:
-    jetty_system:
-      type: jetty_system
-  service:
-    pipelines:
-      jetty_system:
-        receivers: [jetty_system]
-        processors: [jetty_system]
-```
-
-## Logs
-
-System logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):
-
-| Field | Type | Description |
-| ---   | ---- | ----------- |
-| `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received |
-| `jsonPayload.logger_name` | string | Module of hbase where the log originated |
-| `jsonPayload.source` | string | source of where the log originated |
-| `jsonPayload.message` | string | Log message, including detailed stacktrace where provided |
-| `severity` | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)) | Log entry level (translated) |
-
-Any fields that are blank or missing will not be present in the log entry.
+System logs are collected by default in the syslog receiver.

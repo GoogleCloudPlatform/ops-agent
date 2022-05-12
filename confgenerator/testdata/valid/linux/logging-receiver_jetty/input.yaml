@@ -16,17 +16,8 @@ logging:
   receivers:
     jetty_access:
       type: jetty_access
-    jetty_system:
-      type: files
-      include_paths:
-      - /opt/logs/*.jetty.log
-  processors:
-    jetty_system:
-      type: jetty_system
   service:
     pipelines:
       jetty:
         receivers:
           - jetty_access
-          - jetty_system
-        processors: [jetty_system]
