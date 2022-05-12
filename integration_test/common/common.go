@@ -80,6 +80,7 @@ type ConfigurationOptions struct {
 
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
+	AppUrl                       string                       `yaml:"app_url" validate:"required"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
 	LogoPath                     string                       `yaml:"logo_path"`
