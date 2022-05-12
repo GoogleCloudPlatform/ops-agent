@@ -1,6 +1,5 @@
 set -e
 
-# Centos / RHEL 7:        Varnish 4.0.5
 # Centos Stream / RHEL 8: Varnish 6.0.8
 
 sudo yum install -y varnish nginx curl
@@ -17,3 +16,7 @@ backend default {
 EOF
 
 sudo systemctl restart varnish
+
+# enable varnishncsa for logging
+sudo systemctl enable varnishncsa
+sudo systemctl start varnishncsa
