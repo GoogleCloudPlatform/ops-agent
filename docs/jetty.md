@@ -3,7 +3,7 @@
 The `jetty` metric receiver can fetch stats from a Jetty server's Java Virtual Machine (JVM) via [JMX](https://www.oracle.com/java/technologies/javase/javamanagement.html).
 ## Prerequisites
 
-In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. You should set these properties when running the `start.jar` file when starting the server.
+In order to expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port` system property. It is recommended to also set the `com.sun.management.jmxremote.rmi.port` system property to the same port. To expose a JMX endpoint remotely, you must also set the `java.rmi.server.hostname` system property. You should set these properties when running the `start.jar` file when starting the server. Also, the `jmx` module needs to be enabled on the jetty server.
 
 ## Configuration
 
