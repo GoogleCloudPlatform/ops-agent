@@ -4,7 +4,7 @@ sudo zypper install -y curl java-11-openjdk
 
 sudo mkdir -p /opt/zookeeper/stage
 sudo curl \
-    "https://dlcdn.apache.org/zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0-bin.tar.gz" \
+    "https://dlcdn.apache.org/zookeeper/zookeeper-3.7.1/apache-zookeeper-3.7.1-bin.tar.gz" \
     -o /opt/zookeeper/stage/zk.tgz
 sudo tar -xvzf /opt/zookeeper/stage/zk.tgz -C /opt/zookeeper --strip 1
 
