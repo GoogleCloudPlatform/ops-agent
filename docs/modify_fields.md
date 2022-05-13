@@ -32,12 +32,12 @@ from the Cloud Logging query language. Filters use the Cloud Logging query
 language.
 
 All transformations are applied in parallel, which means that sources and
-filters operate on the original input log entry and may not reference the new
-value of any other fields being modified by the same processor.
+filters operate on the original input log entry and therefore can not reference
+the new value of any other fields being modified by the same processor.
 
 ### Source options
 
-At most one source specified is allowed.
+At most one specified source is allowed.
 
 #### No source specified
 
