@@ -18,6 +18,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels: {}
+  representative: true
 - type: workload.googleapis.com/jetty.session.count
   value_type: INT64
   kind: CUMULATIVE
