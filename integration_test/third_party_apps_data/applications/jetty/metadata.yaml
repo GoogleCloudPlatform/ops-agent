@@ -62,6 +62,6 @@ configuration_options:
   - log_name: syslog
     fields:
     - name: jsonPayload.message
-      value_regex: '.*oejs.Server:main: Started Server@.*STARTING'
+      value_regex: '.*oejs.Server:main: Started Server@.*{STARTING}'
       type: string
       description: null
