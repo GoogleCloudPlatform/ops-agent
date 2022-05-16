@@ -380,7 +380,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
 	}
-	
+
 	if folder == "debian_ubuntu" {
 		// Gets us around problematic prompts for user input.
 		gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"DEBIAN_FRONTEND": "noninteractive"})
