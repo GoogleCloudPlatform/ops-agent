@@ -13,8 +13,6 @@ per_application_overrides:
       - ubuntu-2004-lts
   cassandra:
     platforms_to_skip: *common_skips
-  jvm:
-    platforms_to_skip: *common_skips
   mysql:
     platforms_to_skip: *common_skips
   nginx:
