@@ -1,5 +1,7 @@
 set -e
 
+# foo
+
 cat <<EOF > config-user
 [client]
 user=root
