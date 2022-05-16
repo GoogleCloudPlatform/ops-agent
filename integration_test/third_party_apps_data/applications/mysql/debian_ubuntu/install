@@ -4,15 +4,13 @@ sudo apt update
 sudo apt install -y wget
 
 wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
-# DEBIAN_FRONTEND=noninteractive gets us around a problematic prompt:
-# http://screen/g4PsZtaXjBX
-sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.22-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
 sudo apt update
 sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
 
 source /etc/os-release
 
-sudo DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
+sudo apt install -y mysql-server
 
 if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18
