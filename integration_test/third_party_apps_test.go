@@ -380,9 +380,14 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
 	}
-
+	
+	installEnv := make(map[string]string)
+	if folder == "debian_ubuntu" {
+		// Gets us around problematic prompts for user input.
+		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
+	}
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
