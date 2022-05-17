@@ -48,7 +48,7 @@ expected_logs:
   - name: jsonPayload.message
     value_regex: '.*oejs\.Server:main: Started Server\@.*\{STARTING\}.*'
     type: string
-    description: null
+    description: ''
 configuration_options:
   logs:
   - type: jetty_access
