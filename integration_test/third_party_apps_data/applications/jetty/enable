@@ -12,6 +12,15 @@ metrics:
       jetty_pipeline:
         receivers:
           - jetty_metrics
+logging:
+  receivers:
+    jetty_access:
+      type: jetty_access
+  service:
+    pipelines:
+      jetty:
+        receivers:
+          - jetty_access
 EOF
 
 sudo service google-cloud-ops-agent restart

@@ -47,7 +47,59 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
+expected_logs:
+- log_name: jetty_access
+  fields:
+  - name: httpRequest.remoteIp
+    type: string
+    description: ''
+  - name: httpRequest.requestUrl
+    value_regex: \/forbidden.html\?something=something
+    type: string
+    description: ''
+  - name: httpRequest.protocol
+    value_regex: HTTP\/1.1
+    type: string
+    description: ''
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: ''
+  - name: httpRequest.userAgent
+    value_regex: curl\/.*
+    type: string
+    description: ''
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+  - name: httpRequest.status
+    type: string
+    description: ''
+- log_name: syslog
+  fields:
+  - name: jsonPayload.message
+    value_regex: '.*oejs\.Server:main: Started Server\@.*\{STARTING\}.*'
+    type: string
+    description: ''
 configuration_options:
+  logs:
+  - type: jetty_access
+    fields:
+    - name: type
+      default: null
+      description: The value must be jetty_access.
+    - name: include_paths
+      default: '["/opt/logs/*.request.log"]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - type: jetty
     fields:
