@@ -4,7 +4,7 @@ set -e
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/10.0.9/jetty-home-10.0.9.tar.gz
 
-sudo yum install -y wget java-17-openjdk
+sudo yum install -y wget java-11-openjdk-devel
 sudo wget -O jetty.tar.gz https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz
 sudo mkdir -p /opt/jetty
 
