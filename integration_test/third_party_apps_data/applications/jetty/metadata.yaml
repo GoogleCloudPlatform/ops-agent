@@ -8,6 +8,8 @@ description: |-
 
   For more information about Jetty, see
   [The Jetty Docs](https://www.eclipse.org/jetty/documentation/jetty-11/operations-guide/index.html).
+minimum_supported_agent_version:
+  logging: 2.16.0
 supported_app_version: ["11.x", "10.x", "9.4.x"]
 expected_logs:
 - log_name: jetty_access
