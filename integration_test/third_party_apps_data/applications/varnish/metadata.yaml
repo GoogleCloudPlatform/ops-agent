@@ -84,7 +84,7 @@ configuration_options:
       description: This value must be varnish.
     - name: include_paths
       default: '[/var/log/varnish/varnishncsa.log]'
-      description: A varnishncsa default log path to read by tailing each file. 
+      description: A varnishncsa default log path to read by tailing each file.
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
@@ -108,6 +108,7 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
 minimum_supported_agent_version:
   metrics: 2.15.0
+  logging: 2.16.0
 expected_logs:
 - log_name: varnish
   fields:
