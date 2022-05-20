@@ -125,7 +125,7 @@ const (
 	nonRetryable = false
 
 	sapHanaPlatform = "ops-agent-hanamon"
-	sapHanaApp = "saphana"
+	sapHanaApp      = "saphana"
 )
 
 // distroFolder returns the distro family name we use in our directory hierarchy
