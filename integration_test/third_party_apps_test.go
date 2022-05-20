@@ -591,8 +591,8 @@ func TestThirdPartyApps(t *testing.T) {
 					extraArgs = append(extraArgs, "--create-disk=auto-delete=yes,device-name=test-hana-mon-pdssd,image=projects/core-connect-integration/global/images/img-saphanamon-pdssd,mode=rw,name=test-hana-mon-pdssd,size=834,type=projects/core-connect-integration/zones/us-central1-a/diskTypes/pd-balanced")
 				}
 				options := gce.VMOptions{
-					Platform: tc.platform,
-					MachineType: agents.RecommendedMachineType(tc.platform),
+					Platform:             tc.platform,
+					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: extraArgs,
 				}
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
