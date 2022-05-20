@@ -132,7 +132,7 @@ func distroFolder(platform string) (string, error) {
 		return "windows", nil
 	}
 	if platform == gce.SAPHANAPlatform {
-		return "sles"
+		return "sles", nil
 	}
 	firstWord := strings.Split(platform, "-")[0]
 	switch firstWord {
@@ -531,10 +531,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAPlatform := test.platform == gce.SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform && !isSAPHANAApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform is only meant for testing %v", test.app, sapHanaApp)
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform is only meant for testing %v", test.app, SAPHANAApp)
 		}
 		if !isSAPHANAPlatform && isSAPHANAApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform does not support testing %v", test.app, sapHanaApp)
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform does not support testing %v", test.app, SAPHANAApp)
 		}
 	}
 }
