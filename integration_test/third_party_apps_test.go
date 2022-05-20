@@ -583,7 +583,19 @@ func TestThirdPartyApps(t *testing.T) {
 			for attempt := 1; attempt <= 4; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
+				extraArgs := nil
+				if tc.Platform == gce.SAPHANAPlatform {
+					// The way this image is set up, it expects two disks:
+					// 1. The boot disk, which we specify with --image-family,
+					// 2. This extra disk, which we specify with --create-disk.
+					extraArgs = append(extraArgs, "--create-disk=auto-delete=yes,device-name=test-hana-mon-pdssd,image=projects/core-connect-integration/global/images/img-saphanamon-pdssd,mode=rw,name=test-hana-mon-pdssd,size=834,type=projects/core-connect-integration/zones/us-central1-a/diskTypes/pd-balanced")
+				}
+				options := gce.VMOptions{
+					Platform: tc.platform,
+					MachineType: agents.RecommendedMachineType(tc.platform),
+					ExtraCreateArguments: extraArgs,
+				}
+				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
