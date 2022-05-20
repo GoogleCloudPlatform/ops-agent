@@ -123,6 +123,9 @@ func appsToTest(platform string) ([]string, error) {
 const (
 	retryable    = true
 	nonRetryable = false
+
+	sapHanaPlatform = "ops-agent-hanamon"
+	sapHanaApp = "saphana"
 )
 
 // distroFolder returns the distro family name we use in our directory hierarchy
@@ -130,6 +133,9 @@ const (
 func distroFolder(platform string) (string, error) {
 	if gce.IsWindows(platform) {
 		return "windows", nil
+	}
+	if platform == sapHanaPlatform {
+		return "sles"
 	}
 	firstWord := strings.Split(platform, "-")[0]
 	switch firstWord {
@@ -501,11 +507,6 @@ var defaultPlatforms = map[string]bool{
 	"debian-10":    true,
 	"windows-2019": true,
 }
-
-const (
-	sapHanaPlatform = "ops-agent-hanamon"
-	sapHanaApp = "saphana"
-)
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
