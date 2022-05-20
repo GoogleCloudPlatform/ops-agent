@@ -502,10 +502,18 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
+const (
+	sapHanaPlatform = "ops-agent-hanamon"
+	sapHanaApp = "saphana"
+)
+
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
+// `platforms_to_skip` overrides the above.
+// Also, restrict `sapHanaPlatform` to only test `sapHanaApp` and skip that app
+// on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -517,6 +525,14 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		}
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		}
+		isSapHanaPlatform := test.platform == sapHanaPlatform
+		isSapHanaApp := test.app == sapHanaApp
+		if isSapHanaPlatform && !isSapHanaApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform is only meant for testing %v", test.app, sapHanaApp)
+		}
+		if !isSapHanaPlatform && isSapHanaApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform does not support testing %v", test.app, sapHanaApp)
 		}
 	}
 }
