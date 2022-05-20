@@ -278,7 +278,7 @@ type VM struct {
 // imageProject returns the image project providing the given image family.
 func imageProject(family string) (string, error) {
 	if family == "ops-agent-hanamon" {
-		return "core-connect-integration"
+		return "core-connect-integration", nil
 	}
 	firstWord := strings.Split(family, "-")[0]
 	switch firstWord {
