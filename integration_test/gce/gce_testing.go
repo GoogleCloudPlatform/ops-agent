@@ -150,6 +150,8 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
+
+	SAPHANAPlatform = "ops-agent-hanamon"
 )
 
 func init() {
@@ -277,6 +279,9 @@ type VM struct {
 
 // imageProject returns the image project providing the given image family.
 func imageProject(family string) (string, error) {
+	if family == SAPHANAPlatform {
+		return "core-connect-integration", nil
+	}
 	firstWord := strings.Split(family, "-")[0]
 	switch firstWord {
 	case "windows":
@@ -1046,7 +1051,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 }
 
 func isSUSE(platform string) bool {
-	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
+	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-") || platform == sapHanaPlatform
 }
 
 // CreateInstance launches a new VM instance based on the given options.

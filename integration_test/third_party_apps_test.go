@@ -124,8 +124,7 @@ const (
 	retryable    = true
 	nonRetryable = false
 
-	sapHanaPlatform = "ops-agent-hanamon"
-	sapHanaApp      = "saphana"
+	SAPHANAApp      = "saphana"
 )
 
 // distroFolder returns the distro family name we use in our directory hierarchy
@@ -134,7 +133,7 @@ func distroFolder(platform string) (string, error) {
 	if gce.IsWindows(platform) {
 		return "windows", nil
 	}
-	if platform == sapHanaPlatform {
+	if platform == gce.SAPHANAPlatform {
 		return "sles"
 	}
 	firstWord := strings.Split(platform, "-")[0]
@@ -513,8 +512,8 @@ var defaultPlatforms = map[string]bool{
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
 // `platforms_to_skip` overrides the above.
-// Also, restrict `sapHanaPlatform` to only test `sapHanaApp` and skip that app
-// on all other platforms too.
+// Also, restrict `gce.SAPHANAPlatform` to only test `SAPHANAApp` and skip that
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -527,12 +526,12 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
-		isSapHanaPlatform := test.platform == sapHanaPlatform
-		isSapHanaApp := test.app == sapHanaApp
-		if isSapHanaPlatform && !isSapHanaApp {
+		isSAPHANAPlatform := test.platform == gce.SAPHANAPlatform
+		isSAPHANAApp := test.app == SAPHANAApp
+		if isSAPHANAPlatform && !isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform is only meant for testing %v", test.app, sapHanaApp)
 		}
-		if !isSapHanaPlatform && isSapHanaApp {
+		if !isSAPHANAPlatform && isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform does not support testing %v", test.app, sapHanaApp)
 		}
 	}
