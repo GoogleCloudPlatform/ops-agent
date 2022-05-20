@@ -1,4 +1,5 @@
 short_name: varnish
+app_url: "https://varnish-cache.org/"
 long_name: Varnish HTTP Cache
 logo_path: /images/partners/varnish-logo.png # supplied by google technical writer
 description: |-
@@ -7,11 +8,9 @@ description: |-
   as well as the number of sessions and backend connections.
   The integration also collects Varnish logs and parses them
   into a standardized json payload.
-  For more information about Varnish, see
-  [Varnish HTTP Cache](https://varnish-cache.org/).
 supported_app_version: ["6.x", "7.0.x"]
 configure_integration: |-
-  The Varnish logging processor processes logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html). Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/) guide depending on os. By default, logs write to /var/log/varnish/varnishncsa.log. If another file is chosen, the user will have to also update the receiver configuration. Logs are expected to be in the default format and a logrotation should be setup.
+  The Varnish logging processor processes logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html){: .external}. Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/){: .external} guide depending on os. By default, logs write to /var/log/varnish/varnishncsa.log. If another file is chosen, the user will have to also update the receiver configuration. Logs are expected to be in the default format and a logrotation should be setup.
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64

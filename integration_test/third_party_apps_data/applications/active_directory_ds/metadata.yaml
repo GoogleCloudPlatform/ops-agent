@@ -1,10 +1,10 @@
 short_name: AD DS
+app_url: "https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
 long_name: Active Directory Domain Services
 supported_app_version: ["windows-server-2012-r2", "windows-server-2016", "windows-server-2019"]
 description: |-
   Active Directory Domain Services stores information about objects on the network so that administrators and users
-  can easily access this information. For more information, see 
-  [Microsoft's overview](https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview)
+  can easily access this information.
 configure_integration: |-
   By default, Active Directory Windows event logs and performance counters are enabled.
 restart_after_install: true
