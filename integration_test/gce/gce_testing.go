@@ -1051,7 +1051,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 }
 
 func isSUSE(platform string) bool {
-	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-") || platform == sapHanaPlatform
+	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-") || platform == SAPHANAPlatform
 }
 
 // CreateInstance launches a new VM instance based on the given options.
