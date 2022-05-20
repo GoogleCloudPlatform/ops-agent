@@ -123,8 +123,6 @@ func appsToTest(platform string) ([]string, error) {
 const (
 	retryable    = true
 	nonRetryable = false
-
-	SAPHANAApp      = "saphana"
 )
 
 // distroFolder returns the distro family name we use in our directory hierarchy
@@ -506,6 +504,10 @@ var defaultPlatforms = map[string]bool{
 	"debian-10":    true,
 	"windows-2019": true,
 }
+
+const (
+	SAPHANAApp = "saphana"
+)
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
