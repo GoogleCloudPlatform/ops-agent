@@ -232,9 +232,6 @@ func TestParseMultilineFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		logPath := logPathForPlatform(vm.Platform)
 		config := fmt.Sprintf(`logging:
