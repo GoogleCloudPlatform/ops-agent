@@ -63,7 +63,7 @@ func (LoggingProcessorCassandraSystem) Type() string {
 }
 
 func (p LoggingProcessorCassandraSystem) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(tag, uid)
+	return javaLogParsingComponents(p.Type(), tag, uid)
 }
 
 type LoggingProcessorCassandraDebug struct {
@@ -75,10 +75,10 @@ func (LoggingProcessorCassandraDebug) Type() string {
 }
 
 func (p LoggingProcessorCassandraDebug) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(tag, uid)
+	return javaLogParsingComponents(p.Type(), tag, uid)
 }
 
-func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
+func javaLogParsingComponents(processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -132,6 +132,7 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 					},
 					MapValuesExclusive: true,
 				},
+				InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 			},
 		}.Components(tag, uid)...,
 	)
