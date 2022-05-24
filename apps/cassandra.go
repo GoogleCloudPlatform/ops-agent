@@ -185,6 +185,12 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 		},
 	}.Components(tag, uid)
 
+	c = append(c, confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)...)
+
 	return c
 }
 
