@@ -151,7 +151,7 @@ const (
 
 	exhaustedRetriesSuffix = "exhausted retries"
 
-	SAPHANAPlatform = "ops-agent-hanamon"
+	SAPHANAPlatform = "ops-agent-hanamon-single"
 )
 
 func init() {
