@@ -21,7 +21,16 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
+const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
+
+func instrumentationSourceValue(processorType string) *confgenerator.ModifyField {
+	val := fmt.Sprintf("agent.googleapis.com/%s", processorType)
+	return &confgenerator.ModifyField{
+		StaticValue: &val,
+	}
+}
+
+func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -40,7 +49,9 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 		},
 	}.Components(tag, uid)
 	mf := confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{},
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
+		},
 	}
 	// apache/nginx/varnish logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{

@@ -68,7 +68,7 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+	return genericAccessLogParser(p.Type(), tag, uid)
 }
 
 type LoggingProcessorNginxError struct {
