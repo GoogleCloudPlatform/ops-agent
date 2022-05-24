@@ -71,6 +71,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Exporter: otel.Component{
 			Type: "googlecloud",
 			Config: map[string]interface{}{
+				"retry_on_failure": map[string]interface{}{
+					"enabled": false,
+				},
 				"user_agent": userAgent,
 				"metric": map[string]interface{}{
 					// Receivers are responsible for sending fully-qualified metric names.
