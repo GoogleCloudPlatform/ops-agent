@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
+const InstrumentationSourceLabel = confgenerator.InstrumentationSourceLabel
 
 func instrumentationSourceValue(processorType string) *confgenerator.ModifyField {
 	val := fmt.Sprintf("agent.googleapis.com/%s", processorType)

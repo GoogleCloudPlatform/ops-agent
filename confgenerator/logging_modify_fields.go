@@ -44,7 +44,7 @@ type ModifyField struct {
 
 type LoggingProcessorModifyFields struct {
 	ConfigComponent `yaml:",inline"`
-	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,distinctfield,endkeys"`
+	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,distinctfield,writablefield,endkeys"`
 }
 
 func (p LoggingProcessorModifyFields) Type() string {
