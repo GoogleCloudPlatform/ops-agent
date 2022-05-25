@@ -913,7 +913,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:      options.Project,
 		Platform:     options.Platform,
-		ImageProject: options.ImageProject,
 		Network:      os.Getenv("NETWORK_NAME"),
 		Zone:         options.Zone,
 	}
@@ -938,12 +937,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	if vm.ImageProject == "" {
+	imgProject := options.ImageProject,
+	if imgProject == "" {
 		imgProject, err := imageProject(vm.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
 		}
-		vm.ImageProject = imgProject
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
