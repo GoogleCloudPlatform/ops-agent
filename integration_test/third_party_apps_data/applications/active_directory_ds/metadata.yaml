@@ -1,6 +1,6 @@
-short_name: AD DS
+short_name: Active Directory Domain Services
 app_url: "https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
-long_name: Active Directory Domain Services (AD DS)
+long_name: Active Directory Domain Services
 supported_app_version: ["windows-server-2012-r2", "windows-server-2016", "windows-server-2019"]
 logo_path: /stackdriver/images/active_directory_ds.png # supplied by google technical writer
 description: |-
