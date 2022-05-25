@@ -939,7 +939,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
-		imgProject, err := imageProject(vm.Platform)
+		var err error
+		imgProject, err = imageProject(vm.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
 		}
