@@ -44,12 +44,6 @@ expected_logs:
   - name: httpRequest.status
     type: string
     description: ''
-- log_name: syslog
-  fields:
-  - name: jsonPayload.message
-    value_regex: '.*oejs\.Server:main: Started Server\@.*\{STARTING\}.*'
-    type: string
-    description: ''
 configuration_options:
   logs:
   - type: jetty_access
