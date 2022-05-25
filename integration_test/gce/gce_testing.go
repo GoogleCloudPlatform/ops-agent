@@ -911,10 +911,10 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
 	vm := &VM{
-		Project:      options.Project,
-		Platform:     options.Platform,
-		Network:      os.Getenv("NETWORK_NAME"),
-		Zone:         options.Zone,
+		Project:  options.Project,
+		Platform: options.Platform,
+		Network:  os.Getenv("NETWORK_NAME"),
+		Zone:     options.Zone,
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
