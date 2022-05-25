@@ -131,9 +131,6 @@ func distroFolder(platform string) (string, error) {
 	if gce.IsWindows(platform) {
 		return "windows", nil
 	}
-	if platform == gce.SAPHANAPlatform {
-		return "sles", nil
-	}
 	firstWord := strings.Split(platform, "-")[0]
 	switch firstWord {
 	case "centos", "rhel", "rocky":
@@ -506,6 +503,7 @@ var defaultPlatforms = map[string]bool{
 }
 
 const (
+	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp = "saphana"
 )
 
@@ -514,7 +512,7 @@ const (
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
 // `platforms_to_skip` overrides the above.
-// Also, restrict `gce.SAPHANAPlatform` to only test `SAPHANAApp` and skip that
+// Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
@@ -528,13 +526,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
-		isSAPHANAPlatform := test.platform == gce.SAPHANAPlatform
+		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
-		if isSAPHANAPlatform && !isSAPHANAApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform is only meant for testing %v", test.app, SAPHANAApp)
-		}
-		if !isSAPHANAPlatform && isSAPHANAApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because this platform does not support testing %v", test.app, SAPHANAApp)
+		if isSAPHANAPlatform != isSAPHANAApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
 	}
 }
@@ -583,16 +578,17 @@ func TestThirdPartyApps(t *testing.T) {
 			for attempt := 1; attempt <= 4; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-				var extraArgs []string
-				if tc.platform == gce.SAPHANAPlatform {
-					// This image needs an SSD in order to be performant enough.
-					extraArgs = append(extraArgs, "--boot-disk-type=pd-ssd")
-				}
 				options := gce.VMOptions{
 					Platform:             tc.platform,
 					MachineType:          agents.RecommendedMachineType(tc.platform),
-					ExtraCreateArguments: extraArgs,
+					ExtraCreateArguments: nil,
 				}
+				if tc.platform == SAPHANAPlatform {
+					// This image needs an SSD in order to be performant enough.
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
+					options.ImageProject = "stackdriver-test-143416"
+				}
+
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
