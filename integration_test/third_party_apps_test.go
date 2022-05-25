@@ -504,7 +504,7 @@ var defaultPlatforms = map[string]bool{
 
 const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
-	SAPHANAApp = "saphana"
+	SAPHANAApp      = "saphana"
 )
 
 // When in `-short` test mode, mark some tests for skipping, based on
