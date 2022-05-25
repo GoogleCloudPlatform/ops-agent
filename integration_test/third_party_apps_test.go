@@ -584,7 +584,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				var extraArgs []string
-				if tc.Platform == gce.SAPHANAPlatform {
+				if tc.platform == gce.SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					extraArgs = append(extraArgs, "--boot-disk-type=pd-ssd")
 				}
