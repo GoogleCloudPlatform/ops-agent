@@ -937,7 +937,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject := options.ImageProject,
+	imgProject := options.ImageProject
 	if imgProject == "" {
 		imgProject, err := imageProject(vm.Platform)
 		if err != nil {
