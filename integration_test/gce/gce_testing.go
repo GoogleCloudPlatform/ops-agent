@@ -150,8 +150,6 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
-
-	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 )
 
 func init() {
@@ -279,9 +277,6 @@ type VM struct {
 
 // imageProject returns the image project providing the given image family.
 func imageProject(family string) (string, error) {
-	if family == SAPHANAPlatform {
-		return "core-connect-integration", nil
-	}
 	firstWord := strings.Split(family, "-")[0]
 	switch firstWord {
 	case "windows":
