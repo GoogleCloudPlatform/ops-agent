@@ -15,9 +15,47 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverJetty struct {
+	confgenerator.ConfigComponent                 `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
+	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
+}
+
+const defaultJettyEndpoint = "localhost:1099"
+
+func (r MetricsReceiverJetty) Type() string {
+	return "jetty"
+}
+
+func (r MetricsReceiverJetty) Pipelines() []otel.Pipeline {
+	targetSystem := "jetty"
+	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
+		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
+	}
+
+	return r.MetricsReceiverSharedJVM.
+		WithDefaultEndpoint(defaultJettyEndpoint).
+		ConfigurePipelines(
+			targetSystem,
+			[]otel.Component{
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+			},
+		)
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJetty{} })
+}
 
 type LoggingProcessorJettyAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
