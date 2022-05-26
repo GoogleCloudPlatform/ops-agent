@@ -3,6 +3,15 @@
 set -e
 
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    jetty_metrics:
+      type: jetty
+  service:
+    pipelines:
+      jetty_pipeline:
+        receivers:
+          - jetty_metrics
 logging:
   receivers:
     jetty_access:
