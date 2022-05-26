@@ -304,7 +304,7 @@ configuration_options:
     - name: type
       default: null
       description: This value must be mysql.
-    - name: stub_status_url
+    - name: endpoint
       default: localhost:3306
       description: The url exposed by MySQL.
     - name: username
