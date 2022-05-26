@@ -57,6 +57,7 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
+	BufferInMemory          bool
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -101,6 +102,10 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 	if r.WildcardRefreshInterval != nil {
 		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
+	}
+
+	if r.BufferInMemory {
+		config["storage.type"] = "memory"
 	}
 
 	c := []fluentbit.Component{}
