@@ -145,3 +145,4 @@ expected_logs:
   - name: httpRequest.userAgent
     type: string
     description: Contents of the `User-Agent` header
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/varnish
