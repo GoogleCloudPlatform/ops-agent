@@ -1,0 +1,4 @@
+
+set -e
+
+sudo systemctl restart flink
