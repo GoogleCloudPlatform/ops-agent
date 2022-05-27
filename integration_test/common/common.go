@@ -49,12 +49,12 @@ type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description" validate:"required"`
+	Description string `yaml:"description"`
 }
 
 type ExpectedLog struct {
 	LogName string       `yaml:"log_name" validate:"required"`
-	Fields  []*LogFields `yaml:"fields" validate:"required"`
+	Fields  []*LogFields `yaml:"fields" validate:"required,dive"`
 }
 
 type MinimumSupportedAgentVersion struct {
@@ -64,18 +64,18 @@ type MinimumSupportedAgentVersion struct {
 
 type ConfigurationFields struct {
 	Name        string `yaml:"name" validate:"required"`
-	Default     string `yaml:"default" validate:"required"`
+	Default     string `yaml:"default"`
 	Description string `yaml:"description" validate:"required"`
 }
 
 type InputConfiguration struct {
 	Type   string                 `yaml:"type" validate:"required"`
-	Fields []*ConfigurationFields `yaml:"fields" validate:"required"`
+	Fields []*ConfigurationFields `yaml:"fields" validate:"required,dive"`
 }
 
 type ConfigurationOptions struct {
-	LogsConfiguration    []*InputConfiguration `yaml:"logs" validate:"required_without=MetricsConfiguration"`
-	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration"`
+	LogsConfiguration    []*InputConfiguration `yaml:"logs" validate:"required_without=MetricsConfiguration,dive"`
+	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration,dive"`
 }
 
 type IntegrationMetadata struct {
@@ -87,8 +87,8 @@ type IntegrationMetadata struct {
 	Description                  string                       `yaml:"description" validate:"required"`
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
-	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics"`
+	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
