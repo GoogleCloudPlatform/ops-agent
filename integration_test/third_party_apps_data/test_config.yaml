@@ -2,9 +2,6 @@ per_application_overrides:
   apache:
     # TODO: reenable distros incrementally.
     platforms_to_skip:
-      - centos-7
-      - centos-8
-      - rocky-linux-8
       - sles-12
       - sles-15
   cassandra:
@@ -14,7 +11,6 @@ per_application_overrides:
     # TODO: reenable application+distro pairs incrementally.
     platforms_to_skip: &common_skips
       - centos-7
-      - centos-8
       - rocky-linux-8
       - sles-12
       - sles-15
