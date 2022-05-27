@@ -1,7 +1,8 @@
 short_name: AD DS
 app_url: "https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview"
-long_name: Active Directory Domain Services
+long_name: Active Directory Domain Services (AD DS)
 supported_app_version: ["windows-server-2012-r2", "windows-server-2016", "windows-server-2019"]
+logo_path: /stackdriver/images/active_directory_ds.png # supplied by google technical writer
 description: |-
   Active Directory Domain Services stores information about objects on the network so that administrators and users
   can easily access this information.
@@ -180,3 +181,4 @@ expected_metrics:
 minimum_supported_agent_version:
   metrics: 2.15.0
   logging: 2.15.0
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/active_directory_ds
