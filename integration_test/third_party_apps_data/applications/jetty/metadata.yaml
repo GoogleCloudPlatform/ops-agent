@@ -1,0 +1,118 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/jetty"
+app_url: "https://www.eclipse.org/jetty/"
+short_name: Jetty
+long_name: Jetty
+logo_path: /stackdriver/images/jetty.png # supplied by google technical writer
+description: |-
+  The Jetty integration collects
+  access logs. Access logs are parsed into a JSON payload
+  focused on request details. 
+
+  For more information about Jetty, see
+  [The Jetty Docs](https://www.eclipse.org/jetty/documentation/jetty-11/operations-guide/index.html).
+minimum_supported_agent_version:
+  logging: 2.16.0
+supported_app_version: ["11.x", "10.x", "9.4.x"]
+expected_metrics:
+- type: workload.googleapis.com/jetty.select.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/jetty.session.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    resource: .*
+- type: workload.googleapis.com/jetty.session.time.total
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    resource: .*
+- type: workload.googleapis.com/jetty.session.time.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    resource: .*
+- type: workload.googleapis.com/jetty.thread.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/jetty.thread.queue.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+expected_logs:
+- log_name: jetty_access
+  fields:
+  - name: httpRequest.remoteIp
+    type: string
+    description: ''
+  - name: httpRequest.requestUrl
+    value_regex: \/forbidden.html\?something=something
+    type: string
+    description: ''
+  - name: httpRequest.protocol
+    value_regex: HTTP\/1.1
+    type: string
+    description: ''
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: ''
+  - name: httpRequest.userAgent
+    value_regex: curl\/.*
+    type: string
+    description: ''
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+  - name: httpRequest.status
+    type: string
+    description: ''
+configuration_options:
+  logs:
+  - type: jetty_access
+    fields:
+    - name: type
+      default: null
+      description: The value must be jetty_access.
+    - name: include_paths
+      default: '["/opt/logs/*.request.log"]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: jetty
+    fields:
+    - name: type
+      default: null
+      description: This value must be jetty.
+    - name: endpoint
+      default: localhost:1099
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: collect_jvm_metrics
+      default: true
+      description: Configures the receiver to also collect the supported JVM metrics.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
