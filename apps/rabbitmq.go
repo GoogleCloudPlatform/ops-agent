@@ -42,15 +42,23 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 	c = append(c, regexParser.Components(tag, uid)...)
 
 	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
-	c = append(c, fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"debug", "DEBUG"},
-		{"error", "ERROR"},
-		{"info", "INFO"},
-		{"noti", "DEFAULT"},
-	})...)
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"debug": "DEBUG",
+						"error": "ERROR",
+						"info": "INFO",
+						"noti": "DEFAULT",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 
 	return c
 }

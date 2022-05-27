@@ -189,7 +189,6 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 // to a valid logging.googleapis.com/seveirty field
 func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Component {
 	severityComponents := []fluentbit.Component{}
-	severityKey := "logging.googleapis.com/severity"
 
 	severityComponents = append(severityComponents, fluentbit.Component{
 		Kind: "FILTER",
@@ -200,21 +199,29 @@ func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Co
 		},
 	})
 
-	severityComponents = append(severityComponents, fluentbit.TranslationComponents(tag, "severity", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"D", "DEBUG"},
-		{"D1", "DEBUG"},
-		{"D2", "DEBUG"},
-		{"D3", "DEBUG"},
-		{"D4", "DEBUG"},
-		{"D5", "DEBUG"},
-		{"I", "INFO"},
-		{"E", "ERROR"},
-		{"F", "FATAL"},
-		{"W", "WARNING"},
-	})...)
+	severityComponents = append(severityComponents,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.severity",
+					MapValues: map[string]string{
+						"D": "DEBUG",
+						"D1": "DEBUG",
+						"D2": "DEBUG",
+						"D3": "DEBUG",
+						"D4": "DEBUG",
+						"D5": "DEBUG",
+						"I": "INFO",
+						"E": "ERROR",
+						"F": "FATAL",
+						"W": "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 
 	return severityComponents
 }

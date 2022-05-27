@@ -65,7 +65,7 @@ func (LoggingProcessorHadoop) Type() string {
 	return "hadoop"
 }
 
-func (LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component {
 	// Sample log line:
 	// 2022-02-01 18:09:47,136 INFO org.apache.hadoop.hdfs.server.namenode.FSEditLog: Edit logging is async:true
 
@@ -77,20 +77,25 @@ func (LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component 
 		},
 	}
 
-	severityKey := "logging.googleapis.com/severity"
-	severityMappingComponents := fluentbit.TranslationComponents(tag, "severity", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"TRACE", "DEBUG"},
-		{"DEBUG", "DEBUG"},
-		{"INFO", "INFO"},
-		{"WARN", "WARNING"},
-		{"DEPRECATION", "WARNING"},
-		{"ERROR", "ERROR"},
-		{"CRITICAL", "ERROR"},
-		{"FATAL", "FATAL"},
-	})
+	severityMappingComponents := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"TRACE": "DEBUG",
+					"DEBUG": "DEBUG",
+					"INFO": "INFO",
+					"WARN": "WARNING",
+					"DEPRECATION": "WARNING",
+					"ERROR": "ERROR",
+					"CRITICAL": "ERROR",
+					"FATAL": "FATAL",
+				},
+				MapValuesExclusive: true,
+			},
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)
 
 	c := regexParser.Components(tag, uid)
 	c = append(c, severityMappingComponents...)

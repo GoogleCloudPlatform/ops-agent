@@ -119,22 +119,29 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 
 	// Log levels documented: https://docs.couchdb.org/en/stable/config/logging.html#log/level
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"emerg", "EMERGENCY"},
-				{"emergency", "EMERGENCY"},
-				{"alert", "ALERT"},
-				{"crit", "CRITICAL"},
-				{"critical", "CRITICAL"},
-				{"error", "ERROR"},
-				{"err", "ERROR"},
-				{"warn", "WARNING"},
-				{"warning", "WARNING"},
-				{"notice", "NOTICE"},
-				{"info", "INFO"},
-				{"debug", "DEBUG"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"emerg": "EMERGENCY",
+						"emergency": "EMERGENCY",
+						"alert": "ALERT",
+						"crit": "CRITICAL",
+						"critical": "CRITICAL",
+						"error": "ERROR",
+						"err": "ERROR",
+						"warn": "WARNING",
+						"warning": "WARNING",
+						"notice": "NOTICE",
+						"info": "INFO",
+						"debug": "DEBUG",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 	return c
 }

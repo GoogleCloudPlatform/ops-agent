@@ -101,26 +101,24 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"FINEST", "DEBUG"},
-				{"FINER", "DEBUG"},
-				{"FINE", "DEBUG"},
-				{"INFO", "INFO"},
-				{"WARNING", "WARNING"},
-				{"SEVERE", "CRITICAL"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"FINEST": "DEBUG",
+						"FINER": "DEBUG",
+						"FINE": "DEBUG",
+						"INFO": "INFO",
+						"WARNING": "WARNING",
+						"SEVERE": "CRITICAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
-
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": "level",
-		},
-	})
 	return c
 }
 

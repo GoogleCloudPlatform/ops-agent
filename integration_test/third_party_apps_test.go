@@ -194,9 +194,11 @@ func constructQuery(logName string, fields []*common.LogFields) string {
 		}
 	}
 
-	// Verify instrumentation_source label
-	val := fmt.Sprintf("agent.googleapis.com/%s", logName)
-	parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	if logName != "syslog" {
+		// verify instrumentation_source label
+		val := fmt.Sprintf("agent.googleapis.com/%s", logName)
+		parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	}
 
 	return strings.Join(parts, " AND ")
 }

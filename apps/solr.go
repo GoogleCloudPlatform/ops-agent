@@ -90,16 +90,23 @@ func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentb
 
 	// https://solr.apache.org/guide/6_6/configuring-logging.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"TRACE", "DEBUG"},
-				{"DEBUG", "DEBUG"},
-				{"INFO", "INFO"},
-				{"WARN", "WARNING"},
-				{"ERROR", "ERROR"},
-				{"FATAL", "CRITICAL"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"TRACE": "DEBUG",
+						"DEBUG": "DEBUG",
+						"INFO": "INFO",
+						"WARN": "WARNING",
+						"ERROR": "ERROR",
+						"FATAL": "CRITICAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 	return c
 }

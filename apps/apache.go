@@ -117,6 +117,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 					},
 					MapValuesExclusive: true,
 				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
 		}.Components(tag, uid)...,
 	)

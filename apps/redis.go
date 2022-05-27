@@ -105,14 +105,21 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 
 	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{".", "DEBUG"},
-				{"-", "INFO"},
-				{"*", "NOTICE"},
-				{"#", "WARNING"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						".": "DEBUG",
+						"-": "INFO",
+						"*": "NOTICE",
+						"#": "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149

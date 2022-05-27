@@ -101,17 +101,25 @@ func (p LoggingProcessorHbaseSystem) Components(tag string, uid string) []fluent
 
 	// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"TRACE", "DEBUG"},
-				{"DEBUG", "DEBUG"},
-				{"INFO", "INFO"},
-				{"WARN", "WARNING"},
-				{"ERROR", "ERROR"},
-				{"FATAL", "CRITICAL"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"TRACE": "DEBUG",
+						"DEBUG": "DEBUG",
+						"INFO": "INFO",
+						"WARN": "WARNING",
+						"ERROR": "ERROR",
+						"FATAL": "CRITICAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
+
 	return c
 }
 
