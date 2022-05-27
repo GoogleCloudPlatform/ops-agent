@@ -5,6 +5,7 @@ couchdb
 elasticsearch
 hadoop
 hbase
+jetty
 jvm
 kafka
 memcached

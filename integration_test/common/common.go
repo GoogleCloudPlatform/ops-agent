@@ -80,6 +80,7 @@ type ConfigurationOptions struct {
 
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
+	AppUrl                       string                       `yaml:"app_url" validate:"required"`
 	ShortName                    string                       `yaml:"short_name" validate:"required"`
 	LongName                     string                       `yaml:"long_name" validate:"required"`
 	LogoPath                     string                       `yaml:"logo_path"`
@@ -91,6 +92,7 @@ type IntegrationMetadata struct {
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
+	Troubleshoot                 string                       `yaml:"troubleshoot"`
 }
 
 // ValidateMetrics checks that all enum fields have valid values and that
