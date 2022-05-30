@@ -1,9 +1,17 @@
 
 function process(tag, timestamp, record)
-local __field_0 = (function()
+local __field_1 = (function()
 return record["level"]
 end)();
-local v = __field_0;
+local v = "agent.googleapis.com/apache_error";
+(function(value)
+if record["logging.googleapis.com/labels"] == nil
+then
+record["logging.googleapis.com/labels"] = {}
+end
+record["logging.googleapis.com/labels"]["logging.googleapis.com/instrumentation_source"] = value
+end)(v)
+local v = __field_1;
 if v == "alert" then v = "ALERT"
 elseif v == "crit" then v = "CRITICAL"
 elseif v == "debug" then v = "DEBUG"
