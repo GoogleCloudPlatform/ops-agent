@@ -937,9 +937,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject, err := imageProject(vm.Platform)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+	imgProject := options.ImageProject
+	if imgProject == "" {
+		var err error
+		imgProject, err = imageProject(vm.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1559,8 +1563,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required.
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
 	Platform string
+	// Optional. Passed as --image-project to "gcloud compute images create".
+	// If not supplied, the framework will attempt to guess the right project
+	// to use based on Platform.
+	ImageProject string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.
