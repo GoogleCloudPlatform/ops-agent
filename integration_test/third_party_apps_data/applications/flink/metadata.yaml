@@ -1,3 +1,4 @@
+app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
 description: |-
@@ -10,11 +11,9 @@ expected_logs:
     type: string
     description: ''
   - name: jsonPayload.source
-    value_regex: .*Waiting until connected.*
     type: string
     description: ''
   - name: severity
-    value_regex: .*Waiting until connected.*
     type: string
     description: ''
   - name: timestamp
