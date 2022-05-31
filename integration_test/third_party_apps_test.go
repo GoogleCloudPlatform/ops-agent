@@ -109,17 +109,6 @@ func appsToTest(platform string) ([]string, error) {
 	return apps, nil
 }
 
-// findMetricName reads which metric to query from the metric_name.txt file
-// corresponding to the given application. The file is allowed to be empty,
-// and if so, the test is skipped.
-func findMetricName(app string) (string, error) {
-	contents, err := readFileFromScriptsDir(path.Join("applications", app, "metric_name.txt"))
-	if err != nil {
-		return "", fmt.Errorf("could not read metric_name.txt: %v", err)
-	}
-	return strings.TrimSpace(string(contents)), nil
-}
-
 const (
 	retryable    = true
 	nonRetryable = false
