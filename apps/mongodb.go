@@ -190,31 +190,25 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Component {
 	severityComponents := []fluentbit.Component{}
 
-	severityComponents = append(severityComponents, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":  tag,
-			"Name":   "modify",
-			"Rename": "s severity",
-		},
-	})
-
 	severityComponents = append(severityComponents,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
+				"jsonPayload.severity": {
+					MoveFrom: "jsonPayload.s",
+				},
 				"severity": {
-					CopyFrom: "jsonPayload.severity",
+					CopyFrom: "jsonPayload.s",
 					MapValues: map[string]string{
-						"D": "DEBUG",
+						"D":  "DEBUG",
 						"D1": "DEBUG",
 						"D2": "DEBUG",
 						"D3": "DEBUG",
 						"D4": "DEBUG",
 						"D5": "DEBUG",
-						"I": "INFO",
-						"E": "ERROR",
-						"F": "FATAL",
-						"W": "WARNING",
+						"I":  "INFO",
+						"E":  "ERROR",
+						"F":  "FATAL",
+						"W":  "WARNING",
 					},
 					MapValuesExclusive: true,
 				},
@@ -282,7 +276,7 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
 		"message":   "string",
 		"id":        "integer",
-		"severity":  "string",
+		"s":         "string",
 		"component": "string",
 		"context":   "string",
 	}, fmt.Sprintf("%s_regex", tag), uid)

@@ -117,21 +117,20 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 					},
 					MapValuesExclusive: true,
 				},
+				"jsonPayload.role": {
+					CopyFrom: "jsonPayload.roleChar",
+					// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
+					MapValues: map[string]string{
+						"X": "sentinel",
+						"C": "RDB/AOF_writing_child",
+						"S": "slave",
+						"M": "master",
+					},
+					MapValuesExclusive: true,
+				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
 		}.Components(tag, uid)...,
-	)
-
-	// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
-	c = append(c,
-		fluentbit.TranslationComponents(tag, "roleChar", "role", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"X", "sentinel"},
-				{"C", "RDB/AOF_writing_child"},
-				{"S", "slave"},
-				{"M", "master"},
-			},
-		)...,
 	)
 
 	return c
