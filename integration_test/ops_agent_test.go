@@ -425,6 +425,67 @@ func TestCustomLogFormat(t *testing.T) {
 	})
 }
 
+func TestHTTPRequestLog(t *testing.T) {
+	t.Parallel()
+
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
+  processors:
+    json1:
+      type: parse_json
+      field: message
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+        exporters: [google]`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		httpRequestBody := map[string]interface{}{
+			"requestMethod": "GET",
+			"requestUrl":    "https://cool.site.net",
+			"status":        200,
+		}
+		logBody := map[string]interface{}{
+			"log":                                "4837291",
+			"logging.googleapis.com/httpRequest": httpRequestBody,
+		}
+		logBytes, err := json.Marshal(logBody)
+		if err != nil {
+			t.Fatalf("could not marshal test log: %v", err)
+		}
+		log.Println(string(logBytes))
+
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(string(logBytes)+"\n"), logPath); err != nil {
+			t.Fatalf("error writing log line: %v", err)
+		}
+
+		entry, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "", gce.QueryMaxAttempts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Println(entry)
+		if entry.HTTPRequest == nil {
+			t.Fatal("expected log entry to have HTTPRequest field")
+		}
+	})
+}
+
 func TestInvalidConfig(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
