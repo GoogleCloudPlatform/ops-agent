@@ -1,7 +1,7 @@
 
 function process(tag, timestamp, record)
 local __field_1 = (function()
-return record["level"]
+return record["severity"]
 end)();
 local v = "agent.googleapis.com/hadoop";
 (function(value)
