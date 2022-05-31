@@ -1,0 +1,2 @@
+# SAP HANA is pre-installed on the images used for tests
+set -e
