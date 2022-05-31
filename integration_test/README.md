@@ -6,17 +6,21 @@ builds are split up by distro.
 
 ## Setup
 
-You will need a GCP project to run VMs in and a GCS bucket that is used to
-transfer files onto the testing VMs. These are referred to as `${PROJECT}`
-and `${TRANSFERS_BUCKET}` in the following instructions.
+You will need a GCP project to run VMs in. This is referred to as `${PROJECT}` in
+the following instructions.
 
-You will need gcloud installed. Run `gcloud auth login` if you haven't
-done so already.
+The project needs sufficient quota to run many tests in parallel. It also needs
+(when testing Windows) a firewall that allows connections over port 5986. In the
+case of Google-owned projects, such a firewall is difficult to obtain, so for this
+reason and quota reasons it is recommended for Googlers to use our prebuilt testing
+project. Ask a teammate (e.g. martijnvs@) for the project ID.
 
-Next, follow the setup instructions for either User Credentials or
-Service Account Credentials.
+You will also need a GCS bucket that is used to transfer files onto the 
+testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
+`stackdriver-test-143416-untrusted-file-transfers` is recommended.
 
-### Setup (User Credentials)
+You will need `gcloud` to be installed. Run `gcloud auth login` to set up `gcloud`
+    authentication (if you haven't done that already).
 
 To give the tests credentials to be able to access Google APIs as you,
 run the following command and do what it says (it may ask you to run
@@ -27,60 +31,7 @@ ability to open a browser window):
 gcloud --billing-project="${PROJECT}" auth application-default login
 ```
 
-That's it! Now the test commands should be able to authenticate as you.
-
-NOTE: this way of using user credentials is new and may have unforeseen
-problems.
-
-### Setup (Service Account Credentials)
-
-You will need a service account with permissions to run various
-operations in the project. You can set up such a service account with
-a few commands:
-
-```
-gcloud iam service-accounts create "service-account-$(whoami)" \
-  --project "${PROJECT}" \
-  --display-name "service-account-$(whoami)"  
-```
-
-```
-for ROLE in \
-    logging.logWriter \
-    monitoring.metricWriter \
-    stackdriver.resourceMetadata.writer \
-    logging.viewer \
-    monitoring.viewer \
-    stackdriver.resourceMetadata.viewer \
-  ; do
-      gcloud projects add-iam-policy-binding "${PROJECT}" \
-          --member "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com" \
-          --role "roles/${ROLE}" > /dev/null
-  done
-```
-
-You will also need to give your service account read/write permissions on
-`${TRANSFERS_BUCKET}`. To do this, register your service account as principal
-with role "Storage Admin" to the bucket:
-
-```
-gsutil iam ch \
-  "serviceAccount:service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com:roles/storage.admin" \
-  "gs://${TRANSFERS_BUCKET}"
-```
-
-Finally, download your credentials as a JSON file:
-
-```
-gcloud iam service-accounts keys create $HOME/credentials.json \
-  --project "${PROJECT}" \
-  --iam-account "service-account-$(whoami)@${PROJECT}.iam.gserviceaccount.com"
-```
-
-When runninng the test commands below, you must also pass the
-environment variable
-`GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json"` to the
-test command.
+Once these steps are complete, you should be able to run the below commands.
 
 ## Ops Agent Test
 
@@ -116,16 +67,14 @@ AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
 ```
 
-You can obtain such a URI by taking a previous Kokoro run with
-a successful build and getting the "gsutil URI" to `+build_and_test.txt`
-from Pantheon. For example:
+You can obtain such a URI by:
 
-```
-gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt
-```
-
-Then replace `logs/+build_and_test.txt` at the end of the URI with
-`agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+1.  take a previous Kokoro run with a successful build and get the
+    "gsutil URI" to `+build_and_test.txt` from the Google Cloud Storage browser
+    page. For example:
+    `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
+2.  Replace `logs/+build_and_test.txt` at the end of the URI with
+    `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
 
 ## Third Party Apps Test
 
@@ -137,7 +86,7 @@ The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
 it reads `test_config.yaml` and uses that to set some testing options. See the
 "test_config.yaml" section below. Then it reads
-`agent/ops-agent/<platform>/supported_applications.txt` to determine
+`agent/<platform>/supported_applications.txt` to determine
 which applications to test. Each application is tested in parallel. For each,
 the test will:
 
@@ -152,8 +101,8 @@ the test will:
 1.  Wait for up to 7 minutes for logs matching the expectations in
     `applications/<application>/expected_logs.yaml` to appear in the Google
     Cloud Logging backend.
-1.  Wait up to 7 minutes for metrics matching the expectations in
-    `applications/<application>/expected_metrics.yaml` to appear in the Google Cloud
+1.  Wait up to 7 minutes for metrics matching the expectations in expected_metrics of
+    `applications/<application>/metadata.yaml` to appear in the Google Cloud
     Monitoring backend.
 
 The test is designed so that simply modifying files in the
@@ -164,7 +113,7 @@ data directory and the test runner before it is really meeting our needs.
 ### Adding a new third-party application
 
 You will need to add and modify a few files. Start by adding your new
-application to `agent/ops-agent/<linux_or_windows>/supported_applications.txt`
+application to `agent/<linux_or_windows>/supported_applications.txt`
 
 Then, inside `applications/<application>/`:
 
@@ -173,16 +122,47 @@ Then, inside `applications/<application>/`:
     exposed in the previous step.
 1.  (if necessary) `exercise`. This is only needed
     sometimes, e.g. to get the application to log to a particular file.
-1.  (if you want to test logging) `expected_logs.yaml`
-1.  (if you want to test metrics) `expected_metrics.yaml`
+1.  Inside `metadata.yaml`, add `short_name`, e.g. `solr` and `long_name`, e.g.
+    `Apache Solr`.
+1.  Some integration will have steps for configuring instance, e.g. [Apache Hadoop](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/hadoop#configure-instance).
+1.  (if you want to test logging) add `expected_logs` in metadata.yaml
+1.  (if you want to test metrics) add `expected_metrics` in metadata.yaml
 
-### expected_metrics.yaml
+### expected_logs
 
-We use `expected_metrics.yaml` both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+We use `expected_logs` inside `metadata.yaml` file both as a test artifact and as a source for documentation, e.g. [Apache(httpd) public doc](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache#monitored-logs). All logs ingested from the integration should be documented here.
 
-A sample `expected_metrics.yaml` snippet looks like:
+A sample `expected_logs` snippet looks like:
 
 ```yaml
+expected_logs:
+- log_name: apache_access
+  fields:
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: HTTP method
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated username for the request
+```
+
+- `name`: required, it will be used in e2e searching for the matching logs
+- `type`: required, informational
+- `description`: required, informational
+- `value_regex`: optional, the value of the LogEntry field will be used in e2e searching for the matching logs.
+
+### expected_metrics
+
+We use `expected_metrics` inside `metadata.yaml` file both as a test artifact and as a source for documentation. All metrics ingested from the integration should be documented here.
+
+A sample `expected_metrics` snippet looks like:
+
+```yaml
+expected_metrics:
 - type: workload.googleapis.com/apache.current_connections
   value_type: INT64
   kind: GAUGE
@@ -196,39 +176,37 @@ A sample `expected_metrics.yaml` snippet looks like:
 
 `labels` is an exhaustive list of labels associated with the metric. Each key in `labels` is the label name, and its value is a regular expression. During the test, each label returned by the time series for that metric is checked against `labels`: every label in the time series must be present in `labels`, and its value must match the regular expression.
 
-For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics.yaml` would be as follows:
+For example, if a metric defines a label `operation` whose values can only be `read` or `write`, then an appropriate `labels` map in `expected_metrics` would be as follows:
 
 ```yaml
   labels:
     operation: read|write
 ```
 
-Exactly one metric from each integration's `expected_metrics.yaml` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
+Exactly one metric from each integration's `expected_metrics` must have `representative: true`. This metric can be used to detect when the integration is enabled. A representative metric cannot be optional.
 
 With `optional: true`, the metric will be skipped during the test. This can be useful for metrics that are not guaranteed to be present during the test, for example due to platform differences or unimplemented test setup procedures. An optional metric cannot be representative.
 
-`expected_metrics.yaml` can be generated or updated using `generate_expected_metrics.go`:
+`expected_metrics` can be generated or updated using `generate_expected_metrics.go`:
 
 ```
 PROJECT="${PROJECT}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run -tags=integration_test \
+./cmd/generate_expected_metrics
 ```
 
 This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
 
 ```
 PROJECT="${PROJECT}" \
-GOOGLE_APPLICATION_CREDENTIALS="${HOME}/credentials.json" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
-go run generate_expected_metrics.go \
- -tags=integration_test
+go run -tags=integration_test \
+./cmd/generate_expected_metrics
 ```
 
-Existing `expected_metrics.yaml` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
+Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
 
 ### Testing Command
 
@@ -278,9 +256,8 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── fluent_bit_main.conf.txt
 |       └── fluent_bit_parser.conf.txt
 └── agent_packages
-    └── ops-agent
-        ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
-        └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
+    ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
+    └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
 ```
 
 Let's go through each of these files and discuss what they are.

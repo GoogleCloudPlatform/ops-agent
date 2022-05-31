@@ -21,32 +21,20 @@ import (
 )
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(tag, logName string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match": tag,
-				"Add":   fmt.Sprintf("logging.googleapis.com/logName %s", logName),
-				"Name":  "modify",
+func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"logName": {
+				DefaultValue: &logName,
 			},
-		},
-	}
-}
-
-// addLuaFilter generates a component with a Lua filter with the given parameters
-func addLuaFilter(tag, script, call string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":   "lua",
-				"Match":  tag,
-				"script": script,
-				"call":   call,
+			`labels."compute.googleapis.com/resource_name"`: {
+				DefaultValue: &hostName,
 			},
+			// `labels."agent.googleapis.com/receiver_type"`: {
+			// 	StaticValue: &receiverType,
+			// },
 		},
-	}
+	}.Components(tag, "setlogname")
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.

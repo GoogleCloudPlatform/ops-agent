@@ -1,0 +1,112 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/postgresql"
+app_url: "http://www.postgresql.org/"
+short_name: PostgreSQL
+long_name: PostgreSQL
+logo_path: /images/launcher/logos/postgresql.png # supplied by google technical writer
+description: |-
+  The PostgreSQL integration collects database-usage metrics, such as the database
+  size, the number of backends, or the number of operations. The integration also
+  collects PostgreSQL logs and parses them into a JSON payload. This result
+  includes fields for role, user, level, and message.
+configure_integration: |-
+  The `postgresql` receiver connects by default to a local `postgresql`
+  server using a Unix socket and Unix authentication as the `root` user.
+minimum_supported_agent_version:
+  metrics: 2.9.0
+  logging: 2.9.0
+supported_app_version: ["10.18+"]
+expected_metrics:
+- type: workload.googleapis.com/postgresql.backends
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+  representative: true
+- type: workload.googleapis.com/postgresql.commits
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.db_size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/postgresql.rollbacks
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+expected_logs:
+- log_name: postgresql_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: .*starting PostgreSQL.*
+    type: string
+    description: Log of the database action
+  - name: jsonPayload.level
+    value_regex: LOG
+    type: string
+    description: Log severity or type of database interaction type for some logs
+  - name: jsonPayload.tid
+    type: number
+    description: Thread ID where the log originated
+  - name: jsonPayload.role
+    type: string
+    description: Authenticated role for the action being logged when relevant
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated user for the action being logged when relevant
+configuration_options:
+  logs:
+  - type: postgresql_general
+    fields:
+    - name: type
+      default: null
+      description: The value must be postgresql_general.
+    - name: include_paths
+      default: '[/var/log/postgresql/postgresql*.log, /var/lib/pgsql/data/log/postgresql*.log, /var/lib/pgsql/*/data/log/postgresql*.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: postgresql
+    fields:
+    - name: type
+      default: null
+      description: This value must be postgresql.
+    - name: endpoint
+      default: /var/run/postgresql/.s.PGSQL.5432
+      description: The hostname:port or socket path starting with / used to connect to the postgresql server.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: username
+      default: null
+      description: The username used to connect to the server.
+    - name: password
+      default: null
+      description: The password used to connect to the server.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

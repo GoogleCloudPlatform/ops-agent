@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -12,20 +26,12 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
-REPO_SUFFIX: If provided, what Rapture repo suffix to install the ops agent from.
+REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Each agent in
-		AGENTS_TO_TEST must have its own subdirectory, so for example this would be
-		a valid structure inside AGENT_PACKAGES_IN_GCS if
-		AGENTS_TO_TEST=metrics,ops_agent:
-	├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
+REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
+    version of the Ops Agent to install first, before installing the version
+	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -44,13 +50,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-)
-
-var (
-	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
 )
 
 func logPathForPlatform(platform string) string {
@@ -139,12 +142,31 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
+type packageLocation struct {
+	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
+	// This setting takes precedence over repoSuffix.
+	packagesInGCS string
+	// Package repository suffix to install from. Setting this to ""
+	// means to install the latest stable release.
+	repoSuffix string
+}
+
+func locationFromEnvVars() packageLocation {
+	return packageLocation{
+		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:    os.Getenv("REPO_SUFFIX"),
+	}
+}
+
+// installOpsAgent installs the Ops Agent on the given VM. Preferentially
+// chooses to install from location.packagesInGCS if that is set, otherwise
+// falls back to location.repoSuffix.
+func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
+	if location.packagesInGCS != "" {
+		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
-		suffix := os.Getenv("REPO_SUFFIX")
+		suffix := location.repoSuffix
 		if suffix == "" {
 			suffix = "all"
 		}
@@ -164,7 +186,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+os.Getenv("REPO_SUFFIX")+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
@@ -173,8 +195,15 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	return nil
 }
 
+// setupOpsAgent installs the Ops Agent and installs the given config.
 func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
-	if err := installOpsAgent(ctx, logger, vm); err != nil {
+	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
+}
+
+// setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
+// decide which version of the agent gets installed.
+func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
+	if err := installOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
 	startupDelay := 20 * time.Second
@@ -199,6 +228,106 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nil
 }
 
+func TestParseMultilineFile(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: java
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from 3 java exception stacktraces, thus expect 3 logEntries.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
+  at com.my.app.Object.do$a1(MakeLog.java:50)
+  at java.lang.Thing.call(Thing.java:10)
+javax.servlet.ServletException: Something bad happened
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)
+    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)
+    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)
+    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)
+    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)
+    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)
+    at org.mortbay.jetty.Server.handle(Server.java:326)
+    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)
+    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)
+    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)
+    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)
+    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)
+    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)
+    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)
+Caused by: com.example.myproject.MyProjectServletException
+    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
+    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
+    ... 27 common frames omitted
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)\n"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -218,6 +347,7 @@ func TestCustomLogFile(t *testing.T) {
     my_exclude:
       type: exclude_logs
       match_any:
+      - jsonPayload.missing_field = "value"
       - jsonPayload.message =~ "test pattern"
   service:
     pipelines:
@@ -574,6 +704,121 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	})
 }
 
+func TestModifyFields(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."my.cool.service/foo":
+          copy_from: jsonPayload.field
+        labels."static":
+          static_value: hello world
+        labels."label2":
+          move_from: labels."label1"
+        severity:
+          static_value: WARNING
+        jsonPayload.field2:
+          move_from: jsonPayload.field
+          omit_if: jsonPayload.missing_field = "present"
+        jsonPayload.default_present:
+          default_value: default
+        jsonPayload.default_absent:
+          default_value: default
+        jsonPayload.integer:
+          static_value: 15
+          type: integer
+        jsonPayload.float:
+          static_value: 10.5
+          type: float
+        jsonPayload.mapped_field:
+          copy_from: jsonPayload.field
+          map_values:
+            value: new_value
+            value2: wrong_value
+        jsonPayload.omitted:
+          static_value: broken
+          omit_if: jsonPayload.field = "value"
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json, modify]
+        exporters: [google]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestResourceNameLabel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -796,9 +1041,9 @@ func metricsForPlatform(platform string) []string {
 		"agent.googleapis.com/agent/monitoring/point_count",
 
 		// TODO(b/170138116): Enable these metrics once they are being collected.
-		//"agent.googleapis.com/agent/log_entry_count",
-		//"agent.googleapis.com/agent/log_entry_retry_count",
-		//"agent.googleapis.com/agent/request_count",
+		"agent.googleapis.com/agent/log_entry_count",
+		// "agent.googleapis.com/agent/log_entry_retry_count",
+		"agent.googleapis.com/agent/request_count",
 
 		"agent.googleapis.com/cpu/load_1m",
 		"agent.googleapis.com/cpu/load_5m",
@@ -1081,22 +1326,32 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.Di
 	}
 }
 
+func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric from the last minute. Sleep for 3 minutes first
+	// to make sure we aren't picking up metrics from a previous instance
+	// of the metrics agent.
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+	return err
+}
+
 func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			time.Sleep(3 * time.Minute)
-
-			if _, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), metricsLivenessChecker)
 	})
+}
+
+func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	msg := uuid.NewString()
+	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
+		return err
+	}
+	tag := systemLogTagForPlatform(vm.Platform)
+	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, msg))
 }
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
@@ -1105,18 +1360,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			if err := writeToSystemLog(ctx, logger, vm, "33337777"); err != nil {
-				t.Fatal(err)
-			}
-
-			tag := systemLogTagForPlatform(vm.Platform)
-			if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, "33337777")); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
 	})
 }
 
@@ -1135,7 +1379,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger, vm); err != nil {
+		if err := installOpsAgent(ctx, logger, vm, locationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1162,6 +1406,48 @@ func TestWindowsLoggingAgentConflict(t *testing.T) {
 func TestWindowsMonitoringAgentConflict(t *testing.T) {
 	wantError := "We detected an existing Windows service for the StackdriverMonitoring agent"
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
+}
+
+func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	return multierr.Append(
+		loggingLivenessChecker(ctx, logger, vm),
+		metricsLivenessChecker(ctx, logger, vm))
+}
+
+func TestUpgradeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
+		// a default value of "", which means stable.
+		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
+			// Installation from stable may fail before the first release.
+			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
+			}
+			t.Fatal(err)
+		}
+
+		// Wait for the Ops Agent to be active. Make sure that it is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
+		secondVersion := locationFromEnvVars()
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
+			t.Fatal(err)
+		}
+
+		// Make sure that the newly installed Ops Agent is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {

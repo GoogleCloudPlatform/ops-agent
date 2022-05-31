@@ -1,0 +1,206 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/redis"
+app_url: "http://redis.io/"
+short_name: Redis
+long_name: Redis
+logo_path: /images/launcher/logos/redis.png # supplied by google technical writer
+description: |-
+  The Redis integration collects metrics related to performance and usage.
+  Performance metrics focus on CPU, memory, and network throughput, and usage
+  metrics focus on keys, commands, and replication. The integration also collects
+  Redis logs and parses them into a JSON payload. During this process, the
+  symbols for role and level are transformed into a human readable format.
+minimum_supported_agent_version:
+  metrics: 2.7.0
+  logging: 2.5.0
+supported_app_version: ["6.2"]
+expected_metrics:
+- type: workload.googleapis.com/redis.clients.blocked
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.clients.connected
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.clients.max_input_buffer
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/redis.clients.max_output_buffer
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.commands.processed
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.connections.received
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.connections.rejected
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.cpu.time
+  value_type: DOUBLE
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/redis.keys.evicted
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.keys.expired
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.keyspace.hits
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.keyspace.misses
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.latest_fork
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.memory.fragmentation_ratio
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.memory.lua
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.memory.peak
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.memory.rss
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.memory.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.net.input
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.net.output
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.rdb.changes_since_last_save
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.replication.backlog_first_byte_offset
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.replication.offset
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/redis.slaves.connected
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+expected_logs:
+- log_name: redis
+  fields:
+  - name: jsonPayload.level
+    value_regex: \*
+    type: string
+    description: Log entry level
+  - name: jsonPayload.message
+    value_regex: Ready to accept connections
+    type: string
+    description: ''
+  - name: jsonPayload.roleChar
+    value_regex: M
+    type: string
+    description: redis role character (X, C, S, M)
+  - name: jsonPayload.role
+    value_regex: master
+    type: string
+    description: translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
+  - name: jsonPayload.pid
+    type: number
+    description: Process ID
+configuration_options:
+  logs:
+  - type: redis
+    fields:
+    - name: type
+      default: null
+      description: This value must be redis.
+    - name: include_paths
+      default: '[/var/log/redis/redis-server.log, /var/log/redis_6379.log, /var/log/redis/redis.log, /var/log/redis/default.log, /var/log/redis/redis_6379.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/redis/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: redis
+    fields:
+    - name: type
+      default: null
+      description: This value must be redis.
+    - name: address
+      default: localhost:6379
+      description: The URL exposed by Redis.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: password
+      default: null
+      description: The password used to connect to the server.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

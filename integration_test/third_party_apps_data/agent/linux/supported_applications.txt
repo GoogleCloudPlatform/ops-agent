@@ -5,6 +5,7 @@ couchdb
 elasticsearch
 hadoop
 hbase
+jetty
 jvm
 kafka
 memcached
@@ -16,5 +17,6 @@ rabbitmq
 redis
 solr
 tomcat
+varnish
 wildfly
 zookeeper

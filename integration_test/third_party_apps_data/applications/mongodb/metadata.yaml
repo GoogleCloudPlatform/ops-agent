@@ -1,0 +1,150 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mongodb"
+app_url: "https://www.mongodb.com/"
+short_name: MongoDB
+long_name: MongoDB
+logo_path: /images/launcher/logos/mongodb.png # supplied by google technical writer
+description: |-
+  The MongoDB integration primarily collects database metrics, such as the number
+  of operations and objects, as well as resource usage. The integration also
+  collects logs and parses them into a JSON payload. The result includes fields
+  for context, component, level, and message.
+minimum_supported_agent_version:
+  metrics: 2.11.0
+  logging: 2.10.0
+supported_app_version: ["4.0+"]
+expected_metrics:
+- type: workload.googleapis.com/mongodb.cache.operations
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    type: .*
+- type: workload.googleapis.com/mongodb.collection.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.connection.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    type: .*
+- type: workload.googleapis.com/mongodb.data.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.global_lock.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.index.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.index.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.memory.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    type: .*
+  representative: true
+- type: workload.googleapis.com/mongodb.object.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.operation.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/mongodb.storage.size
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+expected_logs:
+- log_name: mongodb
+  fields:
+  - name: jsonPayload.component
+    type: string
+    description: Categorization of the log message. A full list can be found [here](https://docs.mongodb.com/manual/reference/log-messages/#std-label-log-message-components)
+  - name: jsonPayload.ctx
+    type: string
+    description: The name of the thread issuing the log statement
+  - name: jsonPayload.id
+    type: number
+    description: Log ID
+  - name: jsonPayload.message
+    type: string
+    description: Log message
+  - name: jsonPayload.attributes
+    type: object (optional)
+    description: Object containing one or more key-value pairs for any additional attributes provided
+configuration_options:
+  logs:
+  - type: mongodb
+    fields:
+    - name: type
+      default: null
+      description: This value must be mongodb.
+    - name: include_paths
+      default: '[/var/log/mongodb/mongod.log*]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mongodb/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: mongodb
+    fields:
+    - name: type
+      default: null
+      description: This value must be mongodb.
+    - name: endpoint
+      default: http://localhost:27017
+      description: The hostname, IP address, or UNIX domain socket. A port can be specified like <hostname>:<port>. If no port is specified the default 27017 will be used.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: username
+      default: null
+      description: Username for authentication with the MongoDB instance. Required if password is set.
+    - name: password
+      default: null
+      description: Password for authentication with the MongoDB instance. Required if username is set.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
