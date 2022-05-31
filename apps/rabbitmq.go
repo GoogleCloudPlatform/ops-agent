@@ -46,7 +46,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					CopyFrom: "jsonPayload.level",
+					CopyFrom: "jsonPayload.severity",
 					MapValues: map[string]string{
 						"debug": "DEBUG",
 						"error": "ERROR",

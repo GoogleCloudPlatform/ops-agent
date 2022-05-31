@@ -80,7 +80,7 @@ func (p LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Componen
 	severityMappingComponents := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
-				CopyFrom: "jsonPayload.level",
+				CopyFrom: "jsonPayload.severity",
 				MapValues: map[string]string{
 					"TRACE": "DEBUG",
 					"DEBUG": "DEBUG",
