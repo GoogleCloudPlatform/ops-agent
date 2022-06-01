@@ -1,15 +1,16 @@
 short_name: varnish
+app_url: "https://varnish-cache.org/"
 long_name: Varnish HTTP Cache
+logo_path: /images/partners/varnish-logo.png # supplied by google technical writer
 description: |-
   The Varnish integration collects cache and session metrics.
   It monitors the number of objects entering and exiting the cache,
   as well as the number of sessions and backend connections.
-  The integration also collects Varnish access logs and parses them
+  The integration also collects Varnish logs and parses them
   into a standardized json payload.
-
-  For more information about Varnish, see
-  [Varnish HTTP Cache](https://varnish-cache.org/).
 supported_app_version: ["6.x", "7.0.x"]
+configure_integration: |-
+  The Varnish logging processor processes logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html){: .external}. Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/){: .external} guide depending on os. By default, logs write to /var/log/varnish/varnishncsa.log. If another file is chosen, the user will have to also update the receiver configuration. Logs are expected to be in the default format and a logrotation should be setup.
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64
@@ -74,6 +75,21 @@ expected_metrics:
   labels:
     operation: .*
 configuration_options:
+  logs:
+  - type: varnish
+    fields:
+    - name: type
+      default: null
+      description: This value must be varnish.
+    - name: include_paths
+      default: '[/var/log/varnish/varnishncsa.log]'
+      description: A varnishncsa default log path to read by tailing each file.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - type: varnish
     fields:
@@ -89,3 +105,44 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
+minimum_supported_agent_version:
+  metrics: 2.15.0
+  logging: 2.16.0
+expected_logs:
+- log_name: varnish
+  fields:
+  - name: httpRequest.remoteIp
+    value_regex: 127.0.0.1
+    type: string
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: HTTP method
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+  - name: jsonPayload.user
+    type: string
+    description: Authenticated username for the request
+  - name: httpRequest.requestUrl
+    value_regex: /forbidden.html
+    type: string
+    description: Request URL (typically just the path part of the URL
+  - name: httpRequest.protocol
+    value_regex: HTTP/1.1
+    type: string
+    description: Protocol used for the request
+  - name: httpRequest.status
+    type: string
+    description: HTTP status code
+  - name: httpRequest.responseSize
+    type: string
+    description: Response size
+  - name: httpRequest.referer
+    type: string
+    description: Contents of the `Referer` header
+  - name: httpRequest.userAgent
+    type: string
+    description: Contents of the `User-Agent` header
+public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/varnish

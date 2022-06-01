@@ -1,15 +1,14 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/solr"
+app_url: "https://solr.apache.org/"
 short_name: Solr
 long_name: Apache Solr
+logo_path: /stackdriver/images/solr.png # supplied by google technical writer
 description: |-
   The Apache Solr integration collects core and cache metrics. Core metrics focus
   on requests, document count, and index size. Cache metrics focus on cache
   utilization. The integration also collects Solr logs and parses them into a
   JSON payload. The result includes fields for shard, replica, core,
   level, and message.
-
-  For more information about Solr, see
-  [solr.apache.org/](https://solr.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the

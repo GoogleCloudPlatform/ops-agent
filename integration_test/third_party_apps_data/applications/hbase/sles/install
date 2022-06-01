@@ -5,7 +5,7 @@ sudo zypper install -y wget java-11-openjdk
 
 HBASE_VERSION=2.4.11
 
-wget https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
+wget --no-verbose https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo mkdir /opt/hbase
 sudo tar -xzf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 

@@ -1,18 +1,18 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache"
+app_url: "http://httpd.apache.org/"
 short_name: Apache Web Server
 long_name: Apache Web Server (httpd)
+logo_path: /stackdriver/images/apache.png # supplied by google technical writer
 description: |-
   The Apache Web Server integration collects traffic-related metrics, such as the
   number of open connections or incoming requests. The integration also collects
   access and error logs. Access logs are parsed into a JSON payload focused on
   request details, and error logs are parsed for their error code and message.
-
-  For more information about Apache Web Server, see
-  [http://httpd.apache.org/](http://httpd.apache.org/).
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
+  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
+  {: .external}.
 
   Many Apache installations enable this plugin by default. To see if the
   plugin is enabled on your VM instance, run:
