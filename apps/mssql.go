@@ -48,6 +48,9 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.TransformAttributes(
+					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
+				),
 				otel.CastToSum(
 					"workload.googleapis.com/sqlserver.transaction_log.growth.count",
 					"workload.googleapis.com/sqlserver.transaction_log.shrink.count",
