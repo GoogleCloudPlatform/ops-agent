@@ -164,22 +164,23 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 		},
 	}.Components(tag, uid)
 	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
+	fields := map[string]*confgenerator.ModifyField{}
+
 	for _, field := range []string{
 		"cs_uri_query",
 		"http_request_referer",
 		"user",
 	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
+		fields[fmt.Sprintf("jsonPayload.%s", field)] = &confgenerator.ModifyField{
+			OmitIf: fmt.Sprintf(`jsonPayload.%s = "-"`, field),
+		}
 	}
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: fields,
+		}.Components(tag, uid)...,
+	)
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
 	c = append(c, []fluentbit.Component{
@@ -200,7 +201,7 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 
 	}...)
 
-	fields := map[string]*confgenerator.ModifyField{
+	fields = map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
 
@@ -209,6 +210,7 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 		"serverIp",
 		"remoteIp",
 		"requestMethod",
+		"requestUrl",
 		"status",
 		"referer",
 		"userAgent",
