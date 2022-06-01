@@ -46,7 +46,7 @@ expected_logs:
 - log_name: saphana_trace
   fields:
   - name: jsonPayload.message
-    value_regex: "*"
+    value_regex: ".*"
     type: string
     description: Log message
 configuration_options:
