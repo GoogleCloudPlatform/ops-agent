@@ -198,19 +198,30 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 			},
 		},
 
-		// Generate the httpRequest structure.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":          "nest",
-				"Match":         tag,
-				"Operation":     "nest",
-				"Wildcard":      "http_request_*",
-				"Nest_under":    "logging.googleapis.com/http_request",
-				"Remove_prefix": "http_request_",
-			},
-		},
 	}...)
+
+	fields := map[string]*confgenerator.ModifyField{
+		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+	}
+
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"serverIp",
+		"remoteIp",
+		"requestMethod",
+		"status",
+		"responseSize",
+	} {
+		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
+			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
+		}
+	}
+
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: fields,
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 
