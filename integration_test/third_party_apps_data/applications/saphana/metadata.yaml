@@ -1,5 +1,6 @@
 short_name: HANA
 long_name: SAP HANA
+app_url: "https://www.sap.com/products/hana.html"
 description: |-
   The SAP HANA integration collects SAP HANA trace logs and parses them into a
   structured log for consumption in Google Cloud Logging.
