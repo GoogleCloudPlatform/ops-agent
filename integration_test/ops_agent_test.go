@@ -469,7 +469,6 @@ func TestHTTPRequestLog(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not marshal test log: %v", err)
 		}
-		log.Println(string(logBytes))
 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(string(logBytes)+"\n"), logPath); err != nil {
 			t.Fatalf("error writing log line: %v", err)
@@ -479,7 +478,6 @@ func TestHTTPRequestLog(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		log.Println(entry)
 		if entry.HTTPRequest == nil {
 			t.Fatal("expected log entry to have HTTPRequest field")
 		}
