@@ -210,7 +210,8 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 		"remoteIp",
 		"requestMethod",
 		"status",
-		"responseSize",
+		"referer",
+		"userAgent",
 	} {
 		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
 			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
