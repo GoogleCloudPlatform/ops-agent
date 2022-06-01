@@ -46,10 +46,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
@@ -456,31 +458,82 @@ func TestHTTPRequestLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// The HTTP request data that will be used in each log
 		httpRequestBody := map[string]interface{}{
 			"requestMethod": "GET",
 			"requestUrl":    "https://cool.site.net",
 			"status":        200,
 		}
-		logBody := map[string]interface{}{
-			"log":                                "4837291",
-			"logging.googleapis.com/httpRequest": httpRequestBody,
-		}
-		logBytes, err := json.Marshal(logBody)
-		if err != nil {
-			t.Fatalf("could not marshal test log: %v", err)
+
+		// Write an http request log with to cloud logging and immediately query it
+		writeLog := func(httpRequestKey string, logId string) *cloudlogging.Entry {
+			logBody := map[string]interface{}{
+				"logId":        logId,
+				httpRequestKey: httpRequestBody,
+			}
+			logBytes, err := json.Marshal(logBody)
+			if err != nil {
+				t.Fatalf("could not marshal test log: %v", err)
+			}
+			err = gce.UploadContent(
+				ctx,
+				logger,
+				vm,
+				strings.NewReader(string(logBytes)+"\n"),
+				logPath)
+			if err != nil {
+				t.Fatalf("error writing log line: %v", err)
+			}
+
+			entry, err := gce.QueryLog(
+				ctx,
+				logger.ToMainLog(),
+				vm,
+				"mylog_source",
+				time.Hour,
+				"jsonPayload.logId="+logId,
+				gce.QueryMaxAttempts)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", logId, err)
+			}
+			return entry
 		}
 
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(string(logBytes)+"\n"), logPath); err != nil {
-			t.Fatalf("error writing log line: %v", err)
-		}
+		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
+		// parsed as expected by Fluent Bit.
+		t.Run("parse new HTTPRequest key", func(t *testing.T) {
+			httpRequestKey := confgenerator.HttpRequestKey
+			entry := writeLog(httpRequestKey, "341231")
+			payload := entry.Payload.(*structpb.Struct)
+			for key := range payload.GetFields() {
+				if key == httpRequestKey {
+					t.Fatal("expected request key to be stripped out")
+				}
+			}
+			if entry.HTTPRequest == nil {
+				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+		})
 
-		entry, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "", gce.QueryMaxAttempts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if entry.HTTPRequest == nil {
-			t.Fatal("expected log entry to have HTTPRequest field")
-		}
+		// Test that the old field, "logging.googleapis.com/http_request", is no longer
+		// parsed by Fluent Bit.
+		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
+			httpRequestKey := "logging.googleapis.com/http_request"
+			entry := writeLog(httpRequestKey, "34203948")
+			payload := entry.Payload.(*structpb.Struct)
+			foundKey := false
+			for key := range payload.GetFields() {
+				if key == httpRequestKey {
+					foundKey = true
+				}
+			}
+			if !foundKey {
+				t.Fatalf("expected %s key to be present in the payload", httpRequestKey)
+			}
+			if entry.HTTPRequest != nil {
+				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+		})
 	})
 }
 
