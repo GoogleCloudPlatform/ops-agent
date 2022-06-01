@@ -10,12 +10,15 @@ local __field_2 = (function()
 return record["http_request_requestMethod"]
 end)();
 local __field_3 = (function()
-return record["http_request_serverIp"]
+return record["http_request_requestUrl"]
 end)();
 local __field_4 = (function()
-return record["http_request_status"]
+return record["http_request_serverIp"]
 end)();
 local __field_5 = (function()
+return record["http_request_status"]
+end)();
+local __field_6 = (function()
 return record["http_request_userAgent"]
 end)();
 (function(value)
@@ -26,6 +29,9 @@ record["http_request_remoteIp"] = value
 end)(nil);
 (function(value)
 record["http_request_requestMethod"] = value
+end)(nil);
+(function(value)
+record["http_request_requestUrl"] = value
 end)(nil);
 (function(value)
 record["http_request_serverIp"] = value
@@ -66,7 +72,7 @@ if record["logging.googleapis.com/http_request"] == nil
 then
 record["logging.googleapis.com/http_request"] = {}
 end
-record["logging.googleapis.com/http_request"]["serverIp"] = value
+record["logging.googleapis.com/http_request"]["requestUrl"] = value
 end)(v)
 local v = __field_4;
 (function(value)
@@ -74,9 +80,17 @@ if record["logging.googleapis.com/http_request"] == nil
 then
 record["logging.googleapis.com/http_request"] = {}
 end
-record["logging.googleapis.com/http_request"]["status"] = value
+record["logging.googleapis.com/http_request"]["serverIp"] = value
 end)(v)
 local v = __field_5;
+(function(value)
+if record["logging.googleapis.com/http_request"] == nil
+then
+record["logging.googleapis.com/http_request"] = {}
+end
+record["logging.googleapis.com/http_request"]["status"] = value
+end)(v)
+local v = __field_6;
 (function(value)
 if record["logging.googleapis.com/http_request"] == nil
 then
