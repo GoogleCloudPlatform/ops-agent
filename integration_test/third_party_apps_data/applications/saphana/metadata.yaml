@@ -45,8 +45,28 @@ expected_metrics:
 expected_logs:
 - log_name: saphana_trace
   fields:
+  - name: jsonPayload.component
+    value_regex: "Basis"
+    type: string
+    description: SAP HANA component
+  - name: jsonPayload.source_file
+    value_regex: "TraceStream.cpp(00734)"
+    type: string
+    description: Source of log message
+  - name: jsonPayload.thread_id
+    type: number
+    description: ID of the thread logging the message
+  - name: jsonPayload.connection_id
+    type: number
+    description: ID of the connection where the message originated, if message was logged within the scope of a connection
+  - name: jsonPayload.transaction_id
+    type: number
+    description: ID of the transaction where the message originated, if message was logged within the scope of a transaction
+  - name: jsonPayload.update_transaction_id
+    type: number
+    description: ID of the update transaction where the message originated, if message was logged within the scope of an update transaction
   - name: jsonPayload.message
-    value_regex: ".*"
+    value_regex: "==== Starting hdbpreprocessor, version 2.*"
     type: string
     description: Log message
 configuration_options:

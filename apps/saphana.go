@@ -54,7 +54,7 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "severity_flag", "logging.googleapis.com/severity", false,
+		fluentbit.TranslationComponents(tag, "severity_flag", "logging.googleapis.com/severity", true,
 			[]struct{ SrcVal, DestVal string }{
 				{"d", "DEBUG"},
 				{"i", "INFO"},
