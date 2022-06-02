@@ -366,6 +366,7 @@ func (r *componentTypeRegistry[CI, M]) GetComponentsFromRegistry() []Component {
 	return components
 }
 
+// unmarshalValue is a bogus unmarshalling destination that just captures the unmarshal() function pointer for later reuse.
 type unmarshalValue struct {
 	unmarshal func(interface{}) error
 }
@@ -377,6 +378,9 @@ func (v *unmarshalValue) UnmarshalYAML(ctx context.Context, unmarshal func(inter
 
 type unmarshalMap map[string]unmarshalValue
 
+// unmarshalToMap unmarshals a YAML structure to a config map.
+// It should be called from UnmarshalYAML() on a concrete type.
+// N.B. The map type itself can't be generic because it needs to point to a specific type registry, not just a type registry type (whew).
 func (r *componentTypeRegistry[CI, M]) unmarshalToMap(ctx context.Context, m *M, unmarshal func(interface{}) error) error {
 	if *m == nil {
 		*m = make(M)
