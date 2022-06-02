@@ -288,15 +288,19 @@ type ConfigComponent struct {
 	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
+type componentInterface interface {
+	Component
+}
+
 // componentFactory is the value type for the componentTypeRegistry map.
-type componentFactory struct {
+type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
-	constructor func() Component
+	constructor func() CI
 	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
 	platforms []string
 }
 
-func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
+func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
 	platform := ctx.Value(platformKey).(string)
 	for _, v := range ct.platforms {
 		if v == platform {
@@ -306,29 +310,29 @@ func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
 	return len(ct.platforms) == 0
 }
 
-type componentTypeRegistry struct {
+type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	// Subagent is "logging" or "metric" (only used for error messages)
 	Subagent string
 	// Kind is "receiver" or "processor" (only used for error messages)
 	Kind string
 	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
-	TypeMap map[string]*componentFactory
+	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry) RegisterType(constructor func() Component, platforms ...string) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...string) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
 	}
 	if r.TypeMap == nil {
-		r.TypeMap = make(map[string]*componentFactory)
+		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	r.TypeMap[name] = &componentFactory{constructor, platforms}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platforms}
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
-func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inner *interface{}, unmarshal func(interface{}) error) error {
+func (r *componentTypeRegistry[CI, M]) unmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
 	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	var o interface{}
@@ -347,19 +351,50 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 			r.Subagent, r.Kind, c.Type,
 			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
-	*inner = o
+	*inner = o.(CI)
 	return unmarshal(*inner)
 }
 
 // GetComponentsFromRegistry returns all components that belong to the associated registry
-func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
-	components := make([]Component, len(c.TypeMap))
+func (r *componentTypeRegistry[CI, M]) GetComponentsFromRegistry() []Component {
+	components := make([]Component, len(r.TypeMap))
 	i := 0
-	for _, comp := range c.TypeMap {
+	for _, comp := range r.TypeMap {
 		components[i] = comp.constructor()
 		i++
 	}
 	return components
+}
+
+type unmarshalValue struct {
+	unmarshal func(interface{}) error
+}
+
+func (v *unmarshalValue) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	v.unmarshal = unmarshal
+	return nil
+}
+
+type unmarshalMap map[string]unmarshalValue
+
+func (r *componentTypeRegistry[CI, M]) unmarshalToMap(ctx context.Context, m *M, unmarshal func(interface{}) error) error {
+	if *m == nil {
+		*m = make(M)
+	}
+	// Step 1: Capture unmarshal functions for each component
+	um := unmarshalMap{}
+	if err := unmarshal(&um); err != nil {
+		return err
+	}
+	// Step 2: Unmarshal into the destination map
+	for k, u := range um {
+		var inner CI
+		if err := r.unmarshalComponentYaml(ctx, &inner, u.unmarshal); err != nil {
+			return err
+		}
+		(*m)[k] = inner
+	}
+	return nil
 }
 
 // Ops Agent logging config.
@@ -378,31 +413,12 @@ type LoggingReceiver interface {
 	Components(tag string) []fluentbit.Component
 }
 
-var LoggingReceiverTypes = &componentTypeRegistry{
+var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type loggingReceiverWrapper struct {
-	inner interface{}
-}
-
-func (l *loggingReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return LoggingReceiverTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]loggingReceiverWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = loggingReceiverMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(LoggingReceiver)
-	}
-	return nil
+func (m *loggingReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return LoggingReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 // Logging receivers that listen on a port of the host
@@ -418,31 +434,12 @@ type LoggingProcessor interface {
 	Components(tag string, uid string) []fluentbit.Component
 }
 
-var LoggingProcessorTypes = &componentTypeRegistry{
+var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
 	Subagent: "logging", Kind: "processor",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type loggingProcessorWrapper struct {
-	inner interface{}
-}
-
-func (l *loggingProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return LoggingProcessorTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]loggingProcessorWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = loggingProcessorMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(LoggingProcessor)
-	}
-	return nil
+func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return LoggingProcessorTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type LoggingService struct {
@@ -621,34 +618,12 @@ func (m MetricsReceiverSharedCluster) ShouldCollectClusterMetrics() bool {
 	return m.CollectClusterMetrics == nil || *m.CollectClusterMetrics
 }
 
-var MetricsReceiverTypes = &componentTypeRegistry{
+var MetricsReceiverTypes = &componentTypeRegistry[MetricsReceiver, metricsReceiverMap]{
 	Subagent: "metrics", Kind: "receiver",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type metricsReceiverWrapper struct {
-	inner interface{}
-}
-
-func (m *metricsReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return MetricsReceiverTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
-}
-
-func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]metricsReceiverWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = metricsReceiverMap{}
-	for k, r := range tm {
-		if r.inner == nil {
-			return fmt.Errorf("unknown type for receiver %q", k) // TODO: better error
-		}
-		(*m)[k] = r.inner.(MetricsReceiver)
-	}
-	return nil
+func (m *metricsReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return MetricsReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsProcessor interface {
@@ -656,31 +631,12 @@ type MetricsProcessor interface {
 	Processors() []otel.Component
 }
 
-var MetricsProcessorTypes = &componentTypeRegistry{
+var MetricsProcessorTypes = &componentTypeRegistry[MetricsProcessor, metricsProcessorMap]{
 	Subagent: "metrics", Kind: "processor",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type metricsProcessorWrapper struct {
-	inner interface{}
-}
-
-func (m *metricsProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return MetricsProcessorTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
-}
-
-func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]metricsProcessorWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = metricsProcessorMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(MetricsProcessor)
-	}
-	return nil
+func (m *metricsProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return MetricsProcessorTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsService struct {

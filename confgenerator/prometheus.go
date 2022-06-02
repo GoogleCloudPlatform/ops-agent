@@ -292,5 +292,5 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 }
 
 func init() {
-	MetricsReceiverTypes.RegisterType(func() Component { return &PrometheusMetrics{} })
+	MetricsReceiverTypes.RegisterType(func() MetricsReceiver { return &PrometheusMetrics{} })
 }
