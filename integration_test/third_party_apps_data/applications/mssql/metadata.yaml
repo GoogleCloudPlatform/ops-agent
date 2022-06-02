@@ -38,7 +38,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 # v2 metrics
-- type: workload.googleapis.com/sqlserver.user.connection.count
+- type: workload.googleapis.com/sqlserver.user.connection.count # TODO: look into this metric type change
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
@@ -73,7 +73,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-- type: workload.googleapis.com/sqlserver.page.life_expectancy
+- type: workload.googleapis.com/sqlserver.page.life_expectancy # TODO: look into this metric type change
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
@@ -99,54 +99,57 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     type: .*
+  # TODO: look into this metric change
 - type: workload.googleapis.com/sqlserver.transaction_log.growth.count
   value_type: DOUBLE
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
+  # TODO: look into this metric type change
 - type: workload.googleapis.com/sqlserver.transaction_log.shrink.count
   value_type: DOUBLE
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
+  # TODO: look into this metric type change
 - type: workload.googleapis.com/sqlserver.transaction_log.percent_used
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.flush.wait.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.flush.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.flush.data.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 - type: workload.googleapis.com/sqlserver.transaction.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 - type: workload.googleapis.com/sqlserver.transaction.write.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    sqlserver_database_name: .*
+    database: .*
 configuration_options:
   metrics:
   - type: mssql
