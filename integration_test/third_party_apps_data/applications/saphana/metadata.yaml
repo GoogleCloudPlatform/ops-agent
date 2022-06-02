@@ -50,7 +50,7 @@ expected_logs:
     type: string
     description: SAP HANA component
   - name: jsonPayload.source_file
-    value_regex: "TraceStream.cpp(00734)"
+    value_regex: "TraceStream.cpp.*"
     type: string
     description: Source of log message
   - name: jsonPayload.thread_id
