@@ -756,37 +756,16 @@ var (
 )
 
 // mapKeys returns keys from a map[string]Any as a map[string]bool.
-func mapKeys(m interface{}) map[string]bool {
+func mapKeys[V any, M ~map[string]V](m M) map[string]bool {
 	keys := map[string]bool{}
-	switch m := m.(type) {
-	case loggingReceiverMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]LoggingProcessor:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]*Pipeline:
-		for k := range m {
-			keys[k] = true
-		}
-	case metricsReceiverMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case metricsProcessorMap:
-		for k := range m {
-			keys[k] = true
-		}
-	default:
-		panic(fmt.Sprintf("Unknown type: %T", m))
+	for k := range m {
+		keys[k] = true
 	}
 	return keys
 }
 
 // sortedKeys returns keys from a map[string]Any as a sorted string slice.
-func sortedKeys(m interface{}) []string {
+func sortedKeys[V any, M ~map[string]V](m M) []string {
 	var r []string
 	for k := range mapKeys(m) {
 		r = append(r, k)
@@ -806,7 +785,7 @@ func findInvalid(actual []string, allowed map[string]bool) []string {
 	return invalid
 }
 
-func validateComponentKeys(components interface{}, refs []string, subagent string, kind string, pipeline string) error {
+func validateComponentKeys[V any, M ~map[string]V](components M, refs []string, subagent string, kind string, pipeline string) error {
 	invalid := findInvalid(refs, mapKeys(components))
 	if len(invalid) > 0 {
 		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid[0], pipeline)
@@ -814,7 +793,7 @@ func validateComponentKeys(components interface{}, refs []string, subagent strin
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) (map[string]int, error) {
+func validateComponentTypeCounts[V any, M ~map[string]V](components M, refs []string, subagent string, kind string) (map[string]int, error) {
 	r := map[string]int{}
 	cm := reflect.ValueOf(components)
 	for _, id := range refs {
