@@ -3,11 +3,16 @@
 set -e
 
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-
 logging:
   receivers:
     saphana_trace:
       type: saphana_trace
+      include_paths:
+      - /usr/sap/*/HDB*/saphanamon/trace/*.trc
+      exclude_paths:
+      - /usr/sap/*/HDB*/saphanamon/trace/nameserver_history*.trc
+      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*loads*.trc
+      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*executed_statements*.trc
   service:
     pipelines:
       saphana:
