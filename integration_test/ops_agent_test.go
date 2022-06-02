@@ -465,8 +465,8 @@ func TestHTTPRequestLog(t *testing.T) {
 			"status":        200,
 		}
 
-		// Write an http request log with to cloud logging and immediately query it
-		writeLog := func(httpRequestKey string, logId string) *cloudlogging.Entry {
+		// Write a log with an http request in the message to cloud logging and immediately query it.
+		writeAndQueryLog := func(httpRequestKey string, logId string) *cloudlogging.Entry {
 			logBody := map[string]interface{}{
 				"logId":        logId,
 				httpRequestKey: httpRequestBody,
@@ -491,7 +491,7 @@ func TestHTTPRequestLog(t *testing.T) {
 				vm,
 				"mylog_source",
 				time.Hour,
-				"jsonPayload.logId="+logId,
+				fmt.Sprintf("jsonPayload.logId=%q", logId),
 				gce.QueryMaxAttempts)
 			if err != nil {
 				t.Fatalf("could not find written log with id %s: %v", logId, err)
@@ -503,11 +503,11 @@ func TestHTTPRequestLog(t *testing.T) {
 		// parsed as expected by Fluent Bit.
 		t.Run("parse new HTTPRequest key", func(t *testing.T) {
 			httpRequestKey := confgenerator.HttpRequestKey
-			entry := writeLog(httpRequestKey, "341231")
+			entry := writeAndQueryLog(httpRequestKey, "341231")
 			payload := entry.Payload.(*structpb.Struct)
 			for key := range payload.GetFields() {
 				if key == httpRequestKey {
-					t.Fatal("expected request key to be stripped out")
+					t.Fatal("expected request key to be stripped out of message")
 				}
 			}
 			if entry.HTTPRequest == nil {
@@ -518,17 +518,17 @@ func TestHTTPRequestLog(t *testing.T) {
 		// Test that the old field, "logging.googleapis.com/http_request", is no longer
 		// parsed by Fluent Bit.
 		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
-			httpRequestKey := "logging.googleapis.com/http_request"
-			entry := writeLog(httpRequestKey, "34203948")
+			oldHTTPRequestKey := "logging.googleapis.com/http_request"
+			entry := writeAndQueryLog(oldHTTPRequestKey, "34203948")
 			payload := entry.Payload.(*structpb.Struct)
 			foundKey := false
 			for key := range payload.GetFields() {
-				if key == httpRequestKey {
+				if key == oldHTTPRequestKey {
 					foundKey = true
 				}
 			}
 			if !foundKey {
-				t.Fatalf("expected %s key to be present in the payload", httpRequestKey)
+				t.Fatalf("expected %s key to be present in the payload", oldHTTPRequestKey)
 			}
 			if entry.HTTPRequest != nil {
 				t.Fatal("expected log entry not to have HTTPRequest field")
