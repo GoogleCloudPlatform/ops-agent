@@ -93,4 +93,4 @@ expected_logs:
     description: null
 configuration_options:
   metrics:
-
+  logs:

@@ -43,15 +43,15 @@ type fieldError struct {
 	tag   string
 }
 
-func getYaml(t *testing.T, dirName string) []byte {
-	dir := path.Join(testdataDir, dirName, inputYamlName)
-	contents, err := ioutil.ReadFile(dir)
+func getInputYamlBytes(t *testing.T, dirName string) []byte {
+	yamlFilePath := path.Join(testdataDir, dirName, inputYamlName)
+	contents, err := ioutil.ReadFile(yamlFilePath)
 	if err != nil {
-		t.Fatal("could not read dirName: " + dir)
+		t.Fatal("could not read dirName: " + yamlFilePath)
 	}
-	str := strings.ReplaceAll(string(contents), "\r\n", "\n")
+	escapedYamlStr := strings.ReplaceAll(string(contents), "\r\n", "\n")
 
-	return []byte(str)
+	return []byte(escapedYamlStr)
 }
 
 func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
@@ -66,91 +66,98 @@ func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
 func TestAll(t *testing.T) {
 	table := []testCase{
 		{
-			"pass",
-			nil,
+			dirName:        "pass",
+			expectedErrors: nil,
 		},
 		{
-			"integration-metadata_required_app-url",
-			map[fieldError]struct{}{
-				{"AppUrl", "required"}: {},
+			dirName: "integration-metadata_required_app-url",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "AppUrl", tag: "required"}: {},
 			},
 		},
 		{
-			"configuration-options_required_without_metrics-configuration",
-			map[fieldError]struct{}{
-				{"LogsConfiguration", "required_without"}:    {},
-				{"MetricsConfiguration", "required_without"}: {},
+			dirName: "configuration-options_required_without_metrics-configuration",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "LogsConfiguration", tag: "required_without"}:    {},
+				{field: "MetricsConfiguration", tag: "required_without"}: {},
 			},
 		},
 		{
-			"expected-metric_one_of_value-type",
-			map[fieldError]struct{}{
-				{"ValueType", "oneof"}: {},
+			dirName: "expected-metric_one_of_value-type",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "ValueType", tag: "oneof"}: {},
 			},
 		},
 		{
-			"expected-metric_excluded_with_optional",
-			map[fieldError]struct{}{
-				{"Representative", "excluded_with"}: {},
-				{"Optional", "excluded_with"}:       {},
+			dirName: "expected-metric_excluded_with_optional",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "Representative", tag: "excluded_with"}: {},
+				{field: "Optional", tag: "excluded_with"}:       {},
 			},
 		},
 		{
-			"integration-metadata_unique_supported-app-version",
-			map[fieldError]struct{}{
-				{"SupportedAppVersion", "unique"}: {},
+			dirName: "integration-metadata_unique_supported-app-version",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "SupportedAppVersion", tag: "unique"}: {},
 			},
 		},
 		{
-			"integration-metadata_unique_supported-app-version",
-			map[fieldError]struct{}{
-				{"SupportedAppVersion", "unique"}: {},
+			dirName: "integration-metadata_unique_supported-app-version",
+			expectedErrors: map[fieldError]struct{}{
+				{field: "SupportedAppVersion", tag: "unique"}: {},
 			},
 		},
 	}
 
 	for _, test := range table {
 		t.Run(test.dirName, func(t *testing.T) {
-			testDir(t, test)
+			//We want to parallelize the test cases, so we pass the test case into a
+			//separate function
+			testMetadataValidation(t, test)
 		})
 	}
 }
 
-func testDir(t *testing.T, test testCase) {
+func testMetadataValidation(t *testing.T, test testCase) {
 	t.Parallel()
-	fmt.Println("test.dirName: " + test.dirName)
-	bytes := getYaml(t, test.dirName)
+	bytes := getInputYamlBytes(t, test.dirName)
 	actualErrors := UnmarshallAndValidate(t, bytes, &IntegrationMetadata{})
 
 	//testdata/pass
 	if test.expectedErrors == nil {
 		if actualErrors == nil {
 			return
-		} else {
-			t.Fatal("Expecting no errors")
 		}
+		t.Fatal("Expecting no errors")
 	}
 
-	if actualErrors != nil {
-		fieldErrors := actualErrors.(validator.ValidationErrors)
-		if len(fieldErrors) != len(test.expectedErrors) {
-			t.Fatal("Expecting validation errors to equal expected errors")
-		}
-		expectedErrorsMap := test.expectedErrors
-		actualErrorsMap := map[fieldError]struct{}{}
-		for _, err := range fieldErrors {
-			actualError := err.(validator.FieldError)
-			actualErrorsMap[fieldError{actualError.Field(), actualError.Tag()}] = struct{}{}
-		}
-
-		for i := range actualErrorsMap {
-			delete(expectedErrorsMap, i)
-		}
-
-		if len(expectedErrorsMap) > 0 {
-			t.Fatal(fmt.Sprintf("Unexcpected errors detected: \n Expected error: %v but got %v", test.expectedErrors, actualErrorsMap))
-		}
-	} else {
+	if actualErrors == nil {
 		t.Fatal("Expecting validation to fail for test: " + test.dirName)
 	}
+
+	fieldErrors, ok := actualErrors.(validator.ValidationErrors)
+
+	if !ok {
+		t.Fatal("Expected validation error to of type validator.ValidationErrors")
+	}
+
+	if len(fieldErrors) != len(test.expectedErrors) {
+		t.Fatal("Expecting validation errors to equal expected errors")
+	}
+	expectedErrorsMap := test.expectedErrors
+	var actualErrorsSlice []fieldError
+	for _, fieldErr := range fieldErrors {
+		actualError := fieldError{fieldErr.Field(), fieldErr.Tag()}
+		actualErrorsSlice = append(actualErrorsSlice, actualError)
+		delete(expectedErrorsMap, actualError)
+	}
+
+	if len(expectedErrorsMap) > 0 {
+		var expectedErrorsSlice []fieldError
+		for k, _ := range expectedErrorsMap {
+			expectedErrorsSlice = append(expectedErrorsSlice, k)
+		}
+		t.Fatal(fmt.Sprintf("Unexpected errors detected: \n Expected error: %v but got %v", expectedErrorsSlice, actualErrorsSlice))
+	}
+
 }
