@@ -36,8 +36,9 @@ import (
 
 // Ops Agent config.
 type UnifiedConfig struct {
-	Logging *Logging `yaml:"logging"`
-	Metrics *Metrics `yaml:"metrics"`
+	GenericReceivers genericReceiverMap `yaml:"generic_receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
+	Logging          *Logging           `yaml:"logging"`
+	Metrics          *Metrics           `yaml:"metrics"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -628,6 +629,21 @@ var MetricsReceiverTypes = &componentTypeRegistry[MetricsReceiver, metricsReceiv
 
 func (m *metricsReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 	return MetricsReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
+}
+
+type GenericReceiver interface {
+	// TODO: Add more types of signals
+	MetricsReceiver
+}
+
+var GenericReceiverTypes = &componentTypeRegistry[GenericReceiver, genericReceiverMap]{
+	Subagent: "generic", Kind: "receiver",
+}
+
+type genericReceiverMap map[string]GenericReceiver
+
+func (m *genericReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return GenericReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsProcessor interface {
