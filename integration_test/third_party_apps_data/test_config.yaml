@@ -1,5 +1,8 @@
 per_application_overrides:
   apache:
+    # Skip various failing platforms for now.
+    # New applications should use platforms_to_skip sparingly
+    # if at all.
     # TODO: reenable distros incrementally.
     platforms_to_skip:
       - centos-7
@@ -8,9 +11,6 @@ per_application_overrides:
       - sles-12
       - sles-15
   cassandra:
-    # Skip all platforms listed above except debian-10 for now.
-    # New applications should use platforms_to_skip sparingly
-    # if at all.
     # TODO: reenable application+distro pairs incrementally.
     platforms_to_skip: &common_skips
       - centos-7
