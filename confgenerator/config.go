@@ -671,7 +671,7 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.Metrics.Validate(platform); err != nil {
+		if err := uc.ValidateMetrics(platform); err != nil {
 			return err
 		}
 	}
@@ -719,7 +719,8 @@ func (l *Logging) Validate(platform string) error {
 	return nil
 }
 
-func (m *Metrics) Validate(platform string) error {
+func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
+	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
@@ -727,9 +728,21 @@ func (m *Metrics) Validate(platform string) error {
 	if m.Service == nil {
 		return nil
 	}
+	validReceivers := map[string]MetricsReceiver{}
+	for k, v := range m.Receivers {
+		validReceivers[k] = v
+	}
+	for k, v := range uc.GenericReceivers {
+		if _, ok := m.Receivers[k]; ok {
+			return fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+		}
+		if v, ok := v.(MetricsReceiver); ok {
+			validReceivers[k] = v
+		}
+	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
-		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(validReceivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
