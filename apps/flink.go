@@ -17,7 +17,45 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
+
+type MetricsReceiverFlink struct {
+	confgenerator.ConfigComponent       `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	Endpoint                            string `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
+}
+
+func (MetricsReceiverFlink) Type() string {
+	return "flinkmetrics"
+}
+
+const defaultFlinkEndpoint = "http://localhost:8081"
+
+func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
+	if r.Endpoint == "" {
+		r.Endpoint = defaultFlinkEndpoint
+	}
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type: "flinkmetrics",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"endpoint":            r.Endpoint,
+			},
+		},
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+		},
+	}}
+}
+
+func init() {
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverFlink{} })
+}
 
 type LoggingProcessorFlink struct {
 	confgenerator.ConfigComponent `yaml:",inline"`

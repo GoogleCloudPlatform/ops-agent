@@ -1,0 +1,9 @@
+[19:17] "endpoint" must start with "http:"
+  16 |   receivers:
+  17 |     flinkmetrics:
+  18 |       type: flinkmetrics
+> 19 |       endpoint: localhost:8081
+                       ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       flinkmetrics:
