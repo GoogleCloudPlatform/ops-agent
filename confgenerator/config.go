@@ -719,6 +719,22 @@ func (l *Logging) Validate(platform string) error {
 	return nil
 }
 
+func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
+	validReceivers := map[string]MetricsReceiver{}
+	for k, v := range uc.Metrics.Receivers {
+		validReceivers[k] = v
+	}
+	for k, v := range uc.GenericReceivers {
+		if _, ok := uc.Metrics.Receivers[k]; ok {
+			return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+		}
+		if v, ok := v.(MetricsReceiver); ok {
+			validReceivers[k] = v
+		}
+	}
+	return validReceivers, nil
+}
+
 func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	m := uc.Metrics
 	subagent := "metrics"
@@ -728,34 +744,26 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	if m.Service == nil {
 		return nil
 	}
-	validReceivers := map[string]MetricsReceiver{}
-	for k, v := range m.Receivers {
-		validReceivers[k] = v
-	}
-	for k, v := range uc.GenericReceivers {
-		if _, ok := m.Receivers[k]; ok {
-			return fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
-		}
-		if v, ok := v.(MetricsReceiver); ok {
-			validReceivers[k] = v
-		}
+	receivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return err
 	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
-		if err := validateComponentKeys(validReceivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if receiverCounts, err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if receiverCounts, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		} else {
 			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
 				return err
 			}
 
-			if err := validateSSLConfig(m.Receivers); err != nil {
+			if err := validateSSLConfig(receivers); err != nil {
 				return err
 			}
 		}
