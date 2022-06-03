@@ -75,7 +75,7 @@ expected_logs:
 - log_name: apache_access
   fields:
   - name: httpRequest.remoteIp
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestUrl
@@ -99,7 +99,7 @@ expected_logs:
 - log_name: apache_error
   fields:
   - name: jsonPayload.client
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1:[0-9]+
     type: string
     description: Client IP address (optional)
   - name: jsonPayload.level
