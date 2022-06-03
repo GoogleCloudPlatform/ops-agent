@@ -57,7 +57,7 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
-	BufferInMemory          bool
+	BufferInMemory          bool            `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
