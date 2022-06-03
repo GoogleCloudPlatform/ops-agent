@@ -1,7 +1,5 @@
 set -e
 
-# foo
-
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 metrics:
   receivers:
