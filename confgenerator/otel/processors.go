@@ -100,7 +100,9 @@ func TransformAttributes(queries ...TransformQuery) Component {
 	return Component{
 		Type: "transform",
 		Config: map[string]interface{}{
-			"queries": queryStrings,
+			"metrics": map[string]interface{}{
+				"queries": queryStrings,
+			},
 		},
 	}
 }
