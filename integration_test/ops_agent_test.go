@@ -46,10 +46,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
@@ -422,6 +424,116 @@ func TestCustomLogFormat(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func TestHTTPRequestLog(t *testing.T) {
+	t.Parallel()
+
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
+  processors:
+    json1:
+      type: parse_json
+      field: message
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+        exporters: [google]`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// The HTTP request data that will be used in each log
+		httpRequestBody := map[string]interface{}{
+			"requestMethod": "GET",
+			"requestUrl":    "https://cool.site.net",
+			"status":        200,
+		}
+
+		// Write a log with an http request in the message to cloud logging and immediately query it.
+		writeAndQueryLog := func(httpRequestKey string, logId string) *cloudlogging.Entry {
+			logBody := map[string]interface{}{
+				"logId":        logId,
+				httpRequestKey: httpRequestBody,
+			}
+			logBytes, err := json.Marshal(logBody)
+			if err != nil {
+				t.Fatalf("could not marshal test log: %v", err)
+			}
+			err = gce.UploadContent(
+				ctx,
+				logger,
+				vm,
+				strings.NewReader(string(logBytes)+"\n"),
+				logPath)
+			if err != nil {
+				t.Fatalf("error writing log line: %v", err)
+			}
+
+			entry, err := gce.QueryLog(
+				ctx,
+				logger.ToMainLog(),
+				vm,
+				"mylog_source",
+				time.Hour,
+				fmt.Sprintf("jsonPayload.logId=%q", logId),
+				gce.QueryMaxAttempts)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", logId, err)
+			}
+			return entry
+		}
+
+		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
+		// parsed as expected by Fluent Bit.
+		t.Run("parse new HTTPRequest key", func(t *testing.T) {
+			httpRequestKey := confgenerator.HttpRequestKey
+			entry := writeAndQueryLog(httpRequestKey, "341231")
+			payload := entry.Payload.(*structpb.Struct)
+			for key := range payload.GetFields() {
+				if key == httpRequestKey {
+					t.Fatal("expected request key to be stripped out of message")
+				}
+			}
+			if entry.HTTPRequest == nil {
+				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+		})
+
+		// Test that the old field, "logging.googleapis.com/http_request", is no longer
+		// parsed by Fluent Bit.
+		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
+			oldHTTPRequestKey := "logging.googleapis.com/http_request"
+			entry := writeAndQueryLog(oldHTTPRequestKey, "34203948")
+			payload := entry.Payload.(*structpb.Struct)
+			foundKey := false
+			for key := range payload.GetFields() {
+				if key == oldHTTPRequestKey {
+					foundKey = true
+				}
+			}
+			if !foundKey {
+				t.Fatalf("expected %s key to be present in the payload", oldHTTPRequestKey)
+			}
+			if entry.HTTPRequest != nil {
+				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+		})
 	})
 }
 
@@ -1425,6 +1537,10 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		// a default value of "", which means stable.
 		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
 		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
+			// Installation from stable may fail before the first release.
+			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
+			}
 			t.Fatal(err)
 		}
 
