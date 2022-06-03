@@ -1,4 +1,5 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache"
+app_url: "http://httpd.apache.org/"
 short_name: Apache Web Server
 long_name: Apache Web Server (httpd)
 logo_path: /stackdriver/images/apache.png # supplied by google technical writer
@@ -7,13 +8,11 @@ description: |-
   number of open connections or incoming requests. The integration also collects
   access and error logs. Access logs are parsed into a JSON payload focused on
   request details, and error logs are parsed for their error code and message.
-
-  For more information about Apache Web Server, see
-  [http://httpd.apache.org/](http://httpd.apache.org/).
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
+  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
+  {: .external}.
 
   Many Apache installations enable this plugin by default. To see if the
   plugin is enabled on your VM instance, run:
@@ -76,7 +75,7 @@ expected_logs:
 - log_name: apache_access
   fields:
   - name: httpRequest.remoteIp
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestUrl
@@ -100,7 +99,7 @@ expected_logs:
 - log_name: apache_error
   fields:
   - name: jsonPayload.client
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1:[0-9]+
     type: string
     description: Client IP address (optional)
   - name: jsonPayload.level

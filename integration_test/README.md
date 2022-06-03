@@ -1,6 +1,6 @@
 # Integration Testing
 
-Integration tests are implemented as Kokoko builds that run on each PR. The
+Integration tests are implemented as Kokoro builds that run on each PR. The
 builds first build the Ops Agent and then run tests on that agent. The Kokoro
 builds are split up by distro.
 

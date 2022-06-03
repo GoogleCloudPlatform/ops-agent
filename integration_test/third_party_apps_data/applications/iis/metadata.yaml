@@ -1,4 +1,5 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
+app_url: "https://www.iis.net/"
 short_name: IIS
 long_name: IIS
 logo_path: /stackdriver/images/iis.png # supplied by google technical writer
@@ -9,9 +10,6 @@ description: |-
 
   When using the Ops Agent on a Microsoft Windows VM, the agent automatically
   collects IIS metrics. No additional configuration is required.
-
-  For more information on IIS, see the
-  [IIS](https://www.iis.net/) documentation.
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0
