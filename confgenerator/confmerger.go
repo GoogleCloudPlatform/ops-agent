@@ -72,6 +72,7 @@ func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
+	original.GenericReceivers = overrides.GenericReceivers
 	// For "default_pipeline", we go one level deeper.
 	// this covers 2 cases:
 	// 1. if "<receivers / processors / exporters>: []" is specified explicitly in user config, the entity gets cleared.
