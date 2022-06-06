@@ -16,7 +16,6 @@ expected_logs:
     type: string
     description: ''
   - name: severity
-    value_regex: INFO
     type: string
     description: ''
   - name: timestamp
