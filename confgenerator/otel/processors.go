@@ -91,7 +91,7 @@ func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
 	}
 }
 
-// TransformAttributes returns a transform processor that
+// TransformAttributes returns a transform processor object that contains all the queries passed into it.
 func TransformAttributes(queries ...TransformQuery) Component {
 	queryStrings := []string{}
 	for _, q := range queries {
