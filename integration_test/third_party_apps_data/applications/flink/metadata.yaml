@@ -18,6 +18,9 @@ expected_logs:
   - name: severity
     type: string
     description: ''
+  - name: timestamp
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: flink
@@ -51,8 +54,5 @@ expected_metrics:
 minimum_supported_agent_version:
   logging: ""
   metrics: ""
-supported_app_version:
-- 1.13.6
-- 1.14.4
 restart_after_install: false
 troubleshoot: ""
