@@ -43,6 +43,14 @@ configuration_options:
   metrics: []
 configure_integration: ""
 expected_metrics:
+- type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+  optional: false
+  representative: true
 minimum_supported_agent_version:
   logging: ""
   metrics: ""
