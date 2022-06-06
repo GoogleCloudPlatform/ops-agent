@@ -17,8 +17,10 @@
 package common
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"testing"
@@ -28,30 +30,23 @@ import (
 )
 
 const (
-	//relative path to testdata folder
-	testdataDir   = "testdata"
-	inputYamlName = "input.yaml"
+	// relative path to testdata folder
+	testdataDir     = "testdata"
+	inputYamlName   = "input.yaml"
+	goldenErrorName = "golden_error"
 )
 
-type testCase struct {
-	dirName        string
-	expectedErrors map[fieldError]struct{}
-}
+var (
+	updateGolden = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
+)
 
-type fieldError struct {
-	field string
-	tag   string
-}
-
-func getInputYamlBytes(t *testing.T, dirName string) []byte {
-	yamlFilePath := path.Join(testdataDir, dirName, inputYamlName)
-	contents, err := ioutil.ReadFile(yamlFilePath)
+func getTestFile(t *testing.T, dirName, fileName string) string {
+	filePath := path.Join(testdataDir, dirName, fileName)
+	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		t.Fatal("could not read dirName: " + yamlFilePath)
+		t.Fatal("could not read dirName: " + filePath)
 	}
-	escapedYamlStr := strings.ReplaceAll(string(contents), "\r\n", "\n")
-
-	return []byte(escapedYamlStr)
+	return strings.ReplaceAll(string(contents), "\r\n", "\n")
 }
 
 func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
@@ -64,100 +59,59 @@ func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
 }
 
 func TestAll(t *testing.T) {
-	table := []testCase{
-		{
-			dirName:        "pass",
-			expectedErrors: nil,
-		},
-		{
-			dirName: "integration-metadata_required_app-url",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "AppUrl", tag: "required"}: {},
-			},
-		},
-		{
-			dirName: "configuration-options_required_without_metrics-configuration",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "LogsConfiguration", tag: "required_without"}:    {},
-				{field: "MetricsConfiguration", tag: "required_without"}: {},
-			},
-		},
-		{
-			dirName: "expected-metric_one_of_value-type",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "ValueType", tag: "oneof"}: {},
-			},
-		},
-		{
-			dirName: "expected-metric_excluded_with_optional",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "Representative", tag: "excluded_with"}: {},
-				{field: "Optional", tag: "excluded_with"}:       {},
-			},
-		},
-		{
-			dirName: "integration-metadata_unique_supported-app-version",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "SupportedAppVersion", tag: "unique"}: {},
-			},
-		},
-		{
-			dirName: "integration-metadata_unique_supported-app-version",
-			expectedErrors: map[fieldError]struct{}{
-				{field: "SupportedAppVersion", tag: "unique"}: {},
-			},
-		},
+	dirs, err := os.ReadDir(testdataDir)
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for _, test := range table {
-		t.Run(test.dirName, func(t *testing.T) {
-			//We want to parallelize the test cases, so we pass the test case into a
-			//separate function
-			testMetadataValidation(t, test)
+	for _, dir := range dirs {
+		dirName := dir.Name()
+		t.Run(dirName, func(t *testing.T) {
+			// We want to parallelize the test cases, so we pass the test case into a
+			// separate function
+			if *updateGolden {
+				generateNewGolden(t, dirName)
+				return
+			}
+
+			testMetadataValidation(t, dirName)
 		})
 	}
 }
 
-func testMetadataValidation(t *testing.T, test testCase) {
+func generateNewGolden(t *testing.T, dir string) {
 	t.Parallel()
-	bytes := getInputYamlBytes(t, test.dirName)
-	actualErrors := UnmarshallAndValidate(t, bytes, &IntegrationMetadata{})
+	goldenPath := path.Join(testdataDir, dir, goldenErrorName)
+	yamlStr := getTestFile(t, dir, inputYamlName)
+	err := UnmarshallAndValidate(t, []byte(yamlStr), &IntegrationMetadata{})
 
-	//testdata/pass
-	if test.expectedErrors == nil {
-		if actualErrors == nil {
+	errStr := ""
+	if err != nil {
+		errStr = err.Error()
+	}
+
+	if err = ioutil.WriteFile(goldenPath, []byte(errStr), 0644); err != nil {
+		t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
+	}
+}
+
+func testMetadataValidation(t *testing.T, dir string) {
+	t.Parallel()
+
+	yamlStr := getTestFile(t, dir, inputYamlName)
+	goldenErrStr := getTestFile(t, dir, goldenErrorName)
+
+	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &IntegrationMetadata{})
+
+	if actualError == nil {
+		if goldenErrStr == "" {
 			return
 		}
-		t.Fatal("Expecting no errors")
+		t.Fatal("Expecting validation to fail for test: " + dir)
 	}
 
-	if actualErrors == nil {
-		t.Fatal("Expecting validation to fail for test: " + test.dirName)
+	if actualError.Error() != goldenErrStr {
+		t.Fatal(fmt.Sprintf("Unexpected errors detected: \n Expected error: \n%s\n Actual error:  \n%s\n", goldenErrStr, actualError.Error()))
 	}
-
-	fieldErrors, ok := actualErrors.(validator.ValidationErrors)
-
-	if !ok {
-		t.Fatal("Expected validation error to of type validator.ValidationErrors")
-	}
-
-	if len(fieldErrors) != len(test.expectedErrors) {
-		t.Fatal("Expecting validation errors to equal expected errors")
-	}
-	expectedErrorsMap := test.expectedErrors
-	var actualErrorsSlice []fieldError
-	for _, fieldErr := range fieldErrors {
-		actualError := fieldError{fieldErr.Field(), fieldErr.Tag()}
-		actualErrorsSlice = append(actualErrorsSlice, actualError)
-		delete(expectedErrorsMap, actualError)
-	}
-
-	if len(expectedErrorsMap) > 0 {
-		var expectedErrorsSlice []fieldError
-		for k, _ := range expectedErrorsMap {
-			expectedErrorsSlice = append(expectedErrorsSlice, k)
-		}
-		t.Fatal(fmt.Sprintf("Unexpected errors detected: \n Expected error: %v but got %v", expectedErrorsSlice, actualErrorsSlice))
-	}
-
 }
