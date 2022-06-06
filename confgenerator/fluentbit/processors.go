@@ -122,23 +122,40 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 	return parser, parserName
 }
 
-func ParserFilterComponent(tag string, field string, parserNames []string) Component {
+func ParserFilterComponents(tag string, field string, parserNames []string, preserveKey bool) []Component {
 	parsers := [][2]string{}
 	for _, name := range parserNames {
 		parsers = append(parsers, [2]string{"Parser", name})
 	}
+
+	parseKey := "message"
+	if field != "" {
+		parseKey = field
+	}
+
+	nestFilters := LuaFilterComponents(tag, ParserNestLuaFunction, fmt.Sprintf(ParserNestLuaScriptContents, parseKey))
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
 			"Match":    tag,
 			"Name":     "parser",
-			"Key_Name": "message", // Required
+			"Key_Name": parseKey, // Required
+			// We need to preserve existing fields (like LogName) that are present
+			// before parsing.
+			"Reserve_Data": "True",
 		},
 		OrderedConfig: parsers,
 	}
-	if field != "" {
-		filter.Config["Key_Name"] = field
+
+	if preserveKey {
+		filter.Config["Preserve_Key"] = "True"
 	}
 
-	return filter
+	mergeFilters := LuaFilterComponents(tag, ParserMergeLuaFunction, ParserMergeLuaScriptContents)
+	parseFilters := []Component{}
+	parseFilters = append(parseFilters, nestFilters...)
+	parseFilters = append(parseFilters, filter)
+	parseFilters = append(parseFilters, mergeFilters...)
+
+	return parseFilters
 }
