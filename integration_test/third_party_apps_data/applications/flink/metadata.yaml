@@ -23,17 +23,14 @@ configuration_options:
   - type: flink
     fields:
     - name: type
-      default: ""
+      default: null
       description: The value must be flink.
     - name: include_paths
-      default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log,
-        /opt/flink/log/flink-*-client-*.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild
-        card (*) can be used in the paths.
+      default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log, /opt/flink/log/flink-*-client-*.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: ""
-      description: A list of filesystem path patterns to exclude from the set matched
-        by include_paths.
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are
