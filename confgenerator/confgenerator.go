@@ -90,6 +90,14 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 					"instrumentation_library_labels": false,
 					// Omit service labels, which break agent metrics.
 					"service_resource_labels": false,
+					"resource_filters": []map[string]interface{}{
+						{"prefix": "host.name"},
+						{"prefix": "flink.taskmanager.id"},
+						{"prefix": "flink.job.name"},
+						{"prefix": "flink.task.name"},
+						{"prefix": "flink.subtask.index"},
+						{"prefix": "flink.resource.type"},
+					},
 				},
 			},
 		},
