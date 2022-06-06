@@ -114,7 +114,7 @@ func (r LoggingReceiverSapHanaTrace) Components(tag string) []fluentbit.Componen
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^(?!\[\d+\])\{-?\d+\}`,
+			Regex:     `^(?!\[\d+\]\{-?\d+\})`,
 		},
 	}
 
