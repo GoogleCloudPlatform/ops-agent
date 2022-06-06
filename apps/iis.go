@@ -132,6 +132,17 @@ const (
 	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
 	iisMergeRecordFieldsLuaScriptContents = `
 	function iis_merge_fields(tag, timestamp, record)
+
+	  if (record["cs_uri_query"] == "-") then
+	    record["cs_uri_query"] = nil
+	  end
+	  if (record["http_request_referer"] == "-") then
+	    record["http_request_referer"] = nil
+	  end
+	  if (record["user"] == "-") then
+	    record["user"] = nil
+	  end
+
 	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
 	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
 		record["http_request_requestUrl"] = record["cs_uri_stem"]
@@ -163,24 +174,8 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 			},
 		},
 	}.Components(tag, uid)
+
 	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	fields := map[string]*confgenerator.ModifyField{}
-
-	for _, field := range []string{
-		"cs_uri_query",
-		"http_request_referer",
-		"user",
-	} {
-		fields[fmt.Sprintf("jsonPayload.%s", field)] = &confgenerator.ModifyField{
-			OmitIf: fmt.Sprintf(`jsonPayload.%s = "-"`, field),
-		}
-	}
-
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: fields,
-		}.Components(tag, uid)...,
-	)
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
 	c = append(c, []fluentbit.Component{
@@ -198,10 +193,9 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
 			},
 		},
-
 	}...)
 
-	fields = map[string]*confgenerator.ModifyField{
+	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
 

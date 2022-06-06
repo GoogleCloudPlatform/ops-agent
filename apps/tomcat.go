@@ -106,12 +106,12 @@ func (p LoggingProcessorTomcatSystem) Components(tag string, uid string) []fluen
 				"severity": {
 					CopyFrom: "jsonPayload.level",
 					MapValues: map[string]string{
-						"FINEST": "DEBUG",
-						"FINER": "DEBUG",
-						"FINE": "DEBUG",
-						"INFO": "INFO",
+						"FINEST":  "DEBUG",
+						"FINER":   "DEBUG",
+						"FINE":    "DEBUG",
+						"INFO":    "INFO",
 						"WARNING": "WARNING",
-						"SEVERE": "CRITICAL",
+						"SEVERE":  "CRITICAL",
 					},
 					MapValuesExclusive: true,
 				},

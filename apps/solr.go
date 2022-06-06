@@ -97,8 +97,8 @@ func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentb
 					MapValues: map[string]string{
 						"TRACE": "DEBUG",
 						"DEBUG": "DEBUG",
-						"INFO": "INFO",
-						"WARN": "WARNING",
+						"INFO":  "INFO",
+						"WARN":  "WARNING",
 						"ERROR": "ERROR",
 						"FATAL": "CRITICAL",
 					},

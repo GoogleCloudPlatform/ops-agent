@@ -50,8 +50,8 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 					MapValues: map[string]string{
 						"debug": "DEBUG",
 						"error": "ERROR",
-						"info": "INFO",
-						"noti": "DEFAULT",
+						"info":  "INFO",
+						"noti":  "DEFAULT",
 					},
 					MapValuesExclusive: true,
 				},
