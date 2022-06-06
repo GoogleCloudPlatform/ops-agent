@@ -90,9 +90,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 					"instrumentation_library_labels": false,
 					// Omit service labels, which break agent metrics.
 					"service_resource_labels": false,
-					"resource_filters": []map[string]interface{}{
-						{"prefix": "sqlserver.database.name"},
-					},
 				},
 			},
 		},
