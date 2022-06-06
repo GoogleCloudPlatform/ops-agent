@@ -8,15 +8,15 @@ expected_logs:
 - log_name: flink
   fields:
   - name: jsonPayload.message
-    value_regex: "        [] - --------------------------------------------------------------------------------"
+    value_regex:         [] - --------------------------------------------------------------------------------
     type: string
     description: ''
   - name: jsonPayload.source
-    value_regex: "org.apache.flink.runtime.entrypoint.ClusterEntrypoint"
+    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
     type: string
     description: ''
   - name: severity
-    value_regex: "INFO"
+    value_regex: INFO
     type: string
     description: ''
   - name: timestamp
