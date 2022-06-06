@@ -1,27 +1,11 @@
-app_url: "https://flink.apache.org/"
+public_url: ""
+app_url: https://flink.apache.org/
 short_name: Flink
 long_name: Apache Flink
-description: |-
-  The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload. The result includes fields for logger, level, and message.
-supported_app_version: ["1.13.6", "1.14.4"]
-expected_logs:
-- log_name: flink
-  fields:
-  - name: jsonPayload.message
-    value_regex:         [] - --------------------------------------------------------------------------------
-    type: string
-    description: ''
-  - name: jsonPayload.source
-    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
-    type: string
-    description: ''
-  - name: severity
-    value_regex: INFO
-    type: string
-    description: ''
-  - name: timestamp
-    type: string
-    description: ''
+logo_path: ""
+description: The Apache Flink integration collects client, jobmanager and taskmanager
+  logs and parses them into a JSON payload. The result includes fields for logger,
+  level, and message.
 configuration_options:
   logs:
   - type: flink
@@ -37,4 +21,31 @@ configuration_options:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+description: |-
+  The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload. The result includes fields for logger, level, and message.
+supported_app_version: ["1.13.6", "1.14.4"]
+expected_logs:
+- log_name: flink
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: ''
+  - name: jsonPayload.source
+    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
+    type: string
+    description: ''
+  - name: severity
+    value_regex: INFO
+    type: string
+    description: ''
+  - name: timestamp
+    type: string
+    description: ''
+minimum_supported_agent_version:
+  logging: ""
+  metrics: ""
+supported_app_version:
+- 1.13.6
+- 1.14.4
+restart_after_install: false
+troubleshoot: ""
