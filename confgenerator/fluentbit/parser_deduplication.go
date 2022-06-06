@@ -44,7 +44,6 @@ end
         return parsedRecord
     end
     
-    -- Potentially overwrite or merge the original records.
     for k, v in pairs(parsedRecord) do
         record[k] = v
     end
