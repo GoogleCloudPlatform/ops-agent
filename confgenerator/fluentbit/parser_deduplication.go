@@ -20,21 +20,22 @@ const (
 	// ParserNestLuaScriptContents is an incomplete Lua funtion that is completed when populated
 	// with the parse_key (i.e. the key being parsed).
 	ParserNestLuaScriptContents = `
-  function parser_nest(tag, timestamp, record)
-  record["logging.googleapis.com/__tmp"] = {}
-  
+function parser_nest(tag, timestamp, record)
+  local nestedRecord = {}
+  local parseKey = "%s"
   for k, v in pairs(record) do
-      if k ~= "%s" then
-          if record["logging.googleapis.com/__tmp"] == nil then
-              record["logging.googleapis.com/__tmp"] = {}
-          end
-          record["logging.googleapis.com/__tmp"][k] = v
-          record[k] = nil
+      if k ~= parseKey then
+          nestedRecord[k] = v
       end
   end
 
-  return 2, timestamp, record
+  local result = {}
+  result[parseKey] = record[parseKey]
+  result["logging.googleapis.com/__tmp"] = nestedRecord
+
+  return 2, timestamp, result
 end
+
 `
 	ParserMergeLuaFunction       = `parser_merge_record`
 	ParserMergeLuaScriptContents = `

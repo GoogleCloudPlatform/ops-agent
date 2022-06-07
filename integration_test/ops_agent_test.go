@@ -950,7 +950,7 @@ logging:
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
-			`jsonPayload.orginal-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.orginal-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING"`); err != nil {
+			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING"`); err != nil {
 			t.Error(err)
 		}
 	})
