@@ -465,8 +465,8 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
-		newHTTPRequestKey := confgenerator.HttpRequestKey
-		newHTTPRequestLogId := "new_request_log"
+		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestLogId = "new_request_log"
 		newLogBody := map[string]interface{}{
 			"logId":           newHTTPRequestLogId,
 			newHTTPRequestKey: httpRequestBody,
@@ -477,8 +477,8 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
-		oldHTTPRequestKey := "logging.googleapis.com/http_request"
-		oldHTTPRequestLogId := "old_request_log"
+		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		const oldHTTPRequestLogId = "old_request_log"
 		oldLogBody := map[string]interface{}{
 			"logId":           oldHTTPRequestLogId,
 			oldHTTPRequestKey: httpRequestBody,
