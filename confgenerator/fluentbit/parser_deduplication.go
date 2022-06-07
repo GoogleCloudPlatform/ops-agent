@@ -62,8 +62,11 @@ function merge(record, parsedRecord)
     for k, v in pairs(parsedRecord) do
         -- If there is no conflict
         if k == "logging.googleapis.com/logName" then 
-            -- Ignore the parsed payload
+            -- Ignore the parsed payload since the logName is controlled
+            -- by the OpsAgent.
         elseif k == "logging.googleapis.com/labels" then 
+            -- LogEntry.labels are basically a map[string]string and so only require a
+            -- shallow merge (one level deep merge).
             record[k] = shallow_merge(record[k], v)
         else
             record[k] = v
