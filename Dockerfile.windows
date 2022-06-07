@@ -21,8 +21,8 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
-    New-Item -Type Directory -Path /work/out/bin; `
-    New-Item -Type Directory -Path /work/out/config;
+    New-Item -Type Directory -Path /work/result/bin; `
+    New-Item -Type Directory -Path /work/result/config;
 
 ###############################################################################
 # Install build prerequisites
@@ -51,9 +51,9 @@ ADD https://aka.ms/vs/15/release/vc_redist.x64.exe /local/vc_redist.x64.exe
 
 RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/out/bin/;
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /work/result/bin/; `
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /work/result/bin/; `
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/result/bin/;
 
 #
 # Install OpenSSL
