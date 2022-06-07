@@ -115,10 +115,10 @@ WORKDIR /work/submodules/fluent-bit/build
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
 RUN cmake --build . --config Release; `
-    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/;
+    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/result/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/result/bin/;
 
-# TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
+# TODO: Do something with /work/result/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
 # Build JMX Project
@@ -139,7 +139,7 @@ WORKDIR /work/submodules/opentelemetry-java-contrib
 # Build & test systems do not always check out git history for submodules, so the properties assigned
 # here allow the nebula release process to function properly in that state
 RUN ./gradlew --no-daemon :jmx-metrics:build; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/result/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching
@@ -156,7 +156,7 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
 RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
+    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/result/bin/;
 
 ###############################################################################
 # Config generator/service installer
@@ -170,8 +170,8 @@ ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
     go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
-    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
-    Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
+    Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/result/bin/; `
+    Copy-Item -Path confgenerator/default-config.yaml -Destination /work/result/config/config.yaml;
 
 ###############################################################################
 # Packaging
@@ -183,8 +183,8 @@ WORKDIR /work
 
 COPY . /work
 
-COPY --from=fluentbit /work/out /work/out
-COPY --from=gobuilder /work/out /work/out
-COPY --from=javacontrib /work/out /work/out
+COPY --from=fluentbit /work/result /work/result
+COPY --from=gobuilder /work/result /work/result
+COPY --from=javacontrib /work/result /work/result
 
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+RUN & .\pkg\goo\build.ps1 -DestDir /work/result;
