@@ -17,12 +17,12 @@
 #
 # In addition, the following test suites need additional env variables:
 # collectd_third_party_apps_test:
-#   * SCRIPTS_DR: path to scripts to use for installing/configuring apps.
+#   * SCRIPTS_DIR: path to scripts to use for installing/configuring apps.
 # install_scripts_test:
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
-#   * SCRIPTS_DR: path to installation scripts to test.
+#   * SCRIPTS_DIR: path to installation scripts to test.
 # os_config_test:
-#   * GCLOUD_LITE_BLAZE_PATH: path to just-built copy of gcloud_lite to use fors
+#   * GCLOUD_LITE_BLAZE_PATH: path to just-built copy of gcloud_lite to use for
 #     testing.
 
 set -e
@@ -34,7 +34,7 @@ set -o pipefail
 cd "$(readlink -f "$(dirname "$0")")"
 cd ../../../
 
-# source the common utilities, for track_flakiness.
+# Source the common utilities, for track_flakiness.
 source kokoro/scripts/utils/common.sh
 
 track_flakiness
