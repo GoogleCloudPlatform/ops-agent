@@ -24,11 +24,14 @@ to the ones mentioned at the top of gce_testing.go:
 
 PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
-The following variables are optional:
+Exactly one of the following variables must be set:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs.
+    
+Optional Variables:
+
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
     version of the Ops Agent to install first, before installing the version
 	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
@@ -160,10 +163,12 @@ func locationFromEnvVars() packageLocation {
 	}
 }
 
-// installOpsAgent installs the Ops Agent on the given VM. Preferentially
-// chooses to install from location.packagesInGCS if that is set, otherwise
-// falls back to location.repoSuffix.
+// installOpsAgent installs the Ops Agent on the given VM. Installs from either location.packagesInGCS or location.repoSuffix.
+// Exactly one must be set or an error is raised. 
 func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
+	if (location.packagesInGCS != "") == (location.repoSuffix != "") {
+		return fmt.Errorf("Exactly one of AGENT_PACKAGES_IN_GCS(\"%s\") or REPO_SUFFIX(\"%s\") must be set.", location.packagesInGCS, location.repoSuffix)
+	}
 	if location.packagesInGCS != "" {
 		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
