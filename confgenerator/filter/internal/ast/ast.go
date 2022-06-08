@@ -52,7 +52,10 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"labels":         "logging.googleapis.com/labels",
 	"operation":      "logging.googleapis.com/operation",
 	"sourceLocation": "logging.googleapis.com/sourceLocation",
-	"httpRequest":    "logging.googleapis.com/httpRequest",
+	// TODO: This needs to be the same as confgenerator.HttpRequestKey. Importing
+	// that package here results in a circular import. That should move somewhere
+	// better, and once it does we can use that here.
+	"httpRequest": "logging.googleapis.com/httpRequest",
 }
 
 func (m Target) fluentBitPath() ([]string, error) {
