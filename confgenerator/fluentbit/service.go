@@ -36,7 +36,7 @@ func (s Service) Component() Component {
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
 			"storage.sync": "normal",
-			// Disabled data integrity check to avoid spurious corruption errors due to empty spaces.
+			// Disable data integrity check to avoid spurious corruption errors due to empty spaces.
 			// Most users do not enforce checksum.
 			"storage.checksum": "off",
 			// The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
