@@ -52,7 +52,7 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"labels":         "logging.googleapis.com/labels",
 	"operation":      "logging.googleapis.com/operation",
 	"sourceLocation": "logging.googleapis.com/sourceLocation",
-	"httpRequest":    "logging.googleapis.com/http_request",
+	"httpRequest":    "logging.googleapis.com/httpRequest",
 }
 
 func (m Target) fluentBitPath() ([]string, error) {
