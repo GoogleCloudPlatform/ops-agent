@@ -53,8 +53,9 @@ type LogFields struct {
 }
 
 type ExpectedLog struct {
-	LogName string       `yaml:"log_name" validate:"required"`
-	Fields  []*LogFields `yaml:"fields" validate:"required,dive"`
+	LogName      string       `yaml:"log_name" validate:"required"`
+	ReceiverType string       `yaml:"receiver_type" validate:"required"`
+	Fields       []*LogFields `yaml:"fields" validate:"required,dive"`
 }
 
 type MinimumSupportedAgentVersion struct {

@@ -84,6 +84,7 @@ expected_metrics:
   labels: {}
 expected_logs:
 - log_name: zookeeper_general
+  receiver_type: zookeeper_general
   fields:
   - name: jsonPayload.message
     value_regex: binding to port 0.0.0.0/0.0.0.0:2181

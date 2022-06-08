@@ -119,6 +119,7 @@ expected_metrics:
   labels: {}
 expected_logs:
 - log_name: cassandra_system
+  receiver_type: cassandra_system
   fields:
   - name: jsonPayload.message
     value_regex: .*Startup complete.*
@@ -140,6 +141,7 @@ expected_logs:
     type: string
     description: Line number of the source file where the log originated
 - log_name: cassandra_debug
+  receiver_type: cassandra_debug
   fields:
   - name: jsonPayload.message
     value_regex: .*Loading settings from file.*
@@ -161,6 +163,7 @@ expected_logs:
     type: string
     description: Line number of the source file where the log originated
 - log_name: cassandra_gc
+  receiver_type: cassandra_gc
   fields:
   - name: jsonPayload.message
     value_regex: .*Total time for which application threads were stopped.*

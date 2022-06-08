@@ -61,6 +61,7 @@ expected_metrics:
     view: .*
 expected_logs:
 - log_name: couchdb
+  receiver_type: couchdb
   fields:
   - name: jsonPayload.node
     value_regex: couchdb

@@ -79,6 +79,7 @@ expected_metrics:
     proto_handler: .*
 expected_logs:
 - log_name: tomcat_system
+  receiver_type: tomcat_system
   fields:
   - name: jsonPayload.message
     value_regex: org.apache.catalina.startup.Catalina.start Server startup*
@@ -93,6 +94,7 @@ expected_logs:
     type: string
     description: source of where the log originated
 - log_name: tomcat_access
+  receiver_type: tomcat_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: 127.0.0.1

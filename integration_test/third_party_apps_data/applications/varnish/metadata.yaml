@@ -110,6 +110,7 @@ minimum_supported_agent_version:
   logging: 2.16.0
 expected_logs:
 - log_name: varnish
+  receiver_type: varnish
   fields:
   - name: httpRequest.remoteIp
     value_regex: 127.0.0.1

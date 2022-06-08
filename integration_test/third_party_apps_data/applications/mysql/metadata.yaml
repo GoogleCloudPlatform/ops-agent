@@ -129,6 +129,7 @@ expected_metrics:
   representative: true
 expected_logs:
 - log_name: mysql_error
+  receiver_type: mysql_error
   fields:
   - name: jsonPayload.level
     value_regex: System
@@ -149,6 +150,7 @@ expected_logs:
     type: string
     description: 'MySQL error code associated with the log'
 - log_name: mysql_general
+  receiver_type: mysql_general
   fields:
   - name: jsonPayload.message
     value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*
@@ -162,6 +164,7 @@ expected_logs:
     type: number
     description: 'Thread ID where the log originated'
 - log_name: mysql_slow
+  receiver_type: mysql_slow
   fields:
   - name: jsonPayload.message
     value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*

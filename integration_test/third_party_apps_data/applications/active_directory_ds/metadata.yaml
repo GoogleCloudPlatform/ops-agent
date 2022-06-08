@@ -27,6 +27,7 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
 expected_logs:
 - log_name: active_directory_ds
+  receiver_type: active_directory_ds
   fields:
   - name: jsonPayload.Message
     value_regex: '^Microsoft Active Directory Domain Services startup complete.*'

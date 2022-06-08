@@ -90,6 +90,7 @@ expected_metrics:
     type: .*
 expected_logs:
 - log_name: kafka
+  receiver_type: kafka
   fields:
   - name: jsonPayload.message
     value_regex: .*Waiting until connected.*

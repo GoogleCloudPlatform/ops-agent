@@ -71,6 +71,7 @@ expected_metrics:
   labels: {}
 expected_logs:
 - log_name: syslog
+  receiver_type: syslog
   fields:
   - name: jsonPayload.message
     value_regex: '(systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'

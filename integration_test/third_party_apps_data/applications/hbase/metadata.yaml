@@ -346,6 +346,7 @@ expected_metrics:
     region_server: .*
 expected_logs:
 - log_name: hbase_system
+  receiver_type: hbase_system
   fields:
   - name: jsonPayload.message
     value_regex: 'master.HMaster: STARTING service HMaster'

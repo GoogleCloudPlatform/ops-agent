@@ -138,6 +138,7 @@ expected_metrics:
   labels: {}
 expected_logs:
 - log_name: redis
+  receiver_type: redis
   fields:
   - name: jsonPayload.level
     value_regex: \*

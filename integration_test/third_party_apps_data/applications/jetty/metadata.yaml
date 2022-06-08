@@ -48,6 +48,7 @@ expected_metrics:
   labels: {}
 expected_logs:
 - log_name: jetty_access
+  receiver_type: jetty_access
   fields:
   - name: httpRequest.remoteIp
     type: string

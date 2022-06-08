@@ -86,6 +86,7 @@ expected_metrics:
     destination: .*
 expected_logs:
 - log_name: syslog
+  receiver_type: syslog
   fields:
   - name: jsonPayload.message
     value_regex: '(activemq\[[0-9]+\]|activemq):'

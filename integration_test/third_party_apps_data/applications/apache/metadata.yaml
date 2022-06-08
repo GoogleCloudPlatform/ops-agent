@@ -73,6 +73,7 @@ expected_metrics:
     state: .*
 expected_logs:
 - log_name: apache_access
+  receiver_type: apache_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: ::1|127.0.0.1
@@ -97,6 +98,7 @@ expected_logs:
     type: string
     description: Authenticated username for the request
 - log_name: apache_error
+  receiver_type: apache_error
   fields:
   - name: jsonPayload.client
     value_regex: ::1|127.0.0.1:[0-9]+

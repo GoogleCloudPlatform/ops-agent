@@ -43,6 +43,7 @@ expected_metrics:
     database: .*
 expected_logs:
 - log_name: postgresql_general
+  receiver_type: postgresql_general
   fields:
   - name: jsonPayload.message
     value_regex: .*starting PostgreSQL.*

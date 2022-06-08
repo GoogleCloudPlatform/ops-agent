@@ -114,6 +114,7 @@ expected_metrics:
     cause: .*
 expected_logs:
 - log_name: wildfly_system
+  receiver_type: wildfly_system
   fields:
   - name: jsonPayload.messageCode
     value_regex: WFLYSRV0049

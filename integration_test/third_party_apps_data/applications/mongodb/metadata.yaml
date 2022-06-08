@@ -83,6 +83,7 @@ expected_metrics:
     database: .*
 expected_logs:
 - log_name: mongodb
+  receiver_type: mongodb
   fields:
   - name: jsonPayload.component
     type: string

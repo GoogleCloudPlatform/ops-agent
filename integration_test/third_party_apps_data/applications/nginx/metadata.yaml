@@ -123,6 +123,7 @@ expected_metrics:
   representative: true
 expected_logs:
 - log_name: nginx_access
+  receiver_type: nginx_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: ::1
@@ -139,6 +140,7 @@ expected_logs:
     type: string
     description: Authenticated username for the request
 - log_name: nginx_error
+  receiver_type: nginx_error
   fields:
   - name: jsonPayload.client
     value_regex: ::1

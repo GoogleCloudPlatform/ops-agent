@@ -27,6 +27,7 @@ expected_metrics:
   representative: true
 expected_logs:
 - log_name: rabbitmq
+  receiver_type: rabbitmq
   fields:
   - name: jsonPayload.process_id
     type: string

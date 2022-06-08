@@ -83,6 +83,7 @@ expected_metrics:
     node_name: .*
 expected_logs:
 - log_name: hadoop
+  receiver_type: hadoop
   fields:
   - name: jsonPayload.message
     value_regex: STARTUP_MSG:.*

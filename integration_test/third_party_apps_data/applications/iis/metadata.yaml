@@ -109,6 +109,7 @@ expected_metrics:
 
 expected_logs:
 - log_name: iis_access
+  receiver_type: iis_access
   fields:
   - name: httpRequest.serverIp
     value_regex: "::1:80"
