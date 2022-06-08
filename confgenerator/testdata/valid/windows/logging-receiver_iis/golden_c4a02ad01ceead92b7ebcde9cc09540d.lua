@@ -1,13 +1,13 @@
 
 	function iis_merge_fields(tag, timestamp, record)
 
-	  if (record["cs_uri_query"] == '-') then
+	  if (record["cs_uri_query"] == "-") then
 	    record["cs_uri_query"] = nil
 	  end
-	  if (record["http_request_referer"] == '-') then
+	  if (record["http_request_referer"] == "-") then
 	    record["http_request_referer"] = nil
 	  end
-	  if (record["user"] == '-') then
+	  if (record["user"] == "-") then
 	    record["user"] = nil
 	  end
 
