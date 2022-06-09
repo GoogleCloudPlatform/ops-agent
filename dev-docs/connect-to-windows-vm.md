@@ -26,7 +26,7 @@ non-trivial interactions with Windows VMs.
     permission by running the following command:
 
     ```shell
-    $ gcloud projects add-iam-policy-binding ${USER}-sandbox \
+    gcloud projects add-iam-policy-binding ${USER}-sandbox \
         --member=user:${USER}@google.com \
         --role=roles/iap.tunnelResourceAccessor
     ```
