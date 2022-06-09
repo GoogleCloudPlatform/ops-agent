@@ -1,0 +1,52 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch"
+app_url: "http://elasticsearch.org/"
+short_name: Vault
+long_name: Hashicorp Vault
+description: |-
+  Elasticsearch is an open-source search server, based on the
+  [Lucene](https://lucene.apache.org/){: .external} search library. It runs in a Java virtual
+  machine on top of a number of operating systems. The `elasticsearch` receiver
+  collects node- and cluster-level telemetry from your Elasticsearch instances.
+configure_integration: |-
+  To configure a
+minimum_supported_agent_version:
+supported_app_version: ["1.6+"]
+expected_logs:
+- log_name: vault_audit
+  fields:
+  - name: jsonPayload.auth.token_type
+    value_regex: default
+    type: string
+    description: ''
+  - name: jsonPayload.request.namespace.id
+    value_regex: root
+    type: string
+    description: ''
+  - name: jsonPayload.request.path
+    value_regex: sys\/audit\/test
+    type: string
+    description: ''
+  - name: jsonPayload.request.operation
+    value_regex: update
+    type: string
+    description: ''
+  - name: jsonPayload.type
+    value_regex: request
+    type: string
+    description: 'the type of audit log.'
+configuration_options:
+  logs:
+  - type: vault_audit
+    fields:
+    - name: type
+      default: null
+      description: The value must be vault_audit.
+    - name: include_paths
+      default: null
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
