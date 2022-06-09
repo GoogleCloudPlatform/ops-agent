@@ -1,6 +1,8 @@
 package apps
 
 import (
+	"sort"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -175,11 +177,20 @@ var metrics = map[string]couchbaseMetric{
 
 func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
 	operations := []otel.TransformQuery{}
-	for mName, m := range metrics {
+
+	// persisting order so config generation is non-random
+	keys := []string{}
+	for k := range metrics {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, metricName := range keys {
+		m := metrics[metricName]
 		if m.catToGauge {
-			operations = append(operations, otel.ConvertGaugeToSum(mName))
+			operations = append(operations, otel.ConvertGaugeToSum(metricName))
 		}
-		operations = append(operations, otel.SetDescription(mName, m.description), otel.SetUnit(mName, m.unit))
+		operations = append(operations, otel.SetDescription(metricName, m.description), otel.SetUnit(metricName, m.unit))
 	}
 	return operations
 }
