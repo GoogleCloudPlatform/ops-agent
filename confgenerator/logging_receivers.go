@@ -332,11 +332,9 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}
 
-	timestampParserFilter := fluentbit.ParserFilterComponent(tag, "TimeGenerated", []string{timestampParserName})
-	timestampParserFilter.Config["Preserve_Key"] = "True"
-	timestampParserFilter.Config["Reserve_Data"] = "True"
-
-	input = append(input, timestampParser, timestampParserFilter)
+	timestampParserFilters := fluentbit.ParserFilterComponents(tag, "TimeGenerated", []string{timestampParserName}, true)
+	input = append(input, timestampParser)
+	input = append(input, timestampParserFilters...)
 
 	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
