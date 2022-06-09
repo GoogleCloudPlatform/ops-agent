@@ -44,59 +44,59 @@ record["http_request_userAgent"] = value
 end)(nil);
 local v = __field_0;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["referer"] = value
+record["logging.googleapis.com/httpRequest"]["referer"] = value
 end)(v)
 local v = __field_1;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["remoteIp"] = value
+record["logging.googleapis.com/httpRequest"]["remoteIp"] = value
 end)(v)
 local v = __field_2;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["requestMethod"] = value
+record["logging.googleapis.com/httpRequest"]["requestMethod"] = value
 end)(v)
 local v = __field_3;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["requestUrl"] = value
+record["logging.googleapis.com/httpRequest"]["requestUrl"] = value
 end)(v)
 local v = __field_4;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["serverIp"] = value
+record["logging.googleapis.com/httpRequest"]["serverIp"] = value
 end)(v)
 local v = __field_5;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["status"] = value
+record["logging.googleapis.com/httpRequest"]["status"] = value
 end)(v)
 local v = __field_6;
 (function(value)
-if record["logging.googleapis.com/http_request"] == nil
+if record["logging.googleapis.com/httpRequest"] == nil
 then
-record["logging.googleapis.com/http_request"] = {}
+record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/http_request"]["userAgent"] = value
+record["logging.googleapis.com/httpRequest"]["userAgent"] = value
 end)(v)
 local v = "agent.googleapis.com/iis_access";
 (function(value)
