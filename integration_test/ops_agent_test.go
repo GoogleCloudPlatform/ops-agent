@@ -60,7 +60,7 @@ import (
 
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "C:/mylog"
+		return `C:\mylog`
 	}
 	return "/tmp/mylog"
 }
@@ -1049,8 +1049,15 @@ func TestLogFilePathLabel(t *testing.T) {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// Expect to see the log with the modifications applied
-		check := fmt.Sprintf(`labels."compute.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// When constructing the query in WaithForLog the backslashes are escaped so
+		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		if gce.IsWindows(platform) {
+			file1 = strings.Replace(file1, `\`, `\\`, 1)
+		}
+
+		// Expect to see log with label added.
+		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
 			t.Error(err)
 		}
