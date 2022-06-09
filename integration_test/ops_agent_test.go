@@ -51,6 +51,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
@@ -465,7 +466,8 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
-		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		// const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestKey = "logging.googleapis.com/http_request"
 		const newHTTPRequestLogId = "new_request_log"
 		newLogBody := map[string]interface{}{
 			"logId":           newHTTPRequestLogId,
@@ -477,7 +479,8 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
-		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		// const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		const oldHTTPRequestKey = confgenerator.HttpRequestKey
 		const oldHTTPRequestLogId = "old_request_log"
 		oldLogBody := map[string]interface{}{
 			"logId":           oldHTTPRequestLogId,
@@ -499,29 +502,41 @@ func TestHTTPRequestLog(t *testing.T) {
 			t.Fatalf("error writing log line: %v", err)
 		}
 
-		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
-		// parsed as expected by Fluent Bit.
-		t.Run("parse new HTTPRequest key", func(t *testing.T) {
-			t.Parallel()
-			entry, err := gce.QueryLog(
+		queryLogById := func(logId string) (*cloudlogging.Entry, error) {
+			return gce.QueryLog(
 				ctx,
 				logger.ToMainLog(),
 				vm,
 				"mylog_source",
 				time.Hour,
-				fmt.Sprintf("jsonPayload.logId=%q", newHTTPRequestLogId),
+				fmt.Sprintf("jsonPayload.logId=%q", logId),
 				gce.QueryMaxAttempts)
+		}
+
+		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
+			payload := entry.Payload.(*structpb.Struct)
+			foundKey := false
+			for key := range payload.GetFields() {
+				if key == httpRequestKey {
+					foundKey = true
+				}
+			}
+			return foundKey
+		}
+
+		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
+		// parsed as expected by Fluent Bit.
+		t.Run("parse new HTTPRequest key", func(t *testing.T) {
+			t.Parallel()
+			entry, err := queryLogById(newHTTPRequestLogId)
 			if err != nil {
 				t.Fatalf("could not find written log with id %s: %v", newHTTPRequestLogId, err)
 			}
-			payload := entry.Payload.(*structpb.Struct)
-			for key := range payload.GetFields() {
-				if key == newHTTPRequestKey {
-					t.Fatal("expected request key to be stripped out of message")
-				}
-			}
 			if entry.HTTPRequest == nil {
 				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+			if isKeyInPayload(newHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be stripped out of the payload", newHTTPRequestKey)
 			}
 		})
 
@@ -529,29 +544,15 @@ func TestHTTPRequestLog(t *testing.T) {
 		// parsed by Fluent Bit.
 		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
 			t.Parallel()
-			entry, err := gce.QueryLog(
-				ctx,
-				logger.ToMainLog(),
-				vm,
-				"mylog_source",
-				time.Hour,
-				fmt.Sprintf("jsonPayload.logId=%q", oldHTTPRequestLogId),
-				gce.QueryMaxAttempts)
+			entry, err := queryLogById(oldHTTPRequestLogId)
 			if err != nil {
 				t.Fatalf("could not find written log with id %s: %v", oldHTTPRequestLogId, err)
 			}
-			payload := entry.Payload.(*structpb.Struct)
-			foundKey := false
-			for key := range payload.GetFields() {
-				if key == oldHTTPRequestKey {
-					foundKey = true
-				}
-			}
-			if !foundKey {
-				t.Fatalf("expected %s key to be present in the payload", oldHTTPRequestKey)
-			}
 			if entry.HTTPRequest != nil {
 				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+			if !isKeyInPayload(oldHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be present in payload", oldHTTPRequestKey)
 			}
 		})
 	})
