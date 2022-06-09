@@ -112,7 +112,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 			"Match":         tag,
 			"Operation":     "nest",
 			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
+			"Nest_under":    confgenerator.HttpRequestKey,
 			"Remove_prefix": "http_request_",
 		},
 	})
