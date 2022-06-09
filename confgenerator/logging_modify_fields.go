@@ -36,13 +36,13 @@ type ModifyField struct {
 	omitVar string `yaml:"-"`
 
 	// Operations to perform
-	Type               string            `yaml:"type" validate:"omitempty,oneof=integer float"`
-	OmitIf             string            `yaml:"omit_if" validate:"omitempty,filter"`
-	MapValues          map[string]string `yaml:"map_values"`
+	Type      string            `yaml:"type" validate:"omitempty,oneof=integer float"`
+	OmitIf    string            `yaml:"omit_if" validate:"omitempty,filter"`
+	MapValues map[string]string `yaml:"map_values"`
 	// In case the source field's value does not match any keys specified in the map_values pairs,
 	// the destination field will be forcefully unset if map_values_exclusive is true,
 	// or left untouched if map_values_exclusive is false.
-	MapValuesExclusive bool              `yaml:"map_values_exclusive" validate:"excluded_without=MapValues"`
+	MapValuesExclusive bool `yaml:"map_values_exclusive" validate:"excluded_without=MapValues"`
 }
 
 type LoggingProcessorModifyFields struct {
