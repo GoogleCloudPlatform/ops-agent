@@ -45,7 +45,12 @@ fi
 function build_otel() {
   cd submodules/opentelemetry-operations-collector
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector"
-  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" ./cmd/otelopscol
+
+  # Using array assignment to drop the filename from the hash
+  JAR_SHA_256=($(sha256sum "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"))
+  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
+    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=${JAR_SHA_256}" \
+    ./cmd/otelopscol
 }
 
 function build_otel_jmx() {
@@ -104,8 +109,8 @@ function build_systemd() {
   done
 }
 
-(build_otel)
 (build_otel_jmx)
+(build_otel)
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)
