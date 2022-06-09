@@ -909,6 +909,73 @@ func TestModifyFields(t *testing.T) {
 	})
 }
 
+func TestParseWithConflictsWithRecord(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."non-overwritten-label":
+          static_value: non-overwritten
+        labels."overwritten-label":
+          static_value: non-overwritten
+        labels."original-label":
+          static_value: original-label
+        severity:
+          static_value: WARNING
+        sourceLocation.file:
+          static_value: non-overwritten-file-path
+        jsonPayload."non-overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."original-field":
+          static_value: original-value
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+        processors:
+          - modify
+          - json
+        exporters:
+          - google
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
+			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING" AND sourceLocation.file="overwritten-file-path"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestResourceNameLabel(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
