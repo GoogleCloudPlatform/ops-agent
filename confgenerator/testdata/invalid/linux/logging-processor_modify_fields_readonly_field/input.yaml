@@ -1,0 +1,11 @@
+logging:
+  processors:
+    processor_1:
+      type: modify_fields
+      fields:
+        labels."logging.googleapis.com/instrumentation_source":
+          static_value: hello
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]

@@ -121,6 +121,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	case "distinctfield":
 		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
+	case "writablefield":
+		return fmt.Sprintf("%q is not a writable field", ve.Value().(string))
 	}
 
 	return ve.FieldError.Error()
@@ -219,6 +221,20 @@ func newValidator() *validator.Validate {
 			}
 		}
 		return true
+	})
+	// writablefield checks to make sure the field is writable
+	v.RegisterValidation("writablefield", func(fl validator.FieldLevel) bool {
+		m1, err := filter.NewMember(fl.Field().String())
+		if err != nil {
+			// The "field" validator will handle this better.
+			return true
+		}
+		// Currently, instrumentation_source is the only field that is not writable.
+		m2, err := filter.NewMember(InstrumentationSourceLabel)
+		if err != nil {
+			panic(err)
+		}
+		return !m2.Equals(*m1)
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
