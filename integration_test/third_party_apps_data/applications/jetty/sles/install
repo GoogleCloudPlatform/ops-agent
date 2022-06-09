@@ -10,13 +10,10 @@ sudo mkdir -p /opt/jetty
 
 sudo tar -xvf jetty-home-11.0.9.tar.gz -C /opt/jetty --strip 1
 
-sudo mkdir -p /opt/webapps/ROOT
-sudo touch /opt/webapps/ROOT/index.html
-
 # to create the remote jmx configuration file
 # set jetty.home and jetty.base
 # add http module
-sudo /usr/bin/java -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1099 -jar /opt/jetty/start.jar jetty.home=/opt/jetty jetty.base=/opt --add-module=http,requestlog
+sudo /usr/bin/java -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=1099 -jar /opt/jetty/start.jar jetty.home=/opt/jetty jetty.base=/opt --add-module=http,requestlog,jmx,demo
 
 cat << EOF | sudo tee /etc/systemd/system/jetty.service
 [Unit]
