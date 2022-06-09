@@ -466,8 +466,7 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
-		// const newHTTPRequestKey = confgenerator.HttpRequestKey
-		const newHTTPRequestKey = "logging.googleapis.com/http_request"
+		const newHTTPRequestKey = confgenerator.HttpRequestKey
 		const newHTTPRequestLogId = "new_request_log"
 		newLogBody := map[string]interface{}{
 			"logId":           newHTTPRequestLogId,
@@ -479,8 +478,7 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
-		// const oldHTTPRequestKey = "logging.googleapis.com/http_request"
-		const oldHTTPRequestKey = confgenerator.HttpRequestKey
+		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
 		const oldHTTPRequestLogId = "old_request_log"
 		oldLogBody := map[string]interface{}{
 			"logId":           oldHTTPRequestLogId,
@@ -515,13 +513,12 @@ func TestHTTPRequestLog(t *testing.T) {
 
 		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
 			payload := entry.Payload.(*structpb.Struct)
-			foundKey := false
-			for key := range payload.GetFields() {
-				if key == httpRequestKey {
-					foundKey = true
+			for k := range payload.GetFields() {
+				if k == httpRequestKey {
+					return true
 				}
 			}
-			return foundKey
+			return false
 		}
 
 		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
