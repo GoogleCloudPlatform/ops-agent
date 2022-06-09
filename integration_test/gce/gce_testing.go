@@ -1471,12 +1471,13 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
 	}
 
+	var creds *WindowsCredentials
 	resetCredentials := func() error {
-		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
+		var err error
+		creds, err = resetAndFetchWindowsCredentials(ctx, logger, vm)
 		if err != nil {
 			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
 		}
-		vm.WindowsCredentials = creds
 		return nil
 	}
 
