@@ -1,0 +1,170 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/wildfly"
+app_url: "https://www.wildfly.org/"
+short_name: WildFly
+long_name: WildFly
+logo_path: /stackdriver/images/wildfly.png # supplied by google technical writer
+description: |-
+  The WildFly integration collects WildFly logs and parses them into a JSON
+  payload. The result includes source, message code, level, and message.
+configure_integration: |-
+  To collect and ingest WildFly logs, you must
+  [install Ops Agent]({{install_path}}/install-index) version 2.12.0 or higher.
+
+  This receiver supports WildFly versions 25.x and 26.x.
+
+  ## Configure your WildFly instance {: #configure-instance }
+
+  To expose the JMX endpoint remotely, you must set the
+  `jboss.bind.address.management` system property. By default, this property is
+  set in WildFly's configuration. The default WildFly installation requires no JMX
+  authentication with JMX exposed locally on `127.0.0.1:9990`.
+
+  To collect session metrics, you must enable statistics on the undertow
+  subsystem by running the following command using the JBoss CLI:
+
+  ```none
+  /subsystem=undertow:write-attribute(name=statistics-enabled,value=true)
+  ```
+minimum_supported_agent_version:
+  metrics: 2.12.0
+  logging: 2.11.0
+supported_app_version: ["26.x", "25.x"]
+expected_metrics:
+- type: workload.googleapis.com/wildfly.session.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+  optional: true
+- type: workload.googleapis.com/wildfly.session.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+  optional: true
+- type: workload.googleapis.com/wildfly.session.expired
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+  optional: true
+- type: workload.googleapis.com/wildfly.session.rejected
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    deployment: .*
+  optional: true
+- type: workload.googleapis.com/wildfly.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    listener: .*
+    server: .*
+- type: workload.googleapis.com/wildfly.request.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    listener: .*
+    server: .*
+- type: workload.googleapis.com/wildfly.request.server_error
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    listener: .*
+    server: .*
+- type: workload.googleapis.com/wildfly.network.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    listener: .*
+    server: .*
+    state: .*
+  representative: true
+- type: workload.googleapis.com/wildfly.jdbc.connection.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    data_source: .*
+    state: .*
+- type: workload.googleapis.com/wildfly.jdbc.request.wait
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    data_source: .*
+- type: workload.googleapis.com/wildfly.jdbc.transaction.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/wildfly.jdbc.rollback.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cause: .*
+expected_logs:
+- log_name: wildfly_system
+  fields:
+  - name: jsonPayload.messageCode
+    value_regex: WFLYSRV0049
+    type: string
+    description: Wildfly specific message code preceding the log, where applicable
+  - name: jsonPayload.message
+    value_regex: .*WildFly Full.*
+    type: string
+    description: Log message
+  - name: jsonPayload.thread
+    value_regex: MSC service thread.*
+    type: string
+    description: Thread where the log originated
+  - name: jsonPayload.source
+    value_regex: org.jboss.as
+    type: string
+    description: Source where the log originated
+configuration_options:
+  logs:
+  - type: wildfly_system
+    fields:
+    - name: type
+      default: null
+      description: The value must be wildfly_system.
+    - name: include_paths
+      default: '[/opt/wildfly/standalone/log/server.log, /opt/wildfly/domain/servers/*/log/server.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/wildfly*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: wildfly
+    fields:
+    - name: type
+      default: null
+      description: This value must be wildfly.
+    - name: endpoint
+      default: service:jmx:remote+http://localhost:9990
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: additional_jars
+      default: /opt/wildfly/bin/client/jboss-client.jar
+      description: The path to the jboss-client.jar file, which is required to monitor WildFly through JMX.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.

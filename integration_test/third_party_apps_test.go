@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -12,13 +26,7 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 The following variables are optional:
 
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. They must be inside
-    a directory called ops-agent. For example, this would be a valid structure
-    inside AGENT_PACKAGES_IN_GCS:
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */
@@ -43,6 +51,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -55,6 +64,8 @@ var (
 
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
+
+var validate = validator.New()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -169,68 +180,47 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	if packagesInGCS == "" {
 		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
-// expectedLogs encodes a series of assertions about what data we expect
-// to see in the logging backend.
-type expectedLogs struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-	LogEntries []expectedLog `yaml:"log_entries"`
-}
-type expectedLog struct {
-	LogName string `yaml:"log_name"`
-	// Map of field name to a regex that is expected to match the field value.
-	// For example, {"jsonPayload.message": ".*access denied.*"}.
-	FieldMatchers map[string]string `yaml:"field_matchers"`
-}
-
-// constructQuery converts the given map of:
+// constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fieldMatchers map[string]string) string {
+func constructQuery(fields []*common.LogFields) string {
 	var parts []string
-	for field, matcher := range fieldMatchers {
-		parts = append(parts, fmt.Sprintf("%s=~%q", field, matcher))
+	for _, field := range fields {
+		if field.ValueRegex != "" {
+			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
+		}
 	}
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries expectedLogs
-	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal contents of expected_logs.yaml: %v", err)
-	}
-	logger.ToMainLog().Printf("Parsed expected_logs.yaml: %+v", entries)
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*common.ExpectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
-	c := make(chan error, len(entries.LogEntries))
-	for _, entry := range entries.LogEntries {
+	var err error
+	c := make(chan error, len(logs))
+	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.FieldMatchers))
+			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.Fields))
 		}()
 	}
-	for range entries.LogEntries {
+	for range logs {
 		err = multierr.Append(err, <-c)
 	}
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var metrics []common.ExpectedMetric
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
-	if err = yaml.UnmarshalStrict(testCaseBytes, &metrics); err != nil {
-		return fmt.Errorf("could not unmarshal contents of expected_metrics.yaml: %v", err)
-	}
 	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics.yaml failed validation: %v", err)
+		return fmt.Errorf("expected_metrics failed validation: %v", err)
 	}
-	logger.ToMainLog().Printf("Parsed expected_metrics.yaml: %+v", metrics)
+	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
 	// if it does exist, we go on to the other metrics in parallel, by which point they
@@ -255,7 +245,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
 	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
-	var requiredMetrics []common.ExpectedMetric
+	var requiredMetrics []*common.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
@@ -276,7 +266,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric common.ExpectedMetric) error {
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *common.ExpectedMetric) error {
 	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err != nil {
 		// Optional metrics can be missing
@@ -301,7 +291,7 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nil
 }
 
-func assertMetricLabels(metric common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
+func assertMetricLabels(metric *common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	// All present labels must be expected
 	var err error
 	for actualLabel := range series.Metric.Labels {
@@ -375,9 +365,34 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if err != nil {
 		return nonRetryable, err
 	}
+
+	var metadata common.IntegrationMetadata
+	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
+		logger.ToMainLog().Println("found metadata.yaml, parsing...")
+
+		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+		}
+		if err = validate.Struct(&metadata); err != nil {
+			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
+		}
+		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
+	}
+
 	if _, err = runScriptFromScriptsDir(
 		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
+	}
+
+	if metadata.RestartAfterInstall {
+		logger.ToMainLog().Printf("Restarting vm instance...")
+		err := gce.RestartInstance(ctx, logger, vm)
+		if err != nil {
+			return nonRetryable, err
+		}
+		logger.ToMainLog().Printf("vm instance restarted")
 	}
 
 	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
@@ -397,18 +412,16 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	// Check if expected_logs.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml")); err == nil {
-		logger.ToMainLog().Println("found expected_logs.yaml, running logging test cases...")
-		if err = runLoggingTestCases(ctx, logger, vm, testCaseBytes); err != nil {
+	if metadata.ExpectedLogs != nil {
+		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
+		if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
 	}
 
-	// Check if expected_metrics.yaml exists, and run the test cases if it does.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_metrics.yaml")); err == nil {
-		logger.ToMainLog().Println("found expected_metrics.yaml, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, testCaseBytes); err != nil {
+	if metadata.ExpectedMetrics != nil {
+		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -489,10 +502,18 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
+const (
+	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
+	SAPHANAApp      = "saphana"
+)
+
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
+// `platforms_to_skip` overrides the above.
+// Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -504,6 +525,11 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		}
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		}
+		isSAPHANAPlatform := test.platform == SAPHANAPlatform
+		isSAPHANAApp := test.app == SAPHANAApp
+		if isSAPHANAPlatform != isSAPHANAApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
 	}
 }
@@ -552,7 +578,18 @@ func TestThirdPartyApps(t *testing.T) {
 			for attempt := 1; attempt <= 4; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
+				options := gce.VMOptions{
+					Platform:             tc.platform,
+					MachineType:          agents.RecommendedMachineType(tc.platform),
+					ExtraCreateArguments: nil,
+				}
+				if tc.platform == SAPHANAPlatform {
+					// This image needs an SSD in order to be performant enough.
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
+					options.ImageProject = "stackdriver-test-143416"
+				}
+
+				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
@@ -576,4 +613,5 @@ func TestThirdPartyApps(t *testing.T) {
 			t.Errorf("Final attempt failed: %v", err)
 		})
 	}
+
 }

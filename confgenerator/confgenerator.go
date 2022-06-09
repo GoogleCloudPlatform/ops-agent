@@ -71,12 +71,25 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Exporter: otel.Component{
 			Type: "googlecloud",
 			Config: map[string]interface{}{
+				// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+				// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+				// recommends disabling this.
+				"retry_on_failure": map[string]interface{}{
+					"enabled": false,
+				},
 				"user_agent": userAgent,
 				"metric": map[string]interface{}{
 					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `custom.googleapis.com/opencensus/`.
+					// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
 					// TODO(b/197129428): Write a test to make sure this doesn't happen.
 					"prefix": "",
+					// OT calls CreateMetricDescriptor by default. Skip because we want
+					// descriptors to be created implicitly with new time series.
+					"skip_create_descriptor": true,
+					// Omit instrumentation labels, which break agent metrics.
+					"instrumentation_library_labels": false,
+					// Omit service labels, which break agent metrics.
+					"service_resource_labels": false,
 				},
 			},
 		},
@@ -114,12 +127,13 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
-// GenerateFluentBitConfigs generates a main and parser configuration file for Fluent Bit.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (main string, parser string, err error) {
+// GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
+// It returns a map of filenames to file contents.
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (map[string]string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	c := fluentbit.ModularConfig{
@@ -130,6 +144,42 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir strin
 		Components: components,
 	}
 	return c.Generate()
+}
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
+	var multilineParserNames []string
+	if processor.Type() != "parse_multiline" {
+		return nil
+	}
+	for _, p := range processorComponents {
+		if p.Kind == "MULTILINE_PARSER" {
+			multilineParserNames = append(multilineParserNames, p.Config["name"])
+		}
+	}
+	allowedMultilineReceiverTypes := []string{"files"}
+	for _, r := range receiverComponents {
+		if len(multilineParserNames) != 0 &&
+			!contains(allowedMultilineReceiverTypes, receiver.Type()) {
+			return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
+		}
+		if len(multilineParserNames) != 0 {
+			r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
+		}
+
+	}
+	if i != 0 {
+		return fmt.Errorf(`at most one logging processor with type "parse_multiline" is allowed in the pipeline. A logging processor with type "parse_multiline" must be right after a logging receiver with type "files"`)
+	}
+	return nil
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
@@ -184,7 +234,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					receiverIdCleaned := strings.ReplaceAll(rID, ".", "_")
 					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 				}
-				components := receiver.Components(tag)
+				var components []fluentbit.Component
+				receiverComponents := receiver.Components(tag)
+				components = append(components, receiverComponents...)
 
 				// To match on fluent_forward records, we need to account for the addition
 				// of the existing tag (unknown during config generation) as the suffix
@@ -206,14 +258,18 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					components = append(components, processor.Components(tag, strconv.Itoa(i))...)
+					processorComponents := processor.Components(tag, strconv.Itoa(i))
+					if err := processUserDefinedMultilineParser(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
+						return nil, err
+					}
+					components = append(components, processorComponents...)
 				}
-				components = append(components, setLogNameComponents(tag, rID)...)
+				components = append(components, setLogNameComponents(tag, rID, receiver.Type(), hostInfo.Hostname)...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
 				if receiver.Type() == "fluent_forward" {
-					components = append(components, addLuaFilter(tag, "add_log_name.lua", "add_log_name")...)
+					components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 				}
 				sources = append(sources, fbSource{tag, components})
 			}

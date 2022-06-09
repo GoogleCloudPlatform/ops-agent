@@ -1,0 +1,134 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/zookeeper"
+app_url: "https://zookeeper.apache.org/"
+short_name: ZooKeeper
+long_name: Apache ZooKeeper
+logo_path: /stackdriver/images/zookeeper.png # supplied by google technical writer
+description: |-
+  The Apache ZooKeeper integration collects traffic metrics for nodes, such as
+  latency, active requests, and active connections. The integration also collects
+  ZooKeeper logs and parses them into a JSON payload. The result includes fields
+  for node ID, source, level, and message.
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.11.0
+supported_app_version: ["3.5", "3.6", "3.7"]
+expected_metrics:
+- type: workload.googleapis.com/zookeeper.connection.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.data_tree.ephemeral_node.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.data_tree.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.file_descriptor.limit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/zookeeper.file_descriptor.open
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.fsync.exceeded_threshold.count
+  optional: true
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.avg
+  optional: true
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.latency.min
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.packet.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/zookeeper.request.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.watch.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/zookeeper.znode.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+expected_logs:
+- log_name: zookeeper_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: binding to port 0.0.0.0/0.0.0.0:2181
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.thread
+    value_regex: main
+    type: string
+    description: Thread from which the log originated
+  - name: jsonPayload.source
+    value_regex: NIOServerCnxnFactory
+    type: string
+    description: Source of where the log originated
+  - name: jsonPayload.line
+    type: number
+    description: Line number from which the log was generated in source
+  - name: jsonPayload.myid
+    type: number
+    description: Numeric ID of the Zookeeper instance
+configuration_options:
+  logs:
+  - type: zookeeper_general
+    fields:
+    - name: type
+      default: null
+      description: The value must be zookeeper_general.
+    - name: include_paths
+      default: '[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/zookeeper*/*.log.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: zookeeper
+    fields:
+    - name: type
+      default: null
+      description: This value must be zookeeper.
+    - name: endpoint
+      default: localhost:2181
+      description: The URL exposed by ZooKeeper.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+

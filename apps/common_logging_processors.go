@@ -39,10 +39,12 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 			},
 		},
 	}.Components(tag, uid)
-	// apache/nginx logs "-" when a field does not have a value. Remove the field entirely when this happens.
+	// apache/nginx/varnish logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{
+		"http_request_remoteIp",
 		"host",
 		"user",
+		"http_request_responseSize",
 		"http_request_referer",
 	} {
 		c = append(c, fluentbit.Component{
@@ -63,7 +65,7 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 			"Match":         tag,
 			"Operation":     "nest",
 			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
+			"Nest_under":    confgenerator.HttpRequestKey,
 			"Remove_prefix": "http_request_",
 		},
 	})

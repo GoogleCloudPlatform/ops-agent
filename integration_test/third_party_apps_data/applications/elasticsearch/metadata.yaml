@@ -1,0 +1,228 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch"
+app_url: "http://elasticsearch.org/"
+short_name: Elasticsearch
+long_name: Elasticsearch
+logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
+description: |-
+  Elasticsearch is an open-source search server, based on the
+  [Lucene](https://lucene.apache.org/){: .external} search library. It runs in a Java virtual
+  machine on top of a number of operating systems. The `elasticsearch` receiver
+  collects node- and cluster-level telemetry from your Elasticsearch instances.
+configure_integration: |-
+  If you enable [Elasticsearch security
+  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html){: .external},
+  you must configure a user with the `monitor` or `manage` [cluster
+  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster)
+  {: .external}.
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.9.0
+supported_app_version: ["7.9+"]
+expected_metrics:
+- type: workload.googleapis.com/elasticsearch.cluster.data_nodes
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.cluster.health
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    status: .*
+- type: workload.googleapis.com/elasticsearch.cluster.nodes
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.cluster.shards
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/elasticsearch.node.cache.evictions
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cache_name: .*
+- type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    cache_name: .*
+- type: workload.googleapis.com/elasticsearch.node.cluster.connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.cluster.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/elasticsearch.node.documents
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: workload.googleapis.com/elasticsearch.node.fs.disk.available
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.http.connections
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.open_files
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/elasticsearch.node.operations.completed
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/elasticsearch.node.operations.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/elasticsearch.node.shards.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+    thread_pool_name: .*
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    thread_pool_name: .*
+- type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+    thread_pool_name: .*
+expected_logs:
+- log_name: elasticsearch_json
+  fields:
+  - name: jsonPayload.message
+    value_regex: initialized
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.component
+    value_regex: o.e.n.Node
+    type: string
+    description: 'The component of Elasticsearch that emitted the log'
+  - name: jsonPayload.type
+    value_regex: server
+    type: string
+    description: 'The type of log, indicating which log the record came from (e.g. *server* indicates this LogEntry came from the server log)'
+  - name: jsonPayload.cluster.name
+    type: string
+    description: 'The name of the cluster emitting the log record'
+  - name: jsonPayload.cluster.uuid
+    type: string
+    description: 'The uuid of the cluster emitting the log record'
+  - name: jsonPayload.node.name
+    type: string
+    description: 'The name of the node emitting the log record'
+  - name: jsonPayload.node.uuid
+    type: string
+    description: 'The uuid of the node emitting the log record'
+- log_name: elasticsearch_gc
+  fields:
+  - name: jsonPayload.message
+    value_regex: Using G1
+    type: string
+    description: 'Log message'
+  - name: jsonPayload.type
+    value_regex: gc
+    type: string
+    description: 'The type of the log record'
+  - name: jsonPayload.gc_run
+    type: number
+    description: 'The run of the garbage collector'
+configuration_options:
+  logs:
+  - type: elasticsearch_json
+    fields:
+    - name: type
+      default: null
+      description: The value must be elasticsearch_json.
+    - name: include_paths
+      default: '[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  - type: elasticsearch_gc
+    fields:
+    - name: type
+      default: null
+      description: The value must be elasticsearch_gc.
+    - name: include_paths
+      default: '[/var/log/elasticsearch/gc.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: elasticsearch
+    fields:
+    - name: type
+      default: null
+      description: This value must be elasticsearch.
+    - name: endpoint
+      default: http://localhost:92002
+      description: The base URL for the Elasticsearch REST API.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: username
+      default: null
+      description: Username for authentication with Elasticsearch. Required if password is set.
+    - name: password
+      default: null
+      description: Password for authentication with Elasticsearch. Required if username is set.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

@@ -1,0 +1,178 @@
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
+app_url: "https://www.iis.net/"
+short_name: IIS
+long_name: IIS
+logo_path: /stackdriver/images/iis.png # supplied by google technical writer
+description: |-
+  The Internet Information Services (IIS) integration collects metrics from your
+  IIS web servers. The metrics provide connection information and also data on
+  transferred bytes.
+
+  When using the Ops Agent on a Microsoft Windows VM, the agent automatically
+  collects IIS metrics. No additional configuration is required.
+minimum_supported_agent_version:
+  metrics: 2.10.0
+  logging: 2.10.0
+supported_app_version: ["8.5", "10.0"]
+expected_metrics:
+# v1 metrics
+- type: agent.googleapis.com/iis/current_connections
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: agent.googleapis.com/iis/network/transferred_bytes_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: agent.googleapis.com/iis/new_connection_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: agent.googleapis.com/iis/request_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    http_method: .*
+  representative: true
+
+# v2 metrics
+- type: workload.googleapis.com/iis.request.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    request: .*
+  # representative: true
+- type: workload.googleapis.com/iis.request.rejected
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.request.queue.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.request.queue.age.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/iis.network.file.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/iis.network.blocked
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.network.io
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+- type: workload.googleapis.com/iis.connection.attempt.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.connection.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.connection.anonymous
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.thread.active
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/iis.uptime
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+
+expected_logs:
+- log_name: iis_access
+  fields:
+  - name: httpRequest.serverIp
+    value_regex: "::1:80"
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: httpRequest.remoteIp
+    value_regex: "::1"
+    type: string
+    description: "IP of the client that made the request"
+  - name: httpRequest.requestUrl
+    value_regex: '/forbidden\?something=something'
+    type: string
+    description: "Request URL (typically just the path part of the URL)"
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: "HTTP method"
+  - name: httpRequest.status
+    type: number
+    description: "HTTP status code"
+  - name: httpRequest.userAgent
+    value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
+    type: string
+    description: "Contents of the `User-Agent` header"
+  - name: httpRequest.referer
+    type: string
+    description: "Contents of the `Referer` header"
+  - name: jsonPayload.sc_substatus
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.sc_win32_status
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: jsonPayload.time_taken
+    type: string
+    description: "The length of time that the action took, in milliseconds"
+  - name: jsonPayload.user
+    type: string
+    description: "Authenticated username for the request"
+configuration_options:
+  logs:
+  - type: iis_access
+    fields:
+    - name: type
+      default: null
+      description: This value must be iis_access.
+    - name: include_paths
+      default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+      description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: iis
+    fields:
+    - name: type
+      default: null
+      description: This value must be iis.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: receiver_version
+      default: null
+      description: Establishes the version of the metric collection implementation.

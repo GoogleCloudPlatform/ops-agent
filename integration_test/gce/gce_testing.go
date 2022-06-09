@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -128,8 +142,9 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
-	vmInitTimeout         = 20 * time.Minute
-	vmInitBackoffDuration = 10 * time.Second
+	vmInitTimeout                     = 20 * time.Minute
+	vmInitBackoffDuration             = 10 * time.Second
+	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	sshUserName = "test_user"
 
@@ -521,7 +536,7 @@ type ThreadSafeWriter struct {
 	guarded io.Writer
 }
 
-func (writer ThreadSafeWriter) Write(p []byte) (int, error) {
+func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 	writer.mu.Lock()
 	defer writer.mu.Unlock()
 	return writer.guarded.Write(p)
@@ -557,7 +572,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	var stderrBuilder strings.Builder
 	var interleavedBuilder strings.Builder
 
-	interleavedWriter := ThreadSafeWriter{guarded: &interleavedBuilder}
+	interleavedWriter := &ThreadSafeWriter{guarded: &interleavedBuilder}
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
@@ -869,8 +884,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		metadataCopy["windows-startup-script-ps1"] = `
-Enable-PSRemoting  # Might help to diagnose b/185923886.
-
 # Needed to get our WinRM connection settings to work.
 Set-WSManInstance WinRM/Config/Service/Auth -ValueSet @{Basic = $true}
 
@@ -953,9 +966,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject, err := imageProject(vm.Platform)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+	imgProject := options.ImageProject
+	if imgProject == "" {
+		var err error
+		imgProject, err = imageProject(vm.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1058,7 +1075,20 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if isRHEL(vm.Platform) {
+		// Disable the google-cloud-sdk repo, which is occasionally corrupted
+		// (b/231439681). This should help with issues like b/231217003.
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i 's/^enabled=1$/enabled=0/' /etc/yum.repos.d/google-cloud.repo")
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to disable the google-cloud-sdk repo: %v", err)
+		}
+	}
+
 	return vm, nil
+}
+
+func isRHEL(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-") || strings.HasPrefix(platform, "centos-") || strings.HasPrefix(platform, "rocky-linux-")
 }
 
 func isSUSE(platform string) bool {
@@ -1230,6 +1260,18 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return waitForStart(ctx, logger, vm)
 }
 
+// RestartInstance stops and starts the instance.
+// It also waits for the instance to be reachable over ssh post-restart.
+func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
+	fileLogger := logger.ToFile("VM_restart.txt")
+
+	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+		return fmt.Errorf("failed to stop instance: %w", err)
+	}
+
+	return StartInstance(ctx, fileLogger, vm)
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1267,7 +1309,7 @@ sudo zypper --non-interactive refresh test-vendor`
 	installCmd := `set -ex
 
 ` + repoSetupCmd + `
-sudo zypper --non-interactive install --capability 'python>=3.6'
+sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
 sudo zypper --non-interactive install python3-certifi
 
 # On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
@@ -1429,9 +1471,18 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
 	}
 
-	creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
-	if err != nil {
-		return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+	resetCredentials := func() error {
+		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
+		if err != nil {
+			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+		}
+		vm.WindowsCredentials = creds
+		return nil
+	}
+
+	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
+	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
+		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
 	}
 
 	// Now, make sure the server is really ready to run remote commands by
@@ -1572,8 +1623,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required.
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
 	Platform string
+	// Optional. Passed as --image-project to "gcloud compute images create".
+	// If not supplied, the framework will attempt to guess the right project
+	// to use based on Platform.
+	ImageProject string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.

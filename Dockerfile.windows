@@ -58,10 +58,10 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 # Install OpenSSL
 # This must be done after installing Visual Studio
-ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1n.msi
+ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1o.msi
 # SHA256 hash from win32_openssl_hashes.json in https://github.com/slproweb/opensslhashes.
 # DO NOT FORGET to change this hash when changing the MSI.
-ARG OPENSSL_SHA256=66dc0e2536d688255247d90644acb8cf3d55c80b8a9d393aa5f03229e891949b
+ARG OPENSSL_SHA256=6c6179a9fd6097132f302daca3bfff2bd81a540d5681dde4edd9022124185368
 ADD https://slproweb.com/download/$OPENSSL_INSTALLER /local/$OPENSSL_INSTALLER
 
 RUN $ExpectedHash = $env:OPENSSL_SHA256; `
@@ -127,7 +127,6 @@ RUN cmake --build . --config Release; `
 FROM base as javacontrib
 
 # Both of these are necessary for the nebula release plugin's options
-COPY BUILD_CONFIG /work/BUILD_CONFIG
 COPY .git /work/.git
 
 ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
@@ -139,9 +138,8 @@ WORKDIR /work/submodules/opentelemetry-java-contrib
 
 # Build & test systems do not always check out git history for submodules, so the properties assigned
 # here allow the nebula release process to function properly in that state
-RUN Get-Content /work/BUILD_CONFIG | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    ./gradlew --no-daemon :jmx-metrics:build \"-Pgit.root=$pwd/../../.git\" \"-Prelease.version=$env:JMX_METRICS_JAR_VERSION\" \"-Prelease.disableGitChecks=true\"; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-$env:JMX_METRICS_JAR_VERSION.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+RUN ./gradlew --no-daemon :jmx-metrics:build; `
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build Go code in one container to exploit Go build caching
