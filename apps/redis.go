@@ -105,26 +105,32 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 
 	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{".", "DEBUG"},
-				{"-", "INFO"},
-				{"*", "NOTICE"},
-				{"#", "WARNING"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						".": "DEBUG",
+						"-": "INFO",
+						"*": "NOTICE",
+						"#": "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				"jsonPayload.role": {
+					CopyFrom: "jsonPayload.roleChar",
+					// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
+					MapValues: map[string]string{
+						"X": "sentinel",
+						"C": "RDB/AOF_writing_child",
+						"S": "slave",
+						"M": "master",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
-	)
-
-	// Role translation documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1149
-	c = append(c,
-		fluentbit.TranslationComponents(tag, "roleChar", "role", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"X", "sentinel"},
-				{"C", "RDB/AOF_writing_child"},
-				{"S", "slave"},
-				{"M", "master"},
-			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c
