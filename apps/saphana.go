@@ -48,6 +48,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.Pipeline {
 				"collection_interval": s.CollectionIntervalString(),
 				"endpoint":            s.Endpoint,
 				"password":            s.Password,
+				"username":            s.Username,
 				"tls":                 s.TLSConfig(true),
 			},
 		},
