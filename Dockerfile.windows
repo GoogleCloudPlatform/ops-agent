@@ -127,8 +127,8 @@ RUN cmake --build . --config Release; `
 FROM base as gobuilder
 
 ###############################################################################
-# Build JMX Project hereso it can be hashed for
-# build flags for operations-collector
+# Build JMX Project here so it can be hashed for
+# a required build flag to support jmx receiver in operations-collector
 ###############################################################################
 
 ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
@@ -141,9 +141,6 @@ WORKDIR /work/submodules/opentelemetry-java-contrib
 RUN ./gradlew --no-daemon :jmx-metrics:build; `
     Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
-RUN powershell -Command Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | `
-    Select-Object -ExpandProperty Hash | Out-File -FilePath /work/jarhash.sha256
-
 ###############################################################################
 # Build OT collector
 ###############################################################################
@@ -152,9 +149,9 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
-RUN FOR /F %A IN ('type /work/jarhash.sha256') DO `
+RUN $JarHash = Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash; `
     go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
-    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=%~A" `
+    -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
      ./cmd/otelopscol; `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
@@ -185,6 +182,5 @@ COPY . /work
 
 COPY --from=fluentbit /work/out /work/out
 COPY --from=gobuilder /work/out /work/out
-COPY --from=javacontrib /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;

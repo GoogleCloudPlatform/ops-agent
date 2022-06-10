@@ -43,21 +43,17 @@ if [ -z "$DESTDIR" ]; then
 fi
 
 function build_otel() {
-  cd submodules/opentelemetry-operations-collector
-  mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector"
-
-  # Using array assignment to drop the filename from the hash
-  JAR_SHA_256=($(sha256sum "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"))
-  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
-    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=${JAR_SHA_256}" \
-    ./cmd/otelopscol
-}
-
-function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
   ./gradlew --no-daemon :jmx-metrics:build
   cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+
+  cd ../opentelemetry-operations-collector
+  # Using array assignment to drop the filename from the sha256sum output
+  JAR_SHA_256=($(sha256sum "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"))
+  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
+    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
+    ./cmd/otelopscol
 }
 
 function build_fluentbit() {
@@ -109,7 +105,6 @@ function build_systemd() {
   done
 }
 
-(build_otel_jmx)
 (build_otel)
 (build_fluentbit)
 (build_opsagent)
