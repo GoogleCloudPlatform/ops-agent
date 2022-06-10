@@ -62,7 +62,7 @@ type LoggingProcessorJettyAccess struct {
 }
 
 func (p LoggingProcessorJettyAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+	return genericAccessLogParser(p.Type(), tag, uid)
 }
 
 func (LoggingProcessorJettyAccess) Type() string {
