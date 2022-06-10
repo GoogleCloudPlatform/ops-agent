@@ -111,6 +111,6 @@ func testMetadataValidation(t *testing.T, dir string) {
 	}
 
 	if actualError.Error() != goldenErrStr {
-		t.Fatal(fmt.Sprintf("Unexpected errors detected: \n Expected error: \n%s\n Actual error:  \n%s\n", goldenErrStr, actualError.Error()))
+		t.Fatal(fmt.Sprintf("Unexpected errors detected: \nExpected error: \n%s\nActual error:  \n%s\n", goldenErrStr, actualError.Error()))
 	}
 }
