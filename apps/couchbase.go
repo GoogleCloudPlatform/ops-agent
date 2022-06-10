@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -197,4 +198,75 @@ func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverCouchbase{} })
+}
+
+// LoggingReceiverCouchbase is a struct used for generating the fluentbit component for couchbase logs
+type LoggingReceiverCouchbase struct {
+	confgenerator.ConfigComponent           `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (lr LoggingReceiverCouchbase) Type() string {
+	return "couchbase_general"
+}
+
+// Components returns the logging components of the couchbase access logs
+func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component {
+	if len(lr.IncludePaths) == 0 {
+		lr.IncludePaths = []string{
+			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
+			"/opt/couchbase/var/lib/couchbase/logs/info.log",
+			"/opt/couchbase/var/lib/couchbase/logs/debug.log",
+			"/opt/couchbase/var/lib/couchbase/logs/error.log",
+			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
+		}
+	}
+	components := lr.LoggingReceiverFilesMixin.Components(tag)
+	return components
+}
+
+func init() {
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverCouchbase{} })
+}
+
+// LoggingProcessorCouchbaseHTTPAccess is a struct that will generate the fluentbit components for the http access logs
+type LoggingProcessorCouchbaseHTTPAccess struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+// Type returns the string for the couchbase http access logs
+func (lp LoggingProcessorCouchbaseHTTPAccess) Type() string {
+	return "couchbase_http_access"
+}
+
+// Components returns the fluentbit components for the http access logs of couchbase
+func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit.Component {
+	if len(lp.IncludePaths) == 0 {
+		lp.IncludePaths = []string{
+			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
+			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
+		}
+	}
+	components := lp.Components(tag)
+	return components
+}
+
+// LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
+type LoggingProcessorCouchbaseGOXDCR struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+// Type returns the type string for the goxdcr logs of couchbase
+func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
+	return "couchbase_goxcdr"
+}
+
+// Components returns the fluentbit components for the couchbase goxdcr logs
+func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Component {
+	if len(lg.IncludePaths) == 0 {
+		lg.IncludePaths = []string{
+			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
+		}
+	}
+	return lg.LoggingReceiverFilesMixin.Components(tag)
 }
