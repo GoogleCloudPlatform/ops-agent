@@ -13,8 +13,8 @@ type MetricsReceiverCouchbase struct {
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Username string `yaml:"username" validate:"required"`
+	Password string `yaml:"password" validate:"required"`
 }
 
 const defaultCouchbaseEndpoint = "localhost:8091"
