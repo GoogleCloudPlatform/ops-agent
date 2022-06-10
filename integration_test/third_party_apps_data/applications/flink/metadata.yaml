@@ -2,17 +2,28 @@ public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agen
 app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
-logo_path: ""
+1logo_path: ""
 description: The Apache Flink integration collects client, jobmanager and taskmanager
   logs and parses them into a JSON payload. The result includes fields for logger,
   level, and message.
 supported_app_version: ["1.13.6", "1.14.4"]
+configure_integration: ""
+expected_metrics:
+- type: workload.googleapis.com/flink.jvm.cpu.load
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+    representative: true
 configuration_options:
   logs:
   - type: flink
     fields:
     - name: type
-      default: ""
+      default: null
       description: The value must be flink.
     - name: include_paths
       default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log,
@@ -41,17 +52,9 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
-configure_integration: ""
-expected_metrics:
-- type: workload.googleapis.com/flink.jvm.cpu.load
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    host_name: .*
-    resource_type: .*
-    optional: false
-    representative: true
+minimum_supported_agent_version:
+  logging: ""
+  metrics: ""
 expected_logs:
 - log_name: flink
   fields:
@@ -68,11 +71,3 @@ expected_logs:
   - name: timestamp
     type: string
     description: ''
-minimum_supported_agent_version:
-  logging: ""
-  metrics: ""
-supported_app_version:
-- 1.13.6
-- 1.14.4
-restart_after_install: false
-troubleshoot: ""
