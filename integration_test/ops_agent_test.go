@@ -362,21 +362,6 @@ func TestCustomLogFile(t *testing.T) {
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
-
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
-			t.Error(err)
-		}
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
-		}
 	})
 }
 
