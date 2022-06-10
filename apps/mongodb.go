@@ -135,9 +135,13 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 	}
 	jpComponents := jsonParser.Components(tag, uid)
 
-	parserComponent, filterComponent := jpComponents[0], jpComponents[1]
-
-	c = append(c, parserComponent, filterComponent)
+	// The parserFilterComponent is the actual filter component that configures and defines
+	// which parser to use. We need the component to determine which parser to use when
+	// re-parsing below. Each time a parser filter is used, there are 2 filter components right
+	// before it to account for the nest lua script (see confgenerator/fluentbit/parse_deduplication.go).
+	// Therefore, the parse filter component is actually the third component in the list.
+	parserFilterComponent := jpComponents[2]
+	c = append(c, jpComponents...)
 
 	tempPrefix := "temp_ts_"
 	timeKey := "time"
@@ -162,15 +166,21 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	c = append(c, fluentbit.Component{
+	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, "message"))
+	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Name":     "parser",
-			"Match":    tag,
-			"Key_Name": "message",
-			"Parser":   parserComponent.OrderedConfig[0][1],
+			"Name":         "parser",
+			"Match":        tag,
+			"Key_Name":     "message",
+			"Reserve_Data": "True",
+			"Parser":       parserFilterComponent.OrderedConfig[0][1],
 		},
-	})
+	}
+	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	c = append(c, nestFilters...)
+	c = append(c, parserFilter)
+	c = append(c, mergeFilters...)
 
 	removeTimestamp := fluentbit.Component{
 		Kind: "FILTER",
@@ -189,32 +199,33 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(tag, uid string) []fluen
 // to a valid logging.googleapis.com/seveirty field
 func (p *LoggingProcessorMongodb) severityParser(tag, uid string) []fluentbit.Component {
 	severityComponents := []fluentbit.Component{}
-	severityKey := "logging.googleapis.com/severity"
 
-	severityComponents = append(severityComponents, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":  tag,
-			"Name":   "modify",
-			"Rename": "s severity",
-		},
-	})
-
-	severityComponents = append(severityComponents, fluentbit.TranslationComponents(tag, "severity", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"D", "DEBUG"},
-		{"D1", "DEBUG"},
-		{"D2", "DEBUG"},
-		{"D3", "DEBUG"},
-		{"D4", "DEBUG"},
-		{"D5", "DEBUG"},
-		{"I", "INFO"},
-		{"E", "ERROR"},
-		{"F", "FATAL"},
-		{"W", "WARNING"},
-	})...)
+	severityComponents = append(severityComponents,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"jsonPayload.severity": {
+					MoveFrom: "jsonPayload.s",
+				},
+				"severity": {
+					CopyFrom: "jsonPayload.s",
+					MapValues: map[string]string{
+						"D":  "DEBUG",
+						"D1": "DEBUG",
+						"D2": "DEBUG",
+						"D3": "DEBUG",
+						"D4": "DEBUG",
+						"D5": "DEBUG",
+						"I":  "INFO",
+						"E":  "ERROR",
+						"F":  "FATAL",
+						"W":  "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 
 	return severityComponents
 }
@@ -272,27 +283,35 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 
 func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
+	parseKey := "message"
 	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
 		"message":   "string",
 		"id":        "integer",
-		"severity":  "string",
+		"s":         "string",
 		"component": "string",
 		"context":   "string",
 	}, fmt.Sprintf("%s_regex", tag), uid)
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
-	parser.Config["Key_Name"] = "message"
+	parser.Config["Key_Name"] = parseKey
 
+	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, parseKey))
 	parserFilter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Match":    tag,
-			"Name":     "parser",
-			"Parser":   parserName,
-			"Key_Name": "message",
+			"Match":        tag,
+			"Name":         "parser",
+			"Parser":       parserName,
+			"Reserve_Data": "True",
+			"Key_Name":     parseKey,
 		},
 	}
-	c = append(c, parser, parserFilter)
+	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+
+	c = append(c, parser)
+	c = append(c, nestFilters...)
+	c = append(c, parserFilter)
+	c = append(c, mergeFilters...)
 
 	return c
 }

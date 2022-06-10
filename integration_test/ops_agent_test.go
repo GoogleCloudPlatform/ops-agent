@@ -465,27 +465,43 @@ func TestHTTPRequestLog(t *testing.T) {
 			"status":        200,
 		}
 
-		// Write a log with an http request in the message to cloud logging and immediately query it.
-		writeAndQueryLog := func(httpRequestKey string, logId string) *cloudlogging.Entry {
-			logBody := map[string]interface{}{
-				"logId":        logId,
-				httpRequestKey: httpRequestBody,
-			}
-			logBytes, err := json.Marshal(logBody)
-			if err != nil {
-				t.Fatalf("could not marshal test log: %v", err)
-			}
-			err = gce.UploadContent(
-				ctx,
-				logger,
-				vm,
-				strings.NewReader(string(logBytes)+"\n"),
-				logPath)
-			if err != nil {
-				t.Fatalf("error writing log line: %v", err)
-			}
+		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
+		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestLogId = "new_request_log"
+		newLogBody := map[string]interface{}{
+			"logId":           newHTTPRequestLogId,
+			newHTTPRequestKey: httpRequestBody,
+		}
+		newLogBytes, err := json.Marshal(newLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal new test log: %v", err)
+		}
 
-			entry, err := gce.QueryLog(
+		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
+		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		const oldHTTPRequestLogId = "old_request_log"
+		oldLogBody := map[string]interface{}{
+			"logId":           oldHTTPRequestLogId,
+			oldHTTPRequestKey: httpRequestBody,
+		}
+		oldLogBytes, err := json.Marshal(oldLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal old test log: %v", err)
+		}
+
+		// Write both logs to log source file at the same time.
+		err = gce.UploadContent(
+			ctx,
+			logger,
+			vm,
+			strings.NewReader(fmt.Sprintf("%s\n%s\n", string(newLogBytes), string(oldLogBytes))),
+			logPath)
+		if err != nil {
+			t.Fatalf("error writing log line: %v", err)
+		}
+
+		queryLogById := func(logId string) (*cloudlogging.Entry, error) {
+			return gce.QueryLog(
 				ctx,
 				logger.ToMainLog(),
 				vm,
@@ -493,45 +509,47 @@ func TestHTTPRequestLog(t *testing.T) {
 				time.Hour,
 				fmt.Sprintf("jsonPayload.logId=%q", logId),
 				gce.QueryMaxAttempts)
-			if err != nil {
-				t.Fatalf("could not find written log with id %s: %v", logId, err)
+		}
+
+		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
+			payload := entry.Payload.(*structpb.Struct)
+			for k := range payload.GetFields() {
+				if k == httpRequestKey {
+					return true
+				}
 			}
-			return entry
+			return false
 		}
 
 		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
 		// parsed as expected by Fluent Bit.
 		t.Run("parse new HTTPRequest key", func(t *testing.T) {
-			httpRequestKey := confgenerator.HttpRequestKey
-			entry := writeAndQueryLog(httpRequestKey, "341231")
-			payload := entry.Payload.(*structpb.Struct)
-			for key := range payload.GetFields() {
-				if key == httpRequestKey {
-					t.Fatal("expected request key to be stripped out of message")
-				}
+			t.Parallel()
+			entry, err := queryLogById(newHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", newHTTPRequestLogId, err)
 			}
 			if entry.HTTPRequest == nil {
 				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+			if isKeyInPayload(newHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be stripped out of the payload", newHTTPRequestKey)
 			}
 		})
 
 		// Test that the old field, "logging.googleapis.com/http_request", is no longer
 		// parsed by Fluent Bit.
 		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
-			oldHTTPRequestKey := "logging.googleapis.com/http_request"
-			entry := writeAndQueryLog(oldHTTPRequestKey, "34203948")
-			payload := entry.Payload.(*structpb.Struct)
-			foundKey := false
-			for key := range payload.GetFields() {
-				if key == oldHTTPRequestKey {
-					foundKey = true
-				}
-			}
-			if !foundKey {
-				t.Fatalf("expected %s key to be present in the payload", oldHTTPRequestKey)
+			t.Parallel()
+			entry, err := queryLogById(oldHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", oldHTTPRequestLogId, err)
 			}
 			if entry.HTTPRequest != nil {
 				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+			if !isKeyInPayload(oldHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be present in payload", oldHTTPRequestKey)
 			}
 		})
 	})
@@ -886,6 +904,73 @@ func TestModifyFields(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseWithConflictsWithRecord(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."non-overwritten-label":
+          static_value: non-overwritten
+        labels."overwritten-label":
+          static_value: non-overwritten
+        labels."original-label":
+          static_value: original-label
+        severity:
+          static_value: WARNING
+        sourceLocation.file:
+          static_value: non-overwritten-file-path
+        jsonPayload."non-overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."original-field":
+          static_value: original-value
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+        processors:
+          - modify
+          - json
+        exporters:
+          - google
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
+			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING" AND sourceLocation.file="overwritten-file-path"`); err != nil {
 			t.Error(err)
 		}
 	})

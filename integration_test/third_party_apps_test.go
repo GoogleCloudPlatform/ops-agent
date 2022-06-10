@@ -186,13 +186,20 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []*common.LogFields) string {
+func constructQuery(logName string, fields []*common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
 			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
 		}
 	}
+
+	if logName != "syslog" {
+		// verify instrumentation_source label
+		val := fmt.Sprintf("agent.googleapis.com/%s", logName)
+		parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	}
+
 	return strings.Join(parts, " AND ")
 }
 
@@ -206,7 +213,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.Fields))
+			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.LogName, entry.Fields))
 		}()
 	}
 	for range logs {
