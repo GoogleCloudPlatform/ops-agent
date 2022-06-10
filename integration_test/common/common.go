@@ -88,7 +88,7 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
