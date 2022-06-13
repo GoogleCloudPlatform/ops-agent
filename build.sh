@@ -45,6 +45,7 @@ fi
 function build_otel() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
+  mv LICENSE LICENSE.apache
   ./gradlew --no-daemon :jmx-metrics:build
   cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
 
