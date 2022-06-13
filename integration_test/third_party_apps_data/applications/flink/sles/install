@@ -24,3 +24,5 @@ WantedBy=default.target
 EOF
 
 sudo systemctl enable flink
+
+sudo systemctl restart flink
