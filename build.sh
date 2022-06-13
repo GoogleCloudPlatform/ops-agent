@@ -45,9 +45,16 @@ fi
 function build_otel() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  mv LICENSE LICENSE.apache
   ./gradlew --no-daemon :jmx-metrics:build
   cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+
+  # Rename LICENSE file because it causes issues with file hash consistency
+  # due to an unknown issue with the debuild/rpmbuild processes
+  mkdir ./META-INF
+  unzip -j "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE" -d ./META-INF
+  zip -d "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
+  mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed
+  zip -u "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
 
   cd ../opentelemetry-operations-collector
   # Using array assignment to drop the filename from the sha256sum output
