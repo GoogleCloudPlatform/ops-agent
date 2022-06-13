@@ -130,39 +130,39 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 
 type couchbaseMetric struct {
 	description string
-	catToGauge  bool
+	castToGauge bool
 	unit        string
 }
 
 var metrics = map[string]couchbaseMetric{
 	"couchbase.bucket.operation.count": {
 		description: "Number of operations on the bucket.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "{operations}",
 	},
 	"couchbase.bucket.item.count": {
 		description: "Number of items that belong to the bucket.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "{items}",
 	},
 	"couchbase.bucket.vbucket.count": {
 		description: "Number of non-resident vBuckets.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "{vbuckets}",
 	},
 	"couchbase.bucket.memory.usage": {
 		description: "Usage of total memory available to the bucket.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "By",
 	},
 	"couchbase.bucket.item.ejection.count": {
 		description: "Number of item value ejections from memory to disk.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "{ejections}",
 	},
 	"couchbase.bucket.error.oom.count": {
 		description: "Number of out of memory errors.",
-		catToGauge:  true,
+		castToGauge: true,
 		unit:        "{errors}",
 	},
 	"couchbase.bucket.memory.high_water_mark.limit": {
@@ -187,7 +187,7 @@ func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
 
 	for _, metricName := range keys {
 		m := metrics[metricName]
-		if m.catToGauge {
+		if m.castToGauge {
 			operations = append(operations, otel.ConvertGaugeToSum(metricName))
 		}
 		operations = append(operations, otel.SetDescription(metricName, m.description), otel.SetUnit(metricName, m.unit))
