@@ -224,9 +224,6 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
-	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics failed validation: %v", err)
-	}
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;

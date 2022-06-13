@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )
 
@@ -50,7 +49,7 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 }
 
 func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := validator.New()
+	v := newIntegrationMetadataValidator()
 	err := yaml.UnmarshalStrict(bytes, i)
 	if err != nil {
 		t.Fatal(err)

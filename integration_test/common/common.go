@@ -19,6 +19,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 )
 
@@ -88,7 +89,7 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"oneof_field=Representative,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
@@ -120,4 +121,22 @@ func SliceContains(slice []string, toFind string) bool {
 		}
 	}
 	return false
+}
+
+func newIntegrationMetadataValidator() *validator.Validate {
+	v := validator.New()
+	_ = v.RegisterValidation("oneof_field", func(fl validator.FieldLevel) bool {
+		metrics, ok := fl.Field().Interface().([]*ExpectedMetric)
+		if !ok {
+			return false
+		}
+		representativeCount := 0
+		for _, m := range metrics {
+			if m.Representative {
+				representativeCount += 1
+			}
+		}
+		return representativeCount == 1
+	})
+	return v
 }
