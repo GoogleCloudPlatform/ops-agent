@@ -18,9 +18,6 @@ expected_logs:
   - name: severity
     type: string
     description: ''
-  - name: timestamp
-    type: string
-    description: ''
 configuration_options:
   logs:
   - type: flink
