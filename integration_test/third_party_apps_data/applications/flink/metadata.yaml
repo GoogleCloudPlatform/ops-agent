@@ -16,7 +16,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
     representative: true
 configuration_options:
   logs:
@@ -62,12 +61,9 @@ expected_logs:
     type: string
     description: ''
   - name: jsonPayload.source
-    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
+    value_regex: org.apache.flink.*
     type: string
     description: ''
   - name: severity
-    type: string
-    description: ''
-  - name: timestamp
     type: string
     description: ''
