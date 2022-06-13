@@ -221,12 +221,24 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
 		}
 	}
+	lr.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^{.*`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^[^{].*[,}]$`,
+		},
+	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
-	return components
-}
 
-func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverCouchbase{} })
+	components = append(components, confgenerator.LoggingProcessorParseRegex{
+		Regex: `\[(?<logger>\w+):(?<level>\w+),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<message>.*)$`,
+	}.Components(tag, "couchbase_default")...)
+	return components
 }
 
 // LoggingProcessorCouchbaseHTTPAccess is a struct that will generate the fluentbit components for the http access logs
@@ -247,7 +259,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
 		}
 	}
-	components := lp.Components(tag)
+	components := lp.LoggingReceiverFilesMixin.Components(tag)
 	return components
 }
 
@@ -268,5 +280,27 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
 		}
 	}
-	return lg.LoggingReceiverFilesMixin.Components(tag)
+
+	c := lg.LoggingReceiverFilesMixin.Components(tag)
+
+	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3,6})\s(?<level>[A-z]+)\s{1,5}\((?<thread>[^\)]+)\)\s\[c?:?(?<collection>[^\s]*)\ss?:?(?<shard>[^\s]*)\sr?:?(?<replica>[^\s]*)\sx?:?(?<core>[^\]]*)\]\s(?<source>[^\s]+)\s(?<message>(?:(?!\s\=\>)[\s\S])+)\s?=?>?(?<exception>[\s\S]*)`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+					},
+				},
+			},
+		},
+	}.Components(tag, "couchbase_xdcr")...)
+	return c
+}
+
+func init() {
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverCouchbase{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorCouchbaseHTTPAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorCouchbaseGOXDCR{} })
 }
