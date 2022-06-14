@@ -97,8 +97,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 				otel.RenameMetric("kv_ops", "couchbase.bucket.operation.count"),
 				otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
 				otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
-				otel.RenameMetric("kv_ep_cursor_memory_freed_bytes", "couchbase.bucket.memory.usage.free"),
-				otel.RenameMetric("kv_ep_cursor_memory_used_bytes", "couchbase.bucket.memory.usage.used"),
+				otel.RenameMetric("kv_memory_used_bytes", "couchbase.bucket.memory.usage"),
 				otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.memoryitem.ejection.count"),
 				otel.RenameMetric("kv_ep_tmp_oom_errors", "couchbase.bucket.error.oom.count.recoverable"),
 				otel.RenameMetric("kv_ep_oom_errors", "couchbase.bucket.error.oom.count.unrecoverable"),
@@ -107,10 +106,6 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 				otel.CombineMetrics(
 					`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
 					"couchbase.bucket.oom.count",
-				),
-				otel.CombineMetrics(
-					`^couchbase\.bucket\.memory\.usage\.(?P<state>free|used)$$`,
-					"couchbase.bucket.memory.usage",
 				),
 
 				otel.UpdateMetric(
