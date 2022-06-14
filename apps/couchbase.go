@@ -46,29 +46,32 @@ var metricList = []string{
 
 // Pipelines will construct the prometheus receiver configuration
 func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
+	targets := []string{r.Endpoint}
+	if r.Endpoint == "" {
+		targets = []string{defaultCouchbaseEndpoint}
+	}
+
 	config := map[string]interface{}{
-		"scrape_configs": []map[string]interface{}{
-			{
-				"job_name":        r.Type(),
-				"scrape_interval": r.CollectionIntervalString(),
-				"basic_auth": map[string]interface{}{
-					"username": r.Username,
-					"password": r.Password,
-				},
-				"metric_relabel_configs": []map[string]interface{}{
-					{
-						"source_labels": []string{"__name__"},
-						"regex": `(kv_ops)|\
-								(kv_vb_curr_items)|\
-								(kv_num_vbuckets)|\
-								(kv_ep_cursor_memory_freed_bytes)|\
-								(kv_total_memory_used_bytes)|\
-								(kv_ep_num_value_ejects)|\
-								(kv_ep_mem_high_wat)|\
-								(kv_ep_mem_low_wat)|\
-								(kv_ep_tmp_oom_errors)|\
-								(kv_ep_oom_errors)`,
-						"action": "keep",
+		"config": map[string]interface{}{
+			"scrape_configs": []map[string]interface{}{
+				{
+					"job_name":        r.Type(),
+					"scrape_interval": r.CollectionIntervalString(),
+					"basic_auth": map[string]interface{}{
+						"username": r.Username,
+						"password": r.Password,
+					},
+					"metric_relabel_configs": []map[string]interface{}{
+						{
+							"source_labels": []string{"__name__"},
+							"regex":         "(kv_ops)|(kv_vb_curr_items)|(kv_num_vbuckets)|(kv_ep_cursor_memory_freed_bytes)|(kv_total_memory_used_bytes)|(kv_ep_num_value_ejects)|(kv_ep_mem_high_wat)|(kv_ep_mem_low_wat)|(kv_ep_oom_errors)",
+							"action":        "keep",
+						},
+					},
+					"static_configs": []map[string]interface{}{
+						{
+							"targets": targets,
+						},
 					},
 				},
 			},
@@ -89,11 +92,8 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 				"scrape_samples_scraped",
 				"up",
 			),
-
 			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-
-				// renaming from prometheus style to otel style
+				// renaming from prometheus style to otel style, order is important before workload prefix
 				otel.RenameMetric("kv_ops", "couchbase.bucket.operation.count"),
 				otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
 				otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
@@ -112,6 +112,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					`^couchbase\.bucket\.memory\.usage\.(?P<state>free|used)$$`,
 					"couchbase.bucket.memory.usage",
 				),
+
 				otel.UpdateMetric(
 					`couchbase.bucket.operation.count`,
 					map[string]interface{}{
@@ -120,7 +121,9 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						"aggregation_type": "sum",
 					},
 				),
+				otel.AddPrefix("workload.googleapis.com"),
 			),
+
 			otel.TransformationMetrics(
 				r.transformMetrics()...,
 			),
@@ -135,41 +138,41 @@ type couchbaseMetric struct {
 }
 
 var metrics = map[string]couchbaseMetric{
-	"couchbase.bucket.operation.count": {
+	"workload.googleapis.com/couchbase.bucket.operation.count": {
 		description: "Number of operations on the bucket.",
 		castToGauge: true,
 		unit:        "{operations}",
 	},
-	"couchbase.bucket.item.count": {
+	"workload.googleapis.com/couchbase.bucket.item.count": {
 		description: "Number of items that belong to the bucket.",
 		castToGauge: true,
 		unit:        "{items}",
 	},
-	"couchbase.bucket.vbucket.count": {
+	"workload.googleapis.com/couchbase.bucket.vbucket.count": {
 		description: "Number of non-resident vBuckets.",
 		castToGauge: true,
 		unit:        "{vbuckets}",
 	},
-	"couchbase.bucket.memory.usage": {
+	"workload.googleapis.com/couchbase.bucket.memory.usage": {
 		description: "Usage of total memory available to the bucket.",
 		castToGauge: true,
 		unit:        "By",
 	},
-	"couchbase.bucket.item.ejection.count": {
+	"workload.googleapis.com/couchbase.bucket.item.ejection.count": {
 		description: "Number of item value ejections from memory to disk.",
 		castToGauge: true,
 		unit:        "{ejections}",
 	},
-	"couchbase.bucket.error.oom.count": {
+	"workload.googleapis.com/couchbase.bucket.error.oom.count": {
 		description: "Number of out of memory errors.",
 		castToGauge: true,
 		unit:        "{errors}",
 	},
-	"couchbase.bucket.memory.high_water_mark.limit": {
+	"workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit": {
 		description: "The memory usage at which items will be ejected.",
 		unit:        "By",
 	},
-	"couchbase.bucket.memory.low_water_mark.limit": {
+	"workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit": {
 		description: "The memory usage at which ejections will stop that were previously triggered by a high water mark breach.",
 		unit:        "By",
 	},
