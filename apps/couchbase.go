@@ -13,9 +13,9 @@ type MetricsReceiverCouchbase struct {
 	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Endpoints []string `yaml:"endpoints" validate:"omitempty,hostname_port"`
+	Username  string   `yaml:"username" validate:"required_with=Password"`
+	Password  string   `yaml:"password" validate:"required_with=Username"`
 }
 
 const defaultCouchbaseEndpoint = "localhost:8091"
@@ -47,19 +47,27 @@ var metricList = []string{
 
 // Pipelines will construct the prometheus receiver configuration
 func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
+	targets := r.Endpoints
+	if len(targets) == 0 {
+		targets = []string{defaultCouchbaseEndpoint}
+	}
 	config := map[string]interface{}{
-		"scrape_configs": []map[string]interface{}{
-			{
-				"job_name":        r.Type(),
-				"scrape_interval": r.CollectionIntervalString(),
-				"basic_auth": map[string]interface{}{
-					"username": r.Username,
-					"password": r.Password,
-				},
-				"metric_relabel_configs": []map[string]interface{}{
-					{
-						"source_labels": []string{"__name__"},
-						"regex": `(kv_ops)|\
+		"config": map[string]interface{}{
+			"scrape_configs": []map[string]interface{}{
+				{
+					"job_name":        r.Type(),
+					"scrape_interval": r.CollectionIntervalString(),
+					"basic_auth": map[string]interface{}{
+						"username": r.Username,
+						"password": r.Password,
+					},
+					"static_configs": map[string]interface{}{
+						"targets": targets,
+					},
+					"metric_relabel_configs": []map[string]interface{}{
+						{
+							"source_labels": []string{"__name__"},
+							"regex": `(kv_ops)|\
 								(kv_vb_curr_items)|\
 								(kv_num_vbuckets)|\
 								(kv_ep_cursor_memory_freed_bytes)|\
@@ -69,7 +77,8 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 								(kv_ep_mem_low_wat)|\
 								(kv_ep_tmp_oom_errors)|\
 								(kv_ep_oom_errors)`,
-						"action": "keep",
+							"action": "keep",
+						},
 					},
 				},
 			},
@@ -92,19 +101,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 			),
 
 			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-
-				// renaming from prometheus style to otel style
-				otel.RenameMetric("kv_ops", "couchbase.bucket.operation.count"),
-				otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
-				otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
-				otel.RenameMetric("kv_ep_cursor_memory_freed_bytes", "couchbase.bucket.memory.usage.free"),
-				otel.RenameMetric("kv_ep_cursor_memory_used_bytes", "couchbase.bucket.memory.usage.used"),
-				otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.memoryitem.ejection.count"),
-				otel.RenameMetric("kv_ep_tmp_oom_errors", "couchbase.bucket.error.oom.count.recoverable"),
-				otel.RenameMetric("kv_ep_oom_errors", "couchbase.bucket.error.oom.count.unrecoverable"),
-
-				// combine metrics
+				// combine metrics order matters here
 				otel.CombineMetrics(
 					`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
 					"couchbase.bucket.oom.count",
@@ -121,6 +118,17 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						"aggregation_type": "sum",
 					},
 				),
+				// renaming from prometheus style to otel style
+				otel.RenameMetric("kv_ops", "couchbase.bucket.operation.count"),
+				otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
+				otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
+				otel.RenameMetric("kv_ep_cursor_memory_freed_bytes", "couchbase.bucket.memory.usage.free"),
+				otel.RenameMetric("kv_ep_cursor_memory_used_bytes", "couchbase.bucket.memory.usage.used"),
+				otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.memoryitem.ejection.count"),
+				otel.RenameMetric("kv_ep_tmp_oom_errors", "couchbase.bucket.error.oom.count.recoverable"),
+				otel.RenameMetric("kv_ep_oom_errors", "couchbase.bucket.error.oom.count.unrecoverable"),
+
+				otel.AddPrefix("workload.googleapis.com"),
 			),
 			otel.TransformationMetrics(
 				r.transformMetrics()...,
@@ -206,6 +214,7 @@ type LoggingReceiverCouchbase struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+// Type returns the string identifier for the general couchbase logs
 func (lr LoggingReceiverCouchbase) Type() string {
 	return "couchbase_general"
 }
@@ -225,24 +234,41 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `^{.*`,
+			Regex:     `\[(?<type>[^:]*):`,
 		},
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^[^{].*[,}]$`,
+			Regex:     `^(?!\[(?<type>[^:]*)`,
 		},
 	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
+	components = append(components,
+		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{
+					"debug", "DEBUG",
+				},
+				{
+					"info", "INFO",
+				},
+			},
+		)...,
+	)
 
 	components = append(components, confgenerator.LoggingProcessorParseRegex{
-		Regex: `\[(?<logger>\w+):(?<level>\w+),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<message>.*)$`,
+		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node>[^@]*)@(?<host>[^:]*):(?<source>[^\]]+)\](?<message>.*)$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+		},
 	}.Components(tag, "couchbase_default")...)
 	return components
 }
 
 // LoggingProcessorCouchbaseHTTPAccess is a struct that will generate the fluentbit components for the http access logs
 type LoggingProcessorCouchbaseHTTPAccess struct {
+	confgenerator.ConfigComponent           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
@@ -259,18 +285,31 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
 		}
 	}
-	components := lp.LoggingReceiverFilesMixin.Components(tag)
-	return components
+	c := lp.LoggingReceiverFilesMixin.Components(tag)
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{
+					"debug", "DEBUG",
+				},
+				{
+					"info", "INFO",
+				},
+			},
+		)...,
+	)
+	return c
 }
 
 // LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
 type LoggingProcessorCouchbaseGOXDCR struct {
+	confgenerator.ConfigComponent           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-// Type returns the type string for the goxdcr logs of couchbase
+// Type returns the type string for the cross datacenter logs of couchbase
 func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
-	return "couchbase_goxcdr"
+	return "couchbase_xdcr"
 }
 
 // Components returns the fluentbit components for the couchbase goxdcr logs
@@ -281,21 +320,44 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		}
 	}
 
+	lg.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
+		},
+	}
 	c := lg.LoggingReceiverFilesMixin.Components(tag)
-
 	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
-					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3,6})\s(?<level>[A-z]+)\s{1,5}\((?<thread>[^\)]+)\)\s\[c?:?(?<collection>[^\s]*)\ss?:?(?<shard>[^\s]*)\sr?:?(?<replica>[^\s]*)\sx?:?(?<core>[^\]]*)\]\s(?<source>[^\s]+)\s(?<message>(?:(?!\s\=\>)[\s\S])+)\s?=?>?(?<exception>[\s\S]*)`,
+					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<severity>\w+) (?<log_type>\w+.\w+): (?<message>.*)$`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
 					},
 				},
 			},
 		},
 	}.Components(tag, "couchbase_xdcr")...)
+	c = append(c,
+		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{
+					"debug", "DEBUG",
+				},
+				{
+					"info", "INFO",
+				},
+			},
+		)...,
+	)
 	return c
 }
 
