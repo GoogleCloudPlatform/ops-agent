@@ -185,7 +185,7 @@ RUN set -x; \
     # The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
     zypper --no-gpg-check refresh 'OSS Update' && \
     (echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-    zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros zip && \
+    zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
     # Remove expired root certificate.
     mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
     update-ca-certificates && \
@@ -216,7 +216,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel zip && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip && \
     # Add home:ptrommler:formal repo to install >3.4 bison
     zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
