@@ -12,7 +12,7 @@ expected_logs:
     type: string
     description: ''
   - name: jsonPayload.source
-    value_regex: org.apache.flink.*
+    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
     type: string
     description: ''
   - name: severity
