@@ -24,26 +24,6 @@ func (r MetricsReceiverCouchbase) Type() string {
 	return "couchbase"
 }
 
-var metricList = []string{
-	"couchbase.bucket.operation.count",
-	"couchbase.bucket.item.count",
-	"couchbase.bucket.vbucket.count",
-
-	"couchbase.bucket.memory.usage.free",
-	"couchbase.bucket.memory.usage.used",
-	"couchbase.bucket.memory.usage",
-
-	"couchbase.bucket.memory.high_water_mark.limit",
-	"couchbase.bucket.memory.low_water_mark.limit",
-	// combines
-	"couchbase.bucket.error.oom.count.recoverable",
-	"couchbase.bucket.error.oom.count.unrecoverable",
-	// into
-	"couchbase.bucket.error.oom.count",
-
-	"couchbase.bucket.item.ejection.count",
-}
-
 // Pipelines will construct the prometheus receiver configuration
 func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 	targets := []string{r.Endpoint}
@@ -64,7 +44,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					"metric_relabel_configs": []map[string]interface{}{
 						{
 							"source_labels": []string{"__name__"},
-							"regex":         "(kv_ops)|(kv_vb_curr_items)|(kv_num_vbuckets)|(kv_ep_cursor_memory_freed_bytes)|(kv_total_memory_used_bytes)|(kv_ep_num_value_ejects)|(kv_ep_mem_high_wat)|(kv_ep_mem_low_wat)|(kv_ep_oom_errors)",
+							"regex":         "(kv_ops)|(kv_vb_curr_items)|(kv_num_vbuckets)|(kv_total_memory_used_bytes)|(kv_ep_num_value_ejects)|(kv_ep_mem_high_wat)|(kv_ep_mem_low_wat)|(kv_ep_oom_errors)",
 							"action":        "keep",
 						},
 					},
@@ -97,7 +77,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 				otel.RenameMetric("kv_ops", "couchbase.bucket.operation.count"),
 				otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
 				otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
-				otel.RenameMetric("kv_memory_used_bytes", "couchbase.bucket.memory.usage"),
+				otel.RenameMetric("kv_total_memory_used_bytes", "couchbase.bucket.memory.usage"),
 				otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.memoryitem.ejection.count"),
 				otel.RenameMetric("kv_ep_tmp_oom_errors", "couchbase.bucket.error.oom.count.recoverable"),
 				otel.RenameMetric("kv_ep_oom_errors", "couchbase.bucket.error.oom.count.unrecoverable"),
