@@ -48,13 +48,14 @@ function build_otel() {
   ./gradlew --no-daemon :jmx-metrics:build
   cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
 
-  # Rename LICENSE file because it causes issues with file hash consistency
-  # due to an unknown issue with the debuild/rpmbuild processes
+  # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
+  # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive
+  # environment and having a conflict between the LICENSE file and license/ directory, leading to a changed jar file
   mkdir ./META-INF
   unzip -j "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE" -d ./META-INF
-  zip -d "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
+  tar --delete -f "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
   mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed
-  zip -u "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
+  tar -rf "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
 
   cd ../opentelemetry-operations-collector
   # Using array assignment to drop the filename from the sha256sum output
