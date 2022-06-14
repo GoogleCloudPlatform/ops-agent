@@ -53,9 +53,9 @@ function build_otel() {
   # environment and having a conflict between the LICENSE file and license/ directory, leading to a changed jar file
   mkdir ./META-INF
   unzip -j "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE" -d ./META-INF
-  tar --delete -f "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
+  zip --d "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
   mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed
-  tar -rf "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
+  zip -u "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
 
   cd ../opentelemetry-operations-collector
   # Using array assignment to drop the filename from the sha256sum output
