@@ -1,9 +1,0 @@
-[17:18] Key: 'MetricsReceiverCouchbase.endpoints' Error:Field validation for 'endpoints' failed on the 'hostname_port' tag
-  14 |     couchbase:
-  15 |       type: couchbase
-  16 |       collection_interval: ""
-> 17 |       endpoints: []
-                        ^
-  18 |       username: otelu
-  19 |       password: otelp
-  20 |     hostmetrics:

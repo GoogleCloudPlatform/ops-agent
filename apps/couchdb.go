@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -104,37 +106,46 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 		},
 	}.Components(tag, uid)
 
-	// Generate the httpRequest structure.
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    confgenerator.HttpRequestKey,
-			"Remove_prefix": "http_request_",
+	fields := map[string]*confgenerator.ModifyField{
+		"severity": {
+			CopyFrom: "jsonPayload.level",
+			MapValues: map[string]string{
+				"emerg":     "EMERGENCY",
+				"emergency": "EMERGENCY",
+				"alert":     "ALERT",
+				"crit":      "CRITICAL",
+				"critical":  "CRITICAL",
+				"error":     "ERROR",
+				"err":       "ERROR",
+				"warn":      "WARNING",
+				"warning":   "WARNING",
+				"notice":    "NOTICE",
+				"info":      "INFO",
+				"debug":     "DEBUG",
+			},
+			MapValuesExclusive: true,
 		},
-	})
+		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+	}
+
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"serverIp",
+		"remoteIp",
+		"requestMethod",
+		"status",
+		"responseSize",
+	} {
+		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
+			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
+		}
+	}
 
 	// Log levels documented: https://docs.couchdb.org/en/stable/config/logging.html#log/level
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"emerg", "EMERGENCY"},
-				{"emergency", "EMERGENCY"},
-				{"alert", "ALERT"},
-				{"crit", "CRITICAL"},
-				{"critical", "CRITICAL"},
-				{"error", "ERROR"},
-				{"err", "ERROR"},
-				{"warn", "WARNING"},
-				{"warning", "WARNING"},
-				{"notice", "NOTICE"},
-				{"info", "INFO"},
-				{"debug", "DEBUG"},
-			},
-		)...,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: fields,
+		}.Components(tag, uid)...,
 	)
 	return c
 }
