@@ -1,3 +1,4 @@
 # Check that the instance is up
 sudo su - opsadm
+cd /usr/sap/OPS/HDB00
 hdbsql -u SYSTEM -j "SELECT * FROM DUMMY"
