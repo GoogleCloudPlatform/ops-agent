@@ -22,7 +22,7 @@ logging:
       type: couchbase_xdcr
   service:
     pipelines:
-      cassandra:
+      couchbase:
         receivers:
           - couchbase_general
           - couchbase_http_access

@@ -201,15 +201,23 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `\[(?<type>[^:]*):`,
+			Regex:     `^\[([^\s+:]*):`,
 		},
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^(?!\[(?<type>[^:]*)`,
+			Regex:     `^(?!\[([^\s+:]*):).*`,
 		},
 	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
+	components = append(components, confgenerator.LoggingProcessorParseRegex{
+		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node>[^@]*)@(?<host>[^:]*):(?<source>[^\]]+)\](?<message>.*)$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+		},
+	}.Components(tag, "couchbase_default")...)
+
 	components = append(components,
 		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
@@ -219,17 +227,15 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 				{
 					"info", "INFO",
 				},
+				{
+					"warn", "WARNING",
+				},
+				{
+					"error", "ERROR",
+				},
 			},
 		)...,
 	)
-
-	components = append(components, confgenerator.LoggingProcessorParseRegex{
-		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node>[^@]*)@(?<host>[^:]*):(?<source>[^\]]+)\](?<message>.*)$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
-		},
-	}.Components(tag, "couchbase_default")...)
 	return components
 }
 
@@ -254,16 +260,16 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 	}
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{
-					"debug", "DEBUG",
-				},
-				{
-					"info", "INFO",
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*) - (?<client>.*)$`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "timestamp",
+				TimeFormat: `%d/%mmm/%Y:%H:%M:%S %Z`,
+				Types: map[string]string{
+					"user": "string",
 				},
 			},
-		)...,
+		}.Components(tag, "couchbase_http_access")...,
 	)
 	return c
 }
@@ -314,13 +320,20 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		},
 	}.Components(tag, "couchbase_xdcr")...)
 	c = append(c,
+		// rename the severities to logging.googleapis.com/severity
 		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
 			[]struct{ SrcVal, DestVal string }{
 				{
-					"debug", "DEBUG",
+					"DEBUG", "DEBUG",
 				},
 				{
-					"info", "INFO",
+					"INFO", "INFO",
+				},
+				{
+					"WARN", "WARNING",
+				},
+				{
+					"ERROR", "ERROR",
 				},
 			},
 		)...,
