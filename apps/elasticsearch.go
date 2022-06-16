@@ -125,20 +125,25 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 }
 
 func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []fluentbit.Component {
-	severityKey := "logging.googleapis.com/severity"
-	return fluentbit.TranslationComponents(tag, "level", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"TRACE", "DEBUG"},
-		{"DEBUG", "DEBUG"},
-		{"INFO", "INFO"},
-		{"WARN", "WARNING"},
-		{"DEPRECATION", "WARNING"},
-		{"ERROR", "ERROR"},
-		{"CRITICAL", "ERROR"},
-		{"FATAL", "FATAL"},
-	})
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"TRACE":       "DEBUG",
+					"DEBUG":       "DEBUG",
+					"INFO":        "INFO",
+					"WARN":        "WARNING",
+					"DEPRECATION": "WARNING",
+					"ERROR":       "ERROR",
+					"CRITICAL":    "ERROR",
+					"FATAL":       "FATAL",
+				},
+				MapValuesExclusive: true,
+			},
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)
 }
 
 func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
@@ -200,7 +205,13 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 	}
 
 	c = append(c, regexParser.Components(tag, uid)...)
-
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 

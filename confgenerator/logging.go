@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
+const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
 const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
