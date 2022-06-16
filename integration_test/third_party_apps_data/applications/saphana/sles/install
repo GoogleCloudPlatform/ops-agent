@@ -1,10 +1,8 @@
 # SAP HANA is pre-installed on the images used for tests
 set -e
 
-
-sudo su - opsadm
 # Start the instance
-/usr/sap/OPS/HDB00/HDB start
+sudo su - opsadm -c '/usr/sap/OPS/HDB00/HDB start'
 
 # Check that the instance is up
-/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -j "SELECT * FROM DUMMY"
+sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -j "SELECT * FROM DUMMY"'
