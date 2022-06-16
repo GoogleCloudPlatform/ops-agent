@@ -36,12 +36,12 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^(?!\[([^\s+:]*):).*`,
+			Regex:     `^(?!\[([^\s+:]*):).*$`,
 		},
 	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
 	components = append(components, confgenerator.LoggingProcessorParseRegex{
-		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node>[^@]*)@(?<host>[^:]*):(?<source>[^\]]+)\](?<message>.*)$`,
+		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):(?<module_name>[^\<]+)(?<source>[^\]]+)\](?<message>.*)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
@@ -91,7 +91,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c,
 		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*) - (?<client>.*)$`,
+			Regex: `^(?<client_ip>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<status_code>[^ ]*) (?<response_size>[^ ]*) - (?<message>.*)$`,
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
 				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
