@@ -83,6 +83,12 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 		})
 	}
 
+	c = append(c, confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)...)
+
 	return c
 }
 
