@@ -39,15 +39,40 @@ The Ops Agent collects the following metrics from your flink instance.
 | flink.operator.record.count           | cumulative | "{records}"     | operator_name, record  | operator                | The number of records an operator has.                                                                        |
 | flink.operator.watermark.output       | cumulative | ms              | operator_name          | operator                | The last watermark this operator has emitted.                                                                 |
 
+Resource Attributes:
+
+These resource attributes are Flinks system scope variables, which contains context information about metrics. These are required to uniquely identify incoming metrics as the same job can run multiple times concurrently. See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope for more information. 
+
+| Resource Attribute Name | Description                                        |
+|-------------------------|----------------------------------------------------|
+| host_Name               | The host name.                                     |
+| taskmanager_id          | The taskmanager ID.                                |
+| job_name                | The job name.                                      |
+| task_name               | The task name.                                     |
+| subtask_index           | The subtask index.                                 |
+| resource_type           | The flink scope type in which a metric belongs to. |
+
+Attributes:
+
+| Metric Name                                            | Attribute Name         | Description                                                                  | Values                                                            |
+|--------------------------------------------------------|------------------------|------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| workload.googleapis.com/flink.jvm.gc.collections.count | garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors.    | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
+| workload.googleapis.com/flink.jvm.gc.collections.time  | garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors.    | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
+| workload.googleapis.com/flink.job.checkpoint.count     | checkpoint             | The number of checkpoints completed or that failed.                          | completed, failed                                                 |
+| workload.googleapis.com/flink.task.record.count        | operator_name          | The operator name.                                                           | -                                                                 |
+| workload.googleapis.com/flink.task.record.count        | record                 | The number of records received in, sent out or dropped due to arriving late. | in, out, dropped                                                  |
+| workload.googleapis.com/flink.operator.record.count    | operator_name          | The operator name.                                                           | -                                                                 |
+| workload.googleapis.com/flink.operator.record.count    | record                 | The number of records received in, sent out or dropped due to arriving late. | in, out, dropped                                                  |
+
 ## Logs
 
 Flink logs contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) for Client, Jobmanager and Taskmanagers:
 
-| Field | Type | Description |
-| ---   | ---- | ----------- |
-| `jsonPayload.source` | string | Module and/or thread  where the log originated |
-| `jsonPayload.message` | string | Log message, including detailed stacktrace where provided |
-| `severity` | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)) | Log entry level (translated) |
-| `timestamp` | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received |
+| Field                 | Type                                                                                                                            | Description                                               |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| `jsonPayload.source`  | string                                                                                                                          | Module and/or thread  where the log originated            |
+| `jsonPayload.message` | string                                                                                                                          | Log message, including detailed stacktrace where provided |
+| `severity`            | string ([`LogSeverity`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity))                       | Log entry level (translated)                              |
+| `timestamp`           | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received                             |
 
 Any fields that are blank or missing will not be present in the log entry.

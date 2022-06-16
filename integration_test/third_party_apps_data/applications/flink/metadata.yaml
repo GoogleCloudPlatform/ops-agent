@@ -2,9 +2,9 @@ public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agen
 app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
-1logo_path: ""
+logo_path: ""
 description: The Apache Flink integration collects client, jobmanager and taskmanager
-  logs and parses them into a JSON payload. The result includes fields for logger,
+  logs and parses them into a JSON payload. The result includes fields for source,
   level, and message.
 supported_app_version: ["1.13.6", "1.14.4"]
 configure_integration: ""
@@ -16,7 +16,261 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    optional: false
     representative: true
+- type: workload.googleapis.com/flink.jvm.cpu.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.heap.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.heap.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.heap.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.direct.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.direct.total_capacity
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.mapped.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.memory.mapped.total_capacity
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.memory.managed.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.memory.managed.total
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.threads.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.gc.collections.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    garbage_collector_name: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.gc.collections.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    garbage_collector_name: .*
+    optional: false
+- type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    optional: false
+- type: workload.googleapis.com/flink.job.restart.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    optional: true
+- type: workload.googleapis.com/flink.job.last_checkpoint.time
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    optional: true
+- type: workload.googleapis.com/flink.job.last_checkpoint.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    optional: true
+- type: workload.googleapis.com/flink.job.checkpoint.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    checkpoint: .*
+    optional: true
+- type: workload.googleapis.com/flink.job.checkpoint.in_progress
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    optional: true
+- type: workload.googleapis.com/flink.task.record.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    taskmanager_id: .*
+    job_name: .*
+    task_name: .*
+    subtask_index: .*
+    record: .*
+    optional: true
+- type: workload.googleapis.com/flink.operator.record.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    taskmanager_id: .*
+    job_name: .*
+    operator_name: .*
+    task_name: .*
+    subtask_index: .*
+    record: .*
+    optional: true
+- type: workload.googleapis.com/flink.operator.watermark.output
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    operator_name: .*
+    subtask_index: .*
+    task_name: .*
+    taskmanager_id: .*
+  optional: true
+expected_logs:
+- log_name: flink
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: ''
+  - name: jsonPayload.source
+    value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
+    type: string
+    description: ''
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: flink
@@ -25,20 +279,14 @@ configuration_options:
       default: null
       description: The value must be flink.
     - name: include_paths
-      default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log,
-        /opt/flink/log/flink-*-client-*.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild
-        card (*) can be used in the paths.
+      default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log, /opt/flink/log/flink-*-client-*.log]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: ""
-      description: A list of filesystem path patterns to exclude from the set matched
-        by include_paths.
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: wildcard_refresh_interval
       default: 60s
-      description: The interval at which wildcard file paths in include_paths are
-        refreshed. Given as a time duration, for example 30s or 2m. This property
-        might be useful under high logging throughputs where log files are rotated
-        faster than the default interval.
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - type: flinkmetrics
     fields:
@@ -51,19 +299,3 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
-minimum_supported_agent_version:
-  logging: ""
-  metrics: ""
-expected_logs:
-- log_name: flink
-  fields:
-  - name: jsonPayload.message
-    type: string
-    description: ''
-  - name: jsonPayload.source
-    value_regex: org.apache.flink.*
-    type: string
-    description: ''
-  - name: severity
-    type: string
-    description: ''
