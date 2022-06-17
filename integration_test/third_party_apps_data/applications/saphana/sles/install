@@ -6,11 +6,30 @@ ps -ef | grep hdb
 
 # Start the instance
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/HDB stop'
-sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbpreprocessor'
+
+# Check for running services
+ps -ef | grep hdb
+
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbcompileserver'
+
+# Check for running services
+ps -ef | grep hdb
+
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbnameserver'
+
+# Check for running services
+ps -ef | grep hdb
+
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbindexserver'
+
+# Check for running services
+ps -ef | grep hdb
+
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/HDB start'
+
+# Check for running services
+ps -ef | grep hdb
+
 
 # Check that the instance is up
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -j "SELECT * FROM DUMMY"'
