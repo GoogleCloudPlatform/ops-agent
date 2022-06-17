@@ -1,8 +1,13 @@
 # SAP HANA is pre-installed on the images used for tests
 set -e
 
+# Check for running services
+ps -ef | grep hdb
+
 # Start the instance
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/HDB stop'
+sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbpreprocessor'
+sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbcompileserver'
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbnameserver'
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbindexserver'
 sudo su - opsadm -c '/usr/sap/OPS/HDB00/HDB start'
