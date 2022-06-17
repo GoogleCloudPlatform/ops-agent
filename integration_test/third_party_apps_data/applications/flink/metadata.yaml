@@ -17,7 +17,6 @@ expected_metrics:
     host_name: .*
     resource_type: .*
     optional: false
-    representative: true
 - type: workload.googleapis.com/flink.jvm.cpu.time
   value_type: INT64
   kind: CUMULATIVE
@@ -34,6 +33,7 @@ expected_metrics:
     host_name: .*
     resource_type: .*
     optional: false
+    representative: true
 - type: workload.googleapis.com/flink.jvm.memory.heap.committed
   value_type: INT64
   kind: GAUGE
@@ -257,7 +257,7 @@ expected_metrics:
     subtask_index: .*
     task_name: .*
     taskmanager_id: .*
-  optional: true
+    optional: true
 expected_logs:
 - log_name: flink
   fields:
