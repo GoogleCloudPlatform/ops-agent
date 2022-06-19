@@ -54,7 +54,7 @@ type platformConfig struct {
 }
 
 var platforms = []platformConfig{
-	platformConfig{
+	{
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 		InfoStat: &host.InfoStat{
@@ -63,7 +63,7 @@ var platforms = []platformConfig{
 			PlatformVersion: "linux_platform_version",
 		},
 	},
-	platformConfig{
+	{
 		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
 		InfoStat: &host.InfoStat{
