@@ -16,7 +16,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.cpu.time
   value_type: INT64
   kind: CUMULATIVE
@@ -24,7 +23,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.heap.used
   value_type: INT64
   kind: GAUGE
@@ -32,8 +30,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
-    representative: true
+  representative: true
 - type: workload.googleapis.com/flink.jvm.memory.heap.committed
   value_type: INT64
   kind: GAUGE
@@ -41,7 +38,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.heap.max
   value_type: INT64
   kind: GAUGE
@@ -49,7 +45,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.used
   value_type: INT64
   kind: GAUGE
@@ -57,7 +52,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.committed
   value_type: INT64
   kind: GAUGE
@@ -65,7 +59,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.max
   value_type: INT64
   kind: GAUGE
@@ -73,7 +66,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.used
   value_type: INT64
   kind: GAUGE
@@ -81,7 +73,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.committed
   value_type: INT64
   kind: GAUGE
@@ -89,7 +80,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.max
   value_type: INT64
   kind: GAUGE
@@ -97,7 +87,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.direct.used
   value_type: INT64
   kind: GAUGE
@@ -105,7 +94,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.direct.total_capacity
   value_type: INT64
   kind: GAUGE
@@ -113,7 +101,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.mapped.used
   value_type: INT64
   kind: GAUGE
@@ -121,7 +108,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.memory.mapped.total_capacity
   value_type: INT64
   kind: GAUGE
@@ -129,7 +115,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.memory.managed.used
   value_type: INT64
   kind: GAUGE
@@ -137,7 +122,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.memory.managed.total
   value_type: INT64
   kind: GAUGE
@@ -145,7 +129,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.threads.count
   value_type: INT64
   kind: GAUGE
@@ -153,7 +136,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.gc.collections.count
   value_type: INT64
   kind: CUMULATIVE
@@ -162,7 +144,6 @@ expected_metrics:
     host_name: .*
     resource_type: .*
     garbage_collector_name: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.gc.collections.time
   value_type: INT64
   kind: CUMULATIVE
@@ -171,7 +152,6 @@ expected_metrics:
     host_name: .*
     resource_type: .*
     garbage_collector_name: .*
-    optional: false
 - type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
   value_type: INT64
   kind: CUMULATIVE
@@ -179,7 +159,6 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
-    optional: false
 - type: workload.googleapis.com/flink.job.restart.count
   value_type: INT64
   kind: CUMULATIVE
@@ -187,7 +166,6 @@ expected_metrics:
   labels:
     host_name: .*
     job_name: .*
-    optional: true
 - type: workload.googleapis.com/flink.job.last_checkpoint.time
   value_type: INT64
   kind: GAUGE
@@ -195,7 +173,6 @@ expected_metrics:
   labels:
     host_name: .*
     job_name: .*
-    optional: true
 - type: workload.googleapis.com/flink.job.last_checkpoint.size
   value_type: INT64
   kind: GAUGE
@@ -203,7 +180,6 @@ expected_metrics:
   labels:
     host_name: .*
     job_name: .*
-    optional: true
 - type: workload.googleapis.com/flink.job.checkpoint.count
   value_type: INT64
   kind: CUMULATIVE
@@ -212,7 +188,6 @@ expected_metrics:
     host_name: .*
     job_name: .*
     checkpoint: .*
-    optional: true
 - type: workload.googleapis.com/flink.job.checkpoint.in_progress
   value_type: INT64
   kind: GAUGE
@@ -220,7 +195,6 @@ expected_metrics:
   labels:
     host_name: .*
     job_name: .*
-    optional: true
 - type: workload.googleapis.com/flink.task.record.count
   value_type: INT64
   kind: CUMULATIVE
@@ -232,7 +206,6 @@ expected_metrics:
     task_name: .*
     subtask_index: .*
     record: .*
-    optional: true
 - type: workload.googleapis.com/flink.operator.record.count
   value_type: INT64
   kind: CUMULATIVE
@@ -245,7 +218,6 @@ expected_metrics:
     task_name: .*
     subtask_index: .*
     record: .*
-    optional: true
 - type: workload.googleapis.com/flink.operator.watermark.output
   value_type: INT64
   kind: GAUGE
@@ -257,7 +229,6 @@ expected_metrics:
     subtask_index: .*
     task_name: .*
     taskmanager_id: .*
-    optional: true
 expected_logs:
 - log_name: flink
   fields:
