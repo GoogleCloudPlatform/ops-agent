@@ -27,7 +27,7 @@ type MetricsReceiverFlink struct {
 }
 
 func (MetricsReceiverFlink) Type() string {
-	return "flinkmetrics"
+	return "flink"
 }
 
 const defaultFlinkEndpoint = "http://localhost:8081"
@@ -38,7 +38,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "flinkmetrics",
+			Type: "flink",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,

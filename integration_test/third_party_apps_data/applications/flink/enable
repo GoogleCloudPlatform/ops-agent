@@ -5,13 +5,13 @@ set -e
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 metrics:
   receivers:
-    flinkmetrics:
-      type: flinkmetrics
+    flink:
+      type: flink
   service:
     pipelines:
-      flinkmetrics:
+      flink:
         receivers:
-          - flinkmetrics
+          - flink
 logging:
   receivers:
     flink:

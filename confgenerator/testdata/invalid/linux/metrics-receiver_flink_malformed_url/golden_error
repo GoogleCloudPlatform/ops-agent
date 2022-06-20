@@ -1,9 +1,1 @@
-[19:17] "endpoint" must be a URL
-  16 |   receivers:
-  17 |     flinkmetrics:
-  18 |       type: flinkmetrics
-> 19 |       endpoint: localhost
-                       ^
-  20 |   service:
-  21 |     pipelines:
-  22 |       flinkmetrics:
+metrics receiver with type "flinkmetrics" is not supported. Supported metrics receiver types: [activemq, apache, cassandra, couchdb, elasticsearch, flink, hadoop, hbase, hostmetrics, jetty, jvm, kafka, memcached, mongodb, mysql, nginx, postgresql, rabbitmq, redis, solr, tomcat, varnish, wildfly, zookeeper].

@@ -14,11 +14,11 @@
 
 metrics:
   receivers:
-    flinkmetrics:
-      type: flinkmetrics
+    flink:
+      type: flink
       # exercising default endpoint
   service:
     pipelines:
-      flinkmetrics:
+      flink:
         receivers:
-          - flinkmetrics
+          - flink
