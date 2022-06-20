@@ -41,7 +41,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
 	components = append(components, confgenerator.LoggingProcessorParseRegex{
-		Regex: `^\[(?<type>[^:]*):(?<severity>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):(?<module_name>[^\<]+)(?<source>[^\]]+)\](?<message>.*)$`,
+		Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):(?<module_name>[^\<]+)(?<source>[^\]]+)\](?<message>.*)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
@@ -49,23 +49,21 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 	}.Components(tag, "couchbase_default")...)
 
 	components = append(components,
-		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{
-					"debug", "DEBUG",
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"debug": "DEBUG",
+						"info":  "INFO",
+						"warn":  "WARNING",
+						"error": "ERROR",
+					},
+					MapValuesExclusive: true,
 				},
-				{
-					"info", "INFO",
-				},
-				{
-					"warn", "WARNING",
-				},
-				{
-					"error", "ERROR",
-				},
+				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		)...,
-	)
+		}.Components(tag, lr.Type())...)
 	return components
 }
 
@@ -102,6 +100,11 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			},
 		}.Components(tag, "couchbase_http_access")...,
 	)
+	c = append(c, confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(lp.Type()),
+		},
+	}.Components(tag, lp.Type())...)
 	return c
 }
 
@@ -141,7 +144,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
-					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<severity>\w+) (?<log_type>\w+.\w+): (?<message>.*)$`,
+					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<level>\w+) (?<log_type>\w+.\w+): (?<message>.*)$`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
@@ -149,25 +152,23 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				},
 			},
 		},
-	}.Components(tag, "couchbase_xdcr")...)
+	}.Components(tag, lg.Type())...)
 	c = append(c,
-		// rename the severities to logging.googleapis.com/severity
-		fluentbit.TranslationComponents(tag, "severity", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{
-					"DEBUG", "DEBUG",
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"DEBUG": "DEBUG",
+						"INFO":  "INFO",
+						"WARN":  "WARNING",
+						"ERROR": "ERROR",
+					},
+					MapValuesExclusive: true,
 				},
-				{
-					"INFO", "INFO",
-				},
-				{
-					"WARN", "WARNING",
-				},
-				{
-					"ERROR", "ERROR",
-				},
+				InstrumentationSourceLabel: instrumentationSourceValue(lg.Type()),
 			},
-		)...,
+		}.Components(tag, lg.Type())...,
 	)
 	return c
 }
