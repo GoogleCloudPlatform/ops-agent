@@ -38,7 +38,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 	}
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
-			Type: "flink",
+			Type: "flinkmetrics",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
