@@ -49,7 +49,7 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 }
 
 func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := newIntegrationMetadataValidator()
+	v := NewIntegrationMetadataValidator()
 	err := yaml.UnmarshalStrict(bytes, i)
 	if err != nil {
 		t.Fatal(err)

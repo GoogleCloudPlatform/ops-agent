@@ -123,7 +123,7 @@ func SliceContains(slice []string, toFind string) bool {
 	return false
 }
 
-func newIntegrationMetadataValidator() *validator.Validate {
+func NewIntegrationMetadataValidator() *validator.Validate {
 	v := validator.New()
 	_ = v.RegisterValidation("oneof_field", func(fl validator.FieldLevel) bool {
 		metrics, ok := fl.Field().Interface().([]*ExpectedMetric)
