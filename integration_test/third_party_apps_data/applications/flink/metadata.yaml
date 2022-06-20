@@ -16,6 +16,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.cpu.time
   value_type: INT64
   kind: CUMULATIVE
@@ -23,6 +24,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.heap.used
   value_type: INT64
   kind: GAUGE
@@ -30,6 +32,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
   representative: true
 - type: workload.googleapis.com/flink.jvm.memory.heap.committed
   value_type: INT64
@@ -38,6 +41,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.heap.max
   value_type: INT64
   kind: GAUGE
@@ -45,6 +49,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.used
   value_type: INT64
   kind: GAUGE
@@ -52,6 +57,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.committed
   value_type: INT64
   kind: GAUGE
@@ -59,6 +65,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.nonheap.max
   value_type: INT64
   kind: GAUGE
@@ -66,6 +73,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.used
   value_type: INT64
   kind: GAUGE
@@ -73,6 +81,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.committed
   value_type: INT64
   kind: GAUGE
@@ -80,6 +89,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.metaspace.max
   value_type: INT64
   kind: GAUGE
@@ -87,6 +97,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.direct.used
   value_type: INT64
   kind: GAUGE
@@ -94,6 +105,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.direct.total_capacity
   value_type: INT64
   kind: GAUGE
@@ -101,6 +113,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.mapped.used
   value_type: INT64
   kind: GAUGE
@@ -108,6 +121,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.memory.mapped.total_capacity
   value_type: INT64
   kind: GAUGE
@@ -115,6 +129,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.memory.managed.used
   value_type: INT64
   kind: GAUGE
@@ -122,6 +137,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.memory.managed.total
   value_type: INT64
   kind: GAUGE
@@ -129,6 +145,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.threads.count
   value_type: INT64
   kind: GAUGE
@@ -136,6 +153,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.jvm.gc.collections.count
   value_type: INT64
   kind: CUMULATIVE
@@ -143,6 +161,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
     garbage_collector_name: .*
 - type: workload.googleapis.com/flink.jvm.gc.collections.time
   value_type: INT64
@@ -151,6 +170,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
     garbage_collector_name: .*
 - type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
   value_type: INT64
@@ -159,6 +179,7 @@ expected_metrics:
   labels:
     host_name: .*
     resource_type: .*
+    taskmanager_id: .*
 - type: workload.googleapis.com/flink.job.restart.count
   value_type: INT64
   kind: CUMULATIVE
