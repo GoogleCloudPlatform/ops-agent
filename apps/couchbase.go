@@ -27,32 +27,38 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
 		}
 	}
-	lr.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\[([^\s+:]*):`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\[([^\s+:]*):).*$`,
-		},
-	}
 	components := lr.LoggingReceiverFilesMixin.Components(tag)
-	components = append(components, confgenerator.LoggingProcessorParseRegex{
-		Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):(?<module_name>[^\<]+)(?<source>[^\]]+)\](?<message>.*)$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):(?<module_name>[^\<]+)(?<source>[^\]]+)\](?<message>.*)$`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+					},
+				},
+			},
 		},
-	}.Components(tag, "couchbase_default")...)
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^\[([^\s+:]*):`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^(?!\[([^\s+:]*):).*$`,
+			},
+		},
+	}.Components(tag, lr.Type())...)
 
 	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					CopyFrom: "jsonPayload.level",
+					MoveFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"debug": "DEBUG",
 						"info":  "INFO",
@@ -127,18 +133,6 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		}
 	}
 
-	lg.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
-		},
-	}
 	c := lg.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -152,12 +146,24 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				},
 			},
 		},
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
+			},
+		},
 	}.Components(tag, lg.Type())...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					CopyFrom: "jsonPayload.level",
+					MoveFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"DEBUG": "DEBUG",
 						"INFO":  "INFO",
