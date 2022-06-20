@@ -1,1 +1,1 @@
-metrics receiver "flink" from pipeline "flinkmetrics" is not defined.
+metrics receiver "flink" from pipeline "flink" is not defined.

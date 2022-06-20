@@ -19,6 +19,6 @@ metrics:
       # exercising default endpoint
   service:
     pipelines:
-      flinkmetrics:
+      flink:
         receivers:
           - flink

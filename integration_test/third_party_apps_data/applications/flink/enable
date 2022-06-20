@@ -9,7 +9,7 @@ metrics:
       type: flink
   service:
     pipelines:
-      flinkmetrics:
+      flink:
         receivers:
           - flink
 logging:
