@@ -25,6 +25,13 @@ func (p LoggingProcessorVaultJson) Components(tag, uid string) []fluentbit.Compo
 		},
 	}
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	c = append(c, jsonParser.Components(tag, uid)...)
 	return c
 }
