@@ -11,7 +11,7 @@ metrics:
     pipelines:
       flink:
         receivers:
-          - flink
+          - flinkmetrics
 logging:
   receivers:
     flink:
