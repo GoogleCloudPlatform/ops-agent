@@ -18,7 +18,7 @@ expected_logs:
     type: string
     description: ''
   - name: jsonPayload.request.path
-    value_regex: sys\/audit\/test
+    # value_regex: sys\/audit\/test
     type: string
     description: ''
   - name: jsonPayload.request.operation
