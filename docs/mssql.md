@@ -1,6 +1,6 @@
 # MS SQL Server
 
-Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql) for instructions to collect metrics from this application using Ops Agent.
+Follow the [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql) for instructions to collect metrics and logs from this application using Ops Agent.
 
 ## Metrics
 
@@ -12,3 +12,11 @@ The following table provides the list of metrics that the Ops Agent collects fro
 | agent.googleapis.com/mssql/transaction_rate       | gauge     | 1/s  |        | SQL server total transactions per second. |
 | agent.googleapis.com/mssql/write_transaction_rate | gauge     | 1/s  |        | SQL server write transactions per second. |
 
+## Logs
+
+The following table provides the list of log fields that the Ops Agent collects from this application.
+| Log Field                                         | Type      | Description |
+| ---                                               | ---       | ---         | 
+| logtime                                           | string    | The log timestamp, logged in sending server's configured time zone. |
+| spid                                              | string    | Server Process ID.                                                  |
+| message                                           | string    | Log message.                                                        |
