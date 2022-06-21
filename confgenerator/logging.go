@@ -33,6 +33,9 @@ func setLogNameComponents(tag, logName, receiverType string, hostName string) []
 			`labels."compute.googleapis.com/resource_name"`: {
 				DefaultValue: &hostName,
 			},
+			`labels."agent.googleapis.com/log_file_path"`: {
+				MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
+			},
 			// `labels."agent.googleapis.com/receiver_type"`: {
 			// 	StaticValue: &receiverType,
 			// },
