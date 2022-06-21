@@ -19,7 +19,6 @@ package common
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -42,7 +41,7 @@ var (
 
 func getTestFile(t *testing.T, dirName, fileName string) string {
 	filePath := path.Join(testdataDir, dirName, fileName)
-	contents, err := ioutil.ReadFile(filePath)
+	contents, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatal("could not read dirName: " + filePath)
 	}
@@ -58,7 +57,7 @@ func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
 	return v.Struct(i)
 }
 
-func TestAll(t *testing.T) {
+func TestMetadataValidation(t *testing.T) {
 	dirs, err := os.ReadDir(testdataDir)
 
 	if err != nil {
@@ -91,7 +90,7 @@ func generateNewGolden(t *testing.T, dir string) {
 		errStr = err.Error()
 	}
 
-	if err = ioutil.WriteFile(goldenPath, []byte(errStr), 0644); err != nil {
+	if err = os.WriteFile(goldenPath, []byte(errStr), 0644); err != nil {
 		t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
 	}
 }
@@ -112,6 +111,6 @@ func testMetadataValidation(t *testing.T, dir string) {
 	}
 
 	if actualError.Error() != goldenErrStr {
-		t.Fatal(fmt.Sprintf("Unexpected errors detected: \n Expected error: \n%s\n Actual error:  \n%s\n", goldenErrStr, actualError.Error()))
+		t.Fatal(fmt.Sprintf("Unexpected errors detected: \nExpected error: \n%s\nActual error:  \n%s\n", goldenErrStr, actualError.Error()))
 	}
 }
