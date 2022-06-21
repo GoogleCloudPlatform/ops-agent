@@ -17,10 +17,7 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/go-playground/validator/v10"
-	"go.uber.org/multierr"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -89,29 +86,11 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"oneof_field=Representative,dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onerepresentative,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot"`
-}
-
-// ValidateMetrics checks that all enum fields have valid values and that
-// there is exactly one representative metric in the slice.
-func ValidateMetrics(metrics []*ExpectedMetric) error {
-	var err error
-
-	// Representative validation
-	representativeCount := 0
-	for _, m := range metrics {
-		if m.Representative {
-			representativeCount += 1
-		}
-	}
-	if representativeCount != 1 {
-		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %d were found", representativeCount))
-	}
-	return err
 }
 
 func SliceContains(slice []string, toFind string) bool {
@@ -125,7 +104,7 @@ func SliceContains(slice []string, toFind string) bool {
 
 func NewIntegrationMetadataValidator() *validator.Validate {
 	v := validator.New()
-	_ = v.RegisterValidation("oneof_field", func(fl validator.FieldLevel) bool {
+	_ = v.RegisterValidation("onerepresentative", func(fl validator.FieldLevel) bool {
 		metrics, ok := fl.Field().Interface().([]*ExpectedMetric)
 		if !ok {
 			return false
