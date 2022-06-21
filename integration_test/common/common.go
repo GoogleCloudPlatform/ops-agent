@@ -116,6 +116,11 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 		if !ok {
 			return false
 		}
+
+		if len(metrics) == 0 {
+			return true
+		}
+
 		representativeCount := 0
 		for _, m := range metrics {
 			if m.Representative {
