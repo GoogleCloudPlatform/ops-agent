@@ -105,6 +105,13 @@ func SliceContains(slice []string, toFind string) bool {
 func NewIntegrationMetadataValidator() *validator.Validate {
 	v := validator.New()
 	_ = v.RegisterValidation("onerepresentative", func(fl validator.FieldLevel) bool {
+
+		fieldStr := fl.Field().String()
+		if fieldStr == "" {
+			// Ignore the case where this field is not actually specified or is left empty.
+			return true
+		}
+
 		metrics, ok := fl.Field().Interface().([]*ExpectedMetric)
 		if !ok {
 			return false
