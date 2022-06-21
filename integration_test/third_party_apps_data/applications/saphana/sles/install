@@ -2,4 +2,4 @@
 set -e
 
 # Check that the instance is up
-sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -j "SELECT * FROM DUMMY"'
+sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -p G00g3l21 -j "SELECT * FROM DUMMY"'
