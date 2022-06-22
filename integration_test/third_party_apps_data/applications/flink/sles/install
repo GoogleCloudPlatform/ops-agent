@@ -2,7 +2,7 @@ set -e
 
 sudo zypper install -y curl java-11-openjdk
 
-curl -L -o flink.tgz https://dlcdn.apache.org/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
+curl -L -o flink.tgz https://archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
 
 sudo mkdir /opt/flink
 sudo tar -xzf flink.tgz -C /opt/flink --strip-components 1
