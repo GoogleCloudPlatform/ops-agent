@@ -8,17 +8,14 @@ minimum_supported_agent_version:
   logging: 1.0.0
 supported_app_version: ["Example0"]
 expected_metrics:
-- type: example.googleapis.com/example.example0
+- type: example.googleapis.com/example.example1
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
-  representative: true
-- type: example.googleapis.com/example.example0
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
+  labels:
+    broker: .*
+    destination: .*
+  optional: true
 expected_logs:
 - log_name: examplelog
   fields:

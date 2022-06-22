@@ -17,6 +17,9 @@
 package common
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/go-playground/validator/v10"
 )
 
@@ -86,7 +89,7 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"unique=Type,dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
@@ -104,30 +107,47 @@ func SliceContains(slice []string, toFind string) bool {
 
 func NewIntegrationMetadataValidator() *validator.Validate {
 	v := validator.New()
-	_ = v.RegisterValidation("onerepresentative", func(fl validator.FieldLevel) bool {
+	_ = v.RegisterValidation("onetrue", func(fl validator.FieldLevel) bool {
+		field := fl.Field()
+		param := fl.Param()
 
-		fieldStr := fl.Field().String()
-		if fieldStr == "" {
-			// Ignore the case where this field is not actually specified or is left empty.
-			return true
+		if param == "" {
+			panic(fmt.Sprintf("onetrue must contain an argument"))
 		}
 
-		metrics, ok := fl.Field().Interface().([]*ExpectedMetric)
-		if !ok {
-			return false
-		}
+		switch field.Kind() {
 
-		if len(metrics) == 0 {
-			return true
-		}
+		case reflect.Slice, reflect.Array:
+			elem := field.Type().Elem()
 
-		representativeCount := 0
-		for _, m := range metrics {
-			if m.Representative {
-				representativeCount += 1
+			if field.Len() == 0 {
+				return true
 			}
+
+			if elem.Kind() == reflect.Ptr {
+				elem = elem.Elem()
+			}
+
+			count := 0
+			for i := 0; i < field.Len(); i++ {
+				elm := reflect.Indirect(field.Index(i))
+
+				f := elm.FieldByName(param)
+
+				if !f.IsValid() {
+					panic(fmt.Sprintf("Invalid field name %s", param))
+				}
+
+				if !f.IsZero() {
+					count++
+				}
+			}
+
+			return count == 1
+
+		default:
+			panic(fmt.Sprintf("Invalid field type %T", field.Interface()))
 		}
-		return representativeCount == 1
 	})
 	return v
 }
