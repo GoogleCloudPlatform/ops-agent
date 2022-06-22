@@ -366,6 +366,7 @@ expected_metrics:
       host: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.transaction.blocked
+    optional: true
     value_type: INT64
   - kind: CUMULATIVE
     labels:
