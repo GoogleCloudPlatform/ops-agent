@@ -18,12 +18,12 @@ logging:
       type: couchbase_general
     couchbase_http_access:
       type: couchbase_http_access
-    couchbase_xdcr:
-      type: couchbase_xdcr
+    couchbase_goxdcr:
+      type: couchbase_goxdcr
   service:
     pipelines:
       couchbase:
         receivers:
           - couchbase_general
           - couchbase_http_access
-          - couchbase_xdcr
+          - couchbase_goxdcr

@@ -104,7 +104,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 					"code": "integer",
 				},
 			},
-		}.Components(tag, "couchbase_http_access")...,
+		}.Components(tag, lp.Type())...,
 	)
 	c = append(c, confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
@@ -122,7 +122,7 @@ type LoggingProcessorCouchbaseGOXDCR struct {
 
 // Type returns the type string for the cross datacenter logs of couchbase
 func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
-	return "couchbase_xdcr"
+	return "couchbase_goxdcr"
 }
 
 // Components returns the fluentbit components for the couchbase goxdcr logs

@@ -6,7 +6,7 @@ end)();
 (function(value)
 record["level"] = value
 end)(nil);
-local v = "agent.googleapis.com/couchbase_xdcr";
+local v = "agent.googleapis.com/couchbase_goxdcr";
 (function(value)
 if record["logging.googleapis.com/labels"] == nil
 then
