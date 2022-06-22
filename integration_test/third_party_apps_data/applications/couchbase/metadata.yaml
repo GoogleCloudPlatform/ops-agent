@@ -21,6 +21,40 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
   representative: true
+- type: workload.googleapis.com/couchbase.bucket.vbucket.count
+  value_type: CUMULATIVE
+  kind: DOUBLE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.usage
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/couchbase.bucket.item.ejection.count
+  value_type: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.error.oom.count
+  value_type: CUMULATIVE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
 configuration_options:
   metrics:
   - type: couchbase

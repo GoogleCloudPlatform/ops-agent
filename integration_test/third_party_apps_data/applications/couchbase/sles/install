@@ -1,0 +1,7 @@
+set -e 
+
+sudo zypper install -y curl bzip2
+
+curl -L "https://packages.couchbase.com/releases/7.0.0/couchbase-server-community-7.0.0-suse12.x86_64.rpm"  -o couchbase.rpm
+
+sudo rpm -i ./couchbase.rpm
