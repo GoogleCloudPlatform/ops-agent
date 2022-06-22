@@ -23,7 +23,15 @@ expected_metrics:
   labels:
     broker: .*
     destination: .*
-  representative: true  
+  representative: true
+- type: example.googleapis.com/example.example1
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+  optional: true
 configuration_options:
   metrics:
   - type: example

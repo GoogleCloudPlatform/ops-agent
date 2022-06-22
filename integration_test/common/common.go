@@ -112,7 +112,7 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 		param := fl.Param()
 
 		if param == "" {
-			panic(fmt.Sprintf("onetrue must contain an argument"))
+			panic("onetrue must contain an argument")
 		}
 
 		switch field.Kind() {
@@ -120,6 +120,7 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 		case reflect.Slice, reflect.Array:
 			elem := field.Type().Elem()
 
+			// Ignore the case where this field is not actually specified or is left empty.
 			if field.Len() == 0 {
 				return true
 			}
@@ -128,17 +129,17 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 				elem = elem.Elem()
 			}
 
+			sf, ok := elem.FieldByName(param)
+			if !ok {
+				panic(fmt.Sprintf("Invalid field name %s", param))
+			}
+			if sfTyp := sf.Type; sfTyp.Kind() != reflect.Bool {
+				panic(fmt.Sprintf("Field %s is %s, not bool", param, sfTyp))
+			}
+
 			count := 0
 			for i := 0; i < field.Len(); i++ {
-				elm := reflect.Indirect(field.Index(i))
-
-				f := elm.FieldByName(param)
-
-				if !f.IsValid() {
-					panic(fmt.Sprintf("Invalid field name %s", param))
-				}
-
-				if !f.IsZero() {
+				if reflect.Indirect(field.Index(i)).FieldByName(param).Bool() {
 					count++
 				}
 			}
