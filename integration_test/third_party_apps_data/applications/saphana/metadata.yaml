@@ -75,7 +75,7 @@ configuration_options:
       type: saphana
 expected_logs:
 expected_metrics:
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       rating: .*
     monitored_resource: gce_instance
@@ -85,8 +85,9 @@ expected_metrics:
     labels: {}
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.backup.latest
+    optional: true
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       subtype: data|dict|index|misc
@@ -94,14 +95,14 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.column.memory.used
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       component: .*
       host: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.component.memory.used
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       status: running|idle|queueing
@@ -116,7 +117,7 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.cpu.used
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       path: .*
@@ -125,40 +126,40 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.disk.size.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       state: used|free
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.host.memory.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       state: used|free
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.host.swap.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.instance.code_size
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       state: used|free
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.instance.memory.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.instance.memory.shared.allocated
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
     monitored_resource: gce_instance
@@ -171,14 +172,14 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.license.expiration.time
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       product: .*
       system: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.license.limit
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       product: .*
       system: .*
@@ -191,7 +192,7 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.network.request.average_time
     value_type: DOUBLE
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       state: active|pending
@@ -213,8 +214,9 @@ expected_metrics:
       secondary: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.replication.average_time
+    optional: true
     value_type: DOUBLE
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       mode: .*
       port: .*
@@ -222,8 +224,9 @@ expected_metrics:
       secondary: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.replication.backlog.size
+    optional: true
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       mode: .*
       port: .*
@@ -231,15 +234,16 @@ expected_metrics:
       secondary: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.replication.backlog.time
+    optional: true
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       type: fixed|variable
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.row_store.memory.used
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       schema: .*
@@ -247,7 +251,7 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.schema.memory.used.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       schema: .*
@@ -262,14 +266,14 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.schema.operation.count
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       schema: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.schema.record.compressed.count
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       schema: .*
@@ -277,42 +281,42 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.schema.record.count
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.code_size
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       status: active|inactive
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.count
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.compactors.allocated
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.compactors.freeable
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.effective_limit
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
@@ -320,14 +324,14 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.heap.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.limit
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
@@ -335,7 +339,7 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.shared.current
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
@@ -343,21 +347,21 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.memory.used
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       service: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.stack_size
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
       status: active|inactive
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.service.thread.count
     value_type: INT64
-  - kind: CUMULATIVE
+  - kind: GAUGE
     labels:
       host: .*
     monitored_resource: gce_instance
@@ -369,14 +373,6 @@ expected_metrics:
       type: update|commit|rollback
     monitored_resource: gce_instance
     type: workload.googleapis.com/saphana.transaction.count
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      database: .*
-      host: .*
-      system: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.uptime
     value_type: INT64
   - kind: CUMULATIVE
     labels:
