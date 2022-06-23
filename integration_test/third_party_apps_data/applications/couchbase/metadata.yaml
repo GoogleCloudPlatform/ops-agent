@@ -47,18 +47,6 @@ expected_logs:
       - name: log_type
         type: string
         description: The name of the component that is issuing the cross datacenter log
-expected_metrics:
-  - type: workload.googleapis.com/couchbase.bucket.operation.count
-    value_type: DOUBLE
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels: {}
-  - type: workload.googleapis.com/couchbase.bucket.item.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
-    monitored_resource: gce_instance
-    labels: {}
-    representative: true
 configuration_options:
   metrics:
     - type: couchbase
