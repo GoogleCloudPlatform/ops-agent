@@ -18,8 +18,9 @@ package common
 
 import (
 	"fmt"
+	"reflect"
 
-	"go.uber.org/multierr"
+	"github.com/go-playground/validator/v10"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -88,29 +89,11 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"unique=Type,dive"`
+	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot"`
-}
-
-// ValidateMetrics checks that all enum fields have valid values and that
-// there is exactly one representative metric in the slice.
-func ValidateMetrics(metrics []*ExpectedMetric) error {
-	var err error
-
-	// Representative validation
-	representativeCount := 0
-	for _, m := range metrics {
-		if m.Representative {
-			representativeCount += 1
-		}
-	}
-	if representativeCount != 1 {
-		err = multierr.Append(err, fmt.Errorf("there must be exactly one metric with representative: true, but %d were found", representativeCount))
-	}
-	return err
 }
 
 func SliceContains(slice []string, toFind string) bool {
@@ -120,4 +103,52 @@ func SliceContains(slice []string, toFind string) bool {
 		}
 	}
 	return false
+}
+
+func NewIntegrationMetadataValidator() *validator.Validate {
+	v := validator.New()
+	_ = v.RegisterValidation("onetrue", func(fl validator.FieldLevel) bool {
+		field := fl.Field()
+		param := fl.Param()
+
+		if param == "" {
+			panic("onetrue must contain an argument")
+		}
+
+		switch field.Kind() {
+
+		case reflect.Slice, reflect.Array:
+			elem := field.Type().Elem()
+
+			// Ignore the case where this field is not actually specified or is left empty.
+			if field.Len() == 0 {
+				return true
+			}
+
+			if elem.Kind() == reflect.Ptr {
+				elem = elem.Elem()
+			}
+
+			sf, ok := elem.FieldByName(param)
+			if !ok {
+				panic(fmt.Sprintf("Invalid field name %s", param))
+			}
+			if sfTyp := sf.Type; sfTyp.Kind() != reflect.Bool {
+				panic(fmt.Sprintf("Field %s is %s, not bool", param, sfTyp))
+			}
+
+			count := 0
+			for i := 0; i < field.Len(); i++ {
+				if reflect.Indirect(field.Index(i)).FieldByName(param).Bool() {
+					count++
+				}
+			}
+
+			return count == 1
+
+		default:
+			panic(fmt.Sprintf("Invalid field type %T", field.Interface()))
+		}
+	})
+	return v
 }
