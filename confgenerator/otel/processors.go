@@ -91,8 +91,8 @@ func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
 	}
 }
 
-// TransformAttributes returns a transform processor object that contains all the queries passed into it.
-func TransformAttributes(queries ...TransformQuery) Component {
+// TransformationMetrics returns a transform processor object that contains all the queries passed into it.
+func TransformationMetrics(queries ...TransformQuery) Component {
 	queryStrings := []string{}
 	for _, q := range queries {
 		queryStrings = append(queryStrings, string(q))
@@ -115,6 +115,21 @@ type TransformQuery string
 // metric attribute.
 func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
 	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
+}
+
+// ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
+func ConvertGaugeToSum(metricName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
+}
+
+// SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
+func SetDescription(metricName, metricDescription string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
+}
+
+// SetUnit returns a metrics transform expression where the metric unit is set to provided value
+func SetUnit(metricName, unit string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName))
 }
 
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
