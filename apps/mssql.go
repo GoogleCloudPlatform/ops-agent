@@ -48,7 +48,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.TransformAttributes(
+				otel.TransformationMetrics(
 					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
 				),
 				otel.NormalizeSums(),
