@@ -4,13 +4,11 @@ short_name: Jetty
 long_name: Jetty
 logo_path: /stackdriver/images/jetty.png # supplied by google technical writer
 description: |-
-  The Jetty integration collects
-  access logs. Access logs are parsed into a JSON payload
-  focused on request details. 
-
-  For more information about Jetty, see
-  [The Jetty Docs](https://www.eclipse.org/jetty/documentation/jetty-11/operations-guide/index.html).
+  The Jetty integration collects session and thread-usage metrics. The
+  integration also collects access and system logs. Access logs are parsed
+  into a JSON payload focused on request details.
 minimum_supported_agent_version:
+  metrics: 2.17.0
   logging: 2.16.0
 supported_app_version: ["11.x", "10.x", "9.4.x"]
 expected_metrics:
@@ -48,6 +46,7 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
+  labels: {}
 expected_logs:
 - log_name: jetty_access
   fields:

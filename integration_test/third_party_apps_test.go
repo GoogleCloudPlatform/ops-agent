@@ -51,7 +51,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -65,7 +64,7 @@ var (
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
-var validate = validator.New()
+var validate = common.NewIntegrationMetadataValidator()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -186,13 +185,20 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []*common.LogFields) string {
+func constructQuery(logName string, fields []*common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
 			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
 		}
 	}
+
+	if logName != "syslog" {
+		// verify instrumentation_source label
+		val := fmt.Sprintf("agent.googleapis.com/%s", logName)
+		parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	}
+
 	return strings.Join(parts, " AND ")
 }
 
@@ -206,7 +212,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.Fields))
+			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.LogName, entry.Fields))
 		}()
 	}
 	for range logs {
@@ -217,9 +223,6 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
-	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics failed validation: %v", err)
-	}
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
@@ -502,10 +505,18 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
+const (
+	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
+	SAPHANAApp      = "saphana"
+)
+
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
+// `platforms_to_skip` overrides the above.
+// Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -517,6 +528,11 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		}
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		}
+		isSAPHANAPlatform := test.platform == SAPHANAPlatform
+		isSAPHANAApp := test.app == SAPHANAApp
+		if isSAPHANAPlatform != isSAPHANAApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
 	}
 }
@@ -565,7 +581,18 @@ func TestThirdPartyApps(t *testing.T) {
 			for attempt := 1; attempt <= 4; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: tc.platform, MachineType: agents.RecommendedMachineType(tc.platform)})
+				options := gce.VMOptions{
+					Platform:             tc.platform,
+					MachineType:          agents.RecommendedMachineType(tc.platform),
+					ExtraCreateArguments: nil,
+				}
+				if tc.platform == SAPHANAPlatform {
+					// This image needs an SSD in order to be performant enough.
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
+					options.ImageProject = "stackdriver-test-143416"
+				}
+
+				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
