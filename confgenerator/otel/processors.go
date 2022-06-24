@@ -91,6 +91,47 @@ func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
 	}
 }
 
+// TransformationMetrics returns a transform processor object that contains all the queries passed into it.
+func TransformationMetrics(queries ...TransformQuery) Component {
+	queryStrings := []string{}
+	for _, q := range queries {
+		queryStrings = append(queryStrings, string(q))
+	}
+	return Component{
+		Type: "transform",
+		Config: map[string]map[string]interface{}{
+			"metrics": {
+				"queries": queryStrings,
+			},
+		},
+	}
+}
+
+// TransformQuery is a type wrapper for query expressions supported by the transform
+// processor found here: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
+type TransformQuery string
+
+// FlattenResourceAttribute returns an expression that brings down a resource attribute to a
+// metric attribute.
+func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
+}
+
+// ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
+func ConvertGaugeToSum(metricName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
+}
+
+// SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
+func SetDescription(metricName, metricDescription string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
+}
+
+// SetUnit returns a metrics transform expression where the metric unit is set to provided value
+func SetUnit(metricName, unit string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName))
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{

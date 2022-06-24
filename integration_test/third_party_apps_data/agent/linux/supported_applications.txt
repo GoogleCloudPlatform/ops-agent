@@ -20,5 +20,6 @@ saphana
 solr
 tomcat
 varnish
+vault
 wildfly
 zookeeper
