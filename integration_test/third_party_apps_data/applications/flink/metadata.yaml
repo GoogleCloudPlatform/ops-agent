@@ -1,10 +1,254 @@
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/flink"
-app_url: https://flink.apache.org/
+app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
-description: |-
-  The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload. The result includes fields for logger, level, and message.
+logo_path: ""
+description: The Apache Flink integration collects client, jobmanager and taskmanager
+  logs and parses them into a JSON payload. The result includes fields for source,
+  level, and message.
 supported_app_version: ["1.13.6", "1.14.4"]
+configure_integration: ""
+expected_metrics:
+- type: workload.googleapis.com/flink.jvm.cpu.load
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.cpu.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.heap.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+  representative: true
+- type: workload.googleapis.com/flink.jvm.memory.heap.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.heap.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.nonheap.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.committed
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.metaspace.max
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.direct.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.direct.total_capacity
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.mapped.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.memory.mapped.total_capacity
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.memory.managed.used
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.memory.managed.total
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.threads.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.jvm.gc.collections.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+    garbage_collector_name: .*
+- type: workload.googleapis.com/flink.jvm.gc.collections.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+    garbage_collector_name: .*
+- type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    resource_type: .*
+    taskmanager_id: .*
+- type: workload.googleapis.com/flink.job.restart.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+- type: workload.googleapis.com/flink.job.last_checkpoint.time
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+- type: workload.googleapis.com/flink.job.last_checkpoint.size
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+- type: workload.googleapis.com/flink.job.checkpoint.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    checkpoint: .*
+- type: workload.googleapis.com/flink.job.checkpoint.in_progress
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+- type: workload.googleapis.com/flink.task.record.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    taskmanager_id: .*
+    job_name: .*
+    task_name: .*
+    subtask_index: .*
+    record: .*
+- type: workload.googleapis.com/flink.operator.record.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    taskmanager_id: .*
+    job_name: .*
+    operator_name: .*
+    task_name: .*
+    subtask_index: .*
+    record: .*
+- type: workload.googleapis.com/flink.operator.watermark.output
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    host_name: .*
+    job_name: .*
+    operator_name: .*
+    subtask_index: .*
+    task_name: .*
+    taskmanager_id: .*
 expected_logs:
 - log_name: flink
   fields:
@@ -34,3 +278,15 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+  - type: flink
+    fields:
+    - name: type
+      default: null
+      description: The value must be flink.
+    - name: endpoint
+      default: http://localhost:8081
+      description: The URL exposed by flink.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
