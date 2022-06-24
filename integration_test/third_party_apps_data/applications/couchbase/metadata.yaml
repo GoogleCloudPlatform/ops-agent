@@ -46,6 +46,52 @@ expected_logs:
       - name: log_type
         type: string
         description: The name of the component that is issuing the cross datacenter log
+expected_metrics:
+  - type: workload.googleapis.com/couchbase.bucket.operation.count
+    value_type: DOUBLE
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels: {}
+  - type: workload.googleapis.com/couchbase.bucket.item.count
+    value_type: CUMULATIVE
+    kind: DOUBLE
+    monitored_resource: gce_instance
+    labels: {}
+    representative: true
+  - type: workload.googleapis.com/couchbase.bucket.vbucket.count
+    value_type: CUMULATIVE
+    kind: DOUBLE
+    monitored_resource: gce_instance
+    labels: {}
+    optional: true
+  - type: workload.googleapis.com/couchbase.bucket.memory.usage
+    value_type: GAUGE
+    kind: DOUBLE
+    labels: {}
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
+    value_type: GAUGE
+    monitored_resource: gce_instance
+    labels: {}
+    optional: true
+  - type: workload.googleapis.com/couchbase.bucket.error.oom.count
+    value_type: CUMULATIVE
+    kind: DOUBLE
+    labels: {}
+    monitored_resource: gce_instance
+    optional: true
+  - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
+    value_type: GAUGE
+    kind: DOUBLE
+    labels: {}
+    monitored_resource: gce_instance
+    optional: true
+  - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
+    value_type: GAUGE
+    kind: DOUBLE
+    labels: {}
+    monitored_resource: gce_instance
+    optional: true
 configuration_options:
   metrics:
     - type: couchbase

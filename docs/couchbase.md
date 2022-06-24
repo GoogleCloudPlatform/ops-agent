@@ -1,6 +1,36 @@
 # Couchbase
 
-Supported telemetry types: logs
+Supported telemetry types: metrics and logs
+
+## Metrics
+
+The couchbase integration uses the builtin [prometheus exporter](https://docs.couchbase.com/cloud-native-database/prometheus-overview.html) running on Couchbase 7.0 by default. The metrics are retrieved from this endpoint and then will be transformed to be ingested by Google Cloud.
+
+### Configuration
+
+| Field                 | Default          | Description                                                                              |
+| --------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| `type`                | required         | Must be `couchbase`.                                                                     |
+| `endpoint`            | `localhost:8091` | The address of the couchbase node that exposes the prometheus exporter metrics endpoint. |
+| `username`            | required         | The configured username to authenticate to couchbase.                                    |
+| `password`            | required         | The configured password to authenticate to couchbase.                                    |
+| `collection_interval` | `60s`            | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.   |
+
+Example Configuration:
+
+```yaml
+metrics:
+  receivers:
+    couchbase:
+      type: couchbase
+      username: opsuser
+      password: password
+  service:
+    pipelines:
+      couchbase:
+        receivers:
+          - couchbase
+```
 
 ## Logs
 
@@ -28,12 +58,9 @@ These logs are generally useful for diagnosiing overall activity of the couchbas
 | timestamp           | 2021-12-13T13:35:44.135Z                                            |
 | jsonPayload.node    | cb.local                                                            |
 | jsonPayload.node    | ns_1                                                                |
-| jsonPayload.type    | ns_server                                                         |
+| jsonPayload.type    | ns_server                                                           |
 | jsonPayload.source  | <0.23294.248>:compaction_daemon:spawn_scheduled_views_compactor:548 |
 | jsonPayload.message | Start compaction of indexes for bucket test_bucket with config:     |
-
-
-Example Configuration:
 
 ```yaml
 logs:
@@ -42,7 +69,7 @@ logs:
       type: couchbase_general
   service:
     pipelines:
-      couchbase:
+      couchbase_general:
         receivers:
           - couchbase_general
 ```
@@ -82,7 +109,6 @@ logs:
           - couchbase_http_access
 ```
 
-
 ### Couchbase Cross Datacenter Logs
 
 Cross Datacenter Logs are generally found here on linux:
@@ -108,4 +134,24 @@ logs:
       couchbase:
         receivers:
           - couchbase_xdcr
+```
+
+Example with all 3 configured
+
+```yaml
+logging:
+  receivers:
+    couchbase_general:
+      type: couchbase_general
+    couchbase_http_access:
+      type: couchbase_http_access
+    couchbase_goxdcr:
+      type: couchbase_goxdcr
+  service:
+    pipelines:
+      couchbase:
+        receivers:
+          - couchbase_general
+          - couchbase_http_access
+          - couchbase_goxdcr
 ```
