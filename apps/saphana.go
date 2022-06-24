@@ -15,8 +15,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -54,40 +52,34 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "severity_flag", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"d", "DEBUG"},
-				{"i", "INFO"},
-				{"w", "WARNING"},
-				{"e", "ERROR"},
-				{"f", "ALERT"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.severity_flag",
+					MapValues: map[string]string{
+						"d": "DEBUG",
+						"i": "INFO",
+						"w": "WARNING",
+						"e": "ERROR",
+						"f": "ALERT",
+					},
+					MapValuesExclusive: true,
+				},
+				// If a log is not associated with a connection/transaction the related
+				// fields will be "-1", and we do not want to report those fields
+				"jsonPayload.connection_id": {
+					OmitIf: "jsonPayload.connection_id = -1",
+				},
+				"jsonPayload.transaction_id": {
+					OmitIf: "jsonPayload.transaction_id = -1",
+				},
+				"jsonPayload.update_transaction_id": {
+					OmitIf: "jsonPayload.update_transaction_id = -1",
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
-
-	// If a log is not associated with a connection/transaction the related
-	// fields will be "-1", and we do not want to report those fields
-	for _, field := range []string{
-		"connection_id",
-		"transaction_id",
-		"update_transaction_id",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -1", field),
-				"Remove":    field,
-			},
-		})
-	}
-
-	c = append(c, confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
-		},
-	}.Components(tag, uid)...)
 
 	return c
 }
@@ -125,7 +117,7 @@ func (r LoggingReceiverSapHanaTrace) Components(tag string) []fluentbit.Componen
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorSapHanaTrace.Components(tag, "saphana_trace")...)
+	c = append(c, r.LoggingProcessorSapHanaTrace.Components(tag, r.Type())...)
 	return c
 }
 
