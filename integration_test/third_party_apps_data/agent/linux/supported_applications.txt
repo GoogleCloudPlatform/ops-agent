@@ -19,5 +19,6 @@ redis
 solr
 tomcat
 varnish
+vault
 wildfly
 zookeeper

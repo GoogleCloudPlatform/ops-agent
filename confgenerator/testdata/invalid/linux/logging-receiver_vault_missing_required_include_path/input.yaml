@@ -1,0 +1,8 @@
+logging:
+  receivers:
+    vault_audit:
+      type: vault_audit
+  service:
+    pipelines:
+      vault_audit:
+        receivers: [vault_audit]
