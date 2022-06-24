@@ -62,7 +62,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.TransformMetrics(
+			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
 			),
 		},
