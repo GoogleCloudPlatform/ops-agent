@@ -54,12 +54,12 @@ func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Compon
 		{
 			StateName: "cont",
 			NextState: "cont",
-			Regex:     `^[^{].*[,}]$`,
+			Regex:     `^(?!{.*)`,
 		},
 	}
 
 	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorVaultJson.Components(tag, "vault_audit")...)
+	return append(c, r.LoggingProcessorVaultJson.Components(tag, r.LoggingProcessorVaultJson.Type())...)
 }
 
 func init() {
