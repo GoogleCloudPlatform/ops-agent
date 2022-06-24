@@ -49,7 +49,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.TransformAttributes(
+			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("host.name", "host_name"),
 				otel.FlattenResourceAttribute("flink.taskmanager.id", "taskmanager_id"),
 				otel.FlattenResourceAttribute("flink.job.name", "job_name"),
