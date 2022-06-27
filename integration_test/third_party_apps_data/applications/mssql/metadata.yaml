@@ -68,7 +68,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-- type:  workload.googleapis.com/sqlserver.page.buffer_cache.hit_ratio
+- type: workload.googleapis.com/sqlserver.page.buffer_cache.hit_ratio
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
@@ -78,7 +78,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-- type:  workload.googleapis.com/sqlserver.page.split.rate
+- type: workload.googleapis.com/sqlserver.page.split.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
