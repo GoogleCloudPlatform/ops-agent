@@ -48,6 +48,7 @@ proceeding.
     export IAP_VM_NAME=${USER}-win-build-vm
 
     gcloud compute firewall-rules create allow-rdp-ingress-from-iap \
+        --project $VM_PROJECT_ID \
         --direction=INGRESS \
         --action=allow \
         --rules=tcp:3389 \

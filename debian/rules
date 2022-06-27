@@ -9,6 +9,8 @@ override_dh_auto_configure:
 	true
 override_dh_auto_build:
 	true
+override_dh_strip_nondeterminism:
+	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:
 	CODE_VERSION=$(code_version) BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
 

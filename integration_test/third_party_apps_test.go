@@ -51,7 +51,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -65,7 +64,7 @@ var (
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
-var validate = validator.New()
+var validate = common.NewIntegrationMetadataValidator()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -224,9 +223,6 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
-	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics failed validation: %v", err)
-	}
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
