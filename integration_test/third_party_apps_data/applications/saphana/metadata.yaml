@@ -393,6 +393,13 @@ expected_logs:
     value_regex: "==== Starting hdbpreprocessor, version 2.*"
     type: string
     description: Log message
+  - name: sourceLocation.file
+    value_regex: "TraceStream.cpp"
+    type: string
+    description: Source file of log message
+  - name: sourceLocation.line
+    type: number
+    description: Source line of log message
 configuration_options:
   metrics:
     - type: saphana
