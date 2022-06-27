@@ -15,30 +15,30 @@
 
 logging:
   receivers:
-    saphana_trace:
-      type: saphana_trace
-    saphana_trace_custom:
-      type: saphana_trace
+    saphana:
+      type: saphana
+    saphana_custom:
+      type: saphana
       wildcard_refresh_interval: 20s
       include_paths:
         - /var/log/sap/mytracedir/*.trc
     # N.B. Do not copy these as an example; the syslog receiver does not speak the syslog protocol by default.
-    saphana_trace_syslog:
+    saphana_syslog:
       type: syslog
       transport_protocol: udp
       listen_host: 1.1.1.1
       listen_port: 1
   processors:
-    saphana_trace_syslog:
-      type: saphana_trace
+    saphana_syslog:
+      type: saphana
   service:
     pipelines:
-      saphana_trace_default:
+      saphana_default:
         receivers:
-          - saphana_trace
-      saphana_trace_custom:
+          - saphana
+      saphana_custom:
         receivers:
-          - saphana_trace_custom
-      saphana_trace_syslog:
-        receivers: [saphana_trace_syslog]
-        processors: [saphana_trace_syslog]
+          - saphana_custom
+      saphana_syslog:
+        receivers: [saphana_syslog]
+        processors: [saphana_syslog]

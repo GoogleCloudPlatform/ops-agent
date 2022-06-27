@@ -34,7 +34,7 @@ end
 record["logging.googleapis.com/labels"]["compute.googleapis.com/resource_name"] = value
 end)(v)
 local v = __field_2;
-if v == nil then v = "saphana_trace_syslog" end;
+if v == nil then v = "saphana_custom" end;
 (function(value)
 record["logging.googleapis.com/logName"] = value
 end)(v)

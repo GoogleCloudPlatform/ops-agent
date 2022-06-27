@@ -12,6 +12,12 @@ end)();
 local __field_4 = (function()
 return record["severity_flag"]
 end)();
+local __field_5 = (function()
+return record["source_file"]
+end)();
+local __field_6 = (function()
+return record["source_line"]
+end)();
 local omit0 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-1")) end)((function()
 return record["connection_id"]
 end)());
@@ -21,6 +27,12 @@ end)());
 local omit2 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-1")) end)((function()
 return record["update_transaction_id"]
 end)());
+(function(value)
+record["source_file"] = value
+end)(nil);
+(function(value)
+record["source_line"] = value
+end)(nil);
 local v = __field_0;
 if omit0 then v = nil end;
 (function(value)
@@ -36,7 +48,7 @@ if omit2 then v = nil end;
 (function(value)
 record["update_transaction_id"] = value
 end)(v)
-local v = "agent.googleapis.com/saphana_trace";
+local v = "agent.googleapis.com/saphana";
 (function(value)
 if record["logging.googleapis.com/labels"] == nil
 then
@@ -54,6 +66,22 @@ else v = nil
 end
 (function(value)
 record["logging.googleapis.com/severity"] = value
+end)(v)
+local v = __field_5;
+(function(value)
+if record["logging.googleapis.com/sourceLocation"] == nil
+then
+record["logging.googleapis.com/sourceLocation"] = {}
+end
+record["logging.googleapis.com/sourceLocation"]["file"] = value
+end)(v)
+local v = __field_6;
+(function(value)
+if record["logging.googleapis.com/sourceLocation"] == nil
+then
+record["logging.googleapis.com/sourceLocation"] = {}
+end
+record["logging.googleapis.com/sourceLocation"]["line"] = value
 end)(v)
 return 2, timestamp, record
 end

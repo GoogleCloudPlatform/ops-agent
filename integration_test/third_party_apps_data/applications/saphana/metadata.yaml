@@ -371,16 +371,12 @@ expected_metrics:
     type: workload.googleapis.com/saphana.volume.operation.time
     value_type: INT64
 expected_logs:
-- log_name: saphana_trace
+- log_name: saphana
   fields:
   - name: jsonPayload.component
     value_regex: "Basis"
     type: string
     description: SAP HANA component
-  - name: jsonPayload.source_file
-    value_regex: "TraceStream.cpp.*"
-    type: string
-    description: Source of log message
   - name: jsonPayload.thread_id
     type: number
     description: ID of the thread logging the message
@@ -432,11 +428,11 @@ configuration_options:
           description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
           name: ca_file
   logs:
-  - type: saphana_trace
+  - type: saphana
     fields:
     - name: type
       default: null
-      description: The value must be saphana_trace.
+      description: The value must be saphana.
     - name: include_paths
       default: '[/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.

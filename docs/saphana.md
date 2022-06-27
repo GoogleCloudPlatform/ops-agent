@@ -1,4 +1,4 @@
-# `saphana_trace` Logging Receiver
+# `saphana` Logging Receiver
 
 ## Configuration
 
@@ -6,7 +6,7 @@ To configure a receiver for your SAP HANA trace logs, specify the following fiel
 
 | Field                 | Default                       | Description |
 | ---                   | ---                           | ---         |
-| `type`                | required                      | Must be `saphana_trace`. |
+| `type`                | required                      | Must be `saphana`. |
 | `include_paths`       | `[/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc]` | A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc`.
 | `exclude_paths`       | `[/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver_history*.trc, /usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*loads*.trc, /usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*executed_statements*.trc]`                          | A list of filesystem path patterns to exclude from the set matched by `include_paths`.
 | `wildcard_refresh_interval` | `60s` | The interval at which wildcard file paths in include_paths are refreshed. Specified as a time interval parsable by [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Must be a multiple of 1s.|
@@ -17,12 +17,12 @@ Example Configuration:
 ```yaml
 logging:
   receivers:
-    saphana_trace:
-      type: saphana_trace
+    saphana:
+      type: saphana
   service:
     pipelines:
-      saphana_trace:
-        receivers: [saphana_trace]
+      saphana:
+        receivers: [saphana]
 ```
 
 ## Logs

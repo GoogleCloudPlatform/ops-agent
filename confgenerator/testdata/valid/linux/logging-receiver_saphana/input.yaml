@@ -14,10 +14,10 @@
 
 logging:
   receivers:
-    saphana_trace:
-      type: saphana_trace
+    saphana:
+      type: saphana
   service:
     pipelines:
-      saphana_trace:
+      saphana:
         receivers:
-          - saphana_trace
+          - saphana

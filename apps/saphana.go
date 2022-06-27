@@ -25,7 +25,7 @@ type LoggingProcessorSapHanaTrace struct {
 }
 
 func (LoggingProcessorSapHanaTrace) Type() string {
-	return "saphana_trace"
+	return "saphana"
 }
 
 func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluentbit.Component {
@@ -39,7 +39,7 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 		// 				 1: 0x00007f1937d9095c in .LTHUNK27.lto_priv.2256+0x558 (libhdbbasis.so)
 		// 				 ...
 		//				 25: 0x0000563f44888831 in _GLOBAL__sub_I_setServiceStarting.cpp.lto_priv.239+0x520 (hdbnsutil)
-		Regex: `^\[(?<thread_id>\d+)\]\{(?<connection_id>-?\d+)\}\[(?<transaction_id>-?\d+)\/(?<update_transaction_id>-?\d+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3,6}\d+)\s+(?<severity_flag>\w+)\s+(?<component>\w+)\s+(?<source_file>\S+)\s+:\s+(?<message>[\s\S]+)`,
+		Regex: `^\[(?<thread_id>\d+)\]\{(?<connection_id>-?\d+)\}\[(?<transaction_id>-?\d+)\/(?<update_transaction_id>-?\d+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3,6}\d+)\s+(?<severity_flag>\w+)\s+(?<component>\w+)\s+(?<source_file>[\w\.]+)(?:\((?<source_line>\d+)\))\s+:\s+(?<message>[\s\S]+)`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
@@ -48,6 +48,7 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 				"connection_id":         "int",
 				"transaction_id":        "int",
 				"update_transaction_id": "int",
+				"source_line":           "int",
 			},
 		},
 	}.Components(tag, uid)
@@ -77,10 +78,28 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 				"jsonPayload.update_transaction_id": {
 					OmitIf: "jsonPayload.update_transaction_id = -1",
 				},
+				`sourceLocation.file`: {
+					MoveFrom: "jsonPayload.source_file",
+				},
+				`sourceLocation.line`: {
+					MoveFrom: "jsonPayload.source_line",
+				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
 		}.Components(tag, uid)...,
 	)
+
+	c = append(c, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "nest",
+			"Wildcard":      "logging.googleapis.com/sourceLocation/*",
+			"Nest_under":    "logging.googleapis.com/sourceLocation",
+			"Remove_prefix": "logging.googleapis.com/sourceLocation/",
+		},
+	})
 
 	return c
 }
