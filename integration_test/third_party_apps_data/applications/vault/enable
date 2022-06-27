@@ -12,6 +12,16 @@ metrics:
       vault:
         receivers:
           - vault
+logging:
+  receivers:
+    vault_audit:
+      type: vault_audit
+      include_paths: [/var/log/vault_audit.log]
+  service:
+    pipelines:
+      vault:
+        receivers:
+          - vault_audit
 EOF
 
 sudo service google-cloud-ops-agent restart
