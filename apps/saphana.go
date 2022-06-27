@@ -89,18 +89,6 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 		}.Components(tag, uid)...,
 	)
 
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "logging.googleapis.com/sourceLocation/*",
-			"Nest_under":    "logging.googleapis.com/sourceLocation",
-			"Remove_prefix": "logging.googleapis.com/sourceLocation/",
-		},
-	})
-
 	return c
 }
 
