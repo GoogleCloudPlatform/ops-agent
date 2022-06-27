@@ -1,0 +1,20 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    saphana:
+      type: saphana
+      username: SYSTEM
+      password: G00g3l21
+      endpoint: localhost:30015
+  service:
+    pipelines:
+      saphana:
+        receivers:
+        - saphana
+EOF
+
+sudo service google-cloud-ops-agent restart
