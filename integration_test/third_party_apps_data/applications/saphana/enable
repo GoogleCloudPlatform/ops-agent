@@ -18,6 +18,18 @@ logging:
       saphana:
         receivers:
           - saphana_trace
+metrics:
+  receivers:
+    saphana:
+      type: saphana
+      username: SYSTEM
+      password: G00g3l21
+      endpoint: localhost:30015
+  service:
+    pipelines:
+      saphana:
+        receivers:
+          - saphana
 EOF
 
 sudo service google-cloud-ops-agent restart
