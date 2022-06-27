@@ -58,10 +58,10 @@ RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
 #
 # Install OpenSSL
 # This must be done after installing Visual Studio
-ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1o.msi
+ARG OPENSSL_INSTALLER=Win64OpenSSL-1_1_1p.msi
 # SHA256 hash from win32_openssl_hashes.json in https://github.com/slproweb/opensslhashes.
 # DO NOT FORGET to change this hash when changing the MSI.
-ARG OPENSSL_SHA256=6c6179a9fd6097132f302daca3bfff2bd81a540d5681dde4edd9022124185368
+ARG OPENSSL_SHA256=b4fdebc21d881900a7677b3d316e7109e63e8314a6db696d8b7c82f2ad226939
 ADD https://slproweb.com/download/$OPENSSL_INSTALLER /local/$OPENSSL_INSTALLER
 
 RUN $ExpectedHash = $env:OPENSSL_SHA256; `
@@ -121,14 +121,15 @@ RUN cmake --build . --config Release; `
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
-# Build JMX Project
+# Build Go code in one container to exploit Go build caching
 ###############################################################################
 
-FROM base as javacontrib
+FROM base as gobuilder
 
-# Both of these are necessary for the nebula release plugin's options
-COPY BUILD_CONFIG /work/BUILD_CONFIG
-COPY .git /work/.git
+###############################################################################
+# Build JMX Project here so it can be hashed for
+# a required build flag to support jmx receiver in operations-collector
+###############################################################################
 
 ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
 RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-11-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
@@ -137,17 +138,8 @@ COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-c
 
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
-# Build & test systems do not always check out git history for submodules, so the properties assigned
-# here allow the nebula release process to function properly in that state
-RUN Get-Content /work/BUILD_CONFIG | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    ./gradlew --no-daemon :jmx-metrics:build \"-Pgit.root=$pwd/../../.git\" \"-Prelease.version=$env:JMX_METRICS_JAR_VERSION\" \"-Prelease.disableGitChecks=true\"; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-$env:JMX_METRICS_JAR_VERSION.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
-
-###############################################################################
-# Build Go code in one container to exploit Go build caching
-###############################################################################
-
-FROM base as gobuilder
+RUN ./gradlew --no-daemon :jmx-metrics:build; `
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector
@@ -157,7 +149,10 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
-RUN go build -o bin/google-cloud-metrics-agent_windows_amd64.exe ./cmd/otelopscol; `
+RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
+    go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
+    -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
+     ./cmd/otelopscol; `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
 ###############################################################################
@@ -187,6 +182,5 @@ COPY . /work
 
 COPY --from=fluentbit /work/out /work/out
 COPY --from=gobuilder /work/out /work/out
-COPY --from=javacontrib /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
