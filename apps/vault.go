@@ -92,7 +92,6 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			otel.NormalizeSums(),
 			storageMetricTransforms,
 			metricDetailTransforms,
 			otel.MetricsFilter(
@@ -100,6 +99,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 				"strict",
 				includeMetrics...,
 			),
+			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
@@ -118,21 +118,21 @@ func (r MetricsReceiverVault) addStorageMetrics() (transforms otel.Component, ne
 	storageLabel := "storage"
 
 	storages := []string{
-		"zookeeper",
-		"swift",
-		"spanner",
-		"s3",
-		"postgres",
-		"mysql",
-		"mssql",
+		// "zookeeper",
+		// "swift",
+		// "spanner",
+		// "s3",
+		// "postgres",
+		// "mysql",
+		// "mssql",
 		"gcs",
-		"etcd",
-		"dynamodb",
-		"couchdb",
-		"consul",
-		"cockroachdb",
-		"cassandra",
-		"azure",
+		// "etcd",
+		// "dynamodb",
+		// "couchdb",
+		// "consul",
+		// "cockroachdb",
+		// "cassandra",
+		// "azure",
 	}
 
 	operations := []string{

@@ -138,7 +138,7 @@ func SetName(oldName, newName string) TransformQuery {
 }
 
 func SetAttribute(metricName, attributeKey, attributeValue string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName))
+	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName))
 }
 
 // SummarySumValToSum creates a new Sum metric out of a summary metric's sum value. The new metric has a name of "<Old Name>_sum".

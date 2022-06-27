@@ -16,9 +16,7 @@ metrics:
   receivers:
     vault:
       type: vault
-      insecure_skip_verify: true
-      token: hvs.G0St2QQp5vO9uo40RhEwwpiq
-      endpoint: 
+      endpoint: localhost:8200
   service:
     pipelines:
       vault:
