@@ -1,0 +1,119 @@
+set -e
+
+# the vault package does not install correctly on Debian9
+# install manually, create basic vault config
+# and create a systemd service file
+source /etc/os-release
+if [[ $ID == debian && "$VERSION_ID" =~ ^9 ]]
+then
+
+  vault_download_url="https://releases.hashicorp.com/vault/1.10.3/vault_1.10.3_linux_amd64.zip"
+  sudo apt-get update && sudo apt-get install -y unzip
+  wget $vault_download_url
+  unzip vault*.zip
+  sudo mv vault /usr/bin
+  sudo mkdir -p /etc/vault.d
+  sudo mkdir -p /opt/vault/data
+  sudo touch /etc/vault.d/vault.env
+  sudo touch /var/log/vault_audit.log
+
+  cat <<EOF | sudo tee /etc/vault.d/vault.hcl
+  # Full configuration options can be found at https://www.vaultproject.io/docs/configuration
+
+  ui = true
+
+  storage "file" {
+    path = "/opt/vault/data"
+  }
+
+  # HTTP listener
+  listener "tcp" {
+    address = "127.0.0.1:8200"
+    tls_disable = 1
+  }
+
+  telemetry {
+    prometheus_retention_time = "10m"
+    disable_hostname = false
+  }
+EOF
+
+  cat <<EOF | sudo tee /etc/systemd/system/vault.service
+  [Unit]
+  Description="HashiCorp Vault - A tool for managing secrets"
+  Documentation=https://www.vaultproject.io/docs/
+  Requires=network-online.target
+  After=network-online.target
+  ConditionFileNotEmpty=/etc/vault.d/vault.hcl
+  StartLimitIntervalSec=60
+  StartLimitBurst=3
+
+  [Service]
+  Type=notify
+  EnvironmentFile=/etc/vault.d/vault.env
+  User=root
+  Group=root
+  ProtectSystem=full
+  ProtectHome=read-only
+  PrivateTmp=yes
+  PrivateDevices=yes
+  SecureBits=keep-caps
+  AmbientCapabilities=CAP_IPC_LOCK
+  CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+  NoNewPrivileges=yes
+  ExecStart=/usr/bin/vault server -config=/etc/vault.d/vault.hcl
+  ExecReload=/bin/kill --signal HUP $MAINPID
+  KillMode=process
+  KillSignal=SIGINT
+  Restart=on-failure
+  RestartSec=5
+  TimeoutStopSec=30
+  LimitNOFILE=65536
+  LimitMEMLOCK=infinity
+
+  [Install]
+  WantedBy=multi-user.target
+EOF
+
+else
+
+  sudo apt-get update && sudo apt-get install -y gpg wget
+  wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg >/dev/null
+  gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
+  echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+  sudo apt-get update && sudo apt-get install -y vault
+  sudo touch /var/log/vault_audit.log
+  sudo chown vault:vault /var/log/vault_audit.log
+
+  cat <<EOF | sudo tee -a /etc/vault.d/vault.hcl
+  telemetry {
+      prometheus_retention_time = "10m"   
+      disable_hostname = false
+  }
+EOF
+
+fi
+
+sudo systemctl enable --now vault
+
+
+# initialize and unseal vault
+source /etc/os-release
+if [[ $ID == debian && "$VERSION_ID" =~ ^9 ]]
+then
+    export VAULT_ADDR=http://localhost:8200
+    vault operator init -key-shares=1 -key-threshold=1 > init.out
+    VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
+    VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
+    export VAULT_TOKEN
+    vault operator unseal $VAULT_KEY
+    vault audit enable file file_path=/var/log/vault_audit.log
+else
+    export VAULT_SKIP_VERIFY=true
+    vault operator init -key-shares=1 -key-threshold=1 > init.out
+    VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
+    VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
+    export VAULT_TOKEN
+    vault operator unseal $VAULT_KEY
+    vault audit enable file file_path=/var/log/vault_audit.log
+fi
