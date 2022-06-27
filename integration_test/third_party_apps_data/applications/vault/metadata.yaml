@@ -3,7 +3,7 @@ short_name: Vault
 long_name: Hashicorp Vault
 description: |-
   Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
-minimum_supported_agent_version:
+minimum_supported_agent_version: null
 supported_app_version: ["1.6+"]
 expected_logs:
 - log_name: vault_audit
@@ -87,7 +87,7 @@ expected_logs:
     description: Explicit token maximum TTL value as seconds (‘0’ when not set).
   - name: jsonPayload.response.data.issue_time
     type: string
-    description:  RFC3339 format timestamp.
+    description: RFC3339 format timestamp.
   - name: jsonPayload.response.data.num_uses
     type: number
     description: If the token is limited to a number of uses, that value will be represented here.
@@ -137,3 +137,4 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+public_url: https://cloud.google.com/stackddriver/docs/solutions/agents/ops-agent/third-party/vault
