@@ -396,10 +396,10 @@ expected_logs:
   - name: sourceLocation.file
     value_regex: "TraceStream.cpp"
     type: string
-    description: Source file of log message
+    description: Source file name
   - name: sourceLocation.line
     type: number
-    description: Source line of log message
+    description: Line within the source file
 configuration_options:
   metrics:
     - type: saphana
