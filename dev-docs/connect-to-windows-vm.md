@@ -26,7 +26,7 @@ non-trivial interactions with Windows VMs.
     permission by running the following command:
 
     ```shell
-    $ gcloud projects add-iam-policy-binding ${USER}-sandbox \
+    gcloud projects add-iam-policy-binding ${USER}-sandbox \
         --member=user:${USER}@google.com \
         --role=roles/iap.tunnelResourceAccessor
     ```
@@ -48,6 +48,7 @@ proceeding.
     export IAP_VM_NAME=${USER}-win-build-vm
 
     gcloud compute firewall-rules create allow-rdp-ingress-from-iap \
+        --project $VM_PROJECT_ID \
         --direction=INGRESS \
         --action=allow \
         --rules=tcp:3389 \

@@ -38,6 +38,7 @@ type LoggingReceiverFiles struct {
 	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -49,6 +50,7 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
+		RecordLogFilePath:       r.RecordLogFilePath,
 	}.Components(tag)
 }
 
@@ -57,6 +59,7 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
+	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -101,6 +104,10 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 	if r.WildcardRefreshInterval != nil {
 		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
+	}
+
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
+		config["Path_Key"] = "agent.googleapis.com/log_file_path"
 	}
 
 	c := []fluentbit.Component{}
@@ -332,11 +339,9 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}
 
-	timestampParserFilter := fluentbit.ParserFilterComponent(tag, "TimeGenerated", []string{timestampParserName})
-	timestampParserFilter.Config["Preserve_Key"] = "True"
-	timestampParserFilter.Config["Reserve_Data"] = "True"
-
-	input = append(input, timestampParser, timestampParserFilter)
+	timestampParserFilters := fluentbit.ParserFilterComponents(tag, "TimeGenerated", []string{timestampParserName}, true)
+	input = append(input, timestampParser)
+	input = append(input, timestampParserFilters...)
 
 	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
