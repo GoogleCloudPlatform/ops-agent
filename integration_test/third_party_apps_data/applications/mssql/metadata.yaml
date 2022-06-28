@@ -38,7 +38,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 # v2 metrics
-- type: workload.googleapis.com/sqlserver.user.connection.count # TODO: look into this metric type change
+- type: workload.googleapis.com/sqlserver.user.connection.count
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
