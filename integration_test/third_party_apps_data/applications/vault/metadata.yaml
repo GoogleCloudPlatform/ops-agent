@@ -6,7 +6,6 @@ description: |-
 supported_app_version: ["1.6+"]
 expected_metrics:
 - type: vault.core.request.count
-  representative: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
@@ -52,6 +51,7 @@ expected_metrics:
   value_type: INT64
   labels: {}
 - type: vault.memory.usage
+  representative: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
