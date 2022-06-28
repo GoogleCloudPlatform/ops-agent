@@ -28,10 +28,13 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs.
+
+	.deb/.rpm/.goo files to install on the testing VMs.
+
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-    version of the Ops Agent to install first, before installing the version
-	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+
+	    version of the Ops Agent to install first, before installing the version
+		from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -361,6 +364,21 @@ func TestCustomLogFile(t *testing.T) {
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
+		}
+
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+			t.Error(err)
+		}
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }
