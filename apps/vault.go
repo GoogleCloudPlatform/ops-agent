@@ -76,10 +76,12 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	includeMetrics := []string{}
 
 	storageMetricTransforms, newStorageMetricNames := r.addStorageMetrics()
+	metricRenewRevokeTransforms, newRenewRevokeNames := r.getRenewRevokeMetricsTransforms()
 	metricDetailTransforms, newMetricNames := r.getMetricTransforms()
 
 	includeMetrics = append(includeMetrics, newStorageMetricNames...)
 	includeMetrics = append(includeMetrics, newMetricNames...)
+	includeMetrics = append(includeMetrics, newRenewRevokeNames...)
 
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
@@ -95,6 +97,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 		Processors: []otel.Component{
 			storageMetricTransforms,
 			metricDetailTransforms,
+			metricRenewRevokeTransforms,
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -171,6 +174,35 @@ func (r MetricsReceiverVault) addStorageMetrics() (transforms otel.Component, ne
 	return otel.TransformationMetrics(queries...), newMetrics
 }
 
+func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (transform otel.Component, newNames []string) {
+	metricTransformers := []metricTransformer{
+		{
+			OldName:     "vault_expire_revoke",
+			NewName:     "vault.token.revoke.time",
+			Description: "The average time taken to revoke a token.",
+			Unit:        "ms",
+		},
+		{
+			OldName:     "vault_expire_renew",
+			NewName:     "vault.token.renew.time",
+			Description: "The average time taken to renew a token.",
+			Unit:        "ms",
+		},
+	}
+
+	queries := []otel.TransformQuery{}
+
+	for _, metric := range metricTransformers {
+		queries = append(queries, otel.SummarySumValToSum(metric.OldName, "cumulative", true))
+		queries = append(queries, otel.SetName(metric.OldName+"_sum", metric.NewName))
+		queries = append(queries, otel.SetUnit(metric.NewName, metric.NewName))
+		queries = append(queries, otel.SetDescription(metric.NewName, metric.Description))
+
+		newNames = append(newNames, metric.NewName)
+	}
+	return otel.TransformationMetrics(queries...), newNames
+}
+
 func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, newNames []string) {
 	metricTransformers := []metricTransformer{
 		{
@@ -190,18 +222,6 @@ func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, n
 			NewName:     "vault.token.lease.count",
 			Description: "The number of tokens that are leased for eventual expiration.",
 			Unit:        "{tokens}",
-		},
-		{
-			OldName:     "vault_expire_revoke",
-			NewName:     "vault.token.revoke.time",
-			Description: "The average time taken to revoke a token.",
-			Unit:        "ms",
-		},
-		{
-			OldName:     "vault_expire_renew",
-			NewName:     "vault.token.renew.time",
-			Description: "The average time taken to renew a token.",
-			Unit:        "ms",
 		},
 		{
 			OldName:     "vault_audit_log_request_failure",
