@@ -7,20 +7,20 @@ supported_app_version: ["1.6+"]
 expected_metrics:
 - type: vault.core.request.count
   representative: true
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.core.leader.duration
   optional: true
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.token.lease.count
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.token.count
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
@@ -28,70 +28,70 @@ expected_metrics:
     cluster: .*
 - type: vault.token.revoke.time
   optional: true
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.token.renew.time
   optional: true
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.audit.request.failed
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.audit.response.failed 
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.memory.usage
-  kind: gauge
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.storage.operation.put.time
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.delete.time
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.list.time
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.get.time
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.put.count
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.delete.count
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.list.count
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.get.count
-  kind: cumulative
+  kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
