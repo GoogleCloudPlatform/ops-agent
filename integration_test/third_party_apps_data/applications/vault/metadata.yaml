@@ -54,7 +54,7 @@ expected_metrics:
   representative: true
   kind: GAUGE
   monitored_resource: gce_instance
-  value_type: INT64
+  value_type: DOUBLE
   labels: {}
 - type: vault.storage.operation.put.time
   kind: CUMULATIVE
