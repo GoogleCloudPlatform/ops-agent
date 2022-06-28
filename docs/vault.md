@@ -6,6 +6,15 @@ for instructions to collect logs from this application using Ops Agent.
 
 The `vault` metrics receiver fetches node and cluster level stats from Elasticsearch nodes. The receiver is meant to be run 
 
+## Prerequisites
+In order to expose prometheus metrics for vault, they need to be enabled. To enable append the following to `/etc/vault.d/vault.hcl` on all nodes:
+```
+telemetry {
+  prometheus_retention_time = "10m"
+  disable_hostname = false
+}
+```
+
 ## Configurations
 To configure a receiver for your Vault metrics, specify the following fields:
 
@@ -41,23 +50,54 @@ metrics:
 
 The Ops Agent collects the following metrics from your Elasticsearch nodes:
 
-| Metric                                        | Data Type          | Unit          | Labels                  | Description                                                                              |
-|-----------------------------------------------|--------------------|---------------|-------------------------|------------------------------------------------------------------------------------------|
-| workload.googleapis.com/vault.node.cache.memory.usage              | Gauge (INT64)      | By            | cache_name              | The size in bytes of the cache.                                     |
-| workload.googleapis.com/vault.node.cache.evictions                 | Cumulative (INT64) | {evictions}   | cache_name              | The number of evictions from the cache.                             |
+| Metric                               | Data Type          | Unit          | Labels             | Description                                                                              |
+|-------------------------------       |--------------------|---------------|-----------         |----------                                                                                |
+| vault.core.request.count             | gauge              | {requests}    |                    | The number of requests handled by the Vault core. |
+| vault.core.leader.duration           | gauge              | ms            |                    | The average amount of time a core was the leader in high availability mode. |
+| vault.token.lease.count              | gauge              | {tokens}      |                    | The number of tokens that are leased for eventual expiration. |
+| vault.token.count                    | cumulative         | {tokens}      | namespace, cluster | The number of tokens created. |
+| vault.token.revoke.time              | gauge              | ms            |                    | The average time taken to revoke a token. |
+| vault.token.renew.time               | gauge              | ms            |                    | The average time taken to renew a token. |
+| vault.audit.request.failed           | gauge              | {requests}    |                    | The number of audit log requests that have failed. |
+| vault.audit.response.failed          | gauge              | {responses}   |                    | The number of audit log responses that have failed. |
+| vault.memory.usage                   | gauge              | bytes         |                    | The amount of memory used by Vault. |
+| vault.storage.operation.put.time     | cumulative         | ms            | storage            | The duration of put operations executed against the storage backend. |
+| vault.storage.operation.delete.time  | cumulative         | ms            | storage            | The duration of delete operations executed against the storage backend. |
+| vault.storage.operation.list.time    | cumulative         | ms            | storage            | The duration of list operations executed against the storage backend. |
+| vault.storage.operation.get.time     | cumulative         | ms            | storage            | The duration of get operations executed against the storage backend. |
+| vault.storage.operation.put.count    | cumulative         | {operations}  | storage            | The count of put operations executed against the storage backend. |
+| vault.storage.operation.delete.count | cumulative         | {operations}  | storage            | The count of delete operations executed against the storage backend. |
+| vault.storage.operation.list.count   | cumulative         | {operations}  | storage            | The count of list operations executed against the storage backend. |
+| vault.storage.operation.get.count    | cumulative         | {operations}  | storage            | The count of get operations executed against the storage backend. |
+
 
 
 Labels:
 
-| Metric Name                                        | Label Name | Description                        | Values |
-|----------------------------------------------------|------------|------------------------------------|--------|
-| workload.googleapis.com/jvm.gc.collections.count   | name       | The name of the garbage collector. |        |
-| workload.googleapis.com/jvm.gc.collections.elapsed | name       | The name of the garbage collector. |        |
-| workload.googleapis.com/jvm.memory.pool.max        | name       | The name of the JVM memory pool.   |        |
-| workload.googleapis.com/jvm.memory.pool.used       | name       | The name of the JVM memory pool.   |        |
+| Label Name | Description                               | Values |
+|------------|------------------------------------       |--------|
+| storage    | The type of backend storage being used |  "zookeeper", "swift", "spanner", "s3", "postgres", "mysql", "mssql", "gcs", "etcd", "dynamodb", "couchdb", "consul", "cockroachdb", "cassandra", "azure"  |
+| cluster    | cluster the collection is from |    |
+| namespace  | the namespace within the cluster that the tokens belong to. |    |
+
 
 
 #  `vault_audit` Logging Receiver 
+
+Example Configuration:
+
+```yaml
+logging:
+  receivers:
+    vault_audit:
+      type: vault_audit
+      include_paths: [/var/log/vault_audit.log]
+  service:
+    pipelines:
+      vault:
+        receivers:
+          - vault_audit
+```
 
 ## Logs
 
@@ -103,5 +143,3 @@ Audit logs have variable fields and can contain any subset of these fields.
 Field descriptions taken from https://support.hashicorp.com/hc/en-us/articles/360000995548-Audit-and-Operational-Log-Details.
 
 Any fields that are blank or missing will not be present in the log entry.
-
-Audit logs commonly contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):

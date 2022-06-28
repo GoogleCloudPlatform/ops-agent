@@ -119,21 +119,21 @@ func (r MetricsReceiverVault) addStorageMetrics() (transforms otel.Component, ne
 	storageLabel := "storage"
 
 	storages := []string{
-		// "zookeeper",
-		// "swift",
-		// "spanner",
-		// "s3",
-		// "postgres",
-		// "mysql",
-		// "mssql",
+		"zookeeper",
+		"swift",
+		"spanner",
+		"s3",
+		"postgres",
+		"mysql",
+		"mssql",
 		"gcs",
-		// "etcd",
-		// "dynamodb",
-		// "couchdb",
-		// "consul",
-		// "cockroachdb",
-		// "cassandra",
-		// "azure",
+		"etcd",
+		"dynamodb",
+		"couchdb",
+		"consul",
+		"cockroachdb",
+		"cassandra",
+		"azure",
 	}
 
 	operations := []string{
@@ -220,6 +220,12 @@ func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, n
 			NewName:     "vault.memory.usage",
 			Description: "The amount of memory used by Vault.",
 			Unit:        "bytes",
+		},
+		{
+			OldName:     "vault_token_count",
+			NewName:     "vault.token.count",
+			Description: "The number of tokens created.",
+			Unit:        "{tokens}",
 		},
 	}
 

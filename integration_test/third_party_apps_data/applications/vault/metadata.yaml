@@ -5,6 +5,105 @@ description: |-
   Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
 minimum_supported_agent_version:
 supported_app_version: ["1.6+"]
+expected_metrics:
+- type: vault.core.request.count
+  representative: true
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.core.leader.duration
+  optional: true
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.token.lease.count
+  optional: true
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.token.count
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: INT64
+  labels:
+    namespace: .*
+    cluster: .*
+- type: vault.token.revoke.time
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.token.renew.time 
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.audit.request.failed
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.audit.response.failed 
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.memory.usage
+  kind: gauge
+  monitored_resource: gce_instance
+  value_type: INT64
+- type: vault.storage.operation.put.time
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: DOUBLE
+  labels:
+    storage: .*
+- type: vault.storage.operation.delete.time
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: DOUBLE
+  labels:
+    storage: .*
+- type: vault.storage.operation.list.time
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: DOUBLE
+  labels:
+    storage: .*
+- type: vault.storage.operation.get.time
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: DOUBLE
+  labels:
+    storage: .*
+- type: vault.storage.operation.put.count
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: INT64
+  labels:
+    storage: .*
+- type: vault.storage.operation.delete.count
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: INT64
+  labels:
+    storage: .*
+- type: vault.storage.operation.list.count
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: INT64
+  labels:
+    storage: .*
+- type: vault.storage.operation.get.count
+  optional: true
+  kind: cumulative
+  monitored_resource: gce_instance
+  value_type: INT64
+  labels:
+    storage: .*
 expected_logs:
 - log_name: vault_audit
   fields:
@@ -137,3 +236,36 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+    type: vault
+    fields: 
+    - name: type
+      default: null
+      description: This value must be vault.
+    - name: endpoint
+      default: localhost:8200
+      description: The hostname:port used by vault
+    - name: token
+      default: localhost:8200
+      description: Token used for authentication.
+    - name: metrics_path
+      default: /v1/sys/metrics
+      description: the path for metrics collection.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: insecure
+      default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+    - name: insecure_skip_verify
+      default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+    - name: cert_file
+      default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+    - name: key_file
+      default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+    - name: ca_file
+      default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
