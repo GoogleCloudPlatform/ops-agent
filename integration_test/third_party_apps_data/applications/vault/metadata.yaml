@@ -10,15 +10,18 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.core.leader.duration
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.token.lease.count
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.token.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
@@ -31,23 +34,28 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.token.renew.time
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.audit.request.failed
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.audit.response.failed 
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.memory.usage
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
+  labels: {}
 - type: vault.storage.operation.put.time
   kind: CUMULATIVE
   monitored_resource: gce_instance
