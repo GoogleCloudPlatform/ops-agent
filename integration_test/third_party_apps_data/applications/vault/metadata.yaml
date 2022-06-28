@@ -16,7 +16,6 @@ expected_metrics:
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.token.lease.count
-  optional: true
   kind: gauge
   monitored_resource: gce_instance
   value_type: INT64
@@ -28,10 +27,12 @@ expected_metrics:
     namespace: .*
     cluster: .*
 - type: vault.token.revoke.time
+  optional: true
   kind: gauge
   monitored_resource: gce_instance
   value_type: INT64
-- type: vault.token.renew.time 
+- type: vault.token.renew.time
+  optional: true
   kind: gauge
   monitored_resource: gce_instance
   value_type: INT64
@@ -48,56 +49,48 @@ expected_metrics:
   monitored_resource: gce_instance
   value_type: INT64
 - type: vault.storage.operation.put.time
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.delete.time
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.list.time
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.get.time
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
 - type: vault.storage.operation.put.count
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.delete.count
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.list.count
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
 - type: vault.storage.operation.get.count
-  optional: true
   kind: cumulative
   monitored_resource: gce_instance
   value_type: INT64
