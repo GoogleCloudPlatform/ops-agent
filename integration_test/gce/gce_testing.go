@@ -850,17 +850,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
 		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
 
-		// TODO: Consider removing the "look for STARTUP_SCRIPT_DONE" bit because we don't
-		// need to wait for it to call "gcloud compute reset-windows-password" anymore.
-		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
-			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
-		}
-		metadataCopy["windows-startup-script-ps1"] = `
-$port = new-Object System.IO.Ports.SerialPort 'COM3'
-$port.Open()
-$port.WriteLine("STARTUP_SCRIPT_DONE")
-$port.Close()
-`
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
 		}
@@ -1379,28 +1368,7 @@ const (
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
-	lookForReadyMessages := func() error {
-		output, err := RunGcloud(ctx, logger, "", []string{
-			"compute", "instances", "get-serial-port-output",
-			"--port=3",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			vm.Name})
-		if err != nil {
-			return fmt.Errorf("error getting COM3 serial port output: %v", err)
-		}
-		if strings.Contains(output.Stdout, "STARTUP_SCRIPT_DONE") {
-			// Success.
-			return nil
-		}
-		return fmt.Errorf("STARTUP_SCRIPT_DONE not found in serial port output: %v", output)
-	}
-	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
-	if err := backoff.Retry(lookForReadyMessages, backoffPolicy); err != nil {
-		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
-	}
-
-	// Now, make sure the server is really ready to run remote commands by
+	// Make sure the server is ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
 	attempt := 0
 	printFoo := func() error {
@@ -1411,12 +1379,9 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return err
 	}
 
-	// TODO: reevaluate
-	gracePeriod := 3 * time.Minute // I'm not sure what's a good value here.
-	maxAttempts := uint64(gracePeriod / vmInitBackoffDuration)
-	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(vmInitBackoffDuration), maxAttempts), ctx)
+	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("waitForStartWindows() failed: dummy command could not run, even after %v of attempts. err=%v", gracePeriod, err)
+		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
 	}
 	return nil
 }
