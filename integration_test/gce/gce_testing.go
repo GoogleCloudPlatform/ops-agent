@@ -21,26 +21,30 @@ To run a test based on this library, you can either:
 
 * use Kokoro by triggering automated presubmits on your change, or
 * use "go test" directly, after performing the setup steps described
-  in README.md.
+
+	in README.md.
 
 NOTE: When testing without using Kokoro, PROJECT needs to be a project whose
-    firewall allows ssh connections.
-    [Kokoro can use stackdriver-test-143416, which does not allow arbitrary ssh
-    connections, because our Kokoro workers are also running in that project.]
+
+	firewall allows ssh connections.
+	[Kokoro can use stackdriver-test-143416, which does not allow arbitrary ssh
+	connections, because our Kokoro workers are also running in that project.]
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
-    Ops Agent code, first build and upload a package to Rapture. Then look up
-    the REPO_SUFFIX for that build and add it as an environment variable to the
-    command below; for example: REPO_SUFFIX=20210805-2. You can also use
-    AGENT_PACKAGES_IN_GCS, for details see README.md.
+
+	Ops Agent code, first build and upload a package to Rapture. Then look up
+	the REPO_SUFFIX for that build and add it as an environment variable to the
+	command below; for example: REPO_SUFFIX=20210805-2. You can also use
+	AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 PROJECT=dev_project \
-    ZONE=us-central1-b \
-    PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
-    go test -v ops_agent_test.go \
-	-test.parallel=1000 \
-	-tags=integration_test \
-    -timeout=4h
+
+	    ZONE=us-central1-b \
+	    PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
+	    go test -v ops_agent_test.go \
+		-test.parallel=1000 \
+		-tags=integration_test \
+	    -timeout=4h
 
 This library needs the following environment variables to be defined:
 
@@ -50,25 +54,35 @@ ZONE: What GCP zone to run in.
 The following variables are optional:
 
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
-    By default, a new temporary directory is created.
+
+	By default, a new temporary directory is created.
+
 NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
-    (if set to "true"), or external IP addresses (in all other cases).
-    Only useful on Kokoro.
+
+	(if set to "true"), or external IP addresses (in all other cases).
+	Only useful on Kokoro.
+
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
-    default is the project's "Compute Engine default service account".
+
+	default is the project's "Compute Engine default service account".
+
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
-    The default is "stackdriver-test-143416-file-transfers".
+
+	The default is "stackdriver-test-143416-file-transfers".
+
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
-    If provided, this value overrides the selection made by the callers to
-		this library.
+
+	    If provided, this value overrides the selection made by the callers to
+			this library.
 */
 package gce
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -93,6 +107,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
+	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
@@ -608,6 +623,15 @@ var (
 	}
 )
 
+func wrapPowershellCommand(command string) (string, error) {
+	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	encoded, err := uni.NewEncoder().String(command)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+}
+
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
 // Returns the combined stdout+stderr as a string, plus an error if there was
@@ -622,6 +646,13 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 			err = fmt.Errorf("Command failed: %v\n%v", command, err)
 		}
 	}()
+	wrappedCommand := command
+	if IsWindows(vm.Platform) {
+		wrappedCommand, err = wrapPowershellCommand(command)
+		if err != nil {
+			return CommandOutput{}, err
+		}
+	}
 	// Raw ssh is used instead of "gcloud compute ssh" with OS Login because:
 	// 1. OS Login will generate new ssh keys for each kokoro run and they don't carry over.
 	//    This means that they pile up and need to be deleted periodically.
@@ -631,7 +662,7 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, sshUserName+"@"+vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
-	args = append(args, command)
+	args = append(args, wrappedCommand)
 	return runCommand(ctx, logger, stdin, args)
 }
 
@@ -812,6 +843,12 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		}
+		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+
 		// TODO: Consider removing the "look for STARTUP_SCRIPT_DONE" bit because we don't
 		// need to wait for it to call "gcloud compute reset-windows-password" anymore.
 		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
@@ -826,7 +863,7 @@ $port.Close()
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
 		}
-		metadataCopy["enable-windows-ssh"] = "true"
+		metadataCopy["enable-windows-ssh"] = "TRUE"
 	} else {
 		if _, ok := metadataCopy["startup-script"]; ok {
 			return nil, errors.New("the 'startup-script' metadata key is reserved for future use. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
