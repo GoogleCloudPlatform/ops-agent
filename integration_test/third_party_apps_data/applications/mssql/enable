@@ -9,6 +9,7 @@ metrics:
     mssql_v2:
       type: mssql
       receiver_version: 2
+      collection_interval: 30s
   service:
     pipelines:
       mssql_v2:
