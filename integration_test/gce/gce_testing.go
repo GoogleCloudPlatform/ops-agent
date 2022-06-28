@@ -554,7 +554,6 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
-	logger.Printf("Running command: %v", args)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
@@ -600,6 +599,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 // Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+	logger.Printf("Running command: %v", args)
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
 }
 
@@ -641,6 +641,7 @@ func wrapPowershellCommand(command string) (string, error) {
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	logger.Printf("Running command remotely: %v", command)
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("Command failed: %v\n%v", command, err)
