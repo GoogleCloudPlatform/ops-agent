@@ -3,7 +3,6 @@ short_name: Vault
 long_name: Hashicorp Vault
 description: |-
   Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
-minimum_supported_agent_version:
 supported_app_version: ["1.6+"]
 expected_metrics:
 - type: vault.core.request.count
