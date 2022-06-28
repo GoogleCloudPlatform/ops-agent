@@ -55,9 +55,11 @@ NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ID: supplied by Kokoro.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
-    logs will be uploaded. If unset, this will point to
-    ops-agents-public-buckets-test-logs, which should work for all tests
-    triggered from GitHub.
+
+	logs will be uploaded. If unset, this will point to
+	ops-agents-public-buckets-test-logs, which should work for all tests
+	triggered from GitHub.
+
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
 (if set to "true"), or external IP addresses (in all other cases).
 Only useful on Kokoro.
@@ -1373,7 +1375,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return err
 	}
 
-	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
 		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
 	}
