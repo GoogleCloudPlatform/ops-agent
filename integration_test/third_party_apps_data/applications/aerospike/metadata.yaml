@@ -1,0 +1,49 @@
+expected_metrics:
+  - kind: CUMULATIVE
+    labels:
+      result: error|filtered_out|not_found|success|timeout
+      type: delete|read|udf|write
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aeropsike.namespace.transaction.count
+    value_type: INT64
+  - kind: GAUGE
+    labels: {}
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.disk.available
+    value_type: INT64
+  - kind: GAUGE
+    labels: {}
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.free
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      component: data|index|set_index|secondary_index
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.usage
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      result: abort|complete|error
+      type: aggregation|basic|ops_background|udf_background
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.scan.count
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      operation: close|open
+      type: client|fabric|heartbeat
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.count
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      type: client|fabric|heartbeat
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.open
+    value_type: INT64
+  - kind: GAUGE
+    labels: {}
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.memory.free
+    value_type: INT64

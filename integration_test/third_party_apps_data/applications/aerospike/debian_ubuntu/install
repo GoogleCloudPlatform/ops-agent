@@ -1,0 +1,7 @@
+set -e
+
+# /artifacts/aerospike-server-community/<aerospike_version>/aerospike-server-community-<aerospike_version>-<ubuntu_version>.tgz
+wget -O aerospike.tgz https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.17/aerospike-server-community-5.7.0.17-ubuntu18.04.tgz
+tar -xzf aerospike.tgz
+(cd aerospike-server-community-5.7.0.17-el7 && sudo ./asinstall)
+sudo systemctl enable --now aerospike-server
