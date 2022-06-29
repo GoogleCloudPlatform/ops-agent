@@ -43,7 +43,6 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-  optional: true # if no user connection, metric may not be present
 - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
   value_type: DOUBLE
   kind: GAUGE
