@@ -5,100 +5,100 @@ description: |-
   Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
 supported_app_version: ["1.6+"]
 expected_metrics:
-- type: vault.core.request.count
+- type: workload.googleapis.com/vault.core.request.count
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.core.leader.duration
+- type: workload.googleapis.com/vault.core.leader.duration
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.token.lease.count
+- type: workload.googleapis.com/vault.token.lease.count
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.token.count
+- type: workload.googleapis.com/vault.token.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     namespace: .*
     cluster: .*
-- type: vault.token.revoke.time
+- type: workload.googleapis.com/vault.token.revoke.time
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.token.renew.time
+- type: workload.googleapis.com/vault.token.renew.time
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.audit.request.failed
+- type: workload.googleapis.com/vault.audit.request.failed
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.audit.response.failed 
+- type: workload.googleapis.com/vault.audit.response.failed 
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
-- type: vault.memory.usage
+- type: workload.googleapis.com/vault.memory.usage
   representative: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels: {}
-- type: vault.storage.operation.put.time
+- type: workload.googleapis.com/vault.storage.operation.put.time
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
-- type: vault.storage.operation.delete.time
+- type: workload.googleapis.com/vault.storage.operation.delete.time
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
-- type: vault.storage.operation.list.time
+- type: workload.googleapis.com/vault.storage.operation.list.time
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
-- type: vault.storage.operation.get.time
+- type: workload.googleapis.com/vault.storage.operation.get.time
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: DOUBLE
   labels:
     storage: .*
-- type: vault.storage.operation.put.count
+- type: workload.googleapis.com/vault.storage.operation.put.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
-- type: vault.storage.operation.delete.count
+- type: workload.googleapis.com/vault.storage.operation.delete.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
-- type: vault.storage.operation.list.count
+- type: workload.googleapis.com/vault.storage.operation.list.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
   labels:
     storage: .*
-- type: vault.storage.operation.get.count
+- type: workload.googleapis.com/vault.storage.operation.get.count
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
