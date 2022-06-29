@@ -48,10 +48,11 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 				"severity": {
 					CopyFrom: "jsonPayload.severity",
 					MapValues: map[string]string{
-						"debug": "DEBUG",
-						"error": "ERROR",
-						"info":  "INFO",
-						"noti":  "DEFAULT",
+						"debug":   "DEBUG",
+						"warning": "WARNING",
+						"error":   "ERROR",
+						"info":    "INFO",
+						"noti":    "DEFAULT",
 					},
 					MapValuesExclusive: true,
 				},
