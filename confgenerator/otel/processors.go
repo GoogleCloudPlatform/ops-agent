@@ -164,10 +164,10 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 	return out
 }
 
-// UpdateMetric returns a config snippet that renames old to new, applying zero or more transformations.
-func UpdateMetric(old string, operations ...map[string]interface{}) map[string]interface{} {
+// UpdateMetric returns a config snippet applies transformations to the given metric name
+func UpdateMetric(metric string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include": old,
+		"include": metric,
 		"action":  "update",
 	}
 	if len(operations) > 0 {

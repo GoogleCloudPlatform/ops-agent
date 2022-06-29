@@ -33,8 +33,8 @@ type MetricsReceiverVault struct {
 }
 
 const (
-	defaultVaultEndpoint = "localhost:8200"
-	defaultMetricsPath   = "/v1/sys/metrics"
+	defaultVaultEndpoint    = "localhost:8200"
+	defaultVaultMetricsPath = "/v1/sys/metrics"
 )
 
 func (r MetricsReceiverVault) Type() string {
@@ -46,7 +46,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultVaultEndpoint
 	}
 	if r.MetricsPath == "" {
-		r.MetricsPath = defaultMetricsPath
+		r.MetricsPath = defaultVaultMetricsPath
 	}
 
 	tlsConfig := r.TLSConfig(true)
@@ -74,6 +74,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	scrapeConfig["tls_config"] = tlsConfig
 
 	includeMetrics := []string{}
+	queries := []otel.TransformQuery{}
 
 	storageMetricTransforms, newStorageMetricNames := r.addStorageMetrics()
 	metricRenewRevokeTransforms, newRenewRevokeNames := r.getRenewRevokeMetricsTransforms()
@@ -82,6 +83,10 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	includeMetrics = append(includeMetrics, newStorageMetricNames...)
 	includeMetrics = append(includeMetrics, newMetricNames...)
 	includeMetrics = append(includeMetrics, newRenewRevokeNames...)
+
+	queries = append(queries, storageMetricTransforms...)
+	queries = append(queries, metricRenewRevokeTransforms...)
+	queries = append(queries, metricDetailTransforms...)
 
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
@@ -95,13 +100,27 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 			},
 		},
 		Processors: []otel.Component{
-			storageMetricTransforms,
-			metricDetailTransforms,
-			metricRenewRevokeTransforms,
+			otel.TransformationMetrics(queries...),
 			otel.MetricsFilter(
 				"include",
 				"strict",
 				includeMetrics...,
+			),
+			// This is currently needed along side the newer transform processor as the new processor doesn't currently support toggling scalar data types.
+			// Issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11810
+			otel.MetricsTransform(
+				otel.UpdateMetric(
+					"vault.audit.response.failed",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.audit.response.failed",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.token.lease.count",
+					otel.ToggleScalarDataType,
+				),
 			),
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
@@ -118,7 +137,7 @@ type metricTransformer struct {
 	Unit        string
 }
 
-func (r MetricsReceiverVault) addStorageMetrics() (transforms otel.Component, newMetrics []string) {
+func (r MetricsReceiverVault) addStorageMetrics() (transforms []otel.TransformQuery, newMetrics []string) {
 	storageLabel := "storage"
 
 	storages := []string{
@@ -171,10 +190,10 @@ func (r MetricsReceiverVault) addStorageMetrics() (transforms otel.Component, ne
 		}
 	}
 
-	return otel.TransformationMetrics(queries...), newMetrics
+	return queries, newMetrics
 }
 
-func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (transform otel.Component, newNames []string) {
+func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (queries []otel.TransformQuery, newNames []string) {
 	metricTransformers := []metricTransformer{
 		{
 			OldName:     "vault_expire_revoke",
@@ -190,8 +209,6 @@ func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (transform otel.
 		},
 	}
 
-	queries := []otel.TransformQuery{}
-
 	for _, metric := range metricTransformers {
 		queries = append(queries, otel.SummarySumValToSum(metric.OldName, "cumulative", true))
 		queries = append(queries, otel.SetName(metric.OldName+"_sum", metric.NewName))
@@ -200,10 +217,10 @@ func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (transform otel.
 
 		newNames = append(newNames, metric.NewName)
 	}
-	return otel.TransformationMetrics(queries...), newNames
+	return queries, newNames
 }
 
-func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, newNames []string) {
+func (r MetricsReceiverVault) getMetricTransforms() (queries []otel.TransformQuery, newNames []string) {
 	metricTransformers := []metricTransformer{
 		{
 			OldName:     "vault_core_in_flight_requests",
@@ -249,8 +266,6 @@ func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, n
 		},
 	}
 
-	queries := []otel.TransformQuery{}
-
 	for _, metric := range metricTransformers {
 		if metric.OldName != "" {
 			newNames = append(newNames, metric.NewName)
@@ -259,7 +274,7 @@ func (r MetricsReceiverVault) getMetricTransforms() (transform otel.Component, n
 		queries = append(queries, otel.SetDescription(metric.NewName, metric.Description))
 		queries = append(queries, otel.SetUnit(metric.NewName, metric.Unit))
 	}
-	return otel.TransformationMetrics(queries...), newNames
+	return queries, newNames
 }
 
 func init() {
