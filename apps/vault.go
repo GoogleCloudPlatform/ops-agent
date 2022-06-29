@@ -114,11 +114,15 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 					otel.ToggleScalarDataType,
 				),
 				otel.UpdateMetric(
-					"vault.audit.response.failed",
+					"vault.audit.request.failed",
 					otel.ToggleScalarDataType,
 				),
 				otel.UpdateMetric(
 					"vault.token.lease.count",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.core.request.count",
 					otel.ToggleScalarDataType,
 				),
 			),

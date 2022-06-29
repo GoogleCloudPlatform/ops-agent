@@ -18,11 +18,13 @@ expected_metrics:
   value_type: INT64
   labels: {}
 - type: workload.googleapis.com/vault.token.lease.count
+  optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels: {}
 - type: workload.googleapis.com/vault.token.count
+  optional: true
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
