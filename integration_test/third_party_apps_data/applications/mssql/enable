@@ -9,7 +9,6 @@ metrics:
     mssql_v2:
       type: mssql
       receiver_version: 2
-      collection_interval: 30s
   service:
     pipelines:
       mssql_v2:
@@ -17,5 +16,4 @@ metrics:
         - mssql_v2
 "
 
-Stop-Service google-cloud-ops-agent -Force
-Start-Service google-cloud-ops-agent*
+Restart-Service google-cloud-ops-agent -Force
