@@ -25,7 +25,7 @@ expected_metrics:
   labels: {}
 - type: workload.googleapis.com/vault.token.count
   optional: true
-  kind: CUMULATIVE
+  kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
   labels:

@@ -122,6 +122,10 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 					otel.ToggleScalarDataType,
 				),
 				otel.UpdateMetric(
+					"vault.token.count",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
 					"vault.core.request.count",
 					otel.ToggleScalarDataType,
 				),

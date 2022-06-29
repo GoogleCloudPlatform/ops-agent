@@ -31,3 +31,4 @@ logging:
 EOF
 
 sudo service google-cloud-ops-agent restart
+sleep 60
