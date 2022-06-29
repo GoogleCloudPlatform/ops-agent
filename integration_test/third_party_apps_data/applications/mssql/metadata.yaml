@@ -38,12 +38,12 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 # v2 metrics
-- type: workload.googleapis.com/sqlserver.user.connection.count # if no user connection may not be present
+- type: workload.googleapis.com/sqlserver.user.connection.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
-  optional: true
+  optional: true # if no user connection, metric may not be present
 - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
   value_type: DOUBLE
   kind: GAUGE
