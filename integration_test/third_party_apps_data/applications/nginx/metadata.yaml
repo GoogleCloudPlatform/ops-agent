@@ -193,6 +193,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
@@ -207,6 +210,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
