@@ -12,15 +12,6 @@ metrics:
       aerospike:
         receivers:
           - aerospike
-logging:
-  receivers:
-    aerospike:
-      type: aerospike
-  service:
-    pipelines:
-      aerospike:
-        receivers:
-          - aerospike
 EOF
 
 sudo service google-cloud-ops-agent restart
