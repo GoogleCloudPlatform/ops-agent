@@ -1,3 +1,4 @@
+aerospike
 activemq
 apache
 cassandra
