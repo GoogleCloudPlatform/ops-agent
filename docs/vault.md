@@ -24,6 +24,7 @@ To configure a receiver for your Vault metrics, specify the following fields:
 | `endpoint`              | optional | `localhost:8200`  | hostname:port of vault instance to be monitored. |
 | `metrics_path`          | optional | `/v1/sys/metrics` | the path for metrics collection. |
 | `token`                 | optional |                   | Token used for authentication. |
+| `scheme`                | optional | `http`            | The scheme to use for the request. |
 | `collection_interval`   | optional |                   | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
 | `insecure`              | optional | true              | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
 | `insecure_skip_verify`  | optional | false             | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |

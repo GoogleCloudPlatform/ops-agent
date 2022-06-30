@@ -30,11 +30,13 @@ type MetricsReceiverVault struct {
 	Token       string `yaml:"token"`
 	Endpoint    string `yaml:"endpoint" validate:"omitempty,hostname_port"`
 	MetricsPath string `yaml:"metrics_path" validate:"omitempty,startswith=/"`
+	Scheme      string `yaml:"scheme" validate:"omitempty"`
 }
 
 const (
 	defaultVaultEndpoint    = "localhost:8200"
 	defaultVaultMetricsPath = "/v1/sys/metrics"
+	defaultVaultScheme      = "http"
 )
 
 func (r MetricsReceiverVault) Type() string {
@@ -49,6 +51,10 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 		r.MetricsPath = defaultVaultMetricsPath
 	}
 
+	if r.MetricsPath == "" {
+		r.Scheme = defaultVaultScheme
+	}
+
 	tlsConfig := r.TLSConfig(true)
 
 	scrapeConfig := map[string]interface{}{
@@ -61,7 +67,6 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	}
 
 	if r.Token != "" {
-		scrapeConfig["scheme"] = "https"
 		scrapeConfig["authorization"] = map[string]interface{}{
 			"credentials": r.Token,
 			"type":        "Bearer",

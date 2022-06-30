@@ -7,6 +7,15 @@ sudo touch /var/log/vault_audit.log
 sudo chown vault:vault /var/log/vault_audit.log
 
 cat <<EOF | sudo tee -a /etc/vault.d/vault.hcl
+storage "file" {
+  path = "/opt/vault/data"
+}
+
+# HTTP listener
+listener "tcp" {
+  address = "127.0.0.1:8200"
+  tls_disable = 1
+}
 telemetry {
     prometheus_retention_time = "10m"   
     disable_hostname = false
