@@ -43,333 +43,333 @@ configure_integration: |-
   </pre>
 supported_app_version: ["2.0"]
 expected_metrics:
-  - kind: GAUGE
-    labels:
-      rating: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.alert.count
-    value_type: INT64
-  - kind: GAUGE
-    labels: {}
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.backup.latest
-    optional: true
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      subtype: data|dict|index|misc
-      type: main|delta
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.column.memory.used
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      component: .*
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.component.memory.used
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      status: running|idle|queueing
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.connection.count
-    representative: true
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      type: user|system|io_wait|idle
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.cpu.used
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      path: .*
-      state: used|free
-      usage_type: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.disk.size.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      state: used|free
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.host.memory.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      state: used|free
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.host.swap.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.instance.code_size
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      state: used|free
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.instance.memory.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.instance.memory.shared.allocated
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.instance.memory.used.peak
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      product: .*
-      system: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.license.expiration.time
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      product: .*
-      system: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.license.limit
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      product: .*
-      system: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.license.peak
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.network.request.average_time
-    value_type: DOUBLE
-  - kind: GAUGE
-    labels:
-      host: .*
-      state: active|pending
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.network.request.count
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      type: internal|external
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.network.request.finished.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      mode: .*
-      port: .*
-      primary: .*
-      secondary: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.replication.average_time
-    optional: true
-    value_type: DOUBLE
-  - kind: GAUGE
-    labels:
-      mode: .*
-      port: .*
-      primary: .*
-      secondary: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.replication.backlog.size
-    optional: true
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      mode: .*
-      port: .*
-      primary: .*
-      secondary: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.replication.backlog.time
-    optional: true
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      type: fixed|variable
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.row_store.memory.used
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      schema: .*
-      type: main|delta|history_main|history_delta
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.schema.memory.used.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      schema: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.schema.memory.used.max
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      schema: .*
-      type: read|write|merge
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.schema.operation.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      schema: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.schema.record.compressed.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      schema: .*
-      type: main|delta|history_main|history_delta
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.schema.record.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.code_size
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      status: active|inactive
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.compactors.allocated
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.compactors.freeable
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.effective_limit
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-      state: used|free
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.heap.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.limit
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-      state: used|free
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.shared.current
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-      type: logical|physical
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.memory.used
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      service: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.stack_size
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-      status: active|inactive
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.service.thread.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      host: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.transaction.blocked
-    optional: true
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      type: update|commit|rollback
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.transaction.count
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      path: .*
-      type: read|write
-      usage_type: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.volume.operation.count
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      path: .*
-      type: read|write
-      usage_type: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.volume.operation.size
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      host: .*
-      path: .*
-      type: read|write
-      usage_type: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/saphana.volume.operation.time
-    value_type: INT64
+- kind: GAUGE
+  labels:
+    rating: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.alert.count
+  value_type: INT64
+- kind: GAUGE
+  labels: {}
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.backup.latest
+  optional: true
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    subtype: data|dict|index|misc
+    type: main|delta
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.column.memory.used
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    component: .*
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.component.memory.used
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    status: running|idle|queueing
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.connection.count
+  representative: true
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    type: user|system|io_wait|idle
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.cpu.used
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    path: .*
+    state: used|free
+    usage_type: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.disk.size.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    state: used|free
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.host.memory.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    state: used|free
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.host.swap.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.instance.code_size
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    state: used|free
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.instance.memory.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.instance.memory.shared.allocated
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.instance.memory.used.peak
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    product: .*
+    system: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.license.expiration.time
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    product: .*
+    system: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.license.limit
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    product: .*
+    system: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.license.peak
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.network.request.average_time
+  value_type: DOUBLE
+- kind: GAUGE
+  labels:
+    host: .*
+    state: active|pending
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.network.request.count
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    type: internal|external
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.network.request.finished.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    mode: .*
+    port: .*
+    primary: .*
+    secondary: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.replication.average_time
+  optional: true
+  value_type: DOUBLE
+- kind: GAUGE
+  labels:
+    mode: .*
+    port: .*
+    primary: .*
+    secondary: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.replication.backlog.size
+  optional: true
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    mode: .*
+    port: .*
+    primary: .*
+    secondary: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.replication.backlog.time
+  optional: true
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    type: fixed|variable
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.row_store.memory.used
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    schema: .*
+    type: main|delta|history_main|history_delta
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.schema.memory.used.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    schema: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.schema.memory.used.max
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    schema: .*
+    type: read|write|merge
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.schema.operation.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    schema: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.schema.record.compressed.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    schema: .*
+    type: main|delta|history_main|history_delta
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.schema.record.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.code_size
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    status: active|inactive
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.compactors.allocated
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.compactors.freeable
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.effective_limit
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+    state: used|free
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.heap.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.limit
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+    state: used|free
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.shared.current
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+    type: logical|physical
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.memory.used
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    service: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.stack_size
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+    status: active|inactive
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.service.thread.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    host: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.transaction.blocked
+  optional: true
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    type: update|commit|rollback
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.transaction.count
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    path: .*
+    type: read|write
+    usage_type: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.volume.operation.count
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    path: .*
+    type: read|write
+    usage_type: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.volume.operation.size
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    host: .*
+    path: .*
+    type: read|write
+    usage_type: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/saphana.volume.operation.time
+  value_type: INT64
 expected_logs:
 - log_name: saphana
   fields:
@@ -402,38 +402,38 @@ expected_logs:
     description: Line within the source file
 configuration_options:
   metrics:
-    - type: saphana
-      fields:
-        - default: null
-          description: This value must be saphana.
-          name: type
-        - default: localhost:30015
-          description: The hostname:port used to connect to the saphana instance.
-          name: endpoint
-        - default: 60s
-          description: A time.Duration value, such as 30s or 5m.
-          name: collection_interval
-        - default: null
-          description: The username used to connect to the instance.
-          name: username
-        - default: null
-          description: The password used to connect to the instance.
-          name: password
-        - default: true
-          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
-          name: insecure
-        - default: false
-          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
-          name: insecure_skip_verify
-        - default: null
-          description: Path to the TLS certificate to use for mTLS-required connections.
-          name: cert_file
-        - default: null
-          description: Path to the TLS key to use for mTLS-required connections.
-          name: key_file
-        - default: null
-          description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
-          name: ca_file
+  - type: saphana
+    fields:
+    - default: null
+      description: This value must be saphana.
+      name: type
+    - default: localhost:30015
+      description: The hostname:port used to connect to the saphana instance.
+      name: endpoint
+    - default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+      name: collection_interval
+    - default: null
+      description: The username used to connect to the instance.
+      name: username
+    - default: null
+      description: The password used to connect to the instance.
+      name: password
+    - default: true
+      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+      name: insecure
+    - default: false
+      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+      name: insecure_skip_verify
+    - default: null
+      description: Path to the TLS certificate to use for mTLS-required connections.
+      name: cert_file
+    - default: null
+      description: Path to the TLS key to use for mTLS-required connections.
+      name: key_file
+    - default: null
+      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
+      name: ca_file
   logs:
   - type: saphana
     fields:
@@ -452,3 +452,6 @@ configuration_options:
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+minimum_supported_agent_version:
+  metrics: 2.18.0
+  logging: 2.18.0
