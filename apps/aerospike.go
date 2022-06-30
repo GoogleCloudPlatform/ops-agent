@@ -53,6 +53,10 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.TransformationMetrics(
+					otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
+					otel.FlattenResourceAttribute("aerospike.namespace.name", "namespace_name"),
+				),
 			},
 		},
 	}
