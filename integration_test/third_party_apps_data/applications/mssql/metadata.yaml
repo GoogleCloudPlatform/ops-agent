@@ -38,8 +38,8 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 # v2 metrics
-- type: workload.googleapis.com/sqlserver.user.connection.count # TODO: look into this metric type change
-  value_type: DOUBLE
+- type: workload.googleapis.com/sqlserver.user.connection.count
+  value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
@@ -74,7 +74,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels: {}
 - type: workload.googleapis.com/sqlserver.page.life_expectancy
-  value_type: DOUBLE
+  value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels: {}
@@ -100,19 +100,19 @@ expected_metrics:
   labels:
     type: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.growth.count
-  value_type: DOUBLE
+  value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
     database: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.shrink.count
-  value_type: DOUBLE
+  value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
     database: .*
 - type: workload.googleapis.com/sqlserver.transaction_log.percent_used
-  value_type: DOUBLE
+  value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
