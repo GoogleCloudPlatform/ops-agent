@@ -8,9 +8,10 @@ sudo yum install -y wget openssl
 
 source /etc/os-release
 case "$VERSION_ID" in
+    6*) centos_rhel_version="el6";;
     7*) centos_rhel_version="el7";;
     8*) centos_rhel_version="el8";;
-    *) echo "Found version $VERSION_ID, supported versions are 7/8";;
+    *) echo "Found version $VERSION_ID, supported versions are 6,7,8";;
 esac
 
 # download, extract, install, and start aerospike community edition
