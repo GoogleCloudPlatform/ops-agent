@@ -2,9 +2,7 @@ app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
 logo_path: ""
-description: The Apache Flink integration collects client, jobmanager and taskmanager
-  logs and parses them into a JSON payload. The result includes fields for source,
-  level, and message.
+description: The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload. The result includes fields for source, level, and message.
 supported_app_version: ["1.13.6", "1.14.4"]
 configure_integration: ""
 expected_metrics:
@@ -295,3 +293,4 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
 minimum_supported_agent_version:
   logging: 2.17.0
+  metrics: 2.18.0

@@ -9,103 +9,103 @@ minimum_supported_agent_version:
   logging: 2.17.0
 supported_app_version: ["7.0"]
 expected_logs:
-  - log_name: couchbase_general
-    fields:
-      - name: jsonPayload.message
-        value_regex: initialized
-        type: string
-        description: "Log message"
-      - name: jsonPayload.node_name
-        type: string
-        description: The name of the node issuing the log message
-      - name: jsonPayload.module_name
-        type: string
-        description: The name of the module issuing the entry
-  - log_name: couchbase_http_access
-    fields:
-      - name: jsonPayload.message
-        type: string
-        description: "Log message"
-      - name: jsonPayload.client_ip
-        type: string
-        description: The ip address of the client invoking the HTTP request
-      - name: jsonPayload.user
-        type: string
-        description: The name of the user making the http request if basic auth is used.
-      - name: jsonPayload.method
-        type: string
-        description: The HTTP method of the request
-      - name: jsonPayload.status_code
-        type: integer
-        description: The status code of the response of the HTTP request
-  - log_name: couchbase_xdcr
-    fields:
-      - name: jsonPayload.message
-        type: string
-        description: "Log message"
-      - name: log_type
-        type: string
-        description: The name of the component that is issuing the cross datacenter log
+- log_name: couchbase_general
+  fields:
+  - name: jsonPayload.message
+    value_regex: initialized
+    type: string
+    description: "Log message"
+  - name: jsonPayload.node_name
+    type: string
+    description: The name of the node issuing the log message
+  - name: jsonPayload.module_name
+    type: string
+    description: The name of the module issuing the entry
+- log_name: couchbase_http_access
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: "Log message"
+  - name: jsonPayload.client_ip
+    type: string
+    description: The ip address of the client invoking the HTTP request
+  - name: jsonPayload.user
+    type: string
+    description: The name of the user making the http request if basic auth is used.
+  - name: jsonPayload.method
+    type: string
+    description: The HTTP method of the request
+  - name: jsonPayload.status_code
+    type: integer
+    description: The status code of the response of the HTTP request
+- log_name: couchbase_xdcr
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: "Log message"
+  - name: log_type
+    type: string
+    description: The name of the component that is issuing the cross datacenter log
 expected_metrics:
-  - type: workload.googleapis.com/couchbase.bucket.operation.count
-    value_type: DOUBLE
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels: {}
-  - type: workload.googleapis.com/couchbase.bucket.item.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
-    monitored_resource: gce_instance
-    labels: {}
-    representative: true
-  - type: workload.googleapis.com/couchbase.bucket.vbucket.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
-    monitored_resource: gce_instance
-    labels: {}
-    optional: true
-  - type: workload.googleapis.com/couchbase.bucket.memory.usage
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
-    value_type: GAUGE
-    monitored_resource: gce_instance
-    labels: {}
-    optional: true
-  - type: workload.googleapis.com/couchbase.bucket.error.oom.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
-    labels: {}
-    monitored_resource: gce_instance
-    optional: true
-  - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
-    monitored_resource: gce_instance
-    optional: true
-  - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
-    monitored_resource: gce_instance
-    optional: true
+- type: workload.googleapis.com/couchbase.bucket.operation.count
+  value_type: DOUBLE
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/couchbase.bucket.item.count
+  value_type: CUMULATIVE
+  kind: DOUBLE
+  monitored_resource: gce_instance
+  labels: {}
+  representative: true
+- type: workload.googleapis.com/couchbase.bucket.vbucket.count
+  value_type: CUMULATIVE
+  kind: DOUBLE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.usage
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/couchbase.bucket.item.ejection.count
+  value_type: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.error.oom.count
+  value_type: CUMULATIVE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
+- type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
+  value_type: GAUGE
+  kind: DOUBLE
+  labels: {}
+  monitored_resource: gce_instance
+  optional: true
 configuration_options:
   metrics:
-    - type: couchbase
-      fields:
-        - name: type
-          default: null
-          description: This value must be couchbase.
-        - name: endpoint
-          default: http://localhost:8091
-          description: The URL of the node to monitor.
-        - name: collection_interval
-          default: 60s
-          description: A time.Duration value, such as 30s or 5m.
-        - name: username
-          description: The username used to connect to the couchbase server.
-        - name: password
-          description: The password used to connect to the couchbase server.
+  - type: couchbase
+    fields:
+    - name: type
+      default: null
+      description: This value must be couchbase.
+    - name: endpoint
+      default: http://localhost:8091
+      description: The URL of the node to monitor.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: username
+      description: The username used to connect to the couchbase server.
+    - name: password
+      description: The password used to connect to the couchbase server.
