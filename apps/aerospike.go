@@ -29,10 +29,20 @@ const (
 	defaultCollectClusterMetrics = false // We assume the agent's running on each node
 )
 
+var defaultAerospikeTimeout = 20 * time.Second
+
 // Pipelines is the OTEL pipelines created from MetricsReceiverAerospike
 func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultAerospikeEndpoint
+	}
+	collectClusterMetrics := defaultCollectClusterMetrics
+	if r.CollectClusterMetrics != nil {
+		collectClusterMetrics = *r.CollectClusterMetrics
+	}
+	timeout := defaultAerospikeTimeout
+	if r.Timeout != 0 {
+		timeout = r.Timeout
 	}
 
 	return []otel.Pipeline{
@@ -42,10 +52,10 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 				Config: map[string]interface{}{
 					"collection_interval":     r.CollectionInterval,
 					"endpoint":                r.Endpoint,
-					"collect_cluster_metrics": r.CollectClusterMetrics,
+					"collect_cluster_metrics": collectClusterMetrics,
 					"username":                r.Username,
 					"password":                r.Password,
-					"timeout":                 r.Timeout,
+					"timeout":                 timeout,
 				},
 			},
 			Processors: []otel.Component{
