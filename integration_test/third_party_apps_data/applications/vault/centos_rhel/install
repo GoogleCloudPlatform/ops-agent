@@ -30,6 +30,7 @@ EOF
 sudo systemctl enable --now vault
 
 # initialize and unseal vault
+export VAULT_ADDR=https://localhost:8200
 export VAULT_SKIP_VERIFY=true
 vault operator init -key-shares=1 -key-threshold=1 > init.out
 VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
