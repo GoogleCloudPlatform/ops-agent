@@ -1,3 +1,13 @@
+app_url: "https://aerospike.com/"
+short_name: Aerospike
+long_name: Aerospike
+logo_path: ""
+description: |-
+  The Aerospike integration collects key namespace and system metrics, such as disk and memory usage, scans,
+  and connections. The integration collects these metrics using the official
+  client API provided by Aerospike.
+supported_app_version: ["4.9", "5.x", "6.x"]
+configure_integration: ""
 expected_metrics:
   - kind: CUMULATIVE
     labels:
@@ -55,9 +65,35 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.connection.open
     value_type: INT64
+    representative: true
   - kind: GAUGE
     labels:
       node_name: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.memory.free
     value_type: INT64
+configuration_options:
+  metrics:
+  - type: aerospike
+    fields:
+    - name: type
+      default: null
+      description: This value must be aerospike.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
+    - name: endpoint
+      default: localhost:3000
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: collect_cluster_metrics
+      default: true
+      description: Configures the receiver to collect metrics from peer nodes of the Aerospike system.
+    - name: username
+      default: null
+      description: The configured username if Aerospike is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if Aerospike is configured to require authentication.
+    - name: timeout
+      default: 20s
+      description: Timeout for requests to the Aerospike system.
