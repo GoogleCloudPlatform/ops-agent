@@ -5,8 +5,8 @@ logo_path: /stackdriver/images/couchbase.png # supplied by google technical writ
 description: |-
   The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the prometheus server exposed on a node.
 minimum_supported_agent_version:
-  metrics: 2.17.0
-  logging: 2.17.0
+  metrics: 2.18.0
+  logging: 2.18.0
 supported_app_version: ["7.0"]
 expected_logs:
   - log_name: couchbase_general
@@ -48,48 +48,62 @@ expected_logs:
         description: The name of the component that is issuing the cross datacenter log
 expected_metrics:
   - type: workload.googleapis.com/couchbase.bucket.operation.count
-    value_type: DOUBLE
+    value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
-    labels: {}
+    labels:
+      bucket_name: .*
+      op: .*
   - type: workload.googleapis.com/couchbase.bucket.item.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
+    value_type: INT64
+    kind: GAUGE
     monitored_resource: gce_instance
-    labels: {}
+    labels:
+      bucket_name: .*
+      state: .*
     representative: true
   - type: workload.googleapis.com/couchbase.bucket.vbucket.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
+    value_type: INT64
+    kind: GAUGE
     monitored_resource: gce_instance
-    labels: {}
+    labels:
+      bucket_name: .*
+      state: .*
     optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.usage
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
+    value_type: DOUBLE
+    kind: GAUGE
+    labels:
+      bucket_name: .*
+      state: .*
     monitored_resource: gce_instance
   - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
-    value_type: GAUGE
+    value_type: INT64
+    kind: CUMULATIVE
     monitored_resource: gce_instance
-    labels: {}
+    labels:
+      bucket_name: .*
     optional: true
   - type: workload.googleapis.com/couchbase.bucket.error.oom.count
-    value_type: CUMULATIVE
-    kind: DOUBLE
-    labels: {}
+    value_type: INT64
+    kind: CUMULATIVE
+    labels:
+      bucket_name: .*
+      error_type: .*
     monitored_resource: gce_instance
     optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
+    value_type: DOUBLE
+    kind: GAUGE
+    labels:
+      bucket_name: .*
     monitored_resource: gce_instance
     optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
-    value_type: GAUGE
-    kind: DOUBLE
-    labels: {}
+    value_type: DOUBLE
+    kind: GAUGE
+    labels:
+      bucket_name: .*
     monitored_resource: gce_instance
     optional: true
 configuration_options:
