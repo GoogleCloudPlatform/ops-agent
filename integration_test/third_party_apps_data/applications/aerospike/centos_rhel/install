@@ -1,7 +1,26 @@
 set -e
 
-# /artifacts/aerospike-server-community/<aerospike_version>/aerospike-server-community-<aerospike_version>-<rhel_version>.tgz
-curl -LO https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.17/aerospike-server-community-5.7.0.17-el7.tgz
-tar -xzf aerospike-server-community-5.7.0.17-el7.tgz
-(cd aerospike-server-community-5.7.0.17-el7 && sudo ./asinstall)
-sudo systemctl enable --now aerospike-server
+# disable selinux for installation
+# per the documentation https://docs.aerospike.com/server/operations/install/linux/el6
+sudo setenforce 0
+
+sudo yum install -y wget openssl
+
+source /etc/os-release
+case "$VERSION_ID" in
+    7*) centos_rhel_version="el7";;
+    8*) centos_rhel_version="el8";;
+    *) echo "Found version $VERSION_ID, supported versions are 7/8";;
+esac
+
+# download, extract, install, and start aerospike community edition
+wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.17/aerospike-server-community-5.7.0.17-$centos_rhel_version.tgz"
+tar -xvf aerospike.tgz
+cd aerospike-server-community-5.7.0.17-$centos_rhel_version/
+sudo ./asinstall
+
+# re-enable selinux
+sudo setenforce 1
+
+sudo systemctl enable aerospike
+sudo systemctl start aerospike
