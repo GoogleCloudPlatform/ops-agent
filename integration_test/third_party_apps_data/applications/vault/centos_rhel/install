@@ -6,7 +6,11 @@ sudo yum -y install vault
 sudo touch /var/log/vault_audit.log
 sudo chown vault:vault /var/log/vault_audit.log
 
-cat <<EOF | sudo tee -a /etc/vault.d/vault.hcl
+cat <<EOF | sudo tee /etc/vault.d/vault.hcl
+# Full configuration options can be found at https://www.vaultproject.io/docs/configuration
+
+ui = true
+
 storage "file" {
   path = "/opt/vault/data"
 }
@@ -16,9 +20,10 @@ listener "tcp" {
   address = "127.0.0.1:8200"
   tls_disable = 1
 }
+
 telemetry {
-    prometheus_retention_time = "10m"   
-    disable_hostname = false
+  prometheus_retention_time = "10m"
+  disable_hostname = false
 }
 EOF
 
