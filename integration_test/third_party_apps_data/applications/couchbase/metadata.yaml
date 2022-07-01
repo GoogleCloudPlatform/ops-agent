@@ -47,24 +47,24 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      bucket: .*
+      bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.item.count
     value_type: DOUBLE
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      bucket: .*
+      bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.vbucket.count
     value_type: DOUBLE
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      bucket: .*
+      bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.memory.usage
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket: .*
+      bucket_name: .*
     monitored_resource: gce_instance
     representative: true
   - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
@@ -72,25 +72,25 @@ expected_metrics:
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
-      bucket: .*
+      bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.error.oom.count
     value_type: DOUBLE
     kind: CUMULATIVE
     labels:
-      bucket: .*
+      bucket_name: .*
       error_type: .*
     monitored_resource: gce_instance
   - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket: .*
+      bucket_name: .*
     monitored_resource: gce_instance
   - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket: .*
+      bucket_name: .*
     monitored_resource: gce_instance
 configuration_options:
   metrics:
