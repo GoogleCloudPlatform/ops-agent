@@ -80,40 +80,48 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						"kv_ops",
 						"couchbase.bucket.operation.count",
 						otel.ToggleScalarDataType,
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_vb_curr_items",
 						"couchbase.bucket.item.count",
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_num_vbuckets",
 						"coucbhase.bucket.vbucket.count",
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_total_memory_used_bytes",
 						"couchbase.bucket.memory.usage",
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_ep_num_value_ejects",
 						"couchbase.bucket.item.ejection.count",
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_ep_mem_high_wat",
 						"couchbase.bucket.memory.high_water_mark.limit",
-					),
+						otel.RenameLabel("bucket", "bucket_name")),
 					otel.RenameMetric(
 						"kv_ep_mem_low_wat",
 						"couchbase.bucket.memory.low_water_mark.limit",
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_ep_tmp_oom_errors",
 						"couchbase.bucket.error.oom.count.recoverable",
 						otel.ToggleScalarDataType,
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
 						"kv_ep_oom_errors",
 						"couchbase.bucket.error.oom.count.unrecoverable",
 						otel.ToggleScalarDataType,
+						otel.RenameLabel("bucket", "bucket_name"),
 					),
 
 					// combine OOM metrics
@@ -127,7 +135,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						`couchbase.bucket.operation.count`,
 						map[string]interface{}{
 							"action":           "aggregate_labels",
-							"label_set":        []string{"bucket", "op"},
+							"label_set":        []string{"bucket_name", "op"},
 							"aggregation_type": "sum",
 						},
 					),
