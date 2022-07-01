@@ -7,6 +7,8 @@ metrics:
   receivers:
     couchbase:
       type: couchbase
+      username: admin
+      password: password
   service:
     pipelines:
       couchbase:
