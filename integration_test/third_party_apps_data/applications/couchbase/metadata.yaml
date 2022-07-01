@@ -4,9 +4,6 @@ long_name: Couchbase
 logo_path: /stackdriver/images/couchbase.png # supplied by google technical writer
 description: |-
   The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the prometheus server exposed on a node.
-minimum_supported_agent_version:
-  metrics: 2.18.0
-  logging: 2.18.0
 supported_app_version: ["7.0"]
 expected_logs:
   - log_name: couchbase_general
