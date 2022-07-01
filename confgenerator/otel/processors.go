@@ -117,21 +117,6 @@ func FlattenResourceAttribute(resourceAttribute, metricAttribute string) Transfo
 	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
 }
 
-// ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
-func ConvertGaugeToSum(metricName string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
-}
-
-// SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
-func SetDescription(metricName, metricDescription string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
-}
-
-// SetUnit returns a metrics transform expression where the metric unit is set to provided value
-func SetUnit(metricName, unit string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName))
-}
-
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
