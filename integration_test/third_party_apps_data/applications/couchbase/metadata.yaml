@@ -60,7 +60,6 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       bucket: .*
-    optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.usage
     value_type: DOUBLE
     kind: GAUGE
@@ -74,28 +73,25 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       bucket: .*
-    optional: true
   - type: workload.googleapis.com/couchbase.bucket.error.oom.count
     value_type: DOUBLE
     kind: CUMULATIVE
     labels:
       bucket: .*
+      error_type: .*
     monitored_resource: gce_instance
-    optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
       bucket: .*
     monitored_resource: gce_instance
-    optional: true
   - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
       bucket: .*
     monitored_resource: gce_instance
-    optional: true
 configuration_options:
   metrics:
     - type: couchbase

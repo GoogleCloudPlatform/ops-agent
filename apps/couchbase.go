@@ -80,16 +80,31 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					otel.RenameMetric("kv_vb_curr_items", "couchbase.bucket.item.count"),
 					otel.RenameMetric("kv_num_vbuckets", "coucbhase.bucket.vbucket.count"),
 					otel.RenameMetric("kv_total_memory_used_bytes", "couchbase.bucket.memory.usage"),
-					otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.memoryitem.ejection.count"),
+					otel.RenameMetric("kv_ep_num_num_value_ejects", "couchbase.bucket.item.ejection.count"),
 					otel.RenameMetric("kv_ep_tmp_oom_errors", "couchbase.bucket.error.oom.count.recoverable"),
 					otel.RenameMetric("kv_ep_oom_errors", "couchbase.bucket.error.oom.count.unrecoverable"),
 
-					// combine metrics
+					// combine OOM metrics
 					otel.CombineMetrics(
 						`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
 						"couchbase.bucket.oom.count",
 					),
 
+					// Current transform processor cannot do this
+					otel.UpdateMetric(
+						"couchbase.bucket.item.ejection.count",
+						otel.ToggleScalarDataType,
+					),
+					otel.UpdateMetric(
+						"couchbase.bucket.error.oom.count",
+						otel.ToggleScalarDataType,
+					),
+					otel.UpdateMetric(
+						"couchbase.bucket.operation.count",
+						otel.ToggleScalarDataType,
+					),
+
+					// group by bucket and op
 					otel.UpdateMetric(
 						`couchbase.bucket.operation.count`,
 						map[string]interface{}{
@@ -98,6 +113,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 							"aggregation_type": "sum",
 						},
 					),
+
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.TransformationMetrics(r.transformMetrics()...),
