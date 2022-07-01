@@ -24,6 +24,7 @@ expected_metrics:
       namespace_name: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.namespace.disk.available
+    optional: true
     value_type: INT64
   - kind: GAUGE
     labels:
