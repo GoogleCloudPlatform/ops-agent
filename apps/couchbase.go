@@ -94,7 +94,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						"couchbase.bucket.memory.usage",
 					),
 					otel.RenameMetric(
-						"kv_ep_num_num_value_ejects",
+						"kv_ep_num_value_ejects",
 						"couchbase.bucket.item.ejection.count",
 					),
 					otel.RenameMetric(
