@@ -98,6 +98,14 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 						"couchbase.bucket.item.ejection.count",
 					),
 					otel.RenameMetric(
+						"kv_ep_mem_high_wat",
+						"couchbase.bucket.memory.high_water_mark.limit",
+					),
+					otel.RenameMetric(
+						"kv_ep_mem_low_wat",
+						"couchbase.bucket.memory.low_water_mark.limit",
+					),
+					otel.RenameMetric(
 						"kv_ep_tmp_oom_errors",
 						"couchbase.bucket.error.oom.count.recoverable",
 						otel.ToggleScalarDataType,
