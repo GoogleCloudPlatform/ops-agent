@@ -80,7 +80,7 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 				),
 				otel.TransformationMetrics(
 					otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
-					otel.FlattenResourceAttribute("aerospike.namespace.name", "namespace_name"),
+					otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
 				),
 			},
 		},
