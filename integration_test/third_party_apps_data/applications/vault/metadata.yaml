@@ -197,7 +197,7 @@ expected_logs:
     description: Explicit token maximum TTL value as seconds (‘0’ when not set).
   - name: jsonPayload.response.data.issue_time
     type: string
-    description:  RFC3339 format timestamp.
+    description: RFC3339 format timestamp.
   - name: jsonPayload.response.data.num_uses
     type: number
     description: If the token is limited to a number of uses, that value will be represented here.
@@ -283,3 +283,5 @@ configuration_options:
     - name: ca_file
       default: null
       description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
+minimum_supported_agent_version:
+  logging: 2.18.1
