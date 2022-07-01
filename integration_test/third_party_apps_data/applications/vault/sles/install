@@ -73,7 +73,7 @@ EOF
 sudo systemctl enable --now vault
 
 # initialize and unseal vault
-export VAULT_ADDR=https://localhost:8200
+export VAULT_ADDR=http://localhost:8200
 vault operator init -key-shares=1 -key-threshold=1 > init.out
 VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
 VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
