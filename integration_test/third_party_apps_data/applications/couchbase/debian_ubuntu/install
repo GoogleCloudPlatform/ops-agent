@@ -5,38 +5,10 @@ set -e
 sudo apt-get update
 sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
-
-
-osname="$(lsb_release -si)"
-
-case $osname in 
-  Ubuntu)
-    ## Following instructions from https://docs.couchbase.com/server/current/install/ubuntu-debian-install.html
-    curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
-    sudo dpkg -i couchbase-release-1.0-amd64.deb
-    sudo apt-get update
-    sudo apt-get install -y couchbase-server-community=7.0.2-6703-1
-    ;;
-  Debian)
-    # Debian 11 is not officially supported, so use 'buster'.
-    # couchbase-lite is currently not supported for debian 11, so manually adding source list
-    echo '
-    deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/enterprise/deb/ xenial xenial/main
-    deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/community/deb/ xenial xenial/main
-    deb http://packages.couchbase.com/ubuntu xenial xenial/main
-    ' | sudo tee /etc/apt/sources.list.d/couchbase.list
-
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6EF1EAC479CF7903
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A3FAA648D9223EDA
-    sudo apt-get update
-    sudo apt-get install -y couchbase-server-community
-    ;;
-  *)
-    echo -n "unknown os release"
-    exit 1
-    ;;
-esac
-
+curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
+sudo dpkg -i couchbase-release-1.0-amd64.deb
+sudo apt-get update
+sudo apt-get install -y couchbase-server-community=7.0.2-6703-1
 
 
 timeout 60s bash <<EOF
