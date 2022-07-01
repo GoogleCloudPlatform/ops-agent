@@ -54,7 +54,6 @@ expected_metrics:
       operation: close|open
       type: client|fabric|heartbeat
       node_name: .*
-      namespace_name: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.connection.count
     value_type: INT64
