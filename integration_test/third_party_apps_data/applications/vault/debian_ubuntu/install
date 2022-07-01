@@ -123,6 +123,7 @@ then
     vault operator unseal $VAULT_KEY
     vault audit enable file file_path=/var/log/vault_audit.log
 else
+    export VAULT_ADDR=http://localhost:8200
     export VAULT_SKIP_VERIFY=true
     vault operator init -key-shares=1 -key-threshold=1 > init.out
     VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
