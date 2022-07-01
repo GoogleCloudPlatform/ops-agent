@@ -5,10 +5,6 @@ set -e
 sudo apt-get update
 sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
-curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
-sudo dpkg -i couchbase-release-1.0-amd64.deb
-sudo apt-get update
-
 oscode="$(lsb_release -sc)"
 if [ "$oscode" = "bullseye" ]; then
   # currently debian 11 is not supported, install buster package instead
@@ -17,6 +13,10 @@ if [ "$oscode" = "bullseye" ]; then
   sudo wget -qO- http://packages.couchbase.com/ubuntu/couchbase.key | gpg --dearmor > couchbase.gpg
   sudo mv couchbase.gpg /etc/apt/trusted.gpg.d/couchbase.gpg
   sudo apt update
+else 
+  curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
+  sudo dpkg -i couchbase-release-1.0-amd64.deb
+  sudo apt-get update
 fi
 
 sudo apt-get install -y couchbase-server-community=7.0.2-6703-1
