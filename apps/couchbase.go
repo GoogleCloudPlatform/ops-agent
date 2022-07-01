@@ -126,6 +126,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				// Using the transform processor for metrics
 				otel.TransformationMetrics(r.transformMetrics()...),
 			},
 		},
