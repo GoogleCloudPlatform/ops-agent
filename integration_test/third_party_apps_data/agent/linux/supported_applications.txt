@@ -3,6 +3,7 @@ apache
 cassandra
 couchdb
 elasticsearch
+flink
 hadoop
 hbase
 jetty
@@ -15,8 +16,10 @@ nginx
 postgresql
 rabbitmq
 redis
+saphana
 solr
 tomcat
 varnish
+vault
 wildfly
 zookeeper

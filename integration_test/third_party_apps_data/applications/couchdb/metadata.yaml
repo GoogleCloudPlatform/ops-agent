@@ -87,9 +87,24 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: host instance name
-  - name: httpRequest
-    type: object
-    description: Information about the HTTP request associated with this log entry, if applicable. It's available in access logs.
+  - name: httpRequest.serverIp
+    value_regex: "localhost:5984"
+    type: string
+    description: "The server's IP and port that was requested"
+  - name: httpRequest.remoteIp
+    value_regex: "127.0.0.1"
+    type: string
+    description: "IP of the client that made the request"
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: "HTTP method"
+  - name: httpRequest.requestSize
+    type: number
+    description: "HTTP request size"
+  - name: httpRequest.status
+    type: number
+    description: "HTTP status code"
 configuration_options:
   logs:
   - type: couchdb
@@ -103,6 +118,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.

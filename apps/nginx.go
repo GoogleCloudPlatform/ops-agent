@@ -68,7 +68,7 @@ func (LoggingProcessorNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(tag, uid)
+	return genericAccessLogParser(p.Type(), tag, uid)
 }
 
 type LoggingProcessorNginxError struct {
@@ -99,18 +99,25 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 
 	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"emerg", "EMERGENCY"},
-				{"alert", "ALERT"},
-				{"crit", "CRITICAL"},
-				{"error", "ERROR"},
-				{"warn", "WARNING"},
-				{"notice", "NOTICE"},
-				{"info", "INFO"},
-				{"debug", "DEBUG"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"emerg":  "EMERGENCY",
+						"alert":  "ALERT",
+						"crit":   "CRITICAL",
+						"error":  "ERROR",
+						"warn":   "WARNING",
+						"notice": "NOTICE",
+						"info":   "INFO",
+						"debug":  "DEBUG",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 	return c
 }
