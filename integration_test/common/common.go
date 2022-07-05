@@ -47,7 +47,7 @@ type ExpectedMetric struct {
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
 	Representative bool   `yaml:"representative" validate:"excluded_with=Optional"`
-	Platform       string `yaml:"platform,omitempty" validate:"oneof=linux windows"`
+	Platform       string `yaml:"platform,omitempty" validate:"omitempty,oneof=linux windows"`
 }
 
 type LogFields struct {
