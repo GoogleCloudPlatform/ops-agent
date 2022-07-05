@@ -41,7 +41,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -53,8 +52,6 @@ import (
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
-
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 var (
@@ -183,7 +180,9 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 }
 
 // constructQuery converts the given struct of:
-//   field name => field value regex
+//
+//	field name => field value regex
+//
 // into a query filter to pass to the logging API.
 func constructQuery(logName string, fields []*common.LogFields) string {
 	var parts []string
@@ -278,53 +277,7 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 		}
 		return err
 	}
-	if series.ValueType.String() != metric.ValueType {
-		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
-	}
-	if series.MetricKind.String() != metric.Kind {
-		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
-	}
-	if series.Resource.Type != metric.MonitoredResource {
-		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
-	}
-	err = multierr.Append(err, assertMetricLabels(metric, series))
-	if err != nil {
-		return fmt.Errorf("%s: %w", metric.Type, err)
-	}
-	return nil
-}
-
-func assertMetricLabels(metric *common.ExpectedMetric, series *monitoringpb.TimeSeries) error {
-	// All present labels must be expected
-	var err error
-	for actualLabel := range series.Metric.Labels {
-		if _, ok := metric.Labels[actualLabel]; !ok {
-			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
-		}
-	}
-	// All expected labels must be present and match the given pattern
-	for expectedLabel, expectedPattern := range metric.Labels {
-		actualValue, ok := series.Metric.Labels[expectedLabel]
-		if !ok {
-			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
-			continue
-		}
-		match, matchErr := regexp.MatchString(expectedPattern, actualValue)
-		if matchErr != nil {
-			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
-				expectedLabel,
-				expectedPattern,
-				matchErr,
-			))
-		} else if !match {
-			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
-				expectedLabel,
-				expectedPattern,
-				actualValue,
-			))
-		}
-	}
-	return err
+	return common.AssertMetric(metric, series)
 }
 
 type testConfig struct {
@@ -465,8 +418,10 @@ func modifiedFiles(t *testing.T) []string {
 
 // Determine what apps are impacted by current code changes.
 // Extracts app names as follows:
-//   apps/<appname>.go
-//   integration_test/third_party_apps_data/<appname>/
+//
+//	apps/<appname>.go
+//	integration_test/third_party_apps_data/<appname>/
+//
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
 	impactedApps := make(map[string]bool)

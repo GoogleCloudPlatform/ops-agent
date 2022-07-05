@@ -28,10 +28,13 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs.
+
+	.deb/.rpm/.goo files to install on the testing VMs.
+
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-    version of the Ops Agent to install first, before installing the version
-	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+
+	    version of the Ops Agent to install first, before installing the version
+		from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -41,6 +44,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"testing"
@@ -48,8 +52,10 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"gopkg.in/yaml.v2"
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
@@ -1378,18 +1384,51 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var agentMetrics struct {
+		ExpectedMetrics []*common.ExpectedMetric `yaml:"expected_metrics" validate:"unique=Type,dive"`
+	}
+
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMetrics := agentMetrics.ExpectedMetrics
+	excludedPlatform := getExcludedPlatform(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, metric := range metricsForPlatform(vm.Platform) {
+	for _, metric := range expectedMetrics {
 		metric := metric
+		if metric.Platform == excludedPlatform {
+			continue
+		}
+
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			if err != nil {
+				t.Error(err)
+			}
+
+			err = common.AssertMetric(metric, series)
+			if err != nil {
 				t.Error(err)
 			}
 		}()
 	}
 	metricsWaitGroup.Wait()
+}
+
+func getExcludedPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "linux"
+	}
+	return "windows"
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {

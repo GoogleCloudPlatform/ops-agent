@@ -19,8 +19,11 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/multierr"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -43,7 +46,8 @@ type ExpectedMetric struct {
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool `yaml:"representative" validate:"excluded_with=Optional"`
+	Representative bool   `yaml:"representative" validate:"excluded_with=Optional"`
+	Platform       string `yaml:"platform,omitempty" validate:"oneof=linux windows"`
 }
 
 type LogFields struct {
@@ -151,4 +155,55 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 		}
 	})
 	return v
+}
+
+func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+	var err error
+	if series.ValueType.String() != metric.ValueType {
+		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
+	}
+	if series.MetricKind.String() != metric.Kind {
+		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
+	}
+	if series.Resource.Type != metric.MonitoredResource {
+		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
+	}
+	err = multierr.Append(err, assertMetricLabels(metric, series))
+	if err != nil {
+		return fmt.Errorf("%s: %w", metric.Type, err)
+	}
+	return nil
+}
+
+func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+	// All present labels must be expected
+	var err error
+	for actualLabel := range series.Metric.Labels {
+		if _, ok := metric.Labels[actualLabel]; !ok {
+			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
+		}
+	}
+	// All expected labels must be present and match the given pattern
+	for expectedLabel, expectedPattern := range metric.Labels {
+		actualValue, ok := series.Metric.Labels[expectedLabel]
+		if !ok {
+			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
+			continue
+		}
+		match, matchErr := regexp.MatchString(expectedPattern, actualValue)
+		if matchErr != nil {
+			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
+				expectedLabel,
+				expectedPattern,
+				matchErr,
+			))
+		} else if !match {
+			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
+				expectedLabel,
+				expectedPattern,
+				actualValue,
+			))
+		}
+	}
+	return err
 }
