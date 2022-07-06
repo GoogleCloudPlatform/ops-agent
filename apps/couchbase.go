@@ -89,7 +89,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					),
 					otel.RenameMetric(
 						"kv_num_vbuckets",
-						"coucbhase.bucket.vbucket.count",
+						"couchbase.bucket.vbucket.count",
 						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
