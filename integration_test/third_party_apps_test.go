@@ -487,19 +487,19 @@ const (
 func incompatibleOperatingSystem(t *testing.T, testStruct test) string {
 	supported := testStruct.SupportedOperatingSystems
 	if supported == "linux_and_windows" {
-		return ""  // This app supports both Linux and Windows.
+		return "" // This app supports both Linux and Windows.
 	}
 	if supported == "windows" {
 		if !gce.IsWindows(testStruct.platform) {
 			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Windows.", testStruct.platform, testStruct.app)
 		}
-		return ""  // We are testing Windows and this app supports Windows.
+		return "" // We are testing Windows and this app supports Windows.
 	}
 	if supported == "linux" {
 		if gce.IsWindows(testStruct.platform) {
 			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Linux.", testStruct.platform, testStruct.app)
 		}
-		return ""  // We are testing Linux and this app supports Linux.
+		return "" // We are testing Linux and this app supports Linux.
 	}
 	t.Fatalf("Unrecognized value %q for supported_operating_systems.", supported)
 }
