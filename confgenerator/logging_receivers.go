@@ -59,6 +59,7 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
+	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
@@ -108,6 +109,10 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 
 	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
 		config["Path_Key"] = "agent.googleapis.com/log_file_path"
+	}
+
+	if r.BufferInMemory {
+		config["storage.type"] = "memory"
 	}
 
 	c := []fluentbit.Component{}
