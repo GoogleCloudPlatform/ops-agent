@@ -97,6 +97,7 @@ configure_integration: |-
 minimum_supported_agent_version:
   metrics: 2.1.0
   logging: 2.1.0
+supported_operating_systems: linux
 supported_app_version: ["1.18", "1.20"]
 expected_metrics:
 - type: workload.googleapis.com/nginx.connections_accepted

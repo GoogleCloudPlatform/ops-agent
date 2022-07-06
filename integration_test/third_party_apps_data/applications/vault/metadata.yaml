@@ -3,6 +3,7 @@ short_name: Vault
 long_name: Hashicorp Vault
 description: |-
   Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
+supported_operating_systems: linux
 supported_app_version: ["1.6+"]
 expected_logs:
 - log_name: vault_audit

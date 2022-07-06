@@ -13,6 +13,7 @@ description: |-
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.10.0
+supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
 # v1 metrics

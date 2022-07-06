@@ -14,6 +14,7 @@ configure_integration: |-
 minimum_supported_agent_version:
   metrics: 2.9.0
   logging: 2.9.0
+supported_operating_systems: linux
 supported_app_version: ["10.18+"]
 expected_metrics:
 - type: workload.googleapis.com/postgresql.backends
