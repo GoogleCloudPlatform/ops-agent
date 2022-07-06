@@ -371,7 +371,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	var metadata common.IntegrationMetadata
 	// Load metadata.yaml.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+	testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 	if err != nil {
 		return nonRetryable, fmt.Errorf("could not read metadata.yaml: %v", err)
 	}
