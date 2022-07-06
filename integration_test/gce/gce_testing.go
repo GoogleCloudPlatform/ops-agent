@@ -1050,20 +1050,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if isRHEL(vm.Platform) {
-		// Disable the google-cloud-sdk repo, which is occasionally corrupted
-		// (b/231439681). This should help with issues like b/231217003.
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i 's/^enabled=1$/enabled=0/' /etc/yum.repos.d/google-cloud.repo")
-		if err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to disable the google-cloud-sdk repo: %v", err)
-		}
-	}
-
 	return vm, nil
-}
-
-func isRHEL(platform string) bool {
-	return strings.HasPrefix(platform, "rhel-") || strings.HasPrefix(platform, "centos-") || strings.HasPrefix(platform, "rocky-linux-")
 }
 
 func isSUSE(platform string) bool {
