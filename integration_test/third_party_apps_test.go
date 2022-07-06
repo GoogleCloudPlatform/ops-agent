@@ -377,7 +377,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	logger.ToMainLog().Println("found metadata.yaml, parsing...")
 
-	err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+	err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
 	if err != nil {
 		return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
 	}
