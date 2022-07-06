@@ -484,24 +484,25 @@ const (
 // thinks this app doesn't support the given platform.
 // supported_operating_systems should only contain "linux", "windows", or
 // "linux_and_windows".
-func incompatibleOperatingSystem(t *testing.T, testStruct test) string {
-	supported := testStruct.SupportedOperatingSystems
+func incompatibleOperatingSystem(t *testing.T, testCase test) string {
+	supported := testCase.metadata.SupportedOperatingSystems
 	if supported == "linux_and_windows" {
 		return "" // This app supports both Linux and Windows.
 	}
 	if supported == "windows" {
-		if !gce.IsWindows(testStruct.platform) {
-			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Windows.", testStruct.platform, testStruct.app)
+		if !gce.IsWindows(testCase.platform) {
+			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Windows.", testCase.platform, testCase.app)
 		}
 		return "" // We are testing Windows and this app supports Windows.
 	}
 	if supported == "linux" {
-		if gce.IsWindows(testStruct.platform) {
-			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Linux.", testStruct.platform, testStruct.app)
+		if gce.IsWindows(testCase.platform) {
+			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Linux.", testCase.platform, testCase.app)
 		}
 		return "" // We are testing Linux and this app supports Linux.
 	}
 	t.Fatalf("Unrecognized value %q for supported_operating_systems.", supported)
+	return ""
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -529,7 +530,6 @@ func determineTestsToSkip(t *testing.T, tests []test, impactedApps map[string]bo
 		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
-		return apps, nil
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
@@ -591,7 +591,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
-				retryable, err = runSingleTest(ctx, logger, vm, tc.app)
+				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
 				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
