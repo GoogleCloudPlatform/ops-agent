@@ -391,7 +391,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 func fetchAppsAndMetadata(t *testing.T) map[string]common.IntegrationMetadata {
 	allApps := make(map[string]common.IntegrationMetadata)
 
-	files, err := scriptsDir.ReadDir("applications")
+	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
 	if err != nil {
 		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
 	}
