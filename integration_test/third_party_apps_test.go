@@ -370,19 +370,21 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	var metadata common.IntegrationMetadata
-	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
-		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-
-		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
-			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
-		}
-		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
+	// Load metadata.yaml.
+	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+	if err != nil {
+		return nonRetryable, fmt.Errorf("could not read metadata.yaml: %v", err)
 	}
+	logger.ToMainLog().Println("found metadata.yaml, parsing...")
+
+	err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
+	if err != nil {
+		return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
+	}
+	if err = validate.Struct(&metadata); err != nil {
+		return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
+	}
+	logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
 
 	if _, err = runScriptFromScriptsDir(
 		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
