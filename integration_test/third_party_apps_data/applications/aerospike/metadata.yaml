@@ -16,7 +16,7 @@ expected_metrics:
       node_name: .*
       namespace_name: .*
     monitored_resource: gce_instance
-    type: workload.googleapis.com/aeropsike.namespace.transaction.count
+    type: workload.googleapis.com/aerospike.namespace.transaction.count
     value_type: INT64
   - kind: GAUGE
     labels:
