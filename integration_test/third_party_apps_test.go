@@ -87,38 +87,6 @@ func osFolder(platform string) string {
 	return "linux"
 }
 
-// rejectDuplicates looks for duplicate entries in the input slice and returns
-// an error if any is found.
-func rejectDuplicates(apps []string) error {
-	seen := make(map[string]bool)
-	for _, app := range apps {
-		if seen[app] {
-			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
-		}
-		seen[app] = true
-	}
-	return nil
-}
-
-// appsToTest reads which applications to test for the given agent+platform
-// combination from the appropriate supported_applications.txt file.
-func appsToTest(platform string) ([]string, error) {
-	contents, err := readFileFromScriptsDir(
-		path.Join("agent", osFolder(platform), "supported_applications.txt"))
-	if err != nil {
-		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
-	}
-
-	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
-	if err = rejectDuplicates(apps); err != nil {
-		return nil, err
-	}
-	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
-		apps = removeFromSlice(apps, "mssql")
-	}
-	return apps, nil
-}
-
 const (
 	retryable    = true
 	nonRetryable = false
@@ -363,25 +331,10 @@ func parseTestConfigFile() (testConfig, error) {
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata common.IntegrationMetadata) (retry bool, err error) {
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
-	}
-
-	var metadata common.IntegrationMetadata
-	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
-		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-
-		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
-			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
-		}
-		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
 	}
 
 	if _, err = runScriptFromScriptsDir(
@@ -432,22 +385,37 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-// Returns the authoritative set of all apps available for testing.
-// The authoritative list corresponds to the directory names under
-// integration_test/third_party_apps_data/applications
-func determineAllApps(t *testing.T) map[string]bool {
-	allApps := make(map[string]bool)
+// Returns a map of application name to its parsed and validated metadata.yaml.
+// The set of applications returned is authoritative and corresponds to the
+// directory names under integration_test/third_party_apps_data/applications.
+func fetchAppsAndMetadata(t *testing.T) map[string]common.IntegrationMetadata {
+	allApps := make(map[string]common.IntegrationMetadata)
 
-	files, err := os.ReadDir("third_party_apps_data/applications")
+	files, err := scriptsDir.ReadDir("applications")
 	if err != nil {
 		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
 	}
 	for _, file := range files {
-		if file.IsDir() {
-			allApps[file.Name()] = true
+		app := file.Name()
+		var metadata common.IntegrationMetadata
+		// Load metadata.yaml.
+		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+		if err != nil {
+			t.Fatalf("could not read metadata.yaml for app %v: %v", app, err)
 		}
+		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml for app %v: %v", app, err)
+		}
+		if err = validate.Struct(&metadata); err != nil {
+			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml for app %v: %v", app, err)
+		}
+		allApps[app] = metadata
 	}
-	log.Printf("all apps: %v", allApps)
+	log.Printf("found %v apps", len(allApps))
+	if len(allApps) == 0 {
+		t.Fatal("Found no applications inside third_party_apps_data/applications")
+	}
 	return allApps
 }
 
@@ -468,7 +436,7 @@ func modifiedFiles(t *testing.T) []string {
 //   apps/<appname>.go
 //   integration_test/third_party_apps_data/<appname>/
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
+func determineImpactedApps(mf []string, allApps map[string]common.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
@@ -497,6 +465,7 @@ func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool
 type test struct {
 	platform   string
 	app        string
+	metadata   common.IntegrationMetadata
 	skipReason string
 }
 
@@ -510,6 +479,30 @@ const (
 	SAPHANAApp      = "saphana"
 )
 
+// incompatibleDistro looks at the supported_distros field of metadata.yaml
+// for this app and returns a nonempty skip reason if it thinks this app
+// doesn't support the given platform. supported_distros should only contain
+// "linux", "windows", or "linux_and_windows".
+func incompatibleDistro(t *testing.T, testStruct test) string {
+	supported := testStruct.SupportedDistros
+	if supported == "linux_and_windows" {
+		return ""  // This app supports both Linux and Windows.
+	}
+	if supported == "windows" {
+		if !gce.IsWindows(testStruct.platform) {
+			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Windows.", testStruct.platform, testStruct.app)
+		}
+		return ""  // We are testing Windows and this app supports Windows.
+	}
+	if supported == "linux" {
+		if gce.IsWindows(testStruct.platform) {
+			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Linux.", testStruct.platform, testStruct.app)
+		}
+		return ""  // We are testing Linux and this app supports Linux.
+	}
+	t.Fatalf("Unrecognized value %q for supported_distros.", supported)
+}
+
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
 // platform.  If a subset of apps is determined to be impacted, also test all
@@ -517,7 +510,7 @@ const (
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+func determineTestsToSkip(t *testing.T, tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -529,6 +522,13 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
+		if reason := incompatibleDistro(t, test); reason != "" {
+			tests[i].skipReason = reason
+		}
+		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+		}
+		return apps, nil
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
@@ -547,22 +547,16 @@ func TestThirdPartyApps(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []test{}
+	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
-		apps, err := appsToTest(platform)
-		if err != nil {
-			t.Fatalf("Error when reading list of apps to test for platform=%v. err=%v", platform, err)
-		}
-		if len(apps) == 0 {
-			t.Fatalf("Found no applications when testing platform=%v", platform)
-		}
-		for _, app := range apps {
-			tests = append(tests, test{platform, app, ""})
+		for app, metadata := range allApps {
+			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
 		}
 	}
 
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
