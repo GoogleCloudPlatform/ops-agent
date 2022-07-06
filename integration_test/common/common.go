@@ -92,7 +92,7 @@ type IntegrationMetadata struct {
 	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
-	SupportedDistros             []string                     `yaml:"supported_distros" validate:"required,unique,min=1"`
+	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot"`
 }

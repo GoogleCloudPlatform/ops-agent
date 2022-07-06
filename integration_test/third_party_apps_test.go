@@ -479,12 +479,13 @@ const (
 	SAPHANAApp      = "saphana"
 )
 
-// incompatibleDistro looks at the supported_distros field of metadata.yaml
-// for this app and returns a nonempty skip reason if it thinks this app
-// doesn't support the given platform. supported_distros should only contain
-// "linux", "windows", or "linux_and_windows".
-func incompatibleDistro(t *testing.T, testStruct test) string {
-	supported := testStruct.SupportedDistros
+// incompatibleOperatingSystem looks at the supported_operating_systems field
+// of metadata.yaml for this app and returns a nonempty skip reason if it
+// thinks this app doesn't support the given platform.
+// supported_operating_systems should only contain "linux", "windows", or
+// "linux_and_windows".
+func incompatibleOperatingSystem(t *testing.T, testStruct test) string {
+	supported := testStruct.SupportedOperatingSystems
 	if supported == "linux_and_windows" {
 		return ""  // This app supports both Linux and Windows.
 	}
@@ -500,7 +501,7 @@ func incompatibleDistro(t *testing.T, testStruct test) string {
 		}
 		return ""  // We are testing Linux and this app supports Linux.
 	}
-	t.Fatalf("Unrecognized value %q for supported_distros.", supported)
+	t.Fatalf("Unrecognized value %q for supported_operating_systems.", supported)
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -522,7 +523,7 @@ func determineTestsToSkip(t *testing.T, tests []test, impactedApps map[string]bo
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
-		if reason := incompatibleDistro(t, test); reason != "" {
+		if reason := incompatibleOperatingSystem(t, test); reason != "" {
 			tests[i].skipReason = reason
 		}
 		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
