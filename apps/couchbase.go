@@ -100,6 +100,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					otel.RenameMetric(
 						"kv_ep_num_value_ejects",
 						"couchbase.bucket.item.ejection.count",
+						otel.ToggleScalarDataType,
 						otel.RenameLabel("bucket", "bucket_name"),
 					),
 					otel.RenameMetric(
