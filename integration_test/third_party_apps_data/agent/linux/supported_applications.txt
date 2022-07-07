@@ -16,6 +16,7 @@ nginx
 postgresql
 rabbitmq
 redis
+saphana
 solr
 tomcat
 varnish

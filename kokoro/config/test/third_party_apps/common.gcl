@@ -1,0 +1,7 @@
+import '../common.gcl' as common
+
+template config third_party_apps_test = common.go_test {
+  params {
+    test_suite = 'third_party_apps_test'
+  }
+}
