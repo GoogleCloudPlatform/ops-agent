@@ -16,8 +16,6 @@
 # sources in there, otherwise it will look in GitHub.
 #
 # In addition, the following test suites need additional env variables:
-# collectd_third_party_apps_test:
-#   * SCRIPTS_DIR: path to scripts to use for installing/configuring apps.
 # install_scripts_test:
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
 #   * SCRIPTS_DIR: path to installation scripts to test.
@@ -97,8 +95,10 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   export GCLOUD_TO_TEST
 fi
 
-WINRM_PAR_PATH="${KOKORO_BLAZE_DIR}/${WINRM_PAR_BLAZE_PATH}"
-export WINRM_PAR_PATH
+# Copy down winrm.par from GCS.
+WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
+gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
+chmod u+x "${WINRM_PAR_PATH}"
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
