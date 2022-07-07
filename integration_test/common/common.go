@@ -46,8 +46,9 @@ type ExpectedMetric struct {
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool   `yaml:"representative" validate:"excluded_with=Optional"`
-	Platform       string `yaml:"platform,omitempty" validate:"omitempty,oneof=linux windows"`
+	Representative bool `yaml:"representative" validate:"excluded_with=Optional,excluded_with=Platform"`
+	// Exclusive metric to a particular kind of platform
+	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
 }
 
 type LogFields struct {

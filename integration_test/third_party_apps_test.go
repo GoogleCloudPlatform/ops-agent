@@ -75,15 +75,6 @@ func removeFromSlice(original []string, toRemove string) []string {
 	return result
 }
 
-// osFolder returns the folder containing OS-specific configuration and
-// scripts for the test.
-func osFolder(platform string) string {
-	if gce.IsWindows(platform) {
-		return "windows"
-	}
-	return "linux"
-}
-
 // rejectDuplicates looks for duplicate entries in the input slice and returns
 // an error if any is found.
 func rejectDuplicates(apps []string) error {
@@ -101,7 +92,7 @@ func rejectDuplicates(apps []string) error {
 // combination from the appropriate supported_applications.txt file.
 func appsToTest(platform string) ([]string, error) {
 	contents, err := readFileFromScriptsDir(
-		path.Join("agent", osFolder(platform), "supported_applications.txt"))
+		path.Join("agent", gce.PlatformKind(platform), "supported_applications.txt"))
 	if err != nil {
 		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
 	}
@@ -165,7 +156,7 @@ func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm
 	if suffix != "" {
 		environmentVariables["REPO_SUFFIX"] = suffix
 	}
-	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", osFolder(vm.Platform), "install"), environmentVariables); err != nil {
+	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
 	}
 	return nonRetryable, nil

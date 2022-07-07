@@ -28,13 +28,11 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-
-	.deb/.rpm/.goo files to install on the testing VMs.
+.deb/.rpm/.goo files to install on the testing VMs.
 
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-
-	    version of the Ops Agent to install first, before installing the version
-		from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+version of the Ops Agent to install first, before installing the version
+from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -1285,62 +1283,6 @@ func agentVersionRegexesForPlatform(platform string) []string {
 	}
 }
 
-func metricsForPlatform(platform string) []string {
-	commonMetrics := []string{
-		"agent.googleapis.com/agent/api_request_count",
-		"agent.googleapis.com/agent/memory_usage",
-		"agent.googleapis.com/agent/monitoring/point_count",
-
-		// TODO(b/170138116): Enable these metrics once they are being collected.
-		"agent.googleapis.com/agent/log_entry_count",
-		// "agent.googleapis.com/agent/log_entry_retry_count",
-		"agent.googleapis.com/agent/request_count",
-
-		"agent.googleapis.com/cpu/load_1m",
-		"agent.googleapis.com/cpu/load_5m",
-		"agent.googleapis.com/cpu/load_15m",
-		"agent.googleapis.com/cpu/utilization",
-
-		"agent.googleapis.com/disk/bytes_used",
-		"agent.googleapis.com/disk/io_time",
-		"agent.googleapis.com/disk/operation_count",
-		"agent.googleapis.com/disk/operation_time",
-		"agent.googleapis.com/disk/percent_used",
-		"agent.googleapis.com/disk/read_bytes_count",
-		"agent.googleapis.com/disk/write_bytes_count",
-
-		"agent.googleapis.com/interface/errors",
-		"agent.googleapis.com/interface/packets",
-		"agent.googleapis.com/interface/traffic",
-
-		"agent.googleapis.com/memory/bytes_used",
-		"agent.googleapis.com/memory/percent_used",
-
-		"agent.googleapis.com/network/tcp_connections",
-
-		"agent.googleapis.com/processes/cpu_time",
-		"agent.googleapis.com/processes/disk/read_bytes_count",
-		"agent.googleapis.com/processes/disk/write_bytes_count",
-		"agent.googleapis.com/processes/rss_usage",
-		"agent.googleapis.com/processes/vm_usage",
-
-		"agent.googleapis.com/swap/bytes_used",
-		"agent.googleapis.com/swap/io",
-	}
-	if gce.IsWindows(platform) {
-		windowsOnlyMetrics := []string{
-			"agent.googleapis.com/pagefile/percent_used",
-		}
-		return append(commonMetrics, windowsOnlyMetrics...)
-	}
-
-	linuxOnlyMetrics := []string{
-		"agent.googleapis.com/disk/merged_operations",
-		"agent.googleapis.com/processes/count_by_state",
-	}
-	return append(commonMetrics, linuxOnlyMetrics...)
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1399,11 +1341,11 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	expectedMetrics := agentMetrics.ExpectedMetrics
-	excludedPlatform := getExcludedPlatform(vm.Platform)
+	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
 	for _, metric := range expectedMetrics {
 		metric := metric
-		if metric.Platform == excludedPlatform {
+		if metric.Platform != "" && metric.Platform != platformKind {
 			continue
 		}
 
@@ -1422,13 +1364,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}()
 	}
 	metricsWaitGroup.Wait()
-}
-
-func getExcludedPlatform(platform string) string {
-	if gce.IsWindows(platform) {
-		return "linux"
-	}
-	return "windows"
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
