@@ -1,0 +1,143 @@
+app_url: "https://www.vaultproject.io/"
+short_name: Vault
+long_name: Hashicorp Vault
+description: |-
+  Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
+supported_app_version: ["1.6+"]
+expected_logs:
+- log_name: vault_audit
+  fields:
+  - name: jsonPayload.auth.token_type
+    value_regex: default
+    type: string
+    description: ''
+  - name: jsonPayload.request.namespace.id
+    value_regex: root
+    type: string
+    description: ''
+  - name: jsonPayload.request.path
+    value_regex: sys\/audit\/test
+    type: string
+    description: 'The requested Vault path for operation.'
+  - name: jsonPayload.request.operation
+    value_regex: update
+    type: string
+    description: "This is the type of operation which corresponds to path capabilities and is expected to be one of: `create`, `read`, `update`, `delete`, or `list`."
+  - name: jsonPayload.type
+    value_regex: request
+    type: string
+    description: 'the type of audit log.'
+  - name: jsonPayload.error
+    type: string
+    description: If an error occurred with the request, the error message is included in this field’s value.
+  - name: jsonPayload.auth.client_token
+    type: string
+    description: This is an HMAC of the client’s token ID.
+  - name: jsonPayload.auth.accessor
+    type: string
+    description: This is an HMAC of the client token accessor.
+  - name: jsonPayload.auth.display_name
+    type: string
+    description: This is the display name set by the auth method role or explicitly at secret creation time.
+  - name: jsonPayload.auth.policies
+    type: object
+    description: This will contain a list of policies associated with the client_token.
+  - name: jsonPayload.auth.metadata
+    type: object
+    description: This will contain a list of metadata key/value pairs associated with the client_token.
+  - name: jsonPayload.auth.entity_id
+    type: string
+    description: This is a token entity identifier.
+  - name: jsonPayload.request.id
+    type: string
+    description: This is the unique request identifier.
+  - name: jsonPayload.request.client_token
+    type: string
+    description: "This is an HMAC of the client's token ID."
+  - name: jsonPayload.request.client_token_accessor
+    type: string
+    description: This is an HMAC of the client token accessor.
+  - name: jsonPayload.request.data
+    type: object
+    description: The data object will contain secret data in key/value pairs.
+  - name: jsonPayload.request.policy_override
+    type: boolean
+    description: this is true when a soft-mandatory policy override was requested.
+  - name: jsonPayload.request.remote_address
+    type: string
+    description: The IP address of the client making the request.
+  - name: jsonPayload.request.wrap_ttl
+    type: string
+    description: If the token is wrapped, this displays configured wrapped TTL value as numeric string.
+  - name: jsonPayload.request.headers
+    type: object
+    description: Additional HTTP headers specified by the client as part of the request.
+  - name: jsonPayload.response.data.creation_time
+    type: string
+    description: RFC3339 format timestamp of the token’s creation.
+  - name: jsonPayload.response.data.creation_ttl
+    type: string
+    description: Token creation TTL in seconds.
+  - name: jsonPayload.response.data.expire_time
+    type: string
+    description: RFC3339 format timestamp representing the moment this token will expire.
+  - name: jsonPayload.response.data.explicit_max_ttl
+    type: string
+    description: Explicit token maximum TTL value as seconds (‘0’ when not set).
+  - name: jsonPayload.response.data.issue_time
+    type: string
+    description: RFC3339 format timestamp.
+  - name: jsonPayload.response.data.num_uses
+    type: number
+    description: If the token is limited to a number of uses, that value will be represented here.
+  - name: jsonPayload.response.data.orphan
+    type: boolean
+    description: Boolean value representing whether the token is an orphan.
+  - name: jsonPayload.response.data.renewable
+    type: boolean
+    description: Boolean value representing whether the token is an orphan.
+  - name: jsonPayload.response.data.id
+    type: string
+    description: This is the unique response identifier.
+  - name: jsonPayload.response.data.path
+    type: string
+    description: The requested Vault path for operation.
+  - name: jsonPayload.response.data.policies
+    type: object
+    description: This will contain a list of policies associated with the client_token.
+  - name: jsonPayload.response.data.accessor
+    type: string
+    description: This is an HMAC of the client token accessor.
+  - name: jsonPayload.response.data.display_name
+    type: string
+    description: This is the display name set by the auth method role or explicitly at secret creation time.
+  - name: jsonPayload.response.data.display_name
+    type: string
+    description: This is the display name set by the auth method role or explicitly at secret creation time.
+  - name: jsonPayload.response.data.entity_id
+    type: string
+    description: This is a token entity identifier.
+  - name: timestamp
+    type: string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp))
+    description: Time the request was received
+configuration_options:
+  logs:
+  - type: vault_audit
+    fields:
+    - name: type
+      default: null
+      description: The value must be vault_audit.
+    - name: include_paths
+      default: null
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+minimum_supported_agent_version:
+  logging: 2.18.1

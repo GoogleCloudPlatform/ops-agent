@@ -90,6 +90,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 					"instrumentation_library_labels": false,
 					// Omit service labels, which break agent metrics.
 					"service_resource_labels": false,
+					"resource_filters":        []map[string]interface{}{},
 				},
 			},
 		},
@@ -286,6 +287,9 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+		//Following: b/226668416 temporarily set storage.type to "memory"
+		//to prevent chunk corruption errors
+		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))

@@ -9,6 +9,9 @@
 %endif
 %endif
 
+# Disabling stripping to prevent changing jar hash
+%global __os_install_post %{nil}
+
 Name: google-cloud-ops-agent
 Version: %{package_version}
 Release: 1%{?dist}
