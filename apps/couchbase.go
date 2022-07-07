@@ -127,7 +127,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 					// combine OOM metrics
 					otel.CombineMetrics(
 						`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
-						"couchbase.bucket.oom.count",
+						"couchbase.bucket.error.oom.count",
 					),
 
 					// group by bucket and op
