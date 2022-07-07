@@ -91,6 +91,32 @@ func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
 	}
 }
 
+// TransformationMetrics returns a transform processor object that contains all the queries passed into it.
+func TransformationMetrics(queries ...TransformQuery) Component {
+	queryStrings := []string{}
+	for _, q := range queries {
+		queryStrings = append(queryStrings, string(q))
+	}
+	return Component{
+		Type: "transform",
+		Config: map[string]map[string]interface{}{
+			"metrics": {
+				"queries": queryStrings,
+			},
+		},
+	}
+}
+
+// TransformQuery is a type wrapper for query expressions supported by the transform
+// processor found here: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
+type TransformQuery string
+
+// FlattenResourceAttribute returns an expression that brings down a resource attribute to a
+// metric attribute.
+func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
@@ -104,7 +130,7 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 	return out
 }
 
-// RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
+// UpdateMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func UpdateMetric(old string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
 		"include": old,

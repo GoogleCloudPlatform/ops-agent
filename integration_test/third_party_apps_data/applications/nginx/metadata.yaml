@@ -1,14 +1,13 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/nginx"
+app_url: "https://nginx.org/"
 short_name: nginx
 long_name: nginx
+logo_path: /images/partners/nginx.png # supplied by google technical writer
 description: |-
   The nginx integration collects connection metrics and access logs. Connection
   metrics capture the current state of the connection: active, reading, or
   waiting. Access logs are parsed for their connection details, which include
   fields mapped to request, client, server, and message.
-
-  For more information about nginx, see
-  [nginx.org](http://nginx.org/).
 configure_integration: |-
   You must enable the `stub_status` module in the nginx configuration file to set
   up a locally reachable URL, for example, `http://www.example.com/status` for the
@@ -194,6 +193,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
@@ -208,6 +210,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
@@ -223,4 +228,15 @@ configuration_options:
     - name: collection_interval
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
+troubleshoot: |-
+  On most distributions, nginx comes with `ngx_http_stub_status_module` enabled.
+  You can check if the module is enabled by running the following command:
 
+  ```
+  sudo nginx -V 2>&1 | grep -o with-http_stub_status_module
+  ```
+
+  The expected output is `with-http_stub_status_module`, which means the module
+  is enabled. In rare cases, if the command returns no output, you must compile
+  nginx from source with the `-with-http_stub_status_module` following the nginx
+  public documentation.

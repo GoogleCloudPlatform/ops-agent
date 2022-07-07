@@ -54,8 +54,12 @@ The following variables are optional:
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
     By default, a new temporary directory is created.
 NETWORK_NAME: What GCP network name to use.
-KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
+KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
+LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
+    logs will be uploaded. If unset, this will point to
+    ops-agents-public-buckets-test-logs, which should work for all tests
+    triggered from GitHub.
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
     (if set to "true"), or external IP addresses (in all other cases).
     Only useful on Kokoro.
@@ -937,9 +941,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject, err := imageProject(vm.Platform)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+	imgProject := options.ImageProject
+	if imgProject == "" {
+		var err error
+		imgProject, err = imageProject(vm.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1042,7 +1050,20 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if isRHEL(vm.Platform) {
+		// Disable the google-cloud-sdk repo, which is occasionally corrupted
+		// (b/231439681). This should help with issues like b/231217003.
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i 's/^enabled=1$/enabled=0/' /etc/yum.repos.d/google-cloud.repo")
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to disable the google-cloud-sdk repo: %v", err)
+		}
+	}
+
 	return vm, nil
+}
+
+func isRHEL(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-") || strings.HasPrefix(platform, "centos-") || strings.HasPrefix(platform, "rocky-linux-")
 }
 
 func isSUSE(platform string) bool {
@@ -1531,8 +1552,11 @@ func logLocation(logRootDir, testName string) string {
 	if subdir == "" {
 		return path.Join(logRootDir, testName)
 	}
-	return "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/" +
-		path.Join(subdir, "logs", testName)
+	uploadLocation := os.Getenv("LOG_UPLOAD_URL_ROOT")
+	if uploadLocation == "" {
+		uploadLocation = "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/"
+	}
+	return uploadLocation + path.Join(subdir, "logs", testName)
 }
 
 // SetupLogger creates a new DirectoryLogger that will write to a directory based on
@@ -1559,8 +1583,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required.
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
 	Platform string
+	// Optional. Passed as --image-project to "gcloud compute images create".
+	// If not supplied, the framework will attempt to guess the right project
+	// to use based on Platform.
+	ImageProject string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.

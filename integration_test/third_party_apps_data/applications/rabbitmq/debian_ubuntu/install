@@ -8,31 +8,30 @@ sudo apt-get install -y \
     debian-keyring \
     debian-archive-keyring 
     
+curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | \
+    sudo apt-key add -
 
-curl -s https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | \
+curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | \
     sudo apt-key add -
 
 source /etc/os-release
 case $VERSION_ID in
   # ubuntu
   20.04)
-    echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   # debian
   10)
-    echo "deb https://packages.erlang-solutions.com/ubuntu bionic contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   11)
-    echo "deb https://packages.erlang-solutions.com/ubuntu focal contrib" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   *)
     echo -n "unknown version"
     exit 1
     ;;
 esac
-
-sudo apt-get update
-sudo apt-get install -y erlang
 
 curl -s \
     https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \

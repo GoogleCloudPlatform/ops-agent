@@ -1,0 +1,8 @@
+import '../common.gcl' as common
+
+config build = common.build {
+  params {
+    distro = 'bullseye'
+    package_format = 'deb'
+  }
+}

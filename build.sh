@@ -23,7 +23,6 @@ systemdsystempresetdir=$(pkg-config systemd --variable=systemdsystempresetdir)
 subagentdir=$prefix/subagents
 
 . VERSION
-. BUILD_CONFIG
 if [ -z "$BUILD_DISTRO" ]; then
   release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for centos
   BUILD_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')${release_version%%.}
@@ -44,19 +43,26 @@ if [ -z "$DESTDIR" ]; then
 fi
 
 function build_otel() {
-  cd submodules/opentelemetry-operations-collector
-  mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector"
-  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" ./cmd/otelopscol
-}
-
-function build_otel_jmx() {
   cd submodules/opentelemetry-java-contrib
   mkdir -p "$DESTDIR$subagentdir/opentelemetry-collector/"
-  # Build & test systems do not always check out git history for submodules, so the properties assigned
-  # here allow the nebula release process to function properly in that state
-  ./gradlew --no-daemon -Pgit.root="$(pwd)/../../.git/" -Prelease.version=${JMX_METRICS_JAR_VERSION} -Prelease.disableGitChecks=true :jmx-metrics:build
-  # TODO: Parameterize this jar name once we can control the release artifact
-  cp "jmx-metrics/build/libs/opentelemetry-jmx-metrics-${JMX_METRICS_JAR_VERSION}.jar" "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+  ./gradlew --no-daemon :jmx-metrics:build
+  cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"
+
+  # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
+  # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive
+  # environment and having a conflict between the LICENSE file and license/ directory, leading to a changed jar file
+  mkdir ./META-INF
+  unzip -j "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE" -d ./META-INF
+  zip -d "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
+  mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed
+  zip -u "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
+
+  cd ../opentelemetry-operations-collector
+  # Using array assignment to drop the filename from the sha256sum output
+  JAR_SHA_256=($(sha256sum "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"))
+  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
+    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
+    ./cmd/otelopscol
 }
 
 function build_fluentbit() {
@@ -109,7 +115,6 @@ function build_systemd() {
 }
 
 (build_otel)
-(build_otel_jmx)
 (build_fluentbit)
 (build_opsagent)
 (build_systemd)

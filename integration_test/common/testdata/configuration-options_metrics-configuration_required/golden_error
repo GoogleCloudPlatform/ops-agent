@@ -1,0 +1,2 @@
+Key: 'IntegrationMetadata.ConfigurationOptions.LogsConfiguration' Error:Field validation for 'LogsConfiguration' failed on the 'required_without' tag
+Key: 'IntegrationMetadata.ConfigurationOptions.MetricsConfiguration' Error:Field validation for 'MetricsConfiguration' failed on the 'required_without' tag

@@ -3,35 +3,6 @@
 Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/varnish)
 for instructions to collect logs and metrics from this application using Ops Agent.
 
-# `varnish` Metrics Receiver
-
-## Configuration
-
-Following the guide for [Configuring the Ops Agent](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#file-location), add the required elements for your varnish instance configuration.
-
-To configure a receiver for your Varnish metrics, specify the following fields:
-
-| Field                 | Required | Default | Description                                                                                                                                                                 |
-|-----------------------|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `type`                | required |         | Must be `varnish`.                                                                                                                                                          |
-| `collection_interval` | optional |         | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.                                                                                      |
-| `cache_dir`           | optional |         | Optional. This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host name.                                  |
-| `exec_dir`            | optional |         | Optional. The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH. |
-
-Example Configuration:
-
-```yaml
-metrics:
-  receivers:
-    varnish:
-      type: varnish
-  service:
-    pipelines:
-      varnish:
-        receivers:
-          - varnish
-```
-
 ## Metrics
 
 The Ops Agent collects the following metrics from your varnish instance.
@@ -49,3 +20,21 @@ The Ops Agent collects the following metrics from your varnish instance.
 | workload.googleapis.com/varnish.client.request.count       | cumulative | {requests}    | cache_name, state                   | The client request count                                         |
 | workload.googleapis.com/varnish.client.request.error.count | cumulative | {requests}    | cache_name, http.status_code        | The client requests errors received by status code.              |
 | workload.googleapis.com/varnish.backend.request.count      | cumulative | {requests}    | cache_name                          | The backend requests count                                       |
+
+## Logs
+
+Varnish logs contain the [`httpRequest` field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#httprequest):
+
+| Field                       | Type                                                                                                                            | Description                                                   |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| `httpRequest.protocol`      | string                                                                                                                          | Protocol used for the request                                 |
+| `httpRequest.referer`       | string                                                                                                                          | Contents of the `Referer` header                              |
+| `httpRequest.remoteIp`      | string                                                                                                                          | Client IP address                                             |
+| `httpRequest.requestMethod` | string                                                                                                                          | HTTP method                                                   |
+| `httpRequest.requestUrl`    | string                                                                                                                          | Request URL (typically just the path part of the URL)         |
+| `httpRequest.responseSize`  | string (`int64`)                                                                                                                | Response size                                                 |
+| `httpRequest.status`        | number                                                                                                                          | HTTP status code                                              |
+| `httpRequest.userAgent`     | string                                                                                                                          | Contents of the `User-Agent` header                           |
+| `jsonPayload.host`          | string                                                                                                                          | Contents of the `Host` header (usually not reported by nginx) |
+| `jsonPayload.user`          | string                                                                                                                          | Authenticated username for the request                        |
+| `timestamp`                 | string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)) | Time the request was received                                 |

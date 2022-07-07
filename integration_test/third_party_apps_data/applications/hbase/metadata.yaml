@@ -1,15 +1,14 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/hbase"
+app_url: "https://hbase.apache.org/"
 short_name: HBase
 long_name: Apache HBase
+logo_path: /stackdriver/images/hbase.png # supplied by google technical writer
 description: |-
   The Apache HBase integration collects cluster metrics from `master` and region
   servers. Region server metrics are related to storage as well as request and
   latency. The integration also collects `master` and region server logs and
   parses them into a JSON payload. The result includes fields for source, level,
   and message.
-
-  For more information about HBase, see
-  [hbase.apache.org/](https://hbase.apache.org/).
 configure_integration: |-
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`
   system property when starting the JVM. We also recommend setting the
@@ -373,6 +372,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.

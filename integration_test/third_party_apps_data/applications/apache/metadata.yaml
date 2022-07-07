@@ -1,18 +1,18 @@
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache"
+app_url: "http://httpd.apache.org/"
 short_name: Apache Web Server
 long_name: Apache Web Server (httpd)
+logo_path: /stackdriver/images/apache.png # supplied by google technical writer
 description: |-
   The Apache Web Server integration collects traffic-related metrics, such as the
   number of open connections or incoming requests. The integration also collects
   access and error logs. Access logs are parsed into a JSON payload focused on
   request details, and error logs are parsed for their error code and message.
-
-  For more information about Apache Web Server, see
-  [http://httpd.apache.org/](http://httpd.apache.org/).
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
+  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
+  {: .external}.
 
   Many Apache installations enable this plugin by default. To see if the
   plugin is enabled on your VM instance, run:
@@ -75,7 +75,7 @@ expected_logs:
 - log_name: apache_access
   fields:
   - name: httpRequest.remoteIp
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
   - name: httpRequest.requestUrl
@@ -99,7 +99,7 @@ expected_logs:
 - log_name: apache_error
   fields:
   - name: jsonPayload.client
-    value_regex: ::1
+    value_regex: ::1|127.0.0.1:[0-9]+
     type: string
     description: Client IP address (optional)
   - name: jsonPayload.level
@@ -137,6 +137,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
@@ -151,6 +154,9 @@ configuration_options:
     - name: exclude_paths
       default: null
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
       description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
