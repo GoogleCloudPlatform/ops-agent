@@ -50,16 +50,18 @@ expected_metrics:
       bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.item.count
     value_type: DOUBLE
-    kind: CUMULATIVE
+    kind: GAUGE
     monitored_resource: gce_instance
     labels:
       bucket_name: .*
+      state: .*
   - type: workload.googleapis.com/couchbase.bucket.vbucket.count
     value_type: DOUBLE
-    kind: CUMULATIVE
+    kind: GAUGE
     monitored_resource: gce_instance
     labels:
       bucket_name: .*
+      state: .*
   - type: workload.googleapis.com/couchbase.bucket.memory.usage
     value_type: DOUBLE
     kind: GAUGE
