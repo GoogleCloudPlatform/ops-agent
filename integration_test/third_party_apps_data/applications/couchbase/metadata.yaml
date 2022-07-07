@@ -76,7 +76,7 @@ expected_metrics:
     labels:
       bucket_name: .*
   - type: workload.googleapis.com/couchbase.bucket.error.oom.count
-    value_type: DOUBLE
+    value_type: INT64
     kind: CUMULATIVE
     labels:
       bucket_name: .*
