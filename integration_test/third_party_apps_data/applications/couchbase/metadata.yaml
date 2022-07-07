@@ -48,6 +48,7 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       bucket_name: .*
+      op: .*
   - type: workload.googleapis.com/couchbase.bucket.item.count
     value_type: DOUBLE
     kind: GAUGE
