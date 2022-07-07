@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -201,7 +202,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// Example remotePath: "/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf"
 	for _, remotePath := range strings.Split(strings.TrimSpace(output.Stdout), "\n") {
 		// Example relativePath: "fluent_bit_main.conf"
-		relativePath := strings.TrimPrefix(remotePath, fluentBitDir + "/")
+		relativePath := strings.TrimPrefix(remotePath, fluentBitDir+"/")
 		// Example localPath: "fluent-bit/fluent_bit_main.conf.txt"
 		localPath := path.Join("fluent-bit", relativePath+txtSuffix)
 		gce.RunRemotely(ctx, logger.ToFile(localPath), vm, "", fmt.Sprintf("sudo cat '%s'", remotePath))
