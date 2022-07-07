@@ -45,7 +45,7 @@ if [[ -d "${KOKORO_GFILE_DIR}" ]]; then
   elif compgen -G "${KOKORO_GFILE_DIR}/out/google-cloud-ops-agent*" > /dev/null; then
     RESULT_DIR="${KOKORO_GFILE_DIR}/out"
   fi
-  
+
   if [[ -n "${RESULT_DIR-}" ]]; then
     # Upload the agent packages to GCS.
     AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
