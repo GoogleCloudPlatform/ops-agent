@@ -236,7 +236,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		return
 	}
 	for _, remotePath := range strings.Split(strings.TrimSpace(output.Stdout), "\r\n") {
-		localPath = filepath.ToSlash(remotePath)
+		localPath := filepath.ToSlash(remotePath)
 		gce.RunRemotely(ctx, logger.ToFile(path.Join(localFluentBitDir, localPath+txtSuffix)), vm, "", fmt.Sprintf(`Get-Content -Path '%s\%s' -Raw`, fluentBitDir, remotePath))
 	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
