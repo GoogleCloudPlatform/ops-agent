@@ -19,6 +19,3 @@
   - [ ] This PR introduces no user visible changes.
   - [ ] This PR introduces 3rd party app support change, and the related doc changes have been made in the `metadata.yaml` files.
   - [ ] This PR introduces user visible changes that require direct collaboration with tech writers in the internal code base separately.
-- Misc
-  - [ ] I have commented my code, particularly in hard-to-understand areas
-  - [ ] I understand that the release notes are generated using the PR title and I have made sure it's self descriptive.
