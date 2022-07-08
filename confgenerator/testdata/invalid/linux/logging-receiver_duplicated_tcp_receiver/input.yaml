@@ -1,0 +1,13 @@
+logging:
+  receivers:
+    tcp1:
+      type: tcp
+      format: json
+      listen_host: 0.0.0.0
+      listen_port: 15140
+  service:
+    pipelines:
+      p1:
+        receivers: [tcp1]
+      p2:
+        receivers: [tcp1]
