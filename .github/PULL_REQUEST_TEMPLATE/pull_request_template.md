@@ -1,11 +1,11 @@
 ## Description
-<!--- Describe your changes in detail -->
+<!--- Describe your changes in detail. -->
 
-## Related Issue
+## Related issue
 <!--- Add a link to the issue (follow the b/XXX format for internal issues) -->
 
-## How Has This Been Tested?
-<!--- Please describe how you tested the changes besides the automatically triggered unit tests. -->
+## How has this been tested?
+<!--- Please describe how you tested the changes besides the automatically triggered unit tests when applicable. -->
 <!--- Include sample output logs or metrics and/or screenshots of key results when applicable. -->
 
 ## Checklist:
@@ -17,5 +17,4 @@
   - [ ] Integration tests have been added/modified and passed for this PR.
 - Documentation
   - [ ] This PR introduces no user visible changes.
-  - [ ] This PR introduces 3rd party app support change, and the related doc changes have been made in the `metadata.yaml` files.
-  - [ ] This PR introduces user visible changes that require direct collaboration with tech writers in the internal code base separately.
+  - [ ] This PR introduces user visible changes and the corresponding documentation change has been made.
