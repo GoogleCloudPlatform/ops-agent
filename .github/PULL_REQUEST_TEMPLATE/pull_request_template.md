@@ -14,7 +14,7 @@
   - [ ] Unit tests have been added/modified and passed for this PR.
 - Integration tests
   - [ ] Integration tests do not apply.
-  - [ ] Integration tests have been added/modified and passed for this PR. And a screenshot of the related successful run has been attached.
+  - [ ] Integration tests have been added/modified and passed for this PR.
 - Documentation
   - [ ] This PR introduces no user visible changes.
   - [ ] This PR introduces 3rd party app support change, and the related doc changes have been made in the `metadata.yaml` files.
