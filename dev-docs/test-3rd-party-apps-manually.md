@@ -22,43 +22,20 @@ The commands should be available at `https://github.com/GoogleCloudPlatform/ops-
 
 Take Nginx for example:
 ```
-sudo apt update
-sudo apt install -y nginx
+curl https://raw.githubusercontent.com/GoogleCloudPlatform/ops-agent/master/integration_test/third_party_apps_data/applications/nginx/debian_ubuntu/install > install.sh
+sudo bash install.sh
 ```
 
 ### 4. Configure the application to expose metrics
 
 This step might be a no-op for some applications.
 
-The commands should be available at `https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/{{APPLICATION_NAME}}/{{DISTRO_NAME}}/post` (e.g. https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/nginx/debian_ubuntu/post). To browse all supported applications, go to https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications.
+The commands should be available at `https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/{{APPLICATION_NAME}}/exercise` (e.g. https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications/nginx/exercise). To browse all supported applications, go to https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/applications.
 
 Take Nginx for example:
 ```
-sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
-server {
-    listen 80;
-    server_name 127.0.0.1;
-    location /nginx_status {
-        stub_status on;
-        access_log off;
-        allow 127.0.0.1;
-        deny all;
-    }
-    location / {
-        root /dev/null;
-    }
-}
-EOF
-sudo service nginx reload
-curl http://127.0.0.1:80/nginx_status
-```
-
-output
-```
-Active connections: 1
-server accepts handled requests
- 9 9 9
-Reading: 0 Writing: 1 Waiting: 0
+curl https://raw.githubusercontent.com/GoogleCloudPlatform/ops-agent/master/integration_test/third_party_apps_data/applications/nginx/exercise > exercise.sh
+sudo bash exercise.sh
 ```
 
 ### 5. Configure and restart Ops Agent
@@ -67,32 +44,8 @@ The commands should be available at `https://github.com/GoogleCloudPlatform/ops-
 
 Take Nginx for example:
 ```
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
-logging:
-  receivers:
-    nginx_access:
-      type: nginx_access
-    nginx_error:
-      type: nginx_error
-  service:
-    pipelines:
-      nginx:
-        receivers:
-          - nginx_access
-          - nginx_error
-metrics:
-  receivers:
-    nginx_metrics:
-      type: nginx
-      stub_status_url: http://127.0.0.1:80/nginx_status
-      collection_interval: 30s
-  service:
-    pipelines:
-      nginx:
-        receivers:
-          - nginx_metrics
-EOF
-sudo service google-cloud-ops-agent restart
+curl https://raw.githubusercontent.com/GoogleCloudPlatform/ops-agent/master/integration_test/third_party_apps_data/applications/nginx/enable > enable.sh
+sudo bash enable.sh
 ```
 
 ### 6. Verify metrics
