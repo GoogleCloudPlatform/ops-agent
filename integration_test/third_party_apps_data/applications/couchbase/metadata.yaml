@@ -2,7 +2,7 @@ app_url: "https://www.couchbase.com/"
 short_name: couchbase
 long_name: Couchbase
 description: |-
-  The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the prometheus server exposed on a node.
+  The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the Prometheus server exposed on a node.
 supported_app_version: ["6.5", "6.6", "7.0"]
 expected_logs:
   - log_name: couchbase_general
@@ -23,10 +23,10 @@ expected_logs:
         description: "Log message"
       - name: jsonPayload.client_ip
         type: string
-        description: The ip address of the client invoking the HTTP request
+        description: The IP address of the client invoking the HTTP request
       - name: jsonPayload.user
         type: string
-        description: The name of the user making the http request if basic auth is used.
+        description: The name of the user making the HTTP request if basic auth is used.
       - name: jsonPayload.method
         type: string
         description: The HTTP method of the request
@@ -40,7 +40,7 @@ expected_logs:
         description: "Log message"
       - name: log_type
         type: string
-        description: The name of the component that is issuing the cross datacenter log
+        description: The name of the component that is issuing the cross-datacenter log
 expected_metrics:
   - type: workload.googleapis.com/couchbase.bucket.operation.count
     value_type: INT64
@@ -101,13 +101,13 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be couchbase.
+          description: This value must be `couchbase`.
         - name: endpoint
           default: http://localhost:8091
           description: The URL of the node to monitor.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: username
           description: The username used to connect to the couchbase server.
         - name: password
