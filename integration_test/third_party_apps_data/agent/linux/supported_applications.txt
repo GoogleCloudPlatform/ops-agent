@@ -1,5 +1,5 @@
-aerospike
 activemq
+aerospike
 apache
 cassandra
 couchbase
