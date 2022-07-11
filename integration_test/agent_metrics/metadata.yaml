@@ -12,6 +12,14 @@ expected_metrics:
 #  TODO(b/205585572#comment2) Add response_code when it becomes available
 #  labels:
 #    response_code: ^[0-9]+$
+#  TODO(b/170138116): Enable this metric once it is being collected.
+#- type: agent.googleapis.com/agent/log_entry_retry_count
+#  value_type: INT64
+#  kind: CUMULATIVE
+#  monitored_resource: gce_instance
+#  labels:
+#    response_code: .*
+#  optional: true
 - type: agent.googleapis.com/agent/memory_usage
   value_type: DOUBLE
   kind: GAUGE
