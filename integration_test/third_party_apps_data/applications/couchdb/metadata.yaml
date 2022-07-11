@@ -110,13 +110,13 @@ configuration_options:
   - type: couchdb
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be couchdb.
     - name: include_paths
       default: '[/var/log/couchdb/couchdb.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/couchdb*/*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -128,16 +128,16 @@ configuration_options:
   - type: couchdb
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be couchdb.
     - name: server_status_url
       default: http://localhost:5984
       description: The URL exposed by couchdb.
     - name: username
-      default: null
+      default:
       description: The username used to connect to the server.
     - name: password
-      default: null
+      default:
       description: The password used to connect to the server.
     - name: collection_interval
       default: 60s

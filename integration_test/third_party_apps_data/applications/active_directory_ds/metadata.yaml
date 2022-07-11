@@ -14,13 +14,13 @@ configuration_options:
   - type: active_directory_ds
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be active_directory_ds.
   metrics:
   - type: active_directory_ds
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be active_directory_ds.
     - name: collection_interval
       default: 60s

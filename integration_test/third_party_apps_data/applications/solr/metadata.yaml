@@ -147,13 +147,13 @@ configuration_options:
   - type: solr_system
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be solr_system.
     - name: include_paths
       default: '[/var/solr/logs/solr.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -165,16 +165,16 @@ configuration_options:
   - type: solr
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be solr.
     - name: endpoint
       default: localhost:18983
       description: The JMX Service URL or host and port used to construct the Service URL. Must be in the form of host:port. Values in host:port form will be used to create a Service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
     - name: username
-      default: null
+      default:
       description: The configured username if JMX is configured to require authentication..
     - name: password
-      default: null
+      default:
       description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s

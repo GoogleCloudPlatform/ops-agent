@@ -180,13 +180,13 @@ configuration_options:
   - type: cassandra_system
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be cassandra_system.
     - name: include_paths
       default: '[/var/log/cassandra/system*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -197,13 +197,13 @@ configuration_options:
   - type: cassandra_debug
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be cassandra_debug.
     - name: include_paths
       default: '[/var/log/cassandra/debug*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -214,13 +214,13 @@ configuration_options:
   - type: cassandra_gc
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be cassandra_gc.
     - name: include_paths
       default: '[/var/log/cassandra/gc.log.*.current]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/cassandra/system*.log.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -232,7 +232,7 @@ configuration_options:
   - type: cassandra
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be cassandra.
     - name: endpoint
       default: localhost:7199
@@ -241,10 +241,10 @@ configuration_options:
       default: true
       description: Configures the receiver to also collect the supported JVM metrics.
     - name: username
-      default: null
+      default:
       description: The configured username if JMX is configured to require authentication.
     - name: password
-      default: null
+      default:
       description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s

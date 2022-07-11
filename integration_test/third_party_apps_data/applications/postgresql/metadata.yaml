@@ -66,13 +66,13 @@ configuration_options:
   - type: postgresql_general
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be postgresql_general.
     - name: include_paths
       default: '[/var/log/postgresql/postgresql*.log, /var/lib/pgsql/data/log/postgresql*.log, /var/lib/pgsql/*/data/log/postgresql*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -84,7 +84,7 @@ configuration_options:
   - type: postgresql
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be postgresql.
     - name: endpoint
       default: /var/run/postgresql/.s.PGSQL.5432
@@ -93,10 +93,10 @@ configuration_options:
       default: 60s
       description: A time.Duration value, such as 30s or 5m.
     - name: username
-      default: null
+      default:
       description: The username used to connect to the server.
     - name: password
-      default: null
+      default:
       description: The password used to connect to the server.
     - name: insecure
       default: true
@@ -105,11 +105,11 @@ configuration_options:
       default: false
       description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
     - name: cert_file
-      default: null
+      default:
       description: Path to the TLS certificate to use for mTLS-required connections.
     - name: key_file
-      default: null
+      default:
       description: Path to the TLS key to use for mTLS-required connections.
     - name: ca_file
-      default: null
+      default:
       description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

@@ -90,22 +90,22 @@ expected_logs:
   - name: jsonPayload.message
     value_regex: '(activemq\[[0-9]+\]|activemq):'
     type: string
-    description: null
+    description:
 configuration_options:
   metrics:
   - type: activemq
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be activemq.
     - name: endpoint
       default: http://localhost:1099
       description: The URL of the node to monitor.
     - name: username
-      default: null
+      default:
       description: The configured username if JMX is configured to require authentication.
     - name: password
-      default: null
+      default:
       description: The configured password if JMX is configured to require authentication.
     - name: collection_interval
       default: 60s

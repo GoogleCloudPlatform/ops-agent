@@ -265,13 +265,13 @@ configuration_options:
   - type: flink
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be flink.
     - name: include_paths
       default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log, /opt/flink/log/flink-*-client-*.log]'
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
-      default: null
+      default:
       description: A list of filesystem path patterns to exclude from the set matched by include_paths.
     - name: record_log_file_path
       default: false
@@ -283,7 +283,7 @@ configuration_options:
   - type: flink
     fields:
     - name: type
-      default: null
+      default:
       description: The value must be flink.
     - name: endpoint
       default: http://localhost:8081
@@ -293,4 +293,5 @@ configuration_options:
       description: A time.Duration value, such as 30s or 5m.
 minimum_supported_agent_version:
   logging: 2.17.0
+  metrics: 2.18.1
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/flink

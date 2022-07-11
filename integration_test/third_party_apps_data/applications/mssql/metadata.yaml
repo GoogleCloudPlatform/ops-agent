@@ -152,7 +152,7 @@ configuration_options:
   - type: mssql
     fields:
     - name: type
-      default: null
+      default:
       description: This value must be mssql.
     - name: collection_interval
       default: 60s

@@ -75,13 +75,13 @@ expected_logs:
   - name: jsonPayload.message
     value_regex: '(systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'
     type: string
-    description: null
+    description:
 configuration_options:
   metrics:
   - type: memcached
     fields:
     - name: type
-      default: null
+      default:
       description: memcached.
     - name: endpoint
       default: localhost:3306
