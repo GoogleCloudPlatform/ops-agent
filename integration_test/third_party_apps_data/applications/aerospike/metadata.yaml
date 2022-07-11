@@ -1,7 +1,7 @@
 app_url: "https://aerospike.com/"
 short_name: Aerospike
 long_name: Aerospike
-logo_path: ""
+logo_path: "/stackdriver/images/integrations/aerospike.png"
 description: |-
   The Aerospike integration collects key namespace and system metrics, such as disk and memory usage, scans,
   and connections. The integration collects these metrics using the official
@@ -77,14 +77,14 @@ configuration_options:
   - type: aerospike
     fields:
     - name: type
-      default: null
-      description: This value must be aerospike.
+      default: aerospike
+      description: This value must be `aerospike`.
     - name: collection_interval
       default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+      description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as 30s or 5m.
     - name: endpoint
       default: localhost:3000
-      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+      description: Address of the Aerospike system, formatted as host:port.
     - name: collect_cluster_metrics
       default: true
       description: Configures the receiver to collect metrics from peer nodes of the Aerospike system.
@@ -96,4 +96,4 @@ configuration_options:
       description: The configured password if Aerospike is configured to require authentication.
     - name: timeout
       default: 20s
-      description: Timeout for requests to the Aerospike system.
+      description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value.
