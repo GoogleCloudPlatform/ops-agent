@@ -84,7 +84,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries := []otel.TransformQuery{}
 
 	storageMetricTransforms, newStorageMetricNames := r.addStorageMetrics()
-	metricRenewRevokeTransforms, newRenewRevokeNames := r.getRenewRevokeMetricsTransforms()
+	metricRenewRevokeTransforms, newRenewRevokeNames := r.getSummarySumMetricsTransforms()
 	metricDetailTransforms, newMetricNames := r.getMetricTransforms()
 
 	includeMetrics = append(includeMetrics, newStorageMetricNames...)
