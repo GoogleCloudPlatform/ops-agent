@@ -9,8 +9,9 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels:
-    response_code: ^[0-9]+$
+#  TODO(b/205585572#comment2) Add response_code when it becomes available
+#  labels:
+#    response_code: ^[0-9]+$
 - type: agent.googleapis.com/agent/memory_usage
   value_type: DOUBLE
   kind: GAUGE
@@ -25,8 +26,9 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels:
-    response_code: ^[0-9]+$
+#  TODO(b/205585572#comment2) Add response_code when it becomes available
+#  labels:
+#    response_code: ^[0-9]+$
 - type: agent.googleapis.com/agent/uptime
   value_type: INT64
   kind: CUMULATIVE
@@ -145,7 +147,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    port: ^[0-9]+$
+    port: ^([0-9]+|all)$
     tcp_state: .*
 - type: agent.googleapis.com/pagefile/percent_used
   value_type: DOUBLE
