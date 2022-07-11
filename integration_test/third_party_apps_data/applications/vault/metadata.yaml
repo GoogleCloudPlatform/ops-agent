@@ -2,7 +2,7 @@ app_url: "https://www.vaultproject.io/"
 short_name: Vault
 long_name: Hashicorp Vault
 description: |-
-  Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
+  Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
 supported_app_version: ["1.6+"]
 expected_metrics:
 - type: workload.googleapis.com/vault.core.request.count
@@ -15,7 +15,7 @@ expected_metrics:
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
-  value_type: INT64
+  value_type: DOUBLE
   labels: {}
 - type: workload.googleapis.com/vault.token.lease.count
   optional: true
@@ -237,43 +237,43 @@ configuration_options:
     fields:
     - name: type
       default: null
-      description: The value must be vault_audit.
+      description: The value must be `vault_audit`.
     - name: include_paths
       default: null
       description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
     - name: exclude_paths
       default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
     - name: record_log_file_path
       default: false
       description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
     - name: wildcard_refresh_interval
       default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+      description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a time duration, for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
   - type: vault
     fields: 
     - name: type
       default: null
-      description: This value must be vault.
+      description: This value must be `vault`.
     - name: endpoint
       default: localhost:8200
-      description: The hostname:port used by vault
+      description: The 'hostname:port' used by vault
     - name: token
       default: localhost:8200
       description: Token used for authentication.
     - name: metrics_path
       default: /v1/sys/metrics
-      description: the path for metrics collection.
+      description: The path for metrics collection.
     - name: collection_interval
       default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+      description: A [`time.Duration`](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
     - name: insecure
       default: true
-      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+      description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
     - name: insecure_skip_verify
       default: false
-      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+      description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the 'insecure_skip_verify` value is not used.
     - name: cert_file
       default: null
       description: Path to the TLS certificate to use for mTLS-required connections.

@@ -37,6 +37,7 @@ const (
 	defaultVaultEndpoint    = "localhost:8200"
 	defaultVaultMetricsPath = "/v1/sys/metrics"
 	defaultVaultScheme      = "http"
+	storageLabel            = "storage"
 )
 
 func (r MetricsReceiverVault) Type() string {
@@ -51,7 +52,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 		r.MetricsPath = defaultVaultMetricsPath
 	}
 
-	if r.MetricsPath == "" {
+	if r.Scheme == "" {
 		r.Scheme = defaultVaultScheme
 	}
 
@@ -64,6 +65,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 		"static_configs": []map[string]interface{}{{
 			"targets": []string{r.Endpoint},
 		}},
+		"scheme": r.Scheme,
 	}
 
 	if r.Token != "" {
@@ -148,11 +150,10 @@ type metricTransformer struct {
 	NewName     string
 	Description string
 	Unit        string
+	Monotonic   bool
 }
 
 func (r MetricsReceiverVault) addStorageMetrics() (transforms []otel.TransformQuery, newMetrics []string) {
-	storageLabel := "storage"
-
 	storages := []string{
 		"zookeeper",
 		"swift",
@@ -202,32 +203,39 @@ func (r MetricsReceiverVault) addStorageMetrics() (transforms []otel.TransformQu
 			queries = append(queries, otel.SetDescription(operationCountName, fmt.Sprintf("The amount of %s operations executed against the storage backend.", operation)))
 		}
 	}
-
 	return queries, newMetrics
 }
 
-func (r MetricsReceiverVault) getRenewRevokeMetricsTransforms() (queries []otel.TransformQuery, newNames []string) {
+func (r MetricsReceiverVault) getSummarySumMetricsTransforms() (queries []otel.TransformQuery, newNames []string) {
 	metricTransformers := []metricTransformer{
 		{
 			OldName:     "vault_expire_revoke",
 			NewName:     "vault.token.revoke.time",
 			Description: "The average time taken to revoke a token.",
 			Unit:        "ms",
+			Monotonic:   true,
 		},
 		{
 			OldName:     "vault_expire_renew",
 			NewName:     "vault.token.renew.time",
 			Description: "The average time taken to renew a token.",
 			Unit:        "ms",
+			Monotonic:   true,
+		},
+		{
+			OldName:     "vault_core_leadership_lost",
+			NewName:     "vault.core.leader.duration",
+			Description: "The amount of time a core was the leader in high availability mode.",
+			Unit:        "ms",
+			Monotonic:   false,
 		},
 	}
 
 	for _, metric := range metricTransformers {
-		queries = append(queries, otel.SummarySumValToSum(metric.OldName, "cumulative", true))
+		queries = append(queries, otel.SummarySumValToSum(metric.OldName, "cumulative", metric.Monotonic))
 		queries = append(queries, otel.SetName(metric.OldName+"_sum", metric.NewName))
 		queries = append(queries, otel.SetUnit(metric.NewName, metric.NewName))
 		queries = append(queries, otel.SetDescription(metric.NewName, metric.Description))
-
 		newNames = append(newNames, metric.NewName)
 	}
 	return queries, newNames
@@ -240,12 +248,6 @@ func (r MetricsReceiverVault) getMetricTransforms() (queries []otel.TransformQue
 			NewName:     "vault.core.request.count",
 			Description: "The number of requests handled by the Vault core.",
 			Unit:        "{requests}",
-		},
-		{
-			OldName:     "vault_core_leadership_lost",
-			NewName:     "vault.core.leader.duration",
-			Description: "The average amount of time a core was the leader in high availability mode.",
-			Unit:        "ms",
 		},
 		{
 			OldName:     "vault_expire_num_leases",
