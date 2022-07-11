@@ -166,20 +166,20 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: ^[0-9]+$
-    command_line: ^[0-9]+$
-    owner: ^[0-9]+$
+    command: .*
+    command_line: .*
+    owner: .*
     pid: ^[0-9]+$
-    process: ^[0-9]+$
+    process: .*
     user_or_syst: .*
 - type: agent.googleapis.com/processes/disk/read_bytes_count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: ^[0-9]+$
-    command_line: ^[0-9]+$
-    owner: ^[0-9]+$
+    command: .*
+    command_line: .*
+    owner: .*
     pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/disk/write_bytes_count
@@ -187,9 +187,9 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: ^[0-9]+$
-    command_line: ^[0-9]+$
-    owner: ^[0-9]+$
+    command: .*
+    command_line: .*
+    owner: .*
     pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/rss_usage
@@ -197,9 +197,9 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    command: ^[0-9]+$
-    command_line: ^[0-9]+$
-    owner: ^[0-9]+$
+    command: .*
+    command_line: .*
+    owner: .*
     pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/vm_usage
@@ -207,9 +207,9 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    command: ^[0-9]+$
-    command_line: ^[0-9]+$
-    owner: ^[0-9]+$
+    command: .*
+    command_line: .*
+    owner: .*
     pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/swap/bytes_used
