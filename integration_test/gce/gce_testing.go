@@ -22,7 +22,7 @@ To run a test based on this library, you can either:
 * use Kokoro by triggering automated presubmits on your change, or
 * use "go test" directly, after performing the setup steps described
 
-	in README.md.
+in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
 
@@ -32,12 +32,12 @@ NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
 
-	    Ops Agent code, first build and upload a package to Rapture. Then look up
-	    the REPO_SUFFIX for that build and add it as an environment variable to the
-	    command below; for example: REPO_SUFFIX=20210805-2. You can also use
-		AGENT_PACKAGES_IN_GCS, for details see README.md.
+Ops Agent code, first build and upload a package to Rapture. Then look up
+the REPO_SUFFIX for that build and add it as an environment variable to the
+command below; for example: REPO_SUFFIX=20210805-2. You can also use
+AGENT_PACKAGES_IN_GCS, for details see README.md.
 
-PROJECT=dev_project \
+			PROJECT=dev_project \
 
 	    ZONE=us-central1-b \
 	    PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \

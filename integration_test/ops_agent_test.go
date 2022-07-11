@@ -1298,20 +1298,43 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var agentMetrics struct {
+		ExpectedMetrics []*common.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+	}
+
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMetrics := agentMetrics.ExpectedMetrics
+
 	// First make sure that the uptime metrics are being uploaded.
 	var uptimeWaitGroup sync.WaitGroup
 	regexes := agentVersionRegexesForPlatform(vm.Platform)
-	for _, versionRegex := range regexes {
-		versionRegex := versionRegex
-		uptimeWaitGroup.Add(1)
-		go func() {
-			defer uptimeWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
-				[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
-			); err != nil {
-				t.Error(err)
-			}
-		}()
+	for _, metric := range expectedMetrics {
+		metric := metric
+		if !metric.Representative {
+			continue
+		}
+
+		for _, versionRegex := range regexes {
+			versionRegex := versionRegex
+			uptimeWaitGroup.Add(1)
+			go func() {
+				defer uptimeWaitGroup.Done()
+				if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window,
+					[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
+				); err != nil {
+					t.Error(err)
+				}
+			}()
+		}
 	}
 	uptimeWaitGroup.Wait()
 
@@ -1326,21 +1349,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var agentMetrics struct {
-		ExpectedMetrics []*common.ExpectedMetric `yaml:"expected_metrics" validate:"unique=Type,dive"`
-	}
-
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expectedMetrics := agentMetrics.ExpectedMetrics
 	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
 	for _, metric := range expectedMetrics {

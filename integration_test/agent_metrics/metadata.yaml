@@ -1,4 +1,100 @@
 expected_metrics:
+- type: agent.googleapis.com/agent/api_request_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+- type: agent.googleapis.com/agent/memory_usage
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: agent.googleapis.com/agent/monitoring/point_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    status: .*
+- type: agent.googleapis.com/agent/uptime
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    version: .*
+  representative: true
+- type: agent.googleapis.com/cpu/load_15m
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: agent.googleapis.com/cpu/load_1m
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: agent.googleapis.com/cpu/load_5m
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: agent.googleapis.com/cpu/utilization
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    cpu_number: .*
+    cpu_state: .*
+- type: agent.googleapis.com/disk/bytes_used
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    state: .*
+- type: agent.googleapis.com/disk/io_time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+- type: agent.googleapis.com/disk/merged_operations
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    direction: .*
+  platform: linux
+- type: agent.googleapis.com/disk/operation_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    direction: .*
+- type: agent.googleapis.com/disk/operation_time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    direction: .*
+- type: agent.googleapis.com/disk/percent_used
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    state: .*
+- type: agent.googleapis.com/disk/read_bytes_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+- type: agent.googleapis.com/disk/write_bytes_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
 - type: agent.googleapis.com/interface/errors
   value_type: INT64
   kind: CUMULATIVE
@@ -37,58 +133,72 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    port: .*
+    port: ^[0-9]+$
     tcp_state: .*
+- type: agent.googleapis.com/pagefile/percent_used
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+  platform: windows
+- type: agent.googleapis.com/processes/count_by_state
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    state: .*
+  platform: linux
 - type: agent.googleapis.com/processes/cpu_time
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: .*
-    command_line: .*
-    owner: .*
-    pid: .*
-    process: .*
+    command: ^[0-9]+$
+    command_line: ^[0-9]+$
+    owner: ^[0-9]+$
+    pid: ^[0-9]+$
+    process: ^[0-9]+$
     user_or_syst: .*
 - type: agent.googleapis.com/processes/disk/read_bytes_count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: .*
-    command_line: .*
-    owner: .*
-    pid: .*
+    command: ^[0-9]+$
+    command_line: ^[0-9]+$
+    owner: ^[0-9]+$
+    pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/disk/write_bytes_count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: .*
-    command_line: .*
-    owner: .*
-    pid: .*
+    command: ^[0-9]+$
+    command_line: ^[0-9]+$
+    owner: ^[0-9]+$
+    pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/rss_usage
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    command: .*
-    command_line: .*
-    owner: .*
-    pid: .*
+    command: ^[0-9]+$
+    command_line: ^[0-9]+$
+    owner: ^[0-9]+$
+    pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/processes/vm_usage
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    command: .*
-    command_line: .*
-    owner: .*
-    pid: .*
+    command: ^[0-9]+$
+    command_line: ^[0-9]+$
+    owner: ^[0-9]+$
+    pid: ^[0-9]+$
     process: .*
 - type: agent.googleapis.com/swap/bytes_used
   value_type: DOUBLE
@@ -103,110 +213,3 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     direction: .*
-- type: agent.googleapis.com/agent/api_request_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
-- type: agent.googleapis.com/agent/memory_usage
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: agent.googleapis.com/agent/monitoring/point_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    status: .*
-- type: agent.googleapis.com/cpu/load_1m
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: agent.googleapis.com/cpu/load_5m
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: agent.googleapis.com/cpu/load_15m
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: agent.googleapis.com/cpu/utilization
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    cpu_number: .*
-    cpu_state: .*
-- type: agent.googleapis.com/disk/bytes_used
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-    state: .*
-- type: agent.googleapis.com/disk/io_time
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-- type: agent.googleapis.com/disk/operation_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-    direction: .*
-- type: agent.googleapis.com/disk/operation_time
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-    direction: .*
-- type: agent.googleapis.com/disk/percent_used
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-    state: .*
-- type: agent.googleapis.com/disk/read_bytes_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-- type: agent.googleapis.com/disk/write_bytes_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-- type: agent.googleapis.com/pagefile/percent_used
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
-  platform: windows
-- type: agent.googleapis.com/disk/merged_operations
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    device: .*
-    direction: .*
-  platform: linux
-- type: agent.googleapis.com/processes/count_by_state
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
-  platform: linux

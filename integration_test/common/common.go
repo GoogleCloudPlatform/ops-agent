@@ -40,13 +40,13 @@ type ExpectedMetric struct {
 	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels" validate:"required"`
+	Labels map[string]string `yaml:"labels,omitempty" validate:"required"`
 	// If Optional is true, the test for this metric will be skipped.
-	Optional bool `yaml:"optional" validate:"excluded_with=Representative"`
+	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool `yaml:"representative" validate:"excluded_with=Optional,excluded_with=Platform"`
+	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional,excluded_with=Platform"`
 	// Exclusive metric to a particular kind of platform
 	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
 }
@@ -177,7 +177,7 @@ func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 }
 
 func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
-	// All present labels must be expected
+	// Only expected labels must be present
 	var err error
 	for actualLabel := range series.Metric.Labels {
 		if _, ok := metric.Labels[actualLabel]; !ok {
