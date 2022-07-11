@@ -45,12 +45,12 @@ logging:
       type: syslog
       transport_protocol: tcp
       listen_host: 1.1.1.1
-      listen_port: 2
+      listen_port: 3
     mysql_syslog_slow:
       type: syslog
       transport_protocol: tcp
       listen_host: 1.1.1.1
-      listen_port: 2
+      listen_port: 4
   processors:
     mysql_syslog_error:
       type: mysql_error

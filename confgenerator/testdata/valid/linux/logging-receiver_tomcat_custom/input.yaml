@@ -36,7 +36,7 @@ logging:
       type: syslog
       transport_protocol: udp
       listen_host: 1.1.1.1
-      listen_port: 1
+      listen_port: 2
   processors:
     tomcat_syslog_system:
       type: tomcat_system
