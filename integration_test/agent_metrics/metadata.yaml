@@ -5,6 +5,12 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     state: .*
+- type: agent.googleapis.com/agent/log_entry_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    response_code: ^[0-9]+$
 - type: agent.googleapis.com/agent/memory_usage
   value_type: DOUBLE
   kind: GAUGE
@@ -15,6 +21,12 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     status: .*
+- type: agent.googleapis.com/agent/request_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    response_code: ^[0-9]+$
 - type: agent.googleapis.com/agent/uptime
   value_type: INT64
   kind: CUMULATIVE
