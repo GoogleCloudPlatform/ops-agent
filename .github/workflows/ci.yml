@@ -25,3 +25,4 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
+    - run: go test integration_test/validate_metadata_test.go
