@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package common_test
 
 import (
 	"flag"
@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"gopkg.in/yaml.v2"
 )
 
@@ -46,7 +47,7 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 }
 
 func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := NewIntegrationMetadataValidator()
+	v := common.NewIntegrationMetadataValidator()
 	err := yaml.UnmarshalStrict(bytes, i)
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +81,7 @@ func generateNewGolden(t *testing.T, dir string) {
 	t.Parallel()
 	goldenPath := path.Join(testdataDir, dir, goldenErrorName)
 	yamlStr := getTestFile(t, dir, inputYamlName)
-	err := UnmarshallAndValidate(t, []byte(yamlStr), &IntegrationMetadata{})
+	err := UnmarshallAndValidate(t, []byte(yamlStr), &common.IntegrationMetadata{})
 
 	errStr := ""
 	if err != nil {
@@ -98,7 +99,7 @@ func testMetadataValidation(t *testing.T, dir string) {
 	yamlStr := getTestFile(t, dir, inputYamlName)
 	goldenErrStr := getTestFile(t, dir, goldenErrorName)
 
-	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &IntegrationMetadata{})
+	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &common.IntegrationMetadata{})
 
 	if actualError == nil {
 		if goldenErrStr == "" {
