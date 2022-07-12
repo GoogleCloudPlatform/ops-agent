@@ -98,6 +98,12 @@ expected_metrics:
   labels:
     device: .*
     direction: .*
+- type: agent.googleapis.com/disk/pending_operations
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
 - type: agent.googleapis.com/disk/percent_used
   value_type: DOUBLE
   kind: GAUGE
@@ -106,6 +112,12 @@ expected_metrics:
     device: .*
     state: .*
 - type: agent.googleapis.com/disk/read_bytes_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+- type: agent.googleapis.com/disk/weighted_io_time
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
@@ -202,6 +214,10 @@ expected_metrics:
     owner: .*
     pid: ^[0-9]+$
     process: .*
+- type: agent.googleapis.com/processes/fork_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
 - type: agent.googleapis.com/processes/rss_usage
   value_type: DOUBLE
   kind: GAUGE
@@ -235,3 +251,10 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     direction: .*
+- type: agent.googleapis.com/swap/percent_used
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    device: .*
+    state: .*
