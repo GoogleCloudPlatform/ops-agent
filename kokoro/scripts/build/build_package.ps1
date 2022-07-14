@@ -14,12 +14,17 @@ function Invoke-Program() {
 $tag = 'build'
 $name = 'build-result'
 
-# Disable Windows Defender antivirus for improved build speed.
-Set-MpPreference -Force -DisableRealtimeMonitoring $true
-# Disable Windows Defender firewall for improved build speed.
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+# Try to disable Windows Defender antivirus for improved build speed.
+Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
+# Try to disable Windows Defender firewall for improved build speed.
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
 
-Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents/"
+$gitDir = 'github'
+if (Test-Path env:KOKORO_GOB_COMMIT_URL_unified_agents) {
+  $gitDir = 'git'
+}
+
+Set-Location "$env:KOKORO_ARTIFACTS_DIR/$gitDir/unified_agents"
 Invoke-Program git submodule update --init
 Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
