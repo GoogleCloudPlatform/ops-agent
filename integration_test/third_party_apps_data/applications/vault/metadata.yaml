@@ -22,7 +22,7 @@ expected_logs:
   - name: jsonPayload.request.operation
     value_regex: update
     type: string
-    description: This is the type of operation which corresponds to path capabilities and is expected to be one of: `create`, `read`, `update`, `delete`, or `list`.
+    description: "This is the type of operation which corresponds to path capabilities and is expected to be one of: `create`, `read`, `update`, `delete`, or `list`."
   - name: jsonPayload.type
     value_regex: request
     type: string
