@@ -50,7 +50,7 @@ type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description"`
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 }
 
 type ExpectedLog struct {
@@ -66,7 +66,7 @@ type MinimumSupportedAgentVersion struct {
 type ConfigurationFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	Default     string `yaml:"default"`
-	Description string `yaml:"description" validate:"required"`
+	Description string `yaml:"description" validate:"required,excludesall=‘’“”"`
 }
 
 type InputConfiguration struct {
