@@ -2,7 +2,7 @@ app_url: "https://www.vaultproject.io/"
 short_name: Vault
 long_name: Hashicorp Vault
 description: |-
-  Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs.
+  Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs.
 supported_app_version: ["1.6+"]
 expected_logs:
 - log_name: vault_audit
@@ -18,7 +18,7 @@ expected_logs:
   - name: jsonPayload.request.path
     value_regex: sys\/audit\/test
     type: string
-    description: 'The requested Vault path for operation.'
+    description: The requested Vault path for operation.
   - name: jsonPayload.request.operation
     value_regex: update
     type: string
@@ -26,13 +26,13 @@ expected_logs:
   - name: jsonPayload.type
     value_regex: request
     type: string
-    description: 'the type of audit log.'
+    description: The type of audit log.
   - name: jsonPayload.error
     type: string
-    description: If an error occurred with the request, the error message is included in this field’s value.
+    description: If an error occurred with the request, the error message is included in this field's value.
   - name: jsonPayload.auth.client_token
     type: string
-    description: This is an HMAC of the client’s token ID.
+    description: This is an HMAC of the client's token ID.
   - name: jsonPayload.auth.accessor
     type: string
     description: This is an HMAC of the client token accessor.
@@ -53,7 +53,7 @@ expected_logs:
     description: This is the unique request identifier.
   - name: jsonPayload.request.client_token
     type: string
-    description: "This is an HMAC of the client's token ID."
+    description: This is an HMAC of the client's token ID.
   - name: jsonPayload.request.client_token_accessor
     type: string
     description: This is an HMAC of the client token accessor.
@@ -62,7 +62,7 @@ expected_logs:
     description: The data object will contain secret data in key/value pairs.
   - name: jsonPayload.request.policy_override
     type: boolean
-    description: this is true when a soft-mandatory policy override was requested.
+    description: This is `true` when a soft-mandatory policy override was requested.
   - name: jsonPayload.request.remote_address
     type: string
     description: The IP address of the client making the request.
@@ -74,19 +74,19 @@ expected_logs:
     description: Additional HTTP headers specified by the client as part of the request.
   - name: jsonPayload.response.data.creation_time
     type: string
-    description: RFC3339 format timestamp of the token’s creation.
+    description: RFC 3339 format timestamp of the token's creation.
   - name: jsonPayload.response.data.creation_ttl
     type: string
     description: Token creation TTL in seconds.
   - name: jsonPayload.response.data.expire_time
     type: string
-    description: RFC3339 format timestamp representing the moment this token will expire.
+    description: RFC 3339 format timestamp representing the moment this token will expire.
   - name: jsonPayload.response.data.explicit_max_ttl
     type: string
-    description: Explicit token maximum TTL value as seconds (‘0’ when not set).
+    description: Explicit token maximum TTL value as seconds ("0" when not set).
   - name: jsonPayload.response.data.issue_time
     type: string
-    description: RFC3339 format timestamp.
+    description: RFC 3339 format timestamp.
   - name: jsonPayload.response.data.num_uses
     type: number
     description: If the token is limited to a number of uses, that value will be represented here.
