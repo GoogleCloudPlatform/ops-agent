@@ -29,3 +29,7 @@ Invoke-Program git submodule update --init
 Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
+
+# Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
+New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
+Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
