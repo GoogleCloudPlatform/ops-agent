@@ -42,30 +42,30 @@ const (
 
 func (r MetricsReceiverVault) getOperationList() []string {
 	return []string{
-		"put",
-		"get",
 		"delete",
+		"get",
 		"list",
+		"put",
 	}
 }
 
 func (r MetricsReceiverVault) getStorageList() []string {
 	return []string{
-		"zookeeper",
-		"swift",
-		"spanner",
-		"s3",
-		"postgres",
-		"mysql",
-		"mssql",
-		"gcs",
-		"etcd",
-		"dynamodb",
-		"couchdb",
-		"consul",
-		"cockroachdb",
-		"cassandra",
 		"azure",
+		"cassandra",
+		"cockroachdb",
+		"consul",
+		"couchdb",
+		"dynamodb",
+		"etcd",
+		"gcs",
+		"mssql",
+		"mysql",
+		"postgres",
+		"s3",
+		"spanner",
+		"swift",
+		"zookeeper",
 	}
 }
 
