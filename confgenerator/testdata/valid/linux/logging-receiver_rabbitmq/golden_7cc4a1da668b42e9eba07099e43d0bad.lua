@@ -16,6 +16,7 @@ if v == "debug" then v = "DEBUG"
 elseif v == "error" then v = "ERROR"
 elseif v == "info" then v = "INFO"
 elseif v == "noti" then v = "DEFAULT"
+elseif v == "warning" then v = "WARNING"
 else v = nil
 end
 (function(value)
