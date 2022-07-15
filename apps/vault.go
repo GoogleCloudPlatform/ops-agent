@@ -40,6 +40,35 @@ const (
 	storageLabel            = "storage"
 )
 
+func (r MetricsReceiverVault) getOperationList() []string {
+	return []string{
+		"put",
+		"get",
+		"delete",
+		"list",
+	}
+}
+
+func (r MetricsReceiverVault) getStorageList() []string {
+	return []string{
+		"zookeeper",
+		"swift",
+		"spanner",
+		"s3",
+		"postgres",
+		"mysql",
+		"mssql",
+		"gcs",
+		"etcd",
+		"dynamodb",
+		"couchdb",
+		"consul",
+		"cockroachdb",
+		"cassandra",
+		"azure",
+	}
+}
+
 func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
@@ -154,30 +183,9 @@ type metricTransformer struct {
 }
 
 func (r MetricsReceiverVault) addStorageMetrics() (transforms []otel.TransformQuery, newMetrics []string) {
-	storages := []string{
-		"zookeeper",
-		"swift",
-		"spanner",
-		"s3",
-		"postgres",
-		"mysql",
-		"mssql",
-		"gcs",
-		"etcd",
-		"dynamodb",
-		"couchdb",
-		"consul",
-		"cockroachdb",
-		"cassandra",
-		"azure",
-	}
+	storages := r.getStorageList()
 
-	operations := []string{
-		"put",
-		"get",
-		"delete",
-		"list",
-	}
+	operations := r.getOperationList()
 
 	queries := []otel.TransformQuery{}
 
