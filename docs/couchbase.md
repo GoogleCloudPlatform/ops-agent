@@ -4,7 +4,7 @@ Supported telemetry types: metrics and logs
 
 ## Metrics
 
-The couchbase integration uses the builtin [prometheus exporter](https://docs.couchbase.com/cloud-native-database/prometheus-overview.html) running on Couchbase 7.0 by default. The metrics are retrieved from this endpoint and then will be transformed to be ingested by Google Cloud.
+The `couchbase` integration uses the builtin [Prometheus exporter](https://docs.couchbase.com/cloud-native-database/prometheus-overview.html) running on Couchbase 7.0 by default. The metrics are retrieved from this endpoint and then will be transformed to be ingested by Google Cloud.
 
 ### Configuration
 
