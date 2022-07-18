@@ -1,0 +1,99 @@
+app_url: "https://aerospike.com/"
+short_name: Aerospike
+long_name: Aerospike
+logo_path: "/stackdriver/images/integrations/aerospike.png"
+description: |-
+  The Aerospike integration collects key namespace and system metrics, such as disk and memory usage, scans,
+  and connections. The integration collects these metrics using the official
+  client API provided by Aerospike.
+supported_app_version: ["4.9", "5.x", "6.x"]
+configure_integration: ""
+expected_metrics:
+  - kind: CUMULATIVE
+    labels:
+      result: error|filtered_out|not_found|success|timeout
+      type: delete|read|udf|write
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.transaction.count
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.disk.available
+    optional: true
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.free
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      component: data|index|set_index|secondary_index
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.usage
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      result: abort|complete|error
+      type: aggregation|basic|ops_background|udf_background
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.scan.count
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      operation: close|open
+      type: client|fabric|heartbeat
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.count
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      type: client|fabric|heartbeat
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.open
+    value_type: INT64
+    representative: true
+  - kind: GAUGE
+    labels:
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.memory.free
+    value_type: INT64
+configuration_options:
+  metrics:
+  - type: aerospike
+    fields:
+    - name: type
+      default: aerospike
+      description: This value must be `aerospike`.
+    - name: collection_interval
+      default: 60s
+      description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+    - name: endpoint
+      default: localhost:3000
+      description: Address of the Aerospike system, formatted as host:port.
+    - name: collect_cluster_metrics
+      default: true
+      description: Configures the receiver to collect metrics from peer nodes of the Aerospike system.
+    - name: username
+      default: null
+      description: The configured username if Aerospike is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if Aerospike is configured to require authentication.
+    - name: timeout
+      default: 20s
+      description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
