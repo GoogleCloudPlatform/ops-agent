@@ -76,16 +76,16 @@ USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
 
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
 
-	default is the project's "Compute Engine default service account".
+default is the project's "Compute Engine default service account".
 
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
 
-	The default is "stackdriver-test-143416-file-transfers".
+The default is "stackdriver-test-143416-file-transfers".
 
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 
-	    If provided, this value overrides the selection made by the callers to
-			this library.
+If provided, this value overrides the selection made by the callers to
+this library.
 */
 package gce
 
@@ -373,6 +373,7 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// PlatformKind returns whether the given platform is a version of Windows or Linux
 func PlatformKind(platform string) string {
 	if IsWindows(platform) {
 		return "windows"
@@ -694,7 +695,7 @@ var (
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used and doesn't work
 //
-//	on Windows.
+// on Windows.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	defer func() {
 		if err != nil {

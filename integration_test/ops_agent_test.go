@@ -1248,41 +1248,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-// agentVersionRegexesForPlatform returns a slice containing all agents that
-// we expect to upload an uptime metric on the given platform. This function
-// returns a list of regexes that we can match against the "version" field of the
-// uptime metric.
-func agentVersionRegexesForPlatform(platform string) []string {
-	// TODO(b/191363559): Remove this whole `gce.IsWindows(platform)` section after we
-	// release a stable Ops Agent version that changes user agent to
-	// google-cloud-ops-agent-metrics/ for Windows as well.
-	if gce.IsWindows(platform) {
-		return []string{
-			// TODO(b/176832677): The Logging agent does not currently upload an uptime metric.
-			// TODO(b/191362867): Update the regex to be more strict after a version of
-			// Ops Agent has been released with the expected user agent.
-			// strings.Join([]string{
-			// 	 "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-			// 	 "Google Cloud Metrics Agent/.*",
-			// }, "|"),
-			strings.Join([]string{
-				"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9].*",
-				"Google Cloud Metrics Agent/.*",
-			}, "|"),
-		}
-	}
-	return []string{
-		// TODO(jschulz): Enable this label once it exists.
-		//"google-cloud-ops-agent-engine/",
-		// TODO(b/170138116): Enable this label once it is being collected.
-		//"google-cloud-ops-agent-logs/",
-		// TODO(b/191362867): Update the regex to be more strict after a version of
-		// Ops Agent has been released with the expected user agent.
-		// "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-		"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*",
-	}
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1314,29 +1279,19 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 
 	expectedMetrics := agentMetrics.ExpectedMetrics
 
-	// First make sure that the uptime metrics are being uploaded.
-	var uptimeWaitGroup sync.WaitGroup
-	regexes := agentVersionRegexesForPlatform(vm.Platform)
+	// First make sure that the representative metrics are being uploaded.
 	for _, metric := range expectedMetrics {
 		metric := metric
 		if !metric.Representative {
 			continue
 		}
 
-		for _, versionRegex := range regexes {
-			versionRegex := versionRegex
-			uptimeWaitGroup.Add(1)
-			go func() {
-				defer uptimeWaitGroup.Done()
-				if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window,
-					[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
-				); err != nil {
-					t.Error(err)
-				}
-			}()
+		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window,
+			[]string{`metric.labels.version = monitoring.regex.full_match("google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*")`},
+		); err != nil {
+			t.Error(err)
 		}
 	}
-	uptimeWaitGroup.Wait()
 
 	if t.Failed() {
 		// Return early instead of waiting up to 7 minutes for the second round
@@ -1353,6 +1308,12 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	var metricsWaitGroup sync.WaitGroup
 	for _, metric := range expectedMetrics {
 		metric := metric
+
+		//Already validated the representative metric or skipped because its optional
+		if metric.Representative || metric.Optional {
+			continue
+		}
+
 		if metric.Platform != "" && metric.Platform != platformKind {
 			continue
 		}
