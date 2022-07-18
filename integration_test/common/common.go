@@ -77,6 +77,10 @@ type ConfigurationOptions struct {
 	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration,dive"`
 }
 
+type ExpectedMetrics struct {
+	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+}
+
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
 	AppUrl                       string                       `yaml:"app_url" validate:"required"`
@@ -87,11 +91,12 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot"`
+
+	ExpectedMetrics `yaml:",inline"`
 }
 
 func SliceContains(slice []string, toFind string) bool {

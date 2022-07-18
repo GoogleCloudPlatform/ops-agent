@@ -19,24 +19,29 @@ func Test_ValidateMetadataOfThirdPartyApps(t *testing.T) {
 		if info.Name() != "metadata.yaml" {
 			return nil
 		}
-		v := common.NewIntegrationMetadataValidator()
 
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		yamlStr := strings.ReplaceAll(string(contents), "\r\n", "\n")
-
-		integrationMetadata := &common.IntegrationMetadata{}
-
-		err = yaml.UnmarshalStrict([]byte(yamlStr), integrationMetadata)
-		if err != nil {
-			return err
-		}
-		return v.Struct(integrationMetadata)
+		return validateMetadata(contents, &common.IntegrationMetadata{})
 	})
-
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func Test_ValidateMetadataOfAgentMetric(t *testing.T) {
+
+}
+
+func validateMetadata(bytes []byte, i interface{}) error {
+	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
+
+	v := common.NewIntegrationMetadataValidator()
+	err := yaml.UnmarshalStrict([]byte(yamlStr), i)
+	if err != nil {
+		return err
+	}
+	return v.Struct(i)
 }
