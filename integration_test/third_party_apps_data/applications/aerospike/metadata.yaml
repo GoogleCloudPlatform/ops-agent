@@ -9,69 +9,69 @@ description: |-
 supported_app_version: ["4.9", "5.x", "6.x"]
 configure_integration: ""
 expected_metrics:
-  - kind: CUMULATIVE
-    labels:
-      result: error|filtered_out|not_found|success|timeout
-      type: delete|read|udf|write
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.transaction.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.disk.available
-    optional: true
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.memory.free
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      component: data|index|set_index|secondary_index
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.memory.usage
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      result: abort|complete|error
-      type: aggregation|basic|ops_background|udf_background
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.scan.count
-    value_type: INT64
-  - kind: CUMULATIVE
-    labels:
-      operation: close|open
-      type: client|fabric|heartbeat
-      node_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.node.connection.count
-    value_type: INT64
-  - kind: GAUGE
-    labels:
-      type: client|fabric|heartbeat
-      node_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.node.connection.open
-    value_type: INT64
-    representative: true
-  - kind: GAUGE
-    labels:
-      node_name: .*
-    monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.node.memory.free
-    value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    result: error|filtered_out|not_found|success|timeout
+    type: delete|read|udf|write
+    node_name: .*
+    namespace_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.namespace.transaction.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    node_name: .*
+    namespace_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.namespace.disk.available
+  optional: true
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    node_name: .*
+    namespace_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.namespace.memory.free
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    component: data|index|set_index|secondary_index
+    node_name: .*
+    namespace_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.namespace.memory.usage
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    result: abort|complete|error
+    type: aggregation|basic|ops_background|udf_background
+    node_name: .*
+    namespace_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.namespace.scan.count
+  value_type: INT64
+- kind: CUMULATIVE
+  labels:
+    operation: close|open
+    type: client|fabric|heartbeat
+    node_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.node.connection.count
+  value_type: INT64
+- kind: GAUGE
+  labels:
+    type: client|fabric|heartbeat
+    node_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.node.connection.open
+  value_type: INT64
+  representative: true
+- kind: GAUGE
+  labels:
+    node_name: .*
+  monitored_resource: gce_instance
+  type: workload.googleapis.com/aerospike.node.memory.free
+  value_type: INT64
 configuration_options:
   metrics:
   - type: aerospike
@@ -97,3 +97,5 @@ configuration_options:
     - name: timeout
       default: 20s
       description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
+minimum_supported_agent_version:
+  metrics: 2.18.2
