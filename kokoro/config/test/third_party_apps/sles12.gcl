@@ -2,9 +2,6 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = [
-      'windows-2012-r2',
-      'sql-std-2019-win-2019',
-    ]
+    platforms = ['sles-12']
   }
 }

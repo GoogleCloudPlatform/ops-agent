@@ -1,0 +1,16 @@
+import '../common.gcl' as common
+import '../../image_lists.gcl' as image_lists
+
+config build = common.ops_agent_test {
+  params {
+    // TODO(b/217189970): Change back to 
+    // image_lists.centos.distros.centos8.release once centos-8 is gone.
+    platforms = [
+      'rhel-8',
+      'rhel-8-1-sap-ha',
+      'rhel-8-2-sap-ha',
+      'rhel-8-4-sap-ha',
+      'rocky-linux-8',
+    ]
+  }
+}

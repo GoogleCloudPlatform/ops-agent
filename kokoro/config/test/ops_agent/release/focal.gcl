@@ -3,7 +3,6 @@ import '../../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.windows.distros.windows.release +
-                ['windows-20h2-core']
+    platforms = image_lists.ubuntu.distros.focal.release
   }
 }
