@@ -18,3 +18,6 @@
 - Documentation
   - [ ] This PR introduces no user visible changes.
   - [ ] This PR introduces user visible changes and the corresponding documentation change has been made.
+- Minor version bump
+  - [ ] This PR introduces no new features.
+  - [ ] This PR introduces new features, and there is a separate PR to bump the [minor version](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/VERSION) since the last [release](https://github.com/GoogleCloudPlatform/ops-agent/releases) already.
