@@ -153,7 +153,7 @@ func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
 func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
 	logger.ToMainLog().Printf("Running script with path %s", scriptPath)
 	defer func(t time.time) { 
-        log.Printf("Script (%s) ran in %d seconds\n", scriptPath, (t.Sub(time.Now())).Seconds()) 
+        log.Printf("Script (%s) ran in %d seconds", scriptPath, (t.Sub(time.Now())).Seconds()) 
     }(time.Now()) 
 
 	scriptContents, err := readFileFromScriptsDir(scriptPath)
