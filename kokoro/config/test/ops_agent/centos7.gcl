@@ -1,0 +1,7 @@
+import 'common.gcl' as common
+
+config build = common.ops_agent_test {
+  params {
+    platforms = ['centos-7']
+  }
+}
