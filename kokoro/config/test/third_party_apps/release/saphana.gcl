@@ -1,0 +1,13 @@
+import '../common.gcl' as common
+
+config build = common.third_party_apps_test {
+  params {
+    // Created in b/230338826.
+    platforms = ['sles-15-sp3-sap-saphana']
+
+    environment {
+      // These instances need a lot of RAM.
+      INSTANCE_SIZE = 'n2-highmem-8'
+    }
+  }
+}
