@@ -46,8 +46,7 @@ template config go_test = common {
       TRANSFERS_BUCKET = 'stackdriver-test-143416-untrusted-file-transfers'
       SERVICE_EMAIL =
           'build-and-test-external@stackdriver-test-143416.iam.gserviceaccount.com'
-      WINRM_IN_GCS =
-          'gs://stackdriver-test-143416-untrusted-file-transfers/winrm.par'
+      WINRM_IN_GCS = 'gs://stackdriver-test-143416-winrm/winrm.par'
     }
 
     artifacts = super.artifacts + [
