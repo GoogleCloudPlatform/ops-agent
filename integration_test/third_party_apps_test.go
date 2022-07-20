@@ -483,25 +483,12 @@ const (
 // thinks this app doesn't support the given platform.
 // supported_operating_systems should only contain "linux", "windows", or
 // "linux_and_windows".
-func incompatibleOperatingSystem(t *testing.T, testCase test) string {
-	supported := testCase.metadata.SupportedOperatingSystems
-	if supported == "linux_and_windows" {
-		return "" // This app supports both Linux and Windows.
-	}
-	if supported == "windows" {
-		if !gce.IsWindows(testCase.platform) {
-			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Windows.", testCase.platform, testCase.app)
-		}
-		return "" // We are testing Windows and this app supports Windows.
-	}
-	if supported == "linux" {
-		if gce.IsWindows(testCase.platform) {
-			return fmt.Sprintf("Skipping test for platform %v because app %v only supports Linux.", testCase.platform, testCase.app)
-		}
-		return "" // We are testing Linux and this app supports Linux.
-	}
-	t.Fatalf("Unrecognized value %q for supported_operating_systems.", supported)
-	return ""
+func incompatibleOperatingSystem(testCase test) string {
+    supported := testCase.metadata.SupportedOperatingSystems
+    if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
+        return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
+    }
+    return "" // We are testing on a supported platform for this app.
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -511,7 +498,7 @@ func incompatibleOperatingSystem(t *testing.T, testCase test) string {
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(t *testing.T, tests []test, impactedApps map[string]bool, testConfig testConfig) {
+func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -523,7 +510,7 @@ func determineTestsToSkip(t *testing.T, tests []test, impactedApps map[string]bo
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
-		if reason := incompatibleOperatingSystem(t, test); reason != "" {
+		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
 		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
@@ -556,7 +543,7 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 
 	// Filter tests
-	determineTestsToSkip(t, tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
