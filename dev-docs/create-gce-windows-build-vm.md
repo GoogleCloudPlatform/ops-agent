@@ -25,7 +25,7 @@ gcloud compute instances create \
     --zone $VM_ZONE \
     --image-project windows-cloud \
     --image-family $WIN_BUILD_VM_OS_IMAGE_FAMILY \
-    --machine-type e2-highmem-4 \
+    --machine-type e2-highmem-8 \
     --boot-disk-type pd-ssd \
     --boot-disk-size 200GB \
     --scopes storage-rw \
