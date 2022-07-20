@@ -1,6 +1,6 @@
 # Create a GCE Windows build VM
 
-Create a Windows build VM for running Windows Dockerfile and set a password for $USER.
+Create a Windows build VM for running Windows Dockerfile and set a password for `$USER`.
 
 Note: The `--machine-type` and `--boot-disk-size` settings are required to
 ensure the build VM has enough power/disk space to do the builds.
