@@ -88,6 +88,8 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
   go mod tidy -compat=1.17
+else
+  cd integration_test
 fi
 
 if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
@@ -99,6 +101,7 @@ fi
 WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
 gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
 chmod u+x "${WINRM_PAR_PATH}"
+export WINRM_PAR_PATH
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {

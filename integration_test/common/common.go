@@ -50,7 +50,7 @@ type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description"`
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 }
 
 type ExpectedLog struct {
@@ -66,7 +66,7 @@ type MinimumSupportedAgentVersion struct {
 type ConfigurationFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	Default     string `yaml:"default"`
-	Description string `yaml:"description" validate:"required"`
+	Description string `yaml:"description" validate:"required,excludesall=‘’“”"`
 }
 
 type InputConfiguration struct {
@@ -81,11 +81,11 @@ type ConfigurationOptions struct {
 
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
-	AppUrl                       string                       `yaml:"app_url" validate:"required"`
-	ShortName                    string                       `yaml:"short_name" validate:"required"`
-	LongName                     string                       `yaml:"long_name" validate:"required"`
+	AppUrl                       string                       `yaml:"app_url" validate:"required,url"`
+	ShortName                    string                       `yaml:"short_name" validate:"required,excludesall=‘’“”"`
+	LongName                     string                       `yaml:"long_name" validate:"required,excludesall=‘’“”"`
 	LogoPath                     string                       `yaml:"logo_path"`
-	Description                  string                       `yaml:"description" validate:"required"`
+	Description                  string                       `yaml:"description" validate:"required,excludesall=‘’“”"`
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
@@ -94,7 +94,7 @@ type IntegrationMetadata struct {
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
-	Troubleshoot                 string                       `yaml:"troubleshoot"`
+	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 }
 
 func SliceContains(slice []string, toFind string) bool {
