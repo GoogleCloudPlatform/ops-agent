@@ -2,7 +2,21 @@
 
 set -e
 
+VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
+
+
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    vault:
+      type: vault
+      token: $VAULT_TOKEN
+      endpoint: 127.0.0.1:8200
+  service:
+    pipelines:
+      vault:
+        receivers:
+          - vault
 logging:
   receivers:
     vault_audit:

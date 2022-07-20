@@ -1,13 +1,30 @@
 set -e 
 
-sudo zypper install -y curl bzip2
+sudo zypper install -y curl bzip2 net-tools libncurses5
 
 curl -L "https://packages.couchbase.com/releases/7.0.0/couchbase-server-community-7.0.0-suse12.x86_64.rpm"  -o couchbase.rpm
 
 sudo rpm -i ./couchbase.rpm
 
+timeout 60s bash <<EOF
+wait_for_couchbase() {
+    until curl localhost:8091 > /dev/null 2>&1
+    do
+        echo "Waiting for couchbase to start. . ."
+        sleep "1"
+    done
+}
+
+wait_for_couchbase
+
+sleep 5
+
+echo "couchbase started"
+EOF
+
+
 /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1 --cluster-username admin --cluster-password password \
   --cluster-name otelc --cluster-ramsize 256 --cluster-index-ramsize 256 --services data,index,query,fts \
   --index-storage-setting default
 
-/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username otelu --password otelpassword --bucket-type couchbase --bucket-ramsize 256 --bucket otelb
+/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username admin --password password --bucket-type couchbase --bucket-ramsize 256 --bucket otelb

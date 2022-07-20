@@ -7,12 +7,32 @@ metrics:
   receivers:
     couchbase:
       type: couchbase
+      username: admin
+      password: password
+      collection_interval: 30s
   service:
     pipelines:
       couchbase:
         receivers:
           - couchbase
+
+logging:
+  receivers:
+    couchbase_general:
+      type: couchbase_general
+    couchbase_http_access:
+      type: couchbase_http_access
+    couchbase_goxdcr:
+      type: couchbase_goxdcr
+  service:
+    pipelines:
+      couchbase:
+        receivers:
+          - couchbase_general
+          - couchbase_http_access
+          - couchbase_goxdcr
+
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 60
+sleep 30s

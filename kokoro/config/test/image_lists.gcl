@@ -1,0 +1,160 @@
+// These are the shared lists of test images organized by distro family and
+// grouped by the most fine-grained build artifact (in this case, the
+// per-distro monitoring agent package).
+
+// A representation of a test distro.
+local template _distro {
+  // Human-readable name.
+  name = external
+  // List of release images.
+  release = external
+  // The representative image to be used in presubmit (defaults to none).
+  // Presubmits usually smoke test only the oldest and newest OS families from
+  // a certain OS to speed up presubmit tests and reduce flakiness. The full
+  // set will be tested by the nightly jobs.
+  presubmit = null
+}
+
+local template _family {
+  distros = external
+  // Extract the release image lists for all distros in a given family.
+  releases = sort_asc(flatten(map(lambda d_: d_.release, distros.values())))
+  // Extract the presubmit images for all distros in a given family.
+  presubmits = sort_asc(
+    filter(is_string, map(lambda d_: d_.presubmit, distros.values())))
+}
+
+// DEB Linux distros.
+debian = _family {
+  distros = {
+    stretch = _distro {
+      name = 'Debian 9'
+      release = ['debian-9']
+      presubmit = 'debian-9'
+    }
+    buster = _distro {
+      name = 'Debian 10'
+      release = ['debian-10']
+      presubmit = 'debian-10'
+    }
+    bullseye = _distro {
+      name = 'Debian 11'
+      release = ['debian-11']
+    }
+  }
+}
+ubuntu = _family {
+  distros = {
+    bionic = _distro {
+      name = 'Ubuntu 18.04 Bionic'
+      release = [
+        'ubuntu-1804-lts',
+        'ubuntu-minimal-1804-lts',
+      ]
+      presubmit = 'ubuntu-1804-lts'
+    }
+    focal = _distro {
+      name = 'Ubuntu 20.04 Focal'
+      release = [
+        'ubuntu-2004-lts',
+        'ubuntu-minimal-2004-lts',
+      ]
+      presubmit = 'ubuntu-minimal-2004-lts'
+    }
+    impish = _distro {
+      name = 'Ubuntu 21.10 Impish'
+      release = [
+        'ubuntu-2110',
+        'ubuntu-minimal-2110',
+      ]
+    }
+    jammy = _distro {
+      name = 'Ubuntu 22.04 Jammy'
+      release = [
+        'ubuntu-2204-lts',
+        'ubuntu-minimal-2204-lts',
+      ]
+    }
+  }
+}
+
+// RPM Linux distros.
+centos = _family {
+  distros = {
+    centos7 = _distro {
+      name = 'CentOS 7'
+      release = [
+        // CentOS.
+        'centos-7',
+        // RHEL.
+        'rhel-7',
+        'rhel-7-6-sap-ha',
+        'rhel-7-7-sap-ha',
+        'rhel-7-9-sap-ha',
+      ]
+      presubmit = 'centos-7'
+    }
+    centos8 = _distro {
+      name = 'CentOS 8'
+      release = [
+        // CentOS.
+        'centos-8',
+        // RHEL.
+        'rhel-8',
+        'rhel-8-1-sap-ha',
+        'rhel-8-2-sap-ha',
+        'rhel-8-4-sap-ha',
+        // Rocky.
+        'rocky-linux-8',
+      ]
+      presubmit = 'rocky-linux-8'
+    }
+  }
+}
+sles = _family {
+  distros = {
+    sles12 = _distro {
+      name = 'SLES 12'
+      release = [
+        'sles-12',
+        'sles-12-sp3-sap',
+        'sles-12-sp4-sap',
+        'sles-12-sp5-sap',
+      ]
+      presubmit = 'sles-12'
+    }
+    sles15 = _distro {
+      name = 'SLES 15'
+      release = [
+        'sles-15',
+        'sles-15-sap',
+        'sles-15-sp1-sap',
+        'sles-15-sp2-sap',
+        'opensuse-leap',
+        'opensuse-leap-15-2',
+        'opensuse-leap-15-3',
+        'opensuse-leap-15-4',
+      ]
+      presubmit = 'sles-15'
+    }
+  }
+}
+
+// Windows distros.
+windows = _family {
+  distros = {
+    windows = _distro {
+      name = 'Windows'
+      release = [
+        'windows-2012-r2',
+        'windows-2012-r2-core',
+        'windows-2016',
+        'windows-2016-core',
+        'windows-2019',
+        'windows-2019-core',
+        'windows-20h2-core',
+      ]
+      presubmit = 'windows-2016'
+    }
+  }
+}

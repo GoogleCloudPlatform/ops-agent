@@ -3,18 +3,44 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y gnupg wget curl
+sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
-## Following instructions from https://docs.couchbase.com/server/current/install/ubuntu-debian-install.html
+oscode="$(lsb_release -sc)"
+if [ "$oscode" = "bullseye" ]; then
+  # currently debian 11 is not supported, install buster package instead
+  # Could be removed once couchbase-lite gets supported
+  echo 'deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/community/deb/ buster buster/main' | sudo tee /etc/apt/sources.list.d/couchbase.list
+  sudo wget -qO- http://packages.couchbase.com/ubuntu/couchbase.key | gpg --dearmor > couchbase.gpg
+  sudo mv couchbase.gpg /etc/apt/trusted.gpg.d/couchbase.gpg
+  sudo apt update
+else 
+  curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
+  sudo dpkg -i couchbase-release-1.0-amd64.deb
+  sudo apt-get update
+fi
 
-curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb
-sudo dpkg -i ./couchbase-release-1.0-amd64.deb
+sudo apt-get install -y couchbase-server-community=7.0.2-6703-1
 
-sudo apt-get update
-sudo apt-get install -y couchbase-server-community=7.1.0-2556-1
+
+timeout 60s bash <<EOF
+wait_for_couchbase() {
+    until curl localhost:8091 > /dev/null 2>&1
+    do
+        echo "Waiting for couchbase to start. . ."
+        sleep "1"
+    done
+}
+
+wait_for_couchbase
+
+sleep 5
+
+echo "couchbase started"
+EOF
+
 
 /opt/couchbase/bin/couchbase-cli cluster-init -c 127.0.0.1 --cluster-username admin --cluster-password password \
   --cluster-name otelc --cluster-ramsize 256 --cluster-index-ramsize 256 --services data,index,query,fts \
   --index-storage-setting default
 
-/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username otelu --password otelpassword --bucket-type couchbase --bucket-ramsize 256 --bucket otelb
+/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username admin --password password --bucket-type couchbase --bucket-ramsize 256 --bucket otelb

@@ -16,8 +16,6 @@
 # sources in there, otherwise it will look in GitHub.
 #
 # In addition, the following test suites need additional env variables:
-# collectd_third_party_apps_test:
-#   * SCRIPTS_DIR: path to scripts to use for installing/configuring apps.
 # install_scripts_test:
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
 #   * SCRIPTS_DIR: path to installation scripts to test.
@@ -40,13 +38,15 @@ source kokoro/scripts/utils/common.sh
 track_flakiness
 
 # If a built agent was passed in from Kokoro directly, use that. The file will
-# always be in KOKORO_GFILE_DIR, though it may not be in the same subdirectory,
-# so we have to search for it.
+# always be in $KOKORO_GFILE_DIR/result or $KOKORO_GFILE_DIR/out.
 if [[ -d "${KOKORO_GFILE_DIR}" ]]; then
-  BUILT_AGENT_PATH=$(find "${KOKORO_GFILE_DIR}" -type f -name "google-cloud-ops-agent*" | head -n 1)
-  if [[ ! -z "${BUILT_AGENT_PATH}" ]]; then
-    RESULT_DIR="$(dirname "${BUILT_AGENT_PATH}")"
+  if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
+    RESULT_DIR="${KOKORO_GFILE_DIR}/result"
+  elif compgen -G "${KOKORO_GFILE_DIR}/out/google-cloud-ops-agent*" > /dev/null; then
+    RESULT_DIR="${KOKORO_GFILE_DIR}/out"
+  fi
 
+  if [[ -n "${RESULT_DIR-}" ]]; then
     # Upload the agent packages to GCS.
     AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
     gsutil cp -r "${RESULT_DIR}/*" "${AGENT_PACKAGES_IN_GCS}/"
@@ -88,6 +88,8 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
   go mod tidy -compat=1.17
+else
+  cd integration_test
 fi
 
 if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
@@ -95,7 +97,10 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   export GCLOUD_TO_TEST
 fi
 
-WINRM_PAR_PATH="${KOKORO_BLAZE_DIR}/${WINRM_PAR_BLAZE_PATH}"
+# Copy down winrm.par from GCS.
+WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
+gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
+chmod u+x "${WINRM_PAR_PATH}"
 export WINRM_PAR_PATH
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
