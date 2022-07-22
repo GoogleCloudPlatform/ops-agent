@@ -63,7 +63,14 @@ func (r LoggingReceiverActiveDirectoryDS) Components(tag string) []fluentbit.Com
 		Channels: []string{"Directory Service", "Active Directory Web Services"},
 	}
 
-	return l.Components(tag)
+	c := append(l.Components(tag),
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(r.Type()),
+			},
+		}.Components(tag, "active_directory_ds")...,
+	)
+	return c
 }
 
 func init() {

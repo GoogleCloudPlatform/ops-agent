@@ -65,7 +65,7 @@ func (LoggingProcessorVarnish) Type() string {
 func (p LoggingProcessorVarnish) Components(tag string, uid string) []fluentbit.Component {
 	// Logging documentation: https://github.com/varnishcache/varnish-cache/blob/04455d6c3d8b2d810007239cb1cb2b740d7ec8ab/doc/sphinx/reference/varnishncsa.rst#format
 	// Sample line: 127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
-	return genericAccessLogParser(tag, uid)
+	return genericAccessLogParser(p.Type(), tag, uid)
 }
 
 type LoggingReceiverVarnish struct {

@@ -51,7 +51,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 
@@ -65,7 +64,7 @@ var (
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
-var validate = validator.New()
+var validate = common.NewIntegrationMetadataValidator()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -86,38 +85,6 @@ func osFolder(platform string) string {
 		return "windows"
 	}
 	return "linux"
-}
-
-// rejectDuplicates looks for duplicate entries in the input slice and returns
-// an error if any is found.
-func rejectDuplicates(apps []string) error {
-	seen := make(map[string]bool)
-	for _, app := range apps {
-		if seen[app] {
-			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
-		}
-		seen[app] = true
-	}
-	return nil
-}
-
-// appsToTest reads which applications to test for the given agent+platform
-// combination from the appropriate supported_applications.txt file.
-func appsToTest(platform string) ([]string, error) {
-	contents, err := readFileFromScriptsDir(
-		path.Join("agent", osFolder(platform), "supported_applications.txt"))
-	if err != nil {
-		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
-	}
-
-	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
-	if err = rejectDuplicates(apps); err != nil {
-		return nil, err
-	}
-	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
-		apps = removeFromSlice(apps, "mssql")
-	}
-	return apps, nil
 }
 
 const (
@@ -186,13 +153,20 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 // constructQuery converts the given struct of:
 //   field name => field value regex
 // into a query filter to pass to the logging API.
-func constructQuery(fields []*common.LogFields) string {
+func constructQuery(logName string, fields []*common.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
 			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
 		}
 	}
+
+	if logName != "syslog" {
+		// verify instrumentation_source label
+		val := fmt.Sprintf("agent.googleapis.com/%s", logName)
+		parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	}
+
 	return strings.Join(parts, " AND ")
 }
 
@@ -206,7 +180,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.Fields))
+			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.LogName, entry.Fields))
 		}()
 	}
 	for range logs {
@@ -217,9 +191,6 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
 	var err error
-	if err = common.ValidateMetrics(metrics); err != nil {
-		return fmt.Errorf("expected_metrics failed validation: %v", err)
-	}
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
@@ -360,31 +331,22 @@ func parseTestConfigFile() (testConfig, error) {
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata common.IntegrationMetadata) (retry bool, err error) {
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
 	}
 
-	var metadata common.IntegrationMetadata
-	// Load metadata.yaml if it exists. If it does not, the zero-value metadata will be used instead.
-	if testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml")); err == nil {
-		logger.ToMainLog().Println("found metadata.yaml, parsing...")
-
-		err := yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			return nonRetryable, fmt.Errorf("could not unmarshal contents of metadata.yaml: %v", err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
-			return nonRetryable, fmt.Errorf("could not validate contents of metadata.yaml: %v", err)
-		}
-		logger.ToMainLog().Printf("Parsed metadata.yaml: %+v", metadata)
-	}
-
 	if folder == "debian_ubuntu" {
 		// Gets us around problematic prompts for user input.
-		gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"DEBIAN_FRONTEND": "noninteractive"})
+		if err = gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"DEBIAN_FRONTEND": "noninteractive"}); err != nil {
+			return nonRetryable, err
+		}
+		if err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+			return nonRetryable, err
+		}
 	}
+
 	if _, err = runScriptFromScriptsDir(
 		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
@@ -433,22 +395,36 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-// Returns the authoritative set of all apps available for testing.
-// The authoritative list corresponds to the directory names under
-// integration_test/third_party_apps_data/applications
-func determineAllApps(t *testing.T) map[string]bool {
-	allApps := make(map[string]bool)
+// Returns a map of application name to its parsed and validated metadata.yaml.
+// The set of applications returned is authoritative and corresponds to the
+// directory names under integration_test/third_party_apps_data/applications.
+func fetchAppsAndMetadata(t *testing.T) map[string]common.IntegrationMetadata {
+	allApps := make(map[string]common.IntegrationMetadata)
 
-	files, err := os.ReadDir("third_party_apps_data/applications")
+	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
 	if err != nil {
 		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
 	}
 	for _, file := range files {
-		if file.IsDir() {
-			allApps[file.Name()] = true
+		app := file.Name()
+		var metadata common.IntegrationMetadata
+		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+		if err != nil {
+			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
 		}
+		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		if err != nil {
+			t.Fatalf("could not unmarshal contents of applications/%v/metadata.yaml: %v", app, err)
+		}
+		if err = validate.Struct(&metadata); err != nil {
+			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
+		}
+		allApps[app] = metadata
 	}
-	log.Printf("all apps: %v", allApps)
+	log.Printf("found %v apps", len(allApps))
+	if len(allApps) == 0 {
+		t.Fatal("Found no applications inside third_party_apps_data/applications")
+	}
 	return allApps
 }
 
@@ -469,7 +445,7 @@ func modifiedFiles(t *testing.T) []string {
 //   apps/<appname>.go
 //   integration_test/third_party_apps_data/<appname>/
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool {
+func determineImpactedApps(mf []string, allApps map[string]common.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
@@ -498,6 +474,7 @@ func determineImpactedApps(mf []string, allApps map[string]bool) map[string]bool
 type test struct {
 	platform   string
 	app        string
+	metadata   common.IntegrationMetadata
 	skipReason string
 }
 
@@ -510,6 +487,19 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 )
+
+// incompatibleOperatingSystem looks at the supported_operating_systems field
+// of metadata.yaml for this app and returns a nonempty skip reason if it
+// thinks this app doesn't support the given platform.
+// supported_operating_systems should only contain "linux", "windows", or
+// "linux_and_windows".
+func incompatibleOperatingSystem(testCase test) string {
+	supported := testCase.metadata.SupportedOperatingSystems
+	if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
+		return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
+	}
+	return "" // We are testing on a supported platform for this app.
+}
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.  Always test all apps against the default
@@ -530,6 +520,12 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
+		if reason := incompatibleOperatingSystem(test); reason != "" {
+			tests[i].skipReason = reason
+		}
+		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+		}
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
@@ -548,22 +544,16 @@ func TestThirdPartyApps(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []test{}
+	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	for _, platform := range platforms {
-		apps, err := appsToTest(platform)
-		if err != nil {
-			t.Fatalf("Error when reading list of apps to test for platform=%v. err=%v", platform, err)
-		}
-		if len(apps) == 0 {
-			t.Fatalf("Found no applications when testing platform=%v", platform)
-		}
-		for _, app := range apps {
-			tests = append(tests, test{platform, app, ""})
+		for app, metadata := range allApps {
+			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
 		}
 	}
 
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), determineAllApps(t)), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
@@ -597,7 +587,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
 				var retryable bool
-				retryable, err = runSingleTest(ctx, logger, vm, tc.app)
+				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
 				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return

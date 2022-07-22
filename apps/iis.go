@@ -132,6 +132,17 @@ const (
 	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
 	iisMergeRecordFieldsLuaScriptContents = `
 	function iis_merge_fields(tag, timestamp, record)
+
+	  if (record["cs_uri_query"] == "-") then
+	    record["cs_uri_query"] = nil
+	  end
+	  if (record["http_request_referer"] == "-") then
+	    record["http_request_referer"] = nil
+	  end
+	  if (record["user"] == "-") then
+	    record["user"] = nil
+	  end
+
 	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
 	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
 		record["http_request_requestUrl"] = record["cs_uri_stem"]
@@ -163,23 +174,8 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 			},
 		},
 	}.Components(tag, uid)
-	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	for _, field := range []string{
-		"cs_uri_query",
-		"http_request_referer",
-		"user",
-	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
-	}
 
+	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
 	c = append(c, []fluentbit.Component{
@@ -197,20 +193,32 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
 			},
 		},
-
-		// Generate the httpRequest structure.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":          "nest",
-				"Match":         tag,
-				"Operation":     "nest",
-				"Wildcard":      "http_request_*",
-				"Nest_under":    "logging.googleapis.com/http_request",
-				"Remove_prefix": "http_request_",
-			},
-		},
 	}...)
+
+	fields := map[string]*confgenerator.ModifyField{
+		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+	}
+
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"serverIp",
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"status",
+		"referer",
+		"userAgent",
+	} {
+		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
+			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
+		}
+	}
+
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: fields,
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 

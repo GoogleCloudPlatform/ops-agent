@@ -54,8 +54,12 @@ The following variables are optional:
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
     By default, a new temporary directory is created.
 NETWORK_NAME: What GCP network name to use.
-KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
+KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
+LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
+    logs will be uploaded. If unset, this will point to
+    ops-agents-public-buckets-test-logs, which should work for all tests
+    triggered from GitHub.
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
     (if set to "true"), or external IP addresses (in all other cases).
     Only useful on Kokoro.
@@ -351,6 +355,14 @@ func winRM() string {
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
 func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
+}
+
+// PlatformKind returns "linux" or "windows" based on the given platform.
+func PlatformKind(platform string) string {
+	if IsWindows(platform) {
+		return "windows"
+	}
+	return "linux"
 }
 
 // isRetriableLookupMetricError returns whether the given error, returned from
@@ -839,6 +851,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
+		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
 )
 
@@ -1535,8 +1549,11 @@ func logLocation(logRootDir, testName string) string {
 	if subdir == "" {
 		return path.Join(logRootDir, testName)
 	}
-	return "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/" +
-		path.Join(subdir, "logs", testName)
+	uploadLocation := os.Getenv("LOG_UPLOAD_URL_ROOT")
+	if uploadLocation == "" {
+		uploadLocation = "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/"
+	}
+	return uploadLocation + path.Join(subdir, "logs", testName)
 }
 
 // SetupLogger creates a new DirectoryLogger that will write to a directory based on

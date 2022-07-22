@@ -3,7 +3,7 @@
 See a list of all the Windows VM images we support.
 
 ```shell
-$ gcloud compute images list | grep windows | grep -v sql | grep -v container
+gcloud compute images list | grep windows | grep -v container
 ```
 
 Create a Windows VM and set a password for ${USER}.
@@ -31,25 +31,25 @@ Tip: Avoid VMs with `-core` in the NAME family if you need to use a GUI.
 
 ```shell
 # Your dev GCP project ID.
-$ export VM_PROJECT_ID=${USER}-sandbox
+export VM_PROJECT_ID=${USER}-sandbox
 
 # The zone to create the VM in.
-$ export VM_ZONE=us-central1-a
+export VM_ZONE=us-central1-a
 
 # VM image family.
-$ export WIN_TEST_VM_OS_IMAGE_FAMILY=windows-2016
+export WIN_TEST_VM_OS_IMAGE_FAMILY=windows-2016
 
 # The VM name to use.
-$ export WIN_TEST_VM_NAME=${USER}-windows-vm
+export WIN_TEST_VM_NAME=${USER}-windows-vm
 
-$ gcloud compute instances create \
+gcloud compute instances create \
     --project $VM_PROJECT_ID \
     --zone $VM_ZONE \
     --image-project windows-cloud \
     --image-family $WIN_TEST_VM_OS_IMAGE_FAMILY \
     $WIN_TEST_VM_NAME
 
-$ gcloud compute reset-windows-password --quiet \
+gcloud compute reset-windows-password --quiet \
     --project $VM_PROJECT_ID \
     --zone $VM_ZONE \
     $WIN_TEST_VM_NAME

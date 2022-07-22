@@ -181,4 +181,5 @@ expected_metrics:
 minimum_supported_agent_version:
   metrics: 2.15.0
   logging: 2.15.0
+supported_operating_systems: windows
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/active_directory_ds

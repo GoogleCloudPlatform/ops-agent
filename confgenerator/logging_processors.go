@@ -103,10 +103,11 @@ func (r LoggingProcessorParseJson) Type() string {
 func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "json"
-	return []fluentbit.Component{
-		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
-		parser,
-	}
+
+	parserFilters := []fluentbit.Component{}
+	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	parserFilters = append(parserFilters, parser)
+	return parserFilters
 }
 
 func init() {
@@ -132,10 +133,10 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = p.Regex
 
-	return []fluentbit.Component{
-		parser,
-		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
-	}
+	parserFilters := []fluentbit.Component{}
+	parserFilters = append(parserFilters, parser)
+	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	return parserFilters
 }
 
 type RegexParser struct {
@@ -161,7 +162,7 @@ func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentb
 		parserNames = append(parserNames, parserName)
 	}
 
-	components = append(components, fluentbit.ParserFilterComponent(tag, p.Field, parserNames))
+	components = append(components, fluentbit.ParserFilterComponents(tag, p.Field, parserNames, false)...)
 	return components
 }
 

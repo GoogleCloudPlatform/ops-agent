@@ -1,0 +1,56 @@
+import '../utils/functions.gcl' as functions
+
+template config common = {
+  params = {
+    platforms = external
+    build_file = external
+
+    artifacts = []
+
+    environment = {
+      PROJECT = 'stackdriver-test-143416'
+      ZONE = 'us-central1-b'
+
+      PLATFORMS = join(platforms, ',')
+    }
+  }
+
+  build_file = params.build_file
+
+  action = [
+    {
+      define_artifacts = {
+        regex = params.artifacts
+      }
+    },
+  ]
+  env_vars = functions.environment_variables(params.environment)
+}
+
+template config go_test = common {
+  params {
+    test_suite = external
+
+    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
+
+    environment {
+      TEST_SUITE_NAME = test_suite
+
+      // The firewall rules for our test project don't allow us to ssh/RDP
+      // from the Kokoro worker into the VM under test via the external IP
+      // address. Using the internal IP address gets around this issue though
+      // (but only because the Kokoro worker is in the same project as the VM
+      // under test).
+      USE_INTERNAL_IP = 'true'
+
+      TRANSFERS_BUCKET = 'stackdriver-test-143416-untrusted-file-transfers'
+      SERVICE_EMAIL =
+          'build-and-test-external@stackdriver-test-143416.iam.gserviceaccount.com'
+      WINRM_IN_GCS = 'gs://stackdriver-test-143416-winrm/winrm.par'
+    }
+
+    artifacts = super.artifacts + [
+      '**/logs/**',
+    ]
+  }
+}

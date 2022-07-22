@@ -1,0 +1,18 @@
+logging:
+  receivers:
+    s1:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 0.0.0.0
+      listen_port: 5140      
+    s2:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 0.0.0.0
+      listen_port: 5140  
+  service:
+    pipelines:
+      p1:
+        receivers: [s1]
+      p2:
+        receivers: [s2]
