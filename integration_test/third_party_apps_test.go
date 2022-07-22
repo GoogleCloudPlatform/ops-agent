@@ -151,7 +151,9 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 }
 
 // constructQuery converts the given struct of:
-//   field name => field value regex
+//
+//	field name => field value regex
+//
 // into a query filter to pass to the logging API.
 func constructQuery(logName string, fields []*common.LogFields) string {
 	var parts []string
@@ -339,18 +341,21 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if folder == "debian_ubuntu" {
 		// Gets us around problematic prompts for user input.
-		if err = gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"DEBIAN_FRONTEND": "noninteractive"}); err != nil {
-			return nonRetryable, err
-		}
-		if err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
-			return nonRetryable, err
-		}
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo $DEBIAN_FRONTEND; sudo bash -c 'echo $DEBIAN_FRONTEND'`)
+		log.Printf("before: err=%v, output.Stdout=%v", err, output.Stdout)
+
+		_, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo "\nexport DEBIAN_FRONTEND=noninteractive" >> ~/.bashrc`)
+
+		output, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo $DEBIAN_FRONTEND; sudo bash -c 'echo $DEBIAN_FRONTEND'`)
+		log.Printf("after: err=%v, output.Stdout=%v", err, output.Stdout)
 	}
 
 	if _, err = runScriptFromScriptsDir(
 		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
+
+	return nonRetryable, nil
 
 	if metadata.RestartAfterInstall {
 		logger.ToMainLog().Printf("Restarting vm instance...")
@@ -442,8 +447,10 @@ func modifiedFiles(t *testing.T) []string {
 
 // Determine what apps are impacted by current code changes.
 // Extracts app names as follows:
-//   apps/<appname>.go
-//   integration_test/third_party_apps_data/<appname>/
+//
+//	apps/<appname>.go
+//	integration_test/third_party_apps_data/<appname>/
+//
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(mf []string, allApps map[string]common.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
@@ -530,6 +537,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
+		}
+		/////////////
+		if test.app != "activemq" {
+			tests[i].skipReason = "do noT subMiT"
 		}
 	}
 }
