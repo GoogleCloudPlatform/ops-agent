@@ -61,7 +61,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    cpu_number: .*
+    cpu_number: \d*
     cpu_state: interrupt|nice|softirq|steal|system|user|wait|idle|used
 - type: agent.googleapis.com/disk/bytes_used
   value_type: DOUBLE
