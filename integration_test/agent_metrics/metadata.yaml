@@ -56,20 +56,28 @@ expected_metrics:
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
+- type: agent.googleapis.com/cpu/usage_time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    cpu_number: \d*
+    cpu_state: idle|interrupt|nice|softirq|steal|system|used|user|wait
+  optional: true
 - type: agent.googleapis.com/cpu/utilization
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
     cpu_number: \d*
-    cpu_state: interrupt|nice|softirq|steal|system|user|wait|idle|used
+    cpu_state: idle|interrupt|nice|softirq|steal|system|used|user|wait
 - type: agent.googleapis.com/disk/bytes_used
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
     device: .*
-    state: free|used|reserved
+    state: free|reserved|used
 - type: agent.googleapis.com/disk/io_time
   value_type: INT64
   kind: CUMULATIVE
@@ -110,7 +118,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     device: .*
-    state: free|used|reserved
+    state: free|reserved|used
 - type: agent.googleapis.com/disk/read_bytes_count
   value_type: INT64
   kind: CUMULATIVE
@@ -244,7 +252,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     device: .*
-    state: used|free|cached
+    state: cached|free|used
 - type: agent.googleapis.com/swap/io
   value_type: INT64
   kind: CUMULATIVE
@@ -257,4 +265,4 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     device: .*
-    state: used|free|cached|reserved
+    state: cached|free|reserved|used
