@@ -88,6 +88,8 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
   go mod tidy -compat=1.17
+else
+  cd integration_test
 fi
 
 if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
