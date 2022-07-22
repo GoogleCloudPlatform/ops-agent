@@ -115,3 +115,4 @@ configuration_options:
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.18.2
+supported_operating_systems: linux
