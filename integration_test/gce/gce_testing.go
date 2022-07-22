@@ -357,6 +357,14 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// PlatformKind returns "linux" or "windows" based on the given platform.
+func PlatformKind(platform string) string {
+	if IsWindows(platform) {
+		return "windows"
+	}
+	return "linux"
+}
+
 // isRetriableLookupMetricError returns whether the given error, returned from
 // lookupMetric() or WaitForMetric(), should be retried.
 func isRetriableLookupMetricError(err error) bool {

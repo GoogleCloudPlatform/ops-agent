@@ -40,6 +40,7 @@ configure_integration: |-
   --Add the OTEL_MONITOR role to the monitoring user
   GRANT OTEL_MONITORING TO otel_monitoring_user;
   </pre>
+supported_operating_systems: linux
 supported_app_version: ["2.0"]
 expected_metrics:
 - kind: GAUGE

@@ -2,7 +2,8 @@ app_url: "https://www.vaultproject.io/"
 short_name: Vault
 long_name: Hashicorp Vault
 description: |-
-  Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
+  Vault is an identity-based secrets and encryption management system. This integration Collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
+supported_operating_systems: linux
 supported_app_version: ["1.6+"]
 expected_metrics:
 - type: workload.googleapis.com/vault.core.request.count
