@@ -132,6 +132,8 @@ sles = _family {
         'sles-15-sp2-sap',
         'opensuse-leap',
         'opensuse-leap-15-2',
+        'opensuse-leap-15-3',
+        'opensuse-leap-15-4',
       ]
       presubmit = 'sles-15'
     }

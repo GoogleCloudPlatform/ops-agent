@@ -357,6 +357,14 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// PlatformKind returns "linux" or "windows" based on the given platform.
+func PlatformKind(platform string) string {
+	if IsWindows(platform) {
+		return "windows"
+	}
+	return "linux"
+}
+
 // isRetriableLookupMetricError returns whether the given error, returned from
 // lookupMetric() or WaitForMetric(), should be retried.
 func isRetriableLookupMetricError(err error) bool {
@@ -843,6 +851,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
+		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
 )
 
@@ -1050,20 +1060,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if isRHEL(vm.Platform) {
-		// Disable the google-cloud-sdk repo, which is occasionally corrupted
-		// (b/231439681). This should help with issues like b/231217003.
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i 's/^enabled=1$/enabled=0/' /etc/yum.repos.d/google-cloud.repo")
-		if err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to disable the google-cloud-sdk repo: %v", err)
-		}
-	}
-
 	return vm, nil
-}
-
-func isRHEL(platform string) bool {
-	return strings.HasPrefix(platform, "rhel-") || strings.HasPrefix(platform, "centos-") || strings.HasPrefix(platform, "rocky-linux-")
 }
 
 func isSUSE(platform string) bool {

@@ -1,0 +1,1 @@
+asbench --workload RU,80 -z 8 --duration 20 -o B1400

@@ -2,12 +2,103 @@
 
 Follow [installation guide](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/vault)
 for instructions to collect logs from this application using Ops Agent.
+# `vault` Metrics Receiver
+
+The `vault` metrics receiver fetches node and cluster level stats from Elasticsearch nodes. The receiver is meant to be run 
+
+## Prerequisites
+In order to expose prometheus metrics for vault, they need to be enabled. To enable append the following to `/etc/vault.d/vault.hcl` on all nodes:
+```
+telemetry {
+  prometheus_retention_time = "10m"
+  disable_hostname = false
+}
+```
+
+## Configurations
+To configure a receiver for your Vault metrics, specify the following fields:
+
+| Field                   | Required | Default           | Description |
+| ---                     | ---      | ---               | ---         |
+| `type`                  | required |                   | Must be `vault`. |
+| `endpoint`              | optional | `localhost:8200`  | hostname:port of vault instance to be monitored. |
+| `metrics_path`          | optional | `/v1/sys/metrics` | the path for metrics collection. |
+| `token`                 | optional |                   | Token used for authentication. |
+| `scheme`                | optional | `http`            | The scheme to use for the request. |
+| `collection_interval`   | optional |                   | A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`. |
+| `insecure`              | optional | true              | Signals whether to use a secure TLS connection or not. If insecure is true TLS will not be enabled. |
+| `insecure_skip_verify`  | optional | false             | Whether to skip verifying the certificate or not. A false value of insecure_skip_verify will not be used if insecure is true as the connection will not use TLS at all. |
+| `cert_file`             | optional |                   | Path to the TLS cert to use for mTLS required connections. |
+| `key_file`              | optional |                   | Path to the TLS key to use for mTLS required connections. |
+| `ca_file`               | optional |                   | Path to the CA cert. As a client this verifies the server certificate. If empty, uses system root CA. |
+
+
+Example Configuration:
+
+```yaml
+metrics:
+  receivers:
+    vault:
+      type: vault
+  service:
+    pipelines:
+      vault:
+        receivers:
+          - vault
+```
+
+## Metrics
+
+The Ops Agent collects the following metrics from your Elasticsearch nodes:
+
+| Metric                               | Data Type          | Unit          | Labels             | Description                                                                              |
+|-------------------------------       |--------------------|---------------|-----------         |----------                                                                                |
+| vault.core.request.count             | gauge              | {requests}    |                    | The number of requests handled by the Vault core. |
+| vault.core.leader.duration           | gauge              | ms            |                    | The average amount of time a core was the leader in high availability mode. |
+| vault.token.lease.count              | gauge              | {tokens}      |                    | The number of tokens that are leased for eventual expiration. |
+| vault.token.count                    | cumulative         | {tokens}      | namespace, cluster | The number of tokens created. |
+| vault.token.revoke.time              | gauge              | ms            |                    | The average time taken to revoke a token. |
+| vault.token.renew.time               | gauge              | ms            |                    | The average time taken to renew a token. |
+| vault.audit.request.failed           | gauge              | {requests}    |                    | The number of audit log requests that have failed. |
+| vault.audit.response.failed          | gauge              | {responses}   |                    | The number of audit log responses that have failed. |
+| vault.memory.usage                   | gauge              | bytes         |                    | The amount of memory used by Vault. |
+| vault.storage.operation.put.time     | cumulative         | ms            | storage            | The duration of put operations executed against the storage backend. |
+| vault.storage.operation.delete.time  | cumulative         | ms            | storage            | The duration of delete operations executed against the storage backend. |
+| vault.storage.operation.list.time    | cumulative         | ms            | storage            | The duration of list operations executed against the storage backend. |
+| vault.storage.operation.get.time     | cumulative         | ms            | storage            | The duration of get operations executed against the storage backend. |
+| vault.storage.operation.put.count    | cumulative         | {operations}  | storage            | The count of put operations executed against the storage backend. |
+| vault.storage.operation.delete.count | cumulative         | {operations}  | storage            | The count of delete operations executed against the storage backend. |
+| vault.storage.operation.list.count   | cumulative         | {operations}  | storage            | The count of list operations executed against the storage backend. |
+| vault.storage.operation.get.count    | cumulative         | {operations}  | storage            | The count of get operations executed against the storage backend. |
+
+
+
+Labels:
+
+| Label Name | Description                               | Values |
+|------------|------------------------------------       |--------|
+| storage    | The type of backend storage being used |  "zookeeper", "swift", "spanner", "s3", "postgres", "mysql", "mssql", "gcs", "etcd", "dynamodb", "couchdb", "consul", "cockroachdb", "cassandra", "azure"  |
+| cluster    | cluster the collection is from |    |
+| namespace  | the namespace within the cluster that the tokens belong to. |    |
+
+
 
 #  `vault_audit` Logging Receiver 
 
-## Prerequisites
+Example Configuration:
 
-
+```yaml
+logging:
+  receivers:
+    vault_audit:
+      type: vault_audit
+      include_paths: [/var/log/vault_audit.log]
+  service:
+    pipelines:
+      vault:
+        receivers:
+          - vault_audit
+```
 
 ## Logs
 
@@ -53,5 +144,3 @@ Audit logs have variable fields and can contain any subset of these fields.
 Field descriptions taken from https://support.hashicorp.com/hc/en-us/articles/360000995548-Audit-and-Operational-Log-Details.
 
 Any fields that are blank or missing will not be present in the log entry.
-
-Audit logs commonly contain the following fields in the [`LogEntry`](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry):

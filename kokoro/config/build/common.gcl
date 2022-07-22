@@ -6,14 +6,12 @@ template config build = {
   build_file = 'unified_agents/kokoro/scripts/build/build_package.sh'
 
   params {
-    package_format = null
-
-    environment {
-      PKGFORMAT = package_format
+    environment = {
+      SKIP_SIGNING = 'true'
     }
 
     keystore_keys = []
-    artifacts = ["**/result/**", "**/out/**"]
+    artifacts = ['result/**']
   }
 
   before_action = [functions.fetch_keystore(params.keystore_keys)]
