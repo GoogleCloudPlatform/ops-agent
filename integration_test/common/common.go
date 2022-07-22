@@ -191,7 +191,7 @@ func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) e
 			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
 			continue
 		}
-		match, matchErr := regexp.MatchString(expectedPattern, actualValue)
+		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedPattern), actualValue)
 		if matchErr != nil {
 			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
 				expectedLabel,

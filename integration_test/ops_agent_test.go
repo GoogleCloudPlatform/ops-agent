@@ -53,6 +53,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
 	cloudlogging "cloud.google.com/go/logging"
@@ -1279,18 +1280,23 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 
 	expectedMetrics := agentMetrics.ExpectedMetrics
 
-	// First make sure that the representative metrics are being uploaded.
+	// First make sure that the representative metric is being uploaded.
 	for _, metric := range expectedMetrics {
-		metric := metric
 		if !metric.Representative {
 			continue
 		}
 
-		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window,
-			[]string{`metric.labels.version = monitoring.regex.full_match("google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*")`},
-		); err != nil {
+		var series *monitoring.TimeSeries
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		if err != nil {
 			t.Error(err)
 		}
+
+		err = common.AssertMetric(metric, series)
+		if err != nil {
+			t.Error(err)
+		}
+
 	}
 
 	if t.Failed() {
@@ -1309,8 +1315,13 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	for _, metric := range expectedMetrics {
 		metric := metric
 
-		//Already validated the representative metric or skipped because its optional
-		if metric.Representative || metric.Optional {
+		// Already validated the representative metric
+		if metric.Representative {
+			continue
+		}
+
+		// Don't validate optional metrics
+		if metric.Optional {
 			continue
 		}
 
