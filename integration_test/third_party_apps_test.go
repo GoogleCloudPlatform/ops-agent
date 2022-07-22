@@ -484,11 +484,11 @@ const (
 // supported_operating_systems should only contain "linux", "windows", or
 // "linux_and_windows".
 func incompatibleOperatingSystem(testCase test) string {
-    supported := testCase.metadata.SupportedOperatingSystems
-    if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
-        return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
-    }
-    return "" // We are testing on a supported platform for this app.
+	supported := testCase.metadata.SupportedOperatingSystems
+	if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
+		return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
+	}
+	return "" // We are testing on a supported platform for this app.
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
