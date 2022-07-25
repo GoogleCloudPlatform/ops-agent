@@ -57,7 +57,7 @@ NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ID: supplied by Kokoro.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
-ogs will be uploaded. If unset, this will point to
+logs will be uploaded. If unset, this will point to
 ops-agents-public-buckets-test-logs, which should work for all tests
 triggered from GitHub.
 
