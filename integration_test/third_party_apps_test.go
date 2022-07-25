@@ -339,19 +339,18 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, err
 	}
 
+	installEnv := make(map[string]string)
 	if folder == "debian_ubuntu" {
 		// Gets us around problematic prompts for user input.
-		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo $DEBIAN_FRONTEND; sudo bash -c 'echo $DEBIAN_FRONTEND'`)
-		log.Printf("before: err=%v, output.Stdout=%v", err, output.Stdout)
-
-		_, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo "\nexport DEBIAN_FRONTEND=noninteractive" >> ~/.bashrc`)
-
-		output, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo $DEBIAN_FRONTEND; sudo bash -c 'echo $DEBIAN_FRONTEND'`)
-		log.Printf("after: err=%v, output.Stdout=%v", err, output.Stdout)
+		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
+		// Configures sudo to keep the value of DEBIAN_FRONTEND that we set.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+			return nonRetryable, err
+		}
 	}
 
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
