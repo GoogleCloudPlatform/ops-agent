@@ -1,11 +1,5 @@
 set -e
 
-echo $DEBIAN_FRONTEND
-bash -c 'echo $DEBIAN_FRONTEND'
-sudo bash -c 'echo $DEBIAN_FRONTEND'
-
-exit 0
-
 sudo apt-get update
 sudo apt-get install -y default-jdk default-jdk-headless activemq
 

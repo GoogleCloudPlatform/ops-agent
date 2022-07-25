@@ -781,11 +781,7 @@ func envVarMapToBashPrefix(env map[string]string) string {
 	for key, value := range env {
 		fmt.Fprintf(&builder, "%s='%s' ", key, value)
 	}
-	vars := builder.String()
-	if vars == "" {
-		return ""
-	}
-	return fmt.Sprintf("export %s&& ", vars)
+	return builder.String()
 }
 
 // envVarMapToPowershellPrefix converts a map of env variable name to value into a string
@@ -818,7 +814,7 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	}
 	// Write the script contents to script.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "echo $0; ps -p $$; cat - > script.sh && "+envVarMapToBashPrefix(env)+"sudo --preserve-env bash -x script.sh "+flagsStr)
+	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > script.sh && sudo "+envVarMapToBashPrefix(env)+"bash -x script.sh "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that

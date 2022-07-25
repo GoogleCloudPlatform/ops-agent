@@ -537,10 +537,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
-		/////////////
-		if test.app != "activemq" {
-			tests[i].skipReason = "do noT subMiT"
-		}
 	}
 }
 
