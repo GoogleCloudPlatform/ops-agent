@@ -11,10 +11,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+//go:embed agent_metrics/metadata.yaml
+var agentMetricsMetadata []byte
+
 //go:embed third_party_apps_data/applications
 var thirdPartyDataDir embed.FS
 
-func Test_ValidateMetadataOfThirdPartyApps(t *testing.T) {
+func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 	err := fs.WalkDir(thirdPartyDataDir, ".", func(path string, info fs.DirEntry, err error) error {
 		if info.Name() != "metadata.yaml" {
 			return nil
@@ -31,8 +34,12 @@ func Test_ValidateMetadataOfThirdPartyApps(t *testing.T) {
 	}
 }
 
-func Test_ValidateMetadataOfAgentMetric(t *testing.T) {
+func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
+	err := validateMetadata(agentMetricsMetadata, &common.ExpectedMetrics{})
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func validateMetadata(bytes []byte, i interface{}) error {

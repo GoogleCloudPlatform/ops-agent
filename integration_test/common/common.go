@@ -38,7 +38,7 @@ type ExpectedMetric struct {
 	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels,omitempty" validate:"required"`
+	Labels map[string]string `yaml:"labels"`
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
@@ -100,10 +100,9 @@ type IntegrationMetadata struct {
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
-	Troubleshoot                 string                       `yaml:"troubleshoot"`
+	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
 	ExpectedMetrics `yaml:",inline"`
-	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 }
 
 func SliceContains(slice []string, toFind string) bool {
