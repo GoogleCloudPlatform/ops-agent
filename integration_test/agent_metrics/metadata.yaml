@@ -131,6 +131,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     device: .*
+  platform: linux
 - type: agent.googleapis.com/disk/write_bytes_count
   value_type: INT64
   kind: CUMULATIVE
