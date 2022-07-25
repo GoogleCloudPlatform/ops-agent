@@ -328,8 +328,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
-	return nonRetryable, nil
-
 	if metadata.RestartAfterInstall {
 		logger.ToMainLog().Printf("Restarting vm instance...")
 		err := gce.RestartInstance(ctx, logger, vm)
