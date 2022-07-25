@@ -19,8 +19,11 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/multierr"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -37,20 +40,22 @@ type ExpectedMetric struct {
 	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels" validate:"required"`
+	Labels map[string]string `yaml:"labels,omitempty" validate:"required"`
 	// If Optional is true, the test for this metric will be skipped.
-	Optional bool `yaml:"optional" validate:"excluded_with=Representative"`
+	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
 	// have Representative set to true. This metric can be used
 	// to test that the integration is enabled.
-	Representative bool `yaml:"representative" validate:"excluded_with=Optional"`
+	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional,excluded_with=Platform"`
+	// Exclusive metric to a particular kind of platform.
+	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
 }
 
 type LogFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
-	Description string `yaml:"description"`
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 }
 
 type ExpectedLog struct {
@@ -66,7 +71,7 @@ type MinimumSupportedAgentVersion struct {
 type ConfigurationFields struct {
 	Name        string `yaml:"name" validate:"required"`
 	Default     string `yaml:"default"`
-	Description string `yaml:"description" validate:"required"`
+	Description string `yaml:"description" validate:"required,excludesall=‘’“”"`
 }
 
 type InputConfiguration struct {
@@ -81,19 +86,20 @@ type ConfigurationOptions struct {
 
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
-	AppUrl                       string                       `yaml:"app_url" validate:"required"`
-	ShortName                    string                       `yaml:"short_name" validate:"required"`
-	LongName                     string                       `yaml:"long_name" validate:"required"`
+	AppUrl                       string                       `yaml:"app_url" validate:"required,url"`
+	ShortName                    string                       `yaml:"short_name" validate:"required,excludesall=‘’“”"`
+	LongName                     string                       `yaml:"long_name" validate:"required,excludesall=‘’“”"`
 	LogoPath                     string                       `yaml:"logo_path"`
-	Description                  string                       `yaml:"description" validate:"required"`
+	Description                  string                       `yaml:"description" validate:"required,excludesall=‘’“”"`
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
 	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
+	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
-	Troubleshoot                 string                       `yaml:"troubleshoot"`
+	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 }
 
 func SliceContains(slice []string, toFind string) bool {
@@ -151,4 +157,55 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 		}
 	})
 	return v
+}
+
+func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+	var err error
+	if series.ValueType.String() != metric.ValueType {
+		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
+	}
+	if series.MetricKind.String() != metric.Kind {
+		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
+	}
+	if series.Resource.Type != metric.MonitoredResource {
+		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
+	}
+	err = multierr.Append(err, assertMetricLabels(metric, series))
+	if err != nil {
+		return fmt.Errorf("%s: %w", metric.Type, err)
+	}
+	return nil
+}
+
+func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+	// Only expected labels must be present
+	var err error
+	for actualLabel := range series.Metric.Labels {
+		if _, ok := metric.Labels[actualLabel]; !ok {
+			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
+		}
+	}
+	// All expected labels must be present and match the given pattern
+	for expectedLabel, expectedPattern := range metric.Labels {
+		actualValue, ok := series.Metric.Labels[expectedLabel]
+		if !ok {
+			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
+			continue
+		}
+		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedPattern), actualValue)
+		if matchErr != nil {
+			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
+				expectedLabel,
+				expectedPattern,
+				matchErr,
+			))
+		} else if !match {
+			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
+				expectedLabel,
+				expectedPattern,
+				actualValue,
+			))
+		}
+	}
+	return err
 }

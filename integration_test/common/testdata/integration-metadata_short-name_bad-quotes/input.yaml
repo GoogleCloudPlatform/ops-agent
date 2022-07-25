@@ -1,0 +1,31 @@
+app_url: "https://example.google.com/"
+short_name: ‘Ops’Agent
+long_name: Cloud OpsAgent
+description: |-
+  Example description
+minimum_supported_agent_version:
+  metrics: 1.0.0
+  logging: 1.0.0
+supported_app_version: ["Example0"]
+expected_metrics:
+- type: example.googleapis.com/example.example1
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+  representative: true
+expected_logs:
+- log_name: examplelog
+  fields:
+  - name: jsonPayload.message
+    value_regex: '(example):'
+    type: string
+    description: null
+configuration_options:
+  metrics:
+  - type: example
+    fields:
+    - name: type
+      description: description for type

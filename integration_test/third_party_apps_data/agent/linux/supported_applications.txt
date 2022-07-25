@@ -1,6 +1,8 @@
 activemq
+aerospike
 apache
 cassandra
+couchbase
 couchdb
 elasticsearch
 flink

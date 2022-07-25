@@ -11,5 +11,5 @@ See documentation at https://cloud.google.com/stackdriver/docs/solutions/ops-age
 
 ## License and Copyright
 
-Copyright 2020 Google Inc. All rights reserved.
+Copyright 2020 Google LLC.
 Apache License, Version 2.0

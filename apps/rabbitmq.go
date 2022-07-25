@@ -36,7 +36,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 		Regex: `^(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%d %H:%M:%S.%L+%Z",
+			TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
 		},
 	}
 	c = append(c, regexParser.Components(tag, uid)...)
@@ -48,10 +48,11 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 				"severity": {
 					CopyFrom: "jsonPayload.severity",
 					MapValues: map[string]string{
-						"debug": "DEBUG",
-						"error": "ERROR",
-						"info":  "INFO",
-						"noti":  "DEFAULT",
+						"debug":   "DEBUG",
+						"warning": "WARNING",
+						"error":   "ERROR",
+						"info":    "INFO",
+						"noti":    "DEFAULT",
 					},
 					MapValuesExclusive: true,
 				},
