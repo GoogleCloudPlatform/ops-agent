@@ -1168,10 +1168,8 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	}
 	// Reload the systemd daemon to pick up the new settings from system.conf edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
-	if _, err := RunRemotely(ctx, logger, vm, "", daemonReload); err != nil {
-		return err
-	}
-	return nil
+	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
+	return err
 }
 
 // DeleteInstance deletes the given VM instance synchronously.
