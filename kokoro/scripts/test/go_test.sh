@@ -101,6 +101,7 @@ fi
 WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
 gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
 chmod u+x "${WINRM_PAR_PATH}"
+export WINRM_PAR_PATH
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
