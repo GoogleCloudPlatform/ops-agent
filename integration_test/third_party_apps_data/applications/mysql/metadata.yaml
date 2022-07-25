@@ -68,7 +68,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    kind: writes|written
+    kind: writes|pages_written
 - type: workload.googleapis.com/mysql.handlers
   value_type: INT64
   kind: CUMULATIVE
