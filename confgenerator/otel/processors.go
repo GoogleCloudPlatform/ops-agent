@@ -117,6 +117,40 @@ func FlattenResourceAttribute(resourceAttribute, metricAttribute string) Transfo
 	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
 }
 
+// ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
+func ConvertGaugeToSum(metricName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
+}
+
+// SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
+func SetDescription(metricName, metricDescription string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
+}
+
+// SetUnit returns a metrics transform expression where the metric unit is set to provided value
+func SetUnit(metricName, unit string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName))
+}
+
+// SetName returns a metrics transform expression where the metric name is set to provided value
+func SetName(oldName, newName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(metric.name, "%s") where metric.name == "%s"`, newName, oldName))
+}
+
+func SetAttribute(metricName, attributeKey, attributeValue string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName))
+}
+
+// SummarySumValToSum creates a new Sum metric out of a summary metric's sum value. The new metric has a name of "<Old Name>_sum".
+func SummarySumValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`convert_summary_sum_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
+}
+
+// SummaryCountValToSum creates a new Sum metric out of a summary metric's count value. The new metric has a name of "<Old Name>_count".
+func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
@@ -130,10 +164,10 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 	return out
 }
 
-// UpdateMetric returns a config snippet that renames old to new, applying zero or more transformations.
-func UpdateMetric(old string, operations ...map[string]interface{}) map[string]interface{} {
+// UpdateMetric returns a config snippet applies transformations to the given metric name
+func UpdateMetric(metric string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include": old,
+		"include": metric,
 		"action":  "update",
 	}
 	if len(operations) > 0 {
