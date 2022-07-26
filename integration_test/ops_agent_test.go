@@ -1335,6 +1335,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
 			if err != nil {
 				t.Error(err)
+				return
 			}
 
 			err = common.AssertMetric(metric, series)
