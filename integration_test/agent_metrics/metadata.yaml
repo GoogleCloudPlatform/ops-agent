@@ -227,6 +227,7 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
+  platform: linux
 - type: agent.googleapis.com/processes/rss_usage
   value_type: DOUBLE
   kind: GAUGE
