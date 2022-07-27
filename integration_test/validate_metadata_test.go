@@ -36,7 +36,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := validateMetadata(agentMetricsMetadata, &common.ExpectedMetrics{})
+	err := validateMetadata(agentMetricsMetadata, &common.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}

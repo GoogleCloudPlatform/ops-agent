@@ -82,7 +82,7 @@ type ConfigurationOptions struct {
 	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration,dive"`
 }
 
-type ExpectedMetrics struct {
+type ExpectedMetricsContainer struct {
 	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 }
 
@@ -102,7 +102,7 @@ type IntegrationMetadata struct {
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
-	ExpectedMetrics `yaml:",inline"`
+	ExpectedMetricsContainer `yaml:",inline"`
 }
 
 func SliceContains(slice []string, toFind string) bool {

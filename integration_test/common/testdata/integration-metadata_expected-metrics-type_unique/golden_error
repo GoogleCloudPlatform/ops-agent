@@ -1,1 +1,1 @@
-Key: 'IntegrationMetadata.ExpectedMetrics.ExpectedMetrics' Error:Field validation for 'ExpectedMetrics' failed on the 'unique' tag
+Key: 'IntegrationMetadata.ExpectedMetricsContainer.ExpectedMetrics' Error:Field validation for 'ExpectedMetrics' failed on the 'unique' tag
