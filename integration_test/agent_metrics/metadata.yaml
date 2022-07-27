@@ -9,6 +9,8 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
+  #  TODO(b/240439767) Remove platform specific filter once its becomes available on windows
+  platform: linux
 #  TODO(b/205585572#comment2) Add response_code when it becomes available
 #  labels:
 #    response_code: \d+
@@ -131,6 +133,7 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     device: .*
+  platform: linux
 - type: agent.googleapis.com/disk/write_bytes_count
   value_type: INT64
   kind: CUMULATIVE
@@ -226,6 +229,7 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
+  platform: linux
 - type: agent.googleapis.com/processes/rss_usage
   value_type: DOUBLE
   kind: GAUGE
