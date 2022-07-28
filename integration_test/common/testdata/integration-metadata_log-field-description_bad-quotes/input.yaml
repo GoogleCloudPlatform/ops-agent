@@ -7,6 +7,7 @@ minimum_supported_agent_version:
   metrics: 1.0.0
   logging: 1.0.0
 supported_app_version: ["Example0"]
+supported_operating_systems: linux_and_windows
 expected_metrics:
 - type: example.googleapis.com/example.example1
   value_type: INT64
