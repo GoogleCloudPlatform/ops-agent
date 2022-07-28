@@ -39,6 +39,7 @@ debian = _family {
     bullseye = _distro {
       name = 'Debian 11'
       release = ['debian-11']
+      presubmit = ['debian-11']
     }
   }
 }
