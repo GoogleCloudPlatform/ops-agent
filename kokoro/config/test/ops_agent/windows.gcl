@@ -1,10 +1,8 @@
 import 'common.gcl' as common
+import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = [
-      'windows-2012-r2',
-      'windows-2019',
-    ]
+    platforms = image_lists.windows.distros.windows.presubmit
   }
 }
