@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"gopkg.in/yaml.v2"
 )
 
@@ -27,7 +27,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return validateMetadata(contents, &common.IntegrationMetadata{})
+		return validateMetadata(contents, &metadata.IntegrationMetadata{})
 	})
 	if err != nil {
 		t.Error(err)
@@ -36,7 +36,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := validateMetadata(agentMetricsMetadata, &common.ExpectedMetricsContainer{})
+	err := validateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,7 +45,7 @@ func TestValidateMetadataOfAgentMetric(t *testing.T) {
 func validateMetadata(bytes []byte, i interface{}) error {
 	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
 
-	v := common.NewIntegrationMetadataValidator()
+	v := metadata.NewIntegrationMetadataValidator()
 	err := yaml.UnmarshalStrict([]byte(yamlStr), i)
 	if err != nil {
 		return err
