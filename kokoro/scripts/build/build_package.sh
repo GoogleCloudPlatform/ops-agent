@@ -53,6 +53,7 @@ sudo docker run \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
+
     if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
       bash /signing/sign.sh /artifacts/*.rpm
     fi
