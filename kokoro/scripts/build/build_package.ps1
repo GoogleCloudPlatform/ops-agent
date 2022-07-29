@@ -23,12 +23,12 @@ Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
 # Try to disable Windows Defender firewall for improved build speed.
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
 
-$gitDir = 'github'
-if (Test-Path env:KOKORO_GOB_COMMIT_URL_unified_agents) {
-  $gitDir = 'git'
+if (Test-Path -Path "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents") {
+  Set-Location "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
 }
-
-Set-Location "$env:KOKORO_ARTIFACTS_DIR/$gitDir/unified_agents"
+else {
+  Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents"
+}
 
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
 # same commit that the agent was built from. This only applies to the
