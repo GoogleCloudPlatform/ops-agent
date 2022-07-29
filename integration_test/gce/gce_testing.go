@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration_test
-
 /*
 Package gce holds various helpers for testing the agents on GCE.
 To run a test based on this library, you can either:
