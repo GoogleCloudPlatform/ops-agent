@@ -69,6 +69,10 @@ func main() {
 }
 
 func run() error {
+	if err := initMonitoringClient(); err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -91,6 +95,14 @@ func run() error {
 		}
 		err = multierr.Append(err, writeExpectedMetrics(app, existingMetrics))
 	}
+	return err
+}
+
+// Initialize the global monitoring client.
+func initMonitoringClient() error {
+	ctx := context.Background()
+	var err error
+	monClient, err = monitoring.NewMetricClient(ctx)
 	return err
 }
 
@@ -271,13 +283,4 @@ func updateMetric(toUpdate metadata.ExpectedMetric, withValuesFrom metadata.Expe
 	}
 
 	return result
-}
-
-func init() {
-	ctx := context.Background()
-	var err error
-	monClient, err = monitoring.NewMetricClient(ctx)
-	if err != nil {
-		panic(fmt.Errorf("NewMetricClient() failed: %v", err))
-	}
 }
