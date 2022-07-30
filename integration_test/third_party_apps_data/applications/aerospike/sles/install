@@ -1,0 +1,21 @@
+set -e
+
+# aerospike-init requires `python` in $PATH
+sudo ln -s /usr/bin/python3 /usr/bin/python
+
+curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/5.7.0.17/aerospike-server-community-5.7.0.17.tar.gz
+tar -xzf aerospike.tar.gz
+cd aerospike-server
+./bin/aerospike init
+
+# aerospike-init creates an invalid config
+sed -i 's|default-ttl.*||g' etc/aerospike.conf
+
+sudo ./bin/aerospike start
+./bin/aerospike status
+
+cd -
+
+wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.0.5/aerospike-tools-7.0.5-el8.tgz"
+tar -xzf aerospike-tools.tgz
+(cd aerospike-tools-7.0.5-el8 && sudo ./asinstall)

@@ -28,10 +28,11 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs.
+.deb/.rpm/.goo files to install on the testing VMs.
+
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-    version of the Ops Agent to install first, before installing the version
-	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+version of the Ops Agent to install first, before installing the version
+from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -41,6 +42,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"testing"
@@ -50,6 +52,9 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
@@ -1244,97 +1249,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-// agentVersionRegexesForPlatform returns a slice containing all agents that
-// we expect to upload an uptime metric on the given platform. This function
-// returns a list of regexes that we can match against the "version" field of the
-// uptime metric.
-func agentVersionRegexesForPlatform(platform string) []string {
-	// TODO(b/191363559): Remove this whole `gce.IsWindows(platform)` section after we
-	// release a stable Ops Agent version that changes user agent to
-	// google-cloud-ops-agent-metrics/ for Windows as well.
-	if gce.IsWindows(platform) {
-		return []string{
-			// TODO(b/176832677): The Logging agent does not currently upload an uptime metric.
-			// TODO(b/191362867): Update the regex to be more strict after a version of
-			// Ops Agent has been released with the expected user agent.
-			// strings.Join([]string{
-			// 	 "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-			// 	 "Google Cloud Metrics Agent/.*",
-			// }, "|"),
-			strings.Join([]string{
-				"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9].*",
-				"Google Cloud Metrics Agent/.*",
-			}, "|"),
-		}
-	}
-	return []string{
-		// TODO(jschulz): Enable this label once it exists.
-		//"google-cloud-ops-agent-engine/",
-		// TODO(b/170138116): Enable this label once it is being collected.
-		//"google-cloud-ops-agent-logs/",
-		// TODO(b/191362867): Update the regex to be more strict after a version of
-		// Ops Agent has been released with the expected user agent.
-		// "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-		"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*",
-	}
-}
-
-func metricsForPlatform(platform string) []string {
-	commonMetrics := []string{
-		"agent.googleapis.com/agent/api_request_count",
-		"agent.googleapis.com/agent/memory_usage",
-		"agent.googleapis.com/agent/monitoring/point_count",
-
-		// TODO(b/170138116): Enable these metrics once they are being collected.
-		"agent.googleapis.com/agent/log_entry_count",
-		// "agent.googleapis.com/agent/log_entry_retry_count",
-		"agent.googleapis.com/agent/request_count",
-
-		"agent.googleapis.com/cpu/load_1m",
-		"agent.googleapis.com/cpu/load_5m",
-		"agent.googleapis.com/cpu/load_15m",
-		"agent.googleapis.com/cpu/utilization",
-
-		"agent.googleapis.com/disk/bytes_used",
-		"agent.googleapis.com/disk/io_time",
-		"agent.googleapis.com/disk/operation_count",
-		"agent.googleapis.com/disk/operation_time",
-		"agent.googleapis.com/disk/percent_used",
-		"agent.googleapis.com/disk/read_bytes_count",
-		"agent.googleapis.com/disk/write_bytes_count",
-
-		"agent.googleapis.com/interface/errors",
-		"agent.googleapis.com/interface/packets",
-		"agent.googleapis.com/interface/traffic",
-
-		"agent.googleapis.com/memory/bytes_used",
-		"agent.googleapis.com/memory/percent_used",
-
-		"agent.googleapis.com/network/tcp_connections",
-
-		"agent.googleapis.com/processes/cpu_time",
-		"agent.googleapis.com/processes/disk/read_bytes_count",
-		"agent.googleapis.com/processes/disk/write_bytes_count",
-		"agent.googleapis.com/processes/rss_usage",
-		"agent.googleapis.com/processes/vm_usage",
-
-		"agent.googleapis.com/swap/bytes_used",
-		"agent.googleapis.com/swap/io",
-	}
-	if gce.IsWindows(platform) {
-		windowsOnlyMetrics := []string{
-			"agent.googleapis.com/pagefile/percent_used",
-		}
-		return append(commonMetrics, windowsOnlyMetrics...)
-	}
-
-	linuxOnlyMetrics := []string{
-		"agent.googleapis.com/disk/merged_operations",
-		"agent.googleapis.com/processes/count_by_state",
-	}
-	return append(commonMetrics, linuxOnlyMetrics...)
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1350,22 +1264,40 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	// First make sure that the uptime metrics are being uploaded.
-	var uptimeWaitGroup sync.WaitGroup
-	regexes := agentVersionRegexesForPlatform(vm.Platform)
-	for _, versionRegex := range regexes {
-		versionRegex := versionRegex
-		uptimeWaitGroup.Add(1)
-		go func() {
-			defer uptimeWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
-				[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
-			); err != nil {
-				t.Error(err)
-			}
-		}()
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	uptimeWaitGroup.Wait()
+
+	var agentMetrics struct {
+		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+	}
+
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMetrics := agentMetrics.ExpectedMetrics
+
+	// First make sure that the representative metric is being uploaded.
+	for _, metric := range expectedMetrics {
+		if !metric.Representative {
+			continue
+		}
+
+		var series *monitoring.TimeSeries
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = metadata.AssertMetric(metric, series)
+		if err != nil {
+			t.Error(err)
+		}
+
+	}
 
 	if t.Failed() {
 		// Return early instead of waiting up to 7 minutes for the second round
@@ -1378,13 +1310,36 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
+	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, metric := range metricsForPlatform(vm.Platform) {
+	for _, metric := range expectedMetrics {
 		metric := metric
+
+		// Already validated the representative metric
+		if metric.Representative {
+			continue
+		}
+
+		// Don't validate optional metrics
+		if metric.Optional {
+			continue
+		}
+
+		if metric.Platform != "" && metric.Platform != platformKind {
+			continue
+		}
+
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			err = metadata.AssertMetric(metric, series)
+			if err != nil {
 				t.Error(err)
 			}
 		}()

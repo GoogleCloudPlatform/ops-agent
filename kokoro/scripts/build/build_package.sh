@@ -40,10 +40,10 @@ sudo DOCKER_BUILDKIT=1 docker build . \
   --target "${DISTRO}-build" \
   -t build_image
 
-SIGNING_DIR="kokoro/scripts/build/signing"
+SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
-  cp "${RPM_SIGNING_KEY}" "$SIGNING_DIR/signing-key"
+  cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
 fi
 
 sudo docker run \
