@@ -50,9 +50,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -1270,7 +1270,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	var agentMetrics struct {
-		ExpectedMetrics []*common.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
 
 	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
@@ -1292,7 +1292,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			t.Error(err)
 		}
 
-		err = common.AssertMetric(metric, series)
+		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1338,7 +1338,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 				return
 			}
 
-			err = common.AssertMetric(metric, series)
+			err = metadata.AssertMetric(metric, series)
 			if err != nil {
 				t.Error(err)
 			}
