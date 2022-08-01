@@ -19,7 +19,7 @@ diagram that shows how these configs (called "job configs") are structured and
 how they point to the configs here (called "build configs"). Only bullseye and
 Windows are pictured, for brevity.
 
-![mapping](mapping.png){width="900"}
+![mapping](mapping.png)
 
 The original drawing for this diagram is [here](https://docs.google.com/drawings/d/1C4G8SfwmB0AcYrPIN0ipt8xMQDo79lBw8GwaR57NZzU/edit?usp=sharing&resourcekey=0-9tzXVXtyXWxgUiFCJdcMdA).
 
