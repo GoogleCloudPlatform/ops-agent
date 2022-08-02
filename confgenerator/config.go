@@ -275,6 +275,17 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
+func CalculateEnabledReceivers(uc UnifiedConfig) (int, error) {
+	// fmt.Printf("Logging %#v\n", uc.Logging.Receivers)
+	// fmt.Printf("Metrics %#v\n", uc.Metrics.Receivers)
+
+	receiversCount := len(uc.Logging.Receivers) + len(uc.Metrics.Receivers)
+	log.Printf("Number of Defined Receivers : %d\n", receiversCount)
+
+	return receiversCount, nil
+}
+
+
 type Component interface {
 	// Type returns the component type string as used in the configuration file (e.g. "hostmetrics")
 	Type() string
