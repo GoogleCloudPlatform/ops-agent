@@ -21,7 +21,7 @@ var thirdPartyDataDir embed.FS
 
 func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 	err := walkThirdPartyApps(func(contents []byte) error {
-		return validateMetadata(contents, &metadata.IntegrationMetadata{})
+		return parseAndValidateMetadata(contents, &metadata.IntegrationMetadata{})
 	})
 	if err != nil {
 		t.Error(err)
@@ -31,7 +31,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 func TestThirdPartyPublicUrls(t *testing.T) {
 	err := walkThirdPartyApps(func(contents []byte) error {
 		integrationMetadata := &metadata.IntegrationMetadata{}
-		err := validateMetadata(contents, integrationMetadata)
+		err := parseAndValidateMetadata(contents, integrationMetadata)
 		if err != nil {
 			return err
 		}
@@ -41,7 +41,7 @@ func TestThirdPartyPublicUrls(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			if r.StatusCode == 404 {
+			if r.StatusCode != 200 {
 				t.Error(fmt.Sprintf("Invalid public url: %s", integrationMetadata.PublicUrl))
 			}
 			fmt.Println(r)
@@ -70,13 +70,13 @@ func walkThirdPartyApps(fn func(contents []byte) error) error {
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := validateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
+	err := parseAndValidateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func validateMetadata(bytes []byte, i interface{}) error {
+func parseAndValidateMetadata(bytes []byte, i interface{}) error {
 	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
 
 	v := metadata.NewIntegrationMetadataValidator()
