@@ -680,7 +680,6 @@ var (
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-//
 // on Windows.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	defer func() {
