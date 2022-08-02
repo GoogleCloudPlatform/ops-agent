@@ -3,7 +3,7 @@ import '../common.gcl' as common
 template config third_party_apps_test = common.third_party_apps_test {
   params {
     environment {
-      // The release builds run with slightly elevated privileges.
+      // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
       SERVICE_EMAIL =
           'build-and-test@stackdriver-test-143416.iam.gserviceaccount.com'
