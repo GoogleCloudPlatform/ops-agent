@@ -23,7 +23,7 @@ couchdb couchdb/adminpass_again password ${COUCHDB_PASSWORD}
 couchdb couchdb/adminpass_again seen true" | debconf-set-selections
 
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y couchdb
+sudo apt-get install -y couchdb
 
 cat << EOF > local.ini
 [couchdb]

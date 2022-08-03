@@ -61,13 +61,6 @@ ubuntu = _family {
       ]
       presubmit = ['ubuntu-minimal-2004-lts']
     }
-    impish = _distro {
-      name = 'Ubuntu 21.10 Impish'
-      release = [
-        'ubuntu-2110',
-        'ubuntu-minimal-2110',
-      ]
-    }
     jammy = _distro {
       name = 'Ubuntu 22.04 Jammy'
       release = [
