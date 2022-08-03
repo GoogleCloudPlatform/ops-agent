@@ -34,7 +34,6 @@ import (
 )
 
 func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledReceivers) (*monitoringpb.CreateTimeSeriesRequest, error) {
-	enabledReceiversCount := 1
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
 		return nil, err
@@ -57,15 +56,16 @@ func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledRec
 	now := &timestamp.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
-	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + projectID,
-		TimeSeries: []*monitoringpb.TimeSeries{{
+
+	timeSeriesList := []*monitoringpb.TimeSeries{}
+	for rType, count := range eR {
+		tSeries := monitoringpb.TimeSeries{
 			MetricKind: metricpb.MetricDescriptor_GAUGE,
 			ValueType:  metricpb.MetricDescriptor_INT64,
 			Metric: &metricpb.Metric{
 				Type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
 				Labels: map[string]string{
-					"receiver_type":  "sample",
+					"receiver_type":  rType,
 					"telemetry_type": "metrics",
 				},
 			},
@@ -83,11 +83,18 @@ func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledRec
 				},
 				Value: &monitoringpb.TypedValue{
 					Value: &monitoringpb.TypedValue_Int64Value{
-						Int64Value: int64(enabledReceiversCount),
+						Int64Value: int64(count),
 					},
 				},
 			}},
-		}},
+		}
+
+		timeSeriesList = append(timeSeriesList, &tSeries)
+	}
+
+	req := &monitoringpb.CreateTimeSeriesRequest{
+		Name: "projects/" + projectID,
+		TimeSeries: timeSeriesList,
 	}
 
 	log.Printf("writeTimeseriesRequest: %+v\n", req)
@@ -123,8 +130,8 @@ func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) er
 	go func() {
 		ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
-		for _ = range ticker.C {
-			fmt.Println("Tick send metric")
+		for t := range ticker.C {
+			fmt.Println("Tick send metric : %s", t)
 			sendMetric(eR)
 		}
 	}()
