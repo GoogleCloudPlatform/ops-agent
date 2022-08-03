@@ -66,11 +66,14 @@ func run() error {
 		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
 	}
 
-	eR, err := confgenerator.GetEnabledReceivers(uc)
-	if err != nil {
-		return err
+	// Only google engine service
+	if *service ==  "" { 
+		eR, err := confgenerator.GetEnabledReceivers(uc)
+		if err != nil {
+			return err
+		}
+		log.Println(eR)
+		err = monitoring_api.SendMetricEveryInterval(eR, 60)
 	}
-	log.Println(eR)
-	err = monitoring_api.SendMetricEveryInterval(eR, 60)
 	return nil
 }
