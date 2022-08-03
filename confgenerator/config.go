@@ -275,14 +275,44 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
-func CalculateEnabledReceivers(uc UnifiedConfig) (int, error) {
+type EnabledReceivers map[string]int
+
+func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 	// fmt.Printf("Logging %#v\n", uc.Logging.Receivers)
 	// fmt.Printf("Metrics %#v\n", uc.Metrics.Receivers)
+	eR := make(EnabledReceivers)
 
-	receiversCount := len(uc.Logging.Receivers) + len(uc.Metrics.Receivers)
-	log.Printf("Number of Defined Receivers : %d\n", receiversCount)
+	// Logging Pipelines
+	for _, p := range uc.Logging.Service.Pipelines {
+		fmt.Println(p)
+		for _, rID := range p.ReceiverIDs {
+			rType := uc.Logging.Receivers[rID].Type()
+			if val, ok := eR[rType]; ok {
+				eR[rType] = val + 1
+			} else {
+				eR[rType] = 1
+			}
+		}
+	}
 
-	return receiversCount, nil
+	// Metrics Pipelines
+	for _, p := range uc.Metrics.Service.Pipelines {
+		for _, rID := range p.ReceiverIDs {
+			rType := uc.Metrics.Receivers[rID].Type()
+			if val, ok := eR[rType]; ok {
+				eR[rType] = val + 1
+			} else {
+				eR[rType] = 1
+			}
+		}
+	}
+
+	fmt.Println("eR", eR)
+
+	// receiversCount := len(uc.Logging.Receivers) + len(uc.Metrics.Receivers)
+	// log.Printf("Number of Defined Receivers : %d\n", receiversCount)
+
+	return eR, nil
 }
 
 

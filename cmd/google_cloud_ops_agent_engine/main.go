@@ -18,9 +18,11 @@ import (
 	"flag"
 	"log"
 	"os"
+	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/monitoring_api"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -35,7 +37,7 @@ var (
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
-		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
+		log.Fatal(err)
 	}
 }
 func run() error {
@@ -59,5 +61,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
+	err = confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
+	if err != nil {
+		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
+	}
+
+	eR, err := confgenerator.GetEnabledReceivers(uc)
+	if err != nil {
+		return err
+	}
+	log.Println(eR)
+	monitoring_api.SendMetricEveryInterval(eR, 20)
+	return nil
 }
