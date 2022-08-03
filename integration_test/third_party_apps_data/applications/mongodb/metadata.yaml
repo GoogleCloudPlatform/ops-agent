@@ -81,6 +81,67 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     database: .*
+- type: workload.googleapis.com/mongodb.extent.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+- type: workload.googleapis.com/mongodb.database.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.index.access.count
+  value_type: INT64
+  monitored_resource: gce_instance
+  kind: GAUGE
+  labels:
+    collection: .*
+    database: .*
+- type: workload.googleapis.com/mongodb.document.operation.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    operation: .*
+- type: workload.googleapis.com/mongodb.network.io.receive
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.network.io.transmit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.network.request.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.operation.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: .*
+- type: workload.googleapis.com/mongodb.session.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.cursor.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
+- type: workload.googleapis.com/mongodb.cursor.timeout.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels: {}
 expected_logs:
 - log_name: mongodb
   fields:
