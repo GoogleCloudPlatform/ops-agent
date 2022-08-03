@@ -24,9 +24,9 @@ import (
 )
 
 // ParseMultilineComponent constitutes the mulltiline_parser components.
-func ParseMultilineComponent(tag, uid, language string, languageRules []string) []Component {
+func ParseMultilineComponent(tag, uid string, languageRules []string) []Component {
 	var components []Component
-	multilineParserName := fmt.Sprintf("multiline.%s.%s.%s", tag, uid, language)
+	multilineParserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
 	rules := [][2]string{}
 	for _, rule := range languageRules {
 		rules = append(rules, [2]string{"rule", rule})

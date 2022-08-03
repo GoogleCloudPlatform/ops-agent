@@ -53,10 +53,10 @@ var multilineRulesLanguageMap = map[string][]string{
 		`"java_after_exception" "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*(?:Caused by|Suppressed):/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*... \d+ (?:more|common frames omitted)/" "java_after_exception"`},
-	"python": {`"start_state" "/^Traceback \(most recent call last\):$/" "python"`,
+	"python": {`"start_state, python_start_exception" "/^Traceback \(most recent call last\):$/" "python"`,
 		`"python" "/^[\t ]+File /" "python_code"`,
 		`"python_code" "/[^\t ]/" "python"`,
-		`"python" "/^(?:[^\s.():]+\.)*[^\s.():]+:/" "start_state"`},
+		`"python" "/^(?:[^\s.():]+\.)*[^\s.():]+:/" "python_start_exception"`},
 	"go": {`"start_state" "/\bpanic: /" "go_after_panic"`,
 		`"start_state" "/http: panic serving/" "go_goroutine"`,
 		`"go_after_panic" "/^$/" "go_goroutine"`,
@@ -74,13 +74,14 @@ func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
 	// Remove below two lines when https://github.com/fluent/fluent-bit/issues/4795 is fixed
 	renameLogToMessage := modify.NewRenameOptions("log", "message")
 	components = append(components, renameLogToMessage.Component(tag))
+	var combinedRules []string
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
-			component := fluentbit.ParseMultilineComponent(tag, uid, g.Language, multilineRulesLanguageMap[g.Language])
-			components = append(components, component...)
+			combinedRules = append(combinedRules, multilineRulesLanguageMap[g.Language]...)
 		}
 	}
-
+	component := fluentbit.ParseMultilineComponent(tag, uid, combinedRules)
+	components = append(components, component...)
 	return components
 }
 
