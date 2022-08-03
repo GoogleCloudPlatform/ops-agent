@@ -2,7 +2,9 @@ package integration
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -18,7 +20,41 @@ var agentMetricsMetadata []byte
 var thirdPartyDataDir embed.FS
 
 func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
-	err := fs.WalkDir(thirdPartyDataDir, ".", func(path string, info fs.DirEntry, err error) error {
+	err := walkThirdPartyApps(func(contents []byte) error {
+		return parseAndValidateMetadata(contents, &metadata.IntegrationMetadata{})
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestThirdPartyPublicUrls(t *testing.T) {
+	err := walkThirdPartyApps(func(contents []byte) error {
+		integrationMetadata := &metadata.IntegrationMetadata{}
+		err := parseAndValidateMetadata(contents, integrationMetadata)
+		if err != nil {
+			return err
+		}
+		t.Run(integrationMetadata.ShortName, func(t *testing.T) {
+			t.Parallel()
+			r, err := http.Get(integrationMetadata.PublicUrl)
+			if err != nil {
+				t.Error(err)
+			}
+			if r.StatusCode != 200 {
+				t.Error(fmt.Sprintf("Invalid public url: %s", integrationMetadata.PublicUrl))
+			}
+		})
+		return nil
+	})
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func walkThirdPartyApps(fn func(contents []byte) error) error {
+	return fs.WalkDir(thirdPartyDataDir, ".", func(path string, info fs.DirEntry, err error) error {
 		if info.Name() != "metadata.yaml" {
 			return nil
 		}
@@ -27,22 +63,19 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return validateMetadata(contents, &metadata.IntegrationMetadata{})
+		return fn(contents)
 	})
-	if err != nil {
-		t.Error(err)
-	}
 }
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := validateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
+	err := parseAndValidateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func validateMetadata(bytes []byte, i interface{}) error {
+func parseAndValidateMetadata(bytes []byte, i interface{}) error {
 	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
 
 	v := metadata.NewIntegrationMetadataValidator()
