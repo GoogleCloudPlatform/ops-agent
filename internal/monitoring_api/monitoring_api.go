@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func constructTimeSeriesRequest(ctx context.Context) (*monitoringpb.CreateTimeSeriesRequest, error) {
+func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledReceivers) (*monitoringpb.CreateTimeSeriesRequest, error) {
 	enabledReceiversCount := 1
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
@@ -95,11 +95,11 @@ func constructTimeSeriesRequest(ctx context.Context) (*monitoringpb.CreateTimeSe
 	return req, nil
 }
 
-func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) error {
+func sendMetric(eR confgenerator.EnabledReceivers) error {
 	fmt.Println("interval", eR)
 	ctx := context.Background()
 
-	req, err := constructTimeSeriesRequest(ctx)
+	req, err := constructTimeSeriesRequest(ctx, eR)
 	if err != nil {
 		return err
 	}
@@ -115,6 +115,21 @@ func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) er
 		log.Printf("could not write time series value, %v ", err)
 		return fmt.Errorf("could not write time series value, %v ", err)
 	}
+
+	return nil
+}
+
+func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) error {
+	go func() {
+		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+
+		for _ = range ticker.C {
+			fmt.Println("Tick send metric")
+			sendMetric(eR)
+		}
+	}()
+
+	select {}
 
 	return nil
 }
