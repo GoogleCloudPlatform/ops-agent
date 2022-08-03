@@ -16,16 +16,13 @@ package monitoring_api
 
 import (
 	"context"
-	"flag"
+	// "flag"
 	"fmt"
 	"log"
-	"os"
+	// "os"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/shirou/gopsutil/host"
 	"golang.org/x/oauth2/google"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
@@ -33,35 +30,30 @@ import (
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func sendMetricEveryInterval(metricValue metricpb.Metric, time float32) error {
-	ctx := context.Background()
-
+func constructTimeSeriesRequest(ctx context.Context) (*monitoringpb.CreateTimeSeriesRequest, error) {
+	enabledReceiversCount := 1
 	creds, err := google.FindDefaultCredentials(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	projectID := creds.ProjectID
 	instance_id, err := metadata.InstanceID()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	zone, err := metadata.Zone()
 	if err != nil {
-		return err
+		return nil ,err
 	}
 
 	log.Println("projectID : ", projectID)
 	log.Println("instance_id : ", instance_id)
 	log.Println("zone : ", zone)
 
-	c, err := monitoring.NewMetricClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer c.Close()
 	now := &timestamp.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
@@ -97,7 +89,26 @@ func sendMetricEveryInterval(metricValue metricpb.Metric, time float32) error {
 			}},
 		}},
 	}
+
 	log.Printf("writeTimeseriesRequest: %+v\n", req)
+
+	return req, nil
+}
+
+func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) error {
+	fmt.Println("interval", eR)
+	ctx := context.Background()
+
+	req, err := constructTimeSeriesRequest(ctx)
+	if err != nil {
+		return err
+	}
+
+	c, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
 
 	err = c.CreateTimeSeries(ctx, req)
 	if err != nil {
