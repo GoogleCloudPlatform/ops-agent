@@ -282,7 +282,6 @@ func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
-		fmt.Println(p)
 		for _, rID := range p.ReceiverIDs {
 			rType := uc.Logging.Receivers[rID].Type()
 			if val, ok := eR[rType]; ok {
