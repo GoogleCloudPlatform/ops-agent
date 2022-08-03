@@ -1,0 +1,22 @@
+on: [pull_request]
+name: PR_Presubmit
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/setup-go@v2
+      with:
+        go-version: 1.x
+    - uses: actions/checkout@v2
+    - id: files
+      uses: jitterbit/get-changed-files@v1
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.base_ref }}
+        path: base_checkout
+    - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels=${{ join(github.event.pull_request.labels.*.name, ' ') }} -base-dir="base_checkout" -tags=ci
+
