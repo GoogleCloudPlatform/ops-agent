@@ -71,6 +71,6 @@ func run() error {
 		return err
 	}
 	log.Println(eR)
-	monitoring_api.SendMetricEveryInterval(eR, 20)
+	err = monitoring_api.SendMetricEveryInterval(eR, 60)
 	return nil
 }
