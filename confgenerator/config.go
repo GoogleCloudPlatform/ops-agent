@@ -278,8 +278,6 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 type EnabledReceivers map[string]int
 
 func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
-	// fmt.Printf("Logging %#v\n", uc.Logging.Receivers)
-	// fmt.Printf("Metrics %#v\n", uc.Metrics.Receivers)
 	eR := make(EnabledReceivers)
 
 	// Logging Pipelines
@@ -306,11 +304,6 @@ func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 			}
 		}
 	}
-
-	fmt.Println("eR", eR)
-
-	// receiversCount := len(uc.Logging.Receivers) + len(uc.Metrics.Receivers)
-	// log.Printf("Number of Defined Receivers : %d\n", receiversCount)
 
 	return eR, nil
 }
