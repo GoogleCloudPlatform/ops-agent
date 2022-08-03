@@ -44,7 +44,6 @@ func TestThirdPartyPublicUrls(t *testing.T) {
 			if r.StatusCode != 200 {
 				t.Error(fmt.Sprintf("Invalid public url: %s", integrationMetadata.PublicUrl))
 			}
-			fmt.Println(r)
 		})
 		return nil
 	})
