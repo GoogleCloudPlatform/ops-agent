@@ -130,8 +130,8 @@ func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) er
 	go func() {
 		ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
-		for t := range ticker.C {
-			fmt.Println("Tick send metric : %s", t)
+		for _ = range ticker.C {
+			log.Println("Tick send metric")
 			sendMetric(eR)
 		}
 	}()
