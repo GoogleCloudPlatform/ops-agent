@@ -313,8 +313,18 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, err
 	}
 
+	installEnv := make(map[string]string)
+	if folder == "debian_ubuntu" {
+		// Gets us around problematic prompts for user input.
+		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
+		// Configures sudo to keep the value of DEBIAN_FRONTEND that we set.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+			return nonRetryable, err
+		}
+	}
+
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
