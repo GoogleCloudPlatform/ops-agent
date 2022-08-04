@@ -46,9 +46,9 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -61,7 +61,7 @@ var (
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
-var validate = common.NewIntegrationMetadataValidator()
+var validate = metadata.NewIntegrationMetadataValidator()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -175,7 +175,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 //	field name => field value regex
 //
 // into a query filter to pass to the logging API.
-func constructQuery(logName string, fields []*common.LogFields) string {
+func constructQuery(logName string, fields []*metadata.LogFields) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
@@ -192,7 +192,7 @@ func constructQuery(logName string, fields []*common.LogFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*common.ExpectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -211,7 +211,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*common.ExpectedMetric) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
 	// Wait for the representative metric first, which is intended to *always*
@@ -238,7 +238,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
 	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
-	var requiredMetrics []*common.ExpectedMetric
+	var requiredMetrics []*metadata.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
@@ -259,7 +259,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *common.ExpectedMetric) error {
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
 	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
 	if err != nil {
 		// Optional metrics can be missing
@@ -268,7 +268,7 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 		}
 		return err
 	}
-	return common.AssertMetric(metric, series)
+	return metadata.AssertMetric(metric, series)
 }
 
 type testConfig struct {
@@ -307,14 +307,24 @@ func parseTestConfigFile() (testConfig, error) {
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata common.IntegrationMetadata) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata metadata.IntegrationMetadata) (retry bool, err error) {
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
 	}
 
+	installEnv := make(map[string]string)
+	if folder == "debian_ubuntu" {
+		// Gets us around problematic prompts for user input.
+		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
+		// Configures sudo to keep the value of DEBIAN_FRONTEND that we set.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+			return nonRetryable, err
+		}
+	}
+
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
@@ -364,8 +374,8 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 // Returns a map of application name to its parsed and validated metadata.yaml.
 // The set of applications returned is authoritative and corresponds to the
 // directory names under integration_test/third_party_apps_data/applications.
-func fetchAppsAndMetadata(t *testing.T) map[string]common.IntegrationMetadata {
-	allApps := make(map[string]common.IntegrationMetadata)
+func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata {
+	allApps := make(map[string]metadata.IntegrationMetadata)
 
 	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
 	if err != nil {
@@ -373,7 +383,7 @@ func fetchAppsAndMetadata(t *testing.T) map[string]common.IntegrationMetadata {
 	}
 	for _, file := range files {
 		app := file.Name()
-		var metadata common.IntegrationMetadata
+		var metadata metadata.IntegrationMetadata
 		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
 			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
@@ -413,7 +423,7 @@ func modifiedFiles(t *testing.T) []string {
 //	integration_test/third_party_apps_data/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]common.IntegrationMetadata) map[string]bool {
+func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
@@ -442,7 +452,7 @@ func determineImpactedApps(mf []string, allApps map[string]common.IntegrationMet
 type test struct {
 	platform   string
 	app        string
-	metadata   common.IntegrationMetadata
+	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
 
@@ -485,7 +495,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if common.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
+		if metadata.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
