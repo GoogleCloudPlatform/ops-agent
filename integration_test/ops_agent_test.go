@@ -53,6 +53,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -220,7 +221,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), configPathForPlatform(vm.Platform)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {

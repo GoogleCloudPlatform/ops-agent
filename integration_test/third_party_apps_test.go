@@ -49,6 +49,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -341,7 +342,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
-	backupConfigFilePath := configPathForPlatform(vm.Platform) + ".bak"
+	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
 	if _, err = os.Stat(backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
