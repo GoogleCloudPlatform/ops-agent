@@ -341,6 +341,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
+	backupConfigFilePath := configPathForPlatform(vm.Platform) + ".bak"
+	if _, err = os.Stat(backupConfigFilePath); err != nil {
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
+	}
+
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
