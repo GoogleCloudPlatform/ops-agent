@@ -81,12 +81,6 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     database: .*
-- type: workload.googleapis.com/mongodb.extent.count
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    database: .*
 - type: workload.googleapis.com/mongodb.database.count
   value_type: INT64
   kind: GAUGE
