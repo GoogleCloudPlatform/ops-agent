@@ -275,39 +275,6 @@ func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig
 	return config, nil
 }
 
-type EnabledReceivers map[string]int
-
-func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
-	eR := make(EnabledReceivers)
-
-	// Logging Pipelines
-	for _, p := range uc.Logging.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			rType := uc.Logging.Receivers[rID].Type()
-			if val, ok := eR[rType]; ok {
-				eR[rType] = val + 1
-			} else {
-				eR[rType] = 1
-			}
-		}
-	}
-
-	// Metrics Pipelines
-	for _, p := range uc.Metrics.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			rType := uc.Metrics.Receivers[rID].Type()
-			if val, ok := eR[rType]; ok {
-				eR[rType] = val + 1
-			} else {
-				eR[rType] = 1
-			}
-		}
-	}
-
-	return eR, nil
-}
-
-
 type Component interface {
 	// Type returns the component type string as used in the configuration file (e.g. "hostmetrics")
 	Type() string
