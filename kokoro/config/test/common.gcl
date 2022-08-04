@@ -57,7 +57,7 @@ template config go_test = common {
     }
 
     artifacts = super.artifacts + [
-      '**/logs/**',
+      'logs/**',
     ]
   }
 }
