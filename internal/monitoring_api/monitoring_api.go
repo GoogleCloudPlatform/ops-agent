@@ -16,10 +16,10 @@ package monitoring_api
 
 import (
 	"context"
-	// "flag"
 	"fmt"
 	"log"
-	// "os"
+	"os"
+	"os/signal"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -119,7 +119,6 @@ func sendMetric(eR confgenerator.EnabledReceivers) error {
 
 	err = c.CreateTimeSeries(ctx, req)
 	if err != nil {
-		log.Printf("could not write time series value, %v ", err)
 		return fmt.Errorf("could not write time series value, %v ", err)
 	}
 
@@ -127,16 +126,21 @@ func sendMetric(eR confgenerator.EnabledReceivers) error {
 }
 
 func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) error {
-	go func() {
-		ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
-		for _ = range ticker.C {
-			log.Println("Tick send metric")
+	death := make(chan os.Signal, 1)
+	signal.Notify(death, os.Interrupt, os.Kill)
+
+	for {
+		select {
+		case <-ticker.C:
+			log.Println("Tick send metric : ")
 			sendMetric(eR)
+		case <-death:
+			ticker.Stop()
+			return nil
 		}
-	}()
-
-	select {}
+	}
 
 	return nil
 }
