@@ -5,6 +5,7 @@
 # during the test.
 
 # Create a back up of the existing file so existing configurations are not lost.
+type nul >> 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml'
 Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
 
 # Configure the Ops Agent.

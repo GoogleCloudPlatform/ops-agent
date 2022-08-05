@@ -5,7 +5,8 @@
 # during the test.
 
 # Create a back up of the existing file so existing configurations are not lost.
-sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+type nul >> 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml'
+Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
 
 # Configure the Ops Agent.
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "

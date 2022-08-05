@@ -76,6 +76,28 @@ func removeFromSlice(original []string, toRemove string) []string {
 	return result
 }
 
+// assertFilePresence returns an error if the provided file path doesn't exist on the VM.
+func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
+	var fileQuery string
+	if gce.IsWindows(vm.Platform) {
+		fileQuery = "Test-Path -Path " + filePath
+	} else {
+		fileQuery = "sudo test -f " + filePath
+	}
+
+	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	// Windows returns False if the path doesn't exist.
+	if out.Stdout == "False" {
+		return fmt.Errorf("couldn't find file %s", filePath)
+	}
+
+	return nil
+}
+
 // rejectDuplicates looks for duplicate entries in the input slice and returns
 // an error if any is found.
 func rejectDuplicates(apps []string) error {
@@ -342,13 +364,13 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
-	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
-	if _, err = os.Stat(backupConfigFilePath); err != nil {
-		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
-	}
-
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
+	}
+
+	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	if err = assertFilePresence(ctx, logger, vm, backupConfigFilePath); err != nil {
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
 
 	// Check if the exercise script exists, and run it if it does.
