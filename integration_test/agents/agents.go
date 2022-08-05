@@ -688,6 +688,8 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+// Packages with "dbgsym" in their name are skipped because customers don't
+// generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
@@ -703,6 +705,9 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
 		return err
 	}
 	if IsRPMBased(vm.Platform) {
