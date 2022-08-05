@@ -119,7 +119,7 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// *somewhere*. So the workaround is to make the log source's name unique
 	// per logName.
 	source := logName + "__ops_agent_test"
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog –LogName '%s' –Source '%s' }", source, logName, source)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
 	}
 
