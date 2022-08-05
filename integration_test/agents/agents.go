@@ -715,8 +715,6 @@ func globForAgentPackage(platform string) (string, error) {
 		return "*.sles12.*.rpm", nil
 	case strings.HasPrefix(platform, "sles-15") || strings.HasPrefix(platform, "opensuse-leap"):
 		return "*.sles15.*.rpm", nil
-	case platform == "debian-9":
-		return "*~debian9*.deb", nil
 	case platform == "debian-10":
 		return "*~debian10*.deb", nil
 	case platform == "debian-11":
