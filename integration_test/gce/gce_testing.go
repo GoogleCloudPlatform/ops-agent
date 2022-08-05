@@ -680,7 +680,6 @@ var (
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-//
 // on Windows.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	defer func() {
@@ -1089,6 +1088,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		return strings.Contains(err.Error(), "Quota") ||
 			// Rarely, instance creation fails due to internal errors in the compute API.
 			strings.Contains(err.Error(), "Internal error") ||
+			// Instance creation can also fail due to service unavailability.
+			strings.Contains(err.Error(), "currently unavailable") ||
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
