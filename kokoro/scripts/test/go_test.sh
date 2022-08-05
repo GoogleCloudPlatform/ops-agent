@@ -68,7 +68,7 @@ sudo rm -rf /usr/local/go
 unset GOPATH
 
 # Download and install a newer version of go.
-wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go1.18.linux-amd64.tar.gz | \
+wget --no-verbose --output-document=/dev/stdout https://go.dev/dl/go1.19.linux-amd64.tar.gz | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin
