@@ -38,6 +38,7 @@ type LoggingReceiverFiles struct {
 	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -49,6 +50,7 @@ func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
+		RecordLogFilePath:       r.RecordLogFilePath,
 	}.Components(tag)
 }
 
@@ -57,6 +59,8 @@ type LoggingReceiverFilesMixin struct {
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	MultilineRules          []MultilineRule `yaml:"-"`
+	BufferInMemory          bool            `yaml:"-"`
+	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
@@ -101,6 +105,14 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 	if r.WildcardRefreshInterval != nil {
 		refreshIntervalSeconds := int(r.WildcardRefreshInterval.Seconds())
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
+	}
+
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
+		config["Path_Key"] = "agent.googleapis.com/log_file_path"
+	}
+
+	if r.BufferInMemory {
+		config["storage.type"] = "memory"
 	}
 
 	c := []fluentbit.Component{}
@@ -164,6 +176,10 @@ func (r LoggingReceiverSyslog) Type() string {
 	return "syslog"
 }
 
+func (r LoggingReceiverSyslog) GetListenPort() uint16 {
+	return r.ListenPort
+}
+
 func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
@@ -173,7 +189,7 @@ func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
 			"Tag":    tag,
 			"Mode":   r.TransportProtocol,
 			"Listen": r.ListenHost,
-			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Port":   fmt.Sprintf("%d", r.GetListenPort()),
 			"Parser": tag,
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
@@ -214,12 +230,16 @@ func (r LoggingReceiverTCP) Type() string {
 	return "tcp"
 }
 
+func (r LoggingReceiverTCP) GetListenPort() uint16 {
+	if r.ListenPort == 0 {
+		r.ListenPort = 5170
+	}
+	return r.ListenPort
+}
+
 func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
-	}
-	if r.ListenPort == 0 {
-		r.ListenPort = 5170
 	}
 
 	return []fluentbit.Component{{
@@ -229,7 +249,7 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 			"Name":   "tcp",
 			"Tag":    tag,
 			"Listen": r.ListenHost,
-			"Port":   fmt.Sprintf("%d", r.ListenPort),
+			"Port":   fmt.Sprintf("%d", r.GetListenPort()),
 			"Format": r.Format,
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
@@ -261,12 +281,16 @@ func (r LoggingReceiverFluentForward) Type() string {
 	return "fluent_forward"
 }
 
+func (r LoggingReceiverFluentForward) GetListenPort() uint16 {
+	if r.ListenPort == 0 {
+		r.ListenPort = 24224
+	}
+	return r.ListenPort
+}
+
 func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
-	}
-	if r.ListenPort == 0 {
-		r.ListenPort = 24224
 	}
 
 	return []fluentbit.Component{{
@@ -276,7 +300,7 @@ func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Compone
 			"Name":       "forward",
 			"Tag_Prefix": tag + ".",
 			"Listen":     r.ListenHost,
-			"Port":       fmt.Sprintf("%d", r.ListenPort),
+			"Port":       fmt.Sprintf("%d", r.GetListenPort()),
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 			// Buffer in disk to improve reliability.
 			"storage.type": "filesystem",
@@ -318,6 +342,24 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 			"DB":           DBPath(tag),
 		},
 	}}
+
+	// Parser for parsing TimeGenerated field as log record timestamp
+	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
+	timestampParser := fluentbit.Component{
+		Kind: "PARSER",
+		Config: map[string]string{
+			"Name":        timestampParserName,
+			"Format":      "regex",
+			"Time_Format": "%Y-%m-%d %H:%M:%S %z",
+			"Time_Key":    "timestamp",
+			"Regex":       `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+ [+-]\d{4})`,
+		},
+	}
+
+	timestampParserFilters := fluentbit.ParserFilterComponents(tag, "TimeGenerated", []string{timestampParserName}, true)
+	input = append(input, timestampParser)
+	input = append(input, timestampParserFilters...)
+
 	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{
 			{"Error", "ERROR"},

@@ -23,19 +23,6 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	hostInfo, _ := host.Info()
-	data, err := ioutil.ReadFile(input)
-	if err != nil {
-		return err
-	}
-	uc, err := ParseUnifiedConfigAndValidate(data, hostInfo.OS)
-	if err != nil {
-		return err
-	}
-	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
-}
-
 func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
 	uc := UnifiedConfig{}
 

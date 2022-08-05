@@ -1,0 +1,33 @@
+// Convert a map or a tuple into Kokoro environment variables.
+//
+// Example usage:
+//  environment_variables(['foo': 'bar', 'x': 'y'])
+//  environment_variables({foo = 'bar', x = 'y'})
+// Returns
+//  [{key = 'foo', value = 'bar'}, {key = 'x', value = 'y'}]
+environment_variables = lambda vars_: {
+  assert is_map(vars_) || is_tuple(vars_)
+  ret = map(lambda x_: { key = x_[0], value = x_[1] }, vars_.items())
+}.ret
+
+// Create a fetch_keystore action with the given resources.
+//
+// Example usage:
+//  fetch_keystore([[123, 'name']])
+//  fetch_keystore([{id = 123, name = 'name'}])
+// Returns
+//  [{fetch_keystore = {keystore_resource = [{keystore_config_id = 123, keyname = 'name'}]}}]
+fetch_keystore = lambda keys_: {
+  fetch_keystore = {
+    keystore_resource = map(lambda x_: cond(
+      is_tuple(x_),
+      {
+        keystore_config_id = x_.id
+        keyname = x_.name
+      },
+      {
+        keystore_config_id = x_[0]
+        keyname = x_[1]
+      }), keys_)
+  }
+}

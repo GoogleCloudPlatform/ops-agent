@@ -19,7 +19,7 @@ repo_gpgcheck=0
 enabled=1
 EOF
     ;;
-  centos)
+  centos|rocky)
     sudo yum-config-manager --add-repo https://couchdb.apache.org/repo/couchdb.repo
     ;;
   *)

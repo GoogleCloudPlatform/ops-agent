@@ -12,6 +12,15 @@ metrics:
       varnish:
         receivers:
           - varnish
+logging:
+  receivers:
+    varnish:
+      type: varnish
+  service:
+    pipelines:
+      varnish:
+        receivers:
+          - varnish
 
 EOF
 

@@ -120,7 +120,7 @@ func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbi
 	}
 
 	c = append(c, complexRegex.Components(tag, uid)...)
-	c = append(c, severityParser(tag, uid)...)
+	c = append(c, severityParser(p.Type(), tag, uid)...)
 
 	return c
 }
@@ -156,20 +156,25 @@ func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Comp
 	return append(c, r.LoggingProcessorZookeeperGeneral.Components(tag, "zookeeper_general")...)
 }
 
-func severityParser(tag, uid string) []fluentbit.Component {
-	severityKey := "logging.googleapis.com/severity"
-	return fluentbit.TranslationComponents(tag, "level", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"TRACE", "DEBUG"},
-		{"DEBUG", "DEBUG"},
-		{"INFO", "INFO"},
-		{"WARN", "WARNING"},
-		{"ERROR", "ERROR"},
-		{"CRITICAL", "ERROR"},
-		{"FATAL", "FATAL"},
-	})
+func severityParser(processorType, tag, uid string) []fluentbit.Component {
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"TRACE":    "DEBUG",
+					"DEBUG":    "DEBUG",
+					"INFO":     "INFO",
+					"WARN":     "WARNING",
+					"ERROR":    "ERROR",
+					"CRITICAL": "ERROR",
+					"FATAL":    "FATAL",
+				},
+				MapValuesExclusive: true,
+			},
+			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
+		},
+	}.Components(tag, uid)
 }
 
 func init() {

@@ -18,7 +18,7 @@ import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 
 var (
 	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
-		"linux": &cg.UnifiedConfig{
+		"linux": {
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{
 					"syslog": &cg.LoggingReceiverFiles{
@@ -29,7 +29,7 @@ var (
 				Processors: map[string]cg.LoggingProcessor{},
 				Service: &cg.LoggingService{
 					Pipelines: map[string]*cg.LoggingPipeline{
-						"default_pipeline": &cg.LoggingPipeline{
+						"default_pipeline": {
 							ReceiverIDs: []string{"syslog"},
 						},
 					},
@@ -49,7 +49,7 @@ var (
 				},
 				Service: &cg.MetricsService{
 					Pipelines: map[string]*cg.MetricsPipeline{
-						"default_pipeline": &cg.MetricsPipeline{
+						"default_pipeline": {
 							ReceiverIDs:  []string{"hostmetrics"},
 							ProcessorIDs: []string{"metrics_filter"},
 						},
@@ -57,7 +57,7 @@ var (
 				},
 			},
 		},
-		"windows": &cg.UnifiedConfig{
+		"windows": {
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{
 					"windows_event_log": &cg.LoggingReceiverWindowsEventLog{
@@ -68,7 +68,7 @@ var (
 				Processors: map[string]cg.LoggingProcessor{},
 				Service: &cg.LoggingService{
 					Pipelines: map[string]*cg.LoggingPipeline{
-						"default_pipeline": &cg.LoggingPipeline{
+						"default_pipeline": {
 							ReceiverIDs: []string{"windows_event_log"},
 						},
 					},
@@ -96,7 +96,7 @@ var (
 				},
 				Service: &cg.MetricsService{
 					Pipelines: map[string]*cg.MetricsPipeline{
-						"default_pipeline": &cg.MetricsPipeline{
+						"default_pipeline": {
 							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
 							ProcessorIDs: []string{"metrics_filter"},
 						},

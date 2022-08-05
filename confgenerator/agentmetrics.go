@@ -113,6 +113,8 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 				"include",
 				"strict",
 				"fluentbit_uptime",
+				"fluentbit_stackdriver_requests_total",
+				"fluentbit_stackdriver_proc_records_total",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
@@ -121,6 +123,17 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 					otel.AddLabel("version", r.Version),
 					// remove service.version label
 					otel.AggregateLabels("sum", "version"),
+				),
+				otel.RenameMetric("fluentbit_stackdriver_requests_total", "agent/request_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("status", "response_code"),
+					otel.AggregateLabels("sum"),
+				),
+				otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AggregateLabels("sum"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),

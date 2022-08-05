@@ -88,15 +88,22 @@ func (p LoggingProcessorWildflySystem) Components(tag string, uid string) []flue
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"TRACE", "TRACE"},
-				{"DEBUG", "DEBUG"},
-				{"INFO", "INFO"},
-				{"ERROR", "ERROR"},
-				{"WARN", "WARNING"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"TRACE": "TRACE",
+						"DEBUG": "DEBUG",
+						"INFO":  "INFO",
+						"ERROR": "ERROR",
+						"WARN":  "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c

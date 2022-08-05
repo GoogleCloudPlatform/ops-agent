@@ -1,0 +1,13 @@
+logging:
+  receivers:
+    s1:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 0.0.0.0
+      listen_port: 24224
+    fluent_receiver:
+      type: fluent_forward
+  service:
+    pipelines:
+      p1:
+        receivers: [s1, fluent_receiver]

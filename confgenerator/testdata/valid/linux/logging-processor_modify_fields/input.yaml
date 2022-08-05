@@ -19,6 +19,10 @@ logging:
           type: float
         jsonPayload.nested.structure.field:
           copy_from: jsonPayload.unnested
+        labels."label2":
+          copy_from: labels."label1"
+        labels."label3":
+          default_value: default
         severity:
           copy_from: jsonPayload.level
           map_values:

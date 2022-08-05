@@ -7,7 +7,7 @@ sudo yum -y install \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
 
 sudo mkdir /opt/hbase
-wget https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
+wget --no-verbose https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo tar -xvf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF

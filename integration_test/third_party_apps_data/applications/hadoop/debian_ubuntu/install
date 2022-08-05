@@ -1,14 +1,14 @@
 set -e
 
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y default-jdk default-jdk-headless wget
+sudo apt-get install -y default-jdk default-jdk-headless wget
 
 sudo mkdir -p \
     /opt/hadoop/logs \
     /opt/volume/datanode \
     /opt/volume/namenode
 
-wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
+wget --no-verbose https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
 sudo tar -xf hadoop-3.3.1.tar.gz -C /opt/hadoop --strip 1
 
 JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"

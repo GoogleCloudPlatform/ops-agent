@@ -1,0 +1,8 @@
+[3:16] "include_paths" is a required field
+   1 | logging:
+   2 |   receivers:
+>  3 |     vault_audit:
+                      ^
+   4 |       type: vault_audit
+   5 |   service:
+   6 |     pipelines:

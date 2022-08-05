@@ -54,7 +54,7 @@ func TestValidPath(t *testing.T) {
 		{
 			Target{"httpRequest", "status"},
 			"httpRequest.status",
-			[]string{"logging.googleapis.com/http_request", "status"},
+			[]string{"logging.googleapis.com/httpRequest", "status"},
 		},
 		{
 			Target{"sourceLocation", "line"},
