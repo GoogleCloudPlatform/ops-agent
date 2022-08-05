@@ -701,6 +701,10 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
 	if IsRPMBased(vm.Platform) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
