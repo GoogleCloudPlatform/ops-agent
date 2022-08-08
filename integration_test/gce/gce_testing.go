@@ -16,7 +16,6 @@
 
 /*
 Package gce holds various helpers for testing the agents on GCE.
-
 To run a test based on this library, you can either:
 
 * use Kokoro by triggering automated presubmits on your change, or
@@ -29,6 +28,7 @@ NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
     connections, because our Kokoro workers are also running in that project.]
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
+
     Ops Agent code, first build and upload a package to Rapture. Then look up
     the REPO_SUFFIX for that build and add it as an environment variable to the
     command below; for example: REPO_SUFFIX=20210805-2. You can also use
@@ -43,7 +43,6 @@ PROJECT=dev_project \
     -timeout=4h
 
 This library needs the following environment variables to be defined:
-
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
 WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
@@ -53,12 +52,19 @@ The following variables are optional:
 
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
     By default, a new temporary directory is created.
+
 NETWORK_NAME: What GCP network name to use.
-KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
+KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
+LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
+logs will be uploaded. If unset, this will point to
+ops-agents-public-buckets-test-logs, which should work for all tests
+triggered from GitHub.
+
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
     (if set to "true"), or external IP addresses (in all other cases).
     Only useful on Kokoro.
+
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
     default is the project's "Compute Engine default service account".
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
@@ -144,8 +150,9 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
-	vmInitTimeout         = 20 * time.Minute
-	vmInitBackoffDuration = 10 * time.Second
+	vmInitTimeout                     = 20 * time.Minute
+	vmInitBackoffDuration             = 10 * time.Second
+	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	sshUserName = "test_user"
 
@@ -351,6 +358,14 @@ func winRM() string {
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
 func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
+}
+
+// PlatformKind returns "linux" or "windows" based on the given platform.
+func PlatformKind(platform string) string {
+	if IsWindows(platform) {
+		return "windows"
+	}
+	return "linux"
 }
 
 // isRetriableLookupMetricError returns whether the given error, returned from
@@ -716,7 +731,7 @@ var (
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-//     on Windows.
+// on Windows.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	defer func() {
 		if err != nil {
@@ -889,6 +904,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
+		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
 )
 
@@ -908,8 +925,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		metadataCopy["windows-startup-script-ps1"] = `
-Enable-PSRemoting  # Might help to diagnose b/185923886.
-
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
 $port.WriteLine("STARTUP_SCRIPT_DONE")
@@ -989,9 +1004,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject, err := imageProject(vm.Platform)
+	imgProject := options.ImageProject
+	if imgProject == "" {
+		var err error
+		imgProject, err = imageProject(vm.Platform)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1120,6 +1139,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		return strings.Contains(err.Error(), "Quota") ||
 			// Rarely, instance creation fails due to internal errors in the compute API.
 			strings.Contains(err.Error(), "Internal error") ||
+			// Instance creation can also fail due to service unavailability.
+			strings.Contains(err.Error(), "currently unavailable") ||
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
@@ -1266,6 +1287,18 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return waitForStart(ctx, logger, vm)
 }
 
+// RestartInstance stops and starts the instance.
+// It also waits for the instance to be reachable over ssh post-restart.
+func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
+	fileLogger := logger.ToFile("VM_restart.txt")
+
+	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+		return fmt.Errorf("failed to stop instance: %w", err)
+	}
+
+	return StartInstance(ctx, fileLogger, vm)
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1303,7 +1336,7 @@ sudo zypper --non-interactive refresh test-vendor`
 	installCmd := `set -ex
 
 ` + repoSetupCmd + `
-sudo zypper --non-interactive install --capability 'python>=3.6'
+sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
 sudo zypper --non-interactive install python3-certifi
 
 # On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
@@ -1465,11 +1498,19 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
 	}
 
+	resetCredentials := func() error {
 	creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
 	if err != nil {
 		return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
 	}
 	vm.WindowsCredentials = creds
+		return nil
+	}
+
+	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
+	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
+		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
+	}
 
 	// Now, make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
@@ -1563,8 +1604,11 @@ func logLocation(logRootDir, testName string) string {
 	if subdir == "" {
 		return path.Join(logRootDir, testName)
 	}
-	return "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/" +
-		path.Join(subdir, "logs", testName)
+	uploadLocation := os.Getenv("LOG_UPLOAD_URL_ROOT")
+	if uploadLocation == "" {
+		uploadLocation = "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/"
+	}
+	return uploadLocation + path.Join(subdir, "logs", testName)
 }
 
 // SetupLogger creates a new DirectoryLogger that will write to a directory based on
@@ -1591,8 +1635,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required.
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
 	Platform string
+	// Optional. Passed as --image-project to "gcloud compute images create".
+	// If not supplied, the framework will attempt to guess the right project
+	// to use based on Platform.
+	ImageProject string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.
