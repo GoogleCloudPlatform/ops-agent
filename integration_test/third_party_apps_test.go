@@ -61,8 +61,6 @@ var (
 //go:embed third_party_apps_data
 var scriptsDir embed.FS
 
-var validate = metadata.NewIntegrationMetadataValidator()
-
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
 func removeFromSlice(original []string, toRemove string) []string {
@@ -383,19 +381,12 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	}
 	for _, file := range files {
 		app := file.Name()
-		var metadata metadata.IntegrationMetadata
-		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+		var integrationMetadata metadata.IntegrationMetadata
+		err := metadata.UnmarshallMetadata(&integrationMetadata, path.Join("third_party_apps_data", "applications", app))
 		if err != nil {
-			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
+			t.Fatalf("could not unmarshall applications/%v/metadata.yaml: %v", app, err)
 		}
-		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
-		if err != nil {
-			t.Fatalf("could not unmarshal contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
-			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		allApps[app] = metadata
+		allApps[app] = integrationMetadata
 	}
 	log.Printf("found %v apps", len(allApps))
 	if len(allApps) == 0 {

@@ -16,12 +16,16 @@ package metadata
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -87,22 +91,25 @@ type ExpectedMetricsContainer struct {
 }
 
 type IntegrationMetadata struct {
+	DocMetadata               `yaml:",inline,omitempty"`
+	ConfigurationOptions      *ConfigurationOptions `yaml:"configuration_options" validate:"required"`
+	ConfigureIntegration      string                `yaml:"configure_integration"`
+	ExpectedLogs              []*ExpectedLog        `yaml:"expected_logs" validate:"dive"`
+	SupportedAppVersion       []string              `yaml:"supported_app_version" validate:"required,unique,min=1"`
+	SupportedOperatingSystems string                `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
+	RestartAfterInstall       bool                  `yaml:"restart_after_install"`
+	Troubleshoot              string                `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
+	ExpectedMetricsContainer  `yaml:",inline"`
+}
+
+type DocMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
 	AppUrl                       string                       `yaml:"app_url" validate:"required,url"`
 	ShortName                    string                       `yaml:"short_name" validate:"required,excludesall=‘’“”"`
 	LongName                     string                       `yaml:"long_name" validate:"required,excludesall=‘’“”"`
 	LogoPath                     string                       `yaml:"logo_path"`
 	Description                  string                       `yaml:"description" validate:"required,excludesall=‘’“”"`
-	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
-	ConfigureIntegration         string                       `yaml:"configure_integration"`
-	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
-	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
-	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
-	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
-	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
-
-	ExpectedMetricsContainer `yaml:",inline"`
 }
 
 func SliceContains(slice []string, toFind string) bool {
@@ -112,6 +119,48 @@ func SliceContains(slice []string, toFind string) bool {
 		}
 	}
 	return false
+}
+
+func UnmarshallMetadata(metadata *IntegrationMetadata, p string) error {
+	metadataPath := path.Join(p, "metadata.yaml")
+	docPath := path.Join(p, "doc.yaml")
+
+	var docMetadata DocMetadata
+	err := unmarshallAndValidate(metadataPath, metadata)
+
+	if err != nil {
+		return err
+	}
+
+	// check to see if doc.yaml exists
+	_, err = os.Stat(docPath)
+	docExists := err == nil
+
+	if docExists {
+		err = unmarshallAndValidate(docPath, &docMetadata)
+		if err != nil {
+			return err
+		}
+
+		metadata.DocMetadata = docMetadata
+	}
+
+	v := NewIntegrationMetadataValidator()
+	return v.Struct(metadata)
+}
+
+func unmarshallAndValidate(p string, i interface{}) error {
+	contents, err := os.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	metadataStr := strings.ReplaceAll(string(contents), "\r\n", "\n")
+	v := NewIntegrationMetadataValidator()
+	err = yaml.UnmarshalStrict([]byte(metadataStr), i)
+	if err != nil {
+		return err
+	}
+	return v.Struct(i)
 }
 
 func NewIntegrationMetadataValidator() *validator.Validate {
