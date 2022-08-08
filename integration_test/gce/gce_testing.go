@@ -17,18 +17,23 @@
 /*
 Package gce holds various helpers for testing the agents on GCE.
 To run a test based on this library, you can either:
+
 * use Kokoro by triggering automated presubmits on your change, or
 * use "go test" directly, after performing the setup steps described
 in README.md.
+
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
 a project whose firewall allows WinRM connections.
 [Kokoro can use stackdriver-test-143416, which does not allow WinRM
 connections, because our Kokoro workers are also running in that project.]
+
 NOTE: This command does not actually build the Ops Agent. To test the latest
+
 Ops Agent code, first build and upload a package to Rapture. Then look up
 the REPO_SUFFIX for that build and add it as an environment variable to the
 command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
+
 	PROJECT=dev_project \
 	ZONE=us-central1-b \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
@@ -36,14 +41,18 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 	  -test.parallel=1000 \
 	  -tags=integration_test \
 	  -timeout=4h
+
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
 WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
 Windows VMs.
+
 The following variables are optional:
+
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
 By default, a new temporary directory is created.
+
 NETWORK_NAME: What GCP network name to use.
 KOKORO_BUILD_ID: supplied by Kokoro.
 KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
@@ -51,9 +60,11 @@ LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
 logs will be uploaded. If unset, this will point to
 ops-agents-public-buckets-test-logs, which should work for all tests
 triggered from GitHub.
+
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
 (if set to "true"), or external IP addresses (in all other cases).
 Only useful on Kokoro.
+
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
 default is the project's "Compute Engine default service account".
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
