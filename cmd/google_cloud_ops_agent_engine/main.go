@@ -73,7 +73,7 @@ func run() error {
 			return err
 		}
 		log.Println("Enabled Receivers", eR)
-		err = monitoring_api.SendMetricEveryInterval(eR, 60)
+		err = monitoring_api.SendMetricEveryInterval(eR.ToMetric(), 5)
 		if err != nil {
 			return err
 		}

@@ -19,32 +19,29 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"time"
+	"os/signal"
 
-	"cloud.google.com/go/compute/metadata"
-	"golang.org/x/oauth2/google"
+	gce_metadata "cloud.google.com/go/compute/metadata"
+	oauth2 "golang.org/x/oauth2/google"
 
-	monitoring "cloud.google.com/go/monitoring/apiv3"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	monitoring "cloud.google.com/go/monitoring/apiv3"
+	time_series "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledReceivers) (*monitoringpb.CreateTimeSeriesRequest, error) {
-	creds, err := google.FindDefaultCredentials(ctx)
+func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
+	creds, err := oauth2.FindDefaultCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	projectID := creds.ProjectID
-	instance_id, err := metadata.InstanceID()
+	instance_id, err := gce_metadata.InstanceID()
 	if err != nil {
 		return nil, err
 	}
-	zone, err := metadata.Zone()
+	zone, err := gce_metadata.Zone()
 	if err != nil {
 		return nil ,err
 	}
@@ -53,43 +50,9 @@ func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledRec
 	log.Println("instance_id : ", instance_id)
 	log.Println("zone : ", zone)
 
-	now := &timestamp.Timestamp{
-		Seconds: time.Now().Unix(),
-	}
-
-	timeSeriesList := []*monitoringpb.TimeSeries{}
-	for rType, count := range eR {
-		tSeries := monitoringpb.TimeSeries{
-			MetricKind: metricpb.MetricDescriptor_GAUGE,
-			ValueType:  metricpb.MetricDescriptor_INT64,
-			Metric: &metricpb.Metric{
-				Type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-				Labels: map[string]string{
-					"receiver_type":  rType,
-					"telemetry_type": "metrics",
-				},
-			},
-			Resource: &monitoredres.MonitoredResource{
-				Type: "gce_instance",
-				Labels: map[string]string{
-					"instance_id": instance_id,
-					"zone":        zone,
-				},
-			},
-			Points: []*monitoringpb.Point{{
-				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
-				},
-				Value: &monitoringpb.TypedValue{
-					Value: &monitoringpb.TypedValue_Int64Value{
-						Int64Value: int64(count),
-					},
-				},
-			}},
-		}
-
-		timeSeriesList = append(timeSeriesList, &tSeries)
+	timeSeriesList := make([]*monitoringpb.TimeSeries, 0)
+	for _, m := range metrics {
+		timeSeriesList =  append(timeSeriesList, m.ToTimeSeries(instance_id, zone))
 	}
 
 	req := &monitoringpb.CreateTimeSeriesRequest{
@@ -102,11 +65,10 @@ func constructTimeSeriesRequest(ctx context.Context, eR confgenerator.EnabledRec
 	return req, nil
 }
 
-func sendMetric(eR confgenerator.EnabledReceivers) error {
-	fmt.Println("interval", eR)
+func sendMetric(metrics []time_series.Metric) error {
 	ctx := context.Background()
 
-	req, err := constructTimeSeriesRequest(ctx, eR)
+	req, err := constructTimeSeriesRequest(ctx, metrics)
 	if err != nil {
 		return err
 	}
@@ -125,7 +87,7 @@ func sendMetric(eR confgenerator.EnabledReceivers) error {
 	return nil
 }
 
-func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) error {
+func SendMetricEveryInterval(metrics []time_series.Metric, interval int) error {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
 	death := make(chan os.Signal, 1)
@@ -135,7 +97,7 @@ func SendMetricEveryInterval(eR confgenerator.EnabledReceivers, interval int) er
 		select {
 		case <-ticker.C:
 			log.Println("Tick send metric : ")
-			sendMetric(eR)
+			sendMetric(metrics)
 		case <-death:
 			ticker.Stop()
 			return nil
