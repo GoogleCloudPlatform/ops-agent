@@ -6,7 +6,7 @@
 
 ## How has this been tested?
 <!--- Please describe how you tested the changes besides the automatically triggered unit tests when applicable. -->
-<!--- Include sample output logs or metrics and/or screenshots of key results when applicable. -->
+<!--- Must include sample output logs or metrics and/or screenshots of key results when applicable. -->
 
 ## Checklist:
 - Unit tests
