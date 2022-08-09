@@ -38,11 +38,11 @@ func TestRequireMetadataForAllThirdPartyApps(t *testing.T) {
 	}
 
 	for _, dir := range dirs {
-		_, fileErr := os.Stat(path.Join(parentDirectory, dir.Name(), "metadata.yaml"))
-		if fileErr != nil {
+		if _, fileErr := os.Stat(path.Join(parentDirectory, dir.Name(), "metadata.yaml")); fileErr != nil {
 			err = multierr.Append(err, fileErr)
 		}
 	}
+
 	if err != nil {
 		t.Error(err)
 	}
