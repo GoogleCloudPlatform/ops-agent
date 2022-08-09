@@ -11,6 +11,7 @@ metrics:
   receivers:
     mongodb:
       type: mongodb
+      insecure: true
   service:
     pipelines:
       mongo:
