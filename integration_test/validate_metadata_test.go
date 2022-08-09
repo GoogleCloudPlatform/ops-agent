@@ -2,7 +2,6 @@ package integration
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -34,19 +33,16 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 func TestMissingMetadataForThirdPartyApps(t *testing.T) {
 	parentDirectory := "third_party_apps_data/applications"
 	dirs, err := thirdPartyDataDir.ReadDir(parentDirectory)
-
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	for _, dir := range dirs {
-		dirName := dir.Name()
-		dirPath := path.Join(parentDirectory, dirName)
-		if _, er := os.Stat(path.Join(dirPath, "metadata.yaml")); errors.Is(er, os.ErrNotExist) {
-			err = multierr.Append(err, er)
+		_, fileErr := os.Stat(path.Join(parentDirectory, dir.Name(), "metadata.yaml"))
+		if fileErr != nil {
+			err = multierr.Append(err, fileErr)
 		}
 	}
-
 	if err != nil {
 		t.Error(err)
 	}
