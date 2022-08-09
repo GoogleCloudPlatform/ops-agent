@@ -30,7 +30,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 	}
 }
 
-func TestMissingMetadataForThirdPartyApps(t *testing.T) {
+func TestRequireMetadataForAllThirdPartyApps(t *testing.T) {
 	parentDirectory := "third_party_apps_data/applications"
 	dirs, err := thirdPartyDataDir.ReadDir(parentDirectory)
 	if err != nil {
