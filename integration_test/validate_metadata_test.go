@@ -2,14 +2,17 @@ package integration
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 )
 
@@ -23,6 +26,27 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 	err := walkThirdPartyApps(func(contents []byte) error {
 		return parseAndValidateMetadata(contents, &metadata.IntegrationMetadata{})
 	})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestMissingMetadataForThirdPartyApps(t *testing.T) {
+	parentDirectory := "third_party_apps_data/applications"
+	dirs, err := thirdPartyDataDir.ReadDir(parentDirectory)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, dir := range dirs {
+		dirName := dir.Name()
+		dirPath := path.Join(parentDirectory, dirName)
+		if _, er := os.Stat(path.Join(dirPath, "metadata.yaml")); errors.Is(er, os.ErrNotExist) {
+			err = multierr.Append(err, er)
+		}
+	}
+
 	if err != nil {
 		t.Error(err)
 	}
