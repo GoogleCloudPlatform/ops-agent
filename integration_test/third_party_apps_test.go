@@ -80,19 +80,19 @@ func removeFromSlice(original []string, toRemove string) []string {
 func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
 	var fileQuery string
 	if gce.IsWindows(vm.Platform) {
-		fileQuery = "Test-Path -Path " + filePath
+		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
 	} else {
-		fileQuery = "sudo test -f " + filePath
+		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
 	}
 
 	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("error accessing backup file: %v", err)
 	}
 
 	// Windows returns False if the path doesn't exist.
-	if out.Stdout == "False" {
-		return fmt.Errorf("couldn't find file %s", filePath)
+	if gce.IsWindows(vm.Platform) && strings.Contains(out.Stdout, "False") {
+		return fmt.Errorf("couldn't find file %s. Output response %s. Error response: %s", filePath, out.Stdout, out.Stderr)
 	}
 
 	return nil

@@ -3,7 +3,6 @@
 set -e
 
 # Create a back up of the existing file so existing configurations are not lost.
-sudo touch /etc/google-cloud-ops-agent/config.yaml 
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
 # Configure the Ops Agent.
