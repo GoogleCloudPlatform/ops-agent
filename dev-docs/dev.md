@@ -290,36 +290,6 @@ See [Connect to a Windows VM](connect-to-windows-vm.md).
 
 See [Set up a Windows VM](set-up-windows-vm.md).
 
-<details>
-<summary>You also need to install Git.</summary>
-
-1.  Run PowerShell as Administrator.
-
-    From the start menu, find `Windows PowerShell`, right-click, and select `Run
-    as administrator`.
-
-1.  Download Git installer and install Git on the VM.
-
-    Switch the folder first.
-
-    ```
-    cd $env:UserProfile
-    ```
-
-    Tip: Check https://github.com/git-for-windows/git/releases for all versions.
-
-    ```
-    # [Optional] Adjust the Git version to install.
-    # $GIT_VERSION=2.30.0
-
-    wget -o git.exe https://github.com/git-for-windows/git/releases/download/v$GIT_VERSION.windows.1/Git-$GIT_VERSION-64-bit.exe
-    start git.exe
-    ```
-
-    Restart the `Windows PowerShell` after installation.
-
-</details>
-
 #### Trigger the build
 
 Note: Make sure you have finished the 3 steps above including some one-time
