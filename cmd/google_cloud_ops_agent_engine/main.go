@@ -16,9 +16,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
-	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -67,7 +67,7 @@ func run() error {
 	}
 
 	// Only google engine service
-	if *service ==  "" { 
+	if *service == "" {
 		eR, err := confgenerator.GetEnabledReceivers(uc)
 		if err != nil {
 			return err

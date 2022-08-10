@@ -16,34 +16,35 @@ package confgenerator
 
 import (
 	"time"
+
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 type TimeSeries interface {
-    ToTimeSeries(instance_id, zone string) []*monitoringpb.TimeSeries
+	ToTimeSeries(instance_id, zone string) []*monitoringpb.TimeSeries
 }
 
 type Metric struct {
-    metric_type string
-    metric_labels map[string]string
-    metric_kind metricpb.MetricDescriptor_MetricKind
-    value_type metricpb.MetricDescriptor_ValueType
-    value *monitoringpb.TypedValue
+	metric_type   string
+	metric_labels map[string]string
+	metric_kind   metricpb.MetricDescriptor_MetricKind
+	value_type    metricpb.MetricDescriptor_ValueType
+	value         *monitoringpb.TypedValue
 }
 
-func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries{
-    now := &timestamp.Timestamp{
+func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries {
+	now := &timestamp.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
 
 	return &monitoringpb.TimeSeries{
 		MetricKind: m.metric_kind,
-		ValueType: m.value_type,
+		ValueType:  m.value_type,
 		Metric: &metricpb.Metric{
-			Type: m.metric_type,
+			Type:   m.metric_type,
 			Labels: m.metric_labels,
 		},
 		Resource: &monitoredres.MonitoredResource{
@@ -65,13 +66,13 @@ func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries{
 
 type EnabledReceivers struct {
 	metric map[string]int
-	log map[string]int
+	log    map[string]int
 }
 
 func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 	eR := EnabledReceivers{
-		metric : make(map[string]int),
-		log : make(map[string]int),
+		metric: make(map[string]int),
+		log:    make(map[string]int),
 	}
 
 	// Logging Pipelines
@@ -93,20 +94,20 @@ func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 	return eR, nil
 }
 
-func (e EnabledReceivers) ToMetric() []Metric{
+func (e EnabledReceivers) ToMetric() []Metric {
 
 	metricList := make([]Metric, 0)
-	
+
 	for rType, count := range e.metric {
 		m := Metric{
-			metric_type : "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-		    metric_labels : map[string]string{
-                "receiver_type":  rType,
-                "telemetry_type": "metrics",
-            },
-		    metric_kind : metricpb.MetricDescriptor_GAUGE,
-		    value_type : metricpb.MetricDescriptor_INT64,
-		    value : &monitoringpb.TypedValue{
+			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metric_labels: map[string]string{
+				"receiver_type":  rType,
+				"telemetry_type": "metrics",
+			},
+			metric_kind: metricpb.MetricDescriptor_GAUGE,
+			value_type:  metricpb.MetricDescriptor_INT64,
+			value: &monitoringpb.TypedValue{
 				Value: &monitoringpb.TypedValue_Int64Value{
 					Int64Value: int64(count),
 				},
@@ -118,14 +119,14 @@ func (e EnabledReceivers) ToMetric() []Metric{
 
 	for rType, count := range e.log {
 		m := Metric{
-			metric_type : "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-		    metric_labels : map[string]string{
-                "receiver_type":  rType,
-                "telemetry_type": "logs",
-            },
-		    metric_kind : metricpb.MetricDescriptor_GAUGE,
-		    value_type : metricpb.MetricDescriptor_INT64,
-		    value : &monitoringpb.TypedValue{
+			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metric_labels: map[string]string{
+				"receiver_type":  rType,
+				"telemetry_type": "logs",
+			},
+			metric_kind: metricpb.MetricDescriptor_GAUGE,
+			value_type:  metricpb.MetricDescriptor_INT64,
+			value: &monitoringpb.TypedValue{
 				Value: &monitoringpb.TypedValue_Int64Value{
 					Int64Value: int64(count),
 				},

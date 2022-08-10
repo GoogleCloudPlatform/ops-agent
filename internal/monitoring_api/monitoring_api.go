@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 	"os/signal"
+	"time"
 
 	gce_metadata "cloud.google.com/go/compute/metadata"
 	oauth2 "golang.org/x/oauth2/google"
 
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	time_series "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
@@ -43,7 +43,7 @@ func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metri
 	}
 	zone, err := gce_metadata.Zone()
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 
 	log.Println("projectID : ", projectID)
@@ -52,11 +52,11 @@ func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metri
 
 	timeSeriesList := make([]*monitoringpb.TimeSeries, 0)
 	for _, m := range metrics {
-		timeSeriesList =  append(timeSeriesList, m.ToTimeSeries(instance_id, zone))
+		timeSeriesList = append(timeSeriesList, m.ToTimeSeries(instance_id, zone))
 	}
 
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + projectID,
+		Name:       "projects/" + projectID,
 		TimeSeries: timeSeriesList,
 	}
 
