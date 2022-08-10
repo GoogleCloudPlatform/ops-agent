@@ -131,6 +131,9 @@ expected_logs:
     value_regex: org.jboss.as
     type: string
     description: Source where the log originated
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: wildfly_system

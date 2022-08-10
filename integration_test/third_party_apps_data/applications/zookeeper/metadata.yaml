@@ -92,6 +92,9 @@ expected_logs:
   - name: jsonPayload.myid
     type: number
     description: Numeric ID of the Zookeeper instance
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: zookeeper_general

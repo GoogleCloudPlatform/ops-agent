@@ -143,6 +143,9 @@ expected_logs:
   - name: jsonPayload.exception
     type: string
     description: Exception related to the log, including detailed stacktrace where provided
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: solr_system

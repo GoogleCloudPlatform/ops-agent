@@ -34,6 +34,9 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: Log message
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: rabbitmq

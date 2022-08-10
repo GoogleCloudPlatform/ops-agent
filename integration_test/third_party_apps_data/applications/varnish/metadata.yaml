@@ -114,10 +114,12 @@ expected_logs:
     value_regex: 127.0.0.1
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: HTTP method
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header
@@ -128,20 +130,29 @@ expected_logs:
     value_regex: /forbidden.html
     type: string
     description: Request URL (typically just the path part of the URL
+    optional: true
   - name: httpRequest.protocol
     value_regex: HTTP/1.1
     type: string
     description: Protocol used for the request
+    optional: true
   - name: httpRequest.status
     type: string
     description: HTTP status code
+    optional: true
   - name: httpRequest.responseSize
     type: string
     description: Response size
+    optional: true
   - name: httpRequest.referer
     type: string
     description: Contents of the `Referer` header
+    optional: true
   - name: httpRequest.userAgent
     type: string
     description: Contents of the `User-Agent` header
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/varnish

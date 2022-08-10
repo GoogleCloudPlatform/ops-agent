@@ -62,6 +62,9 @@ expected_logs:
   - name: jsonPayload.user
     type: string
     description: Authenticated user for the action being logged when relevant
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: postgresql_general

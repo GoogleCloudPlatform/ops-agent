@@ -225,6 +225,9 @@ expected_logs:
   - name: timestamp
     type: string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp))
     description: Time the request was received
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: vault_audit

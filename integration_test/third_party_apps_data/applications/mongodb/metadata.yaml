@@ -99,6 +99,9 @@ expected_logs:
   - name: jsonPayload.attributes
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: mongodb

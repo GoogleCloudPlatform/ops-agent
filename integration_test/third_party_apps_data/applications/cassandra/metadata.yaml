@@ -126,6 +126,9 @@ expected_logs:
   - name: jsonPayload.lineNumber
     type: string
     description: Line number of the source file where the log originated
+  - name: severity
+    type: string
+    description: ''
 - log_name: cassandra_debug
   fields:
   - name: jsonPayload.message
@@ -147,6 +150,9 @@ expected_logs:
   - name: jsonPayload.lineNumber
     type: string
     description: Line number of the source file where the log originated
+  - name: severity
+    type: string
+    description: ''
 - log_name: cassandra_gc
   fields:
   - name: jsonPayload.message
@@ -162,6 +168,9 @@ expected_logs:
   - name: jsonPayload.timeStopping
     type: string
     description: Seconds the JVM took to stop threads before garbage collection
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: cassandra_system

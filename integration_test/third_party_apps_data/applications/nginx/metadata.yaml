@@ -126,16 +126,33 @@ expected_logs:
     value_regex: ::1
     type: string
     description: "The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80, FE80::0202:B3FF:FE1E:8329."
+    optional: true
   - name: httpRequest.requestUrl
-    value_regex: /forbidden.html
+    value_regex: .*/forbidden.html
     type: string
+    optional: true
     description: "The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: http://example.com/some/info?color=red."
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.referer
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header (usually not reported by nginx)
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+  - name: severity
+    type: string
+    description: ''
 - log_name: nginx_error
   fields:
   - name: jsonPayload.client
@@ -178,6 +195,9 @@ expected_logs:
   - name: jsonPayload.referer
     type: string
     description: Referer header (optional)
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: nginx_access

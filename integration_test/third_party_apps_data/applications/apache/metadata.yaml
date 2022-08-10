@@ -79,24 +79,43 @@ expected_logs:
     value_regex: ::1|127.0.0.1
     type: string
     description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+    optional: true
   - name: httpRequest.requestUrl
     value_regex: /forbidden.html
     type: string
     description: Request URL (typically just the path part of the URL)
+    optional: true
   - name: httpRequest.protocol
     value_regex: HTTP/1.1
     type: string
     description: Protocol used for the request
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: HTTP method
+    optional: true
+  - name: httpRequest.status
+    type: number
+    description: HTTP status code
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+  - name: severity
+    type: string
+    description: ''
 - log_name: apache_error
   fields:
   - name: jsonPayload.client
@@ -125,6 +144,9 @@ expected_logs:
   - name: jsonPayload.tid
     type: string
     description: Thread ID
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: apache_access

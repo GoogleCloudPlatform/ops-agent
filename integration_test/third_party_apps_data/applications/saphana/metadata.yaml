@@ -399,6 +399,9 @@ expected_logs:
   - name: sourceLocation.line
     type: number
     description: Line within the source file
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   metrics:
   - type: saphana

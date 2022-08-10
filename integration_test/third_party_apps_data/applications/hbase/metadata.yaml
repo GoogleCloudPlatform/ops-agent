@@ -357,6 +357,9 @@ expected_logs:
     value_regex: master.HMaster
     type: string
     description: 'source of where the log originated'
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: hbase_system

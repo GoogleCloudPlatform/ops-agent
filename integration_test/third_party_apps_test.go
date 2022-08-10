@@ -41,10 +41,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
@@ -215,8 +218,140 @@ func constructQuery(logName string, fields []*metadata.LogFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
+// logFieldsMap returns a field name => LogField mapping.
+func logFieldsMap(log *metadata.ExpectedLog) map[string]*metadata.LogFields {
+	if log == nil {
+		return nil
+	}
 
+	fieldsMap := make(map[string]*metadata.LogFields)
+	for _, entry := range log.Fields {
+		fieldsMap[entry.Name] = entry
+	}
+
+	return fieldsMap
+}
+
+func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
+	expectedField, ok := expectedFields[fieldName]
+	if !ok { // Not expecting this field.
+		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
+			return fmt.Errorf("expeced no value for field %s but got %v", fieldName, actualField)
+		}
+		return nil
+	}
+
+	if len(actualField) == 0 && !expectedField.Optional {
+		return fmt.Errorf("expected non-empty value for log field %s", fieldName)
+	}
+
+	pattern := ".*"
+	if expectedField.ValueRegex != "" {
+		pattern = expectedField.ValueRegex
+	}
+	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	if err != nil {
+		return err
+	}
+
+	if !match {
+		return fmt.Errorf("field %s of the actual log %s didn't match regex pattern: %s", fieldName, actualField, pattern)
+	}
+
+	return nil
+}
+
+// verifyLog returns an error if the actualLog has some fields that weren't expected as specified. Or if it is missing
+// some required fields.
+func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog) error {
+	var multiErr error
+	if expectedLog.LogName == "syslog" {
+		// If the application writes to syslog directly (for example: activemq), the log formats are sometimes different
+		// per distro.
+		return nil
+	}
+
+	// Verify all fields in the actualLog match some field in the expectedLog.
+	expectedFields := logFieldsMap(expectedLog)
+
+	// Severity
+	if err := verifyLogField("severity", actualLog.Severity.String(), expectedFields); err != nil {
+		multiErr = multierr.Append(multiErr, err)
+	}
+
+	// SourceLocation
+	if actualLog.SourceLocation == nil {
+		_, fileOk := expectedFields["sourceLocation.file"]
+		_, lineOk := expectedFields["sourceLocation.line"]
+		if fileOk || lineOk {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil"))
+		}
+	} else {
+		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+		if err := verifyLogField("sourceLocation.line", strconv.FormatInt(actualLog.SourceLocation.Line, 10), expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	// HTTP Request
+	// Taken from https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest
+	httpRequestFields := []string{"httpRequest.requestMethod", "httpRequest.requestUrl",
+		"httpRequest.requestSize", "httpRequest.status", "httpRequest.responseSize",
+		"httpRequest.userAgent", "httpRequest.remoteIp", "httpRequest.serverIp",
+		"httpRequest.referer", "httpRequest.latency", "httpRequest.cacheLookup",
+		"httpRequest.cacheHit", "httpRequest.cacheValidatedWithOriginServer",
+		"httpRequest.cacheFillBytes", "httpRequest.protocol"}
+	if actualLog.HTTPRequest == nil {
+		for _, field := range httpRequestFields {
+			if _, ok := expectedFields[field]; ok {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected value for field %s but got nil", field))
+			}
+		}
+	} else {
+		// Validate that the HTTP fields that are present match the expected log.
+		testPairs := [][2]string{
+			{"httpRequest.requestMethod", actualLog.HTTPRequest.Request.Method},
+			{"httpRequest.requestUrl", actualLog.HTTPRequest.Request.URL.String()},
+			{"httpRequest.requestSize", strconv.FormatInt(actualLog.HTTPRequest.RequestSize, 10)},
+			{"httpRequest.status", strconv.Itoa(actualLog.HTTPRequest.Status)},
+			{"httpRequest.responseSize", strconv.FormatInt(actualLog.HTTPRequest.ResponseSize, 10)},
+			{"httpRequest.userAgent", actualLog.HTTPRequest.Request.UserAgent()},
+			{"httpRequest.remoteIp", actualLog.HTTPRequest.RemoteIP},
+			{"httpRequest.serverIp", actualLog.HTTPRequest.LocalIP},
+			{"httpRequest.referer", actualLog.HTTPRequest.Request.Referer()},
+			{"httpRequest.latency", actualLog.HTTPRequest.Latency.String()},
+			{"httpRequest.cacheLookup", strconv.FormatBool(actualLog.HTTPRequest.CacheLookup)},
+			{"httpRequest.cacheHit", strconv.FormatBool(actualLog.HTTPRequest.CacheHit)},
+			{"httpRequest.cacheValidatedWithOriginServer", strconv.FormatBool(actualLog.HTTPRequest.CacheValidatedWithOriginServer)},
+			{"httpRequest.cacheFillBytes", strconv.FormatInt(actualLog.HTTPRequest.CacheFillBytes, 10)},
+			{"httpRequest.protocol", actualLog.HTTPRequest.Request.Proto},
+		}
+		for _, test := range testPairs {
+			expectedHTTPField, actualHTTPField := test[0], test[1]
+			if err := verifyLogField(expectedHTTPField, actualHTTPField, expectedFields); err != nil {
+				multiErr = multierr.Append(multiErr, err)
+			}
+		}
+	}
+
+	// Labels
+	// JSON Payload
+
+	// Verify all non-optional fields in the expectedLog match some field in the actualLog.
+	// Verify types of the fields? That sounds hard
+
+	// For fields in the resulting LogEntry, validate that they are part of the expected fields (with regex if applicable).
+	// Make sure all the required fields are present in the LogEntry.
+	if multiErr != nil {
+		return fmt.Errorf("%s: %w", expectedLog.LogName, multiErr)
+	}
+
+	return nil
+}
+
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
@@ -225,7 +360,24 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.LogName, entry.Fields))
+			// Construct query using non-optional fields.
+			query := constructQuery(entry.LogName, entry.Fields)
+
+			// Query logging backend for log matching the query.
+			actualLog, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			// Verify the log is what was expected.
+			err = verifyLog(actualLog, entry)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			c <- nil
 		}()
 	}
 	for range logs {
