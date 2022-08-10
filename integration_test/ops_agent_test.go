@@ -50,9 +50,10 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -119,7 +120,7 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// *somewhere*. So the workaround is to make the log source's name unique
 	// per logName.
 	source := logName + "__ops_agent_test"
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog –LogName '%s' –Source '%s' }", source, logName, source)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
 	}
 
@@ -220,7 +221,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), configPathForPlatform(vm.Platform)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
@@ -1270,7 +1271,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	var agentMetrics struct {
-		ExpectedMetrics []*common.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
 
 	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
@@ -1292,7 +1293,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			t.Error(err)
 		}
 
-		err = common.AssertMetric(metric, series)
+		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1338,7 +1339,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 				return
 			}
 
-			err = common.AssertMetric(metric, series)
+			err = metadata.AssertMetric(metric, series)
 			if err != nil {
 				t.Error(err)
 			}

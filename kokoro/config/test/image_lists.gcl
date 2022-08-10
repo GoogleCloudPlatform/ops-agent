@@ -61,13 +61,6 @@ ubuntu = _family {
       ]
       presubmit = 'ubuntu-minimal-2004-lts'
     }
-    impish = _distro {
-      name = 'Ubuntu 21.10 Impish'
-      release = [
-        'ubuntu-2110',
-        'ubuntu-minimal-2110',
-      ]
-    }
     jammy = _distro {
       name = 'Ubuntu 22.04 Jammy'
       release = [
@@ -117,7 +110,6 @@ sles = _family {
       name = 'SLES 12'
       release = [
         'sles-12',
-        'sles-12-sp3-sap',
         'sles-12-sp4-sap',
         'sles-12-sp5-sap',
       ]
@@ -127,7 +119,6 @@ sles = _family {
       name = 'SLES 15'
       release = [
         'sles-15',
-        'sles-15-sap',
         'sles-15-sp1-sap',
         'sles-15-sp2-sap',
         'opensuse-leap',

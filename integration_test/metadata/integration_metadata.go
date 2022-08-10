@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration_test
-
-package common
+package metadata
 
 import (
 	"fmt"
@@ -84,6 +82,10 @@ type ConfigurationOptions struct {
 	MetricsConfiguration []*InputConfiguration `yaml:"metrics" validate:"required_without=LogsConfiguration,dive"`
 }
 
+type ExpectedMetricsContainer struct {
+	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+}
+
 type IntegrationMetadata struct {
 	PublicUrl                    string                       `yaml:"public_url"`
 	AppUrl                       string                       `yaml:"app_url" validate:"required,url"`
@@ -94,12 +96,13 @@ type IntegrationMetadata struct {
 	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                       `yaml:"configure_integration"`
 	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	ExpectedMetrics              []*ExpectedMetric            `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
 	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
+
+	ExpectedMetricsContainer `yaml:",inline"`
 }
 
 func SliceContains(slice []string, toFind string) bool {
