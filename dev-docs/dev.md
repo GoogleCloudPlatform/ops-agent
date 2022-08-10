@@ -169,6 +169,7 @@ $ tree $CONFIG_OUT
 
 ## Build and test manually on GCE VMs
 
+<a id="linux-build-test-gce"></a>
 ### Linux
 
 #### Build packages
@@ -274,6 +275,7 @@ $ sudo yum install -y /tmp/$PACKAGE_NAME
 $ sudo zypper install -n /tmp/$PACKAGE_NAME
 ```
 
+<a id="windows-build-test-gce"></a>
 ### Windows
 
 #### Create a Windows build VM
@@ -605,24 +607,8 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     rd -r "C:\Program Files\Google\Cloud Operations\Ops Agent"
     ```
 
-1.  Verify that the service is indeed running.
+1.  [Verify](#windows-verify-status) that the service is indeed running.
 
-    ```
-    Get-Service google-cloud-ops-agent*
-    ```
-
-    <details>
-    <summary>Expected output:</summary>
-
-    ```
-    Status   Name                               DisplayName
-    ------   ----                               -----------
-    Running  google-cloud-ops-agent             Google Cloud Ops Agent
-    Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
-    Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
-    ```
-
-    </details>
 
 **Troubleshooting**
 
@@ -648,34 +634,11 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     C:\Users\{{USERNAME}}\tmp\out\bin\google-cloud-metrics-agent_windows_amd64.exe "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
     ```
 
-#### Uninstall the agent
-
-##### Linux
-
-1.  Stop the agent:
-
-    ```shell
-    sudo service google-cloud-ops-agent stop
-    ```
-
-1.  Uninstall the package:
-
-    ```shell
-    sudo apt remove google-cloud-ops-agent
-    ```
-
-##### Windows
-
-1.  Run the following commands in Windows PowerShell (admin mode):
-
-    ```
-    googet -noconfirm remove google-cloud-ops-agent
-    ```
-
 #### [Optional] Edit config
 
 Edit the Ops Agent configuration file as needed:
 
+<a id="linux-edit-config"></a>
 ##### Linux
 
 ```shell
@@ -685,6 +648,7 @@ $ sudo vim /etc/google-cloud-ops-agent/config.yaml
 Sample
 [config](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator/default-config.yaml)
 
+<a id="windows-edit-config"></a>
 ###### Windows
 
 ```
@@ -746,12 +710,13 @@ $ logger -n 0.0.0.0 --tcp --port=5140 -- $TCP_LOG
 
 #### Uninstall the agent
 
+<a id="linux-uninstall"></a>
 ##### Linux
 
 1.  Stop the agent:
 
     ```shell
-    sudo systemctl stop google-cloud-ops-agent.target
+    sudo service google-cloud-ops-agent stop
     ```
 
 1.  Uninstall the package:
@@ -760,6 +725,7 @@ $ logger -n 0.0.0.0 --tcp --port=5140 -- $TCP_LOG
     sudo apt remove google-cloud-ops-agent
     ```
 
+<a id="windows-uninstall"></a>
 ##### Windows
 
 1.  Run the following commands in Windows PowerShell (admin mode):
@@ -908,6 +874,7 @@ ops-agent$ /google/bin/releases/opensource/thirdparty/cross/cross .
 
 ### Where to find things
 
+<a id="linux-where-to-find-things"></a>
 #### Linux
 
 Description                                                                                          | Link
@@ -921,6 +888,7 @@ Config file - Fluent Bit - Parsers config. Only present when the systemd fluent-
 Config file - OT Metrics Agent                                                                       | `/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml`
 Buffer files - Fluent Bit                                                                            | `/var/lib/google-cloud-ops-agent/fluent-bit/buffers/`
 
+<a id="windows-where-to-find-things"></a>
 #### Windows
 
 Description                               | Link
@@ -935,6 +903,7 @@ Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operati
 
 ### Check logs
 
+<a id="linux-check-logs"></a>
 #### Linux
 
 *   Check all related syslog
@@ -969,6 +938,7 @@ Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operati
     $ sudo grep -r " systemd" /var/log/messages
     ```
 
+<a id="windows-check-logs"></a>
 #### Windows
 
 The OT Collector subagent logs can be found locally in `Event Viewer`. From
@@ -984,25 +954,41 @@ notepad "C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log
 
 ### Verify Ops Agent and subagent status
 
+<a id="linux-verify-status"></a>
 #### Linux
 
 ```shell
 $ sudo systemctl status google-cloud-ops-agent"*"
 ```
 
+<a id="windows-verify-status"></a>
 #### Windows
 
 Open `Windows PowerShell` as administrator and run:
 
 ```
-Get-Service google-cloud-ops-agent
+Get-Service google-cloud-ops-agent*
 ```
+
+    <details>
+    <summary>Expected output:</summary>
+
+    ```
+    Status   Name                               DisplayName
+    ------   ----                               -----------
+    Running  google-cloud-ops-agent             Google Cloud Ops Agent
+    Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
+    Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
+    ```
+
+    </details>
 
 You can also check service status in the `Services` app and inspect running
 processes in the `Task Manager` app.
 
 ### Restart Ops Agent and subagents
 
+<a id="linux-restart-agent"></a>
 #### Linux
 
 ```shell
@@ -1017,6 +1003,7 @@ $ sudo systemctl start google-cloud-ops-agent.target
 $ sudo systemctl stop google-cloud-ops-agent.target
 ```
 
+<a id="windows-restart-agent"></a>
 #### Windows
 
 Open `Windows PowerShell` as administrator and run:
