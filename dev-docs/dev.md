@@ -344,7 +344,7 @@ speed up the build.
     *   `google-cloud-ops-agent.exe`
 
     <details>
-    <summary>Sample output:</summary>
+    <summary>Sample output</summary>
 
     ```
         Directory: C:\Users\{{USERNAME}}\tmp\out
@@ -592,7 +592,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     </details>
 
 
-#### [Optional] Edit config
+## Edit config and apply
 
 Edit the Ops Agent configuration file as needed:
 
@@ -619,9 +619,9 @@ Sample
 [Restart the agent](#restart-ops-agent-and-subagents) to apply the new config.
 
 
-#### Send syslog via TCP (Linux)
+## Send syslog via TCP (Linux)
 
-Follow the step above to edit the config file to include syslog tcp config as
+Follow the ste to [edit the config file](#edit-config-and-apply) to include syslog tcp config as
 below:
 
 ```
@@ -652,32 +652,6 @@ $ export TCP_LOG=${USER}-test-tcp
 
 $ logger -n 0.0.0.0 --tcp --port=5140 -- $TCP_LOG
 ```
-
-#### Uninstall the agent
-
-<a id="linux-uninstall"></a>
-##### Linux
-
-1.  Stop the agent:
-
-    ```shell
-    sudo service google-cloud-ops-agent stop
-    ```
-
-1.  Uninstall the package:
-
-    ```shell
-    sudo apt remove google-cloud-ops-agent
-    ```
-
-<a id="windows-uninstall"></a>
-##### Windows
-
-1.  Run the following commands in Windows PowerShell (admin mode):
-
-    ```
-    googet -noconfirm remove google-cloud-ops-agent
-    ```
 
 ## Verify logs and metrics ingestion
 
@@ -983,6 +957,33 @@ show it.
 ```
 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
 ```
+
+### Uninstall the agent
+
+<a id="linux-uninstall"></a>
+##### Linux
+
+1.  Stop the agent:
+
+    ```shell
+    sudo service google-cloud-ops-agent stop
+    ```
+
+1.  Uninstall the package:
+
+    ```shell
+    sudo apt remove google-cloud-ops-agent
+    ```
+
+<a id="windows-uninstall"></a>
+##### Windows
+
+1.  Run the following commands in Windows PowerShell (admin mode):
+
+    ```
+    googet -noconfirm remove google-cloud-ops-agent
+    ```
+
 
 ### Known issues
 
