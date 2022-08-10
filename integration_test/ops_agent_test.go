@@ -339,9 +339,12 @@ func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
-		config := fmt.Sprintf(`logging:
+		for i := 0; i < 40; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
+				ctx, logger, vm := agents.CommonSetup(t, platform)
+				logPath := logPathForPlatform(vm.Platform)
+				config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -357,6 +360,7 @@ func TestCustomLogFile(t *testing.T) {
       - jsonPayload.missing_field = "value"
       - jsonPayload.message =~ "test pattern"
   service:
+    log_level: debug
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
@@ -364,23 +368,25 @@ func TestCustomLogFile(t *testing.T) {
         exporters: [google]
 `, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+				if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+					t.Fatal(err)
+				}
 
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
+				if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+					t.Fatalf("error writing dummy log line: %v", err)
+				}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
-			t.Error(err)
-		}
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+					t.Error(err)
+				}
+				time.Sleep(60 * time.Second)
+				_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+				if err == nil {
+					t.Error("expected log to be excluded but was included")
+				} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			})
 		}
 	})
 }

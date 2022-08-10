@@ -1478,6 +1478,9 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
 		return fmt.Errorf("%v, even after %v of attempts. err=%v", winRMDummyCommandMessage, gracePeriod, err)
 	}
+
+	time.Sleep(60 * time.Second)
+
 	return nil
 }
 
