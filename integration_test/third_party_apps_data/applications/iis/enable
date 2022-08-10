@@ -4,6 +4,10 @@
 # the default receiver and so both receivers will be active simultaneously
 # during the test.
 
+# Create a back up of the existing file so existing configurations are not lost.
+Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
+
+# Configure the Ops Agent.
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 metrics:
   receivers:
