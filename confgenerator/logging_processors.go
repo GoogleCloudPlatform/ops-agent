@@ -178,19 +178,20 @@ func (r MultilineRule) AsString() string {
 }
 
 // A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
-//     #
-//     # Regex rules for multiline parsing
-//     # ---------------------------------
-//     #
-//     # configuration hints:
-//     #
-//     #  - first state always has the name: start_state
-//     #  - every field in the rule must be inside double quotes
-//     #
-//     # rules |   state name  | regex pattern                  | next state
-//     # ------|---------------|--------------------------------------------
-//     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
-//     rule      "cont"          "/^\s+at.*/"                     "cont"
+//
+//	#
+//	# Regex rules for multiline parsing
+//	# ---------------------------------
+//	#
+//	# configuration hints:
+//	#
+//	#  - first state always has the name: start_state
+//	#  - every field in the rule must be inside double quotes
+//	#
+//	# rules |   state name  | regex pattern                  | next state
+//	# ------|---------------|--------------------------------------------
+//	rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
+//	rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
 	LoggingProcessorParseRegexComplex
 	Rules []MultilineRule

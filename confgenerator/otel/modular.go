@@ -70,9 +70,10 @@ type ModularConfig struct {
 // Each pipeline gets generated as a receiver, per-pipeline processors, global processors, and then global exporter.
 // For example:
 // metrics/mypipe:
-//   receivers: [hostmetrics/mypipe]
-//   processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
-//   exporters: [googlecloud]
+//
+//	receivers: [hostmetrics/mypipe]
+//	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
+//	exporters: [googlecloud]
 func (c ModularConfig) Generate() (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
