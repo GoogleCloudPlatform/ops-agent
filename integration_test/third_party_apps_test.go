@@ -49,6 +49,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -73,6 +74,28 @@ func removeFromSlice(original []string, toRemove string) []string {
 		}
 	}
 	return result
+}
+
+// assertFilePresence returns an error if the provided file path doesn't exist on the VM.
+func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
+	var fileQuery string
+	if gce.IsWindows(vm.Platform) {
+		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
+	} else {
+		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
+	}
+
+	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
+	if err != nil {
+		return fmt.Errorf("error accessing backup file: %v", err)
+	}
+
+	// Windows returns False if the path doesn't exist.
+	if gce.IsWindows(vm.Platform) && strings.Contains(out.Stdout, "False") {
+		return fmt.Errorf("couldn't find file %s. Output response %s. Error response: %s", filePath, out.Stdout, out.Stderr)
+	}
+
+	return nil
 }
 
 // rejectDuplicates looks for duplicate entries in the input slice and returns
@@ -343,6 +366,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
+	}
+
+	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	if err = assertFilePresence(ctx, logger, vm, backupConfigFilePath); err != nil {
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
 
 	// Check if the exercise script exists, and run it if it does.
