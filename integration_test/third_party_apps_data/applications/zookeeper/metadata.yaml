@@ -18,50 +18,41 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.data_tree.ephemeral_node.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.data_tree.size
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.file_descriptor.limit
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/zookeeper.file_descriptor.open
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.fsync.exceeded_threshold.count
   optional: true
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.latency.avg
   optional: true
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.latency.max
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.latency.min
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.packet.count
   value_type: INT64
   kind: CUMULATIVE
@@ -72,17 +63,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.watch.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/zookeeper.znode.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 expected_logs:
 - log_name: zookeeper_general
   fields:
