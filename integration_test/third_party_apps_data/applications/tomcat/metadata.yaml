@@ -125,6 +125,10 @@ expected_logs:
     type: string
     description: ''
     optional: true
+  - name: httpRequest.status
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header

@@ -38,6 +38,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -53,6 +54,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -218,15 +220,18 @@ func constructQuery(logName string, fields []*metadata.LogFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-// logFieldsMap returns a field name => LogField mapping.
-func logFieldsMap(log *metadata.ExpectedLog) map[string]*metadata.LogFields {
+// logFieldsMapWithPrefix returns a field name => LogField mapping where all the fieldnames have the provided prefix.
+// Note that the map will omit the prefix in the returned map.
+func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string]*metadata.LogFields {
 	if log == nil {
 		return nil
 	}
 
 	fieldsMap := make(map[string]*metadata.LogFields)
 	for _, entry := range log.Fields {
-		fieldsMap[entry.Name] = entry
+		if strings.HasPrefix(entry.Name, prefix) {
+			fieldsMap[strings.TrimPrefix(entry.Name, prefix)] = entry
+		}
 	}
 
 	return fieldsMap
@@ -241,8 +246,12 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		return nil
 	}
 
-	if len(actualField) == 0 && !expectedField.Optional {
-		return fmt.Errorf("expected non-empty value for log field %s", fieldName)
+	if len(actualField) == 0 {
+		if expectedField.Optional {
+			return nil
+		} else {
+			return fmt.Errorf("expected non-empty value for log field %s", fieldName)
+		}
 	}
 
 	pattern := ".*"
@@ -272,7 +281,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	}
 
 	// Verify all fields in the actualLog match some field in the expectedLog.
-	expectedFields := logFieldsMap(expectedLog)
+	expectedFields := logFieldsMapWithPrefix(expectedLog, "")
 
 	// Severity
 	if err := verifyLogField("severity", actualLog.Severity.String(), expectedFields); err != nil {
@@ -336,14 +345,68 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		}
 	}
 
-	// Labels
+	// Labels - Untested as of yet since no application sets LogEntry Labels yet.
+
 	// JSON Payload
+	expectedPayloadFields := logFieldsMapWithPrefix(expectedLog, "jsonPayload.")
+	if actualLog.Payload == nil {
+		if len(expectedPayloadFields) > 0 {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil"))
+		}
+	} else {
+		actualPayloadFields := actualLog.Payload.(*structpb.Struct).GetFields()
+		for expectedKey := range expectedPayloadFields {
+			actualValue, ok := actualPayloadFields[expectedKey]
+			if !ok || actualValue == nil {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil", expectedKey))
+			}
 
-	// Verify all non-optional fields in the expectedLog match some field in the actualLog.
-	// Verify types of the fields? That sounds hard
+			// Sanitize the actualValue string.
+			var actualValueStr string
+			switch v := actualValue.GetKind().(type) {
+			case *structpb.Value_NumberValue:
+				if v != nil {
+					switch {
+					case math.IsNaN(v.NumberValue):
+						actualValueStr = "NaN"
+					case math.IsInf(v.NumberValue, +1):
+						actualValueStr = "Infinity"
+					case math.IsInf(v.NumberValue, -1):
+						actualValueStr = "-Infinity"
+					default:
+						actualValueStr = strconv.FormatFloat(v.NumberValue, 'E', -1, 32)
+					}
+				}
+			case *structpb.Value_StringValue:
+				if v != nil {
+					actualValueStr = v.StringValue
+				}
+			case *structpb.Value_BoolValue:
+				if v != nil {
+					actualValueStr = strconv.FormatBool(v.BoolValue)
+				}
+			case *structpb.Value_StructValue:
+				if v != nil {
+					actualValueStr = fmt.Sprint(v.StructValue.AsMap())
+				}
+			case *structpb.Value_ListValue:
+				if v != nil {
+					actualValueStr = fmt.Sprint(v.ListValue.AsSlice())
+				}
+			}
 
-	// For fields in the resulting LogEntry, validate that they are part of the expected fields (with regex if applicable).
-	// Make sure all the required fields are present in the LogEntry.
+			if err := verifyLogField(expectedKey, actualValueStr, expectedPayloadFields); err != nil {
+				multiErr = multierr.Append(multiErr, err)
+			}
+		}
+
+		for actualKey, actualValue := range actualPayloadFields {
+			if _, ok := expectedPayloadFields[actualKey]; !ok {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s", actualKey, actualValue.String()))
+			}
+		}
+	}
+
 	if multiErr != nil {
 		return fmt.Errorf("%s: %w", expectedLog.LogName, multiErr)
 	}
