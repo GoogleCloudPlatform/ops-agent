@@ -18,7 +18,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/memcached.commands
   value_type: INT64
@@ -30,12 +29,10 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/memcached.connections.total
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/memcached.cpu.usage
   value_type: DOUBLE
   kind: CUMULATIVE
@@ -46,12 +43,10 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/memcached.evictions
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/memcached.network
   value_type: INT64
   kind: CUMULATIVE
@@ -69,7 +64,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 expected_logs:
 - log_name: syslog
   fields:

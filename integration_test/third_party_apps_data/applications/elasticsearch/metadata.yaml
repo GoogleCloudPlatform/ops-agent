@@ -24,7 +24,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.cluster.health
   value_type: INT64
   kind: GAUGE
@@ -35,7 +34,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.cluster.shards
   value_type: INT64
   kind: GAUGE
@@ -58,7 +56,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.cluster.io
   value_type: INT64
   kind: CUMULATIVE
@@ -75,17 +72,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.http.connections
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.open_files
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/elasticsearch.node.operations.completed
   value_type: INT64
@@ -103,7 +97,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
   value_type: INT64
   kind: CUMULATIVE

@@ -106,7 +106,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/wildfly.jdbc.rollback.count
   value_type: INT64
   kind: CUMULATIVE

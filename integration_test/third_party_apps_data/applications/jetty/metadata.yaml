@@ -17,7 +17,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/jetty.session.count
   value_type: INT64
@@ -47,7 +46,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 expected_logs:
 - log_name: jetty_access
   fields:

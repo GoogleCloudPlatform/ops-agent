@@ -104,7 +104,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/nginx.connections_current
   value_type: INT64
   kind: GAUGE
@@ -115,12 +114,10 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/nginx.requests
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 expected_logs:
 - log_name: nginx_access
