@@ -43,7 +43,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.index.count
   value_type: INT64
   kind: GAUGE

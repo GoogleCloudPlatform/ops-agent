@@ -26,74 +26,60 @@ expected_metrics:
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: agent.googleapis.com/mssql/transaction_rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: agent.googleapis.com/mssql/write_transaction_rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 # v2 metrics
 - type: workload.googleapis.com/sqlserver.user.connection.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.lock.wait.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.batch.request.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.batch.sql_compilation.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.batch.sql_recompilation.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.buffer_cache.hit_ratio
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.life_expectancy
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.split.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.lazy_write.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.checkpoint.flush.rate
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/sqlserver.page.operation.rate
   value_type: DOUBLE
   kind: GAUGE

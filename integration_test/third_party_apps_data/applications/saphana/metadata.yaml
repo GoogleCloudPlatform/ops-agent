@@ -50,7 +50,6 @@ expected_metrics:
   type: workload.googleapis.com/saphana.alert.count
   value_type: INT64
 - kind: GAUGE
-  labels: {}
   monitored_resource: gce_instance
   type: workload.googleapis.com/saphana.backup.latest
   optional: true

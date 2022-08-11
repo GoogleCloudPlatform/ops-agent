@@ -13,7 +13,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: example.googleapis.com/example.example1
   value_type: INT64
   kind: GAUGE
