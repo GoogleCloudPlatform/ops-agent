@@ -143,7 +143,6 @@ windows = _family {
         'windows-2016-core',
         'windows-2019',
         'windows-2019-core',
-        'windows-20h2-core',
       ]
       presubmit = 'windows-2016'
     }
