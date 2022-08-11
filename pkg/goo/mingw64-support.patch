@@ -12,10 +12,10 @@ index 5e88c994..70a226fd 100644
      set(OPENSSL_MSVC_STATIC_RT  ON)
    endif()
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
-index b55aef20..da6c27e9 100644
+index b55aef20..4a19230c 100644
 --- a/cmake/luajit.cmake
 +++ b/cmake/luajit.cmake
-@@ -11,6 +11,10 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
+@@ -11,10 +11,22 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
  set(LUAJIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${FLB_PATH_LIB_LUAJIT})
  set(LUAJIT_DEST ${CMAKE_CURRENT_BINARY_DIR})
  
@@ -26,15 +26,29 @@ index b55aef20..da6c27e9 100644
  if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
    set(CFLAGS "${CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
  endif()
-@@ -22,7 +26,7 @@ ExternalProject_Add(luajit
+ 
++set(LUAJIT_SRCLIB libluajit.a)
++set(LUAJIT_DESTLIB libluajit.a)
++if (CMAKE_SYSTEM_NAME MATCHES "Windows")
++  set(TARGET_SYS_PARAM "TARGET_SYS=${CMAKE_SYSTEM_NAME}")
++  set(LUAJIT_SRCLIB lua51.dll)
++  set(LUAJIT_DESTLIB libluajit.dll)
++endif()
++
+ # luajit (UNIX)
+ # =============
+ ExternalProject_Add(luajit
+@@ -22,8 +34,8 @@ ExternalProject_Add(luajit
    EXCLUDE_FROM_ALL TRUE
    SOURCE_DIR ${LUAJIT_SRC}
    CONFIGURE_COMMAND ./configure
 -  BUILD_COMMAND $(MAKE) CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC"
-+  BUILD_COMMAND $(MAKE) HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC" Q=
-   INSTALL_COMMAND cp src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
+-  INSTALL_COMMAND cp src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
++  BUILD_COMMAND $(MAKE) ${TARGET_SYS_PARAM} HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC" Q=
++  INSTALL_COMMAND ${CMAKE_COMMAND} -E copy src/${LUAJIT_SRCLIB} "${LUAJIT_DEST}/lib/${LUAJIT_DESTLIB}")
  
  # luajit (Windows)
+ # ================
 diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
 index 30dd4cdf..dac3fe14 100644
 --- a/include/fluent-bit/flb_compat.h
@@ -84,6 +98,86 @@ index 30dd4cdf..dac3fe14 100644
 +#include <monkey/mk_core.h>
 +
  #endif
+diff --git a/lib/avro/src/errors.c b/lib/avro/src/errors.c
+index 8abd8c83..0eabedf2 100644
+--- a/lib/avro/src/errors.c
++++ b/lib/avro/src/errors.c
+@@ -52,7 +52,7 @@ static void make_error_data_key()
+     pthread_key_create(&error_data_key, free);
+ }
+ #elif defined _WIN32
+-#include <Windows.h>
++#include <windows.h>
+ 
+ static __declspec( thread ) struct avro_error_data_t TLS_ERROR_DATA = { "", "", NULL, NULL };
+ 
+diff --git a/lib/chunkio/include/chunkio/chunkio_compat.h b/lib/chunkio/include/chunkio/chunkio_compat.h
+index ca17779b..e91ae6a4 100644
+--- a/lib/chunkio/include/chunkio/chunkio_compat.h
++++ b/lib/chunkio/include/chunkio/chunkio_compat.h
+@@ -27,6 +27,7 @@
+ #include <direct.h>
+ #pragma comment(lib, "ws2_32.lib")
+ 
++#ifndef __MINGW32__
+ /** mode flags for access() */
+ #define R_OK 04
+ #define W_OK 02
+@@ -39,6 +40,7 @@
+ 
+ typedef SSIZE_T ssize_t;
+ typedef unsigned mode_t;
++#endif
+ 
+ static inline char* dirname(const char *path)
+ {
+diff --git a/lib/chunkio/src/cio_os.c b/lib/chunkio/src/cio_os.c
+index b368215f..140aeea7 100644
+--- a/lib/chunkio/src/cio_os.c
++++ b/lib/chunkio/src/cio_os.c
+@@ -27,7 +27,7 @@
+ 
+ #include <chunkio/chunkio_compat.h>
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__MINGW32__)
+ #include <Shlobj.h>
+ #endif
+ 
+diff --git a/lib/chunkio/src/cio_utils.c b/lib/chunkio/src/cio_utils.c
+index 61d33b09..d9f6c9e7 100644
+--- a/lib/chunkio/src/cio_utils.c
++++ b/lib/chunkio/src/cio_utils.c
+@@ -25,14 +25,14 @@
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <errno.h>
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <fts.h>
+ #endif
+ 
+ #include <chunkio/chunkio_compat.h>
+ #include <chunkio/cio_log.h>
+ 
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ /*
+  * Taken from StackOverflow:
+  *
+diff --git a/lib/chunkio/src/win32/dirent.c b/lib/chunkio/src/win32/dirent.c
+index 2ed39ed1..7d1a6584 100644
+--- a/lib/chunkio/src/win32/dirent.c
++++ b/lib/chunkio/src/win32/dirent.c
+@@ -22,7 +22,7 @@
+  * Win32's FIndFirstFile/FindNextFile API.
+  */
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <shlwapi.h>
+ 
+ #include "dirent.h"
 diff --git a/lib/monkey/include/monkey/mk_core/external/winpthreads.h b/lib/monkey/include/monkey/mk_core/external/winpthreads.h
 index 97045a69..f28366d2 100644
 --- a/lib/monkey/include/monkey/mk_core/external/winpthreads.h
@@ -97,6 +191,41 @@ index 97045a69..f28366d2 100644
  struct timespec
  {
    /* long long in windows is the same as long in unix for 64bit */
+diff --git a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c b/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
+index 5ee3e591..84bae9fe 100644
+--- a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
++++ b/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
+@@ -11,7 +11,7 @@ int main(){
+ #else
+ int main(int ac, char*av[]){
+ #endif
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__MINGW32__)
+   void * p = &CHECK_FUNCTION_EXISTS;
+ #else
+   CHECK_FUNCTION_EXISTS();
+diff --git a/lib/monkey/mk_core/mk_rconf.c b/lib/monkey/mk_core/mk_rconf.c
+index 80e7e784..2176a3ed 100644
+--- a/lib/monkey/mk_core/mk_rconf.c
++++ b/lib/monkey/mk_core/mk_rconf.c
+@@ -23,7 +23,7 @@
+ #include <string.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <glob.h>
+ #endif
+ 
+@@ -33,7 +33,7 @@
+ #include <mk_core/mk_list.h>
+ 
+ #ifdef _WIN32
+-#include <Windows.h>
++#include <windows.h>
+ #include <strsafe.h>
+ #define PATH_MAX MAX_PATH
+ #endif
 diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
 index 6034a54b..676050f1 100644
 --- a/plugins/CMakeLists.txt
@@ -112,6 +241,32 @@ index 6034a54b..676050f1 100644
  else()
    REGISTER_IN_PLUGIN("in_serial")
  endif()
+diff --git a/plugins/in_tail/win32/io.c b/plugins/in_tail/win32/io.c
+index a479ff73..043504f9 100644
+--- a/plugins/in_tail/win32/io.c
++++ b/plugins/in_tail/win32/io.c
+@@ -18,7 +18,7 @@
+  *  limitations under the License.
+  */
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <stdlib.h>
+ #include <stdint.h>
+ #include <fcntl.h>
+diff --git a/plugins/in_tail/win32/stat.c b/plugins/in_tail/win32/stat.c
+index f15a45b8..eadf931c 100644
+--- a/plugins/in_tail/win32/stat.c
++++ b/plugins/in_tail/win32/stat.c
+@@ -18,7 +18,7 @@
+  *  limitations under the License.
+  */
+ 
+-#include <Windows.h>
++#include <windows.h>
+ #include <stdlib.h>
+ #include <stdint.h>
+ #include <io.h>
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index 76940076..d5e9c2b8 100644
 --- a/src/CMakeLists.txt
@@ -155,3 +310,18 @@ index 76940076..d5e9c2b8 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
+diff --git a/src/win32/winsvc.c b/src/win32/winsvc.c
+index d7289c66..abe0ffda 100644
+--- a/src/win32/winsvc.c
++++ b/src/win32/winsvc.c
+@@ -18,8 +18,8 @@
+  *  limitations under the License.
+  */
+ 
+-#include <Windows.h>
+-#include <Shlwapi.h>
++#include <windows.h>
++#include <shlwapi.h>
+ 
+ struct flb_config;
+ extern struct flb_config *config;
