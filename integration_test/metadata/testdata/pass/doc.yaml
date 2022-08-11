@@ -1,0 +1,8 @@
+app_url: "https://example.google.com/"
+short_name: OpsAgent
+long_name: Cloud OpsAgent
+description: |-
+  Example description
+minimum_supported_agent_version:
+  metrics: 1.0.0
+  logging: 1.0.0

@@ -23,13 +23,11 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"gopkg.in/yaml.v2"
 )
 
 const (
 	// relative path to testdata folder
 	testdataDir     = "testdata"
-	inputYamlName   = "input.yaml"
 	goldenErrorName = "golden_error"
 )
 
@@ -44,15 +42,6 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 		t.Fatal("could not read dirName: " + filePath)
 	}
 	return strings.ReplaceAll(string(contents), "\r\n", "\n")
-}
-
-func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := metadata.NewIntegrationMetadataValidator()
-	err := yaml.UnmarshalStrict(bytes, i)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return v.Struct(i)
 }
 
 func TestMetadataValidation(t *testing.T) {
@@ -80,9 +69,8 @@ func TestMetadataValidation(t *testing.T) {
 func generateNewGolden(t *testing.T, dir string) {
 	t.Parallel()
 	goldenPath := path.Join(testdataDir, dir, goldenErrorName)
-	yamlStr := getTestFile(t, dir, inputYamlName)
-	err := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
 
+	err := metadata.UnmarshallMetadata(&metadata.IntegrationMetadata{}, path.Join(testdataDir, dir))
 	errStr := ""
 	if err != nil {
 		errStr = err.Error()
@@ -96,10 +84,9 @@ func generateNewGolden(t *testing.T, dir string) {
 func testMetadataValidation(t *testing.T, dir string) {
 	t.Parallel()
 
-	yamlStr := getTestFile(t, dir, inputYamlName)
 	goldenErrStr := getTestFile(t, dir, goldenErrorName)
 
-	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
+	actualError := metadata.UnmarshallMetadata(&metadata.IntegrationMetadata{}, path.Join(testdataDir, dir))
 
 	if actualError == nil {
 		if goldenErrStr == "" {
