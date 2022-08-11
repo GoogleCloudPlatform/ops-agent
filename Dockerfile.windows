@@ -13,11 +13,11 @@ RUN go mod init unused; \
     go get github.com/pavius/impi/cmd/impi; \
     go get github.com/google/googet/v2/goopack;
 
-#COPY . /work
-#WORKDIR /work
-#RUN patch -d ./submodules/fluent-bit/ <./pkg/goo/mingw64-support.patch
-#RUN ./pkg/goo/build.sh
-#
-#FROM scratch
-#COPY --from=mingw /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-windows-ltsc2019.tgz
-#COPY --from=mingw /google-cloud-ops-agent*.goo /
+COPY . /work
+WORKDIR /work
+RUN patch -d ./submodules/fluent-bit/ -p 1 <./pkg/goo/mingw64-support.patch || true
+RUN ./pkg/goo/build.sh
+
+FROM scratch
+COPY --from=mingw /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-windows-ltsc2019.tgz
+COPY --from=mingw /google-cloud-ops-agent*.goo /
