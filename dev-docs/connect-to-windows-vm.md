@@ -142,6 +142,7 @@ Tips: Depends on your network condition, it might be more stable to connect to C
 *   Install `Remmina`
 *   Use the button on the top left to `Add a new connection profile` in `Remmina` that connects to
     `localhost:13000`.
+![image](https://user-images.githubusercontent.com/9001073/184251199-b7c203de-9e98-4c2a-87ef-3300576c19ec.png)
 
 
 *   Set up [IAP](https://cloud.google.com/iap/docs/using-tcp-forwarding)
