@@ -258,6 +258,10 @@ expected_logs:
   - name: severity
     type: string
     description: ''
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
 configuration_options:
   logs:
   - type: mysql_error

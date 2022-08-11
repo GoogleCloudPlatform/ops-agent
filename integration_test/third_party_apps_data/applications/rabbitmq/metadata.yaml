@@ -34,6 +34,10 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: Log message
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

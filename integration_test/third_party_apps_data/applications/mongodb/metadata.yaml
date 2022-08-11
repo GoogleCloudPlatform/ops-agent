@@ -99,6 +99,10 @@ expected_logs:
   - name: jsonPayload.attributes
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided
+  - name: jsonPayload.s
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

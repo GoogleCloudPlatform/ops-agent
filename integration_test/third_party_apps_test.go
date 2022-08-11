@@ -241,7 +241,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	expectedField, ok := expectedFields[fieldName]
 	if !ok { // Not expecting this field.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v", fieldName, actualField)
+			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
 		}
 		return nil
 	}
@@ -250,7 +250,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		if expectedField.Optional {
 			return nil
 		} else {
-			return fmt.Errorf("expected non-empty value for log field %s", fieldName)
+			return fmt.Errorf("expected non-empty value for log field %s\n", fieldName)
 		}
 	}
 
@@ -264,7 +264,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	}
 
 	if !match {
-		return fmt.Errorf("field %s of the actual log %s didn't match regex pattern: %s", fieldName, actualField, pattern)
+		return fmt.Errorf("field %s of the actual log: %s didn't match regex pattern: %s\n", fieldName, actualField, pattern)
 	}
 
 	return nil
@@ -293,7 +293,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		_, fileOk := expectedFields["sourceLocation.file"]
 		_, lineOk := expectedFields["sourceLocation.line"]
 		if fileOk || lineOk {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
 		}
 	} else {
 		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
@@ -315,7 +315,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	if actualLog.HTTPRequest == nil {
 		for _, field := range httpRequestFields {
 			if _, ok := expectedFields[field]; ok {
-				multiErr = multierr.Append(multiErr, fmt.Errorf("expected value for field %s but got nil", field))
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected value for field %s but got nil\n", field))
 			}
 		}
 	} else {
@@ -351,14 +351,14 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	expectedPayloadFields := logFieldsMapWithPrefix(expectedLog, "jsonPayload.")
 	if actualLog.Payload == nil {
 		if len(expectedPayloadFields) > 0 {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil\n"))
 		}
 	} else {
 		actualPayloadFields := actualLog.Payload.(*structpb.Struct).GetFields()
 		for expectedKey := range expectedPayloadFields {
 			actualValue, ok := actualPayloadFields[expectedKey]
 			if !ok || actualValue == nil {
-				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil", expectedKey))
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
 			}
 
 			// Sanitize the actualValue string.
@@ -402,7 +402,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 
 		for actualKey, actualValue := range actualPayloadFields {
 			if _, ok := expectedPayloadFields[actualKey]; !ok {
-				multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s", actualKey, actualValue.String()))
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s\n", actualKey, actualValue.String()))
 			}
 		}
 	}

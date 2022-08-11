@@ -159,6 +159,10 @@ expected_logs:
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

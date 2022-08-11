@@ -92,6 +92,10 @@ expected_logs:
     value_regex: org.apache.catalina.startup.Catalina.start
     type: string
     description: source of where the log originated
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

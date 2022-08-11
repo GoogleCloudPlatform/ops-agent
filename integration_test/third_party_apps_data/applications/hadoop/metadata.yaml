@@ -93,6 +93,10 @@ expected_logs:
     value_regex: org.apache.hadoop.hdfs.server.namenode.NameNode
     type: string
     description: 'The source Java class of the log entry'
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''
