@@ -9,7 +9,7 @@ ways of doing it. `Chrome RDP plugin` is simpler to set up, but it has poor
 performance. And the UI windows scrolling is not very user friendly. This may
 fit in a use case where you just want to spot check something simple. `Microsoft
 Remote Desktop (Mac)` takes longer for the initial setup, but is recommended for
-non-trivial interactions with Windows VMs.
+non-trivial interactions with Windows VMs. [Remmina](https://remmina.org/) is the alternative on Linux-based sytems.
 
 ## Microsoft Remote Desktop (Mac)
 
@@ -38,6 +38,7 @@ proceeding.
 
 **Connect to a specific VM**
 
+<a id="mac-iap-tunnel"></a>
 1.  Start an IAP tunnel to the VM.
 
     Customize `$VM_PROJECT_ID`, `$VM_ZONE`, and `$IAP_VM_NAME` as needed.
@@ -102,10 +103,12 @@ googlecloudsdk.api_lib.compute.iap_tunnel_websocket.ConnectionCreationError: Err
 
 ## Chrome RDP plugin
 
-**One-time setup in Chrome**
+<details>
+<summary>One-time setup</summary>
 
 *   Install the
-    [Chrome RDP Plugin](https://chrome.google.com/webstore/detail/mpbbnannobiobpnfblimoapbephgifkm).
+    [Chrome RDP Plugin](https://chrome.google.com/webstore/detail/mpbbnannobiobpnfblimoapbephgifkm) in Chrome.
+</details>
 
 **Connect to a specific VM**
 
@@ -123,3 +126,41 @@ googlecloudsdk.api_lib.compute.iap_tunnel_websocket.ConnectionCreationError: Err
     ![image](https://user-images.githubusercontent.com/5287526/133006296-04c4a372-e93b-4aac-b578-02a2e2d540ad.png)
 
 </details>
+
+
+
+## Remmina (Linux)
+
+Remmina provides native RDP support and can be used on Linux-based systems, such as Debian/Ubuntu Desktop/GCE VMs or gLinux and Cloudtop.  
+
+Tips: Depends on your network condition, it might be more stable to connect to Cloudtop via Chrome RDP, and then connect to the Windows VM via Remmina.  
+
+<details>
+<summary>One-time setup</summary>
+
+*   If not on GCE VMs, install `gcloud` following https://cloud.google.com/sdk/docs/quickstart.
+*   Install `Remmina`
+*   Use the button on the top left to `Add a new connection profile` in `Remmina` that connects to
+    `localhost:13000`.
+
+
+*   Set up [IAP](https://cloud.google.com/iap/docs/using-tcp-forwarding)
+    permission by running the following command:
+
+    ```shell
+    gcloud projects add-iam-policy-binding ${USER}-sandbox \
+        --member=user:${USER}@google.com \
+        --role=roles/iap.tunnelResourceAccessor
+    ```
+
+</details>
+
+
+**Connect to a specific VM**
+
+1.  Start an IAP tunnel to the VM. Refer to the corresponding step in [Mac setup](#mac-iap-tunnel). 
+
+2.  Open Remmina, double click on the `localhost:13000` PC
+    to connect to it. Use the password you recorded in the previous
+    `gcloud compute reset-windows-password` step when
+    prompted to do so, or edit the connection profile to save the password. 

@@ -232,7 +232,7 @@ See [Create a GCE Linux VM](create-gce-linux-vm.md).
 
 #### Install the package on a VM
 
-##### Using a package built via the previous step
+Copy the package built in the previous step to the VM:
 
 NOTE: The firewall rule creation can be skipped if your project is exempted.
 
@@ -309,16 +309,14 @@ speed up the build.
     PowerShell` windows may be frozen. In other words, the build may appear to
     be stuck when it's actually building. The solution is to reconnect RDP.
 
-    **First time building**
-
     ```powershell
     # [Optional] Adjust the branch or commit hash to check out the code from.
-    # $WINDOWS_BUILD_BRANCH=master
+    $env:WINDOWS_BUILD_BRANCH='master'
 
     cd $env:UserProfile
     git clone https://github.com/GoogleCloudPlatform/ops-agent.git
     cd ops-agent
-    git checkout $WINDOWS_BUILD_BRANCH
+    git checkout $env:WINDOWS_BUILD_BRANCH
     git submodule update --init
     docker build -t full-build -f .\Dockerfile.windows .
 
@@ -337,7 +335,7 @@ speed up the build.
     ```
 
     The output of the `dir` command should list the following 3 exe files in the
-    `C:\Users\${USER}\ops-agent\tmp\out\bin` directory:
+    `C:\Users\{{USER}}\ops-agent\tmp\out\bin` directory:
 
     *   `fluent-bit.exe`
     *   `google-cloud-metrics-agent_windows_amd64.exe`
@@ -385,13 +383,14 @@ speed up the build.
 
     ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    rm -r "C:\Users\{{USERNAME}}\tmp"
-    rm -r "C:\Users\{{USERNAME}}\ops-agent\submodules\fluent-bit\build"
-
     cd $env:UserProfile
-    cd ops-agent
+    rm -r ".\tmp"
+    rm -r ".\ops-agent\submodules\fluent-bit\build"
+
+    cd $env:UserProfile\ops-agent
     docker build -t full-build -f .\Dockerfile.windows .
 
+    cd $env:UserProfile
     docker rm build-image
     docker create --name build-image full-build
     docker cp build-image:/work/out ./tmp
@@ -410,10 +409,9 @@ speed up the build.
 
     ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    Remove-Item -Force -Recurse -Path "C:\Users\{{USERNAME}}\ops-agent\*"
-    Remove-Item -Force -Recurse -Path "C:\Users\{{USERNAME}}\tmp\*"
-    rm -r "C:\Users\{{USERNAME}}\tmp"
-    rm -r "C:\Users\{{USERNAME}}\ops-agent"
+    cd $env:UserProfile
+    rm -r -force ".\tmp"
+    rm -r -force ".\ops-agent"
     docker rm build-image
     ```
 
@@ -426,20 +424,26 @@ To get a package out of a Windows VM, GCS is one of the few available options.
 In `Windows PowerShell`, use gsutil to upload the artifacts to GCS.
 
 ```powershell
+# [Required] Adjust the GCS bucket ID
+# Create the Bucket if not exist
+# Make sure the current service account has storage permissions to the bucket
+$env:GCP_BUCKET_ID=''
+
 # [Optional] Adjust the directory you want to upload to GCS.
-# $LOCAL_ARTIFACTS_DIR=C:\Users\{{USERNAME}}\tmp\out
+$env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
 # [Optional] Adjust the destination GCS bucket dir.
-# $GCP_BUCKET_DIR=ops_agent_windows
+# Create the directory if not exist
+$env:GCP_BUCKET_DIR='ops_agent_windows'
 
-gsutil cp -r $LOCAL_ARTIFACTS_DIR\* gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
 ```
 
 To overwrite existing contents in the bucket:
 
 ```powershell
-gsutil rm -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
-gsutil cp -r $LOCAL_ARTIFACTS_DIR\* gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
+gsutil rm -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
 ```
 
 <details>
@@ -453,7 +457,7 @@ you need to:
 
     ```shell
     # The VM name to grant GCS access to.
-    # $WIN_BUILD_VM_NAME={{USERNAME}}-win-build-vm
+    export WIN_BUILD_VM_NAME=${USER}-win-build-vm
 
     $ gcloud compute instances stop \
         --zone $VM_ZONE --project $VM_PROJECT_ID \
@@ -484,18 +488,20 @@ you need to:
 If you would like to download and save Windows packages to a Linux workstation, run the following commands on your Linux workstation:
 
 ```shell
+# [Required] Adjust the GCS bucket ID
+export GCP_BUCKET_ID=
 # [Optional] Adjust the source GCS bucket dir from where to download the
 # artifacts.
-$ export GCP_BUCKET_DIR=ops_agent_windows
+export GCP_BUCKET_DIR=ops_agent_windows
 
 # [Optional] Adjust the local directory to where you want to store the
 # artifacts.
-$ export WINDOWS_RELEASE_DIR=/tmp/google-cloud-ops-agent/windows-release
+export WINDOWS_RELEASE_DIR=/tmp/google-cloud-ops-agent/windows-release
 
-$ rm -rf $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ mkdir -p $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ ls $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR/google-cloud-ops-agent.x86_64.*.goo
+rm -rf $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+mkdir -p $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+gsutil cp -r gs://$GCP_BUCKET_ID/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+ls $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR/google-cloud-ops-agent.x86_64.*.goo
 ```
 </details>
 
@@ -523,37 +529,39 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
 
     ```powershell
+    # [Required] Adjust the GCS bucket ID
+    $env:GCP_BUCKET_ID=''
     # [Optional] Adjust the source GCS bucket dir from where to download the
     # artifacts. This directory should have `bin` and `config` sub directory in
     # it.
-    # $GCP_BUCKET_DIR=ops_agent_windows
+    $env:GCP_BUCKET_DIR='ops_agent_windows'
 
     # [Optional] Adjust the local directory to where you want to store the
     # artifacts.
-    # $LOCAL_ARTIFACTS_DIR=C:\Users\{{USERNAME}}\tmp\out
+    $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
-    md $LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $LOCAL_ARTIFACTS_DIR
-    ls $LOCAL_ARTIFACTS_DIR
+    md $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR/* $env:LOCAL_ARTIFACTS_DIR
+    ls $env:LOCAL_ARTIFACTS_DIR
     ```
 
     To overwrite existing contents in the local directory:
 
     ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    rd -r "$LOCAL_ARTIFACTS_DIR"
-    md $LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $LOCAL_ARTIFACTS_DIR
+    rm -r -force $env:LOCAL_ARTIFACTS_DIR
+    md $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR/* $env:LOCAL_ARTIFACTS_DIR
     ls $LOCAL_ARTIFACTS_DIR
     ```
 
-1.  Install the `google-cloud-ops-agent` Googet package.
+2.  Install the `google-cloud-ops-agent` Googet package.
 
     ```powershell
     # Version of the package.
-    # $WINDOWS_PACKAGE_VERSION=1.0.1@1
+    $env:WINDOWS_PACKAGE_VERSION='2.18.0@1'
 
-    googet -noconfirm install $LOCAL_ARTIFACTS_DIR\google-cloud-ops-agent.x86_64.$WINDOWS_PACKAGE_VERSION.goo
+    googet -noconfirm install $env:LOCAL_ARTIFACTS_DIR\google-cloud-ops-agent.x86_64.$env:WINDOWS_PACKAGE_VERSION.goo
     ```
 
     Expected output:
@@ -578,7 +586,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     ```
     </details>
 
-1.  [Verify](#windows-verify-status) that the service is indeed running.
+3.  [Verify](#windows-verify-status) that the service is indeed running.
 
     <details>
     <summary>Troubleshooting</summary>
@@ -607,7 +615,7 @@ Sample
 [config](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator/default-config.yaml)
 
 <a id="windows-edit-config"></a>
-###### Windows
+##### Windows
 
 ```
 notepad "C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml"
@@ -621,7 +629,7 @@ Sample
 
 ## Send syslog via TCP (Linux)
 
-Follow the ste to [edit the config file](#edit-config-and-apply) to include syslog tcp config as
+Follow the step to [edit the config file](#edit-config-and-apply) to include syslog tcp config as
 below:
 
 ```
@@ -889,18 +897,18 @@ Open `Windows PowerShell` as administrator and run:
 Get-Service google-cloud-ops-agent*
 ```
 
-    <details>
-    <summary>Expected output:</summary>
+<details>
+<summary>Expected output</summary>
 
-    ```
-    Status   Name                               DisplayName
-    ------   ----                               -----------
-    Running  google-cloud-ops-agent             Google Cloud Ops Agent
-    Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
-    Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
-    ```
+```
+Status   Name                               DisplayName
+------   ----                               -----------
+Running  google-cloud-ops-agent             Google Cloud Ops Agent
+Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
+Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
+```
 
-    </details>
+</details>
 
 You can also check service status in the `Services` app and inspect running
 processes in the `Task Manager` app.
