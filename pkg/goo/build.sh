@@ -106,8 +106,8 @@ function build_opsagent() {
     github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_windows
 }
 
-(build_otel)
 (build_fluentbit)
+(build_otel)
 (build_opsagent)
 # TODO: Build sample config file
 mkdir -p "$DESTDIR$sysconfdir/google-cloud-ops-agent/"
