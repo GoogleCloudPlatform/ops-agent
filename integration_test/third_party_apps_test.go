@@ -256,7 +256,8 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		}
 	}
 
-	pattern := ".*"
+	// The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
+	pattern := "(?s).*"
 	if expectedField.ValueRegex != "" {
 		pattern = expectedField.ValueRegex
 	}
