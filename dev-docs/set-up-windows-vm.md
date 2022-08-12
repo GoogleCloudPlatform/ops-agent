@@ -61,3 +61,14 @@ Check if Docker is installed and running:
     ```
 
 For GCE images not built for containers, install Docker following steps [here](https://docs.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-1). 
+
+
+## [Optional] Install VSCode
+
+VS Code can be installed in an user powershell session (no need to run as Administrator):
+```powershell
+cd $env:UserProfile
+wget -o vscode.exe 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
+start .\vscode.exe
+```
+
