@@ -81,7 +81,7 @@ expected_logs:
 - log_name: tomcat_system
   fields:
   - name: jsonPayload.message
-    value_regex: org.apache.catalina.startup.Catalina.start Server start-up.*
+    value_regex: org.apache.catalina.startup.Catalina.start Server startup.*
     type: string
     description: Log message, including detailed stacktrace where provided
   - name: jsonPayload.module

@@ -121,7 +121,7 @@ expected_logs:
 - log_name: apache_error
   fields:
   - name: jsonPayload.client
-    value_regex: ::1|127.0.0.1:[0-9]+
+    value_regex: ((::1)|(127.0.0.1)):[0-9]+ # Parentheses are required here since the regexp library and Cloud Monitoring regex match differently.
     type: string
     description: Client IP address (optional)
   - name: jsonPayload.level
