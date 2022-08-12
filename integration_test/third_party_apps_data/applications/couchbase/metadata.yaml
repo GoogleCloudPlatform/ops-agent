@@ -10,6 +10,7 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: "Log message"
+    optional: true
   - name: jsonPayload.node_name
     type: string
     description: The name of the node issuing the log message

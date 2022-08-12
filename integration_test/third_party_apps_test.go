@@ -237,6 +237,7 @@ func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string
 	return fieldsMap
 }
 
+// verifyLogField verifies that the actual field retrieved from Cloud Logging is as expected.
 func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
 	expectedField, ok := expectedFields[fieldName]
 	if !ok {
@@ -271,6 +272,75 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	}
 
 	return nil
+}
+
+// verifyJsonPayload verifies that the jsonPayload component of th LogEntry is as expected.
+// TODO: We don't unpack the jsonPayload and assert that the nested substructure is as expected.
+//
+//	The way we could do this is flatten the nested payload into a single layer (using something like https://github.com/jeremywohl/flatten)
+//	and then verifying the fields against the expected fields.
+//
+// This should be added if some of the integrations expect to create nested fields.
+func verifyJsonPayload(actualPayload interface{}, expectedPayload map[string]*metadata.LogFields) error {
+	var multiErr error
+	actualPayloadFields := actualPayload.(*structpb.Struct).GetFields()
+	for expectedKey, expectedValue := range expectedPayload {
+		actualValue, ok := actualPayloadFields[expectedKey]
+		if !ok || actualValue == nil {
+			if !expectedValue.Optional {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
+			}
+
+			continue
+		}
+
+		// Sanitize the actualValue string.
+		// TODO: Assert that the types are what we expect them to be. Left for anther day.
+		var actualValueStr string
+		switch v := actualValue.GetKind().(type) {
+		case *structpb.Value_NumberValue:
+			if v != nil {
+				switch {
+				case math.IsNaN(v.NumberValue):
+					actualValueStr = "NaN"
+				case math.IsInf(v.NumberValue, +1):
+					actualValueStr = "Infinity"
+				case math.IsInf(v.NumberValue, -1):
+					actualValueStr = "-Infinity"
+				default:
+					actualValueStr = strconv.FormatFloat(v.NumberValue, 'E', -1, 32)
+				}
+			}
+		case *structpb.Value_StringValue:
+			if v != nil {
+				actualValueStr = v.StringValue
+			}
+		case *structpb.Value_BoolValue:
+			if v != nil {
+				actualValueStr = strconv.FormatBool(v.BoolValue)
+			}
+		case *structpb.Value_StructValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.StructValue.AsMap())
+			}
+		case *structpb.Value_ListValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.ListValue.AsSlice())
+			}
+		}
+
+		if err := verifyLogField(expectedKey, actualValueStr, expectedPayload); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	for actualKey, actualValue := range actualPayloadFields {
+		if _, ok := expectedPayload[actualKey]; !ok {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s\n", actualKey, actualValue.String()))
+		}
+	}
+
+	return multiErr
 }
 
 // verifyLog returns an error if the actualLog has some fields that weren't expected as specified. Or if it is missing
@@ -357,60 +427,8 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil\n"))
 		}
 	} else {
-		actualPayloadFields := actualLog.Payload.(*structpb.Struct).GetFields()
-		for expectedKey, expectedValue := range expectedPayloadFields {
-			actualValue, ok := actualPayloadFields[expectedKey]
-			if !ok || actualValue == nil {
-				if !expectedValue.Optional {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
-				}
-
-				continue
-			}
-
-			// Sanitize the actualValue string.
-			var actualValueStr string
-			switch v := actualValue.GetKind().(type) {
-			case *structpb.Value_NumberValue:
-				if v != nil {
-					switch {
-					case math.IsNaN(v.NumberValue):
-						actualValueStr = "NaN"
-					case math.IsInf(v.NumberValue, +1):
-						actualValueStr = "Infinity"
-					case math.IsInf(v.NumberValue, -1):
-						actualValueStr = "-Infinity"
-					default:
-						actualValueStr = strconv.FormatFloat(v.NumberValue, 'E', -1, 32)
-					}
-				}
-			case *structpb.Value_StringValue:
-				if v != nil {
-					actualValueStr = v.StringValue
-				}
-			case *structpb.Value_BoolValue:
-				if v != nil {
-					actualValueStr = strconv.FormatBool(v.BoolValue)
-				}
-			case *structpb.Value_StructValue:
-				if v != nil {
-					actualValueStr = fmt.Sprint(v.StructValue.AsMap())
-				}
-			case *structpb.Value_ListValue:
-				if v != nil {
-					actualValueStr = fmt.Sprint(v.ListValue.AsSlice())
-				}
-			}
-
-			if err := verifyLogField(expectedKey, actualValueStr, expectedPayloadFields); err != nil {
-				multiErr = multierr.Append(multiErr, err)
-			}
-		}
-
-		for actualKey, actualValue := range actualPayloadFields {
-			if _, ok := expectedPayloadFields[actualKey]; !ok {
-				multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s\n", actualKey, actualValue.String()))
-			}
+		if err := verifyJsonPayload(actualLog.Payload, expectedPayloadFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
 		}
 	}
 
