@@ -347,7 +347,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		}
 	}
 
-	// Labels - Untested as of yet since no application sets LogEntry Labels yet.
+	// Labels - Untested as of yet, since no application sets LogEntry labels.
 
 	// JSON Payload
 	expectedPayloadFields := logFieldsMapWithPrefix(expectedLog, "jsonPayload.")
@@ -357,10 +357,14 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		}
 	} else {
 		actualPayloadFields := actualLog.Payload.(*structpb.Struct).GetFields()
-		for expectedKey := range expectedPayloadFields {
+		for expectedKey, expectedValue := range expectedPayloadFields {
 			actualValue, ok := actualPayloadFields[expectedKey]
 			if !ok || actualValue == nil {
-				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
+				if !expectedValue.Optional {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
+				}
+
+				continue
 			}
 
 			// Sanitize the actualValue string.
