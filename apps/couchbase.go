@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -306,12 +307,45 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		}
 	}
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, genericAccessLogParser(lp.Type(), tag, lp.Type())...)
-	c = append(c, confgenerator.LoggingProcessorModifyFields{
+	c = append(c,
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*) - "(?<http_request_userAgent>[^\"]*)") (?<bytes_received>[^ ]*)(?<bytes_sent>.*))$`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "timestamp",
+				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
+				Types: map[string]string{
+					"size": "integer",
+					"code": "integer",
+				},
+			},
+		}.Components(tag, lp.Type())...,
+	)
+	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(lp.Type()),
 		},
-	}.Components(tag, lp.Type())...)
+	}
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"protocol",
+		"status",
+		"responseSize",
+		// "referer",
+		"userAgent",
+	} {
+		dest := fmt.Sprintf("httpRequest.%s", field)
+		src := fmt.Sprintf("jsonPayload.http_request_%s", field)
+		mf.Fields[dest] = &confgenerator.ModifyField{
+			MoveFrom: src,
+		}
+		// if field == "referer" {
+		// 	mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		// }
+	}
+	c = append(c, mf.Components(tag, lp.Type())...)
 	return c
 }
 
