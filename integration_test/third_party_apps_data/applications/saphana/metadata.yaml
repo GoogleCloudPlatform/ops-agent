@@ -382,14 +382,17 @@ expected_logs:
   - name: jsonPayload.connection_id
     type: number
     description: ID of the connection where the message originated, if message was logged within the scope of a connection
+    optional: true
   - name: jsonPayload.transaction_id
     type: number
     description: ID of the transaction where the message originated, if message was logged within the scope of a transaction
+    optional: true
   - name: jsonPayload.update_transaction_id
     type: number
     description: ID of the update transaction where the message originated, if message was logged within the scope of an update transaction
+    optional: true
   - name: jsonPayload.message
-    value_regex: "==== Starting hdbpreprocessor, version 2.*"
+    value_regex: (?s)==== Starting hdbpreprocessor, version 2.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
     type: string
     description: Log message
   - name: jsonPayload.severity_flag
