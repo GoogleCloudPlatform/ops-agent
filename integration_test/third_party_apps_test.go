@@ -239,7 +239,9 @@ func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string
 
 func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
 	expectedField, ok := expectedFields[fieldName]
-	if !ok { // Not expecting this field.
+	if !ok {
+		// Not expecting this field. It could however be populated with some default zero-values when we
+		// query it back. Check for zero values basued on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
 			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
 		}

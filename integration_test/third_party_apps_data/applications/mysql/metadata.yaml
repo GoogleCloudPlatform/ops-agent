@@ -129,6 +129,7 @@ expected_logs:
     value_regex: System
     type: string
     description: 'Log entry level'
+    optional: true
   - name: jsonPayload.message
     value_regex: .*InnoDB initialization has started.*
     type: string
@@ -165,7 +166,7 @@ expected_logs:
 - log_name: mysql_slow
   fields:
   - name: jsonPayload.message
-    value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*
+    value_regex: (?s).*select table_catalog, table_schema, table_name from information_schema.tables.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
     type: string
     description: 'Full text of the query'
   - name: jsonPayload.user
@@ -183,6 +184,7 @@ expected_logs:
   - name: jsonPayload.ipAddress
     type: string
     description: 'Address of the database instance'
+    optional: true
   - name: jsonPayload.tid
     type: number
     description: 'Thread ID where the query was logged'

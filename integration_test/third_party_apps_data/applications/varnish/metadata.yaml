@@ -123,11 +123,13 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header
+    optional: true
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+    optional: true
   - name: httpRequest.requestUrl
-    value_regex: /forbidden.html
+    value_regex: .*/forbidden.html
     type: string
     description: Request URL (typically just the path part of the URL
     optional: true

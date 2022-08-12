@@ -110,9 +110,11 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header
+    optional: true
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+    optional: true
   - name: severity
     type: string
     description: ''
@@ -126,6 +128,7 @@ expected_logs:
     value_regex: error
     type: string
     description: Log entry level
+    optional: true
   - name: jsonPayload.module
     value_regex: core
     type: string

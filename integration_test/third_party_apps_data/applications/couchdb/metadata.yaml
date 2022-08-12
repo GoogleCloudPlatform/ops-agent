@@ -84,6 +84,10 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: host instance name
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: httpRequest.serverIp
     value_regex: "localhost:5984"
     type: string

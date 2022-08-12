@@ -120,7 +120,7 @@ expected_logs:
     type: string
     description: Wildfly specific message code preceding the log, where applicable
   - name: jsonPayload.message
-    value_regex: (?s).*WildFly Full.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/7bab3dc83df6a838cc004cc7a7f51d5fe1a427d5/doc/syntax.txt#L65,L68
+    value_regex: (?s).*WildFly Full.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
     type: string
     description: Log message
   - name: jsonPayload.thread

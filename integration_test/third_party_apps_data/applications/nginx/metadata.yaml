@@ -156,9 +156,11 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header (usually not reported by nginx)
+    optional: true
   - name: jsonPayload.user
     type: string
     description: Authenticated username for the request
+    optional: true
   - name: jsonPayload.level
     type: string
     description: Log entry level
@@ -176,6 +178,7 @@ expected_logs:
     value_regex: error
     type: string
     description: Log entry level
+    optional: true
   - name: jsonPayload.message
     value_regex: .*Permission denied.*
     type: string
@@ -196,18 +199,23 @@ expected_logs:
   - name: jsonPayload.server
     type: string
     description: Nginx server name (optional)
+    optional: true
   - name: jsonPayload.subrequest
     type: string
     description: Nginx subrequest (optional)
+    optional: true
   - name: jsonPayload.upstream
     type: string
     description: Upstream request URI (optional)
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Host header (optional)
+    optional: true
   - name: jsonPayload.referer
     type: string
     description: Referer header (optional)
+    optional: true
   - name: severity
     type: string
     description: ''
