@@ -271,7 +271,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					MoveFrom: "jsonPayload.level",
+					CopyFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"debug": "DEBUG",
 						"info":  "INFO",
@@ -364,7 +364,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					MoveFrom: "jsonPayload.level",
+					CopyFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"DEBUG": "DEBUG",
 						"INFO":  "INFO",
