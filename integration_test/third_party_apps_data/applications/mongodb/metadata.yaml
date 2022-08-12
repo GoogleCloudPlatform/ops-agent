@@ -101,10 +101,6 @@ expected_logs:
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided
     optional: true
-  - name: jsonPayload.s
-    type: string
-    description: Log entry level
-    optional: true
   - name: jsonPayload.context
     type: string
     description: ''

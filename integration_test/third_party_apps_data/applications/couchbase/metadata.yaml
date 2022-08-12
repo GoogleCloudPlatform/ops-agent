@@ -47,7 +47,7 @@ expected_logs:
   - name: jsonPayload.method
     type: string
     description: The HTTP method of the request
-  - name: jsonPayload.responseSize
+  - name: jsonPayload.response_size
     type: string
     description: The HTTP response size
     optional: true
