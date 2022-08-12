@@ -306,19 +306,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		}
 	}
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c,
-		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<client_ip>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<status_code>[^ ]*) (?<response_size>[^ ]*) - (?<message>.*)$`,
-			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
-				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
-				Types: map[string]string{
-					"size": "integer",
-					"code": "integer",
-				},
-			},
-		}.Components(tag, lp.Type())...,
-	)
+	c = append(c, genericAccessLogParser(lp.Type(), tag, lp.Type())...)
 	c = append(c, confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(lp.Type()),
