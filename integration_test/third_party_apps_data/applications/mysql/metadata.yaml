@@ -33,7 +33,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mysql.buffer_pool_operations
   value_type: INT64
   kind: CUMULATIVE
@@ -44,7 +43,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mysql.buffer_pool_pages
   value_type: DOUBLE
   kind: GAUGE

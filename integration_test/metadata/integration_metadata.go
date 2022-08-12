@@ -38,7 +38,7 @@ type ExpectedMetric struct {
 	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels"`
+	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must

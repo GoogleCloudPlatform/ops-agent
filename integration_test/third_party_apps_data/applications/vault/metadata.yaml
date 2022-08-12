@@ -17,13 +17,11 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: DOUBLE
-  labels: {}
 - type: workload.googleapis.com/vault.token.lease.count
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
-  labels: {}
 - type: workload.googleapis.com/vault.token.count
   optional: true
   kind: GAUGE
@@ -37,29 +35,24 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
-  labels: {}
 - type: workload.googleapis.com/vault.token.renew.time
   optional: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: INT64
-  labels: {}
 - type: workload.googleapis.com/vault.audit.request.failed
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
-  labels: {}
 - type: workload.googleapis.com/vault.audit.response.failed
   kind: CUMULATIVE
   monitored_resource: gce_instance
   value_type: INT64
-  labels: {}
 - type: workload.googleapis.com/vault.memory.usage
   representative: true
   kind: GAUGE
   monitored_resource: gce_instance
   value_type: DOUBLE
-  labels: {}
 - type: workload.googleapis.com/vault.storage.operation.put.time
   optional: true
   kind: CUMULATIVE

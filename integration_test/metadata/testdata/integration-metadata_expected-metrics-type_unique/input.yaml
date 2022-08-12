@@ -13,13 +13,11 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: example.googleapis.com/example.example0
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 expected_logs:
 - log_name: examplelog
   fields:
