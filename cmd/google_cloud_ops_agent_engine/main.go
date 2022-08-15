@@ -68,24 +68,7 @@ func run() error {
 
 	// Only google engine service
 	if *service == "" {
-		eR, err := self_metrics.GetEnabledReceivers(uc)
-		if err != nil {
-			return err
-		}
-		log.Println("Enabled Receivers", eR)
-
-		iM := []self_metrics.IntervalMetrics{
-			self_metrics.IntervalMetrics {
-				Metrics: eR.ToMetrics(),
-				Interval : 1,
-			},
-			self_metrics.IntervalMetrics {
-				Metrics : eR.ToMetrics(),
-				Interval : 2,
-			},
-		}
-
-		err = self_metrics.SendMetricsEveryInterval(iM)
+		err = self_metrics.CollectOpsAgentSelfMetrics(&uc)
 		if err != nil {
 			return err
 		}

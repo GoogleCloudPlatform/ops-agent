@@ -15,6 +15,7 @@
 package self_metrics
 
 import (
+	"log"
 	"time"
 
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -118,7 +119,7 @@ func (e enabledReceivers) ToMetrics() []Metric {
 	return metricList
 }
 
-func GetEnabledReceivers(uc confgenerator.UnifiedConfig) (enabledReceivers, error) {
+func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, error) {
 	eR := enabledReceivers{
 		metric: make(map[string]int),
 		log:    make(map[string]int),
@@ -141,4 +142,31 @@ func GetEnabledReceivers(uc confgenerator.UnifiedConfig) (enabledReceivers, erro
 	}
 
 	return eR, nil
+}
+
+
+func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
+	eR, err := GetEnabledReceivers(uc)
+	if err != nil {
+		return err
+	}
+	log.Println("Enabled Receivers", eR)
+
+	iM := []IntervalMetrics{
+		IntervalMetrics {
+			Metrics: eR.ToMetrics(),
+			Interval : 1,
+		},
+		IntervalMetrics {
+			Metrics : eR.ToMetrics(),
+			Interval : 2,
+		},
+	}
+
+	err = SendMetricsEveryInterval(iM)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

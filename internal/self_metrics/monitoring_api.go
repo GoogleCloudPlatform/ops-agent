@@ -98,7 +98,6 @@ func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
     buffer := make([]Metric, 0)
 
     death := make(chan os.Signal, 1)
-    stopChannel := make(chan bool)
     signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
     tickers := make([]*time.Ticker, 0)
@@ -108,7 +107,7 @@ func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
     }
 
     for idx, m := range metrics {
-        go registerMetric(m, stopChannel, bufferChannel, tickers[idx])
+        go registerMetric(m, bufferChannel, tickers[idx])
     }
 
     for {
@@ -120,24 +119,20 @@ func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
             buffer = append(buffer, d...)
 
         case <-death:
-        	for _, _ = range tickers {
-        		stopChannel <- true
+        	for _, t := range tickers {
+        		t.Stop()
         	}
-        	time.Sleep(time.Duration(1) * time.Second)
             return nil
         }
     }
 }
 
 
-func registerMetric(metric IntervalMetrics, stopChannel chan bool, bufferChannel chan []Metric, ticker *time.Ticker) error {
+func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
     for {
         select {
         case <-ticker.C:
             bufferChannel <- metric.Metrics
-        case <-stopChannel:
-            ticker.Stop()
-            return nil
         }
     }
 
@@ -146,7 +141,7 @@ func registerMetric(metric IntervalMetrics, stopChannel chan bool, bufferChannel
 
 func waitForBufferChannel(buffer *[]Metric) {
 	// Wait for full buffer
-    time.Sleep(time.Duration(15) * time.Second)
+    time.Sleep(time.Duration(30) * time.Second)
 
     SendMetricsRequest(*buffer)
 
