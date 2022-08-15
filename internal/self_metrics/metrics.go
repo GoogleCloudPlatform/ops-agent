@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confgenerator
+package self_metrics
 
 import (
 	"time"
@@ -21,6 +21,7 @@ import (
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 type TimeSeries interface {
@@ -33,11 +34,12 @@ type Metric struct {
 	metric_kind   metricpb.MetricDescriptor_MetricKind
 	value_type    metricpb.MetricDescriptor_ValueType
 	value         *monitoringpb.TypedValue
+	timestamp     int64
 }
 
 func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries {
 	now := &timestamp.Timestamp{
-		Seconds: time.Now().Unix(),
+		Seconds: m.timestamp,
 	}
 
 	return &monitoringpb.TimeSeries{
@@ -64,13 +66,60 @@ func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries 
 	}
 }
 
-type EnabledReceivers struct {
+type enabledReceivers struct {
 	metric map[string]int
 	log    map[string]int
 }
 
-func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
-	eR := EnabledReceivers{
+func (e enabledReceivers) ToMetrics() []Metric {
+
+	metricList := make([]Metric, 0)
+
+	for rType, count := range e.metric {
+		m := Metric{
+			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metric_labels: map[string]string{
+				"receiver_type":  rType,
+				"telemetry_type": "metrics",
+			},
+			metric_kind: metricpb.MetricDescriptor_GAUGE,
+			value_type:  metricpb.MetricDescriptor_INT64,
+			value: &monitoringpb.TypedValue{
+				Value: &monitoringpb.TypedValue_Int64Value{
+					Int64Value: int64(count),
+				},
+			},
+			timestamp: time.Now().Unix(),
+		}
+
+		metricList = append(metricList, m)
+	}
+
+	for rType, count := range e.log {
+		m := Metric{
+			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metric_labels: map[string]string{
+				"receiver_type":  rType,
+				"telemetry_type": "logs",
+			},
+			metric_kind: metricpb.MetricDescriptor_GAUGE,
+			value_type:  metricpb.MetricDescriptor_INT64,
+			value: &monitoringpb.TypedValue{
+				Value: &monitoringpb.TypedValue_Int64Value{
+					Int64Value: int64(count),
+				},
+			},
+			timestamp: time.Now().Unix(),
+		}
+
+		metricList = append(metricList, m)
+	}
+
+	return metricList
+}
+
+func GetEnabledReceivers(uc confgenerator.UnifiedConfig) (enabledReceivers, error) {
+	eR := enabledReceivers{
 		metric: make(map[string]int),
 		log:    make(map[string]int),
 	}
@@ -92,49 +141,4 @@ func GetEnabledReceivers(uc UnifiedConfig) (EnabledReceivers, error) {
 	}
 
 	return eR, nil
-}
-
-func (e EnabledReceivers) ToMetric() []Metric {
-
-	metricList := make([]Metric, 0)
-
-	for rType, count := range e.metric {
-		m := Metric{
-			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metric_labels: map[string]string{
-				"receiver_type":  rType,
-				"telemetry_type": "metrics",
-			},
-			metric_kind: metricpb.MetricDescriptor_GAUGE,
-			value_type:  metricpb.MetricDescriptor_INT64,
-			value: &monitoringpb.TypedValue{
-				Value: &monitoringpb.TypedValue_Int64Value{
-					Int64Value: int64(count),
-				},
-			},
-		}
-
-		metricList = append(metricList, m)
-	}
-
-	for rType, count := range e.log {
-		m := Metric{
-			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metric_labels: map[string]string{
-				"receiver_type":  rType,
-				"telemetry_type": "logs",
-			},
-			metric_kind: metricpb.MetricDescriptor_GAUGE,
-			value_type:  metricpb.MetricDescriptor_INT64,
-			value: &monitoringpb.TypedValue{
-				Value: &monitoringpb.TypedValue_Int64Value{
-					Int64Value: int64(count),
-				},
-			},
-		}
-
-		metricList = append(metricList, m)
-	}
-
-	return metricList
 }

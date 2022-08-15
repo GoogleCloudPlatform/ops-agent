@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitoring_api
+package self_metrics
 
 import (
 	"context"
@@ -20,17 +20,23 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	gce_metadata "cloud.google.com/go/compute/metadata"
 	oauth2 "golang.org/x/oauth2/google"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
-	time_series "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
+type IntervalMetrics struct {
+	Metrics []Metric
+	Interval int
+}
+
+
+func constructTimeSeriesRequest(ctx context.Context, metrics []Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
 	creds, err := oauth2.FindDefaultCredentials(ctx)
 	if err != nil {
 		return nil, err
@@ -65,7 +71,7 @@ func constructTimeSeriesRequest(ctx context.Context, metrics []time_series.Metri
 	return req, nil
 }
 
-func sendMetric(metrics []time_series.Metric) error {
+func SendMetricsRequest(metrics []Metric) error {
 	ctx := context.Background()
 
 	req, err := constructTimeSeriesRequest(ctx, metrics)
@@ -87,22 +93,63 @@ func sendMetric(metrics []time_series.Metric) error {
 	return nil
 }
 
-func SendMetricEveryInterval(metrics []time_series.Metric, interval int) error {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
+	bufferChannel := make(chan []Metric)
+    buffer := make([]Metric, 0)
 
-	death := make(chan os.Signal, 1)
-	signal.Notify(death, os.Interrupt, os.Kill)
+    death := make(chan os.Signal, 1)
+    stopChannel := make(chan bool)
+    signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
-	for {
-		select {
-		case <-ticker.C:
-			log.Println("Tick send metric : ")
-			sendMetric(metrics)
-		case <-death:
-			ticker.Stop()
-			return nil
-		}
-	}
+    tickers := make([]*time.Ticker, 0)
+    
+    for _, m := range metrics {
+        tickers = append(tickers, time.NewTicker(time.Duration(m.Interval) * time.Minute))
+    }
+
+    for idx, m := range metrics {
+        go registerMetric(m, stopChannel, bufferChannel, tickers[idx])
+    }
+
+    for {
+        select {
+        case d := <-bufferChannel:
+            if len(buffer) == 0 {
+                go waitForBufferChannel(&buffer)
+            }
+            buffer = append(buffer, d...)
+
+        case <-death:
+        	for _, _ = range tickers {
+        		stopChannel <- true
+        	}
+        	time.Sleep(time.Duration(1) * time.Second)
+            return nil
+        }
+    }
+}
+
+
+func registerMetric(metric IntervalMetrics, stopChannel chan bool, bufferChannel chan []Metric, ticker *time.Ticker) error {
+    for {
+        select {
+        case <-ticker.C:
+            bufferChannel <- metric.Metrics
+        case <-stopChannel:
+            ticker.Stop()
+            return nil
+        }
+    }
 
 	return nil
+}
+
+func waitForBufferChannel(buffer *[]Metric) {
+	// Wait for full buffer
+    time.Sleep(time.Duration(15) * time.Second)
+
+    SendMetricsRequest(*buffer)
+
+    // Clear buffer
+    *buffer = make([]Metric, 0)
 }

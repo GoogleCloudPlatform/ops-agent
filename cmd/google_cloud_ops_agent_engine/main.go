@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/monitoring_api"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -68,12 +68,24 @@ func run() error {
 
 	// Only google engine service
 	if *service == "" {
-		eR, err := confgenerator.GetEnabledReceivers(uc)
+		eR, err := self_metrics.GetEnabledReceivers(uc)
 		if err != nil {
 			return err
 		}
 		log.Println("Enabled Receivers", eR)
-		err = monitoring_api.SendMetricEveryInterval(eR.ToMetric(), 60)
+
+		iM := []self_metrics.IntervalMetrics{
+			self_metrics.IntervalMetrics {
+				Metrics: eR.ToMetrics(),
+				Interval : 1,
+			},
+			self_metrics.IntervalMetrics {
+				Metrics : eR.ToMetrics(),
+				Interval : 2,
+			},
+		}
+
+		err = self_metrics.SendMetricsEveryInterval(iM)
 		if err != nil {
 			return err
 		}
