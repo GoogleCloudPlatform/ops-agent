@@ -309,7 +309,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c,
 		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^ ]*) +\S*)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*) - "(?<http_request_userAgent>[^\"]*)")(?<message>.*)$`,
+			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^ ]*) +\S*)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*) - "(?<http_request_userAgent>[^\"]*)"(?<message>.*)$`,
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
 				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
