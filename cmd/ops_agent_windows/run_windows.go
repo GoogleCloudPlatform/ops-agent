@@ -58,7 +58,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0
 	}
 
-	err = sendMetricsEveryIntervalWindows(metrics, r, changes)
+	err = SendMetricsEveryIntervalWindows(metrics, r, changes)
 	if err != nil {
 		return false, 0
 	}
@@ -111,17 +111,17 @@ func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
 	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := s.checkForStandaloneAgents(&uc); err != nil {
-		return err
+		return nil, err
 	}
 	// TODO: Add flag for passing in log/run path?
 	for _, subagent := range []string{
@@ -134,7 +134,7 @@ func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
 			filepath.Join(s.outDirectory, subagent)); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	return uc, nil
@@ -161,7 +161,7 @@ func (s *service) startSubagents() error {
 	return nil
 }
 
-func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <-chan svc.ChangeRequest, changes chan<- svc.Status) error {
+func SendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <-chan svc.ChangeRequest, changes chan<- svc.Status) error {
 	bufferChannel := make(chan []self_metrics.Metric)
 	buffer := make([]self_metrics.Metric, 0)
 
@@ -172,7 +172,7 @@ func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <
 	}
 
 	for idx, m := range metrics {
-		go self_metrics.registerMetric(m, bufferChannel, tickers[idx])
+		go self_metrics.RegisterMetric(m, bufferChannel, tickers[idx])
 	}
 
 	defer func() {
@@ -192,7 +192,7 @@ func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <
 
 		case d := <-bufferChannel:
 			if len(buffer) == 0 {
-				go self_metrics.waitForBufferChannel(&buffer)
+				go self_metrics.WaitForBufferChannel(&buffer)
 			}
 			buffer = append(buffer, d...)
 		}

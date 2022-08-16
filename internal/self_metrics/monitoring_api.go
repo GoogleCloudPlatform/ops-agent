@@ -121,7 +121,7 @@ func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	}
 }
 
-func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
+func RegisterMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
 	for {
 		select {
 		case <-ticker.C:
@@ -132,7 +132,7 @@ func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker 
 	return nil
 }
 
-func waitForBufferChannel(buffer *[]Metric) {
+func WaitForBufferChannel(buffer *[]Metric) {
 	// Wait for full buffer
 	time.Sleep(time.Duration(30) * time.Second)
 
