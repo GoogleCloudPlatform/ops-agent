@@ -30,12 +30,6 @@ import (
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-type IntervalMetrics struct {
-	Metrics []Metric
-	Interval int
-}
-
-
 func constructTimeSeriesRequest(ctx context.Context, metrics []Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
 	creds, err := oauth2.FindDefaultCredentials(ctx)
 	if err != nil {
@@ -93,58 +87,57 @@ func SendMetricsRequest(metrics []Metric) error {
 	return nil
 }
 
-func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
+func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	bufferChannel := make(chan []Metric)
-    buffer := make([]Metric, 0)
+	buffer := make([]Metric, 0)
 
-    death := make(chan os.Signal, 1)
-    signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+	death := make(chan os.Signal, 1)
+	signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
-    tickers := make([]*time.Ticker, 0)
-    
-    for _, m := range metrics {
-        tickers = append(tickers, time.NewTicker(time.Duration(m.Interval) * time.Minute))
-    }
+	tickers := make([]*time.Ticker, 0)
 
-    for idx, m := range metrics {
-        go registerMetric(m, bufferChannel, tickers[idx])
-    }
+	for _, m := range metrics {
+		tickers = append(tickers, time.NewTicker(time.Duration(m.Interval)*time.Minute))
+	}
 
-    for {
-        select {
-        case d := <-bufferChannel:
-            if len(buffer) == 0 {
-                go waitForBufferChannel(&buffer)
-            }
-            buffer = append(buffer, d...)
+	for idx, m := range metrics {
+		go RegisterMetric(m, bufferChannel, tickers[idx])
+	}
 
-        case <-death:
-        	for _, t := range tickers {
-        		t.Stop()
-        	}
-            return nil
-        }
-    }
+	for {
+		select {
+		case d := <-bufferChannel:
+			if len(buffer) == 0 {
+				go WaitForBufferChannel(&buffer)
+			}
+			buffer = append(buffer, d...)
+
+		case <-death:
+			for _, t := range tickers {
+				t.Stop()
+			}
+			return nil
+		}
+	}
 }
 
-
-func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
-    for {
-        select {
-        case <-ticker.C:
-            bufferChannel <- metric.Metrics
-        }
-    }
+func RegisterMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
+	for {
+		select {
+		case <-ticker.C:
+			bufferChannel <- metric.Metrics
+		}
+	}
 
 	return nil
 }
 
-func waitForBufferChannel(buffer *[]Metric) {
+func WaitForBufferChannel(buffer *[]Metric) {
 	// Wait for full buffer
-    time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(30) * time.Second)
 
-    SendMetricsRequest(*buffer)
+	SendMetricsRequest(*buffer)
 
-    // Clear buffer
-    *buffer = make([]Metric, 0)
+	// Clear buffer
+	*buffer = make([]Metric, 0)
 }
