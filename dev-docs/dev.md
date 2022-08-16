@@ -427,7 +427,7 @@ In `Windows PowerShell`, use gsutil to upload the artifacts to GCS.
 # [Required] Adjust the GCS bucket ID
 # Create the Bucket if not exist
 # Make sure the current service account has storage permissions to the bucket
-$env:GCP_BUCKET_ID=''
+$env:GCP_BUCKET_ID='gcp_bucket_id'
 
 # [Optional] Adjust the directory you want to upload to GCS.
 $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
@@ -436,14 +436,14 @@ $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 # Create the directory if not exist
 $env:GCP_BUCKET_DIR='ops_agent_windows'
 
-gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 To overwrite existing contents in the bucket:
 
 ```powershell
-gsutil rm -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
-gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR
+gsutil rm -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 <details>
@@ -530,7 +530,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
     ```powershell
     # [Required] Adjust the GCS bucket ID
-    $env:GCP_BUCKET_ID=''
+    $env:GCP_BUCKET_ID='gcp_bucket_id'
     # [Optional] Adjust the source GCS bucket dir from where to download the
     # artifacts. This directory should have `bin` and `config` sub directory in
     # it.
@@ -541,7 +541,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
     md $env:LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR/* $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
     ls $env:LOCAL_ARTIFACTS_DIR
     ```
 
@@ -551,7 +551,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     Stop-Service google-cloud-ops-agent -Force
     rm -r -force $env:LOCAL_ARTIFACTS_DIR
     md $env:LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://$env:GCP_BUCKET_ID/$env:GCP_BUCKET_DIR/* $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
     ls $LOCAL_ARTIFACTS_DIR
     ```
 
@@ -601,6 +601,9 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
 
 ## Edit config and apply
+
+Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default 
+configuration will be applied.
 
 Edit the Ops Agent configuration file as needed:
 

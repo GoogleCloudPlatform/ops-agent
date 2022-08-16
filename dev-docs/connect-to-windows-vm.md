@@ -127,8 +127,6 @@ googlecloudsdk.api_lib.compute.iap_tunnel_websocket.ConnectionCreationError: Err
 
 </details>
 
-
-
 ## Remmina (Linux)
 
 Remmina provides native RDP support and can be used on Linux-based systems, such as Debian/Ubuntu Desktop/GCE VMs or gLinux and Cloudtop.  
