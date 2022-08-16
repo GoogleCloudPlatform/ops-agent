@@ -39,7 +39,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-	if uc, err := s.generateConfigs(); err != nil {
+	uc, err := s.generateConfigs()
+	if err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
@@ -59,7 +60,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 
 	err = sendMetricsEveryIntervalWindows(metrics, r, changes)
 	if err != nil {
-		return err
+		return false, 0
 	}
 
 	return
