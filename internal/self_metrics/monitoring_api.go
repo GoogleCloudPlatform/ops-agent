@@ -101,14 +101,14 @@ func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	}
 
 	for idx, m := range metrics {
-		go registerMetric(m, bufferChannel, tickers[idx])
+		go RegisterMetric(m, bufferChannel, tickers[idx])
 	}
 
 	for {
 		select {
 		case d := <-bufferChannel:
 			if len(buffer) == 0 {
-				go waitForBufferChannel(&buffer)
+				go WaitForBufferChannel(&buffer)
 			}
 			buffer = append(buffer, d...)
 
