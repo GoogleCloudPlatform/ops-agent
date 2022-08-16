@@ -8,6 +8,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -37,7 +38,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-	if err := s.generateConfigs(); err != nil {
+	if uc, err := s.generateConfigs(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
@@ -49,22 +50,17 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// TODO: Ignore failures for partial startup?
 	}
 	s.log.Info(1, "started subagents")
-	defer func() {
-		changes <- svc.Status{State: svc.StopPending}
-	}()
-	for {
-		select {
-		case c := <-r:
-			switch c.Cmd {
-			case svc.Interrogate:
-				changes <- c.CurrentStatus
-			case svc.Stop, svc.Shutdown:
-				return
-			default:
-				s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
-			}
-		}
+
+	metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
+	if err != nil {
+		return false, 0
 	}
+
+	err = sendMetricsEveryIntervalWindows(metrics, r, changes)
+	if err != nil {
+		return err
+	}
+
 	return
 }
 
@@ -109,7 +105,7 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func (s *service) generateConfigs() error {
+func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
 	if err != nil {
@@ -139,7 +135,7 @@ func (s *service) generateConfigs() error {
 			return err
 		}
 	}
-	return nil
+	return uc, nil
 }
 
 func (s *service) startSubagents() error {
@@ -160,6 +156,46 @@ func (s *service) startSubagents() error {
 			s.log.Error(1, fmt.Sprintf("failed to start %q: %v", svc.name, err))
 		}
 	}
+	return nil
+}
+
+func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <-chan svc.ChangeRequest, changes chan<- svc.Status) error {
+	bufferChannel := make(chan []self_metrics.Metric)
+    buffer := make([]self_metrics.Metric, 0)
+
+    tickers := make([]*time.Ticker, 0)
+    
+    for _, m := range metrics {
+        tickers = append(tickers, time.NewTicker(time.Duration(m.Interval) * time.Minute))
+    }
+
+    for idx, m := range metrics {
+        go self_metrics.registerMetric(m, bufferChannel, tickers[idx])
+    }
+
+	defer func() {
+		changes <- svc.Status{State: svc.StopPending}
+	}()
+	for {
+		select {
+		case c := <-r:
+			switch c.Cmd {
+			case svc.Interrogate:
+				changes <- c.CurrentStatus
+			case svc.Stop, svc.Shutdown:
+				return nil
+			default:
+				return fmt.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+			}
+
+		case d := <-bufferChannel:
+            if len(buffer) == 0 {
+                go self_metrics.waitForBufferChannel(&buffer)
+            }
+            buffer = append(buffer, d...)
+		}
+	}
+
 	return nil
 }
 

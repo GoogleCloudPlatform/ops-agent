@@ -144,11 +144,15 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 	return eR, nil
 }
 
+type IntervalMetrics struct {
+	Metrics []Metric
+	Interval int
+}
 
-func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
+func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) ([]IntervalMetrics, error) {
 	eR, err := GetEnabledReceivers(uc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Println("Enabled Receivers", eR)
 
@@ -163,10 +167,5 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
 		},
 	}
 
-	err = SendMetricsEveryInterval(iM)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return iM, nil
 }

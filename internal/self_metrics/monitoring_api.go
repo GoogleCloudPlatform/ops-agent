@@ -30,12 +30,6 @@ import (
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-type IntervalMetrics struct {
-	Metrics []Metric
-	Interval int
-}
-
-
 func constructTimeSeriesRequest(ctx context.Context, metrics []Metric) (*monitoringpb.CreateTimeSeriesRequest, error) {
 	creds, err := oauth2.FindDefaultCredentials(ctx)
 	if err != nil {
@@ -93,7 +87,7 @@ func SendMetricsRequest(metrics []Metric) error {
 	return nil
 }
 
-func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
+func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	bufferChannel := make(chan []Metric)
     buffer := make([]Metric, 0)
 
@@ -126,7 +120,6 @@ func SendMetricsEveryInterval(metrics []IntervalMetrics) error {
         }
     }
 }
-
 
 func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
     for {
