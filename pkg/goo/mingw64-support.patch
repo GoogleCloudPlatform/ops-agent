@@ -98,6 +98,19 @@ index 30dd4cdf..dac3fe14 100644
 +#include <monkey/mk_core.h>
 +
  #endif
+diff --git a/include/fluent-bit/flb_langinfo.h b/include/fluent-bit/flb_langinfo.h
+index a0161770..7841749c 100644
+--- a/include/fluent-bit/flb_langinfo.h
++++ b/include/fluent-bit/flb_langinfo.h
+@@ -27,7 +27,7 @@
+ #ifndef FLB_LANGINFO_H
+ #define FLB_LANGINFO_H
+ 
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <langinfo.h>
+ #else
+ 
 diff --git a/lib/avro/src/errors.c b/lib/avro/src/errors.c
 index 8abd8c83..0eabedf2 100644
 --- a/lib/avro/src/errors.c
@@ -191,6 +204,19 @@ index 97045a69..f28366d2 100644
  struct timespec
  {
    /* long long in windows is the same as long in unix for 64bit */
+diff --git a/lib/monkey/include/monkey/mk_core/mk_string.h b/lib/monkey/include/monkey/mk_core/mk_string.h
+index 260d67ca..2f6a2b49 100644
+--- a/lib/monkey/include/monkey/mk_core/mk_string.h
++++ b/lib/monkey/include/monkey/mk_core/mk_string.h
+@@ -26,7 +26,7 @@
+ #include "mk_list.h"
+ #include "mk_macros.h"
+ 
+-#if defined(_WIN32) || defined(_WIN64)
++#if (defined(_WIN32) || defined(_WIN64)) && !defined(__MINGW32__)
+   #define snprintf _snprintf
+   #define vsnprintf _vsnprintf
+   #define strcasecmp _stricmp
 diff --git a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c b/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
 index 5ee3e591..84bae9fe 100644
 --- a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
@@ -310,6 +336,60 @@ index 76940076..d5e9c2b8 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
+diff --git a/src/flb_network.c b/src/flb_network.c
+index 6865943b..2cb56bd3 100644
+--- a/src/flb_network.c
++++ b/src/flb_network.c
+@@ -28,11 +28,18 @@
+ #include <errno.h>
+ 
+ #ifdef FLB_SYSTEM_WINDOWS
++#include <sdkddkver.h>
++#define _WIN32_WINNT _WIN32_WINNT_WS08
++#include <winsock2.h>
+ #define poll WSAPoll
+ #else
+ #include <sys/poll.h>
+ #endif
+ 
++#if defined(FLB_SYSTEM_WINDOWS) && !defined(AI_NUMERICSERV)
++#define AI_NUMERICSERV 0x0400
++#endif
++
+ #include <fluent-bit/flb_info.h>
+ #include <fluent-bit/flb_compat.h>
+ #include <fluent-bit/flb_info.h>
+diff --git a/src/flb_sosreport.c b/src/flb_sosreport.c
+index 7df35b76..a10d61e4 100644
+--- a/src/flb_sosreport.c
++++ b/src/flb_sosreport.c
+@@ -29,7 +29,7 @@
+ #include <fluent-bit/flb_utils.h>
+ #include <fluent-bit/flb_kv.h>
+ 
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <sys/utsname.h>
+ #endif
+ 
+@@ -108,7 +108,7 @@ static void print_properties(struct mk_list *props)
+     }
+ }
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+ /* A definition table of SYSTEM_INFO.wProcessorArchitecture.
+  *
+  * This is a streight-forward translation of the official manual.
+@@ -189,7 +189,7 @@ int flb_sosreport(struct flb_config *config)
+     printf("    Built Flags\t\t%s\n", FLB_INFO_FLAGS);
+     printf("\n");
+ 
+-#ifndef _MSC_VER
++#ifndef _WIN32
+     struct utsname uts;
+     uname(&uts);
+ 
 diff --git a/src/win32/winsvc.c b/src/win32/winsvc.c
 index d7289c66..abe0ffda 100644
 --- a/src/win32/winsvc.c
