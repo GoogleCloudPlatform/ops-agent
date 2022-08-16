@@ -121,7 +121,7 @@ index 8abd8c83..0eabedf2 100644
  static __declspec( thread ) struct avro_error_data_t TLS_ERROR_DATA = { "", "", NULL, NULL };
  
 diff --git a/lib/chunkio/include/chunkio/chunkio_compat.h b/lib/chunkio/include/chunkio/chunkio_compat.h
-index ca17779b..e91ae6a4 100644
+index ca17779b..45eb5ece 100644
 --- a/lib/chunkio/include/chunkio/chunkio_compat.h
 +++ b/lib/chunkio/include/chunkio/chunkio_compat.h
 @@ -27,6 +27,7 @@
@@ -132,11 +132,17 @@ index ca17779b..e91ae6a4 100644
  /** mode flags for access() */
  #define R_OK 04
  #define W_OK 02
-@@ -39,6 +40,7 @@
+@@ -35,10 +36,12 @@
+ 
+ #define PATH_MAX MAX_PATH
+ #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+-#define strerror_r(errno,buf,len) strerror_s(buf,len,errno)
  
  typedef SSIZE_T ssize_t;
  typedef unsigned mode_t;
 +#endif
++
++#define strerror_r(errno,buf,len) strerror_s(buf,len,errno)
  
  static inline char* dirname(const char *path)
  {
@@ -242,7 +248,7 @@ index 5ee3e591..84bae9fe 100644
  #else
    CHECK_FUNCTION_EXISTS();
 diff --git a/lib/monkey/mk_core/mk_rconf.c b/lib/monkey/mk_core/mk_rconf.c
-index 80e7e784..2176a3ed 100644
+index 80e7e784..5a4ee006 100644
 --- a/lib/monkey/mk_core/mk_rconf.c
 +++ b/lib/monkey/mk_core/mk_rconf.c
 @@ -23,7 +23,7 @@
@@ -263,6 +269,15 @@ index 80e7e784..2176a3ed 100644
  #include <strsafe.h>
  #define PATH_MAX MAX_PATH
  #endif
+@@ -558,7 +558,7 @@ static int mk_rconf_path_set(struct mk_rconf *conf, char *file)
+     char *end;
+     char path[PATH_MAX + 1];
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+     p = _fullpath(path, file, PATH_MAX + 1);
+ #else
+     p = realpath(file, path);
 diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
 index 6034a54b..676050f1 100644
 --- a/plugins/CMakeLists.txt
@@ -279,10 +294,17 @@ index 6034a54b..676050f1 100644
    REGISTER_IN_PLUGIN("in_serial")
  endif()
 diff --git a/plugins/in_tail/CMakeLists.txt b/plugins/in_tail/CMakeLists.txt
-index 4c83cd7e..71655a11 100644
+index 4c83cd7e..4191c974 100644
 --- a/plugins/in_tail/CMakeLists.txt
 +++ b/plugins/in_tail/CMakeLists.txt
-@@ -25,7 +25,7 @@ if(MSVC)
+@@ -19,13 +19,13 @@ if(FLB_PARSER)
+     )
+ endif()
+ 
+-if(MSVC)
++if(FLB_SYSTEM_WINDOWS)
+   set(src
+     ${src}
      win32/stat.c
      win32/io.c
      )
@@ -291,6 +313,21 @@ index 4c83cd7e..71655a11 100644
  else()
    FLB_PLUGIN(in_tail "${src}" "")
  endif()
+diff --git a/plugins/in_tail/tail_file.c b/plugins/in_tail/tail_file.c
+index b0edc230..48f92fdd 100644
+--- a/plugins/in_tail/tail_file.c
++++ b/plugins/in_tail/tail_file.c
+@@ -41,10 +41,6 @@
+ #include "tail_multiline.h"
+ #include "tail_scan.h"
+ 
+-#ifdef FLB_SYSTEM_WINDOWS
+-#include "win32.h"
+-#endif
+-
+ static inline void consume_bytes(char *buf, int bytes, int length)
+ {
+     memmove(buf, buf + bytes, length - bytes);
 diff --git a/plugins/in_tail/win32/io.c b/plugins/in_tail/win32/io.c
 index a479ff73..043504f9 100644
 --- a/plugins/in_tail/win32/io.c
@@ -317,6 +354,45 @@ index f15a45b8..eadf931c 100644
  #include <stdlib.h>
  #include <stdint.h>
  #include <io.h>
+diff --git a/plugins/in_winlog/pack.c b/plugins/in_winlog/pack.c
+index e2ed80be..f444cb73 100644
+--- a/plugins/in_winlog/pack.c
++++ b/plugins/in_winlog/pack.c
+@@ -25,7 +25,6 @@
+ #include <fluent-bit/flb_input_plugin.h>
+ #include <msgpack.h>
+ #include <sddl.h>
+-#include <locale.h>
+ #include "winlog.h"
+ 
+ #define REGKEY_MAXLEN 256
+@@ -78,25 +77,17 @@ static int pack_time(msgpack_packer *mp_pck, int time)
+     size_t len;
+     struct tm tm;
+     char buf[64];
+-    _locale_t locale;
+ 
+     if (_localtime32_s(&tm, &time)) {
+         flb_errno();
+         return -1;
+     }
+ 
+-    locale = _get_current_locale();
+-    if (locale == NULL) {
+-        return -1;
+-    }
+-
+-    len = _strftime_l(buf, 64, FMT_ISO8601, &tm, locale);
++    len = strftime(buf, 64, FMT_ISO8601, &tm);
+     if (len == 0) {
+         flb_errno();
+-        _free_locale(locale);
+         return -1;
+     }
+-    _free_locale(locale);
+     msgpack_pack_str(mp_pck, len);
+     msgpack_pack_str_body(mp_pck, buf, len);
+ 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index 76940076..bdf86ce5 100644
 --- a/src/CMakeLists.txt
@@ -360,6 +436,21 @@ index 76940076..bdf86ce5 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
+diff --git a/src/flb_hash.c b/src/flb_hash.c
+index 4c36da06..b0020724 100644
+--- a/src/flb_hash.c
++++ b/src/flb_hash.c
+@@ -25,6 +25,10 @@
+ #include <fluent-bit/flb_str.h>
+ #include <xxhash.h>
+ 
++#if defined(_WIN32) && defined(__MINGW32__)
++#define random() rand()
++#endif
++
+ static inline void flb_hash_entry_free(struct flb_hash *ht,
+                                        struct flb_hash_entry *entry)
+ {
 diff --git a/src/flb_network.c b/src/flb_network.c
 index 6865943b..2cb56bd3 100644
 --- a/src/flb_network.c
