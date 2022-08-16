@@ -12,10 +12,10 @@ index 5e88c994..70a226fd 100644
      set(OPENSSL_MSVC_STATIC_RT  ON)
    endif()
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
-index b55aef20..4a19230c 100644
+index b55aef20..08fc0414 100644
 --- a/cmake/luajit.cmake
 +++ b/cmake/luajit.cmake
-@@ -11,10 +11,22 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
+@@ -11,10 +11,18 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
  set(LUAJIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${FLB_PATH_LIB_LUAJIT})
  set(LUAJIT_DEST ${CMAKE_CURRENT_BINARY_DIR})
  
@@ -27,25 +27,21 @@ index b55aef20..4a19230c 100644
    set(CFLAGS "${CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
  endif()
  
-+set(LUAJIT_SRCLIB libluajit.a)
-+set(LUAJIT_DESTLIB libluajit.a)
 +if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 +  set(TARGET_SYS_PARAM "TARGET_SYS=${CMAKE_SYSTEM_NAME}")
-+  set(LUAJIT_SRCLIB lua51.dll)
-+  set(LUAJIT_DESTLIB libluajit.dll)
 +endif()
 +
  # luajit (UNIX)
  # =============
  ExternalProject_Add(luajit
-@@ -22,8 +34,8 @@ ExternalProject_Add(luajit
+@@ -22,8 +30,8 @@ ExternalProject_Add(luajit
    EXCLUDE_FROM_ALL TRUE
    SOURCE_DIR ${LUAJIT_SRC}
    CONFIGURE_COMMAND ./configure
 -  BUILD_COMMAND $(MAKE) CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC"
 -  INSTALL_COMMAND cp src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
-+  BUILD_COMMAND $(MAKE) ${TARGET_SYS_PARAM} HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC" Q=
-+  INSTALL_COMMAND ${CMAKE_COMMAND} -E copy src/${LUAJIT_SRCLIB} "${LUAJIT_DEST}/lib/${LUAJIT_DESTLIB}")
++  BUILD_COMMAND $(MAKE) ${TARGET_SYS_PARAM} HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILDMODE=static "XCFLAGS=-fPIC" Q=
++  INSTALL_COMMAND ${CMAKE_COMMAND} -E copy src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
  
  # luajit (Windows)
  # ================
@@ -144,6 +140,21 @@ index ca17779b..e91ae6a4 100644
  
  static inline char* dirname(const char *path)
  {
+diff --git a/lib/chunkio/src/CMakeLists.txt b/lib/chunkio/src/CMakeLists.txt
+index b8462252..f0984725 100644
+--- a/lib/chunkio/src/CMakeLists.txt
++++ b/lib/chunkio/src/CMakeLists.txt
+@@ -21,8 +21,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+     )
+   set(libs
+     ${libs}
+-    Shell32.lib
+-    Shlwapi.lib)
++    shell32.lib
++    shlwapi.lib)
+ else()
+   set(src
+     ${src}
 diff --git a/lib/chunkio/src/cio_os.c b/lib/chunkio/src/cio_os.c
 index b368215f..140aeea7 100644
 --- a/lib/chunkio/src/cio_os.c
@@ -267,6 +278,19 @@ index 6034a54b..676050f1 100644
  else()
    REGISTER_IN_PLUGIN("in_serial")
  endif()
+diff --git a/plugins/in_tail/CMakeLists.txt b/plugins/in_tail/CMakeLists.txt
+index 4c83cd7e..71655a11 100644
+--- a/plugins/in_tail/CMakeLists.txt
++++ b/plugins/in_tail/CMakeLists.txt
+@@ -25,7 +25,7 @@ if(MSVC)
+     win32/stat.c
+     win32/io.c
+     )
+-  FLB_PLUGIN(in_tail "${src}" "Shlwapi")
++  FLB_PLUGIN(in_tail "${src}" "shlwapi")
+ else()
+   FLB_PLUGIN(in_tail "${src}" "")
+ endif()
 diff --git a/plugins/in_tail/win32/io.c b/plugins/in_tail/win32/io.c
 index a479ff73..043504f9 100644
 --- a/plugins/in_tail/win32/io.c
@@ -294,7 +318,7 @@ index f15a45b8..eadf931c 100644
  #include <stdint.h>
  #include <io.h>
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 76940076..d5e9c2b8 100644
+index 76940076..bdf86ce5 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -61,7 +61,9 @@ if(FLB_SYSTEM_WINDOWS)
@@ -322,15 +346,15 @@ index 76940076..d5e9c2b8 100644
 +    set(FLB_DEPS
 +      "ws2_32.lib"
 +      "crypt32.lib"
-+      "Bcrypt.lib"
-+      "Shlwapi.lib"
++      "bcrypt.lib"
++      "shlwapi.lib"
 +      )
 +  else()
 +    set(FLB_DEPS
 +      "ws2_32.dll"
 +      "crypt32.dll"
-+      "Bcrypt.dll"
-+      "Shlwapi.dll"
++      "bcrypt.dll"
++      "shlwapi.dll"
 +      )
 +  endif()
  else()
