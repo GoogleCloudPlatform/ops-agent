@@ -342,14 +342,15 @@ index a479ff73..043504f9 100644
  #include <stdint.h>
  #include <fcntl.h>
 diff --git a/plugins/in_tail/win32/stat.c b/plugins/in_tail/win32/stat.c
-index f15a45b8..eadf931c 100644
+index f15a45b8..34f032b2 100644
 --- a/plugins/in_tail/win32/stat.c
 +++ b/plugins/in_tail/win32/stat.c
-@@ -18,7 +18,7 @@
+@@ -18,7 +18,8 @@
   *  limitations under the License.
   */
  
 -#include <Windows.h>
++#define _WIN32_WINNT _WIN32_WINNT_WS08
 +#include <windows.h>
  #include <stdlib.h>
  #include <stdint.h>

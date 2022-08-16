@@ -75,7 +75,6 @@ function build_fluentbit() {
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service
   rm "$DESTDIR/lib/systemd/system/fluent-bit.service"
-  rm -r "$DESTDIR$subagentdir/fluent-bit/etc"
 }
 
 function build_opsagent() {
