@@ -1,29 +1,23 @@
 
 function process(tag, timestamp, record)
 local __field_0 = (function()
-return record["http_request_protocol"]
-end)();
-local __field_1 = (function()
 return record["http_request_remoteIp"]
 end)();
-local __field_2 = (function()
+local __field_1 = (function()
 return record["http_request_requestMethod"]
 end)();
-local __field_3 = (function()
+local __field_2 = (function()
 return record["http_request_requestUrl"]
 end)();
-local __field_4 = (function()
+local __field_3 = (function()
 return record["http_request_responseSize"]
 end)();
-local __field_5 = (function()
+local __field_4 = (function()
 return record["http_request_status"]
 end)();
-local __field_6 = (function()
+local __field_5 = (function()
 return record["http_request_userAgent"]
 end)();
-(function(value)
-record["http_request_protocol"] = value
-end)(nil);
 (function(value)
 record["http_request_remoteIp"] = value
 end)(nil);
@@ -48,7 +42,7 @@ if record["logging.googleapis.com/httpRequest"] == nil
 then
 record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/httpRequest"]["protocol"] = value
+record["logging.googleapis.com/httpRequest"]["remoteIp"] = value
 end)(v)
 local v = __field_1;
 (function(value)
@@ -56,7 +50,7 @@ if record["logging.googleapis.com/httpRequest"] == nil
 then
 record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/httpRequest"]["remoteIp"] = value
+record["logging.googleapis.com/httpRequest"]["requestMethod"] = value
 end)(v)
 local v = __field_2;
 (function(value)
@@ -64,7 +58,7 @@ if record["logging.googleapis.com/httpRequest"] == nil
 then
 record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/httpRequest"]["requestMethod"] = value
+record["logging.googleapis.com/httpRequest"]["requestUrl"] = value
 end)(v)
 local v = __field_3;
 (function(value)
@@ -72,7 +66,7 @@ if record["logging.googleapis.com/httpRequest"] == nil
 then
 record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/httpRequest"]["requestUrl"] = value
+record["logging.googleapis.com/httpRequest"]["responseSize"] = value
 end)(v)
 local v = __field_4;
 (function(value)
@@ -80,17 +74,9 @@ if record["logging.googleapis.com/httpRequest"] == nil
 then
 record["logging.googleapis.com/httpRequest"] = {}
 end
-record["logging.googleapis.com/httpRequest"]["responseSize"] = value
-end)(v)
-local v = __field_5;
-(function(value)
-if record["logging.googleapis.com/httpRequest"] == nil
-then
-record["logging.googleapis.com/httpRequest"] = {}
-end
 record["logging.googleapis.com/httpRequest"]["status"] = value
 end)(v)
-local v = __field_6;
+local v = __field_5;
 (function(value)
 if record["logging.googleapis.com/httpRequest"] == nil
 then
