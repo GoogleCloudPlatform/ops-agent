@@ -11,7 +11,7 @@ RUN go mod init unused; \
     go get github.com/golangci/golangci-lint/cmd/golangci-lint; \
     go get github.com/google/addlicense; \
     go get github.com/pavius/impi/cmd/impi; \
-    go get github.com/google/googet/v2/goopack;
+    go install github.com/google/googet/v2/goopack;
 
 COPY . /work
 WORKDIR /work

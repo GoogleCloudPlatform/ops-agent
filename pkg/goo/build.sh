@@ -73,7 +73,7 @@ function build_fluentbit() {
   cmake .. -DCMAKE_TOOLCHAIN_FILE=../../pkg/goo/ubuntu-mingw64.cmake -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RELWITHDEBINFO
   make #-j8
   make DESTDIR="$DESTDIR" install
-  # We don't want fluent-bit's service
+  # We don't want fluent-bit's Linux service
   rm "$DESTDIR/lib/systemd/system/fluent-bit.service"
 }
 
@@ -95,7 +95,7 @@ set -ex
 
 cd pkg/goo
 
-$GOPATH/bin/goopack -output_dir / \
+$(go env GOPATH)/bin/goopack -output_dir / \
   -var:PKG_VERSION=$PKG_VERSION \
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
