@@ -18,11 +18,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 type TimeSeries interface {
@@ -145,7 +145,7 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 }
 
 type IntervalMetrics struct {
-	Metrics []Metric
+	Metrics  []Metric
 	Interval int
 }
 
@@ -157,13 +157,13 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) ([]IntervalMetr
 	log.Println("Enabled Receivers", eR)
 
 	iM := []IntervalMetrics{
-		IntervalMetrics {
-			Metrics: eR.ToMetrics(),
-			Interval : 1,
+		IntervalMetrics{
+			Metrics:  eR.ToMetrics(),
+			Interval: 1,
 		},
-		IntervalMetrics {
-			Metrics : eR.ToMetrics(),
-			Interval : 2,
+		IntervalMetrics{
+			Metrics:  eR.ToMetrics(),
+			Interval: 2,
 		},
 	}
 

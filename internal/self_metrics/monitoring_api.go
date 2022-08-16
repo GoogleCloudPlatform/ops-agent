@@ -89,55 +89,55 @@ func SendMetricsRequest(metrics []Metric) error {
 
 func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	bufferChannel := make(chan []Metric)
-    buffer := make([]Metric, 0)
+	buffer := make([]Metric, 0)
 
-    death := make(chan os.Signal, 1)
-    signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+	death := make(chan os.Signal, 1)
+	signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
-    tickers := make([]*time.Ticker, 0)
-    
-    for _, m := range metrics {
-        tickers = append(tickers, time.NewTicker(time.Duration(m.Interval) * time.Minute))
-    }
+	tickers := make([]*time.Ticker, 0)
 
-    for idx, m := range metrics {
-        go registerMetric(m, bufferChannel, tickers[idx])
-    }
+	for _, m := range metrics {
+		tickers = append(tickers, time.NewTicker(time.Duration(m.Interval)*time.Minute))
+	}
 
-    for {
-        select {
-        case d := <-bufferChannel:
-            if len(buffer) == 0 {
-                go waitForBufferChannel(&buffer)
-            }
-            buffer = append(buffer, d...)
+	for idx, m := range metrics {
+		go registerMetric(m, bufferChannel, tickers[idx])
+	}
 
-        case <-death:
-        	for _, t := range tickers {
-        		t.Stop()
-        	}
-            return nil
-        }
-    }
+	for {
+		select {
+		case d := <-bufferChannel:
+			if len(buffer) == 0 {
+				go waitForBufferChannel(&buffer)
+			}
+			buffer = append(buffer, d...)
+
+		case <-death:
+			for _, t := range tickers {
+				t.Stop()
+			}
+			return nil
+		}
+	}
 }
 
 func registerMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
-    for {
-        select {
-        case <-ticker.C:
-            bufferChannel <- metric.Metrics
-        }
-    }
+	for {
+		select {
+		case <-ticker.C:
+			bufferChannel <- metric.Metrics
+		}
+	}
 
 	return nil
 }
 
 func waitForBufferChannel(buffer *[]Metric) {
 	// Wait for full buffer
-    time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(30) * time.Second)
 
-    SendMetricsRequest(*buffer)
+	SendMetricsRequest(*buffer)
 
-    // Clear buffer
-    *buffer = make([]Metric, 0)
+	// Clear buffer
+	*buffer = make([]Metric, 0)
 }

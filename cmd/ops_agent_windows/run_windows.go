@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -161,17 +162,17 @@ func (s *service) startSubagents() error {
 
 func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <-chan svc.ChangeRequest, changes chan<- svc.Status) error {
 	bufferChannel := make(chan []self_metrics.Metric)
-    buffer := make([]self_metrics.Metric, 0)
+	buffer := make([]self_metrics.Metric, 0)
 
-    tickers := make([]*time.Ticker, 0)
-    
-    for _, m := range metrics {
-        tickers = append(tickers, time.NewTicker(time.Duration(m.Interval) * time.Minute))
-    }
+	tickers := make([]*time.Ticker, 0)
 
-    for idx, m := range metrics {
-        go self_metrics.registerMetric(m, bufferChannel, tickers[idx])
-    }
+	for _, m := range metrics {
+		tickers = append(tickers, time.NewTicker(time.Duration(m.Interval)*time.Minute))
+	}
+
+	for idx, m := range metrics {
+		go self_metrics.registerMetric(m, bufferChannel, tickers[idx])
+	}
 
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
@@ -189,10 +190,10 @@ func sendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <
 			}
 
 		case d := <-bufferChannel:
-            if len(buffer) == 0 {
-                go self_metrics.waitForBufferChannel(&buffer)
-            }
-            buffer = append(buffer, d...)
+			if len(buffer) == 0 {
+				go self_metrics.waitForBufferChannel(&buffer)
+			}
+			buffer = append(buffer, d...)
 		}
 	}
 
