@@ -48,10 +48,10 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
-				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("garbage_collector_name", "name")),
-				otel.UpdateMetric("flink.jvm.gc.collections.time", otel.RenameLabel("garbage_collector_name", "name")),
-				otel.UpdateMetric("flink.operator.record.count", otel.RenameLabel("operator_name", "name")),
-				otel.UpdateMetric("flink.operator.watermark.output", otel.RenameLabel("operator_name", "name")),
+				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
+				otel.UpdateMetric("flink.jvm.gc.collections.time", otel.RenameLabel("name", "garbage_collector_name")),
+				otel.UpdateMetric("flink.operator.record.count", otel.RenameLabel("name", "operator_name")),
+				otel.UpdateMetric("flink.operator.watermark.output", otel.RenameLabel("name", "operator_name")),
 			),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("host.name", "host_name"),
