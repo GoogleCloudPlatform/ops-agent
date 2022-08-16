@@ -18,11 +18,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 type TimeSeries interface {
@@ -144,29 +144,28 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 	return eR, nil
 }
 
+type IntervalMetrics struct {
+	Metrics  []Metric
+	Interval int
+}
 
-func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
+func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) ([]IntervalMetrics, error) {
 	eR, err := GetEnabledReceivers(uc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Println("Enabled Receivers", eR)
 
 	iM := []IntervalMetrics{
-		IntervalMetrics {
-			Metrics: eR.ToMetrics(),
-			Interval : 1,
+		IntervalMetrics{
+			Metrics:  eR.ToMetrics(),
+			Interval: 1,
 		},
-		IntervalMetrics {
-			Metrics : eR.ToMetrics(),
-			Interval : 2,
+		IntervalMetrics{
+			Metrics:  eR.ToMetrics(),
+			Interval: 2,
 		},
 	}
 
-	err = SendMetricsEveryInterval(iM)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return iM, nil
 }
