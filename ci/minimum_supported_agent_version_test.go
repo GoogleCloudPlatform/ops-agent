@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -27,12 +28,22 @@ func TestMinimumSupportedAgentVersionIsModified(t *testing.T) {
 		t.Fatal("Must be run within git action")
 	}
 
+	// "Release" label is required to edit `minimum_supported_agent_version`.
+	// Stackdriver-instrumentation-release is configured to automatically add the
+	// label when creating a pull request, but it may also be added manually by permitted contributors
 	if strings.Contains(*labels, "release") {
 		return
 	}
 
-	addedMetadataFilePaths := filterForMetadata(*added)
-	modifiedMetadataFilePaths := filterForMetadata(*modified)
+	addedMetadataFilePaths, err := filterForMetadata(*added)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	modifiedMetadataFilePaths, err := filterForMetadata(*modified)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(addedMetadataFilePaths) != 0 {
 		testAddedMetadata(t, addedMetadataFilePaths)
@@ -43,23 +54,27 @@ func TestMinimumSupportedAgentVersionIsModified(t *testing.T) {
 	}
 }
 
-func filterForMetadata(filePaths string) []string {
+func filterForMetadata(filePaths string) ([]string, error) {
 	metadataFilePaths := make([]string, 0)
 	for _, filePath := range strings.Split(filePaths, " ") {
-		if strings.Index(filePath, "metadata.yaml") > -1 {
+		matches, err := regexp.MatchString("integration_test/third_party_apps_data/applications/.*/metadata.yaml", filePath)
+		if err != nil {
+			return nil, err
+		}
+		if matches {
 			metadataFilePaths = append(metadataFilePaths, filePath)
 		}
 	}
-	return metadataFilePaths
+	return metadataFilePaths, nil
 }
 
-func testAddedMetadata(t *testing.T, dirs []string) {
-	for _, dir := range dirs {
-		dir := dir
-		t.Run(dir, func(t *testing.T) {
+func testAddedMetadata(t *testing.T, filePaths []string) {
+	for _, filePath := range filePaths {
+		filePath := filePath
+		t.Run(filePath, func(t *testing.T) {
 			t.Parallel()
 			m := metadata.IntegrationMetadata{}
-			if err := unmarshalYamlFromFile(path.Join(basePath, dir), &m); err != nil {
+			if err := unmarshalYamlFromFile(path.Join(basePath, filePath), &m); err != nil {
 				t.Fatal(err)
 			}
 
@@ -71,24 +86,24 @@ func testAddedMetadata(t *testing.T, dirs []string) {
 	}
 }
 
-func testModifiedMetadata(t *testing.T, dirs []string) {
-	for _, dir := range dirs {
-		dir := dir
-		t.Run(dir, func(t *testing.T) {
+func testModifiedMetadata(t *testing.T, filePaths []string) {
+	for _, filePath := range filePaths {
+		filePath := filePath
+		t.Run(filePath, func(t *testing.T) {
 			t.Parallel()
 			var originalMetadata metadata.IntegrationMetadata
 			var modifiedMetadata metadata.IntegrationMetadata
 
-			if err := unmarshalYamlFromFile(path.Join(basePath, dir), &modifiedMetadata); err != nil {
+			if err := unmarshalYamlFromFile(path.Join(basePath, filePath), &modifiedMetadata); err != nil {
 				t.Fatal(err)
 			}
 
-			if err := unmarshalYamlFromFile(path.Join(basePath, *baseDir, dir), &originalMetadata); err != nil {
+			if err := unmarshalYamlFromFile(path.Join(basePath, *baseDir, filePath), &originalMetadata); err != nil {
 				t.Fatal(err)
 			}
 
 			if modifiedMetadata.MinimumSupportedAgentVersion != originalMetadata.MinimumSupportedAgentVersion {
-				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s", dir))
+				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s", filePath))
 			}
 		})
 	}
