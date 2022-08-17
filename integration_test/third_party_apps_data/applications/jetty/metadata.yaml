@@ -52,29 +52,35 @@ expected_logs:
   - name: httpRequest.remoteIp
     type: string
     description: ''
+    optional: true
   - name: httpRequest.requestUrl
     value_regex: \/forbidden.html\?something=something
     type: string
     description: ''
+    optional: true
   - name: httpRequest.protocol
     value_regex: HTTP\/1.1
     type: string
     description: ''
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: ''
+    optional: true
   - name: httpRequest.userAgent
     value_regex: curl\/.*
     type: string
     description: ''
+    optional: true
   - name: httpRequest.responseSize
     type: string
     description: ''
-  - name: httpRequest.userAgent
+    optional: true
+  - name: httpRequest.status
     type: string
     description: ''
-  - name: httpRequest.status
+  - name: severity
     type: string
     description: ''
 configuration_options:

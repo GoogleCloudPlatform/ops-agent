@@ -112,119 +112,167 @@ expected_metrics:
 expected_logs:
 - log_name: vault_audit
   fields:
+  - name: jsonPayload.auth
+    type: struct
+    description: ''
+  - name: jsonPayload.request
+    type: struct
+    description: ''
+  - name: jsonPayload.response
+    type: struct
+    description: ''
+    optional: true
   - name: jsonPayload.auth.token_type
     value_regex: default
     type: string
     description: ''
+    optional: true
   - name: jsonPayload.request.namespace.id
     value_regex: root
     type: string
     description: ''
+    optional: true
   - name: jsonPayload.request.path
     value_regex: sys\/audit\/test
     type: string
     description: The requested Vault path for operation.
+    optional: true
   - name: jsonPayload.request.operation
     value_regex: update
     type: string
     description: "This is the type of operation which corresponds to path capabilities and is expected to be one of: `create`, `read`, `update`, `delete`, or `list`."
+    optional: true
   - name: jsonPayload.type
     value_regex: request
     type: string
     description: The type of audit log.
+    optional: true
   - name: jsonPayload.error
     type: string
     description: If an error occurred with the request, the error message is included in this field's value.
+    optional: true
   - name: jsonPayload.auth.client_token
     type: string
     description: This is an HMAC of the client's token ID.
+    optional: true
   - name: jsonPayload.auth.accessor
     type: string
     description: This is an HMAC of the client token accessor.
+    optional: true
   - name: jsonPayload.auth.display_name
     type: string
     description: This is the display name set by the auth method role or explicitly at secret creation time.
+    optional: true
   - name: jsonPayload.auth.policies
     type: object
     description: This will contain a list of policies associated with the client_token.
+    optional: true
   - name: jsonPayload.auth.metadata
     type: object
     description: This will contain a list of metadata key/value pairs associated with the client_token.
+    optional: true
   - name: jsonPayload.auth.entity_id
     type: string
     description: This is a token entity identifier.
+    optional: true
   - name: jsonPayload.request.id
     type: string
     description: This is the unique request identifier.
+    optional: true
   - name: jsonPayload.request.client_token
     type: string
     description: This is an HMAC of the client's token ID.
+    optional: true
   - name: jsonPayload.request.client_token_accessor
     type: string
     description: This is an HMAC of the client token accessor.
+    optional: true
   - name: jsonPayload.request.data
     type: object
     description: The data object will contain secret data in key/value pairs.
+    optional: true
   - name: jsonPayload.request.policy_override
     type: boolean
     description: This is `true` when a soft-mandatory policy override was requested.
+    optional: true
   - name: jsonPayload.request.remote_address
     type: string
     description: The IP address of the client making the request.
+    optional: true
   - name: jsonPayload.request.wrap_ttl
     type: string
     description: If the token is wrapped, this displays configured wrapped TTL value as numeric string.
+    optional: true
   - name: jsonPayload.request.headers
     type: object
     description: Additional HTTP headers specified by the client as part of the request.
+    optional: true
   - name: jsonPayload.response.data.creation_time
     type: string
     description: RFC 3339 format timestamp of the token's creation.
+    optional: true
   - name: jsonPayload.response.data.creation_ttl
     type: string
     description: Token creation TTL in seconds.
+    optional: true
   - name: jsonPayload.response.data.expire_time
     type: string
     description: RFC 3339 format timestamp representing the moment this token will expire.
+    optional: true
   - name: jsonPayload.response.data.explicit_max_ttl
     type: string
     description: Explicit token maximum TTL value as seconds ("0" when not set).
+    optional: true
   - name: jsonPayload.response.data.issue_time
     type: string
     description: RFC 3339 format timestamp.
+    optional: true
   - name: jsonPayload.response.data.num_uses
     type: number
     description: If the token is limited to a number of uses, that value will be represented here.
+    optional: true
   - name: jsonPayload.response.data.orphan
     type: boolean
     description: Boolean value representing whether the token is an orphan.
+    optional: true
   - name: jsonPayload.response.data.renewable
     type: boolean
     description: Boolean value representing whether the token is an orphan.
+    optional: true
   - name: jsonPayload.response.data.id
     type: string
     description: This is the unique response identifier.
+    optional: true
   - name: jsonPayload.response.data.path
     type: string
     description: The requested Vault path for operation.
+    optional: true
   - name: jsonPayload.response.data.policies
     type: object
     description: This will contain a list of policies associated with the client_token.
+    optional: true
   - name: jsonPayload.response.data.accessor
     type: string
     description: This is an HMAC of the client token accessor.
+    optional: true
   - name: jsonPayload.response.data.display_name
     type: string
     description: This is the display name set by the auth method role or explicitly at secret creation time.
+    optional: true
   - name: jsonPayload.response.data.display_name
     type: string
     description: This is the display name set by the auth method role or explicitly at secret creation time.
+    optional: true
   - name: jsonPayload.response.data.entity_id
     type: string
     description: This is a token entity identifier.
+    optional: true
   - name: timestamp
     type: string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp))
     description: Time the request was received
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: vault_audit

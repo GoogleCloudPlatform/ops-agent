@@ -31,9 +31,17 @@ expected_logs:
   - name: jsonPayload.process_id
     type: string
     description: The process ID issuing the log
+    optional: true
   - name: jsonPayload.message
     type: string
     description: Log message
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: rabbitmq
