@@ -90,6 +90,7 @@ expected_logs:
   - name: jsonPayload.ctx
     type: string
     description: The name of the thread issuing the log statement
+    optional: true
   - name: jsonPayload.id
     type: number
     description: Log ID
@@ -99,6 +100,18 @@ expected_logs:
   - name: jsonPayload.attributes
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided
+    optional: true
+  - name: jsonPayload.context
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: mongodb

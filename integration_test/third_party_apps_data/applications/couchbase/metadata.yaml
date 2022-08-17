@@ -10,12 +10,22 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: "Log message"
+    optional: true
   - name: jsonPayload.node_name
     type: string
     description: The name of the node issuing the log message
   - name: jsonPayload.module_name
     type: string
     description: The name of the module issuing the entry
+    optional: true
+  - name: jsonPayload.source
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.type
+    type: string
+    description: ''
+    optional: true
   - name: severity
     type: string
     description: ''
@@ -30,12 +40,22 @@ expected_logs:
   - name: jsonPayload.client_ip
     type: string
     description: The IP address of the client invoking the HTTP request
+    optional: true
   - name: jsonPayload.user
     type: string
     description: The name of the user making the HTTP request if basic auth is used.
+    optional: true
   - name: jsonPayload.method
     type: string
     description: The HTTP method of the request
+  - name: jsonPayload.response_size
+    type: string
+    description: The HTTP response size
+    optional: true
+  - name: jsonPayload.path
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.status_code
     type: integer
     description: The status code of the response of the HTTP request
@@ -50,6 +70,10 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: "Log message"
+  - name: jsonPayload.log_type
+    type: string
+    description: ''
+    optional: true
   - name: log_type
     type: string
     description: The name of the component that is issuing the cross-datacenter log

@@ -81,7 +81,7 @@ expected_logs:
 - log_name: tomcat_system
   fields:
   - name: jsonPayload.message
-    value_regex: org.apache.catalina.startup.Catalina.start Server startup*
+    value_regex: org.apache.catalina.startup.Catalina.start Server startup.*
     type: string
     description: Log message, including detailed stacktrace where provided
   - name: jsonPayload.module
@@ -92,30 +92,58 @@ expected_logs:
     value_regex: org.apache.catalina.startup.Catalina.start
     type: string
     description: source of where the log originated
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 - log_name: tomcat_access
   fields:
   - name: httpRequest.remoteIp
     value_regex: 127.0.0.1
     type: string
     description: ''
+    optional: true
   - name: httpRequest.requestUrl
     value_regex: /forbidden.html
     type: string
     description: ''
+    optional: true
   - name: httpRequest.protocol
     value_regex: HTTP/1.1
     type: string
     description: ''
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: ''
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.status
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.host
     type: string
     description: Contents of the Host header
+    optional: true
   - name: jsonPayload.user
     type: string
-    description: Authenticated username for the request
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+    optional: true
 configuration_options:
   logs:
   - type: tomcat_system

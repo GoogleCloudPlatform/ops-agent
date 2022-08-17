@@ -54,6 +54,7 @@ type LogFields struct {
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
+	Optional    bool   `yaml:"optional,omitempty"`
 }
 
 type ExpectedLog struct {

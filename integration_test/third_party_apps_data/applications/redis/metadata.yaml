@@ -136,6 +136,9 @@ expected_logs:
   - name: jsonPayload.pid
     type: number
     description: Process ID
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: redis
