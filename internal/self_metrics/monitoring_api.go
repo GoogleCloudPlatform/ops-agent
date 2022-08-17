@@ -87,6 +87,27 @@ func SendMetricsRequest(metrics []Metric) error {
 	return nil
 }
 
+func RegisterMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
+	for {
+		select {
+		case <-ticker.C:
+			bufferChannel <- metric.Metrics
+		}
+	}
+
+	return nil
+}
+
+func WaitForBufferChannel(buffer *[]Metric) {
+	// Wait for full buffer for 30 seconds
+	time.Sleep(time.Duration(30) * time.Second)
+
+	SendMetricsRequest(*buffer)
+
+	// Clear buffer
+	*buffer = make([]Metric, 0)
+}
+
 func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 	bufferChannel := make(chan []Metric)
 	buffer := make([]Metric, 0)
@@ -119,25 +140,4 @@ func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
 			return nil
 		}
 	}
-}
-
-func RegisterMetric(metric IntervalMetrics, bufferChannel chan []Metric, ticker *time.Ticker) error {
-	for {
-		select {
-		case <-ticker.C:
-			bufferChannel <- metric.Metrics
-		}
-	}
-
-	return nil
-}
-
-func WaitForBufferChannel(buffer *[]Metric) {
-	// Wait for full buffer
-	time.Sleep(time.Duration(30) * time.Second)
-
-	SendMetricsRequest(*buffer)
-
-	// Clear buffer
-	*buffer = make([]Metric, 0)
 }
