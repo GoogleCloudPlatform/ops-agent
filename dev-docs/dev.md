@@ -169,6 +169,7 @@ $ tree $CONFIG_OUT
 
 ## Build and test manually on GCE VMs
 
+<a id="linux-build-test-gce"></a>
 ### Linux
 
 #### Build packages
@@ -231,7 +232,7 @@ See [Create a GCE Linux VM](create-gce-linux-vm.md).
 
 #### Install the package on a VM
 
-##### Using a package built via the previous step
+Copy the package built in the previous step to the VM:
 
 NOTE: The firewall rule creation can be skipped if your project is exempted.
 
@@ -274,6 +275,7 @@ $ sudo yum install -y /tmp/$PACKAGE_NAME
 $ sudo zypper install -n /tmp/$PACKAGE_NAME
 ```
 
+<a id="windows-build-test-gce"></a>
 ### Windows
 
 #### Create a Windows build VM
@@ -287,36 +289,6 @@ See [Connect to a Windows VM](connect-to-windows-vm.md).
 #### One-time setup on Windows
 
 See [Set up a Windows VM](set-up-windows-vm.md).
-
-<details>
-<summary>You also need to install Git.</summary>
-
-1.  Run PowerShell as Administrator.
-
-    From the start menu, find `Windows PowerShell`, right-click, and select `Run
-    as administrator`.
-
-1.  Download Git installer and install Git on the VM.
-
-    Switch the folder first.
-
-    ```
-    cd $env:UserProfile
-    ```
-
-    Tip: Check https://github.com/git-for-windows/git/releases for all versions.
-
-    ```
-    # [Optional] Adjust the Git version to install.
-    # $GIT_VERSION=2.30.0
-
-    wget -o git.exe https://github.com/git-for-windows/git/releases/download/v$GIT_VERSION.windows.1/Git-$GIT_VERSION-64-bit.exe
-    start git.exe
-    ```
-
-    Restart the `Windows PowerShell` after installation.
-
-</details>
 
 #### Trigger the build
 
@@ -337,16 +309,14 @@ speed up the build.
     PowerShell` windows may be frozen. In other words, the build may appear to
     be stuck when it's actually building. The solution is to reconnect RDP.
 
-    **First time building**
-
-    ```
+    ```powershell
     # [Optional] Adjust the branch or commit hash to check out the code from.
-    # $WINDOWS_BUILD_BRANCH=master
+    $env:WINDOWS_BUILD_BRANCH='master'
 
     cd $env:UserProfile
     git clone https://github.com/GoogleCloudPlatform/ops-agent.git
     cd ops-agent
-    git checkout $WINDOWS_BUILD_BRANCH
+    git checkout $env:WINDOWS_BUILD_BRANCH
     git submodule update --init
     docker build -t full-build -f .\Dockerfile.windows .
 
@@ -364,18 +334,18 @@ speed up the build.
     Successfully tagged full-build:latest
     ```
 
-    The output of the `dir` command should list the following 3 exe files in the
-    `C:\Users\${USER}\ops-agent\tmp\out\bin` directory:
+    The output of the `dir -Recurse ./tmp/out` command should list the following 3 exe files in the
+    `${env:UserProfile}\tmp\out\bin` directory:
 
     *   `fluent-bit.exe`
     *   `google-cloud-metrics-agent_windows_amd64.exe`
     *   `google-cloud-ops-agent.exe`
 
     <details>
-    <summary>Sample output:</summary>
+    <summary>Sample output</summary>
 
     ```
-        Directory: C:\Users\{{USERNAME}}\tmp\out
+        Directory: ${env:UserProfile}\tmp\out
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -383,7 +353,7 @@ speed up the build.
     d-----         2/6/2021   7:08 AM                config
     -a----         2/6/2021   7:08 AM       44653740 google-cloud-ops-agent.x86_64.1.0.1@1.goo
 
-        Directory: C:\Users\{{USERNAME}}\tmp\out\bin
+        Directory: ${env:UserProfile}\tmp\out\bin
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -395,7 +365,7 @@ speed up the build.
     -a----       11/11/2020  12:27 PM         330120 vccorlib140.dll
     -a----       11/11/2020  12:27 PM          94088 vcruntime140.dll
 
-        Directory: C:\Users\{{USERNAME}}\tmp\out\config
+        Directory: ${env:UserProfile}\tmp\out\config
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -409,17 +379,18 @@ speed up the build.
 
     If it fails, fix the issue then clean up and retry building:
 
-    Warning: The cleanup will wipe the `C:\Users\{{USERNAME}}\tmp` directory.
+    Warning: The cleanup will wipe the `${env:UserProfile}\tmp` directory.
 
-    ```
+    ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    rm -r "C:\Users\{{USERNAME}}\tmp"
-    rm -r "C:\Users\{{USERNAME}}\ops-agent\submodules\fluent-bit\build"
-
     cd $env:UserProfile
-    cd ops-agent
+    rm -r ".\tmp"
+    rm -r ".\ops-agent\submodules\fluent-bit\build"
+
+    cd $env:UserProfile\ops-agent
     docker build -t full-build -f .\Dockerfile.windows .
 
+    cd $env:UserProfile
     docker rm build-image
     docker create --name build-image full-build
     docker cp build-image:/work/out ./tmp
@@ -436,12 +407,11 @@ speed up the build.
     start from scratch), run the following for cleanup, then go back to the
     `First time building` section above:
 
-    ```
+    ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    Remove-Item -Force -Recurse -Path "C:\Users\{{USERNAME}}\ops-agent\*"
-    Remove-Item -Force -Recurse -Path "C:\Users\{{USERNAME}}\tmp\*"
-    rm -r "C:\Users\{{USERNAME}}\tmp"
-    rm -r "C:\Users\{{USERNAME}}\ops-agent"
+    cd $env:UserProfile
+    rm -r -force ".\tmp"
+    rm -r -force ".\ops-agent"
     docker rm build-image
     ```
 
@@ -451,25 +421,29 @@ speed up the build.
 
 To get a package out of a Windows VM, GCS is one of the few available options.
 
-**Upload artifacts**
-
 In `Windows PowerShell`, use gsutil to upload the artifacts to GCS.
 
-```
+```powershell
+# [Required] Adjust the GCS bucket ID
+# Create the Bucket if not exist
+# Make sure the current service account has storage permissions to the bucket
+$env:GCP_BUCKET_ID='gcp_bucket_id'
+
 # [Optional] Adjust the directory you want to upload to GCS.
-# $LOCAL_ARTIFACTS_DIR=C:\Users\{{USERNAME}}\tmp\out
+$env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
 # [Optional] Adjust the destination GCS bucket dir.
-# $GCP_BUCKET_DIR=ops_agent_windows
+# Create the directory if not exist
+$env:GCP_BUCKET_DIR='ops_agent_windows'
 
-gsutil cp -r $LOCAL_ARTIFACTS_DIR\* gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 To overwrite existing contents in the bucket:
 
-```
-gsutil rm -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
-gsutil cp -r $LOCAL_ARTIFACTS_DIR\* gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR
+```powershell
+gsutil rm -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
+gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 <details>
@@ -483,7 +457,7 @@ you need to:
 
     ```shell
     # The VM name to grant GCS access to.
-    # $WIN_BUILD_VM_NAME={{USERNAME}}-win-build-vm
+    export WIN_BUILD_VM_NAME=${USER}-win-build-vm
 
     $ gcloud compute instances stop \
         --zone $VM_ZONE --project $VM_PROJECT_ID \
@@ -508,30 +482,34 @@ you need to:
 
 </details>
 
-#### Download package from GCS to Linux workstation
+<details>
+<summary>Download package from GCS to Linux workstation</summary>
+
+If you would like to download and save Windows packages to a Linux workstation, run the following commands on your Linux workstation:
 
 ```shell
+# [Required] Adjust the GCS bucket ID
+export GCP_BUCKET_ID=
 # [Optional] Adjust the source GCS bucket dir from where to download the
 # artifacts.
-$ export GCP_BUCKET_DIR=ops_agent_windows
+export GCP_BUCKET_DIR=ops_agent_windows
 
 # [Optional] Adjust the local directory to where you want to store the
 # artifacts.
-$ export WINDOWS_RELEASE_DIR=/tmp/google-cloud-ops-agent/windows-release
+export WINDOWS_RELEASE_DIR=/tmp/google-cloud-ops-agent/windows-release
 
-$ rm -rf $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ mkdir -p $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-$ ls $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR/google-cloud-ops-agent.x86_64.*.goo
+rm -rf $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+mkdir -p $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+gsutil cp -r gs://$GCP_BUCKET_ID/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+ls $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR/google-cloud-ops-agent.x86_64.*.goo
 ```
+</details>
 
 #### Create a test VM
 
 See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
 #### Install the agent on the test VM
-
-##### Using a local package
 
 1.  Start a `Windows PowerShell` in admin mode by right-clicking it (use this
     for commands below)
@@ -550,132 +528,86 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     the previous step.
 
 
-    ```
+    ```powershell
+    # [Required] Adjust the GCS bucket ID
+    $env:GCP_BUCKET_ID='gcp_bucket_id'
     # [Optional] Adjust the source GCS bucket dir from where to download the
     # artifacts. This directory should have `bin` and `config` sub directory in
     # it.
-    # $GCP_BUCKET_DIR=ops_agent_windows
+    $env:GCP_BUCKET_DIR='ops_agent_windows'
 
     # [Optional] Adjust the local directory to where you want to store the
     # artifacts.
-    # $LOCAL_ARTIFACTS_DIR=C:\Users\{{USERNAME}}\tmp\out
+    $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
-    md $LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $LOCAL_ARTIFACTS_DIR
-    ls $LOCAL_ARTIFACTS_DIR
+    md $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
+    ls $env:LOCAL_ARTIFACTS_DIR
     ```
 
     To overwrite existing contents in the local directory:
 
-    ```
+    ```powershell
     Stop-Service google-cloud-ops-agent -Force
-    rd -r "$LOCAL_ARTIFACTS_DIR"
-    md $LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://us.artifacts.$VM_PROJECT_ID.appspot.com/$GCP_BUCKET_DIR/* $LOCAL_ARTIFACTS_DIR
+    rm -r -force $env:LOCAL_ARTIFACTS_DIR
+    md $env:LOCAL_ARTIFACTS_DIR
+    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
     ls $LOCAL_ARTIFACTS_DIR
     ```
 
-1.  Install the `google-cloud-ops-agent` Googet package.
+2.  Install the `google-cloud-ops-agent` Googet package.
 
-    ```
+    ```powershell
     # Version of the package.
-    # $WINDOWS_PACKAGE_VERSION=1.0.1@1
+    $env:WINDOWS_PACKAGE_VERSION='2.18.0@1'
 
-    googet -noconfirm install $LOCAL_ARTIFACTS_DIR\google-cloud-ops-agent.x86_64.$WINDOWS_PACKAGE_VERSION.goo
+    googet -noconfirm install $env:LOCAL_ARTIFACTS_DIR\google-cloud-ops-agent.x86_64.$env:WINDOWS_PACKAGE_VERSION.goo
     ```
 
     Expected output:
 
     ```
-    PS C:\Users\lingshi\tmp\out> googet -noconfirm install C:\Users\lingshi\tmp\out\google-cloud-ops-agent.x86_64.$WINDOWS_PACKAGE_VERSION.goo
     Installing google-cloud-ops-agent $WINDOWS_PACKAGE_VERSION...
     2021/02/09 04:57:17 installed services
     Installation of google-cloud-ops-agent completed
     ```
 
-    **Retries**
+    <details>
+    <summary>Retries</summary>
 
     In case of retries, clean up the existing services and data folders first:
 
-    ```
+    ```powershell
     sc delete google-cloud-ops-agent-fluent-bit
     sc delete google-cloud-ops-agent-otel
     sc delete google-cloud-ops-agent
     rd -r "C:\ProgramData\Google\Cloud Operations\Ops Agent"
     rd -r "C:\Program Files\Google\Cloud Operations\Ops Agent"
     ```
+    </details>
 
-1.  Verify that the service is indeed running.
-
-    ```
-    Get-Service google-cloud-ops-agent*
-    ```
+3.  [Verify](#windows-verify-status) that the service is indeed running.
 
     <details>
-    <summary>Expected output:</summary>
+    <summary>Troubleshooting</summary>
 
-    ```
-    Status   Name                               DisplayName
-    ------   ----                               -----------
-    Running  google-cloud-ops-agent             Google Cloud Ops Agent
-    Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
-    Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
-    ```
+    -   Check logs in `Event Viewer` app
+    -   Check service status and start / stop them in `Services` app
+    -   Inspect running processes in `Task Manager` app
+    -   [Run Fluent Bit individually](#run-fluent-bit-individually-on-windows
+    ) or [run Open Telemetry Metrics Agent individually](#run-open-telemetry-metrics-agent-individually-on-windows).
 
     </details>
 
-**Troubleshooting**
 
--   Check logs in `Event Viewer` app
--   Check service status and start / stop them in `Services` app
--   Inspect running processes in `Task Manager` app
--   Run Fluent Bit individually:
+## Edit config and apply
 
-    Temporary step: Manually create a `C:\ProgramData\Google\Cloud
-    Operations\Ops Agent\run\buffers` folder. `C:\ProgramData` is by default
-    hidden, you need to show it.
-
-    ![image](https://user-images.githubusercontent.com/5287526/133006710-2ab21ef6-22e7-43ff-826d-15e82a2d3e08.png)
-
-
-    ```
-    C:\Users\{{USERNAME}}\tmp\out\bin\fluent-bit.exe --config="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf" --parser="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf" --storage_path="C:\ProgramData\Google\Cloud Operations\Ops Agent\run\buffers"
-    ```
-
--   Run Open Telemetry Metrics Agent individually:
-
-    ```
-    C:\Users\{{USERNAME}}\tmp\out\bin\google-cloud-metrics-agent_windows_amd64.exe "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
-    ```
-
-#### Uninstall the agent
-
-##### Linux
-
-1.  Stop the agent:
-
-    ```shell
-    sudo service google-cloud-ops-agent stop
-    ```
-
-1.  Uninstall the package:
-
-    ```shell
-    sudo apt remove google-cloud-ops-agent
-    ```
-
-##### Windows
-
-1.  Run the following commands in Windows PowerShell (admin mode):
-
-    ```
-    googet -noconfirm remove google-cloud-ops-agent
-    ```
-
-#### [Optional] Edit config
+Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default 
+configuration will be applied.
 
 Edit the Ops Agent configuration file as needed:
 
+<a id="linux-edit-config"></a>
 ##### Linux
 
 ```shell
@@ -685,7 +617,8 @@ $ sudo vim /etc/google-cloud-ops-agent/config.yaml
 Sample
 [config](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator/default-config.yaml)
 
-###### Windows
+<a id="windows-edit-config"></a>
+##### Windows
 
 ```
 notepad "C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml"
@@ -694,25 +627,12 @@ notepad "C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml"
 Sample
 [config](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/confgenerator/windows-default-config.yaml)
 
-Restart the agent to apply the new config.
+[Restart the agent](#restart-ops-agent-and-subagents) to apply the new config.
 
-##### Linux
 
-```shell
-$ sudo service google-cloud-ops-agent restart
-```
+## Send syslog via TCP (Linux)
 
-#### Windows
-
-Open `Windows PowerShell` as administrator and run:
-
-```
-Restart-Service google-cloud-ops-agent -Force
-```
-
-#### Send syslog via TCP (Linux)
-
-Follow the step above to edit the config file to include syslog tcp config as
+Follow the step to [edit the config file](#edit-config-and-apply) to include syslog tcp config as
 below:
 
 ```
@@ -743,30 +663,6 @@ $ export TCP_LOG=${USER}-test-tcp
 
 $ logger -n 0.0.0.0 --tcp --port=5140 -- $TCP_LOG
 ```
-
-#### Uninstall the agent
-
-##### Linux
-
-1.  Stop the agent:
-
-    ```shell
-    sudo systemctl stop google-cloud-ops-agent.target
-    ```
-
-1.  Uninstall the package:
-
-    ```shell
-    sudo apt remove google-cloud-ops-agent
-    ```
-
-##### Windows
-
-1.  Run the following commands in Windows PowerShell (admin mode):
-
-    ```
-    googet -noconfirm remove google-cloud-ops-agent
-    ```
 
 ## Verify logs and metrics ingestion
 
@@ -908,6 +804,7 @@ ops-agent$ /google/bin/releases/opensource/thirdparty/cross/cross .
 
 ### Where to find things
 
+<a id="linux-where-to-find-things"></a>
 #### Linux
 
 Description                                                                                          | Link
@@ -921,6 +818,7 @@ Config file - Fluent Bit - Parsers config. Only present when the systemd fluent-
 Config file - OT Metrics Agent                                                                       | `/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml`
 Buffer files - Fluent Bit                                                                            | `/var/lib/google-cloud-ops-agent/fluent-bit/buffers/`
 
+<a id="windows-where-to-find-things"></a>
 #### Windows
 
 Description                               | Link
@@ -935,6 +833,7 @@ Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operati
 
 ### Check logs
 
+<a id="linux-check-logs"></a>
 #### Linux
 
 *   Check all related syslog
@@ -969,6 +868,7 @@ Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operati
     $ sudo grep -r " systemd" /var/log/messages
     ```
 
+<a id="windows-check-logs"></a>
 #### Windows
 
 The OT Collector subagent logs can be found locally in `Event Viewer`. From
@@ -984,25 +884,41 @@ notepad "C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log
 
 ### Verify Ops Agent and subagent status
 
+<a id="linux-verify-status"></a>
 #### Linux
 
 ```shell
 $ sudo systemctl status google-cloud-ops-agent"*"
 ```
 
+<a id="windows-verify-status"></a>
 #### Windows
 
 Open `Windows PowerShell` as administrator and run:
 
 ```
-Get-Service google-cloud-ops-agent
+Get-Service google-cloud-ops-agent*
 ```
+
+<details>
+<summary>Expected output</summary>
+
+```
+Status   Name                               DisplayName
+------   ----                               -----------
+Running  google-cloud-ops-agent             Google Cloud Ops Agent
+Running  google-cloud-ops-agent-fluent-bit  Google Cloud Ops Agent - Logging Agent
+Running  google-cloud-ops-agent-otel        Google Cloud Ops Agent - Metrics Agent
+```
+
+</details>
 
 You can also check service status in the `Services` app and inspect running
 processes in the `Task Manager` app.
 
 ### Restart Ops Agent and subagents
 
+<a id="linux-restart-agent"></a>
 #### Linux
 
 ```shell
@@ -1017,6 +933,7 @@ $ sudo systemctl start google-cloud-ops-agent.target
 $ sudo systemctl stop google-cloud-ops-agent.target
 ```
 
+<a id="windows-restart-agent"></a>
 #### Windows
 
 Open `Windows PowerShell` as administrator and run:
@@ -1040,6 +957,7 @@ You can also start / stop services in the `Services` app.
 Temporary step: Manually create a `C:\ProgramData\Google\Cloud Operations\Ops
 Agent\run\buffers` folder. `C:\ProgramData` is by default hidden, you need to
 show it.
+![image](https://user-images.githubusercontent.com/5287526/133006710-2ab21ef6-22e7-43ff-826d-15e82a2d3e08.png)
 
 ```
 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe' --config="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf" --parser="C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf" --storage_path="C:\ProgramData\Google\Cloud Operations\Ops Agent\run\buffers"
@@ -1050,6 +968,33 @@ show it.
 ```
 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\google-cloud-metrics-agent_windows_amd64.exe' "--config=C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml"
 ```
+
+### Uninstall the agent
+
+<a id="linux-uninstall"></a>
+##### Linux
+
+1.  Stop the agent:
+
+    ```shell
+    sudo service google-cloud-ops-agent stop
+    ```
+
+1.  Uninstall the package:
+
+    ```shell
+    sudo apt remove google-cloud-ops-agent
+    ```
+
+<a id="windows-uninstall"></a>
+##### Windows
+
+1.  Run the following commands in Windows PowerShell (admin mode):
+
+    ```
+    googet -noconfirm remove google-cloud-ops-agent
+    ```
+
 
 ### Known issues
 
