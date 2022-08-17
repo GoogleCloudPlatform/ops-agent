@@ -84,6 +84,7 @@ func run() error {
 				select {
 				case <-osSignal:
 					death <- true
+					break
 				}
 			}
 		}()
