@@ -334,8 +334,8 @@ speed up the build.
     Successfully tagged full-build:latest
     ```
 
-    The output of the `dir` command should list the following 3 exe files in the
-    `C:\Users\{{USER}}\ops-agent\tmp\out\bin` directory:
+    The output of the `dir -Recurse ./tmp/out` command should list the following 3 exe files in the
+    `${env:UserProfile}\tmp\out\bin` directory:
 
     *   `fluent-bit.exe`
     *   `google-cloud-metrics-agent_windows_amd64.exe`
@@ -345,7 +345,7 @@ speed up the build.
     <summary>Sample output</summary>
 
     ```
-        Directory: C:\Users\{{USERNAME}}\tmp\out
+        Directory: ${env:UserProfile}\tmp\out
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -353,7 +353,7 @@ speed up the build.
     d-----         2/6/2021   7:08 AM                config
     -a----         2/6/2021   7:08 AM       44653740 google-cloud-ops-agent.x86_64.1.0.1@1.goo
 
-        Directory: C:\Users\{{USERNAME}}\tmp\out\bin
+        Directory: ${env:UserProfile}\tmp\out\bin
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -365,7 +365,7 @@ speed up the build.
     -a----       11/11/2020  12:27 PM         330120 vccorlib140.dll
     -a----       11/11/2020  12:27 PM          94088 vcruntime140.dll
 
-        Directory: C:\Users\{{USERNAME}}\tmp\out\config
+        Directory: ${env:UserProfile}\tmp\out\config
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
@@ -379,7 +379,7 @@ speed up the build.
 
     If it fails, fix the issue then clean up and retry building:
 
-    Warning: The cleanup will wipe the `C:\Users\{{USERNAME}}\tmp` directory.
+    Warning: The cleanup will wipe the `${env:UserProfile}\tmp` directory.
 
     ```powershell
     Stop-Service google-cloud-ops-agent -Force
