@@ -307,9 +307,11 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		}
 	}
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
+	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
+	// referer fields and there are additional fields after the user agent here but not in the other apps.
 	c = append(c,
 		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^ ]*) +\S*)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*) - "(?<http_request_userAgent>[^\"]*)"(?<message>.*)$`,
+			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) "(?<http_request_userAgent>[^\"]*)" (?<message>.*)$`,
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
 				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
@@ -330,10 +332,10 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		"remoteIp",
 		"requestMethod",
 		"requestUrl",
-		// "protocol",
+		"protocol",
 		"status",
 		"responseSize",
-		// "referer",
+		"referer",
 		"userAgent",
 	} {
 		dest := fmt.Sprintf("httpRequest.%s", field)
@@ -341,9 +343,9 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		mf.Fields[dest] = &confgenerator.ModifyField{
 			MoveFrom: src,
 		}
-		// if field == "referer" {
-		// 	mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
-		// }
+		if field == "referer" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		}
 	}
 	c = append(c, mf.Components(tag, lp.Type())...)
 	return c
