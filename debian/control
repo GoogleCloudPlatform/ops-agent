@@ -8,6 +8,5 @@ Standards-Version: 3.9.4
 Package: google-cloud-ops-agent
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: stackdriver-agent, google-fluentd
 Description: Google Cloud Ops Agent
  The Google Cloud Ops Agent collects metrics and logs from the system.
