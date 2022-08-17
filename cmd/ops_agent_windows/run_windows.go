@@ -71,7 +71,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	if err != nil {
 		return false, 0
 	}
-	s.log.Info(1, "collected  ops agent self metrics")
+	s.log.Info(1, "collected ops agent self metrics")
 
 	err = s.SendMetricsEveryIntervalWindows(metrics, r, changes)
 	if err != nil {
@@ -189,8 +189,7 @@ func (s *service) SendMetricsEveryIntervalWindows(metrics []self_metrics.Interva
 	for idx, m := range metrics {
 		go self_metrics.RegisterMetric(m, bufferChannel, tickers[idx])
 	}
-
-	s.log.Info(1, "registered metrics")
+	s.log.Info(1, "registered metric tickers")
 
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
@@ -211,7 +210,7 @@ func (s *service) SendMetricsEveryIntervalWindows(metrics []self_metrics.Interva
 			}
 
 		case d := <-bufferChannel:
-			s.log.Info(1, "buffer element")
+			s.log.Info(1, "received from buffer")
 			if len(buffer) == 0 {
 				go self_metrics.WaitForBufferChannel(&buffer)
 			}

@@ -154,16 +154,12 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) ([]IntervalMetr
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Enabled Receivers", eR)
+	log.Println("Found Enabled Receivers : ", eR)
 
 	iM := []IntervalMetrics{
 		IntervalMetrics{
 			Metrics:  eR.ToMetrics(),
 			Interval: 1,
-		},
-		IntervalMetrics{
-			Metrics:  eR.ToMetrics(),
-			Interval: 2,
 		},
 	}
 

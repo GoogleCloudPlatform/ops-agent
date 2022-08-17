@@ -59,18 +59,16 @@ func run() error {
 	}
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
 	if err != nil {
-		return err
+		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
 	}
 	err = confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
 	if err != nil {
-		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
+		return err
 	}
-
 	metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
 	if err != nil {
 		return err
 	}
-
 	err = self_metrics.SendMetricsEveryIntervalLinux(metrics)
 	if err != nil {
 		return err
