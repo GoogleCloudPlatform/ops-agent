@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -65,13 +67,31 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
-	if err != nil {
-		return err
-	}
-	err = self_metrics.SendMetricsEveryIntervalLinux(metrics)
-	if err != nil {
-		return err
+
+	// Only when used as main service
+	if *service == "" {
+		metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
+		if err != nil {
+			return err
+		}
+
+		death := make(chan bool)
+
+		go func() {
+			osSignal := make(chan os.Signal, 1)
+			signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+			for {
+				select {
+				case <-osSignal:
+					death <- true
+				}
+			}
+		}()
+
+		err = self_metrics.SendMetricsEveryInterval(metrics, death)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

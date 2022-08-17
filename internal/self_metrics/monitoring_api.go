@@ -18,9 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	gce_metadata "cloud.google.com/go/compute/metadata"
@@ -108,12 +105,9 @@ func WaitForBufferChannel(buffer *[]Metric) {
 	*buffer = make([]Metric, 0)
 }
 
-func SendMetricsEveryIntervalLinux(metrics []IntervalMetrics) error {
+func SendMetricsEveryInterval(metrics []IntervalMetrics, death chan bool) error {
 	bufferChannel := make(chan []Metric)
 	buffer := make([]Metric, 0)
-
-	death := make(chan os.Signal, 1)
-	signal.Notify(death, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
 	tickers := make([]*time.Ticker, 0)
 

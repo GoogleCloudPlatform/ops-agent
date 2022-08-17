@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -73,7 +72,28 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}
 	s.log.Info(1, "collected ops agent self metrics")
 
-	err = s.SendMetricsEveryIntervalWindows(metrics, r, changes)
+	death := make(chan bool)
+
+	defer func() {
+		changes <- svc.Status{State: svc.StopPending}
+	}()
+
+	go func() {
+		select {
+		case c := <-r:
+			switch c.Cmd {
+			case svc.Interrogate:
+				changes <- c.CurrentStatus
+			case svc.Stop, svc.Shutdown:
+				death <- true
+				break
+			default:
+				s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+			}
+		}
+	}()
+
+	err = self_metrics.SendMetricsEveryInterval(metrics, death)
 	if err != nil {
 		return false, 0
 	}
@@ -173,51 +193,6 @@ func (s *service) startSubagents() error {
 			s.log.Error(1, fmt.Sprintf("failed to start %q: %v", svc.name, err))
 		}
 	}
-	return nil
-}
-
-func (s *service) SendMetricsEveryIntervalWindows(metrics []self_metrics.IntervalMetrics, r <-chan svc.ChangeRequest, changes chan<- svc.Status) error {
-	bufferChannel := make(chan []self_metrics.Metric)
-	buffer := make([]self_metrics.Metric, 0)
-
-	tickers := make([]*time.Ticker, 0)
-
-	for _, m := range metrics {
-		tickers = append(tickers, time.NewTicker(time.Duration(m.Interval)*time.Minute))
-	}
-
-	for idx, m := range metrics {
-		go self_metrics.RegisterMetric(m, bufferChannel, tickers[idx])
-	}
-	s.log.Info(1, "registered metric tickers")
-
-	defer func() {
-		changes <- svc.Status{State: svc.StopPending}
-	}()
-	for {
-		select {
-		case c := <-r:
-			switch c.Cmd {
-			case svc.Interrogate:
-				changes <- c.CurrentStatus
-			case svc.Stop, svc.Shutdown:
-				for _, t := range tickers {
-					t.Stop()
-				}
-				return nil
-			default:
-				return fmt.Errorf("unexpected control request #%d", c)
-			}
-
-		case d := <-bufferChannel:
-			s.log.Info(1, "received from buffer")
-			if len(buffer) == 0 {
-				go self_metrics.WaitForBufferChannel(&buffer)
-			}
-			buffer = append(buffer, d...)
-		}
-	}
-
 	return nil
 }
 
