@@ -411,19 +411,16 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	}
 	for _, file := range files {
 		app := file.Name()
-		var metadata metadata.IntegrationMetadata
+		var integrationMetadata metadata.IntegrationMetadata
 		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
-			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
+			t.Fatal(err)
 		}
-		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
 		if err != nil {
-			t.Fatalf("could not unmarshal contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
 			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 		}
-		allApps[app] = metadata
+		allApps[app] = integrationMetadata
 	}
 	log.Printf("found %v apps", len(allApps))
 	if len(allApps) == 0 {

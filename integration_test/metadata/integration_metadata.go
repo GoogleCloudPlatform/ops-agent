@@ -18,10 +18,12 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -103,6 +105,17 @@ type IntegrationMetadata struct {
 	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
 	ExpectedMetricsContainer `yaml:",inline"`
+}
+
+func UnmarshalAndValidate(bytes []byte, i interface{}) error {
+	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
+
+	v := NewIntegrationMetadataValidator()
+	err := yaml.UnmarshalStrict([]byte(yamlStr), i)
+	if err != nil {
+		return err
+	}
+	return v.Struct(i)
 }
 
 func SliceContains(slice []string, toFind string) bool {
