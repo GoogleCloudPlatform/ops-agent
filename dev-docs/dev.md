@@ -833,54 +833,7 @@ Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operati
 
 ### Check logs
 
-<a id="linux-check-logs"></a>
-#### Linux
-
-*   Check all related syslog
-
-    ```shell
-    $ sudo grep -r " google_cloud_ops_agent_engine\| otelopscol\| systemd\| fluent-bit" /var/log/syslog
-    $ sudo grep -r " google_cloud_ops_agent_engine\| otelopscol\| systemd\| fluent-bit" /var/log/messages
-    ```
-
-*   Check Fluent Bit related logs
-
-    ```shell
-    $ sudo grep -r " fluent-bit" /var/log/syslog
-    $ sudo grep -r " fluent-bit" /var/log/messages
-    $ journalctl -u google-cloud-ops-agent-fluent-bit
-    $ cat /var/log/google-cloud-ops-agent/subagents/logging-module.log
-    ```
-
-*   Check Open Telemetry Collector related logs
-
-    ```shell
-    $ sudo grep -r " otelopscol" /var/log/syslog
-    $ sudo grep -r " otelopscol" /var/log/messages
-    $ journalctl -u google-cloud-ops-agent-opentelemetry-collector
-    $ cat /var/log/google-cloud-ops-agent/subagents/metrics-module.log
-    ```
-
-*   Check Systemd related syslog
-
-    ```shell
-    $ sudo grep -r " systemd" /var/log/syslog
-    $ sudo grep -r " systemd" /var/log/messages
-    ```
-
-<a id="windows-check-logs"></a>
-#### Windows
-
-The OT Collector subagent logs can be found locally in `Event Viewer`. From
-`Start`, open the `Event Viewer` app, click `Windows Logs` then `Application`,
-filter by `Source` equal to `Google Cloud Ops Agent - Metrics Agent`. This agent
-does not write logs directly to disk today.
-
-The Fluent Bit subagent writes logs to this local file:
-
-```
-notepad "C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log"
-```
+See the [Inspect agent self logs](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshooting#self-logs) section of the public troubleshooting guide.
 
 ### Verify Ops Agent and subagent status
 
