@@ -70,7 +70,7 @@ function build_fluentbit() {
   export LDFLAGS="-L${LIBTOOL_DIR}/bin -L${LIBTOOL_DIR}/lib ${LDFLAGS}"
   popd
 
-  cmake .. -DCMAKE_TOOLCHAIN_FILE=../../pkg/goo/ubuntu-mingw64.cmake -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RELWITHDEBINFO
+  cmake .. -DCMAKE_TOOLCHAIN_FILE=../../pkg/goo/ubuntu-mingw64.cmake -DCMAKE_INSTALL_PREFIX=$prefix/ -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RELWITHDEBINFO
   make #-j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's Linux service
@@ -78,27 +78,29 @@ function build_fluentbit() {
 }
 
 function build_opsagent() {
-  GOOS=windows go build -o "$DESTDIR$prefix/bin/google_cloud_ops_agent" -ldflags "$LD_FLAGS" github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_windows
+  GOOS=windows go build -o "$DESTDIR$prefix/bin/google-cloud-ops-agent.exe" -ldflags "$LD_FLAGS" ./cmd/ops_agent_windows
 }
 
 (build_fluentbit)
 (build_otel)
 (build_opsagent)
 # TODO: Build sample config file
-mkdir -p "$DESTDIR$sysconfdir/google-cloud-ops-agent/"
-cp "confgenerator/default-config.yaml" "$DESTDIR/$sysconfdir/google-cloud-ops-agent/config.yaml"
+mkdir -p "$DESTDIR$sysconfdir/"
+cp "confgenerator/windows-default-config.yaml" "$DESTDIR$sysconfdir/config.yaml"
+mkdir -p "$DESTDIR/pkg/goo/"
+cp "pkg/goo/maint.ps1" "$DESTDIR/pkg/goo/"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
-(cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)
+(cd "$DESTDIR" && tar -cvzf /tmp/google-cloud-ops-agent.tgz *)
 
 set -ex
 
-cd pkg/goo
-
-$(go env GOPATH)/bin/goopack -output_dir / \
-  -var:PKG_VERSION=$PKG_VERSION \
-  -var:ARCH=x86_64 \
-  -var:GOOS=windows \
-  -var:GOARCH=amd64 \
-  google-cloud-ops-agent.goospec
+TOP_SRCDIR=$(pwd)
+(cd "$DESTDIR" && \
+ $(go env GOPATH)/bin/goopack -output_dir / \
+   -var:PKG_VERSION=$PKG_VERSION \
+   -var:ARCH=x86_64 \
+   -var:GOOS=windows \
+   -var:GOARCH=amd64 \
+   "${TOP_SRCDIR}/pkg/goo/google-cloud-ops-agent.goospec")
 
