@@ -319,6 +319,19 @@ index 621ff2d3a..f57c60a61 100644
      p = _fullpath(path, file, PATH_MAX + 1);
  #else
      p = realpath(file, path);
+diff --git a/lib/monkey/mk_core/mk_utils.c b/lib/monkey/mk_core/mk_utils.c
+index af7330733..c65a1139a 100644
+--- a/lib/monkey/mk_core/mk_utils.c
++++ b/lib/monkey/mk_core/mk_utils.c
+@@ -34,7 +34,7 @@
+ 
+ #if defined (__linux__)
+ #include <sys/prctl.h>
+-#elif defined (_WIN32)
++#elif defined (_MSC_VER)
+ #include <winsock2.h>
+ 
+ #ifndef localtime_r
 diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
 index 12f27bcdb..295c6b4f2 100644
 --- a/plugins/CMakeLists.txt
