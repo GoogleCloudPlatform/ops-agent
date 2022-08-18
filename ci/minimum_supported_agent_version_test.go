@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -114,6 +113,5 @@ func unmarshalYamlFromFile(dir string, i interface{}) error {
 	if err != nil {
 		return err
 	}
-	yml := strings.ReplaceAll(string(bytes), "\r\n", "\n")
-	return yaml.Unmarshal([]byte(yml), i)
+	return metadata.UnmarshalAndValidate(bytes, i)
 }
