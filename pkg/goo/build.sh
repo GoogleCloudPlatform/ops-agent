@@ -92,6 +92,8 @@ function build_fluentbit() {
 
   cmake .. -DCMAKE_TOOLCHAIN_FILE=../../pkg/goo/ubuntu-mingw64.cmake -DCMAKE_INSTALL_PREFIX=$prefix/ \
     -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RelWithDebInfo
+  #cat build/CMakeFiles/CMakeOutput.log
+  #cat >&2 build/CMakeFiles/CMakeError.log
   make #-j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service or configuration, but there are no cmake

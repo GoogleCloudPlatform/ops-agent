@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5e88c9949..70a226fdd 100644
+index 9eca7a696..048570a9c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -423,7 +423,7 @@ if(FLB_TLS)
+@@ -493,7 +493,7 @@ if(FLB_TLS)
    add_subdirectory(${FLB_PATH_LIB_MBEDTLS} EXCLUDE_FROM_ALL)
  
    # Link OpenSSL statically on Windows.
@@ -12,10 +12,10 @@ index 5e88c9949..70a226fdd 100644
      set(OPENSSL_MSVC_STATIC_RT  ON)
    endif()
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
-index b55aef204..08fc0414b 100644
+index 7741805a9..63d697510 100644
 --- a/cmake/luajit.cmake
 +++ b/cmake/luajit.cmake
-@@ -11,10 +11,18 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
+@@ -11,6 +11,10 @@ add_library(libluajit STATIC IMPORTED GLOBAL)
  set(LUAJIT_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${FLB_PATH_LIB_LUAJIT})
  set(LUAJIT_DEST ${CMAKE_CURRENT_BINARY_DIR})
  
@@ -24,7 +24,10 @@ index b55aef204..08fc0414b 100644
 +endif()
 +
  if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-   set(CFLAGS "${CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+   set(CFLAGS "${CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT} -fno-stack-check")
+ 
+@@ -30,6 +34,10 @@ else()
+   set(DEPLOYMENT_TARGET "")
  endif()
  
 +if (CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -34,22 +37,22 @@ index b55aef204..08fc0414b 100644
  # luajit (UNIX)
  # =============
  ExternalProject_Add(luajit
-@@ -22,8 +30,8 @@ ExternalProject_Add(luajit
+@@ -37,8 +45,8 @@ ExternalProject_Add(luajit
    EXCLUDE_FROM_ALL TRUE
    SOURCE_DIR ${LUAJIT_SRC}
    CONFIGURE_COMMAND ./configure
--  BUILD_COMMAND $(MAKE) CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILD_MODE=static "XCFLAGS=-fPIC"
+-  BUILD_COMMAND $(MAKE) CC=${CMAKE_C_COMPILER} ${DEPLOYMENT_TARGET} CFLAGS=${CFLAGS} BUILDMODE=static "XCFLAGS=-fPIC"
 -  INSTALL_COMMAND cp src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
-+  BUILD_COMMAND $(MAKE) ${TARGET_SYS_PARAM} HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} CFLAGS=${CFLAGS} BUILDMODE=static "XCFLAGS=-fPIC" Q=
++  BUILD_COMMAND $(MAKE) ${TARGET_SYS_PARAM} HOST_CC=${CMAKE_HOST_C_COMPILER} CC=${CMAKE_C_COMPILER} ${DEPLOYMENT_TARGET} CFLAGS=${CFLAGS} BUILDMODE=static "XCFLAGS=-fPIC" Q=
 +  INSTALL_COMMAND ${CMAKE_COMMAND} -E copy src/libluajit.a "${LUAJIT_DEST}/lib/libluajit.a")
  
  # luajit (Windows)
  # ================
 diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
-index 30dd4cdfa..dac3fe142 100644
+index 37f3f9c66..6d3638ac4 100644
 --- a/include/fluent-bit/flb_compat.h
 +++ b/include/fluent-bit/flb_compat.h
-@@ -28,17 +28,12 @@
+@@ -27,17 +27,12 @@
  #ifndef FLB_COMPAT_H
  #define FLB_COMPAT_H
  
@@ -69,7 +72,7 @@ index 30dd4cdfa..dac3fe142 100644
  
  #include <monkey/mk_core/mk_sleep.h>
  #include <fluent-bit/flb_dlfcn_win32.h>
-@@ -123,11 +118,13 @@ static inline char* realpath(char *path, char *buf)
+@@ -122,11 +117,13 @@ static inline char* realpath(char *path, char *buf)
      return _fullpath(NULL, path, 0);
  }
  
@@ -83,7 +86,7 @@ index 30dd4cdfa..dac3fe142 100644
  #else
  #include <netdb.h>
  #include <netinet/in.h>
-@@ -140,4 +137,10 @@ static inline int usleep(LONGLONG usec)
+@@ -139,4 +136,10 @@ static inline int usleep(LONGLONG usec)
  #define FLB_DIRCHAR '/'
  #endif
  
@@ -95,10 +98,10 @@ index 30dd4cdfa..dac3fe142 100644
 +
  #endif
 diff --git a/include/fluent-bit/flb_langinfo.h b/include/fluent-bit/flb_langinfo.h
-index a0161770d..7841749c8 100644
+index 6da306829..54331bc9b 100644
 --- a/include/fluent-bit/flb_langinfo.h
 +++ b/include/fluent-bit/flb_langinfo.h
-@@ -27,7 +27,7 @@
+@@ -26,7 +26,7 @@
  #ifndef FLB_LANGINFO_H
  #define FLB_LANGINFO_H
  
@@ -120,11 +123,24 @@ index 8abd8c832..0eabedf23 100644
  
  static __declspec( thread ) struct avro_error_data_t TLS_ERROR_DATA = { "", "", NULL, NULL };
  
+diff --git a/lib/c-ares-809d5e84/CMakeLists.txt b/lib/c-ares-809d5e84/CMakeLists.txt
+index a423b5a2a..5ae46dfcc 100644
+--- a/lib/c-ares-809d5e84/CMakeLists.txt
++++ b/lib/c-ares-809d5e84/CMakeLists.txt
+@@ -233,7 +233,7 @@ IF (HAVE_LIBRT)
+ 	LIST (APPEND CARES_DEPENDENT_LIBS rt)
+ ENDIF ()
+ IF (WIN32)
+-	LIST (APPEND CARES_DEPENDENT_LIBS ws2_32 Advapi32)
++	LIST (APPEND CARES_DEPENDENT_LIBS ws2_32 advapi32)
+ ENDIF ()
+ 
+ 
 diff --git a/lib/chunkio/include/chunkio/chunkio_compat.h b/lib/chunkio/include/chunkio/chunkio_compat.h
-index ca17779b9..45eb5ece5 100644
+index 3e4951b98..0d4c5d2d6 100644
 --- a/lib/chunkio/include/chunkio/chunkio_compat.h
 +++ b/lib/chunkio/include/chunkio/chunkio_compat.h
-@@ -27,6 +27,7 @@
+@@ -32,6 +32,7 @@
  #include <direct.h>
  #pragma comment(lib, "ws2_32.lib")
  
@@ -132,7 +148,7 @@ index ca17779b9..45eb5ece5 100644
  /** mode flags for access() */
  #define R_OK 04
  #define W_OK 02
-@@ -35,10 +36,12 @@
+@@ -40,10 +41,12 @@
  
  #define PATH_MAX MAX_PATH
  #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
@@ -147,10 +163,10 @@ index ca17779b9..45eb5ece5 100644
  static inline char* dirname(const char *path)
  {
 diff --git a/lib/chunkio/src/CMakeLists.txt b/lib/chunkio/src/CMakeLists.txt
-index b8462252e..f09847255 100644
+index a4fc2d37b..db58e1add 100644
 --- a/lib/chunkio/src/CMakeLists.txt
 +++ b/lib/chunkio/src/CMakeLists.txt
-@@ -21,8 +21,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+@@ -22,8 +22,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
      )
    set(libs
      ${libs}
@@ -175,10 +191,10 @@ index b368215fa..140aeea77 100644
  #endif
  
 diff --git a/lib/chunkio/src/cio_utils.c b/lib/chunkio/src/cio_utils.c
-index 61d33b09b..d9f6c9e79 100644
+index 16d4af3da..e297d8d1d 100644
 --- a/lib/chunkio/src/cio_utils.c
 +++ b/lib/chunkio/src/cio_utils.c
-@@ -25,14 +25,14 @@
+@@ -25,7 +25,7 @@
  #include <sys/stat.h>
  #include <fcntl.h>
  #include <errno.h>
@@ -187,6 +203,7 @@ index 61d33b09b..d9f6c9e79 100644
  #include <fts.h>
  #endif
  
+@@ -33,7 +33,7 @@
  #include <chunkio/chunkio_compat.h>
  #include <chunkio/cio_log.h>
  
@@ -221,8 +238,21 @@ index 97045a69a..f28366d2c 100644
  struct timespec
  {
    /* long long in windows is the same as long in unix for 64bit */
+diff --git a/lib/monkey/include/monkey/mk_core/external/winuio.h b/lib/monkey/include/monkey/mk_core/external/winuio.h
+index 4ae747888..5c61df6ac 100644
+--- a/lib/monkey/include/monkey/mk_core/external/winuio.h
++++ b/lib/monkey/include/monkey/mk_core/external/winuio.h
+@@ -8,7 +8,7 @@
+ #else
+ #include <errno.h>
+ #include <io.h>
+-#include <BaseTsd.h>
++#include <basetsd.h>
+ #include <winsock2.h>
+ #include <ws2tcpip.h>
+ typedef SSIZE_T ssize_t;
 diff --git a/lib/monkey/include/monkey/mk_core/mk_string.h b/lib/monkey/include/monkey/mk_core/mk_string.h
-index 260d67ca4..2f6a2b499 100644
+index cdbe6d505..65c032de9 100644
 --- a/lib/monkey/include/monkey/mk_core/mk_string.h
 +++ b/lib/monkey/include/monkey/mk_core/mk_string.h
 @@ -26,7 +26,7 @@
@@ -248,7 +278,7 @@ index 5ee3e5913..84bae9feb 100644
  #else
    CHECK_FUNCTION_EXISTS();
 diff --git a/lib/monkey/mk_core/mk_rconf.c b/lib/monkey/mk_core/mk_rconf.c
-index 80e7e784e..5a4ee0064 100644
+index 621ff2d3a..f57c60a61 100644
 --- a/lib/monkey/mk_core/mk_rconf.c
 +++ b/lib/monkey/mk_core/mk_rconf.c
 @@ -23,7 +23,7 @@
@@ -269,7 +299,7 @@ index 80e7e784e..5a4ee0064 100644
  #include <strsafe.h>
  #define PATH_MAX MAX_PATH
  #endif
-@@ -558,7 +558,7 @@ static int mk_rconf_path_set(struct mk_rconf *conf, char *file)
+@@ -589,7 +589,7 @@ static int mk_rconf_path_set(struct mk_rconf *conf, char *file)
      char *end;
      char path[PATH_MAX + 1];
  
@@ -279,13 +309,13 @@ index 80e7e784e..5a4ee0064 100644
  #else
      p = realpath(file, path);
 diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
-index 6034a54b8..676050f1b 100644
+index 12f27bcdb..295c6b4f2 100644
 --- a/plugins/CMakeLists.txt
 +++ b/plugins/CMakeLists.txt
-@@ -148,7 +148,9 @@ endif()
- 
- if (FLB_SYSTEM_WINDOWS)
-   REGISTER_IN_PLUGIN("in_winlog")
+@@ -201,7 +201,9 @@ if (FLB_SYSTEM_WINDOWS)
+   REGISTER_IN_PLUGIN("in_winstat")
+   REGISTER_IN_PLUGIN("in_winevtlog")
+   REGISTER_IN_PLUGIN("in_windows_exporter_metrics")
 -  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
 +  if (MSVC)
 +    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
@@ -294,10 +324,10 @@ index 6034a54b8..676050f1b 100644
    REGISTER_IN_PLUGIN("in_serial")
  endif()
 diff --git a/plugins/in_tail/CMakeLists.txt b/plugins/in_tail/CMakeLists.txt
-index 4c83cd7eb..4191c974d 100644
+index 31d865218..83ee195c4 100644
 --- a/plugins/in_tail/CMakeLists.txt
 +++ b/plugins/in_tail/CMakeLists.txt
-@@ -19,13 +19,13 @@ if(FLB_PARSER)
+@@ -25,13 +25,13 @@ if(FLB_PARSER)
      )
  endif()
  
@@ -314,10 +344,10 @@ index 4c83cd7eb..4191c974d 100644
    FLB_PLUGIN(in_tail "${src}" "")
  endif()
 diff --git a/plugins/in_tail/tail_file.c b/plugins/in_tail/tail_file.c
-index b0edc2308..48f92fdda 100644
+index 89a8c525b..a144be33f 100644
 --- a/plugins/in_tail/tail_file.c
 +++ b/plugins/in_tail/tail_file.c
-@@ -41,10 +41,6 @@
+@@ -40,10 +40,6 @@
  #include "tail_multiline.h"
  #include "tail_scan.h"
  
@@ -325,14 +355,14 @@ index b0edc2308..48f92fdda 100644
 -#include "win32.h"
 -#endif
 -
+ #include <xxhash.h>
+ 
  static inline void consume_bytes(char *buf, int bytes, int length)
- {
-     memmove(buf, buf + bytes, length - bytes);
 diff --git a/plugins/in_tail/win32/io.c b/plugins/in_tail/win32/io.c
-index a479ff731..043504f94 100644
+index 45928b04a..9336d1690 100644
 --- a/plugins/in_tail/win32/io.c
 +++ b/plugins/in_tail/win32/io.c
-@@ -18,7 +18,7 @@
+@@ -17,7 +17,7 @@
   *  limitations under the License.
   */
  
@@ -342,10 +372,10 @@ index a479ff731..043504f94 100644
  #include <stdint.h>
  #include <fcntl.h>
 diff --git a/plugins/in_tail/win32/stat.c b/plugins/in_tail/win32/stat.c
-index f15a45b83..34f032b21 100644
+index c2b14605a..52dce6473 100644
 --- a/plugins/in_tail/win32/stat.c
 +++ b/plugins/in_tail/win32/stat.c
-@@ -18,7 +18,8 @@
+@@ -17,7 +17,8 @@
   *  limitations under the License.
   */
  
@@ -356,10 +386,10 @@ index f15a45b83..34f032b21 100644
  #include <stdint.h>
  #include <io.h>
 diff --git a/plugins/in_winlog/pack.c b/plugins/in_winlog/pack.c
-index e2ed80bed..f444cb732 100644
+index 4547d5514..896cb535c 100644
 --- a/plugins/in_winlog/pack.c
 +++ b/plugins/in_winlog/pack.c
-@@ -25,7 +25,6 @@
+@@ -24,7 +24,6 @@
  #include <fluent-bit/flb_input_plugin.h>
  #include <msgpack.h>
  #include <sddl.h>
@@ -367,7 +397,7 @@ index e2ed80bed..f444cb732 100644
  #include "winlog.h"
  
  #define REGKEY_MAXLEN 256
-@@ -78,25 +77,17 @@ static int pack_time(msgpack_packer *mp_pck, int time)
+@@ -84,25 +83,17 @@ static int pack_time(msgpack_packer *mp_pck, int time)
      size_t len;
      struct tm tm;
      char buf[64];
@@ -395,10 +425,10 @@ index e2ed80bed..f444cb732 100644
      msgpack_pack_str_body(mp_pck, buf, len);
  
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 76940076d..14e939321 100644
+index 630f875bf..209aa6243 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -61,7 +61,9 @@ if(FLB_SYSTEM_WINDOWS)
+@@ -90,7 +90,9 @@ if(FLB_SYSTEM_WINDOWS)
      ${src}
      flb_dlfcn_win32.c
      )
@@ -409,7 +439,7 @@ index 76940076d..14e939321 100644
  endif()
  
  if(FLB_PARSER)
-@@ -199,12 +201,21 @@ check_symbol_exists(accept4 "sys/socket.h" HAVE_ACCEPT4)
+@@ -236,12 +238,21 @@ check_symbol_exists(accept4 "sys/socket.h" HAVE_ACCEPT4)
  
  # Core dependencies
  if(FLB_SYSTEM_WINDOWS)
@@ -437,7 +467,7 @@ index 76940076d..14e939321 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
-@@ -330,12 +341,17 @@ if(FLB_SHARED_LIB)
+@@ -397,12 +408,17 @@ if(FLB_SHARED_LIB)
      PROPERTIES OUTPUT_NAME fluent-bit)
  
    # Windows doesn't provide pthread (see winpthreads.c in mk_core).
@@ -457,10 +487,10 @@ index 76940076d..14e939321 100644
      set_target_properties(fluent-bit-shared
        PROPERTIES PDB_NAME fluent-bit.dll)
 diff --git a/src/flb_hash.c b/src/flb_hash.c
-index 4c36da064..b00207242 100644
+index fe3035f90..92e764671 100644
 --- a/src/flb_hash.c
 +++ b/src/flb_hash.c
-@@ -25,6 +25,10 @@
+@@ -24,6 +24,10 @@
  #include <fluent-bit/flb_str.h>
  #include <xxhash.h>
  
@@ -472,11 +502,11 @@ index 4c36da064..b00207242 100644
                                         struct flb_hash_entry *entry)
  {
 diff --git a/src/flb_network.c b/src/flb_network.c
-index 6865943b1..2cb56bd30 100644
+index 992eb1db0..6a89d26bd 100644
 --- a/src/flb_network.c
 +++ b/src/flb_network.c
 @@ -28,11 +28,18 @@
- #include <errno.h>
+ #include <ctype.h>
  
  #ifdef FLB_SYSTEM_WINDOWS
 +#include <sdkddkver.h>
@@ -495,10 +525,10 @@ index 6865943b1..2cb56bd30 100644
  #include <fluent-bit/flb_compat.h>
  #include <fluent-bit/flb_info.h>
 diff --git a/src/flb_sosreport.c b/src/flb_sosreport.c
-index 7df35b764..a10d61e41 100644
+index 7bbd79aef..2768163f1 100644
 --- a/src/flb_sosreport.c
 +++ b/src/flb_sosreport.c
-@@ -29,7 +29,7 @@
+@@ -28,7 +28,7 @@
  #include <fluent-bit/flb_utils.h>
  #include <fluent-bit/flb_kv.h>
  
@@ -507,7 +537,7 @@ index 7df35b764..a10d61e41 100644
  #include <sys/utsname.h>
  #endif
  
-@@ -108,7 +108,7 @@ static void print_properties(struct mk_list *props)
+@@ -107,7 +107,7 @@ static void print_properties(struct mk_list *props)
      }
  }
  
@@ -516,7 +546,7 @@ index 7df35b764..a10d61e41 100644
  /* A definition table of SYSTEM_INFO.wProcessorArchitecture.
   *
   * This is a streight-forward translation of the official manual.
-@@ -189,7 +189,7 @@ int flb_sosreport(struct flb_config *config)
+@@ -188,7 +188,7 @@ int flb_sosreport(struct flb_config *config)
      printf("    Built Flags\t\t%s\n", FLB_INFO_FLAGS);
      printf("\n");
  
@@ -526,10 +556,10 @@ index 7df35b764..a10d61e41 100644
      uname(&uts);
  
 diff --git a/src/win32/winsvc.c b/src/win32/winsvc.c
-index d7289c66e..abe0ffdac 100644
+index 9e0942ee5..b82f2780b 100644
 --- a/src/win32/winsvc.c
 +++ b/src/win32/winsvc.c
-@@ -18,8 +18,8 @@
+@@ -17,8 +17,8 @@
   *  limitations under the License.
   */
  
