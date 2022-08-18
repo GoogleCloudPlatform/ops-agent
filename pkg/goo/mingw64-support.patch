@@ -191,7 +191,7 @@ index b368215fa..140aeea77 100644
  #endif
  
 diff --git a/lib/chunkio/src/cio_utils.c b/lib/chunkio/src/cio_utils.c
-index 16d4af3da..e297d8d1d 100644
+index 16d4af3da..d481bc2a8 100644
 --- a/lib/chunkio/src/cio_utils.c
 +++ b/lib/chunkio/src/cio_utils.c
 @@ -25,7 +25,7 @@
@@ -212,6 +212,17 @@ index 16d4af3da..e297d8d1d 100644
  /*
   * Taken from StackOverflow:
   *
+@@ -145,10 +145,3 @@ int cio_utils_read_file(const char *path, char **buf, size_t *size)
+ 
+     return 0;
+ }
+-
+-#ifdef CIO_HAVE_GETPAGESIZE
+-int cio_getpagesize()
+-{
+-    return getpagesize();
+-}
+-#endif
 diff --git a/lib/chunkio/src/win32/dirent.c b/lib/chunkio/src/win32/dirent.c
 index 2ed39ed15..7d1a6584f 100644
 --- a/lib/chunkio/src/win32/dirent.c
