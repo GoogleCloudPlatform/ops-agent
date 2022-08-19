@@ -162,6 +162,24 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
+FROM rockylinux:9 AS centos9-build
+
+RUN set -x; yum -y update && \
+    dnf -y install 'dnf-command(config-manager)' && \
+    yum config-manager --set-enabled powertools && \
+    yum -y install git systemd \
+    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+    expect rpm-sign zip
+
+ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/rpm/build.sh
+
 # Use OpenSUSE Leap 42.3 to emulate SLES 12: https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 FROM opensuse/archive:42.3 AS sles12-build
 
@@ -249,6 +267,10 @@ FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 
+FROM scratch AS centos9
+COPY --from=centos9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-9.tgz
+COPY --from=centos9-build /google-cloud-ops-agent*.rpm /
+
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
@@ -265,5 +287,6 @@ COPY --from=focal /* /
 COPY --from=bionic /* /
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
+COPY --from=centos9 /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
