@@ -18,5 +18,6 @@ jobs:
       with:
         ref: ${{ github.base_ref }}
         path: base_checkout
+      # `github.event.pull_request.labels.*.name` gives us the names of all labels for the PR
     - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels=${{ join(github.event.pull_request.labels.*.name, ' ') }} -base-dir="base_checkout" -tags=ci
 

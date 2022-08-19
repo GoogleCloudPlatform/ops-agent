@@ -77,8 +77,7 @@ func testAddedMetadata(t *testing.T, filePaths []string) {
 				t.Fatal(err)
 			}
 
-			var emptyMetadata metadata.MinimumSupportedAgentVersion
-			if m.MinimumSupportedAgentVersion != emptyMetadata {
+			if m.MinimumSupportedAgentVersion != nil {
 				t.Fatal("Cannot add metadata.MinimumSupportedAgentVersion")
 			}
 		})
