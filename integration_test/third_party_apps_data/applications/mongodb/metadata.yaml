@@ -92,7 +92,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.index.access.count
   value_type: INT64
   monitored_resource: gce_instance
@@ -111,17 +110,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.network.io.transmit
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.network.request.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.operation.time
   value_type: INT64
   kind: CUMULATIVE
@@ -132,17 +128,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.cursor.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/mongodb.cursor.timeout.count
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 expected_logs:
 - log_name: mongodb
   fields:
