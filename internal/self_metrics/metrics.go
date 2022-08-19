@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
+	"google.golang.org/genproto/googleapis/api/monitoredres"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
@@ -30,12 +30,12 @@ type TimeSeries interface {
 }
 
 type Metric struct {
-	metric_type   string
-	metric_labels map[string]string
-	metric_kind   metricpb.MetricDescriptor_MetricKind
-	value_type    metricpb.MetricDescriptor_ValueType
-	value         *monitoringpb.TypedValue
-	timestamp     int64
+	metricType   string
+	metricLabels map[string]string
+	metricKind   metricpb.MetricDescriptor_MetricKind
+	valueType    metricpb.MetricDescriptor_ValueType
+	value        *monitoringpb.TypedValue
+	timestamp    int64
 }
 
 func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries {
@@ -44,11 +44,11 @@ func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries 
 	}
 
 	return &monitoringpb.TimeSeries{
-		MetricKind: m.metric_kind,
-		ValueType:  m.value_type,
+		MetricKind: m.metricKind,
+		ValueType:  m.valueType,
 		Metric: &metricpb.Metric{
-			Type:   m.metric_type,
-			Labels: m.metric_labels,
+			Type:   m.metricType,
+			Labels: m.metricLabels,
 		},
 		Resource: &monitoredres.MonitoredResource{
 			Type: "gce_instance",
@@ -78,13 +78,13 @@ func (e enabledReceivers) ToMetrics() []Metric {
 
 	for rType, count := range e.metric {
 		m := Metric{
-			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metric_labels: map[string]string{
+			metricType: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metricLabels: map[string]string{
 				"receiver_type":  rType,
 				"telemetry_type": "metrics",
 			},
-			metric_kind: metricpb.MetricDescriptor_GAUGE,
-			value_type:  metricpb.MetricDescriptor_INT64,
+			metricKind: metricpb.MetricDescriptor_GAUGE,
+			valueType:  metricpb.MetricDescriptor_INT64,
 			value: &monitoringpb.TypedValue{
 				Value: &monitoringpb.TypedValue_Int64Value{
 					Int64Value: int64(count),
@@ -98,13 +98,13 @@ func (e enabledReceivers) ToMetrics() []Metric {
 
 	for rType, count := range e.log {
 		m := Metric{
-			metric_type: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metric_labels: map[string]string{
+			metricType: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+			metricLabels: map[string]string{
 				"receiver_type":  rType,
 				"telemetry_type": "logs",
 			},
-			metric_kind: metricpb.MetricDescriptor_GAUGE,
-			value_type:  metricpb.MetricDescriptor_INT64,
+			metricKind: metricpb.MetricDescriptor_GAUGE,
+			valueType:  metricpb.MetricDescriptor_INT64,
 			value: &monitoringpb.TypedValue{
 				Value: &monitoringpb.TypedValue_Int64Value{
 					Int64Value: int64(count),
