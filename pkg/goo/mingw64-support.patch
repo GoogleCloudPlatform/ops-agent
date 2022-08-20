@@ -525,14 +525,14 @@ index af7330733..2b2dcbc0b 100644
  
  #ifndef localtime_r
 diff --git a/lib/monkey/mk_server/mk_net.c b/lib/monkey/mk_server/mk_net.c
-index ff6c1355d..99443bfcf 100644
+index ff6c1355d..d0b6eb3e9 100644
 --- a/lib/monkey/mk_server/mk_net.c
 +++ b/lib/monkey/mk_server/mk_net.c
 @@ -26,7 +26,9 @@
  
  #ifdef _WIN32
  #include <winsock2.h>
-+#if MK_HAVE_AFUNIX
++#if MK_HAVE_SOCKADDR_UN
  #include <afunix.h>
 +#endif
  #else
