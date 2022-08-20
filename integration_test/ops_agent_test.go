@@ -320,7 +320,7 @@ com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS
 	... 12 more
 Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
 `), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
+			t.Fatalf("error writing dummy log lines for Java: %v", err)
 		}
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -454,7 +454,7 @@ Traceback (most recent call last):
     '2' + 2
 TypeError: can only concatenate str (not "int") to str
 `), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
+			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
 		}
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -488,6 +488,112 @@ TypeError: can only concatenate str (not "int") to str
 
 		// 6th Python
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/usr/local/google/home/lujieduan/source/test/exception.py\", line 11, in <module>\n    '2' + 2\nTypeError: can only concatenate str (not \"int\") to str\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseMultilineFileGolangJavaPython(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+	  - type: language_exceptions
+        language: go
+      - type: language_exceptions
+        language: java
+      - type: language_exceptions
+        language: python
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from 3 java and 3 python exception stacktraces, thus expect 6 logEntries.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+goroutine 24 [running]:
+net/http.(*conn).serve.func1(0xc00007eaa0)
+	/usr/local/go/src/net/http/server.go:1746 +0xd0
+panic(0x12472a0, 0x12ece10)
+	/usr/local/go/src/runtime/panic.go:513 +0x1b9
+main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
+net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:1964 +0x44
+net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2361 +0x127
+net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2741 +0xab
+net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
+	/usr/local/go/src/net/http/server.go:1847 +0x646
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2851 +0x2f5
+Traceback (most recent call last):
+  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+    return get()
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+    raise Exception('spam', 'eggs')
+Exception: ('spam', 'eggs')
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// 1st one is Golang
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 2nd Python
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 3rd Java
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
 			t.Error(err)
 		}
 	})
