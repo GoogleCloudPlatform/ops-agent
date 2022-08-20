@@ -49,7 +49,7 @@ index 7741805a9..63d697510 100644
  # luajit (Windows)
  # ================
 diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
-index 37f3f9c66..6d3638ac4 100644
+index 37f3f9c66..6b6097b6a 100644
 --- a/include/fluent-bit/flb_compat.h
 +++ b/include/fluent-bit/flb_compat.h
 @@ -27,17 +27,12 @@
@@ -72,7 +72,22 @@ index 37f3f9c66..6d3638ac4 100644
  
  #include <monkey/mk_core/mk_sleep.h>
  #include <fluent-bit/flb_dlfcn_win32.h>
-@@ -122,11 +117,13 @@ static inline char* realpath(char *path, char *buf)
+@@ -62,12 +57,14 @@
+ #define strncasecmp _strnicmp
+ #define timegm _mkgmtime
+ 
++#ifndef __MINGW32__
+ static inline int getpagesize(void)
+ {
+     SYSTEM_INFO info;
+     GetSystemInfo(&info);
+     return info.dwPageSize;
+ }
++#endif
+ 
+ static inline struct tm *gmtime_r(const time_t *timep, struct tm *result)
+ {
+@@ -122,11 +119,13 @@ static inline char* realpath(char *path, char *buf)
      return _fullpath(NULL, path, 0);
  }
  
@@ -86,7 +101,7 @@ index 37f3f9c66..6d3638ac4 100644
  #else
  #include <netdb.h>
  #include <netinet/in.h>
-@@ -139,4 +136,10 @@ static inline int usleep(LONGLONG usec)
+@@ -139,4 +138,10 @@ static inline int usleep(LONGLONG usec)
  #define FLB_DIRCHAR '/'
  #endif
  
@@ -137,7 +152,7 @@ index a423b5a2a..5ae46dfcc 100644
  
  
 diff --git a/lib/chunkio/include/chunkio/chunkio_compat.h b/lib/chunkio/include/chunkio/chunkio_compat.h
-index 3e4951b98..0d4c5d2d6 100644
+index 3e4951b98..8043b36c2 100644
 --- a/lib/chunkio/include/chunkio/chunkio_compat.h
 +++ b/lib/chunkio/include/chunkio/chunkio_compat.h
 @@ -32,6 +32,7 @@
@@ -162,6 +177,14 @@ index 3e4951b98..0d4c5d2d6 100644
  
  static inline char* dirname(const char *path)
  {
+@@ -77,6 +80,7 @@ static inline int cio_getpagesize(void)
+     return system_info.dwPageSize;
+ }
+ #else
++#include <unistd.h>
+ static inline int cio_getpagesize(void)
+ {
+     return getpagesize();
 diff --git a/lib/chunkio/src/CMakeLists.txt b/lib/chunkio/src/CMakeLists.txt
 index a4fc2d37b..db58e1add 100644
 --- a/lib/chunkio/src/CMakeLists.txt
@@ -178,18 +201,20 @@ index a4fc2d37b..db58e1add 100644
    set(src
      ${src}
 diff --git a/lib/chunkio/src/cio_os.c b/lib/chunkio/src/cio_os.c
-index b368215fa..140aeea77 100644
+index b368215fa..767ff1fd4 100644
 --- a/lib/chunkio/src/cio_os.c
 +++ b/lib/chunkio/src/cio_os.c
-@@ -27,7 +27,7 @@
+@@ -27,8 +27,8 @@
  
  #include <chunkio/chunkio_compat.h>
  
 -#ifdef _WIN32
+-#include <Shlobj.h>
 +#if defined(_WIN32) && !defined(__MINGW32__)
- #include <Shlobj.h>
++#include <shlobj.h>
  #endif
  
+ /* Check if a path is a directory */
 diff --git a/lib/chunkio/src/cio_utils.c b/lib/chunkio/src/cio_utils.c
 index 16d4af3da..d481bc2a8 100644
 --- a/lib/chunkio/src/cio_utils.c
@@ -236,6 +261,43 @@ index 2ed39ed15..7d1a6584f 100644
  #include <shlwapi.h>
  
  #include "dirent.h"
+diff --git a/lib/monkey/CMakeLists.txt b/lib/monkey/CMakeLists.txt
+index f11894f3d..29d400363 100644
+--- a/lib/monkey/CMakeLists.txt
++++ b/lib/monkey/CMakeLists.txt
+@@ -214,6 +214,18 @@ if(HAVE_REGEX)
+   MK_DEFINITION(MK_HAVE_REGEX)
+ endif()
+ 
++# sockaddr_un support
++check_c_source_compiles("
++  #include <afunix.h>
++  int main() {
++     struct sockaddr_un socket;
++     return 0;
++  }" HAVE_SOCKADDR_UN)
++
++if(HAVE_SOCKADDR_UN)
++  MK_DEFINITION(MK_HAVE_SOCKADDR_UN)
++endif()
++
+ 
+ # ============================================
+ # =========== CONFIGURATION FILES=============
+diff --git a/lib/monkey/include/monkey/mk_config.h b/lib/monkey/include/monkey/mk_config.h
+index f650f4242..bd3bb7167 100644
+--- a/lib/monkey/include/monkey/mk_config.h
++++ b/lib/monkey/include/monkey/mk_config.h
+@@ -27,7 +27,9 @@
+ #include "../../deps/rbtree/rbtree.h"
+ 
+ #ifdef _WIN32
++#ifdef _MSC_VER
+ typedef uint32_t mode_t;
++#endif
+ typedef uint32_t uid_t;
+ typedef uint32_t gid_t;
+ #endif
 diff --git a/lib/monkey/include/monkey/mk_core/external/winpthreads.h b/lib/monkey/include/monkey/mk_core/external/winpthreads.h
 index 97045a69a..f28366d2c 100644
 --- a/lib/monkey/include/monkey/mk_core/external/winpthreads.h
@@ -262,6 +324,32 @@ index 4ae747888..5c61df6ac 100644
  #include <winsock2.h>
  #include <ws2tcpip.h>
  typedef SSIZE_T ssize_t;
+diff --git a/lib/monkey/include/monkey/mk_core/mk_event_select.h b/lib/monkey/include/monkey/mk_core/mk_event_select.h
+index b69c0ba38..e80091ca4 100644
+--- a/lib/monkey/include/monkey/mk_core/mk_event_select.h
++++ b/lib/monkey/include/monkey/mk_core/mk_event_select.h
+@@ -21,7 +21,7 @@
+ #define MK_EVENT_SELECT_H
+ 
+ #ifdef _WIN32
+-#include <Winsock2.h>
++#include <winsock2.h>
+ #else
+ #include <sys/select.h>
+ #endif
+diff --git a/lib/monkey/include/monkey/mk_core/mk_macros.h b/lib/monkey/include/monkey/mk_core/mk_macros.h
+index f5179faa1..7d6e998b7 100644
+--- a/lib/monkey/include/monkey/mk_core/mk_macros.h
++++ b/lib/monkey/include/monkey/mk_core/mk_macros.h
+@@ -166,7 +166,7 @@
+   #define MK_EXPORT __declspec(dllexport)
+ #endif
+ 
+-#ifdef _WIN32
++#ifdef _MSC_VERSION
+     #define MK_INLINE __forceinline
+ #else
+     #define MK_INLINE inline __attribute__((always_inline))
 diff --git a/lib/monkey/include/monkey/mk_core/mk_string.h b/lib/monkey/include/monkey/mk_core/mk_string.h
 index cdbe6d505..65c032de9 100644
 --- a/lib/monkey/include/monkey/mk_core/mk_string.h
@@ -275,6 +363,72 @@ index cdbe6d505..65c032de9 100644
    #define snprintf _snprintf
    #define vsnprintf _vsnprintf
    #define strcasecmp _stricmp
+diff --git a/lib/monkey/include/monkey/mk_scheduler.h b/lib/monkey/include/monkey/mk_scheduler.h
+index b28a93323..c3ef45f3f 100644
+--- a/lib/monkey/include/monkey/mk_scheduler.h
++++ b/lib/monkey/include/monkey/mk_scheduler.h
+@@ -37,7 +37,7 @@
+ #define MK_SCHED_SIGNAL_FREE_ALL         0xFFEE0000
+ #define MK_SCHED_SIGNAL_EVENT_LOOP_BREAK 0xEEFFAACC
+ 
+-#ifdef _WIN32
++#ifdef _MSC_VER
+     /* The pid field in the mk_sched_worker structure is ignored in platforms other than
+      * linux and mac os so it can be safely plugged in this meaningless way
+      */
+diff --git a/lib/monkey/include/monkey/mk_socket.h b/lib/monkey/include/monkey/mk_socket.h
+index 67d290f08..8130d9acd 100644
+--- a/lib/monkey/include/monkey/mk_socket.h
++++ b/lib/monkey/include/monkey/mk_socket.h
+@@ -24,8 +24,19 @@
+ 
+ #ifdef _WIN32
+ #include <winsock2.h>
++#if MK_HAVE_SOCKADDR_UN
+ #include <afunix.h>
+ #else
++/* Support older MinGW versions. */
++#ifndef UNIX_PATH_MAX
++#define UNIX_PATH_MAX 108
++struct sockaddr_un {
++  ADDRESS_FAMILY sun_family;
++  char sun_path[UNIX_PATH_MAX];
++};
++#endif
++#endif
++#else
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+diff --git a/lib/monkey/mk_core/CMakeLists.txt b/lib/monkey/mk_core/CMakeLists.txt
+index 2dc6708d4..a85deb15b 100644
+--- a/lib/monkey/mk_core/CMakeLists.txt
++++ b/lib/monkey/mk_core/CMakeLists.txt
+@@ -153,4 +153,7 @@ target_link_libraries(mk_core ${CMAKE_THREAD_LIBS_INIT})
+ 
+ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+   target_link_libraries(mk_core event)
++  if (NOT MSVC)
++    target_link_libraries(mk_core -lws2_32)
++  endif()
+ endif()
+diff --git a/lib/monkey/mk_core/deps/libevent/CMakeLists.txt b/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
+index 7a839decf..9135099ab 100644
+--- a/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
++++ b/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
+@@ -746,7 +746,11 @@ if(WIN32)
+     list(APPEND HDR_PRIVATE WIN32-Code/getopt.h)
+ 
+     set(EVENT__DNS_USE_FTIME_FOR_ID 1)
+-    set(LIB_PLATFORM ws2_32)
++    if(MSVC)
++      set(LIB_PLATFORM ws2_32)
++    else()
++      set(LIB_PLATFORM -lws2_32)
++    endif()
+     add_definitions(
+             -D_CRT_SECURE_NO_WARNINGS
+             -D_CRT_NONSTDC_NO_DEPRECATE)
 diff --git a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c b/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
 index 5ee3e5913..84bae9feb 100644
 --- a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
@@ -288,6 +442,34 @@ index 5ee3e5913..84bae9feb 100644
    void * p = &CHECK_FUNCTION_EXISTS;
  #else
    CHECK_FUNCTION_EXISTS();
+diff --git a/lib/monkey/mk_core/deps/libevent/include/event2/util.h b/lib/monkey/mk_core/deps/libevent/include/event2/util.h
+index defe00a3a..bf144cfe7 100644
+--- a/lib/monkey/mk_core/deps/libevent/include/event2/util.h
++++ b/lib/monkey/mk_core/deps/libevent/include/event2/util.h
+@@ -53,8 +53,8 @@ extern "C" {
+ #ifdef EVENT__HAVE_STDDEF_H
+ #include <stddef.h>
+ #endif
+-#ifdef _MSC_VER
+-#include <BaseTsd.h>
++#ifdef _WIN32
++#include <basetsd.h>
+ #endif
+ #include <stdarg.h>
+ #ifdef EVENT__HAVE_NETDB_H
+diff --git a/lib/monkey/mk_core/mk_event_select.c b/lib/monkey/mk_core/mk_event_select.c
+index be118ae3b..b592733bd 100644
+--- a/lib/monkey/mk_core/mk_event_select.c
++++ b/lib/monkey/mk_core/mk_event_select.c
+@@ -18,7 +18,7 @@
+  */
+ 
+ #ifdef _WIN32
+-#include <Winsock2.h>
++#include <winsock2.h>
+ #else
+ #include <sys/select.h>
+ #endif
 diff --git a/lib/monkey/mk_core/mk_rconf.c b/lib/monkey/mk_core/mk_rconf.c
 index 621ff2d3a..f57c60a61 100644
 --- a/lib/monkey/mk_core/mk_rconf.c
@@ -320,10 +502,20 @@ index 621ff2d3a..f57c60a61 100644
  #else
      p = realpath(file, path);
 diff --git a/lib/monkey/mk_core/mk_utils.c b/lib/monkey/mk_core/mk_utils.c
-index af7330733..c65a1139a 100644
+index af7330733..2b2dcbc0b 100644
 --- a/lib/monkey/mk_core/mk_utils.c
 +++ b/lib/monkey/mk_core/mk_utils.c
-@@ -34,7 +34,7 @@
+@@ -22,6 +22,9 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#ifdef __MINGW32__
++#define _POSIX_THREAD_SAFE_FUNCTIONS
++#endif
+ #include <time.h>
+ #include <errno.h>
+ #include <stdarg.h>
+@@ -34,7 +37,7 @@
  
  #if defined (__linux__)
  #include <sys/prctl.h>
@@ -332,6 +524,20 @@ index af7330733..c65a1139a 100644
  #include <winsock2.h>
  
  #ifndef localtime_r
+diff --git a/lib/monkey/mk_server/mk_net.c b/lib/monkey/mk_server/mk_net.c
+index ff6c1355d..99443bfcf 100644
+--- a/lib/monkey/mk_server/mk_net.c
++++ b/lib/monkey/mk_server/mk_net.c
+@@ -26,7 +26,9 @@
+ 
+ #ifdef _WIN32
+ #include <winsock2.h>
++#if MK_HAVE_AFUNIX
+ #include <afunix.h>
++#endif
+ #else
+ #include <sys/socket.h>
+ #include <netinet/tcp.h>
 diff --git a/plugins/CMakeLists.txt b/plugins/CMakeLists.txt
 index 12f27bcdb..295c6b4f2 100644
 --- a/plugins/CMakeLists.txt
@@ -409,6 +615,95 @@ index c2b14605a..52dce6473 100644
  #include <stdlib.h>
  #include <stdint.h>
  #include <io.h>
+diff --git a/plugins/in_winevtlog/pack.c b/plugins/in_winevtlog/pack.c
+index 68bb79122..39bfa1589 100644
+--- a/plugins/in_winevtlog/pack.c
++++ b/plugins/in_winevtlog/pack.c
+@@ -25,7 +25,6 @@
+ #include <fluent-bit/flb_input_plugin.h>
+ #include <msgpack.h>
+ #include <sddl.h>
+-#include <locale.h>
+ #include "winevtlog.h"
+ 
+ #define FORMAT_ISO8601 "%Y-%m-%d %H:%M:%S %z"
+@@ -190,16 +189,11 @@ static int pack_systemtime(msgpack_packer *mp_pck, SYSTEMTIME *st)
+ {
+     CHAR buf[64];
+     size_t len = 0;
+-    _locale_t locale;
+     TIME_ZONE_INFORMATION tzi;
+     SYSTEMTIME st_local;
+ 
+     GetTimeZoneInformation(&tzi);
+ 
+-    locale = _get_current_locale();
+-    if (locale == NULL) {
+-        return -1;
+-    }
+     if (st != NULL) {
+         SystemTimeToTzSpecificLocalTime(&tzi, st, &st_local);
+ 
+@@ -210,13 +204,11 @@ static int pack_systemtime(msgpack_packer *mp_pck, SYSTEMTIME *st)
+                         st_local.wMonth-1,
+                         st_local.wYear-1900,
+                         st_local.wDayOfWeek, 0, 0};
+-        len = _strftime_l(buf, 64, FORMAT_ISO8601, &tm, locale);
++        len = strftime(buf, 64, FORMAT_ISO8601, &tm);
+         if (len == 0) {
+             flb_errno();
+-            _free_locale(locale);
+             return -1;
+         }
+-        _free_locale(locale);
+         msgpack_pack_str(mp_pck, len);
+         msgpack_pack_str_body(mp_pck, buf, len);
+     }
+@@ -234,25 +226,18 @@ static int pack_filetime(msgpack_packer *mp_pck, ULONGLONG filetime)
+     size_t len = 0;
+     FILETIME ft, ft_local;
+     SYSTEMTIME st;
+-    _locale_t locale;
+ 
+-    locale = _get_current_locale();
+-    if (locale == NULL) {
+-        return -1;
+-    }
+     timestamp.QuadPart = filetime;
+     ft.dwHighDateTime = timestamp.HighPart;
+     ft.dwLowDateTime = timestamp.LowPart;
+     FileTimeToLocalFileTime(&ft, &ft_local);
+     if (FileTimeToSystemTime(&ft_local, &st)) {
+         struct tm tm = {st.wSecond, st.wMinute, st.wHour, st.wDay, st.wMonth-1, st.wYear-1900, st.wDayOfWeek, 0, 0};
+-        len = _strftime_l(buf, 64, FORMAT_ISO8601, &tm, locale);
++        len = strftime(buf, 64, FORMAT_ISO8601, &tm);
+         if (len == 0) {
+             flb_errno();
+-            _free_locale(locale);
+             return -1;
+         }
+-        _free_locale(locale);
+         msgpack_pack_str(mp_pck, len);
+         msgpack_pack_str_body(mp_pck, buf, len);
+     }
+diff --git a/plugins/in_winevtlog/winevtlog.h b/plugins/in_winevtlog/winevtlog.h
+index d5db6eb1e..f4d1b44d2 100644
+--- a/plugins/in_winevtlog/winevtlog.h
++++ b/plugins/in_winevtlog/winevtlog.h
+@@ -21,7 +21,13 @@
+ #ifndef FLB_WINEVTLOG_H
+ #define FLB_WINEVTLOG_H
+ 
++#define _WIN32_WINNT _WIN32_WINNT_WS08
+ #include <winevt.h>
++#ifdef __MINGW32__
++#define EVT_VARIANT_TYPE_MASK 0x7f
++#define EVT_VARIANT_TYPE_ARRAY 128
++#include <ole2.h>
++#endif
+ 
+ struct winevtlog_config {
+     unsigned int interval_sec;
 diff --git a/plugins/in_winlog/pack.c b/plugins/in_winlog/pack.c
 index 4547d5514..896cb535c 100644
 --- a/plugins/in_winlog/pack.c
@@ -448,8 +743,53 @@ index 4547d5514..896cb535c 100644
      msgpack_pack_str(mp_pck, len);
      msgpack_pack_str_body(mp_pck, buf, len);
  
+diff --git a/plugins/in_winstat/CMakeLists.txt b/plugins/in_winstat/CMakeLists.txt
+index ed36a5615..af200b631 100644
+--- a/plugins/in_winstat/CMakeLists.txt
++++ b/plugins/in_winstat/CMakeLists.txt
+@@ -1,4 +1,8 @@
+ set(src
+   winstat.c)
+ 
+-FLB_PLUGIN(in_winstat "${src}" "")
++if(FLB_SYSTEM_WINDOWS AND NOT MSVC)
++  set(WINSTAT_DEPS -lpsapi)
++endif()
++
++FLB_PLUGIN(in_winstat "${src}" ${WINSTAT_DEPS})
+diff --git a/plugins/out_file/file.c b/plugins/out_file/file.c
+index 3539b507b..d512ebebe 100644
+--- a/plugins/out_file/file.c
++++ b/plugins/out_file/file.c
+@@ -31,8 +31,8 @@
+ #include <fcntl.h>
+ 
+ #ifdef FLB_SYSTEM_WINDOWS
+-#include <Shlobj.h>
+-#include <Shlwapi.h>
++#include <shlobj.h>
++#include <shlwapi.h>
+ #endif
+ 
+ #include "file.h"
+diff --git a/plugins/out_s3/s3.c b/plugins/out_s3/s3.c
+index bba11849d..083254b02 100644
+--- a/plugins/out_s3/s3.c
++++ b/plugins/out_s3/s3.c
+@@ -375,7 +375,11 @@ static int init_seq_index(void *context) {
+     }
+ 
+     /* Create directory path if it doesn't exist */
++#ifdef _WIN32
++    ret = mkdir(ctx->metadata_dir);
++#else
+     ret = mkdir(ctx->metadata_dir, 0700);
++#endif
+     if (ret < 0 && errno != EEXIST) {
+         flb_plg_error(ctx->ins, "Failed to create metadata directory");
+         return -1;
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 630f875bf..209aa6243 100644
+index 630f875bf..a10451a2d 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -90,7 +90,9 @@ if(FLB_SYSTEM_WINDOWS)
@@ -510,6 +850,55 @@ index 630f875bf..209aa6243 100644
    if (MSVC)
      set_target_properties(fluent-bit-shared
        PROPERTIES PDB_NAME fluent-bit.dll)
+@@ -463,6 +479,10 @@ if(FLB_BINARY)
+ 
+   target_link_libraries(fluent-bit-bin fluent-bit-static ${CMAKE_THREAD_LIBS_INIT})
+ 
++  if(FLB_SYSTEM_WINDOWS AND NOT MSVC)
++    target_link_libraries(fluent-bit-bin -lws2_32 -lpsapi)
++  endif()
++
+   set_target_properties(fluent-bit-bin
+     PROPERTIES
+     OUTPUT_NAME ${FLB_OUT_NAME}
+diff --git a/src/config_format/flb_cf_fluentbit.c b/src/config_format/flb_cf_fluentbit.c
+index 08b878fab..c8ec54ce1 100644
+--- a/src/config_format/flb_cf_fluentbit.c
++++ b/src/config_format/flb_cf_fluentbit.c
+@@ -30,12 +30,12 @@
+ #include <ctype.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <glob.h>
+ #endif
+ 
+ #ifdef _WIN32
+-#include <Windows.h>
++#include <windows.h>
+ #include <strsafe.h>
+ #define PATH_MAX MAX_PATH
+ #endif
+diff --git a/src/config_format/flb_cf_yaml.c b/src/config_format/flb_cf_yaml.c
+index cdda77be2..4d9e9d4b0 100644
+--- a/src/config_format/flb_cf_yaml.c
++++ b/src/config_format/flb_cf_yaml.c
+@@ -30,12 +30,12 @@
+ #include <ctype.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+-#ifndef _MSC_VER
++#ifndef _WIN32
+ #include <glob.h>
+ #endif
+ 
+ #ifdef _WIN32
+-#include <Windows.h>
++#include <windows.h>
+ #include <strsafe.h>
+ #define PATH_MAX MAX_PATH
+ #endif
 diff --git a/src/flb_hash.c b/src/flb_hash.c
 index fe3035f90..92e764671 100644
 --- a/src/flb_hash.c
