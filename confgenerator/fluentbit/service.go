@@ -35,7 +35,7 @@ func (s Service) Component() Component {
 			"dns.resolver": "legacy",
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
-			"storage.sync": "normal",
+			"storage.sync": "full",
 			// Disable data integrity check to avoid spurious corruption errors due to empty spaces.
 			// Most users do not enforce checksum.
 			"storage.checksum": "off",
