@@ -512,7 +512,7 @@ func TestParseMultilineFileGolangJavaPython(t *testing.T) {
     multiline_parser_1:
       type: parse_multiline
       match_any:
-	  - type: language_exceptions
+      - type: language_exceptions
         language: go
       - type: language_exceptions
         language: java
