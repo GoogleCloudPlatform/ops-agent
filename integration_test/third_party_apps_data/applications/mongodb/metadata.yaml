@@ -123,7 +123,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
+    operation: insert|query|update|delete|getmore|command
 - type: workload.googleapis.com/mongodb.session.count
   value_type: INT64
   kind: GAUGE
