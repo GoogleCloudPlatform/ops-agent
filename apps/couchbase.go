@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -271,7 +272,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					MoveFrom: "jsonPayload.level",
+					CopyFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"debug": "DEBUG",
 						"info":  "INFO",
@@ -306,9 +307,11 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 		}
 	}
 	c := lp.LoggingReceiverFilesMixin.Components(tag)
+	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
+	// referer fields and there are additional fields after the user agent here but not in the other apps.
 	c = append(c,
 		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<client_ip>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<status_code>[^ ]*) (?<response_size>[^ ]*) - (?<message>.*)$`,
+			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) "(?<http_request_userAgent>[^\"]*)" (?<message>.*)$`,
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
 				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
@@ -319,11 +322,32 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			},
 		}.Components(tag, lp.Type())...,
 	)
-	c = append(c, confgenerator.LoggingProcessorModifyFields{
+	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(lp.Type()),
 		},
-	}.Components(tag, lp.Type())...)
+	}
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"protocol",
+		"status",
+		"responseSize",
+		"referer",
+		"userAgent",
+	} {
+		dest := fmt.Sprintf("httpRequest.%s", field)
+		src := fmt.Sprintf("jsonPayload.http_request_%s", field)
+		mf.Fields[dest] = &confgenerator.ModifyField{
+			MoveFrom: src,
+		}
+		if field == "referer" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		}
+	}
+	c = append(c, mf.Components(tag, lp.Type())...)
 	return c
 }
 
@@ -376,7 +400,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					MoveFrom: "jsonPayload.level",
+					CopyFrom: "jsonPayload.level",
 					MapValues: map[string]string{
 						"DEBUG": "DEBUG",
 						"INFO":  "INFO",

@@ -104,28 +104,39 @@ expected_logs:
     value_regex: "::1:80"
     type: string
     description: "The server's IP and port that was requested"
+    optional: true
   - name: httpRequest.remoteIp
     value_regex: "::1"
     type: string
     description: "IP of the client that made the request"
+    optional: true
   - name: httpRequest.requestUrl
     value_regex: '/forbidden\?something=something'
     type: string
     description: "Request URL (typically just the path part of the URL)"
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: "HTTP method"
+    optional: true
   - name: httpRequest.status
     type: number
     description: "HTTP status code"
+    optional: true
   - name: httpRequest.userAgent
     value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
     type: string
     description: "Contents of the `User-Agent` header"
+    optional: true
   - name: httpRequest.referer
     type: string
     description: "Contents of the `Referer` header"
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ""
+    optional: true
   - name: jsonPayload.sc_substatus
     type: string
     description: "The server's IP and port that was requested"
@@ -138,6 +149,10 @@ expected_logs:
   - name: jsonPayload.user
     type: string
     description: "Authenticated username for the request"
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: iis_access

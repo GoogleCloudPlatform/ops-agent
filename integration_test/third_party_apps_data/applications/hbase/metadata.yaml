@@ -357,6 +357,13 @@ expected_logs:
     value_regex: master.HMaster
     type: string
     description: 'source of where the log originated'
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: hbase_system
