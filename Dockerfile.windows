@@ -78,7 +78,7 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
     Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
 
 #
-# Install Golang 1.19.2
+# Install Golang 1.19
 #
 ADD https://go.dev/dl/go1.19.windows-amd64.msi /local/go1.19.windows-amd64.msi
 
@@ -93,11 +93,10 @@ RUN Start-Process msiexec.exe `
 # Run these in a directory with a go.mod file so that "go get" doesn't need
 # a working Git installation.
 WORKDIR /goget
-RUN go mod init unused; `
-    go get github.com/golangci/golangci-lint/cmd/golangci-lint; `
-    go get github.com/google/addlicense; `
-    go get github.com/pavius/impi/cmd/impi; `
-    go get github.com/google/googet/v2/goopack;
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint; `
+    go install github.com/google/addlicense; `
+    go install github.com/pavius/impi/cmd/impi; `
+    go install github.com/google/googet/v2/goopack;
 
 ###############################################################################
 # Build fluent-bit
