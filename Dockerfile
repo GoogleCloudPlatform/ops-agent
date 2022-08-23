@@ -164,7 +164,7 @@ RUN ./pkg/rpm/build.sh
 
 FROM rockylinux:9 AS centos9-build
 
-RUN set -x; yum -y update && \
+RUN set -x; dnf -y update && \
     dnf -y install 'dnf-command(config-manager)' && \
     dnf config-manager --set-enabled crb && \
     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
