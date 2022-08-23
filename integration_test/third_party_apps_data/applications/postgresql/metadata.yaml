@@ -24,6 +24,7 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/postgresql.backends
     value_type: INT64
+    representative: true
   - kind: CUMULATIVE
     labels:
       database: .*
