@@ -9,3 +9,8 @@ sudo apt-get install -y postgresql-14
 sudo service postgresql restart
 
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test2(id);\""
+sudo su postgres -c "psql postgres -cINSERT INTO test2 (id) VALUES(67);\""
