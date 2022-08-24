@@ -60,6 +60,7 @@ expected_metrics:
   - kind: CUMULATIVE
     labels:
       database: .*
+      table: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/postgresql.commits
     value_type: INT64
