@@ -38,6 +38,7 @@ jobs:
     - run: go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
+        GOTESTTOOLS_GOLDEN_NormalizeCRLFToLF: false
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
