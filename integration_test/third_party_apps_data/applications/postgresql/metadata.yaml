@@ -53,6 +53,7 @@ expected_metrics:
   - kind: CUMULATIVE
     labels:
       database: .*
+      table: .*
       source: heap_read|heap_hit|idx_read|idx_hit|toast_read|toast_hit|tidx_read|tidx_hit
     monitored_resource: gce_instance
     type: workload.googleapis.com/postgresql.blocks_read
@@ -60,7 +61,6 @@ expected_metrics:
   - kind: CUMULATIVE
     labels:
       database: .*
-      table: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/postgresql.commits
     value_type: INT64
@@ -97,6 +97,7 @@ expected_metrics:
   - kind: CUMULATIVE
     labels:
       database: .*
+      table: .*
       operation: ins|upd|del|hot_upd
     monitored_resource: gce_instance
     type: workload.googleapis.com/postgresql.operations
