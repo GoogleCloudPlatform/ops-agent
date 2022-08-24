@@ -33,3 +33,11 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 fi
 
+
+sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
+sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
+
