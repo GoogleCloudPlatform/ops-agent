@@ -175,9 +175,9 @@ RUN set -x; dnf -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
