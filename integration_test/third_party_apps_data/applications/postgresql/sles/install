@@ -12,6 +12,12 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo service postgresql restart
 
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
+  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
+
   sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
   sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
 
@@ -31,12 +37,9 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo service postgresql-14 restart
 
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
+  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
 fi
-
-
-sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
-sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
-sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
-sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
-sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
-
