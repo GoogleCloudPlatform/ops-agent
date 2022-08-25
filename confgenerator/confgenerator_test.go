@@ -161,21 +161,18 @@ func testGenerateConfInvalid(
 ) {
 	t.Parallel()
 
-	checkGoldenError := func(err error) {
-		goldenErrorPath := filepath.Join(testDir, errorGolden)
-		golden.Assert(t, err.Error(), goldenErrorPath)
-	}
+	goldenErrorPath := filepath.Join(testDir, errorGolden)
 	inputPath := filepath.Join("testdata", testDir, inputFileName)
 
 	_, confBytes, err := confgenerator.MergeConfFiles(inputPath, platform.OS, apps.BuiltInConfStructs)
 	if err != nil {
-		checkGoldenError(err)
+		golden.Assert(t, err.Error(), goldenErrorPath)
 		return
 	}
 
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
 	if err != nil {
-		checkGoldenError(err)
+		golden.Assert(t, err.Error(), goldenErrorPath)
 		return
 	}
 
@@ -185,13 +182,13 @@ func testGenerateConfInvalid(
 		platform.InfoStat,
 	)
 	if err != nil {
-		checkGoldenError(err)
+		golden.Assert(t, err.Error(), goldenErrorPath)
 		return
 	}
 
 	_, err = uc.GenerateOtelConfig(platform.InfoStat)
 	if err != nil {
-		checkGoldenError(err)
+		golden.Assert(t, err.Error(), goldenErrorPath)
 		return
 	}
 
