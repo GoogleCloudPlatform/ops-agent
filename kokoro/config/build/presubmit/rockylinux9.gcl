@@ -3,9 +3,9 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      // centos8 is built ontop of rockylinux:8 in Dockerfile:
+      // centos9 is built ontop of rockylinux:9 in Dockerfile:
       // https://github.com/GoogleCloudPlatform/ops-agent/blob/72488e91d2f5dbd5ba5dc8c30f493deb7802dc09/Dockerfile#L163
-      DISTRO = 'centos8'
+      DISTRO = 'centos9'
       PKGFORMAT = 'rpm'
     }
   }
