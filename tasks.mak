@@ -49,7 +49,7 @@ test_confgenerator:
 	go test ./confgenerator
 
 test_confgenerator_update:
-	go test ./confgenerator -update_golden
+	go test ./confgenerator -update
 
 test_metadata:
 	go test ./integration_test/metadata
