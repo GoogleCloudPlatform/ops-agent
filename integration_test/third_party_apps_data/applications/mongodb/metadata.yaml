@@ -81,6 +81,54 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     database: .*
+- type: workload.googleapis.com/mongodb.database.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.index.access.count
+  value_type: INT64
+  monitored_resource: gce_instance
+  kind: GAUGE
+  labels:
+    collection: .*
+    database: .*
+- type: workload.googleapis.com/mongodb.document.operation.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    operation: .*
+- type: workload.googleapis.com/mongodb.network.io.receive
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.network.io.transmit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.network.request.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.operation.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: insert|query|update|delete|getmore|command
+- type: workload.googleapis.com/mongodb.session.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.cursor.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.cursor.timeout.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
 expected_logs:
 - log_name: mongodb
   fields:
@@ -90,6 +138,7 @@ expected_logs:
   - name: jsonPayload.ctx
     type: string
     description: The name of the thread issuing the log statement
+    optional: true
   - name: jsonPayload.id
     type: number
     description: Log ID
@@ -99,6 +148,18 @@ expected_logs:
   - name: jsonPayload.attributes
     type: object (optional)
     description: Object containing one or more key-value pairs for any additional attributes provided
+    optional: true
+  - name: jsonPayload.context
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: mongodb

@@ -29,7 +29,7 @@ expected_logs:
 - log_name: active_directory_ds
   fields:
   - name: jsonPayload.Message
-    value_regex: '^Microsoft Active Directory Domain Services startup complete.*'
+    value_regex: (?s)^Microsoft Active Directory Domain Services startup complete.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68 
     type: string
     description: "The log message."
   - name: jsonPayload.RecordNumber
@@ -73,9 +73,13 @@ expected_logs:
     value_regex: '^$'
     type: string
     description: "Extra event-specific data included with the log."
+    optional: true
   - name: jsonPayload.StringInserts
     type: "[]string"
     description: "Dynamic string data that was used to construct the log message."
+  - name: severity
+    type: string
+    description: ''
 expected_metrics:
 - type: workload.googleapis.com/active_directory.ds.bind.rate
   value_type: DOUBLE

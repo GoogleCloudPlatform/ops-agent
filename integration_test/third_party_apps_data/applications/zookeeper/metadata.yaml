@@ -75,7 +75,7 @@ expected_logs:
 - log_name: zookeeper_general
   fields:
   - name: jsonPayload.message
-    value_regex: binding to port 0.0.0.0/0.0.0.0:2181
+    value_regex: (?s)binding to port 0.0.0.0/0.0.0.0:2181.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68 
     type: string
     description: Log message, including detailed stacktrace where provided
   - name: jsonPayload.thread
@@ -92,6 +92,14 @@ expected_logs:
   - name: jsonPayload.myid
     type: number
     description: Numeric ID of the Zookeeper instance
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: zookeeper_general

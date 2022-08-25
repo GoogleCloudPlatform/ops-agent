@@ -59,9 +59,14 @@ expected_logs:
   - name: jsonPayload.role
     type: string
     description: Authenticated role for the action being logged when relevant
+    optional: true
   - name: jsonPayload.user
     type: string
+    optional: true
     description: Authenticated user for the action being logged when relevant
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: postgresql_general
