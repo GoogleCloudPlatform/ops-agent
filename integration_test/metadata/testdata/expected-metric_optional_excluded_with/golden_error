@@ -1,2 +1,2 @@
-Key: 'IntegrationMetadata.ExpectedMetricsContainer.ExpectedMetrics[1].Optional' Error:Field validation for 'Optional' failed on the 'excluded_with' tag
-Key: 'IntegrationMetadata.ExpectedMetricsContainer.ExpectedMetrics[1].Representative' Error:Field validation for 'Representative' failed on the 'excluded_with' tag
+[23:13] Key: 'ExpectedMetric.Optional' Error:Field validation for 'Optional' failed on the 'excluded_with' tag
+Key: 'ExpectedMetric.Representative' Error:Field validation for 'Representative' failed on the 'excluded_with' tag
