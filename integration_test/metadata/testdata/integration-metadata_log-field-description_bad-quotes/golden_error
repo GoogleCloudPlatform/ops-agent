@@ -1,1 +1,1 @@
-Key: 'IntegrationMetadata.ExpectedLogs[0].Fields[0].Description' Error:Field validation for 'Description' failed on the 'excludesall' tag
+[26:18] Key: 'LogFields.Description' Error:Field validation for 'Description' failed on the 'excludesall' tag

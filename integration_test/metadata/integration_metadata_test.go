@@ -16,14 +16,13 @@ package metadata_test
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"gopkg.in/yaml.v2"
+	"github.com/goccy/go-yaml"
 )
 
 const (
@@ -44,15 +43,6 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 		t.Fatal("could not read dirName: " + filePath)
 	}
 	return strings.ReplaceAll(string(contents), "\r\n", "\n")
-}
-
-func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := metadata.NewIntegrationMetadataValidator()
-	err := yaml.UnmarshalStrict(bytes, i)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return v.Struct(i)
 }
 
 func TestMetadataValidation(t *testing.T) {
@@ -81,11 +71,11 @@ func generateNewGolden(t *testing.T, dir string) {
 	t.Parallel()
 	goldenPath := path.Join(testdataDir, dir, goldenErrorName)
 	yamlStr := getTestFile(t, dir, inputYamlName)
-	err := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
+	err := metadata.UnmarshalAndValidate([]byte(yamlStr), &metadata.IntegrationMetadata{})
 
 	errStr := ""
 	if err != nil {
-		errStr = err.Error()
+		errStr = yaml.FormatError(err, false, false)
 	}
 
 	if err = os.WriteFile(goldenPath, []byte(errStr), 0644); err != nil {
@@ -99,7 +89,8 @@ func testMetadataValidation(t *testing.T, dir string) {
 	yamlStr := getTestFile(t, dir, inputYamlName)
 	goldenErrStr := getTestFile(t, dir, goldenErrorName)
 
-	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
+	var md metadata.IntegrationMetadata
+	actualError := metadata.UnmarshalAndValidate([]byte(yamlStr), &md)
 
 	if actualError == nil {
 		if goldenErrStr == "" {
@@ -107,8 +98,9 @@ func testMetadataValidation(t *testing.T, dir string) {
 		}
 		t.Fatal("Expecting validation to fail for test: " + dir)
 	}
+	actualErrorStr := yaml.FormatError(actualError, false, false)
 
-	if actualError.Error() != goldenErrStr {
-		t.Fatal(fmt.Sprintf("Unexpected errors detected: \nExpected error: \n%s\nActual error:  \n%s\n", goldenErrStr, actualError.Error()))
+	if actualErrorStr != goldenErrStr {
+		t.Fatalf("Unexpected errors detected: \nExpected error: \n%s\nActual error:  \n%s\n", goldenErrStr, actualErrorStr)
 	}
 }
