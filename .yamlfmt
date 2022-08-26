@@ -1,5 +1,2 @@
 include:
 - integration_test/**/*.yaml
-
-exclude:
-- submodules/**
