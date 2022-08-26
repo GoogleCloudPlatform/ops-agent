@@ -1,6 +1,6 @@
 # Create a GCE Windows build VM
 
-Create a Windows build VM for running Windows Dockerfile and set a password for $USER.
+Create a Windows build VM for running Windows Dockerfile and set a password for `$USER`.
 
 Note: The `--machine-type` and `--boot-disk-size` settings are required to
 ensure the build VM has enough power/disk space to do the builds.
@@ -25,7 +25,7 @@ gcloud compute instances create \
     --zone $VM_ZONE \
     --image-project windows-cloud \
     --image-family $WIN_BUILD_VM_OS_IMAGE_FAMILY \
-    --machine-type e2-highmem-4 \
+    --machine-type e2-highmem-8 \
     --boot-disk-type pd-ssd \
     --boot-disk-size 200GB \
     --scopes storage-rw \

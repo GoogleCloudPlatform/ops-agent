@@ -59,7 +59,7 @@ type ModifyOptions struct {
 }
 
 // Component uses the option and transforms it into a Component
-func (mo *ModifyOptions) Component(tag string) fluentbit.Component {
+func (mo ModifyOptions) Component(tag string) fluentbit.Component {
 	c := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{

@@ -1,3 +1,5 @@
 set -e
 
 sudo yum -y install memcached
+sudo sed -i 's/OPTIONS.*/OPTIONS="-vv"/' /etc/sysconfig/memcached
+sudo systemctl restart memcached

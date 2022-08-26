@@ -1,0 +1,34 @@
+# This config gets merged with the built-in Ops Agent config, which already
+# includes the v1 receiver in the default pipeline.
+# Because the v2 receiver here uses a unique ID, it does not overwrite
+# the default receiver and so both receivers will be active simultaneously
+# during the test.
+
+# Create a back up of the existing file so existing configurations are not lost.
+Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
+
+# Configure the Ops Agent.
+Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
+metrics:
+  receivers:
+    iis_v2:
+      type: iis
+      receiver_version: 2
+  service:
+    pipelines:
+      iispipeline:
+        receivers:
+          - iis_v2
+logging:
+  receivers:
+    iis_access:
+      type: iis_access
+  service:
+    pipelines:
+      iis:
+        receivers:
+        - iis_access
+"
+
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent* 

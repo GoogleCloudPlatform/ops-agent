@@ -1,4 +1,0 @@
-set -e
-
-sudo systemctl restart tomcat
-sleep 30

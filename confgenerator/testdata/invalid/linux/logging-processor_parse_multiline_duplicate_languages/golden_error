@@ -1,9 +1,0 @@
-[14:20] Key: 'ParseMultilineGroup.languages' Error:Field validation for 'languages' failed on the 'unique' tag
-  11 |       type: parse_multiline
-  12 |       match_any:
-  13 |       - type: language_exceptions
-> 14 |         languages: [java,java]
-                          ^
-  15 |   service:
-  16 |     pipelines:
-  17 |       p1:

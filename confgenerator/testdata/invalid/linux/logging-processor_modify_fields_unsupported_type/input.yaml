@@ -1,0 +1,11 @@
+logging:
+  processors:
+    processor_1:
+      type: modify_fields
+      fields:
+        jsonPayload.foo:
+          type: struct
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]

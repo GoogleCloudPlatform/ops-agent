@@ -22,3 +22,5 @@ sudo zypper -n refresh
 sudo zypper -n --no-gpg-checks install redis libhiredis0_13
 sudo systemctl enable redis@default
 sudo cp -p /etc/redis/default.conf.example /etc/redis/default.conf
+
+sudo service redis start

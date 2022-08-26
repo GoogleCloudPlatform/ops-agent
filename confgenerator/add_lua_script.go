@@ -14,14 +14,9 @@
 
 package confgenerator
 
-import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-)
-
-const addLogNameLuaScriptContents string = `
+const (
+	addLogNameLuaFunction       = `add_log_name`
+	addLogNameLuaScriptContents = `
 function split (inputstr, sep)
   if sep == nil then
     sep = "%s"
@@ -55,19 +50,4 @@ function add_log_name(tag, timestamp, record)
   return 2, timestamp, record
 end
 `
-
-// writeForwardScript writes the above Lua script to the given path so it can be
-// used by the logging subagent.
-//
-// TODO(ridwanmsharif): Replace this with in-config script when
-//   fluent/fluent-bit#4634 is supported.
-func writeForwardScript(path string) error {
-	// Make sure the directory exists before writing the file.
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return fmt.Errorf("failed to create directory for %q: %w", path, err)
-	}
-	if err := ioutil.WriteFile(path, []byte(addLogNameLuaScriptContents), 0644); err != nil {
-		return fmt.Errorf("failed to write file to %q: %w", path, err)
-	}
-	return nil
-}
+)

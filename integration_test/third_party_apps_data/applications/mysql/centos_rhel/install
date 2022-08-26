@@ -20,3 +20,5 @@ password='$password'
 EOF
 
 mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'" --connect-expired-password
+
+sudo service mysqld start

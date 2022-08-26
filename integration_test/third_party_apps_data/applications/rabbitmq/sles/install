@@ -22,3 +22,33 @@ esac
 
 sudo systemctl daemon-reload
 sudo systemctl enable rabbitmq-server
+sudo systemctl restart rabbitmq-server
+sudo rabbitmq-plugins enable rabbitmq_management
+sudo systemctl restart rabbitmq-server
+
+sudo rabbitmqctl add_vhost dev
+sudo rabbitmqctl add_user "admin" "admin"
+sudo rabbitmqctl set_user_tags "admin" administrator
+sudo rabbitmqctl set_permissions -p "dev" "admin" ".*" ".*" ".*"
+
+endpoint="http://127.0.0.1:15672"
+
+curl -i -u admin:admin \
+    -H "content-type:application/json" \
+    -X PUT "${endpoint}/api/exchanges/dev/webex" \
+    -d'{"type":"direct","auto_delete":false,"durable":true,"internal":false,"arguments":{}}'
+
+curl -i -u admin:admin \
+    -H "content-type:application/json" \
+    -X PUT "${endpoint}/api/queues/dev/webq1" \
+    -d'{"auto_delete":false,"durable":true,"arguments":{}}'
+
+curl -i -u admin:admin \
+    -H "content-type:application/json" \
+    -X POST "${endpoint}/api/bindings/dev/e/webex/q/webq1" \
+    -d'{"routing_key":"webq1","arguments":{}}'
+
+sudo rabbitmq-plugins enable rabbitmq_management
+sudo rabbitmqctl add_user "otelu" "otelp"
+sudo rabbitmqctl set_user_tags "otelu" monitoring
+sudo rabbitmqctl set_permissions -p "dev" "otelu" "" "" ".*"

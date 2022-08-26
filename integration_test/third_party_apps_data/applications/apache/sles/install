@@ -17,3 +17,5 @@ sudo zypper -n install apache2
 (cd /etc/apache2/conf.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/httpd/conf.d/status.conf)
 sudo a2enmod mod_status
 sudo a2enmod mod_access_compat
+
+sudo service apache2 start

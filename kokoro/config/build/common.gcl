@@ -1,0 +1,32 @@
+// Common configuration for Linux Ops Agent builds.
+
+import '../utils/functions.gcl' as functions
+
+template config build = {
+  build_file = 'unified_agents/kokoro/scripts/build/build_package.sh'
+
+  params {
+    environment = {
+      SKIP_SIGNING = 'true'
+    }
+
+    keystore_keys = []
+    artifacts = ['result/**']
+  }
+
+  before_action = [functions.fetch_keystore(params.keystore_keys)]
+
+  action = [
+    {
+      define_artifacts = {
+        regex = params.artifacts
+      }
+    },
+  ]
+
+  env_vars = functions.environment_variables(params.environment)
+}
+
+template config windows_build = build {
+  build_file = 'unified_agents/kokoro/scripts/build/build_package.bat'
+}

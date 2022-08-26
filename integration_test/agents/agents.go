@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -216,9 +230,10 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 				c <- nil
 				return
 			}
-			c <- gce.WaitForMetric(
+			_, err := gce.WaitForMetric(
 				ctx, logger, vm, "agent.googleapis.com/agent/uptime", TrailingQueryWindow,
 				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)})
+			c <- err
 		}()
 	}
 	for range services {
@@ -670,104 +685,57 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 	return ctx, logger, vm
 }
 
-func globForAgentPackage(platform string) (string, error) {
-	if gce.IsWindows(platform) {
-		return "*.goo", nil
-	}
-
-	// Here is a real example of what package names look like once built:
-	// google-cloud-ops-agent-2.0.3-1.el7.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.el8.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles12.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles15.x86_64.rpm
-	// google-cloud-ops-agent_2.0.3~debian10_amd64.deb
-	// google-cloud-ops-agent_2.0.3~debian9.13_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu16.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu18.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu20.04_amd64.deb
-	//
-	// The goal of this function is to convert what we have (vm.Platform, e.g.
-	// debian-10)	into a glob that will pick out the appropriate package file for
-	// that distro.
-
-	// I honestly can't think of a better way to do this.
-	switch {
-	case strings.HasPrefix(platform, "centos-7") || strings.HasPrefix(platform, "rhel-7"):
-		return "*.el7.*.rpm", nil
-	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rhel-8") || strings.HasPrefix(platform, "rocky-linux-8"):
-		return "*.el8.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-12"):
-		return "*.sles12.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-15") || strings.HasPrefix(platform, "opensuse-leap"):
-		return "*.sles15.*.rpm", nil
-	case platform == "debian-9":
-		return "*~debian9*.deb", nil
-	case platform == "debian-10":
-		return "*~debian10*.deb", nil
-	case platform == "debian-11":
-		return "*~debian11*.deb", nil
-	case platform == "ubuntu-1804-lts" || platform == "ubuntu-minimal-1804-lts":
-		return "*~ubuntu18.04_*.deb", nil
-	case platform == "ubuntu-2004-lts" || platform == "ubuntu-minimal-2004-lts":
-		return "*~ubuntu20.04_*.deb", nil
-	default:
-		return "", fmt.Errorf("agents.go does not know how to convert platform %q into a glob that can pick the appropriate package out of a lineup", platform)
-	}
-}
-
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
-// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs. Each agent
-// must have its own subdirectory. For example this would be
-// a valid structure inside AGENT_PACKAGES_IN_GCS when testing metrics & ops-agent:
-// ├── metrics
-// │   ├── collectd-4.5.6.deb
-// │   ├── collectd-4.5.6.rpm
-// │   └── otel-collector-0.1.2.goo
-// └── ops-agent
-//     ├── ops-agent-google-cloud-1.2.3.deb
-//     ├── ops-agent-google-cloud-1.2.3.rpm
-//     └── ops-agent-google-cloud-1.2.3.goo
-func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+// Packages with "dbgsym" in their name are skipped because customers don't
+// generally install those, so our tests shouldn't either.
+func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
-		return installWindowsPackageFromGCS(ctx, logger, vm, agentType, gcsPath)
+		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
-	glob, err := globForAgentPackage(vm.Platform)
-	if err != nil {
-		return err
-	}
-
 	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s/%s /tmp/agentUpload", gcsPath, agentType, glob)); err != nil {
-		logger.ToMainLog().Printf("picking agent package using glob %q", glob)
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+		return err
+	}
 	if IsRPMBased(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm -i /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}
 		return nil
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install /tmp/agentUpload/*"); err != nil {
+	// --allow-downgrades is marked as dangerous, but I don't see another way
+	// to get the following sequence to work (from TestUpgradeOpsAgent):
+	// 1. install stable package from Rapture
+	// 2. install just-built package from GCS
+	// Nor do I know why apt considers that sequence to be a downgrade.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
-func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string, gcsPath string) error {
+func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/%s/*.goo C:\\agentUpload", gcsPath, agentType)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm install (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil

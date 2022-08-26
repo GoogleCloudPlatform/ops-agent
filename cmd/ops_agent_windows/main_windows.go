@@ -108,6 +108,7 @@ func initServices() error {
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+				"--feature-gates=exporter.googlecloud.OTLPDirect",
 			},
 		},
 		{

@@ -1,64 +1,77 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
 Package gce holds various helpers for testing the agents on GCE.
+To run a test based on this library, you can either:
 
-To run a test based on this library, you can use Kokoro by triggering
-automated presubmits on your change.
-
-NOTE: This needs the $HOME/credentials.json file to exist. If it doesn't,
-    please run the commands at go/sdi-service-accounts#setup to generate it.
-    Your service account needs to have "Storage Object Viewer" and
-    "Storage Object Creator" permissions on the GCS bucket TRANSFERS_BUCKET.
-
-NOTE: This requires gcloud login to generate the $HOME/.config/gcloud directory.
-    Run "gcloud auth login" if you have not yet logged in.
+* use Kokoro by triggering automated presubmits on your change, or
+* use "go test" directly, after performing the setup steps described
+in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
-    a project whose firewall allows WinRM connections.
-    [Kokoro can use stackdriver-test-143416, which does not allow WinRM
-    connections, because our Kokoro workers are also running in that project.]
+a project whose firewall allows WinRM connections.
+[Kokoro can use stackdriver-test-143416, which does not allow WinRM
+connections, because our Kokoro workers are also running in that project.]
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
-    Ops Agent code, first build and upload a package to Rapture. Then look up
-    the REPO_SUFFIX for that build and add it as an environment variable to the
-    command below; for example: REPO_SUFFIX=20210805-2
 
-PROJECT=dev_project \
-    ZONE=us-central1-b \
-    GOOGLE_APPLICATION_CREDENTIALS=$HOME/credentials.json \
-    PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
-    go test -v ops_agent_test.go \
-    -test.parallel=1000 \
-    -timeout=3h
+Ops Agent code, first build and upload a package to Rapture. Then look up
+the REPO_SUFFIX for that build and add it as an environment variable to the
+command below; for example: REPO_SUFFIX=20210805-2. You can also use
+AGENT_PACKAGES_IN_GCS, for details see README.md.
+
+	PROJECT=dev_project \
+	ZONE=us-central1-b \
+	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
+	go test -v ops_agent_test.go \
+	  -test.parallel=1000 \
+	  -tags=integration_test \
+	  -timeout=4h
 
 This library needs the following environment variables to be defined:
-
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
-GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
-    some GCP services. All gcloud commands actually use a different set of
-    credentials, those in CLOUDSDK_CONFIG (unfortunately).
 WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
-    Windows VMs.
+Windows VMs.
 
 The following variables are optional:
 
 TEST_UNDECLARED_OUTPUTS_DIR: A path to a directory to write log files into.
-    By default, a new temporary directory is created.
+By default, a new temporary directory is created.
+
 NETWORK_NAME: What GCP network name to use.
-KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
 KOKORO_BUILD_ID: supplied by Kokoro.
+KOKORO_BUILD_ARTIFACTS_SUBDIR: supplied by Kokoro.
+LOG_UPLOAD_URL_ROOT: A URL prefix (remember the trailing "/") where the test
+logs will be uploaded. If unset, this will point to
+ops-agents-public-buckets-test-logs, which should work for all tests
+triggered from GitHub.
+
 USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
-    (if set to "true"), or external IP addresses (in all other cases).
-    Only useful on Kokoro.
+(if set to "true"), or external IP addresses (in all other cases).
+Only useful on Kokoro.
+
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
-    default is the project's "Compute Engine default service account".
+default is the project's "Compute Engine default service account".
 TRANSFERS_BUCKET: A GCS bucket name to use to transfer files to testing VMs.
-    The default is "stackdriver-test-143416-file-transfers".
+The default is "stackdriver-test-143416-file-transfers".
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
-    If provided, this value overrides the selection made by the callers to
-		this library.
+If provided, this value overrides the selection made by the callers to
+this library.
 */
 package gce
 
@@ -136,10 +149,13 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
-	vmInitTimeout         = 20 * time.Minute
-	vmInitBackoffDuration = 10 * time.Second
+	vmInitTimeout                     = 20 * time.Minute
+	vmInitBackoffDuration             = 10 * time.Second
+	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	sshUserName = "test_user"
+
+	exhaustedRetriesSuffix = "exhausted retries"
 )
 
 func init() {
@@ -343,6 +359,14 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// PlatformKind returns "linux" or "windows" based on the given platform.
+func PlatformKind(platform string) string {
+	if IsWindows(platform) {
+		return "windows"
+	}
+	return "linux"
+}
+
 // isRetriableLookupMetricError returns whether the given error, returned from
 // lookupMetric() or WaitForMetric(), should be retried.
 func isRetriableLookupMetricError(err error) bool {
@@ -375,55 +399,60 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
-// hasNonEmptySeries examines the given iterator, returning true if the
-// lookup succeeded and returned a nonempty time series, and false otherwise.
-// Also returns an error if the lookup failed.
-// A return value of (false, nil) indicates that the lookup succeeded but
-// returned no data.
-func hasNonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (bool, error) {
-	// Loop through the iterator, looking for at least one nonempty time series.
+// nonEmptySeries evaluates the given iterator, returning its first non-empty
+// time series. An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+	// Loop through the iterator, looking for at least one non-empty time series.
 	for {
 		series, err := it.Next()
-		logger.Printf("hasNonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			// Either there were no data series in the iterator or all of them were empty.
-			return false, nil
+			return nil, nil
 		}
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		if len(series.Points) == 0 {
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		// Success, we found a timeseries with len(series.Points) > 0.
-		return true, nil
+		// Success, we found a time series with len(series.Points) > 0.
+		return series, nil
 	}
 }
 
-// WaitForMetric looks for the given metric in the backend and returns an error
-// if it does not have data. This function will retry "no data" errors a fixed
-// number of times. This is useful because it takes time for monitoring data to
-// become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) error {
+// WaitForMetric looks for the given metric in the backend and returns it if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
-		found, err := hasNonEmptySeries(logger, it)
-		if found {
+		series, err := nonEmptySeries(logger, it)
+		if series != nil && err == nil {
 			// Success.
-			return nil
+			return series, nil
 		}
 		if err != nil && !isRetriableLookupMetricError(err) {
-			return fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
 		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("hasNonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, found-data=%v, retrying (%d/%d)...",
-			metric, extraFilters, err, found, attempt, QueryMaxAttempts)
+		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+			metric, extraFilters, err, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: exhausted retries", metric, extraFilters)
+	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// IsExhaustedRetriesMetricError returns true if the given error is an
+// "exhausted retries" error returned from WaitForMetric.
+func IsExhaustedRetriesMetricError(err error) bool {
+	return err != nil && strings.HasSuffix(err.Error(), exhaustedRetriesSuffix)
 }
 
 // AssertMetricMissing looks for data of a metric and returns success if
@@ -432,8 +461,9 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil)
-		found, err := hasNonEmptySeries(logger, it)
-		logger.Printf("hasNonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
+		series, err := nonEmptySeries(logger, it)
+		found := series != nil
+		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
 		if err == nil {
@@ -526,9 +556,19 @@ type CommandOutput struct {
 	Stderr string
 }
 
-// runCommand invokes a binary and waits until it finishes. Returns the combined stdout
-// and stderr in a single string, and an error if the binary had a nonzero
-// exit code.
+type ThreadSafeWriter struct {
+	mu      sync.Mutex
+	guarded io.Writer
+}
+
+func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.guarded.Write(p)
+}
+
+// runCommand invokes a binary and waits until it finishes. Returns the stdout
+// and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
 func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
@@ -559,32 +599,32 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 
 	var stdoutBuilder strings.Builder
 	var stderrBuilder strings.Builder
+	var interleavedBuilder strings.Builder
 
-	cmd.Stdout = &stdoutBuilder
-	cmd.Stderr = &stderrBuilder
+	interleavedWriter := &ThreadSafeWriter{guarded: &interleavedBuilder}
+	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
+	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
 	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v\nstdout: %s\nstderr: %s", args, err, stdoutBuilder.String(), stderrBuilder.String())
+		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
 	}
 
 	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
+	logger.Printf("stdout+stderr: %s", interleavedBuilder.String())
+
 	output.Stdout = stdoutBuilder.String()
 	output.Stderr = stderrBuilder.String()
-
-	logger.Printf("stdout: %s", output.Stdout)
-	logger.Printf("stderr: %s", output.Stderr)
 
 	return output, err
 }
 
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
-// Returns the combined stdout and stderr in a single string, and an error if
-// the binary had a nonzero exit code.
-// args is a slice containing the arguments to pass to gcloud.
+// Returns the stdout and stderr and an error if the binary had a nonzero exit
+// code. args is a slice containing the arguments to pass to gcloud.
 //
 // Note: most calls to this function could be replaced by calls to the Compute API
 // (https://cloud.google.com/compute/docs/reference/rest/v1).
-// Various pros/cons of shelling out to gcloud vs using the Compute API are dicussed here:
+// Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
@@ -640,7 +680,7 @@ var (
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-//     on Windows.
+// on Windows.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	defer func() {
 		if err != nil {
@@ -813,6 +853,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
+		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
 )
 
@@ -832,8 +874,6 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		metadataCopy["windows-startup-script-ps1"] = `
-Enable-PSRemoting  # Might help to diagnose b/185923886.
-
 $port = new-Object System.IO.Ports.SerialPort 'COM3'
 $port.Open()
 $port.WriteLine("STARTUP_SCRIPT_DONE")
@@ -913,9 +953,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
-	imgProject, err := imageProject(vm.Platform)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+	imgProject := options.ImageProject
+	if imgProject == "" {
+		var err error
+		imgProject, err = imageProject(vm.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -952,6 +996,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
@@ -1043,6 +1088,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		return strings.Contains(err.Error(), "Quota") ||
 			// Rarely, instance creation fails due to internal errors in the compute API.
 			strings.Contains(err.Error(), "Internal error") ||
+			// Instance creation can also fail due to service unavailability.
+			strings.Contains(err.Error(), "currently unavailable") ||
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
@@ -1189,6 +1236,18 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return waitForStart(ctx, logger, vm)
 }
 
+// RestartInstance stops and starts the instance.
+// It also waits for the instance to be reachable over ssh post-restart.
+func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
+	fileLogger := logger.ToFile("VM_restart.txt")
+
+	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+		return fmt.Errorf("failed to stop instance: %w", err)
+	}
+
+	return StartInstance(ctx, fileLogger, vm)
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1226,7 +1285,7 @@ sudo zypper --non-interactive refresh test-vendor`
 	installCmd := `set -ex
 
 ` + repoSetupCmd + `
-sudo zypper --non-interactive install --capability 'python>=3.6'
+sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
 sudo zypper --non-interactive install python3-certifi
 
 # On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
@@ -1388,11 +1447,19 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
 	}
 
-	creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
-	if err != nil {
-		return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+	resetCredentials := func() error {
+		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
+		if err != nil {
+			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
+		}
+		vm.WindowsCredentials = creds
+		return nil
 	}
-	vm.WindowsCredentials = creds
+
+	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
+	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
+		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
+	}
 
 	// Now, make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
@@ -1486,8 +1553,11 @@ func logLocation(logRootDir, testName string) string {
 	if subdir == "" {
 		return path.Join(logRootDir, testName)
 	}
-	return "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/" +
-		path.Join(subdir, "logs", testName)
+	uploadLocation := os.Getenv("LOG_UPLOAD_URL_ROOT")
+	if uploadLocation == "" {
+		uploadLocation = "https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/"
+	}
+	return uploadLocation + path.Join(subdir, "logs", testName)
 }
 
 // SetupLogger creates a new DirectoryLogger that will write to a directory based on
@@ -1514,8 +1584,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required.
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
 	Platform string
+	// Optional. Passed as --image-project to "gcloud compute images create".
+	// If not supplied, the framework will attempt to guess the right project
+	// to use based on Platform.
+	ImageProject string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.
@@ -1527,6 +1602,9 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If provided, these arguments are appended on to the end
+	// of the "gcloud compute instances create" command.
+	ExtraCreateArguments []string
 }
 
 // SetupVM creates a new VM according to the given options.

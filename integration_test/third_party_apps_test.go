@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -7,22 +21,12 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-SCRIPTS_DIR: a path containing scripts for installing/configuring the various
-    applications and agents. Also has some files that aren't technically
-    scripts that tell the test what to do, such as supported_applications.txt.
-
 PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. They must be inside
-    a directory called ops-agent. For example, this would be a valid structure
-    inside AGENT_PACKAGES_IN_GCS:
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+    .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 */
@@ -31,26 +35,39 @@ package integration_test
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"os/exec"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	scriptsDir    = os.Getenv("SCRIPTS_DIR")
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
 )
+
+//go:embed third_party_apps_data
+var scriptsDir embed.FS
+
+var validate = metadata.NewIntegrationMetadataValidator()
 
 // removeFromSlice returns a new []string that is a copy of the given []string
 // with all occurrences of toRemove removed.
@@ -64,49 +81,58 @@ func removeFromSlice(original []string, toRemove string) []string {
 	return result
 }
 
-// osFolder returns the folder containing OS-specific configuration and
-// scripts for the test.
-func osFolder(platform string) string {
-	if gce.IsWindows(platform) {
-		return "windows"
+// assertFilePresence returns an error if the provided file path doesn't exist on the VM.
+func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
+	var fileQuery string
+	if gce.IsWindows(vm.Platform) {
+		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
+	} else {
+		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
 	}
-	return "linux"
+
+	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
+	if err != nil {
+		return fmt.Errorf("error accessing backup file: %v", err)
+	}
+
+	// Windows returns False if the path doesn't exist.
+	if gce.IsWindows(vm.Platform) && strings.Contains(out.Stdout, "False") {
+		return fmt.Errorf("couldn't find file %s. Output response %s. Error response: %s", filePath, out.Stdout, out.Stderr)
+	}
+
+	return nil
+}
+
+// rejectDuplicates looks for duplicate entries in the input slice and returns
+// an error if any is found.
+func rejectDuplicates(apps []string) error {
+	seen := make(map[string]bool)
+	for _, app := range apps {
+		if seen[app] {
+			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
+		}
+		seen[app] = true
+	}
+	return nil
 }
 
 // appsToTest reads which applications to test for the given agent+platform
 // combination from the appropriate supported_applications.txt file.
-func appsToTest(agentType, platform string) ([]string, error) {
-	contents, err := os.ReadFile(
-		path.Join(scriptsDir, "agent", agentType, osFolder(platform), "supported_applications.txt"))
+func appsToTest(platform string) ([]string, error) {
+	contents, err := readFileFromScriptsDir(
+		path.Join("agent", gce.PlatformKind(platform), "supported_applications.txt"))
 	if err != nil {
 		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
 	}
 
 	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	if err = rejectDuplicates(apps); err != nil {
+		return nil, err
+	}
 	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
 		apps = removeFromSlice(apps, "mssql")
 	}
 	return apps, nil
-}
-
-// findMetricName reads which metric to query from the metric_name.txt file
-// corresponding to the given application. The file is allowed to be empty,
-// and if so, the test is skipped.
-func findMetricName(app string) (string, error) {
-	contents, err := os.ReadFile(path.Join(scriptsDir, "applications", app, "metric_name.txt"))
-	if err != nil {
-		return "", fmt.Errorf("could not read metric_name.txt: %v", err)
-	}
-	return strings.TrimSpace(string(contents)), nil
-}
-
-func sliceContains(slice []string, toFind string) bool {
-	for _, entry := range slice {
-		if entry == toFind {
-			return true
-		}
-	}
-	return false
 }
 
 const (
@@ -133,7 +159,7 @@ func distroFolder(platform string) (string, error) {
 }
 
 func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
-	return os.ReadFile(path.Join(scriptsDir, scriptPath))
+	return scriptsDir.ReadFile(path.Join("third_party_apps_data", scriptPath))
 }
 
 // runScriptFromScriptsDir runs a script on the given VM.
@@ -152,87 +178,365 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 
 // Installs the agent according to the instructions in a script
 // stored in the scripts directory.
-func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
+func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	environmentVariables := make(map[string]string)
 	suffix := os.Getenv("REPO_SUFFIX")
 	if suffix != "" {
 		environmentVariables["REPO_SUFFIX"] = suffix
 	}
-	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "install"), environmentVariables); err != nil {
+	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
 	}
 	return nonRetryable, nil
 }
 
-func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType string) (bool, error) {
+func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	defer time.Sleep(10 * time.Second)
 	if packagesInGCS == "" {
-		return installUsingScript(ctx, logger, vm, agentType)
+		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, agentType, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
-// expectedEntries encodes a series of assertions about what data we expect to
-// to see in the logging backend.
-type expectedEntries struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-	LogEntries []expectedEntry `yaml:"log_entries"`
-}
-type expectedEntry struct {
-	LogName string `yaml:"log_name"`
-	// Map of field name to a regex that is expected to match the field value.
-	// For example, {"jsonPayload.message": ".*access denied.*"}.
-	FieldMatchers map[string]string `yaml:"field_matchers"`
-}
-
-// constructQuery converts the given map of:
-//   field name => field value regex
+// constructQuery converts the given struct of:
+//
+//	field name => field value regex
+//
 // into a query filter to pass to the logging API.
-func constructQuery(fieldMatchers map[string]string) string {
+func constructQuery(logName string, fields []*metadata.LogFields) string {
 	var parts []string
-	for field, matcher := range fieldMatchers {
-		parts = append(parts, fmt.Sprintf("%s=~%q", field, matcher))
+	for _, field := range fields {
+		if field.ValueRegex != "" {
+			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
+		}
 	}
+
+	if logName != "syslog" {
+		// verify instrumentation_source label
+		val := fmt.Sprintf("agent.googleapis.com/%s", logName)
+		parts = append(parts, fmt.Sprintf(`%s=%s`, `labels."logging.googleapis.com/instrumentation_source"`, val))
+	}
+
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, testCaseBytes []byte) error {
-	var entries expectedEntries
-	err := yaml.UnmarshalStrict(testCaseBytes, &entries)
-	if err != nil {
-		return fmt.Errorf("could not unmarshal contents of expected_logs.yaml: %v", err)
+// logFieldsMapWithPrefix returns a field name => LogField mapping where all the fieldnames have the provided prefix.
+// Note that the map will omit the prefix in the returned map.
+func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string]*metadata.LogFields {
+	if log == nil {
+		return nil
 	}
-	logger.ToMainLog().Printf("Parsed expected_logs.yaml: %+v", entries)
 
+	fieldsMap := make(map[string]*metadata.LogFields)
+	for _, entry := range log.Fields {
+		if strings.HasPrefix(entry.Name, prefix) {
+			fieldsMap[strings.TrimPrefix(entry.Name, prefix)] = entry
+		}
+	}
+
+	return fieldsMap
+}
+
+// verifyLogField verifies that the actual field retrieved from Cloud Logging is as expected.
+func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
+	expectedField, ok := expectedFields[fieldName]
+	if !ok {
+		// Not expecting this field. It could however be populated with some default zero-values when we
+		// query it back. Check for zero values basued on expectedField.type? Not ideal for sure.
+		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
+			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+		}
+		return nil
+	}
+
+	if len(actualField) == 0 {
+		if expectedField.Optional {
+			return nil
+		} else {
+			return fmt.Errorf("expected non-empty value for log field %s\n", fieldName)
+		}
+	}
+
+	// The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
+	pattern := "(?s).*"
+	if expectedField.ValueRegex != "" {
+		pattern = expectedField.ValueRegex
+	}
+	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	if err != nil {
+		return err
+	}
+
+	if !match {
+		return fmt.Errorf("field %s of the actual log: %s didn't match regex pattern: %s\n", fieldName, actualField, pattern)
+	}
+
+	return nil
+}
+
+// verifyJsonPayload verifies that the jsonPayload component of th LogEntry is as expected.
+// TODO: We don't unpack the jsonPayload and assert that the nested substructure is as expected.
+//
+//	The way we could do this is flatten the nested payload into a single layer (using something like https://github.com/jeremywohl/flatten)
+//	and then verifying the fields against the expected fields.
+//
+// This should be added if some of the integrations expect to create nested fields.
+func verifyJsonPayload(actualPayload interface{}, expectedPayload map[string]*metadata.LogFields) error {
+	var multiErr error
+	actualPayloadFields := actualPayload.(*structpb.Struct).GetFields()
+	for expectedKey, expectedValue := range expectedPayload {
+		actualValue, ok := actualPayloadFields[expectedKey]
+		if !ok || actualValue == nil {
+			if !expectedValue.Optional {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
+			}
+
+			continue
+		}
+
+		// Sanitize the actualValue string.
+		// TODO: Assert that the types are what we expect them to be. Left for anther day.
+		var actualValueStr string
+		switch v := actualValue.GetKind().(type) {
+		case *structpb.Value_NumberValue:
+			if v != nil {
+				switch {
+				case math.IsNaN(v.NumberValue):
+					actualValueStr = "NaN"
+				case math.IsInf(v.NumberValue, +1):
+					actualValueStr = "Infinity"
+				case math.IsInf(v.NumberValue, -1):
+					actualValueStr = "-Infinity"
+				default:
+					actualValueStr = strconv.FormatFloat(v.NumberValue, 'E', -1, 32)
+				}
+			}
+		case *structpb.Value_StringValue:
+			if v != nil {
+				actualValueStr = v.StringValue
+			}
+		case *structpb.Value_BoolValue:
+			if v != nil {
+				actualValueStr = strconv.FormatBool(v.BoolValue)
+			}
+		case *structpb.Value_StructValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.StructValue.AsMap())
+			}
+		case *structpb.Value_ListValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.ListValue.AsSlice())
+			}
+		}
+
+		if err := verifyLogField(expectedKey, actualValueStr, expectedPayload); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	for actualKey, actualValue := range actualPayloadFields {
+		if _, ok := expectedPayload[actualKey]; !ok {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s\n", actualKey, actualValue.String()))
+		}
+	}
+
+	return multiErr
+}
+
+// verifyLog returns an error if the actualLog has some fields that weren't expected as specified. Or if it is missing
+// some required fields.
+func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog) error {
+	var multiErr error
+	if expectedLog.LogName == "syslog" {
+		// If the application writes to syslog directly (for example: activemq), the log formats are sometimes different
+		// per distro.
+		return nil
+	}
+
+	// Verify all fields in the actualLog match some field in the expectedLog.
+	expectedFields := logFieldsMapWithPrefix(expectedLog, "")
+
+	// Severity
+	if err := verifyLogField("severity", actualLog.Severity.String(), expectedFields); err != nil {
+		multiErr = multierr.Append(multiErr, err)
+	}
+
+	// SourceLocation
+	if actualLog.SourceLocation == nil {
+		_, fileOk := expectedFields["sourceLocation.file"]
+		_, lineOk := expectedFields["sourceLocation.line"]
+		if fileOk || lineOk {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+		}
+	} else {
+		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+		if err := verifyLogField("sourceLocation.line", strconv.FormatInt(actualLog.SourceLocation.Line, 10), expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	// HTTP Request
+	// Taken from https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest
+	httpRequestFields := []string{"httpRequest.requestMethod", "httpRequest.requestUrl",
+		"httpRequest.requestSize", "httpRequest.status", "httpRequest.responseSize",
+		"httpRequest.userAgent", "httpRequest.remoteIp", "httpRequest.serverIp",
+		"httpRequest.referer", "httpRequest.latency", "httpRequest.cacheLookup",
+		"httpRequest.cacheHit", "httpRequest.cacheValidatedWithOriginServer",
+		"httpRequest.cacheFillBytes", "httpRequest.protocol"}
+	if actualLog.HTTPRequest == nil {
+		for _, field := range httpRequestFields {
+			if _, ok := expectedFields[field]; ok {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected value for field %s but got nil\n", field))
+			}
+		}
+	} else {
+		// Validate that the HTTP fields that are present match the expected log.
+		testPairs := [][2]string{
+			{"httpRequest.requestMethod", actualLog.HTTPRequest.Request.Method},
+			{"httpRequest.requestUrl", actualLog.HTTPRequest.Request.URL.String()},
+			{"httpRequest.requestSize", strconv.FormatInt(actualLog.HTTPRequest.RequestSize, 10)},
+			{"httpRequest.status", strconv.Itoa(actualLog.HTTPRequest.Status)},
+			{"httpRequest.responseSize", strconv.FormatInt(actualLog.HTTPRequest.ResponseSize, 10)},
+			{"httpRequest.userAgent", actualLog.HTTPRequest.Request.UserAgent()},
+			{"httpRequest.remoteIp", actualLog.HTTPRequest.RemoteIP},
+			{"httpRequest.serverIp", actualLog.HTTPRequest.LocalIP},
+			{"httpRequest.referer", actualLog.HTTPRequest.Request.Referer()},
+			{"httpRequest.latency", actualLog.HTTPRequest.Latency.String()},
+			{"httpRequest.cacheLookup", strconv.FormatBool(actualLog.HTTPRequest.CacheLookup)},
+			{"httpRequest.cacheHit", strconv.FormatBool(actualLog.HTTPRequest.CacheHit)},
+			{"httpRequest.cacheValidatedWithOriginServer", strconv.FormatBool(actualLog.HTTPRequest.CacheValidatedWithOriginServer)},
+			{"httpRequest.cacheFillBytes", strconv.FormatInt(actualLog.HTTPRequest.CacheFillBytes, 10)},
+			{"httpRequest.protocol", actualLog.HTTPRequest.Request.Proto},
+		}
+		for _, test := range testPairs {
+			expectedHTTPField, actualHTTPField := test[0], test[1]
+			if err := verifyLogField(expectedHTTPField, actualHTTPField, expectedFields); err != nil {
+				multiErr = multierr.Append(multiErr, err)
+			}
+		}
+	}
+
+	// Labels - Untested as of yet, since no application sets LogEntry labels.
+
+	// JSON Payload
+	expectedPayloadFields := logFieldsMapWithPrefix(expectedLog, "jsonPayload.")
+	if actualLog.Payload == nil {
+		if len(expectedPayloadFields) > 0 {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil\n"))
+		}
+	} else {
+		if err := verifyJsonPayload(actualLog.Payload, expectedPayloadFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	if multiErr != nil {
+		return fmt.Errorf("%s: %w", expectedLog.LogName, multiErr)
+	}
+
+	return nil
+}
+
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
-	c := make(chan error, len(entries.LogEntries))
-	for _, entry := range entries.LogEntries {
+	var err error
+	c := make(chan error, len(logs))
+	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.FieldMatchers))
+			// Construct query using non-optional fields.
+			query := constructQuery(entry.LogName, entry.Fields)
+
+			// Query logging backend for log matching the query.
+			actualLog, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			// Verify the log is what was expected.
+			err = verifyLog(actualLog, entry)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			c <- nil
 		}()
 	}
-	for range entries.LogEntries {
+	for range logs {
 		err = multierr.Append(err, <-c)
 	}
 	return err
 }
 
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
+	var err error
+	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
+	// Wait for the representative metric first, which is intended to *always*
+	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
+	// if it does exist, we go on to the other metrics in parallel, by which point they
+	// have gotten a head start and should end up needing fewer API calls before being found.
+	// In both cases we make significantly fewer API calls which helps us stay under quota.
+	for _, metric := range metrics {
+		if !metric.Representative {
+			continue
+		}
+		err = assertMetric(ctx, logger, vm, metric)
+		if gce.IsExhaustedRetriesMetricError(err) {
+			return fmt.Errorf("representative metric %s not found, skipping remaining metrics", metric.Type)
+		}
+		// If err is non-nil here, then the non-representative metric tests later on will
+		// pick it up and report it as part of the multierr.
+		break
+	}
+	// Give some catch-up time to the remaining metrics, which tend to be configured
+	// for a 60-second interval, plus 10 seconds to let the data propagate in the backend.
+	logger.ToMainLog().Println("Found representative metric, sleeping before checking remaining metrics")
+	time.Sleep(70 * time.Second)
+	// Wait for all remaining metrics, skipping the optional ones.
+	// TODO: Improve coverage for optional metrics.
+	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
+	var requiredMetrics []*metadata.ExpectedMetric
+	for _, metric := range metrics {
+		if metric.Optional || metric.Representative {
+			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
+			continue
+		}
+		requiredMetrics = append(requiredMetrics, metric)
+	}
+	c := make(chan error, len(requiredMetrics))
+	for _, metric := range requiredMetrics {
+		metric := metric // https://go.dev/doc/faq#closures_and_goroutines
+		go func() {
+			c <- assertMetric(ctx, logger, vm, metric)
+		}()
+	}
+	for range requiredMetrics {
+		err = multierr.Append(err, <-c)
+	}
+	return err
+}
+
+func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
+	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
+	if err != nil {
+		// Optional metrics can be missing
+		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
+			return nil
+		}
+		return err
+	}
+	return metadata.AssertMetric(metric, series)
+}
+
 type testConfig struct {
 	// Note on tags: the "yaml" tag specifies the name of this field in the
 	// .yaml file.
-
-	// Until we have tests working on all platforms, platforms_override
-	// provides a way for people to control which platforms actually run
-	// from GitHub, because some of our GitHub contributors don't have access
-	// to the GCL file where the full set of platforms is configured.
-	Platforms []string `yaml:"platforms_override"`
-	// retries provides a way for GitHub contributors to control the number
-	// of retries (for retriable errors only).
-	Retries int `yaml:"retries"`
 
 	// per_application_overrides is a map from application to specific settings
 	// for that application.
@@ -247,11 +551,7 @@ type testConfig struct {
 // parseTestConfigFile looks for test_config.yaml, and if it exists, merges
 // any options in it into the default test config and returns the result.
 func parseTestConfigFile() (testConfig, error) {
-	// Set up the default test options.
-	config := testConfig{
-		Platforms: strings.Split(os.Getenv("PLATFORMS"), ","),
-		Retries:   3,
-	}
+	config := testConfig{}
 
 	bytes, err := readFileFromScriptsDir("test_config.yaml")
 	if err != nil {
@@ -270,27 +570,47 @@ func parseTestConfigFile() (testConfig, error) {
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, agentType, app string) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata metadata.IntegrationMetadata) (retry bool, err error) {
 	folder, err := distroFolder(vm.Platform)
 	if err != nil {
 		return nonRetryable, err
 	}
+
+	installEnv := make(map[string]string)
+	if folder == "debian_ubuntu" {
+		// Gets us around problematic prompts for user input.
+		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
+		// Configures sudo to keep the value of DEBIAN_FRONTEND that we set.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+			return nonRetryable, err
+		}
+	}
+
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), nil); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
-	if shouldRetry, err := installAgent(ctx, logger, vm, agentType); err != nil {
+	if metadata.RestartAfterInstall {
+		logger.ToMainLog().Printf("Restarting vm instance...")
+		err := gce.RestartInstance(ctx, logger, vm)
+		if err != nil {
+			return nonRetryable, err
+		}
+		logger.ToMainLog().Printf("vm instance restarted")
+	}
+
+	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
 	}
 
-	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "post"), nil); err != nil {
-		return retryable, fmt.Errorf("error starting %s: %v", app, err)
+	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
+		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
-	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", agentType, osFolder(vm.Platform), "enable_"+app), nil); err != nil {
-		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
+	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	if err = assertFilePresence(ctx, logger, vm, backupConfigFilePath); err != nil {
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
 
 	// Check if the exercise script exists, and run it if it does.
@@ -302,29 +622,159 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	// Check if expected_logs.yaml exists, and run the test cases if it does.
-	testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "expected_logs.yaml"))
-	if err == nil {
-		logger.ToMainLog().Println("found expected_logs.yaml, running logging test cases...")
-		if err = runLoggingTestCases(ctx, logger, vm, testCaseBytes); err != nil {
+	if metadata.ExpectedLogs != nil {
+		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
+		if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
 	}
 
-	metricName, err := findMetricName(app)
-	if err != nil {
-		return nonRetryable, fmt.Errorf("error finding metric name for %v: %v", app, err)
+	if metadata.ExpectedMetrics != nil {
+		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+			return nonRetryable, err
+		}
 	}
-	if metricName == "" {
-		logger.ToMainLog().Println("metric_name.txt is empty, skipping metrics testing...")
-		return nonRetryable, nil
-	}
-	// Assert that the right metric has been uploaded for the given instance
-	// at least once in the last hour.
-	if err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metricName, 1*time.Hour, nil); err != nil {
-		return nonRetryable, err
-	}
+
 	return nonRetryable, nil
+}
+
+// Returns a map of application name to its parsed and validated metadata.yaml.
+// The set of applications returned is authoritative and corresponds to the
+// directory names under integration_test/third_party_apps_data/applications.
+func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata {
+	allApps := make(map[string]metadata.IntegrationMetadata)
+
+	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
+	if err != nil {
+		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
+	}
+	for _, file := range files {
+		app := file.Name()
+		var integrationMetadata metadata.IntegrationMetadata
+		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
+		if err != nil {
+			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
+		}
+		allApps[app] = integrationMetadata
+	}
+	log.Printf("found %v apps", len(allApps))
+	if len(allApps) == 0 {
+		t.Fatal("Found no applications inside third_party_apps_data/applications")
+	}
+	return allApps
+}
+
+func modifiedFiles(t *testing.T) []string {
+	cmd := exec.Command("git", "diff", "--name-only", "origin/master")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("got error calling `git diff`: %v", err)
+	}
+	stdout := string(out)
+	log.Printf("git diff output:\n\tstdout:%v", stdout)
+
+	return strings.Split(stdout, "\n")
+}
+
+// Determine what apps are impacted by current code changes.
+// Extracts app names as follows:
+//
+//	apps/<appname>.go
+//	integration_test/third_party_apps_data/<appname>/
+//
+// Checks the extracted app names against the set of all known apps.
+func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
+	impactedApps := make(map[string]bool)
+	for _, f := range mf {
+		if strings.HasPrefix(f, "apps/") {
+
+			// File names: apps/<appname>.go
+			f := strings.TrimPrefix(f, "apps/")
+			f = strings.TrimSuffix(f, ".go")
+
+			if _, ok := allApps[f]; ok {
+				impactedApps[f] = true
+			}
+		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
+			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
+			f := strings.TrimPrefix(f, "integration_test/third_party_apps_data/applications/")
+			f = strings.Split(f, "/")[0]
+			// The directories here are already authoritative, no
+			// need to check against list.
+			impactedApps[f] = true
+
+		}
+	}
+	log.Printf("impacted apps: %v", impactedApps)
+	return impactedApps
+}
+
+type test struct {
+	platform   string
+	app        string
+	metadata   metadata.IntegrationMetadata
+	skipReason string
+}
+
+var defaultPlatforms = map[string]bool{
+	"debian-10":    true,
+	"windows-2019": true,
+}
+
+const (
+	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
+	SAPHANAApp      = "saphana"
+)
+
+// incompatibleOperatingSystem looks at the supported_operating_systems field
+// of metadata.yaml for this app and returns a nonempty skip reason if it
+// thinks this app doesn't support the given platform.
+// supported_operating_systems should only contain "linux", "windows", or
+// "linux_and_windows".
+func incompatibleOperatingSystem(testCase test) string {
+	supported := testCase.metadata.SupportedOperatingSystems
+	if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
+		return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
+	}
+	return "" // We are testing on a supported platform for this app.
+}
+
+// When in `-short` test mode, mark some tests for skipping, based on
+// test_config and impacted apps.  Always test all apps against the default
+// platform.  If a subset of apps is determined to be impacted, also test all
+// platforms for those apps.
+// `platforms_to_skip` overrides the above.
+// Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
+// app on all other platforms too.
+func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+	for i, test := range tests {
+		if testing.Short() {
+			_, testApp := impactedApps[test.app]
+			_, defaultPlatform := defaultPlatforms[test.platform]
+			if !defaultPlatform && !testApp {
+				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
+			}
+		}
+		if metadata.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
+			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		}
+		if reason := incompatibleOperatingSystem(test); reason != "" {
+			tests[i].skipReason = reason
+		}
+		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+		}
+		isSAPHANAPlatform := test.platform == SAPHANAPlatform
+		isSAPHANAApp := test.app == SAPHANAApp
+		if isSAPHANAPlatform != isSAPHANAApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
+		}
+	}
 }
 
 // This is the entry point for the test. Runs runSingleTest
@@ -332,66 +782,73 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
-	if scriptsDir == "" {
-		t.Fatalf("Cannot run test with empty value of SCRIPTS_DIR.")
-	}
-	agentType := agents.OpsAgentType
-
 	testConfig, err := parseTestConfigFile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, platform := range testConfig.Platforms {
-		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(platform, func(t *testing.T) {
+	tests := []test{}
+	allApps := fetchAppsAndMetadata(t)
+	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	for _, platform := range platforms {
+		for app, metadata := range allApps {
+			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+		}
+	}
+
+	// Filter tests
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+
+	// Execute tests
+	for _, tc := range tests {
+		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
 			t.Parallel()
 
-			apps, err := appsToTest(agentType, platform)
-			if err != nil {
-				t.Fatalf("Error when reading list of apps to test for agentType=%v, platform=%v. err=%v", agentType, platform, err)
+			if tc.skipReason != "" {
+				t.Skip(tc.skipReason)
 			}
-			if len(apps) == 0 {
-				t.Fatalf("Found no applications when testing agentType=%v, platform=%v", agentType, platform)
+
+			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+			defer cancel()
+
+			var err error
+			for attempt := 1; attempt <= 4; attempt++ {
+				logger := gce.SetupLogger(t)
+				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
+				options := gce.VMOptions{
+					Platform:             tc.platform,
+					MachineType:          agents.RecommendedMachineType(tc.platform),
+					ExtraCreateArguments: nil,
+				}
+				if tc.platform == SAPHANAPlatform {
+					// This image needs an SSD in order to be performant enough.
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
+					options.ImageProject = "stackdriver-test-143416"
+				}
+
+				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
+				logger.ToMainLog().Printf("VM is ready: %#v", vm)
+
+				var retryable bool
+				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
+				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				if err == nil {
+					return
+				}
+				agents.RunOpsAgentDiagnostics(ctx, logger, vm)
+				if !retryable {
+					t.Fatalf("Non-retryable error: %v", err)
+				}
+				// If we got here, we're going to retry runSingleTest(). The VM we spawned
+				// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
+				// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
+				// do our retries, we preemptively delete the VM now.
+				if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+					t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
+				}
 			}
-			for _, app := range apps {
-				app := app // https://golang.org/doc/faq#closures_and_goroutines
-				t.Run(app, func(t *testing.T) {
-					t.Parallel()
-
-					if sliceContains(testConfig.PerApplicationOverrides[app].PlatformsToSkip, platform) {
-						t.Skip("Skipping test due to 'platforms_to_skip' entry in test_config.yaml")
-					}
-					ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-					defer cancel()
-
-					var err error
-					for attempt := 1; attempt <= testConfig.Retries+1; attempt++ {
-						logger := gce.SetupLogger(t)
-						logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-						vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
-						logger.ToMainLog().Printf("VM is ready: %#v", vm)
-
-						var retryable bool
-						retryable, err = runSingleTest(ctx, logger, vm, agentType, app)
-						log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, platform, app, err, retryable)
-						if err == nil {
-							return
-						}
-						agents.RunOpsAgentDiagnostics(ctx, logger, vm)
-						if !retryable {
-							t.Fatalf("Non-retryable error: %v", err)
-						}
-						// If we got here, we're going to retry runSingleTest(). The VM we spawned
-						// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
-						// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
-						// do our retries, we preemptively delete the VM now.
-						if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
-							t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
-						}
-					}
-					t.Errorf("Final attempt failed: %v", err)
-				})
-			}
+			t.Errorf("Final attempt failed: %v", err)
 		})
 	}
+
 }

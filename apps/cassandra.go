@@ -63,7 +63,7 @@ func (LoggingProcessorCassandraSystem) Type() string {
 }
 
 func (p LoggingProcessorCassandraSystem) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(tag, uid)
+	return javaLogParsingComponents(p.Type(), tag, uid)
 }
 
 type LoggingProcessorCassandraDebug struct {
@@ -75,10 +75,10 @@ func (LoggingProcessorCassandraDebug) Type() string {
 }
 
 func (p LoggingProcessorCassandraDebug) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(tag, uid)
+	return javaLogParsingComponents(p.Type(), tag, uid)
 }
 
-func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
+func javaLogParsingComponents(processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -119,15 +119,22 @@ func javaLogParsingComponents(tag string, uid string) []fluentbit.Component {
 	// Best documentation found for log levels:
 	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"TRACE", "TRACE"},
-				{"DEBUG", "DEBUG"},
-				{"INFO", "INFO"},
-				{"ERROR", "ERROR"},
-				{"WARN", "WARNING"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"TRACE": "TRACE",
+						"DEBUG": "DEBUG",
+						"INFO":  "INFO",
+						"ERROR": "ERROR",
+						"WARN":  "WARNING",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c
@@ -177,6 +184,12 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 			},
 		},
 	}.Components(tag, uid)
+
+	c = append(c, confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)...)
 
 	return c
 }

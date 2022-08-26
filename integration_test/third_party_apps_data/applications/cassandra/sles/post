@@ -1,2 +1,0 @@
-apache-cassandra/bin/cassandra -f &
-ps -f -p $!

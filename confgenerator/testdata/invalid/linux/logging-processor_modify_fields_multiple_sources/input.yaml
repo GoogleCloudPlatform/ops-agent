@@ -1,0 +1,12 @@
+logging:
+  processors:
+    processor_1:
+      type: modify_fields
+      fields:
+        jsonPayload.foo:
+          copy_from: jsonPayload.bar
+          move_from: jsonPayload.baz
+  service:
+    pipelines:
+      default_pipeline:
+        processors: [processor_1]

@@ -1,9 +1,0 @@
-set -e
-
-sudo service postgresql restart
-
-sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
-sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
-sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
-
-sudo service postgresql restart

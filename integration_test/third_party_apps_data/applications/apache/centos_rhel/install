@@ -2,3 +2,5 @@ set -e
 
 sudo yum -y install httpd
 (cd /etc/httpd/conf.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/httpd/conf.d/status.conf)
+
+sudo service httpd start

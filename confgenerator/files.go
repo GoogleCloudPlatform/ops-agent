@@ -23,19 +23,6 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-func GenerateFiles(input, service, logsDir, stateDir, outDir string) error {
-	hostInfo, _ := host.Info()
-	data, err := ioutil.ReadFile(input)
-	if err != nil {
-		return err
-	}
-	uc, err := ParseUnifiedConfigAndValidate(data, hostInfo.OS)
-	if err != nil {
-		return err
-	}
-	return GenerateFilesFromConfig(&uc, service, logsDir, stateDir, outDir)
-}
-
 func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
 	uc := UnifiedConfig{}
 
@@ -56,18 +43,14 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":
-		mainConfig, parserConfig, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
+		files, err := uc.GenerateFluentBitConfigs(logsDir, stateDir, hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		if err = writeConfigFile([]byte(mainConfig), filepath.Join(outDir, "fluent_bit_main.conf")); err != nil {
-			return err
-		}
-		if err = writeConfigFile([]byte(parserConfig), filepath.Join(outDir, "fluent_bit_parser.conf")); err != nil {
-			return err
-		}
-		if err = writeForwardScript(filepath.Join(outDir, "add_log_name.lua")); err != nil {
-			return err
+		for name, contents := range files {
+			if err = writeConfigFile([]byte(contents), filepath.Join(outDir, name)); err != nil {
+				return err
+			}
 		}
 	case "otel":
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)

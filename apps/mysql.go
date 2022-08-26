@@ -67,6 +67,19 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
+				// The following changes are here to ensure maximum backwards compatibility after the fixes
+				// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
+				otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+				otel.UpdateMetric("mysql.buffer_pool_pages",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric("mysql.threads",
+					otel.ToggleScalarDataType,
+				),
+				otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
+					otel.RenameLabel("status", "kind"),
+					otel.ToggleScalarDataType,
+				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
@@ -127,19 +140,27 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"ERROR", "ERROR"},
-				{"Error", "ERROR"},
-				{"WARNING", "WARNING"},
-				{"Warning", "WARNING"},
-				{"SYSTEM", "INFO"},
-				{"System", "INFO"},
-				{"NOTE", "NOTICE"},
-				{"Note", "NOTICE"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"ERROR":   "ERROR",
+						"Error":   "ERROR",
+						"WARNING": "WARNING",
+						"Warning": "WARNING",
+						"SYSTEM":  "INFO",
+						"System":  "INFO",
+						"NOTE":    "NOTICE",
+						"Note":    "NOTICE",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
+
 	return c
 }
 
@@ -184,6 +205,13 @@ func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluen
 		},
 	}.Components(tag, uid)
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 
@@ -289,6 +317,13 @@ func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbi
 		},
 	}.Components(tag, uid)
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 

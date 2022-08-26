@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
@@ -25,9 +24,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 )
 
+// TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
 type ParseMultilineGroup struct {
-	Type      string   `yaml:"type" validate:"required,oneof=language_exceptions"`
-	Languages []string `yaml:"languages" validate:"required,unique,min=1,dive,oneof=java"`
+	Type     string `yaml:"type" validate:"required,oneof=language_exceptions"`
+	Language string `yaml:"language" validate:"required,oneof=java"`
 }
 
 type ParseMultiline struct {
@@ -59,13 +59,11 @@ func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
 	var components []fluentbit.Component
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
-			for i, l := range g.Languages {
-				component := fluentbit.ParseMultilineComponent(tag, fmt.Sprintf("%s_%s", uid, strconv.Itoa(i)), multilineRulesLanguageMap[l])
-				// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-				renameLogToMessage := modify.NewRenameOptions("log", "message")
-				components = append(components, renameLogToMessage.Component(tag))
-				components = append(components, component...)
-			}
+			component := fluentbit.ParseMultilineComponent(tag, uid, multilineRulesLanguageMap[g.Language])
+			// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+			renameLogToMessage := modify.NewRenameOptions("log", "message")
+			components = append(components, renameLogToMessage.Component(tag))
+			components = append(components, component...)
 		}
 	}
 
@@ -105,10 +103,11 @@ func (r LoggingProcessorParseJson) Type() string {
 func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "json"
-	return []fluentbit.Component{
-		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
-		parser,
-	}
+
+	parserFilters := []fluentbit.Component{}
+	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	parserFilters = append(parserFilters, parser)
+	return parserFilters
 }
 
 func init() {
@@ -134,10 +133,10 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 	parser.Config["Format"] = "regex"
 	parser.Config["Regex"] = p.Regex
 
-	return []fluentbit.Component{
-		parser,
-		fluentbit.ParserFilterComponent(tag, p.Field, []string{parserName}),
-	}
+	parserFilters := []fluentbit.Component{}
+	parserFilters = append(parserFilters, parser)
+	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	return parserFilters
 }
 
 type RegexParser struct {
@@ -163,7 +162,7 @@ func (p LoggingProcessorParseRegexComplex) Components(tag, uid string) []fluentb
 		parserNames = append(parserNames, parserName)
 	}
 
-	components = append(components, fluentbit.ParserFilterComponent(tag, p.Field, parserNames))
+	components = append(components, fluentbit.ParserFilterComponents(tag, p.Field, parserNames, false)...)
 	return components
 }
 
@@ -329,7 +328,19 @@ func (p LoggingProcessorExcludeLogs) Components(tag, uid string) []fluentbit.Com
 		}
 		filters = append(filters, filter)
 	}
-	return filter.AllComponents(tag, filters, true)
+	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
+		"match": filter.MatchesAny(filters),
+	})
+	components = append(components, fluentbit.LuaFilterComponents(
+		tag, "process", fmt.Sprintf(`
+function process(tag, timestamp, record)
+%s
+  if match then
+    return -1, 0, 0
+  end
+  return 0, 0, 0
+end`, lua))...)
+	return components
 }
 
 func init() {

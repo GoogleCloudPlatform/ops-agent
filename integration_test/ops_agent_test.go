@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build integration_test
 
 /*
@@ -12,20 +26,13 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 
 The following variables are optional:
 
-REPO_SUFFIX: If provided, what Rapture repo suffix to install the ops agent from.
+REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Each agent in
-		AGENTS_TO_TEST must have its own subdirectory, so for example this would be
-		a valid structure inside AGENT_PACKAGES_IN_GCS if
-		AGENTS_TO_TEST=metrics,ops_agent:
-		├── metrics
-    │   ├── collectd-4.5.6.deb
-    │   ├── collectd-4.5.6.rpm
-    │   └── otel-collector-0.1.2.goo
-    └── ops-agent
-        ├── ops-agent-google-cloud-1.2.3.deb
-        ├── ops-agent-google-cloud-1.2.3.rpm
-        └── ops-agent-google-cloud-1.2.3.goo
+.deb/.rpm/.goo files to install on the testing VMs.
+
+REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
+version of the Ops Agent to install first, before installing the version
+from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -35,27 +42,31 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
 
+	cloudlogging "cloud.google.com/go/logging"
+	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
-var (
-	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
-)
-
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "C:/mylog"
+		return `C:\mylog`
 	}
 	return "/tmp/mylog"
 }
@@ -109,7 +120,7 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// *somewhere*. So the workaround is to make the log source's name unique
 	// per logName.
 	source := logName + "__ops_agent_test"
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog –LogName '%s' –Source '%s' }", source, logName, source)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
 	}
 
@@ -139,12 +150,31 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, agents.OpsAgentType, packagesInGCS)
+type packageLocation struct {
+	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
+	// This setting takes precedence over repoSuffix.
+	packagesInGCS string
+	// Package repository suffix to install from. Setting this to ""
+	// means to install the latest stable release.
+	repoSuffix string
+}
+
+func locationFromEnvVars() packageLocation {
+	return packageLocation{
+		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:    os.Getenv("REPO_SUFFIX"),
+	}
+}
+
+// installOpsAgent installs the Ops Agent on the given VM. Preferentially
+// chooses to install from location.packagesInGCS if that is set, otherwise
+// falls back to location.repoSuffix.
+func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
+	if location.packagesInGCS != "" {
+		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
-		suffix := os.Getenv("REPO_SUFFIX")
+		suffix := location.repoSuffix
 		if suffix == "" {
 			suffix = "all"
 		}
@@ -164,7 +194,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+os.Getenv("REPO_SUFFIX")+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
@@ -173,8 +203,15 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	return nil
 }
 
+// setupOpsAgent installs the Ops Agent and installs the given config.
 func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
-	if err := installOpsAgent(ctx, logger, vm); err != nil {
+	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
+}
+
+// setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
+// decide which version of the agent gets installed.
+func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
+	if err := installOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
 	startupDelay := 20 * time.Second
@@ -184,7 +221,7 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), configPathForPlatform(vm.Platform)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
@@ -219,7 +256,7 @@ func TestParseMultilineFile(t *testing.T) {
       type: parse_multiline
       match_any:
       - type: language_exceptions
-        languages: [java]
+        language: java
   service:
     pipelines:
       p1:
@@ -318,6 +355,7 @@ func TestCustomLogFile(t *testing.T) {
     my_exclude:
       type: exclude_logs
       match_any:
+      - jsonPayload.missing_field = "value"
       - jsonPayload.message =~ "test pattern"
   service:
     pipelines:
@@ -392,6 +430,134 @@ func TestCustomLogFormat(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func TestHTTPRequestLog(t *testing.T) {
+	t.Parallel()
+
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
+  processors:
+    json1:
+      type: parse_json
+      field: message
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+        exporters: [google]`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// The HTTP request data that will be used in each log
+		httpRequestBody := map[string]interface{}{
+			"requestMethod": "GET",
+			"requestUrl":    "https://cool.site.net",
+			"status":        200,
+		}
+
+		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
+		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestLogId = "new_request_log"
+		newLogBody := map[string]interface{}{
+			"logId":           newHTTPRequestLogId,
+			newHTTPRequestKey: httpRequestBody,
+		}
+		newLogBytes, err := json.Marshal(newLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal new test log: %v", err)
+		}
+
+		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
+		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		const oldHTTPRequestLogId = "old_request_log"
+		oldLogBody := map[string]interface{}{
+			"logId":           oldHTTPRequestLogId,
+			oldHTTPRequestKey: httpRequestBody,
+		}
+		oldLogBytes, err := json.Marshal(oldLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal old test log: %v", err)
+		}
+
+		// Write both logs to log source file at the same time.
+		err = gce.UploadContent(
+			ctx,
+			logger,
+			vm,
+			strings.NewReader(fmt.Sprintf("%s\n%s\n", string(newLogBytes), string(oldLogBytes))),
+			logPath)
+		if err != nil {
+			t.Fatalf("error writing log line: %v", err)
+		}
+
+		queryLogById := func(logId string) (*cloudlogging.Entry, error) {
+			return gce.QueryLog(
+				ctx,
+				logger.ToMainLog(),
+				vm,
+				"mylog_source",
+				time.Hour,
+				fmt.Sprintf("jsonPayload.logId=%q", logId),
+				gce.QueryMaxAttempts)
+		}
+
+		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
+			payload := entry.Payload.(*structpb.Struct)
+			for k := range payload.GetFields() {
+				if k == httpRequestKey {
+					return true
+				}
+			}
+			return false
+		}
+
+		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
+		// parsed as expected by Fluent Bit.
+		t.Run("parse new HTTPRequest key", func(t *testing.T) {
+			t.Parallel()
+			entry, err := queryLogById(newHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", newHTTPRequestLogId, err)
+			}
+			if entry.HTTPRequest == nil {
+				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+			if isKeyInPayload(newHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be stripped out of the payload", newHTTPRequestKey)
+			}
+		})
+
+		// Test that the old field, "logging.googleapis.com/http_request", is no longer
+		// parsed by Fluent Bit.
+		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
+			t.Parallel()
+			entry, err := queryLogById(oldHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", oldHTTPRequestLogId, err)
+			}
+			if entry.HTTPRequest != nil {
+				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+			if !isKeyInPayload(oldHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be present in payload", oldHTTPRequestKey)
+			}
+		})
 	})
 }
 
@@ -674,6 +840,236 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	})
 }
 
+func TestModifyFields(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."my.cool.service/foo":
+          copy_from: jsonPayload.field
+        labels."static":
+          static_value: hello world
+        labels."label2":
+          move_from: labels."label1"
+        severity:
+          static_value: WARNING
+        jsonPayload.field2:
+          move_from: jsonPayload.field
+          omit_if: jsonPayload.missing_field = "present"
+        jsonPayload.default_present:
+          default_value: default
+        jsonPayload.default_absent:
+          default_value: default
+        jsonPayload.integer:
+          static_value: 15
+          type: integer
+        jsonPayload.float:
+          static_value: 10.5
+          type: float
+        jsonPayload.mapped_field:
+          copy_from: jsonPayload.field
+          map_values:
+            value: new_value
+            value2: wrong_value
+        jsonPayload.omitted:
+          static_value: broken
+          omit_if: jsonPayload.field = "value"
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json, modify]
+        exporters: [google]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseWithConflictsWithRecord(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."non-overwritten-label":
+          static_value: non-overwritten
+        labels."overwritten-label":
+          static_value: non-overwritten
+        labels."original-label":
+          static_value: original-label
+        severity:
+          static_value: WARNING
+        sourceLocation.file:
+          static_value: non-overwritten-file-path
+        jsonPayload."non-overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."original-field":
+          static_value: original-value
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+        processors:
+          - modify
+          - json
+        exporters:
+          - google
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
+			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING" AND sourceLocation.file="overwritten-file-path"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestResourceNameLabel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestLogFilePathLabel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      record_log_file_path: true
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// When constructing the query in WaithForLog the backslashes are escaped so
+		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		if gce.IsWindows(platform) {
+			file1 = strings.Replace(file1, `\`, `\\`, 1)
+		}
+
+		// Expect to see log with label added.
+		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -854,97 +1250,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-// agentVersionRegexesForPlatform returns a slice containing all agents that
-// we expect to upload an uptime metric on the given platform. This function
-// returns a list of regexes that we can match against the "version" field of the
-// uptime metric.
-func agentVersionRegexesForPlatform(platform string) []string {
-	// TODO(b/191363559): Remove this whole `gce.IsWindows(platform)` section after we
-	// release a stable Ops Agent version that changes user agent to
-	// google-cloud-ops-agent-metrics/ for Windows as well.
-	if gce.IsWindows(platform) {
-		return []string{
-			// TODO(b/176832677): The Logging agent does not currently upload an uptime metric.
-			// TODO(b/191362867): Update the regex to be more strict after a version of
-			// Ops Agent has been released with the expected user agent.
-			// strings.Join([]string{
-			// 	 "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-			// 	 "Google Cloud Metrics Agent/.*",
-			// }, "|"),
-			strings.Join([]string{
-				"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9].*",
-				"Google Cloud Metrics Agent/.*",
-			}, "|"),
-		}
-	}
-	return []string{
-		// TODO(jschulz): Enable this label once it exists.
-		//"google-cloud-ops-agent-engine/",
-		// TODO(b/170138116): Enable this label once it is being collected.
-		//"google-cloud-ops-agent-logs/",
-		// TODO(b/191362867): Update the regex to be more strict after a version of
-		// Ops Agent has been released with the expected user agent.
-		// "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-		"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*",
-	}
-}
-
-func metricsForPlatform(platform string) []string {
-	commonMetrics := []string{
-		"agent.googleapis.com/agent/api_request_count",
-		"agent.googleapis.com/agent/memory_usage",
-		"agent.googleapis.com/agent/monitoring/point_count",
-
-		// TODO(b/170138116): Enable these metrics once they are being collected.
-		//"agent.googleapis.com/agent/log_entry_count",
-		//"agent.googleapis.com/agent/log_entry_retry_count",
-		//"agent.googleapis.com/agent/request_count",
-
-		"agent.googleapis.com/cpu/load_1m",
-		"agent.googleapis.com/cpu/load_5m",
-		"agent.googleapis.com/cpu/load_15m",
-		"agent.googleapis.com/cpu/utilization",
-
-		"agent.googleapis.com/disk/bytes_used",
-		"agent.googleapis.com/disk/io_time",
-		"agent.googleapis.com/disk/operation_count",
-		"agent.googleapis.com/disk/operation_time",
-		"agent.googleapis.com/disk/percent_used",
-		"agent.googleapis.com/disk/read_bytes_count",
-		"agent.googleapis.com/disk/write_bytes_count",
-
-		"agent.googleapis.com/interface/errors",
-		"agent.googleapis.com/interface/packets",
-		"agent.googleapis.com/interface/traffic",
-
-		"agent.googleapis.com/memory/bytes_used",
-		"agent.googleapis.com/memory/percent_used",
-
-		"agent.googleapis.com/network/tcp_connections",
-
-		"agent.googleapis.com/processes/cpu_time",
-		"agent.googleapis.com/processes/disk/read_bytes_count",
-		"agent.googleapis.com/processes/disk/write_bytes_count",
-		"agent.googleapis.com/processes/rss_usage",
-		"agent.googleapis.com/processes/vm_usage",
-
-		"agent.googleapis.com/swap/bytes_used",
-		"agent.googleapis.com/swap/io",
-	}
-	if gce.IsWindows(platform) {
-		windowsOnlyMetrics := []string{
-			"agent.googleapis.com/pagefile/percent_used",
-		}
-		return append(commonMetrics, windowsOnlyMetrics...)
-	}
-
-	linuxOnlyMetrics := []string{
-		"agent.googleapis.com/disk/merged_operations",
-		"agent.googleapis.com/processes/count_by_state",
-	}
-	return append(commonMetrics, linuxOnlyMetrics...)
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -960,22 +1265,40 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	// First make sure that the uptime metrics are being uploaded.
-	var uptimeWaitGroup sync.WaitGroup
-	regexes := agentVersionRegexesForPlatform(vm.Platform)
-	for _, versionRegex := range regexes {
-		versionRegex := versionRegex
-		uptimeWaitGroup.Add(1)
-		go func() {
-			defer uptimeWaitGroup.Done()
-			if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
-				[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
-			); err != nil {
-				t.Error(err)
-			}
-		}()
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	uptimeWaitGroup.Wait()
+
+	var agentMetrics struct {
+		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+	}
+
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMetrics := agentMetrics.ExpectedMetrics
+
+	// First make sure that the representative metric is being uploaded.
+	for _, metric := range expectedMetrics {
+		if !metric.Representative {
+			continue
+		}
+
+		var series *monitoring.TimeSeries
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = metadata.AssertMetric(metric, series)
+		if err != nil {
+			t.Error(err)
+		}
+
+	}
 
 	if t.Failed() {
 		// Return early instead of waiting up to 7 minutes for the second round
@@ -988,13 +1311,36 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
+	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, metric := range metricsForPlatform(vm.Platform) {
+	for _, metric := range expectedMetrics {
 		metric := metric
+
+		// Already validated the representative metric
+		if metric.Representative {
+			continue
+		}
+
+		// Don't validate optional metrics
+		if metric.Optional {
+			continue
+		}
+
+		if metric.Platform != "" && metric.Platform != platformKind {
+			continue
+		}
+
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			err = metadata.AssertMetric(metric, series)
+			if err != nil {
 				t.Error(err)
 			}
 		}()
@@ -1096,7 +1442,7 @@ metrics:
 		excludedMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
-		if err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
+		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
 			t.Error(err)
 		}
 		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
@@ -1181,22 +1527,32 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.Di
 	}
 }
 
+func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric from the last minute. Sleep for 3 minutes first
+	// to make sure we aren't picking up metrics from a previous instance
+	// of the metrics agent.
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+	return err
+}
+
 func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			time.Sleep(3 * time.Minute)
-
-			if err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), metricsLivenessChecker)
 	})
+}
+
+func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	msg := uuid.NewString()
+	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
+		return err
+	}
+	tag := systemLogTagForPlatform(vm.Platform)
+	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, msg))
 }
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
@@ -1205,18 +1561,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		livenessChecker := func(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-			if err := writeToSystemLog(ctx, logger, vm, "33337777"); err != nil {
-				t.Fatal(err)
-			}
-
-			tag := systemLogTagForPlatform(vm.Platform)
-			if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, "33337777")); err != nil {
-				return err
-			}
-			return nil
-		}
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, livenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
 	})
 }
 
@@ -1235,7 +1580,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger, vm); err != nil {
+		if err := installOpsAgent(ctx, logger, vm, locationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1262,6 +1607,48 @@ func TestWindowsLoggingAgentConflict(t *testing.T) {
 func TestWindowsMonitoringAgentConflict(t *testing.T) {
 	wantError := "We detected an existing Windows service for the StackdriverMonitoring agent"
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
+}
+
+func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	return multierr.Append(
+		loggingLivenessChecker(ctx, logger, vm),
+		metricsLivenessChecker(ctx, logger, vm))
+}
+
+func TestUpgradeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
+		// a default value of "", which means stable.
+		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
+			// Installation from stable may fail before the first release.
+			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
+			}
+			t.Fatal(err)
+		}
+
+		// Wait for the Ops Agent to be active. Make sure that it is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
+		secondVersion := locationFromEnvVars()
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
+			t.Fatal(err)
+		}
+
+		// Make sure that the newly installed Ops Agent is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {

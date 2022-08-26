@@ -1,4 +1,0 @@
-set -e
-
-sudo systemctl restart hadoop
-sleep 60

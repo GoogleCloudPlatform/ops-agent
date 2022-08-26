@@ -23,6 +23,8 @@ type MetricsReceiverMssql struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	ReceiverVersion string `yaml:"receiver_version,omitempty"`
 }
 
 func (MetricsReceiverMssql) Type() string {
@@ -30,6 +32,30 @@ func (MetricsReceiverMssql) Type() string {
 }
 
 func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
+	if m.ReceiverVersion == "2" {
+		return []otel.Pipeline{{
+			Receiver: otel.Component{
+				Type: "sqlserver",
+				Config: map[string]interface{}{
+					"collection_interval": m.CollectionIntervalString(),
+				},
+			},
+			Processors: []otel.Component{
+				otel.MetricsTransform(
+					otel.RenameMetric(
+						"sqlserver.transaction_log.usage",
+						"sqlserver.transaction_log.percent_used",
+					),
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.TransformationMetrics(
+					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
+				),
+				otel.NormalizeSums(),
+			},
+		}}
+	}
+
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
@@ -39,14 +65,14 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					{
 						"object":    "SQLServer:General Statistics",
 						"instances": []string{"_Total"},
-						"counters":  []string{"User Connections"},
+						"counters":  []map[string]string{{"name": "User Connections"}},
 					},
 					{
 						"object":    "SQLServer:Databases",
 						"instances": []string{"_Total"},
-						"counters": []string{
-							"Transactions/sec",
-							"Write Transactions/sec",
+						"counters": []map[string]string{
+							{"name": "Transactions/sec"},
+							{"name": "Write Transactions/sec"},
 						},
 					},
 				},

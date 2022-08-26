@@ -3,3 +3,5 @@ set -e
 sudo apt update
 sudo apt install -y apache2
 (cd /etc/apache2/conf-available/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/httpd/conf.d/status.conf)
+
+sudo service apache2 start

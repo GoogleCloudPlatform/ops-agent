@@ -93,6 +93,7 @@ The Ops Agent collects the following metrics from your Elasticsearch nodes:
 | workload.googleapis.com/elasticsearch.node.open_files                 | Gauge (INT64)      | {files}       |                         | The number of open file descriptors held by the node.                                    |
 
 Labels:
+
 | Metric Name                                                           | Label Name       | Description                    | Values                                                                           |
 |-----------------------------------------------------------------------|------------------|--------------------------------|----------------------------------------------------------------------------------|
 | workload.googleapis.com/elasticsearch.node.cache.memory.usage         | cache_name       | The name of cache.             | fielddata, query                                                                 |
@@ -124,6 +125,7 @@ If `collect_jvm_metrics` is true, the following JVM metrics are collected:
 | workload.googleapis.com/jvm.threads.count            | Gauge (INT64)      | 1    |        | The current number of threads                                                 |
 
 Labels:
+
 | Metric Name                                        | Label Name | Description                        | Values |
 |----------------------------------------------------|------------|------------------------------------|--------|
 | workload.googleapis.com/jvm.gc.collections.count   | name       | The name of the garbage collector. |        |
@@ -133,6 +135,7 @@ Labels:
 
 
 If `collect_cluster_metrics` is true, the following cluster-level metrics are collected:
+
 | Metric                                                   | Data Type     | Unit     | Labels | Description                                                                                                                                                                                    |
 |----------------------------------------------------------|---------------|----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | workload.googleapis.com/elasticsearch.cluster.shards     | Gauge (INT64) | {shards} | state  | The number of shards in the cluster.                                                                                                                                                           |
@@ -141,6 +144,7 @@ If `collect_cluster_metrics` is true, the following cluster-level metrics are co
 | workload.googleapis.com/elasticsearch.cluster.health     | Gauge (INT64) | {status} | status | The health status of the cluster. See [the Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/cluster-health.html#cluster-health-api-desc) for more information. |
 
 Labels:
+
 | Metric Name                                          | Label Name | Description                       | Values                                       |
 |------------------------------------------------------|------------|-----------------------------------|----------------------------------------------|
 | workload.googleapis.com/elasticsearch.cluster.shards | state      | The state of the shard.           | active, relocating, initializing, unassigned |

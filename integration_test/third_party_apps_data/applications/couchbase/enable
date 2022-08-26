@@ -1,0 +1,42 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Configure the Ops Agent.
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    couchbase:
+      type: couchbase
+      username: admin
+      password: password
+      collection_interval: 30s
+  service:
+    pipelines:
+      couchbase:
+        receivers:
+          - couchbase
+
+logging:
+  receivers:
+    couchbase_general:
+      type: couchbase_general
+    couchbase_http_access:
+      type: couchbase_http_access
+    couchbase_goxdcr:
+      type: couchbase_goxdcr
+  service:
+    pipelines:
+      couchbase:
+        receivers:
+          - couchbase_general
+          - couchbase_http_access
+          - couchbase_goxdcr
+
+EOF
+
+sudo service google-cloud-ops-agent restart
+sleep 30s

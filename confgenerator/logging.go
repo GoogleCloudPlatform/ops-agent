@@ -20,33 +20,27 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-// setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(tag, logName string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match": tag,
-				"Add":   fmt.Sprintf("logging.googleapis.com/logName %s", logName),
-				"Name":  "modify",
-			},
-		},
-	}
-}
+const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
+const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
-// addLuaFilter generates a component with a Lua filter with the given parameters
-func addLuaFilter(tag, script, call string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":   "lua",
-				"Match":  tag,
-				"script": script,
-				"call":   call,
+// setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
+func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"logName": {
+				DefaultValue: &logName,
 			},
+			`labels."compute.googleapis.com/resource_name"`: {
+				DefaultValue: &hostName,
+			},
+			`labels."agent.googleapis.com/log_file_path"`: {
+				MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
+			},
+			// `labels."agent.googleapis.com/receiver_type"`: {
+			// 	StaticValue: &receiverType,
+			// },
 		},
-	}
+	}.Components(tag, "setlogname")
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
@@ -59,6 +53,8 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 			"Match_Regex":       fmt.Sprintf("^(%s)$", match),
 			"resource":          "gce_instance",
 			"stackdriver_agent": userAgent,
+
+			"http_request_key": HttpRequestKey,
 
 			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
 			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
@@ -74,20 +70,6 @@ func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
 
 			// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
 			"net.connect_timeout_log_error": "False",
-		},
-	}
-}
-
-// prometheusExporterOutputComponent generates a component that outputs to metrics prometheus format.
-func prometheusExporterOutputComponent() fluentbit.Component {
-	return fluentbit.Component{
-		Kind: "OUTPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/outputs/prometheus-exporter
-			"Name":  "prometheus_exporter",
-			"Match": "*",
-			"host":  "0.0.0.0",
-			"port":  "20202",
 		},
 	}
 }

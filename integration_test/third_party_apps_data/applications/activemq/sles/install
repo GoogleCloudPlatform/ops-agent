@@ -38,3 +38,4 @@ sudo sed -i "s/$before/$after/g" /opt/activemq/bin/env
 
 sudo systemctl daemon-reload
 sudo systemctl enable activemq
+sudo systemctl restart activemq

@@ -48,10 +48,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 
 	pipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
+		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
 
 	pipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
+		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
 
 	if uc.Metrics.Service.LogLevel == "" {
@@ -69,12 +71,26 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		Exporter: otel.Component{
 			Type: "googlecloud",
 			Config: map[string]interface{}{
+				// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+				// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+				// recommends disabling this.
+				"retry_on_failure": map[string]interface{}{
+					"enabled": false,
+				},
 				"user_agent": userAgent,
 				"metric": map[string]interface{}{
 					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `custom.googleapis.com/opencensus/`.
+					// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
 					// TODO(b/197129428): Write a test to make sure this doesn't happen.
 					"prefix": "",
+					// OT calls CreateMetricDescriptor by default. Skip because we want
+					// descriptors to be created implicitly with new time series.
+					"skip_create_descriptor": true,
+					// Omit instrumentation labels, which break agent metrics.
+					"instrumentation_library_labels": false,
+					// Omit service labels, which break agent metrics.
+					"service_resource_labels": false,
+					"resource_filters":        []map[string]interface{}{},
 				},
 			},
 		},
@@ -112,12 +128,13 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	return out, nil
 }
 
-// GenerateFluentBitConfigs generates a main and parser configuration file for Fluent Bit.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (main string, parser string, err error) {
+// GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
+// It returns a map of filenames to file contents.
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (map[string]string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
 	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	c := fluentbit.ModularConfig{
@@ -174,7 +191,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
 	out = append(out, service.Component())
-	out = append(out, service.MetricsComponent())
+	out = append(out, fluentbit.MetricsInputComponent())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
@@ -248,12 +265,12 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					}
 					components = append(components, processorComponents...)
 				}
-				components = append(components, setLogNameComponents(tag, rID)...)
+				components = append(components, setLogNameComponents(tag, rID, receiver.Type(), hostInfo.Hostname)...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
 				if receiver.Type() == "fluent_forward" {
-					components = append(components, addLuaFilter(tag, "add_log_name.lua", "add_log_name")...)
+					components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 				}
 				sources = append(sources, fbSource{tag, components})
 			}
@@ -270,10 +287,13 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	}
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+		//Following: b/226668416 temporarily set storage.type to "memory"
+		//to prevent chunk corruption errors
+		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
-	out = append(out, prometheusExporterOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
 }

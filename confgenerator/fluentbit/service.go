@@ -36,8 +36,9 @@ func (s Service) Component() Component {
 			// https://docs.fluentbit.io/manual/administration/buffering-and-storage#service-section-configuration
 			// storage.path is set by Fluent Bit systemd unit (e.g. /var/lib/google-cloud-ops-agent/fluent-bit/buffers).
 			"storage.sync": "normal",
-			// Enable the data integrity check when writing and reading data from the filesystem.
-			"storage.checksum": "on",
+			// Disable data integrity check to avoid spurious corruption errors due to empty spaces.
+			// Most users do not enforce checksum.
+			"storage.checksum": "off",
 			// The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
 			"storage.backlog.mem_limit": "50M",
 			// Enable storage metrics in the built-in HTTP server.
@@ -46,17 +47,6 @@ func (s Service) Component() Component {
 			// Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
 			// we don't want them to all be loaded into the memory.
 			"storage.max_chunks_up": "128",
-		},
-	}
-}
-
-func (s Service) MetricsComponent() Component {
-	return Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name":            "fluentbit_metrics",
-			"Scrape_On_Start": "True",
-			"Scrape_Interval": "60",
 		},
 	}
 }

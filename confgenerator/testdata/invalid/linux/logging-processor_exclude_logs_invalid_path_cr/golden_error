@@ -1,4 +1,4 @@
-[5:18] "match_any[0]": 1:25: error: target may not contain line breaks, spaces, commas, or double-quotes: a\rb
+[5:18] "match_any[0]": 1:25: error: target may not contain line breaks, spaces, commas, or double-quotes: "a\rb"
    2 |   processors:
    3 |     p1:
    4 |       type: exclude_logs

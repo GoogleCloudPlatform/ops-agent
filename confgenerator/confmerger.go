@@ -17,36 +17,40 @@ package confgenerator
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	yaml "github.com/goccy/go-yaml"
 )
 
-func MergeConfFiles(userConfPath, confDebugFolder, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
-	builtInConfPath := filepath.Join(confDebugFolder, "built-in-config.yaml")
-	mergedConfPath := filepath.Join(confDebugFolder, "merged-config.yaml")
-	return mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform, builtInConfStructs)
-}
+// MergeConfFiles merges the user provided config with the built-in config struct for the platform.
+// It returns the built-in config for the platform and the merged config.
+func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) ([]byte, []byte, error) {
+	mergedConf, err := mergeConfFiles(userConfPath, platform, builtInConfStructs)
+	if err != nil {
+		return nil, nil, err
+	}
 
-func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) error {
 	builtInStruct := builtInConfStructs[platform]
 	builtInYaml, err := yaml.Marshal(builtInStruct)
 	if err != nil {
-		return fmt.Errorf("failed to convert the built-in config %q to yaml: %w \n", builtInConfPath, err)
+		return nil, nil, fmt.Errorf("failed to convert the built-in config for %s to yaml: %w \n", platform, err)
 	}
 
-	// Write the built-in conf to disk for debugging purpose.
-
-	if err := writeConfigFile(builtInYaml, builtInConfPath); err != nil {
-		return err
+	mergedConfigYaml, err := yaml.Marshal(mergedConf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to convert the merged config %+v to yaml: %w \n", mergedConf, err)
 	}
+
+	return builtInYaml, mergedConfigYaml, nil
+}
+
+func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
+	builtInStruct := builtInConfStructs[platform]
 
 	// Read the built-in config file.
 	original, err := builtInStruct.DeepCopy(platform)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Optionally merge the user config file.
@@ -54,25 +58,17 @@ func mergeConfFiles(builtInConfPath, userConfPath, mergedConfPath, platform stri
 		if os.IsNotExist(err) {
 			// Skip the merge if the user config file does not exist.
 		} else {
-			return fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
+			return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
 		}
 	} else {
 		overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		mergeConfigs(&original, &overrides)
 	}
 
-	// Write the merged conf file.
-	configBytes, err := yaml.Marshal(original)
-	if err != nil {
-		return fmt.Errorf("failed to convert the merged config %q to yaml: %w \n", mergedConfPath, err)
-	}
-	if err := ioutil.WriteFile(mergedConfPath, configBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write the merged config file %q: %w \n", mergedConfPath, err)
-	}
-	return nil
+	return &original, nil
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {

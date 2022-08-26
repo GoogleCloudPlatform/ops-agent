@@ -26,3 +26,4 @@ sudo zypper install -y \
     mongodb-org-tools-5.0.5
 
 sudo systemctl enable mongod
+sudo systemctl restart mongod

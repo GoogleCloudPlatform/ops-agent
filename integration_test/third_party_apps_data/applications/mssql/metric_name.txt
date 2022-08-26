@@ -1,1 +1,0 @@
-agent.googleapis.com/mssql/connections/user

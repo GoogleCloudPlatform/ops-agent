@@ -17,15 +17,15 @@ var actionTab = actionTable{
 			nil,       // INVALID
 			nil,       // $
 			shift(3),  // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(8),  // not
-			shift(9),  // minus
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(10), // not
+			shift(11), // minus
 			nil,       // dot
-			shift(15), // lparen
+			shift(17), // lparen
 			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
+			shift(19), // text
+			shift(21), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -80,8 +80,8 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(1), // $, reduce: Filter
-			shift(20), // ws
-			shift(21), // andOp
+			shift(22), // ws
+			shift(23), // andOp
 			nil,       // orOp
 			nil,       // not
 			nil,       // minus
@@ -113,15 +113,15 @@ var actionTab = actionTable{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(8),  // not
-			shift(9),  // minus
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(10), // not
+			shift(11), // minus
 			nil,       // dot
-			shift(15), // lparen
+			shift(17), // lparen
 			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
+			shift(19), // text
+			shift(21), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -144,7 +144,7 @@ var actionTab = actionTable{
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(5), // $, reduce: Expression
-			shift(23), // ws
+			shift(25), // ws
 			reduce(5), // andOp, reduce: Expression
 			nil,       // orOp
 			nil,       // not
@@ -174,11 +174,43 @@ var actionTab = actionTable{
 	actionRow{ // S5
 		canRecover: false,
 		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(30), // $, reduce: Value
+			reduce(30), // ws, reduce: Value
+			reduce(30), // andOp, reduce: Value
+			reduce(30), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(30), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(30), // less_equals, reduce: Value
+			reduce(30), // less_than, reduce: Value
+			reduce(30), // greater_equals, reduce: Value
+			reduce(30), // greater_than, reduce: Value
+			reduce(30), // not_equals, reduce: Value
+			reduce(30), // equals, reduce: Value
+			reduce(30), // has, reduce: Value
+			reduce(30), // matches_regexp, reduce: Value
+			reduce(30), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S6
+		canRecover: false,
+		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(7), // $, reduce: AmbiguousSequence
 			reduce(7), // ws, reduce: AmbiguousSequence
 			reduce(7), // andOp, reduce: AmbiguousSequence
-			shift(24), // orOp
+			shift(26), // orOp
 			nil,       // not
 			nil,       // minus
 			nil,       // dot
@@ -203,7 +235,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S6
+	actionRow{ // S7
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
@@ -235,359 +267,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S7
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(11), // $, reduce: Term
-			reduce(11), // ws, reduce: Term
-			reduce(11), // andOp, reduce: Term
-			reduce(11), // orOp, reduce: Term
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
 	actionRow{ // S8
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			shift(25), // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
-			nil,       // dot
-			shift(15), // lparen
-			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S9
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
-			nil,       // dot
-			shift(15), // lparen
-			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S10
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(15), // $, reduce: Primitive
-			reduce(15), // ws, reduce: Primitive
-			reduce(15), // andOp, reduce: Primitive
-			reduce(15), // orOp, reduce: Primitive
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S11
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(16), // $, reduce: Primitive
-			reduce(16), // ws, reduce: Primitive
-			reduce(16), // andOp, reduce: Primitive
-			reduce(16), // orOp, reduce: Primitive
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S12
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(17), // $, reduce: Restriction
-			shift(28),  // ws
-			reduce(17), // andOp, reduce: Restriction
-			reduce(17), // orOp, reduce: Restriction
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			shift(31),  // less_equals
-			shift(32),  // less_than
-			shift(33),  // greater_equals
-			shift(34),  // greater_than
-			shift(35),  // not_equals
-			shift(36),  // equals
-			shift(37),  // has
-			shift(38),  // matches_regexp
-			shift(39),  // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S13
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(19), // $, reduce: Comparable
-			reduce(19), // ws, reduce: Comparable
-			reduce(19), // andOp, reduce: Comparable
-			reduce(19), // orOp, reduce: Comparable
-			nil,        // not
-			nil,        // minus
-			shift(40),  // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(19), // less_equals, reduce: Comparable
-			reduce(19), // less_than, reduce: Comparable
-			reduce(19), // greater_equals, reduce: Comparable
-			reduce(19), // greater_than, reduce: Comparable
-			reduce(19), // not_equals, reduce: Comparable
-			reduce(19), // equals, reduce: Comparable
-			reduce(19), // has, reduce: Comparable
-			reduce(19), // matches_regexp, reduce: Comparable
-			reduce(19), // not_matches_regexp, reduce: Comparable
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S14
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(20), // $, reduce: Member
-			reduce(20), // ws, reduce: Member
-			reduce(20), // andOp, reduce: Member
-			reduce(20), // orOp, reduce: Member
-			nil,        // not
-			nil,        // minus
-			reduce(20), // dot, reduce: Member
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(20), // less_equals, reduce: Member
-			reduce(20), // less_than, reduce: Member
-			reduce(20), // greater_equals, reduce: Member
-			reduce(20), // greater_than, reduce: Member
-			reduce(20), // not_equals, reduce: Member
-			reduce(20), // equals, reduce: Member
-			reduce(20), // has, reduce: Member
-			reduce(20), // matches_regexp, reduce: Member
-			reduce(20), // not_matches_regexp, reduce: Member
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S15
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			shift(42), // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S16
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(27), // $, reduce: Item
-			reduce(27), // ws, reduce: Item
-			reduce(27), // andOp, reduce: Item
-			reduce(27), // orOp, reduce: Item
-			nil,        // not
-			nil,        // minus
-			reduce(27), // dot, reduce: Item
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(27), // less_equals, reduce: Item
-			reduce(27), // less_than, reduce: Item
-			reduce(27), // greater_equals, reduce: Item
-			reduce(27), // greater_than, reduce: Item
-			reduce(27), // not_equals, reduce: Item
-			reduce(27), // equals, reduce: Item
-			reduce(27), // has, reduce: Item
-			reduce(27), // matches_regexp, reduce: Item
-			reduce(27), // not_matches_regexp, reduce: Item
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S17
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(28), // $, reduce: Value
-			reduce(28), // ws, reduce: Value
-			reduce(28), // andOp, reduce: Value
-			reduce(28), // orOp, reduce: Value
-			nil,        // not
-			nil,        // minus
-			reduce(28), // dot, reduce: Value
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(28), // less_equals, reduce: Value
-			reduce(28), // less_than, reduce: Value
-			reduce(28), // greater_equals, reduce: Value
-			reduce(28), // greater_than, reduce: Value
-			reduce(28), // not_equals, reduce: Value
-			reduce(28), // equals, reduce: Value
-			reduce(28), // has, reduce: Value
-			reduce(28), // matches_regexp, reduce: Value
-			reduce(28), // not_matches_regexp, reduce: Value
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S18
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -619,32 +299,352 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S19
+	actionRow{ // S9
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(30), // $, reduce: Phrase
-			reduce(30), // ws, reduce: Phrase
-			reduce(30), // andOp, reduce: Phrase
-			reduce(30), // orOp, reduce: Phrase
+			reduce(11), // $, reduce: Term
+			reduce(11), // ws, reduce: Term
+			reduce(11), // andOp, reduce: Term
+			reduce(11), // orOp, reduce: Term
 			nil,        // not
 			nil,        // minus
-			reduce(30), // dot, reduce: Phrase
+			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(30), // less_equals, reduce: Phrase
-			reduce(30), // less_than, reduce: Phrase
-			reduce(30), // greater_equals, reduce: Phrase
-			reduce(30), // greater_than, reduce: Phrase
-			reduce(30), // not_equals, reduce: Phrase
-			reduce(30), // equals, reduce: Phrase
-			reduce(30), // has, reduce: Phrase
-			reduce(30), // matches_regexp, reduce: Phrase
-			reduce(30), // not_matches_regexp, reduce: Phrase
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S10
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(31), // $, reduce: Value
+			shift(27),  // ws
+			shift(5),   // andOp
+			shift(8),   // orOp
+			shift(29),  // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			shift(17),  // lparen
+			nil,        // rparen
+			shift(19),  // text
+			shift(21),  // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S11
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(29), // not
+			nil,       // minus
+			nil,       // dot
+			shift(17), // lparen
+			nil,       // rparen
+			shift(19), // text
+			shift(21), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S12
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(15), // $, reduce: Primitive
+			reduce(15), // ws, reduce: Primitive
+			reduce(15), // andOp, reduce: Primitive
+			reduce(15), // orOp, reduce: Primitive
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S13
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(16), // $, reduce: Primitive
+			reduce(16), // ws, reduce: Primitive
+			reduce(16), // andOp, reduce: Primitive
+			reduce(16), // orOp, reduce: Primitive
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S14
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(17), // $, reduce: Restriction
+			shift(31),  // ws
+			reduce(17), // andOp, reduce: Restriction
+			reduce(17), // orOp, reduce: Restriction
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			shift(34),  // less_equals
+			shift(35),  // less_than
+			shift(36),  // greater_equals
+			shift(37),  // greater_than
+			shift(38),  // not_equals
+			shift(39),  // equals
+			shift(40),  // has
+			shift(41),  // matches_regexp
+			shift(42),  // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S15
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(19), // $, reduce: Comparable
+			reduce(19), // ws, reduce: Comparable
+			reduce(19), // andOp, reduce: Comparable
+			reduce(19), // orOp, reduce: Comparable
+			nil,        // not
+			nil,        // minus
+			shift(43),  // dot
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(19), // less_equals, reduce: Comparable
+			reduce(19), // less_than, reduce: Comparable
+			reduce(19), // greater_equals, reduce: Comparable
+			reduce(19), // greater_than, reduce: Comparable
+			reduce(19), // not_equals, reduce: Comparable
+			reduce(19), // equals, reduce: Comparable
+			reduce(19), // has, reduce: Comparable
+			reduce(19), // matches_regexp, reduce: Comparable
+			reduce(19), // not_matches_regexp, reduce: Comparable
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S16
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(20), // $, reduce: Member
+			reduce(20), // ws, reduce: Member
+			reduce(20), // andOp, reduce: Member
+			reduce(20), // orOp, reduce: Member
+			nil,        // not
+			nil,        // minus
+			reduce(20), // dot, reduce: Member
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(20), // less_equals, reduce: Member
+			reduce(20), // less_than, reduce: Member
+			reduce(20), // greater_equals, reduce: Member
+			reduce(20), // greater_than, reduce: Member
+			reduce(20), // not_equals, reduce: Member
+			reduce(20), // equals, reduce: Member
+			reduce(20), // has, reduce: Member
+			reduce(20), // matches_regexp, reduce: Member
+			reduce(20), // not_matches_regexp, reduce: Member
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S17
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			shift(45), // ws
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
+			nil,       // dot
+			shift(59), // lparen
+			nil,       // rparen
+			shift(61), // text
+			shift(63), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S18
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(27), // $, reduce: Item
+			reduce(27), // ws, reduce: Item
+			reduce(27), // andOp, reduce: Item
+			reduce(27), // orOp, reduce: Item
+			nil,        // not
+			nil,        // minus
+			reduce(27), // dot, reduce: Item
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(27), // less_equals, reduce: Item
+			reduce(27), // less_than, reduce: Item
+			reduce(27), // greater_equals, reduce: Item
+			reduce(27), // greater_than, reduce: Item
+			reduce(27), // not_equals, reduce: Item
+			reduce(27), // equals, reduce: Item
+			reduce(27), // has, reduce: Item
+			reduce(27), // matches_regexp, reduce: Item
+			reduce(27), // not_matches_regexp, reduce: Item
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S19
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(28), // $, reduce: Value
+			reduce(28), // ws, reduce: Value
+			reduce(28), // andOp, reduce: Value
+			reduce(28), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(28), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(28), // less_equals, reduce: Value
+			reduce(28), // less_than, reduce: Value
+			reduce(28), // greater_equals, reduce: Value
+			reduce(28), // greater_than, reduce: Value
+			reduce(28), // not_equals, reduce: Value
+			reduce(28), // equals, reduce: Value
+			reduce(28), // has, reduce: Value
+			reduce(28), // matches_regexp, reduce: Value
+			reduce(28), // not_matches_regexp, reduce: Value
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -652,6 +652,70 @@ var actionTab = actionTable{
 		},
 	},
 	actionRow{ // S20
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(32), // $, reduce: Value
+			reduce(32), // ws, reduce: Value
+			reduce(32), // andOp, reduce: Value
+			reduce(32), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(32), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(32), // less_equals, reduce: Value
+			reduce(32), // less_than, reduce: Value
+			reduce(32), // greater_equals, reduce: Value
+			reduce(32), // greater_than, reduce: Value
+			reduce(32), // not_equals, reduce: Value
+			reduce(32), // equals, reduce: Value
+			reduce(32), // has, reduce: Value
+			reduce(32), // matches_regexp, reduce: Value
+			reduce(32), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S21
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(33), // $, reduce: Phrase
+			reduce(33), // ws, reduce: Phrase
+			reduce(33), // andOp, reduce: Phrase
+			reduce(33), // orOp, reduce: Phrase
+			nil,        // not
+			nil,        // minus
+			reduce(33), // dot, reduce: Phrase
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(33), // less_equals, reduce: Phrase
+			reduce(33), // less_than, reduce: Phrase
+			reduce(33), // greater_equals, reduce: Phrase
+			reduce(33), // greater_than, reduce: Phrase
+			reduce(33), // not_equals, reduce: Phrase
+			reduce(33), // equals, reduce: Phrase
+			reduce(33), // has, reduce: Phrase
+			reduce(33), // matches_regexp, reduce: Phrase
+			reduce(33), // not_matches_regexp, reduce: Phrase
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S22
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
@@ -683,21 +747,21 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S21
+	actionRow{ // S23
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(8),  // not
-			shift(9),  // minus
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(10), // not
+			shift(11), // minus
 			nil,       // dot
-			shift(15), // lparen
+			shift(17), // lparen
 			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
+			shift(19), // text
+			shift(21), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -715,13 +779,13 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S22
+	actionRow{ // S24
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(2), // $, reduce: Filter
-			shift(60), // ws
-			shift(21), // andOp
+			shift(65), // ws
+			shift(23), // andOp
 			nil,       // orOp
 			nil,       // not
 			nil,       // minus
@@ -747,85 +811,21 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S23
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(8),  // not
-			shift(9),  // minus
-			nil,       // dot
-			shift(15), // lparen
-			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S24
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(8),  // not
-			shift(9),  // minus
-			nil,       // dot
-			shift(15), // lparen
-			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
 	actionRow{ // S25
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(10), // not
+			shift(11), // minus
 			nil,       // dot
-			shift(15), // lparen
+			shift(17), // lparen
 			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
+			shift(19), // text
+			shift(21), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -844,6 +844,70 @@ var actionTab = actionTable{
 		},
 	},
 	actionRow{ // S26
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(10), // not
+			shift(11), // minus
+			nil,       // dot
+			shift(17), // lparen
+			nil,       // rparen
+			shift(19), // text
+			shift(21), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S27
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(29), // not
+			nil,       // minus
+			nil,       // dot
+			shift(17), // lparen
+			nil,       // rparen
+			shift(19), // text
+			shift(21), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S28
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -875,7 +939,39 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S27
+	actionRow{ // S29
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(31), // $, reduce: Value
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S30
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -907,7 +1003,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S28
+	actionRow{ // S31
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
@@ -924,36 +1020,36 @@ var actionTab = actionTable{
 			nil,       // string
 			nil,       // or
 			nil,       // and
-			shift(31), // less_equals
-			shift(32), // less_than
-			shift(33), // greater_equals
-			shift(34), // greater_than
-			shift(35), // not_equals
-			shift(36), // equals
-			shift(37), // has
-			shift(38), // matches_regexp
-			shift(39), // not_matches_regexp
+			shift(34), // less_equals
+			shift(35), // less_than
+			shift(36), // greater_equals
+			shift(37), // greater_than
+			shift(38), // not_equals
+			shift(39), // equals
+			shift(40), // has
+			shift(41), // matches_regexp
+			shift(42), // not_matches_regexp
 			nil,       // backslash
 			nil,       // comma
 			nil,       // plus
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S29
+	actionRow{ // S32
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
+			shift(70), // andOp
+			shift(71), // orOp
+			shift(72), // not
 			nil,       // minus
 			nil,       // dot
 			nil,       // lparen
 			nil,       // rparen
-			shift(70), // text
-			shift(72), // string
+			shift(78), // text
+			shift(80), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -971,117 +1067,21 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S30
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			shift(73),  // ws
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			reduce(36), // text, reduce: Comparator
-			reduce(36), // string, reduce: Comparator
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S31
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(40), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			reduce(40), // text, reduce: Comparison
-			reduce(40), // string, reduce: Comparison
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S32
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(41), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			reduce(41), // text, reduce: Comparison
-			reduce(41), // string, reduce: Comparison
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
 	actionRow{ // S33
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(42), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			shift(81),  // ws
+			reduce(39), // andOp, reduce: Comparator
+			reduce(39), // orOp, reduce: Comparator
+			reduce(39), // not, reduce: Comparator
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			reduce(42), // text, reduce: Comparison
-			reduce(42), // string, reduce: Comparison
+			reduce(39), // text, reduce: Comparator
+			reduce(39), // string, reduce: Comparator
 			nil,        // or
 			nil,        // and
 			nil,        // less_equals
@@ -1105,9 +1105,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(43), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(43), // andOp, reduce: Comparison
+			reduce(43), // orOp, reduce: Comparison
+			reduce(43), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1137,9 +1137,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(44), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(44), // andOp, reduce: Comparison
+			reduce(44), // orOp, reduce: Comparison
+			reduce(44), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1169,9 +1169,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(45), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(45), // andOp, reduce: Comparison
+			reduce(45), // orOp, reduce: Comparison
+			reduce(45), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1201,9 +1201,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(46), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(46), // andOp, reduce: Comparison
+			reduce(46), // orOp, reduce: Comparison
+			reduce(46), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1233,9 +1233,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(47), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(47), // andOp, reduce: Comparison
+			reduce(47), // orOp, reduce: Comparison
+			reduce(47), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1265,9 +1265,9 @@ var actionTab = actionTable{
 			nil,        // INVALID
 			nil,        // $
 			reduce(48), // ws, reduce: Comparison
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(48), // andOp, reduce: Comparison
+			reduce(48), // orOp, reduce: Comparison
+			reduce(48), // not, reduce: Comparison
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
@@ -1294,20 +1294,116 @@ var actionTab = actionTable{
 	actionRow{ // S40
 		canRecover: false,
 		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(49), // ws, reduce: Comparison
+			reduce(49), // andOp, reduce: Comparison
+			reduce(49), // orOp, reduce: Comparison
+			reduce(49), // not, reduce: Comparison
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			reduce(49), // text, reduce: Comparison
+			reduce(49), // string, reduce: Comparison
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S41
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(50), // ws, reduce: Comparison
+			reduce(50), // andOp, reduce: Comparison
+			reduce(50), // orOp, reduce: Comparison
+			reduce(50), // not, reduce: Comparison
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			reduce(50), // text, reduce: Comparison
+			reduce(50), // string, reduce: Comparison
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S42
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(51), // ws, reduce: Comparison
+			reduce(51), // andOp, reduce: Comparison
+			reduce(51), // orOp, reduce: Comparison
+			reduce(51), // not, reduce: Comparison
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			reduce(51), // text, reduce: Comparison
+			reduce(51), // string, reduce: Comparison
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S43
+		canRecover: false,
+		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(74), // not
+			shift(5),  // andOp
+			shift(8),  // orOp
+			shift(82), // not
 			nil,       // minus
 			nil,       // dot
 			nil,       // lparen
 			nil,       // rparen
-			shift(17), // text
-			shift(19), // string
-			shift(78), // or
-			shift(79), // and
+			shift(19), // text
+			shift(21), // string
+			shift(86), // or
+			shift(87), // and
 			nil,       // less_equals
 			nil,       // less_than
 			nil,       // greater_equals
@@ -1323,19 +1419,19 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S41
+	actionRow{ // S44
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
-			shift(80), // ws
-			shift(81), // andOp
+			shift(88), // ws
+			shift(89), // andOp
 			nil,       // orOp
 			nil,       // not
 			nil,       // minus
 			nil,       // dot
 			nil,       // lparen
-			shift(82), // rparen
+			shift(90), // rparen
 			nil,       // text
 			nil,       // string
 			nil,       // or
@@ -1355,21 +1451,21 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S42
+	actionRow{ // S45
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
 			nil,       // dot
-			shift(54), // lparen
+			shift(59), // lparen
 			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
+			shift(61), // text
+			shift(63), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -1387,12 +1483,12 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S43
+	actionRow{ // S46
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
-			shift(84), // ws
+			shift(92), // ws
 			reduce(5), // andOp, reduce: Expression
 			nil,       // orOp
 			nil,       // not
@@ -1419,14 +1515,46 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S44
+	actionRow{ // S47
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(30), // ws, reduce: Value
+			reduce(30), // andOp, reduce: Value
+			reduce(30), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(30), // dot, reduce: Value
+			nil,        // lparen
+			reduce(30), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(30), // less_equals, reduce: Value
+			reduce(30), // less_than, reduce: Value
+			reduce(30), // greater_equals, reduce: Value
+			reduce(30), // greater_than, reduce: Value
+			reduce(30), // not_equals, reduce: Value
+			reduce(30), // equals, reduce: Value
+			reduce(30), // has, reduce: Value
+			reduce(30), // matches_regexp, reduce: Value
+			reduce(30), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S48
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			reduce(7), // ws, reduce: AmbiguousSequence
 			reduce(7), // andOp, reduce: AmbiguousSequence
-			shift(85), // orOp
+			shift(93), // orOp
 			nil,       // not
 			nil,       // minus
 			nil,       // dot
@@ -1451,7 +1579,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S45
+	actionRow{ // S49
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
@@ -1483,359 +1611,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S46
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(11), // ws, reduce: Term
-			reduce(11), // andOp, reduce: Term
-			reduce(11), // orOp, reduce: Term
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			reduce(11), // rparen, reduce: Term
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S47
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			shift(86), // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S48
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S49
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(15), // ws, reduce: Primitive
-			reduce(15), // andOp, reduce: Primitive
-			reduce(15), // orOp, reduce: Primitive
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			reduce(15), // rparen, reduce: Primitive
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
 	actionRow{ // S50
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(16), // ws, reduce: Primitive
-			reduce(16), // andOp, reduce: Primitive
-			reduce(16), // orOp, reduce: Primitive
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			reduce(16), // rparen, reduce: Primitive
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S51
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			shift(28),  // ws
-			reduce(17), // andOp, reduce: Restriction
-			reduce(17), // orOp, reduce: Restriction
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			reduce(17), // rparen, reduce: Restriction
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			shift(31),  // less_equals
-			shift(32),  // less_than
-			shift(33),  // greater_equals
-			shift(34),  // greater_than
-			shift(35),  // not_equals
-			shift(36),  // equals
-			shift(37),  // has
-			shift(38),  // matches_regexp
-			shift(39),  // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S52
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(19), // ws, reduce: Comparable
-			reduce(19), // andOp, reduce: Comparable
-			reduce(19), // orOp, reduce: Comparable
-			nil,        // not
-			nil,        // minus
-			shift(90),  // dot
-			nil,        // lparen
-			reduce(19), // rparen, reduce: Comparable
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(19), // less_equals, reduce: Comparable
-			reduce(19), // less_than, reduce: Comparable
-			reduce(19), // greater_equals, reduce: Comparable
-			reduce(19), // greater_than, reduce: Comparable
-			reduce(19), // not_equals, reduce: Comparable
-			reduce(19), // equals, reduce: Comparable
-			reduce(19), // has, reduce: Comparable
-			reduce(19), // matches_regexp, reduce: Comparable
-			reduce(19), // not_matches_regexp, reduce: Comparable
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S53
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(20), // ws, reduce: Member
-			reduce(20), // andOp, reduce: Member
-			reduce(20), // orOp, reduce: Member
-			nil,        // not
-			nil,        // minus
-			reduce(20), // dot, reduce: Member
-			nil,        // lparen
-			reduce(20), // rparen, reduce: Member
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(20), // less_equals, reduce: Member
-			reduce(20), // less_than, reduce: Member
-			reduce(20), // greater_equals, reduce: Member
-			reduce(20), // greater_than, reduce: Member
-			reduce(20), // not_equals, reduce: Member
-			reduce(20), // equals, reduce: Member
-			reduce(20), // has, reduce: Member
-			reduce(20), // matches_regexp, reduce: Member
-			reduce(20), // not_matches_regexp, reduce: Member
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S54
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			shift(92), // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S55
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(27), // ws, reduce: Item
-			reduce(27), // andOp, reduce: Item
-			reduce(27), // orOp, reduce: Item
-			nil,        // not
-			nil,        // minus
-			reduce(27), // dot, reduce: Item
-			nil,        // lparen
-			reduce(27), // rparen, reduce: Item
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(27), // less_equals, reduce: Item
-			reduce(27), // less_than, reduce: Item
-			reduce(27), // greater_equals, reduce: Item
-			reduce(27), // greater_than, reduce: Item
-			reduce(27), // not_equals, reduce: Item
-			reduce(27), // equals, reduce: Item
-			reduce(27), // has, reduce: Item
-			reduce(27), // matches_regexp, reduce: Item
-			reduce(27), // not_matches_regexp, reduce: Item
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S56
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(28), // ws, reduce: Value
-			reduce(28), // andOp, reduce: Value
-			reduce(28), // orOp, reduce: Value
-			nil,        // not
-			nil,        // minus
-			reduce(28), // dot, reduce: Value
-			nil,        // lparen
-			reduce(28), // rparen, reduce: Value
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			reduce(28), // less_equals, reduce: Value
-			reduce(28), // less_than, reduce: Value
-			reduce(28), // greater_equals, reduce: Value
-			reduce(28), // greater_than, reduce: Value
-			reduce(28), // not_equals, reduce: Value
-			reduce(28), // equals, reduce: Value
-			reduce(28), // has, reduce: Value
-			reduce(28), // matches_regexp, reduce: Value
-			reduce(28), // not_matches_regexp, reduce: Value
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S57
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -1867,32 +1643,256 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
+	actionRow{ // S51
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(11), // ws, reduce: Term
+			reduce(11), // andOp, reduce: Term
+			reduce(11), // orOp, reduce: Term
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			reduce(11), // rparen, reduce: Term
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S52
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			shift(94),  // ws
+			shift(47),  // andOp
+			shift(50),  // orOp
+			shift(96),  // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			shift(59),  // lparen
+			reduce(31), // rparen, reduce: Value
+			shift(61),  // text
+			shift(63),  // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S53
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(96), // not
+			nil,       // minus
+			nil,       // dot
+			shift(59), // lparen
+			nil,       // rparen
+			shift(61), // text
+			shift(63), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S54
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(15), // ws, reduce: Primitive
+			reduce(15), // andOp, reduce: Primitive
+			reduce(15), // orOp, reduce: Primitive
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			reduce(15), // rparen, reduce: Primitive
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S55
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(16), // ws, reduce: Primitive
+			reduce(16), // andOp, reduce: Primitive
+			reduce(16), // orOp, reduce: Primitive
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			reduce(16), // rparen, reduce: Primitive
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S56
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			shift(31),  // ws
+			reduce(17), // andOp, reduce: Restriction
+			reduce(17), // orOp, reduce: Restriction
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			reduce(17), // rparen, reduce: Restriction
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			shift(34),  // less_equals
+			shift(35),  // less_than
+			shift(36),  // greater_equals
+			shift(37),  // greater_than
+			shift(38),  // not_equals
+			shift(39),  // equals
+			shift(40),  // has
+			shift(41),  // matches_regexp
+			shift(42),  // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S57
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(19), // ws, reduce: Comparable
+			reduce(19), // andOp, reduce: Comparable
+			reduce(19), // orOp, reduce: Comparable
+			nil,        // not
+			nil,        // minus
+			shift(99),  // dot
+			nil,        // lparen
+			reduce(19), // rparen, reduce: Comparable
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(19), // less_equals, reduce: Comparable
+			reduce(19), // less_than, reduce: Comparable
+			reduce(19), // greater_equals, reduce: Comparable
+			reduce(19), // greater_than, reduce: Comparable
+			reduce(19), // not_equals, reduce: Comparable
+			reduce(19), // equals, reduce: Comparable
+			reduce(19), // has, reduce: Comparable
+			reduce(19), // matches_regexp, reduce: Comparable
+			reduce(19), // not_matches_regexp, reduce: Comparable
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
 	actionRow{ // S58
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(30), // ws, reduce: Phrase
-			reduce(30), // andOp, reduce: Phrase
-			reduce(30), // orOp, reduce: Phrase
+			reduce(20), // ws, reduce: Member
+			reduce(20), // andOp, reduce: Member
+			reduce(20), // orOp, reduce: Member
 			nil,        // not
 			nil,        // minus
-			reduce(30), // dot, reduce: Phrase
+			reduce(20), // dot, reduce: Member
 			nil,        // lparen
-			reduce(30), // rparen, reduce: Phrase
+			reduce(20), // rparen, reduce: Member
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(30), // less_equals, reduce: Phrase
-			reduce(30), // less_than, reduce: Phrase
-			reduce(30), // greater_equals, reduce: Phrase
-			reduce(30), // greater_than, reduce: Phrase
-			reduce(30), // not_equals, reduce: Phrase
-			reduce(30), // equals, reduce: Phrase
-			reduce(30), // has, reduce: Phrase
-			reduce(30), // matches_regexp, reduce: Phrase
-			reduce(30), // not_matches_regexp, reduce: Phrase
+			reduce(20), // less_equals, reduce: Member
+			reduce(20), // less_than, reduce: Member
+			reduce(20), // greater_equals, reduce: Member
+			reduce(20), // greater_than, reduce: Member
+			reduce(20), // not_equals, reduce: Member
+			reduce(20), // equals, reduce: Member
+			reduce(20), // has, reduce: Member
+			reduce(20), // matches_regexp, reduce: Member
+			reduce(20), // not_matches_regexp, reduce: Member
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -1902,9 +1902,169 @@ var actionTab = actionTable{
 	actionRow{ // S59
 		canRecover: false,
 		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			shift(101), // ws
+			shift(47),  // andOp
+			shift(50),  // orOp
+			shift(52),  // not
+			shift(53),  // minus
+			nil,        // dot
+			shift(59),  // lparen
+			nil,        // rparen
+			shift(61),  // text
+			shift(63),  // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S60
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(27), // ws, reduce: Item
+			reduce(27), // andOp, reduce: Item
+			reduce(27), // orOp, reduce: Item
+			nil,        // not
+			nil,        // minus
+			reduce(27), // dot, reduce: Item
+			nil,        // lparen
+			reduce(27), // rparen, reduce: Item
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(27), // less_equals, reduce: Item
+			reduce(27), // less_than, reduce: Item
+			reduce(27), // greater_equals, reduce: Item
+			reduce(27), // greater_than, reduce: Item
+			reduce(27), // not_equals, reduce: Item
+			reduce(27), // equals, reduce: Item
+			reduce(27), // has, reduce: Item
+			reduce(27), // matches_regexp, reduce: Item
+			reduce(27), // not_matches_regexp, reduce: Item
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S61
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(28), // ws, reduce: Value
+			reduce(28), // andOp, reduce: Value
+			reduce(28), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(28), // dot, reduce: Value
+			nil,        // lparen
+			reduce(28), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(28), // less_equals, reduce: Value
+			reduce(28), // less_than, reduce: Value
+			reduce(28), // greater_equals, reduce: Value
+			reduce(28), // greater_than, reduce: Value
+			reduce(28), // not_equals, reduce: Value
+			reduce(28), // equals, reduce: Value
+			reduce(28), // has, reduce: Value
+			reduce(28), // matches_regexp, reduce: Value
+			reduce(28), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S62
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(32), // ws, reduce: Value
+			reduce(32), // andOp, reduce: Value
+			reduce(32), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(32), // dot, reduce: Value
+			nil,        // lparen
+			reduce(32), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(32), // less_equals, reduce: Value
+			reduce(32), // less_than, reduce: Value
+			reduce(32), // greater_equals, reduce: Value
+			reduce(32), // greater_than, reduce: Value
+			reduce(32), // not_equals, reduce: Value
+			reduce(32), // equals, reduce: Value
+			reduce(32), // has, reduce: Value
+			reduce(32), // matches_regexp, reduce: Value
+			reduce(32), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S63
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(33), // ws, reduce: Phrase
+			reduce(33), // andOp, reduce: Phrase
+			reduce(33), // orOp, reduce: Phrase
+			nil,        // not
+			nil,        // minus
+			reduce(33), // dot, reduce: Phrase
+			nil,        // lparen
+			reduce(33), // rparen, reduce: Phrase
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(33), // less_equals, reduce: Phrase
+			reduce(33), // less_than, reduce: Phrase
+			reduce(33), // greater_equals, reduce: Phrase
+			reduce(33), // greater_than, reduce: Phrase
+			reduce(33), // not_equals, reduce: Phrase
+			reduce(33), // equals, reduce: Phrase
+			reduce(33), // has, reduce: Phrase
+			reduce(33), // matches_regexp, reduce: Phrase
+			reduce(33), // not_matches_regexp, reduce: Phrase
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S64
+		canRecover: false,
+		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(6), // $, reduce: Expression
-			shift(23), // ws
+			shift(25), // ws
 			reduce(6), // andOp, reduce: Expression
 			nil,       // orOp
 			nil,       // not
@@ -1931,7 +2091,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S60
+	actionRow{ // S65
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
@@ -1963,14 +2123,14 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S61
+	actionRow{ // S66
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			reduce(8), // $, reduce: AmbiguousSequence
 			reduce(8), // ws, reduce: AmbiguousSequence
 			reduce(8), // andOp, reduce: AmbiguousSequence
-			shift(24), // orOp
+			shift(26), // orOp
 			nil,       // not
 			nil,       // minus
 			nil,       // dot
@@ -1995,7 +2155,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S62
+	actionRow{ // S67
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2027,7 +2187,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S63
+	actionRow{ // S68
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2059,181 +2219,21 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S64
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			shift(93),  // ws
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			reduce(37), // text, reduce: Comparator
-			reduce(37), // string, reduce: Comparator
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S65
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(26), // $, reduce: Arg
-			reduce(26), // ws, reduce: Arg
-			reduce(26), // andOp, reduce: Arg
-			reduce(26), // orOp, reduce: Arg
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S66
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(18), // $, reduce: Restriction
-			reduce(18), // ws, reduce: Restriction
-			reduce(18), // andOp, reduce: Restriction
-			reduce(18), // orOp, reduce: Restriction
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S67
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(19), // $, reduce: Comparable
-			reduce(19), // ws, reduce: Comparable
-			reduce(19), // andOp, reduce: Comparable
-			reduce(19), // orOp, reduce: Comparable
-			nil,        // not
-			nil,        // minus
-			shift(94),  // dot
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S68
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			reduce(20), // $, reduce: Member
-			reduce(20), // ws, reduce: Member
-			reduce(20), // andOp, reduce: Member
-			reduce(20), // orOp, reduce: Member
-			nil,        // not
-			nil,        // minus
-			reduce(20), // dot, reduce: Member
-			nil,        // lparen
-			nil,        // rparen
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
 	actionRow{ // S69
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(27), // $, reduce: Item
-			reduce(27), // ws, reduce: Item
-			reduce(27), // andOp, reduce: Item
-			reduce(27), // orOp, reduce: Item
-			nil,        // not
+			nil,        // $
+			shift(102), // ws
+			reduce(40), // andOp, reduce: Comparator
+			reduce(40), // orOp, reduce: Comparator
+			reduce(40), // not, reduce: Comparator
 			nil,        // minus
-			reduce(27), // dot, reduce: Item
+			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			nil,        // text
-			nil,        // string
+			reduce(40), // text, reduce: Comparator
+			reduce(40), // string, reduce: Comparator
 			nil,        // or
 			nil,        // and
 			nil,        // less_equals
@@ -2255,13 +2255,13 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(28), // $, reduce: Value
-			reduce(28), // ws, reduce: Value
-			reduce(28), // andOp, reduce: Value
-			reduce(28), // orOp, reduce: Value
+			reduce(30), // $, reduce: Value
+			reduce(30), // ws, reduce: Value
+			reduce(30), // andOp, reduce: Value
+			reduce(30), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			reduce(28), // dot, reduce: Value
+			reduce(30), // dot, reduce: Value
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -2319,13 +2319,13 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(30), // $, reduce: Phrase
-			reduce(30), // ws, reduce: Phrase
-			reduce(30), // andOp, reduce: Phrase
-			reduce(30), // orOp, reduce: Phrase
+			reduce(31), // $, reduce: Value
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			reduce(30), // dot, reduce: Phrase
+			reduce(31), // dot, reduce: Value
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -2351,17 +2351,17 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			nil,        // $
-			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
+			reduce(26), // $, reduce: Arg
+			reduce(26), // ws, reduce: Arg
+			reduce(26), // andOp, reduce: Arg
+			reduce(26), // orOp, reduce: Arg
 			nil,        // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			reduce(38), // text, reduce: Comparator
-			reduce(38), // string, reduce: Comparator
+			nil,        // text
+			nil,        // string
 			nil,        // or
 			nil,        // and
 			nil,        // less_equals
@@ -2383,28 +2383,28 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(35), // $, reduce: Keyword
-			reduce(35), // ws, reduce: Keyword
-			reduce(35), // andOp, reduce: Keyword
-			reduce(35), // orOp, reduce: Keyword
+			reduce(18), // $, reduce: Restriction
+			reduce(18), // ws, reduce: Restriction
+			reduce(18), // andOp, reduce: Restriction
+			reduce(18), // orOp, reduce: Restriction
 			nil,        // not
 			nil,        // minus
-			reduce(35), // dot, reduce: Keyword
+			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(35), // less_equals, reduce: Keyword
-			reduce(35), // less_than, reduce: Keyword
-			reduce(35), // greater_equals, reduce: Keyword
-			reduce(35), // greater_than, reduce: Keyword
-			reduce(35), // not_equals, reduce: Keyword
-			reduce(35), // equals, reduce: Keyword
-			reduce(35), // has, reduce: Keyword
-			reduce(35), // matches_regexp, reduce: Keyword
-			reduce(35), // not_matches_regexp, reduce: Keyword
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -2415,28 +2415,28 @@ var actionTab = actionTable{
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(31), // $, reduce: ItemKeyword
-			reduce(31), // ws, reduce: ItemKeyword
-			reduce(31), // andOp, reduce: ItemKeyword
-			reduce(31), // orOp, reduce: ItemKeyword
+			reduce(19), // $, reduce: Comparable
+			reduce(19), // ws, reduce: Comparable
+			reduce(19), // andOp, reduce: Comparable
+			reduce(19), // orOp, reduce: Comparable
 			nil,        // not
 			nil,        // minus
-			reduce(31), // dot, reduce: ItemKeyword
+			shift(103), // dot
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(31), // less_equals, reduce: ItemKeyword
-			reduce(31), // less_than, reduce: ItemKeyword
-			reduce(31), // greater_equals, reduce: ItemKeyword
-			reduce(31), // greater_than, reduce: ItemKeyword
-			reduce(31), // not_equals, reduce: ItemKeyword
-			reduce(31), // equals, reduce: ItemKeyword
-			reduce(31), // has, reduce: ItemKeyword
-			reduce(31), // matches_regexp, reduce: ItemKeyword
-			reduce(31), // not_matches_regexp, reduce: ItemKeyword
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
@@ -2444,6 +2444,262 @@ var actionTab = actionTable{
 		},
 	},
 	actionRow{ // S76
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(20), // $, reduce: Member
+			reduce(20), // ws, reduce: Member
+			reduce(20), // andOp, reduce: Member
+			reduce(20), // orOp, reduce: Member
+			nil,        // not
+			nil,        // minus
+			reduce(20), // dot, reduce: Member
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S77
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(27), // $, reduce: Item
+			reduce(27), // ws, reduce: Item
+			reduce(27), // andOp, reduce: Item
+			reduce(27), // orOp, reduce: Item
+			nil,        // not
+			nil,        // minus
+			reduce(27), // dot, reduce: Item
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S78
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(28), // $, reduce: Value
+			reduce(28), // ws, reduce: Value
+			reduce(28), // andOp, reduce: Value
+			reduce(28), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(28), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S79
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(32), // $, reduce: Value
+			reduce(32), // ws, reduce: Value
+			reduce(32), // andOp, reduce: Value
+			reduce(32), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(32), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S80
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(33), // $, reduce: Phrase
+			reduce(33), // ws, reduce: Phrase
+			reduce(33), // andOp, reduce: Phrase
+			reduce(33), // orOp, reduce: Phrase
+			nil,        // not
+			nil,        // minus
+			reduce(33), // dot, reduce: Phrase
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S81
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			nil,        // ws
+			reduce(41), // andOp, reduce: Comparator
+			reduce(41), // orOp, reduce: Comparator
+			reduce(41), // not, reduce: Comparator
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			nil,        // rparen
+			reduce(41), // text, reduce: Comparator
+			reduce(41), // string, reduce: Comparator
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S82
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(31), // $, reduce: Value
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S83
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			reduce(34), // $, reduce: ItemKeyword
+			reduce(34), // ws, reduce: ItemKeyword
+			reduce(34), // andOp, reduce: ItemKeyword
+			reduce(34), // orOp, reduce: ItemKeyword
+			nil,        // not
+			nil,        // minus
+			reduce(34), // dot, reduce: ItemKeyword
+			nil,        // lparen
+			nil,        // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(34), // less_equals, reduce: ItemKeyword
+			reduce(34), // less_than, reduce: ItemKeyword
+			reduce(34), // greater_equals, reduce: ItemKeyword
+			reduce(34), // greater_than, reduce: ItemKeyword
+			reduce(34), // not_equals, reduce: ItemKeyword
+			reduce(34), // equals, reduce: ItemKeyword
+			reduce(34), // has, reduce: ItemKeyword
+			reduce(34), // matches_regexp, reduce: ItemKeyword
+			reduce(34), // not_matches_regexp, reduce: ItemKeyword
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S84
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2475,149 +2731,149 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S77
+	actionRow{ // S85
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(32), // $, reduce: ItemKeyword
-			reduce(32), // ws, reduce: ItemKeyword
-			reduce(32), // andOp, reduce: ItemKeyword
-			reduce(32), // orOp, reduce: ItemKeyword
+			reduce(35), // $, reduce: ItemKeyword
+			reduce(35), // ws, reduce: ItemKeyword
+			reduce(35), // andOp, reduce: ItemKeyword
+			reduce(35), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(32), // dot, reduce: ItemKeyword
+			reduce(35), // dot, reduce: ItemKeyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(32), // less_equals, reduce: ItemKeyword
-			reduce(32), // less_than, reduce: ItemKeyword
-			reduce(32), // greater_equals, reduce: ItemKeyword
-			reduce(32), // greater_than, reduce: ItemKeyword
-			reduce(32), // not_equals, reduce: ItemKeyword
-			reduce(32), // equals, reduce: ItemKeyword
-			reduce(32), // has, reduce: ItemKeyword
-			reduce(32), // matches_regexp, reduce: ItemKeyword
-			reduce(32), // not_matches_regexp, reduce: ItemKeyword
+			reduce(35), // less_equals, reduce: ItemKeyword
+			reduce(35), // less_than, reduce: ItemKeyword
+			reduce(35), // greater_equals, reduce: ItemKeyword
+			reduce(35), // greater_than, reduce: ItemKeyword
+			reduce(35), // not_equals, reduce: ItemKeyword
+			reduce(35), // equals, reduce: ItemKeyword
+			reduce(35), // has, reduce: ItemKeyword
+			reduce(35), // matches_regexp, reduce: ItemKeyword
+			reduce(35), // not_matches_regexp, reduce: ItemKeyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S78
+	actionRow{ // S86
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(33), // $, reduce: Keyword
-			reduce(33), // ws, reduce: Keyword
-			reduce(33), // andOp, reduce: Keyword
-			reduce(33), // orOp, reduce: Keyword
+			reduce(36), // $, reduce: Keyword
+			reduce(36), // ws, reduce: Keyword
+			reduce(36), // andOp, reduce: Keyword
+			reduce(36), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(33), // dot, reduce: Keyword
+			reduce(36), // dot, reduce: Keyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(33), // less_equals, reduce: Keyword
-			reduce(33), // less_than, reduce: Keyword
-			reduce(33), // greater_equals, reduce: Keyword
-			reduce(33), // greater_than, reduce: Keyword
-			reduce(33), // not_equals, reduce: Keyword
-			reduce(33), // equals, reduce: Keyword
-			reduce(33), // has, reduce: Keyword
-			reduce(33), // matches_regexp, reduce: Keyword
-			reduce(33), // not_matches_regexp, reduce: Keyword
+			reduce(36), // less_equals, reduce: Keyword
+			reduce(36), // less_than, reduce: Keyword
+			reduce(36), // greater_equals, reduce: Keyword
+			reduce(36), // greater_than, reduce: Keyword
+			reduce(36), // not_equals, reduce: Keyword
+			reduce(36), // equals, reduce: Keyword
+			reduce(36), // has, reduce: Keyword
+			reduce(36), // matches_regexp, reduce: Keyword
+			reduce(36), // not_matches_regexp, reduce: Keyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S79
+	actionRow{ // S87
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(34), // $, reduce: Keyword
-			reduce(34), // ws, reduce: Keyword
-			reduce(34), // andOp, reduce: Keyword
-			reduce(34), // orOp, reduce: Keyword
+			reduce(37), // $, reduce: Keyword
+			reduce(37), // ws, reduce: Keyword
+			reduce(37), // andOp, reduce: Keyword
+			reduce(37), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(34), // dot, reduce: Keyword
+			reduce(37), // dot, reduce: Keyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(34), // less_equals, reduce: Keyword
-			reduce(34), // less_than, reduce: Keyword
-			reduce(34), // greater_equals, reduce: Keyword
-			reduce(34), // greater_than, reduce: Keyword
-			reduce(34), // not_equals, reduce: Keyword
-			reduce(34), // equals, reduce: Keyword
-			reduce(34), // has, reduce: Keyword
-			reduce(34), // matches_regexp, reduce: Keyword
-			reduce(34), // not_matches_regexp, reduce: Keyword
+			reduce(37), // less_equals, reduce: Keyword
+			reduce(37), // less_than, reduce: Keyword
+			reduce(37), // greater_equals, reduce: Keyword
+			reduce(37), // greater_than, reduce: Keyword
+			reduce(37), // not_equals, reduce: Keyword
+			reduce(37), // equals, reduce: Keyword
+			reduce(37), // has, reduce: Keyword
+			reduce(37), // matches_regexp, reduce: Keyword
+			reduce(37), // not_matches_regexp, reduce: Keyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S80
+	actionRow{ // S88
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			nil,        // ws
+			nil,        // andOp
+			nil,        // orOp
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			shift(104), // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S89
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
 			nil,       // dot
-			nil,       // lparen
-			shift(95), // rparen
-			nil,       // text
-			nil,       // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S81
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
-			nil,       // dot
-			shift(54), // lparen
+			shift(59), // lparen
 			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
+			shift(61), // text
+			shift(63), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -2635,7 +2891,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S82
+	actionRow{ // S90
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2667,53 +2923,117 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S83
+	actionRow{ // S91
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			shift(106), // ws
+			shift(89),  // andOp
+			nil,        // orOp
+			nil,        // not
+			nil,        // minus
+			nil,        // dot
+			nil,        // lparen
+			shift(107), // rparen
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S92
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
-			shift(97), // ws
-			shift(81), // andOp
-			nil,       // orOp
-			nil,       // not
+			nil,       // ws
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
+			nil,       // dot
+			shift(59), // lparen
+			nil,       // rparen
+			shift(61), // text
+			shift(63), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S93
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
+			nil,       // dot
+			shift(59), // lparen
+			nil,       // rparen
+			shift(61), // text
+			shift(63), // string
+			nil,       // or
+			nil,       // and
+			nil,       // less_equals
+			nil,       // less_than
+			nil,       // greater_equals
+			nil,       // greater_than
+			nil,       // not_equals
+			nil,       // equals
+			nil,       // has
+			nil,       // matches_regexp
+			nil,       // not_matches_regexp
+			nil,       // backslash
+			nil,       // comma
+			nil,       // plus
+			nil,       // tilde
+		},
+	},
+	actionRow{ // S94
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,       // INVALID
+			nil,       // $
+			nil,       // ws
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(96), // not
 			nil,       // minus
 			nil,       // dot
-			nil,       // lparen
-			shift(98), // rparen
-			nil,       // text
-			nil,       // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S84
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
-			nil,       // dot
-			shift(54), // lparen
+			shift(59), // lparen
 			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
+			shift(61), // text
+			shift(63), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -2731,71 +3051,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S85
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S86
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,       // INVALID
-			nil,       // $
-			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			nil,       // not
-			nil,       // minus
-			nil,       // dot
-			shift(54), // lparen
-			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
-			nil,       // or
-			nil,       // and
-			nil,       // less_equals
-			nil,       // less_than
-			nil,       // greater_equals
-			nil,       // greater_than
-			nil,       // not_equals
-			nil,       // equals
-			nil,       // has
-			nil,       // matches_regexp
-			nil,       // not_matches_regexp
-			nil,       // backslash
-			nil,       // comma
-			nil,       // plus
-			nil,       // tilde
-		},
-	},
-	actionRow{ // S87
+	actionRow{ // S95
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2827,7 +3083,39 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S88
+	actionRow{ // S96
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			nil,        // lparen
+			reduce(31), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S97
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -2859,21 +3147,21 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S89
+	actionRow{ // S98
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
 			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			shift(111), // andOp
+			shift(112), // orOp
+			shift(113), // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			shift(107), // text
-			shift(109), // string
+			shift(119), // text
+			shift(121), // string
 			nil,        // or
 			nil,        // and
 			nil,        // less_equals
@@ -2891,23 +3179,23 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S90
+	actionRow{ // S99
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
 			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
-			shift(110), // not
+			shift(47),  // andOp
+			shift(50),  // orOp
+			shift(122), // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			shift(56),  // text
-			shift(58),  // string
-			shift(114), // or
-			shift(115), // and
+			shift(61),  // text
+			shift(63),  // string
+			shift(126), // or
+			shift(127), // and
 			nil,        // less_equals
 			nil,        // less_than
 			nil,        // greater_equals
@@ -2923,19 +3211,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S91
+	actionRow{ // S100
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			shift(116), // ws
-			shift(81),  // andOp
+			shift(128), // ws
+			shift(89),  // andOp
 			nil,        // orOp
 			nil,        // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
-			shift(117), // rparen
+			shift(129), // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -2955,21 +3243,21 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S92
+	actionRow{ // S101
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			nil,       // ws
-			nil,       // andOp
-			nil,       // orOp
-			shift(47), // not
-			shift(48), // minus
+			shift(47), // andOp
+			shift(50), // orOp
+			shift(52), // not
+			shift(53), // minus
 			nil,       // dot
-			shift(54), // lparen
+			shift(59), // lparen
 			nil,       // rparen
-			shift(56), // text
-			shift(58), // string
+			shift(61), // text
+			shift(63), // string
 			nil,       // or
 			nil,       // and
 			nil,       // less_equals
@@ -2987,21 +3275,21 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S93
+	actionRow{ // S102
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
 			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
-			nil,        // not
+			reduce(42), // andOp, reduce: Comparator
+			reduce(42), // orOp, reduce: Comparator
+			reduce(42), // not, reduce: Comparator
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			reduce(39), // text, reduce: Comparator
-			reduce(39), // string, reduce: Comparator
+			reduce(42), // text, reduce: Comparator
+			reduce(42), // string, reduce: Comparator
 			nil,        // or
 			nil,        // and
 			nil,        // less_equals
@@ -3019,23 +3307,23 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S94
+	actionRow{ // S103
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
 			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
-			shift(119), // not
+			shift(70),  // andOp
+			shift(71),  // orOp
+			shift(131), // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			shift(70),  // text
-			shift(72),  // string
-			shift(123), // or
-			shift(124), // and
+			shift(78),  // text
+			shift(80),  // string
+			shift(135), // or
+			shift(136), // and
 			nil,        // less_equals
 			nil,        // less_than
 			nil,        // greater_equals
@@ -3051,7 +3339,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S95
+	actionRow{ // S104
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3083,12 +3371,12 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S96
+	actionRow{ // S105
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
-			shift(84), // ws
+			shift(92), // ws
 			reduce(6), // andOp, reduce: Expression
 			nil,       // orOp
 			nil,       // not
@@ -3115,7 +3403,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S97
+	actionRow{ // S106
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3127,7 +3415,7 @@ var actionTab = actionTable{
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
-			shift(125), // rparen
+			shift(137), // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3147,7 +3435,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S98
+	actionRow{ // S107
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3179,14 +3467,14 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S99
+	actionRow{ // S108
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,       // INVALID
 			nil,       // $
 			reduce(8), // ws, reduce: AmbiguousSequence
 			reduce(8), // andOp, reduce: AmbiguousSequence
-			shift(85), // orOp
+			shift(93), // orOp
 			nil,       // not
 			nil,       // minus
 			nil,       // dot
@@ -3211,7 +3499,7 @@ var actionTab = actionTable{
 			nil,       // tilde
 		},
 	},
-	actionRow{ // S100
+	actionRow{ // S109
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3243,7 +3531,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S101
+	actionRow{ // S110
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3275,19 +3563,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S102
+	actionRow{ // S111
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(26), // ws, reduce: Arg
-			reduce(26), // andOp, reduce: Arg
-			reduce(26), // orOp, reduce: Arg
+			reduce(30), // ws, reduce: Value
+			reduce(30), // andOp, reduce: Value
+			reduce(30), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			nil,        // dot
+			reduce(30), // dot, reduce: Value
 			nil,        // lparen
-			reduce(26), // rparen, reduce: Arg
+			reduce(30), // rparen, reduce: Value
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3307,167 +3595,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S103
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(18), // ws, reduce: Restriction
-			reduce(18), // andOp, reduce: Restriction
-			reduce(18), // orOp, reduce: Restriction
-			nil,        // not
-			nil,        // minus
-			nil,        // dot
-			nil,        // lparen
-			reduce(18), // rparen, reduce: Restriction
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S104
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(19), // ws, reduce: Comparable
-			reduce(19), // andOp, reduce: Comparable
-			reduce(19), // orOp, reduce: Comparable
-			nil,        // not
-			nil,        // minus
-			shift(126), // dot
-			nil,        // lparen
-			reduce(19), // rparen, reduce: Comparable
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S105
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(20), // ws, reduce: Member
-			reduce(20), // andOp, reduce: Member
-			reduce(20), // orOp, reduce: Member
-			nil,        // not
-			nil,        // minus
-			reduce(20), // dot, reduce: Member
-			nil,        // lparen
-			reduce(20), // rparen, reduce: Member
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S106
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(27), // ws, reduce: Item
-			reduce(27), // andOp, reduce: Item
-			reduce(27), // orOp, reduce: Item
-			nil,        // not
-			nil,        // minus
-			reduce(27), // dot, reduce: Item
-			nil,        // lparen
-			reduce(27), // rparen, reduce: Item
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S107
-		canRecover: false,
-		actions: [numSymbols]action{
-			nil,        // INVALID
-			nil,        // $
-			reduce(28), // ws, reduce: Value
-			reduce(28), // andOp, reduce: Value
-			reduce(28), // orOp, reduce: Value
-			nil,        // not
-			nil,        // minus
-			reduce(28), // dot, reduce: Value
-			nil,        // lparen
-			reduce(28), // rparen, reduce: Value
-			nil,        // text
-			nil,        // string
-			nil,        // or
-			nil,        // and
-			nil,        // less_equals
-			nil,        // less_than
-			nil,        // greater_equals
-			nil,        // greater_than
-			nil,        // not_equals
-			nil,        // equals
-			nil,        // has
-			nil,        // matches_regexp
-			nil,        // not_matches_regexp
-			nil,        // backslash
-			nil,        // comma
-			nil,        // plus
-			nil,        // tilde
-		},
-	},
-	actionRow{ // S108
+	actionRow{ // S112
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3499,19 +3627,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S109
+	actionRow{ // S113
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(30), // ws, reduce: Phrase
-			reduce(30), // andOp, reduce: Phrase
-			reduce(30), // orOp, reduce: Phrase
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			reduce(30), // dot, reduce: Phrase
+			reduce(31), // dot, reduce: Value
 			nil,        // lparen
-			reduce(30), // rparen, reduce: Phrase
+			reduce(31), // rparen, reduce: Value
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3531,71 +3659,327 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S110
+	actionRow{ // S114
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(35), // ws, reduce: Keyword
-			reduce(35), // andOp, reduce: Keyword
-			reduce(35), // orOp, reduce: Keyword
+			reduce(26), // ws, reduce: Arg
+			reduce(26), // andOp, reduce: Arg
+			reduce(26), // orOp, reduce: Arg
 			nil,        // not
 			nil,        // minus
-			reduce(35), // dot, reduce: Keyword
+			nil,        // dot
 			nil,        // lparen
-			reduce(35), // rparen, reduce: Keyword
+			reduce(26), // rparen, reduce: Arg
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(35), // less_equals, reduce: Keyword
-			reduce(35), // less_than, reduce: Keyword
-			reduce(35), // greater_equals, reduce: Keyword
-			reduce(35), // greater_than, reduce: Keyword
-			reduce(35), // not_equals, reduce: Keyword
-			reduce(35), // equals, reduce: Keyword
-			reduce(35), // has, reduce: Keyword
-			reduce(35), // matches_regexp, reduce: Keyword
-			reduce(35), // not_matches_regexp, reduce: Keyword
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S111
+	actionRow{ // S115
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(31), // ws, reduce: ItemKeyword
-			reduce(31), // andOp, reduce: ItemKeyword
-			reduce(31), // orOp, reduce: ItemKeyword
+			reduce(18), // ws, reduce: Restriction
+			reduce(18), // andOp, reduce: Restriction
+			reduce(18), // orOp, reduce: Restriction
 			nil,        // not
 			nil,        // minus
-			reduce(31), // dot, reduce: ItemKeyword
+			nil,        // dot
 			nil,        // lparen
-			reduce(31), // rparen, reduce: ItemKeyword
+			reduce(18), // rparen, reduce: Restriction
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(31), // less_equals, reduce: ItemKeyword
-			reduce(31), // less_than, reduce: ItemKeyword
-			reduce(31), // greater_equals, reduce: ItemKeyword
-			reduce(31), // greater_than, reduce: ItemKeyword
-			reduce(31), // not_equals, reduce: ItemKeyword
-			reduce(31), // equals, reduce: ItemKeyword
-			reduce(31), // has, reduce: ItemKeyword
-			reduce(31), // matches_regexp, reduce: ItemKeyword
-			reduce(31), // not_matches_regexp, reduce: ItemKeyword
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S112
+	actionRow{ // S116
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(19), // ws, reduce: Comparable
+			reduce(19), // andOp, reduce: Comparable
+			reduce(19), // orOp, reduce: Comparable
+			nil,        // not
+			nil,        // minus
+			shift(138), // dot
+			nil,        // lparen
+			reduce(19), // rparen, reduce: Comparable
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S117
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(20), // ws, reduce: Member
+			reduce(20), // andOp, reduce: Member
+			reduce(20), // orOp, reduce: Member
+			nil,        // not
+			nil,        // minus
+			reduce(20), // dot, reduce: Member
+			nil,        // lparen
+			reduce(20), // rparen, reduce: Member
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S118
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(27), // ws, reduce: Item
+			reduce(27), // andOp, reduce: Item
+			reduce(27), // orOp, reduce: Item
+			nil,        // not
+			nil,        // minus
+			reduce(27), // dot, reduce: Item
+			nil,        // lparen
+			reduce(27), // rparen, reduce: Item
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S119
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(28), // ws, reduce: Value
+			reduce(28), // andOp, reduce: Value
+			reduce(28), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(28), // dot, reduce: Value
+			nil,        // lparen
+			reduce(28), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S120
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(32), // ws, reduce: Value
+			reduce(32), // andOp, reduce: Value
+			reduce(32), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(32), // dot, reduce: Value
+			nil,        // lparen
+			reduce(32), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S121
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(33), // ws, reduce: Phrase
+			reduce(33), // andOp, reduce: Phrase
+			reduce(33), // orOp, reduce: Phrase
+			nil,        // not
+			nil,        // minus
+			reduce(33), // dot, reduce: Phrase
+			nil,        // lparen
+			reduce(33), // rparen, reduce: Phrase
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			nil,        // less_equals
+			nil,        // less_than
+			nil,        // greater_equals
+			nil,        // greater_than
+			nil,        // not_equals
+			nil,        // equals
+			nil,        // has
+			nil,        // matches_regexp
+			nil,        // not_matches_regexp
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S122
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
+			nil,        // not
+			nil,        // minus
+			reduce(31), // dot, reduce: Value
+			nil,        // lparen
+			reduce(31), // rparen, reduce: Value
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(31), // less_equals, reduce: Value
+			reduce(31), // less_than, reduce: Value
+			reduce(31), // greater_equals, reduce: Value
+			reduce(31), // greater_than, reduce: Value
+			reduce(31), // not_equals, reduce: Value
+			reduce(31), // equals, reduce: Value
+			reduce(31), // has, reduce: Value
+			reduce(31), // matches_regexp, reduce: Value
+			reduce(31), // not_matches_regexp, reduce: Value
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S123
+		canRecover: false,
+		actions: [numSymbols]action{
+			nil,        // INVALID
+			nil,        // $
+			reduce(34), // ws, reduce: ItemKeyword
+			reduce(34), // andOp, reduce: ItemKeyword
+			reduce(34), // orOp, reduce: ItemKeyword
+			nil,        // not
+			nil,        // minus
+			reduce(34), // dot, reduce: ItemKeyword
+			nil,        // lparen
+			reduce(34), // rparen, reduce: ItemKeyword
+			nil,        // text
+			nil,        // string
+			nil,        // or
+			nil,        // and
+			reduce(34), // less_equals, reduce: ItemKeyword
+			reduce(34), // less_than, reduce: ItemKeyword
+			reduce(34), // greater_equals, reduce: ItemKeyword
+			reduce(34), // greater_than, reduce: ItemKeyword
+			reduce(34), // not_equals, reduce: ItemKeyword
+			reduce(34), // equals, reduce: ItemKeyword
+			reduce(34), // has, reduce: ItemKeyword
+			reduce(34), // matches_regexp, reduce: ItemKeyword
+			reduce(34), // not_matches_regexp, reduce: ItemKeyword
+			nil,        // backslash
+			nil,        // comma
+			nil,        // plus
+			nil,        // tilde
+		},
+	},
+	actionRow{ // S124
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3627,103 +4011,103 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S113
+	actionRow{ // S125
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(32), // ws, reduce: ItemKeyword
-			reduce(32), // andOp, reduce: ItemKeyword
-			reduce(32), // orOp, reduce: ItemKeyword
+			reduce(35), // ws, reduce: ItemKeyword
+			reduce(35), // andOp, reduce: ItemKeyword
+			reduce(35), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(32), // dot, reduce: ItemKeyword
+			reduce(35), // dot, reduce: ItemKeyword
 			nil,        // lparen
-			reduce(32), // rparen, reduce: ItemKeyword
+			reduce(35), // rparen, reduce: ItemKeyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(32), // less_equals, reduce: ItemKeyword
-			reduce(32), // less_than, reduce: ItemKeyword
-			reduce(32), // greater_equals, reduce: ItemKeyword
-			reduce(32), // greater_than, reduce: ItemKeyword
-			reduce(32), // not_equals, reduce: ItemKeyword
-			reduce(32), // equals, reduce: ItemKeyword
-			reduce(32), // has, reduce: ItemKeyword
-			reduce(32), // matches_regexp, reduce: ItemKeyword
-			reduce(32), // not_matches_regexp, reduce: ItemKeyword
+			reduce(35), // less_equals, reduce: ItemKeyword
+			reduce(35), // less_than, reduce: ItemKeyword
+			reduce(35), // greater_equals, reduce: ItemKeyword
+			reduce(35), // greater_than, reduce: ItemKeyword
+			reduce(35), // not_equals, reduce: ItemKeyword
+			reduce(35), // equals, reduce: ItemKeyword
+			reduce(35), // has, reduce: ItemKeyword
+			reduce(35), // matches_regexp, reduce: ItemKeyword
+			reduce(35), // not_matches_regexp, reduce: ItemKeyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S114
+	actionRow{ // S126
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(33), // ws, reduce: Keyword
-			reduce(33), // andOp, reduce: Keyword
-			reduce(33), // orOp, reduce: Keyword
+			reduce(36), // ws, reduce: Keyword
+			reduce(36), // andOp, reduce: Keyword
+			reduce(36), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(33), // dot, reduce: Keyword
+			reduce(36), // dot, reduce: Keyword
 			nil,        // lparen
-			reduce(33), // rparen, reduce: Keyword
+			reduce(36), // rparen, reduce: Keyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(33), // less_equals, reduce: Keyword
-			reduce(33), // less_than, reduce: Keyword
-			reduce(33), // greater_equals, reduce: Keyword
-			reduce(33), // greater_than, reduce: Keyword
-			reduce(33), // not_equals, reduce: Keyword
-			reduce(33), // equals, reduce: Keyword
-			reduce(33), // has, reduce: Keyword
-			reduce(33), // matches_regexp, reduce: Keyword
-			reduce(33), // not_matches_regexp, reduce: Keyword
+			reduce(36), // less_equals, reduce: Keyword
+			reduce(36), // less_than, reduce: Keyword
+			reduce(36), // greater_equals, reduce: Keyword
+			reduce(36), // greater_than, reduce: Keyword
+			reduce(36), // not_equals, reduce: Keyword
+			reduce(36), // equals, reduce: Keyword
+			reduce(36), // has, reduce: Keyword
+			reduce(36), // matches_regexp, reduce: Keyword
+			reduce(36), // not_matches_regexp, reduce: Keyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S115
+	actionRow{ // S127
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(34), // ws, reduce: Keyword
-			reduce(34), // andOp, reduce: Keyword
-			reduce(34), // orOp, reduce: Keyword
+			reduce(37), // ws, reduce: Keyword
+			reduce(37), // andOp, reduce: Keyword
+			reduce(37), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(34), // dot, reduce: Keyword
+			reduce(37), // dot, reduce: Keyword
 			nil,        // lparen
-			reduce(34), // rparen, reduce: Keyword
+			reduce(37), // rparen, reduce: Keyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
 			nil,        // and
-			reduce(34), // less_equals, reduce: Keyword
-			reduce(34), // less_than, reduce: Keyword
-			reduce(34), // greater_equals, reduce: Keyword
-			reduce(34), // greater_than, reduce: Keyword
-			reduce(34), // not_equals, reduce: Keyword
-			reduce(34), // equals, reduce: Keyword
-			reduce(34), // has, reduce: Keyword
-			reduce(34), // matches_regexp, reduce: Keyword
-			reduce(34), // not_matches_regexp, reduce: Keyword
+			reduce(37), // less_equals, reduce: Keyword
+			reduce(37), // less_than, reduce: Keyword
+			reduce(37), // greater_equals, reduce: Keyword
+			reduce(37), // greater_than, reduce: Keyword
+			reduce(37), // not_equals, reduce: Keyword
+			reduce(37), // equals, reduce: Keyword
+			reduce(37), // has, reduce: Keyword
+			reduce(37), // matches_regexp, reduce: Keyword
+			reduce(37), // not_matches_regexp, reduce: Keyword
 			nil,        // backslash
 			nil,        // comma
 			nil,        // plus
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S116
+	actionRow{ // S128
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3735,7 +4119,7 @@ var actionTab = actionTable{
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
-			shift(127), // rparen
+			shift(139), // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3755,7 +4139,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S117
+	actionRow{ // S129
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3787,19 +4171,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S118
+	actionRow{ // S130
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			shift(128), // ws
-			shift(81),  // andOp
+			shift(140), // ws
+			shift(89),  // andOp
 			nil,        // orOp
 			nil,        // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
-			shift(129), // rparen
+			shift(141), // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -3819,17 +4203,17 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S119
+	actionRow{ // S131
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(35), // $, reduce: Keyword
-			reduce(35), // ws, reduce: Keyword
-			reduce(35), // andOp, reduce: Keyword
-			reduce(35), // orOp, reduce: Keyword
+			reduce(31), // $, reduce: Value
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			reduce(35), // dot, reduce: Keyword
+			reduce(31), // dot, reduce: Value
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -3851,17 +4235,17 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S120
+	actionRow{ // S132
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(31), // $, reduce: ItemKeyword
-			reduce(31), // ws, reduce: ItemKeyword
-			reduce(31), // andOp, reduce: ItemKeyword
-			reduce(31), // orOp, reduce: ItemKeyword
+			reduce(34), // $, reduce: ItemKeyword
+			reduce(34), // ws, reduce: ItemKeyword
+			reduce(34), // andOp, reduce: ItemKeyword
+			reduce(34), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(31), // dot, reduce: ItemKeyword
+			reduce(34), // dot, reduce: ItemKeyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -3883,7 +4267,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S121
+	actionRow{ // S133
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -3915,17 +4299,17 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S122
+	actionRow{ // S134
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(32), // $, reduce: ItemKeyword
-			reduce(32), // ws, reduce: ItemKeyword
-			reduce(32), // andOp, reduce: ItemKeyword
-			reduce(32), // orOp, reduce: ItemKeyword
+			reduce(35), // $, reduce: ItemKeyword
+			reduce(35), // ws, reduce: ItemKeyword
+			reduce(35), // andOp, reduce: ItemKeyword
+			reduce(35), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(32), // dot, reduce: ItemKeyword
+			reduce(35), // dot, reduce: ItemKeyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -3947,17 +4331,17 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S123
+	actionRow{ // S135
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(33), // $, reduce: Keyword
-			reduce(33), // ws, reduce: Keyword
-			reduce(33), // andOp, reduce: Keyword
-			reduce(33), // orOp, reduce: Keyword
+			reduce(36), // $, reduce: Keyword
+			reduce(36), // ws, reduce: Keyword
+			reduce(36), // andOp, reduce: Keyword
+			reduce(36), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(33), // dot, reduce: Keyword
+			reduce(36), // dot, reduce: Keyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -3979,17 +4363,17 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S124
+	actionRow{ // S136
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
-			reduce(34), // $, reduce: Keyword
-			reduce(34), // ws, reduce: Keyword
-			reduce(34), // andOp, reduce: Keyword
-			reduce(34), // orOp, reduce: Keyword
+			reduce(37), // $, reduce: Keyword
+			reduce(37), // ws, reduce: Keyword
+			reduce(37), // andOp, reduce: Keyword
+			reduce(37), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(34), // dot, reduce: Keyword
+			reduce(37), // dot, reduce: Keyword
 			nil,        // lparen
 			nil,        // rparen
 			nil,        // text
@@ -4011,7 +4395,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S125
+	actionRow{ // S137
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -4043,23 +4427,23 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S126
+	actionRow{ // S138
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
 			nil,        // ws
-			nil,        // andOp
-			nil,        // orOp
-			shift(130), // not
+			shift(111), // andOp
+			shift(112), // orOp
+			shift(142), // not
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
 			nil,        // rparen
-			shift(107), // text
-			shift(109), // string
-			shift(134), // or
-			shift(135), // and
+			shift(119), // text
+			shift(121), // string
+			shift(146), // or
+			shift(147), // and
 			nil,        // less_equals
 			nil,        // less_than
 			nil,        // greater_equals
@@ -4075,7 +4459,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S127
+	actionRow{ // S139
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -4107,7 +4491,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S128
+	actionRow{ // S140
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -4119,7 +4503,7 @@ var actionTab = actionTable{
 			nil,        // minus
 			nil,        // dot
 			nil,        // lparen
-			shift(136), // rparen
+			shift(148), // rparen
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4139,7 +4523,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S129
+	actionRow{ // S141
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -4171,19 +4555,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S130
+	actionRow{ // S142
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(35), // ws, reduce: Keyword
-			reduce(35), // andOp, reduce: Keyword
-			reduce(35), // orOp, reduce: Keyword
+			reduce(31), // ws, reduce: Value
+			reduce(31), // andOp, reduce: Value
+			reduce(31), // orOp, reduce: Value
 			nil,        // not
 			nil,        // minus
-			reduce(35), // dot, reduce: Keyword
+			reduce(31), // dot, reduce: Value
 			nil,        // lparen
-			reduce(35), // rparen, reduce: Keyword
+			reduce(31), // rparen, reduce: Value
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4203,19 +4587,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S131
+	actionRow{ // S143
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(31), // ws, reduce: ItemKeyword
-			reduce(31), // andOp, reduce: ItemKeyword
-			reduce(31), // orOp, reduce: ItemKeyword
+			reduce(34), // ws, reduce: ItemKeyword
+			reduce(34), // andOp, reduce: ItemKeyword
+			reduce(34), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(31), // dot, reduce: ItemKeyword
+			reduce(34), // dot, reduce: ItemKeyword
 			nil,        // lparen
-			reduce(31), // rparen, reduce: ItemKeyword
+			reduce(34), // rparen, reduce: ItemKeyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4235,7 +4619,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S132
+	actionRow{ // S144
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
@@ -4267,19 +4651,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S133
+	actionRow{ // S145
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(32), // ws, reduce: ItemKeyword
-			reduce(32), // andOp, reduce: ItemKeyword
-			reduce(32), // orOp, reduce: ItemKeyword
+			reduce(35), // ws, reduce: ItemKeyword
+			reduce(35), // andOp, reduce: ItemKeyword
+			reduce(35), // orOp, reduce: ItemKeyword
 			nil,        // not
 			nil,        // minus
-			reduce(32), // dot, reduce: ItemKeyword
+			reduce(35), // dot, reduce: ItemKeyword
 			nil,        // lparen
-			reduce(32), // rparen, reduce: ItemKeyword
+			reduce(35), // rparen, reduce: ItemKeyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4299,19 +4683,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S134
+	actionRow{ // S146
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(33), // ws, reduce: Keyword
-			reduce(33), // andOp, reduce: Keyword
-			reduce(33), // orOp, reduce: Keyword
+			reduce(36), // ws, reduce: Keyword
+			reduce(36), // andOp, reduce: Keyword
+			reduce(36), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(33), // dot, reduce: Keyword
+			reduce(36), // dot, reduce: Keyword
 			nil,        // lparen
-			reduce(33), // rparen, reduce: Keyword
+			reduce(36), // rparen, reduce: Keyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4331,19 +4715,19 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S135
+	actionRow{ // S147
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID
 			nil,        // $
-			reduce(34), // ws, reduce: Keyword
-			reduce(34), // andOp, reduce: Keyword
-			reduce(34), // orOp, reduce: Keyword
+			reduce(37), // ws, reduce: Keyword
+			reduce(37), // andOp, reduce: Keyword
+			reduce(37), // orOp, reduce: Keyword
 			nil,        // not
 			nil,        // minus
-			reduce(34), // dot, reduce: Keyword
+			reduce(37), // dot, reduce: Keyword
 			nil,        // lparen
-			reduce(34), // rparen, reduce: Keyword
+			reduce(37), // rparen, reduce: Keyword
 			nil,        // text
 			nil,        // string
 			nil,        // or
@@ -4363,7 +4747,7 @@ var actionTab = actionTable{
 			nil,        // tilde
 		},
 	},
-	actionRow{ // S136
+	actionRow{ // S148
 		canRecover: false,
 		actions: [numSymbols]action{
 			nil,        // INVALID

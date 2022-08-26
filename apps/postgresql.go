@@ -130,24 +130,31 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"DEBUG1", "DEBUG"},
-				{"DEBUG2", "DEBUG"},
-				{"DEBUG3", "DEBUG"},
-				{"DEBUG4", "DEBUG"},
-				{"DEBUG5", "DEBUG"},
-				{"DETAIL", "DEBUG"},
-				{"STATEMENT", "DEBUG"},
-				{"INFO", "INFO"},
-				{"LOG", "INFO"},
-				{"NOTICE", "INFO"},
-				{"ERROR", "ERROR"},
-				{"WARNING", "WARNING"},
-				{"FATAL", "CRITICAL"},
-				{"PANIC", "CRITICAL"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"DEBUG1":    "DEBUG",
+						"DEBUG2":    "DEBUG",
+						"DEBUG3":    "DEBUG",
+						"DEBUG4":    "DEBUG",
+						"DEBUG5":    "DEBUG",
+						"DETAIL":    "DEBUG",
+						"STATEMENT": "DEBUG",
+						"INFO":      "INFO",
+						"LOG":       "INFO",
+						"NOTICE":    "INFO",
+						"ERROR":     "ERROR",
+						"WARNING":   "WARNING",
+						"FATAL":     "CRITICAL",
+						"PANIC":     "CRITICAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c

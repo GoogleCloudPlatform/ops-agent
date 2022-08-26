@@ -1,0 +1,28 @@
+# Create a back up of the existing file so existing configurations are not lost.
+Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
+
+# Configure the Ops Agent.
+Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
+logging:
+  receivers:
+    active_directory_ds:
+      type: active_directory_ds
+  service:
+    pipelines:
+      active_directory_ds:
+        receivers:
+        - active_directory_ds
+
+metrics:
+  receivers:
+    active_directory_ds:
+      type: active_directory_ds
+  service:
+    pipelines:
+      active_directory_ds:
+        receivers:
+        - active_directory_ds
+"
+
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent*  

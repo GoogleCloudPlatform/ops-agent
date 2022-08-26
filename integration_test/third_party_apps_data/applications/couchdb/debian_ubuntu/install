@@ -8,8 +8,22 @@ source /etc/os-release
 echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" \
     | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
 
+# https://github.com/apache/couchdb-pkg/blob/main/debian/README.Debian
+COUCHDB_PASSWORD=otelp
+COUCHDB_COOKIE=$(openssl rand -hex 32)
+echo "couchdb couchdb/mode select standalone
+couchdb couchdb/mode seen true
+couchdb couchdb/bindaddress string 127.0.0.1
+couchdb couchdb/bindaddress seen true
+couchdb couchdb/cookie string ${COUCHDB_COOKIE}
+couchdb couchdb/cookie seen true
+couchdb couchdb/adminpass password ${COUCHDB_PASSWORD}
+couchdb couchdb/adminpass seen true
+couchdb couchdb/adminpass_again password ${COUCHDB_PASSWORD}
+couchdb couchdb/adminpass_again seen true" | debconf-set-selections
+
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y couchdb
+sudo apt-get install -y couchdb
 
 cat << EOF > local.ini
 [couchdb]
@@ -27,3 +41,5 @@ sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
 sudo chmod 0755 /opt/couchdb/etc/local.ini
 
 sudo systemctl enable couchdb
+
+sudo systemctl restart couchdb

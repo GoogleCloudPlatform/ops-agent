@@ -16,6 +16,8 @@
 package fluentbit
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
@@ -68,6 +70,30 @@ func TranslationComponents(tag, src, dest string, removeSrc bool, translations [
 	return c
 }
 
+// LuaFilterComponents returns components that execute the Lua script given in src on records that match tag.
+// TODO(ridwanmsharif): Replace this with in-config script when
+//   fluent/fluent-bit#4634 is supported.
+func LuaFilterComponents(tag, function, src string) []Component {
+	hasher := md5.New()
+	hasher.Write([]byte(src))
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	filename := fmt.Sprintf("%s.lua", hash)
+
+	return []Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":   "lua",
+				"Match":  tag,
+				"script": filename,
+				"call":   function,
+			},
+		},
+		outputFileComponent(filename, src),
+	}
+}
+
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
 func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]string, tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
@@ -96,23 +122,40 @@ func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]str
 	return parser, parserName
 }
 
-func ParserFilterComponent(tag string, field string, parserNames []string) Component {
+func ParserFilterComponents(tag string, field string, parserNames []string, preserveKey bool) []Component {
 	parsers := [][2]string{}
 	for _, name := range parserNames {
 		parsers = append(parsers, [2]string{"Parser", name})
 	}
+
+	parseKey := "message"
+	if field != "" {
+		parseKey = field
+	}
+
+	nestFilters := LuaFilterComponents(tag, ParserNestLuaFunction, fmt.Sprintf(ParserNestLuaScriptContents, parseKey))
 	filter := Component{
 		Kind: "FILTER",
 		Config: map[string]string{
 			"Match":    tag,
 			"Name":     "parser",
-			"Key_Name": "message", // Required
+			"Key_Name": parseKey, // Required
+			// We need to preserve existing fields (like LogName) that are present
+			// before parsing.
+			"Reserve_Data": "True",
 		},
 		OrderedConfig: parsers,
 	}
-	if field != "" {
-		filter.Config["Key_Name"] = field
+
+	if preserveKey {
+		filter.Config["Preserve_Key"] = "True"
 	}
 
-	return filter
+	mergeFilters := LuaFilterComponents(tag, ParserMergeLuaFunction, ParserMergeLuaScriptContents)
+	parseFilters := []Component{}
+	parseFilters = append(parseFilters, nestFilters...)
+	parseFilters = append(parseFilters, filter)
+	parseFilters = append(parseFilters, mergeFilters...)
+
+	return parseFilters
 }
