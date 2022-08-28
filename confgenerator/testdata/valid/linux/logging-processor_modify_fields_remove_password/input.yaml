@@ -1,0 +1,21 @@
+logging:
+  receivers:
+    sample_logs:
+      type: files
+      include_paths:
+      # e.g. A file with log entries like:
+      # {"password": "secret","not-password": "not-secret"}
+      - /var/log/a-file-with-passwords
+  processors:
+    parse_json:
+      type: parse_json
+    remove_password:
+      type: modify_fields
+      fields:
+        jsonPayload.password:
+          omit_if: jsonPayload.password != ""
+  service:
+    pipelines:
+      mypipeline:
+        receivers: [sample_logs]
+        processors: [parse_json, remove_password]
