@@ -39,17 +39,17 @@ yaml_lint:
 # Unit Tests
 ############
 
-test_all:
+test:
 	go test ./...
 
 test_precommit_update:
 	update_golden
 
 test_confgenerator:
-	go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator 
+	go test ./confgenerator
 
 test_confgenerator_update:
-	go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
+	go test ./confgenerator -update_golden
 
 test_metadata:
 	go test ./integration_test/metadata
@@ -57,7 +57,7 @@ test_metadata:
 test_metadata_update:
 	go test ./integration_test/metadata -update_golden
 
-validate_metadata:
+test_metadata_validate:
 	go test ./integration_test/validate_metadata_test.go
 
 ############
