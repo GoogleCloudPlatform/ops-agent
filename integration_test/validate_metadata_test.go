@@ -7,12 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"go.uber.org/multierr"
-	"gopkg.in/yaml.v2"
 )
 
 //go:embed agent_metrics/metadata.yaml
@@ -23,7 +21,7 @@ var thirdPartyDataDir embed.FS
 
 func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 	err := walkThirdPartyApps(func(contents []byte) error {
-		return parseAndValidateMetadata(contents, &metadata.IntegrationMetadata{})
+		return metadata.UnmarshalAndValidate(contents, &metadata.IntegrationMetadata{})
 	})
 	if err != nil {
 		t.Error(err)
@@ -51,7 +49,7 @@ func TestRequireMetadataForAllThirdPartyApps(t *testing.T) {
 func TestThirdPartyPublicUrls(t *testing.T) {
 	err := walkThirdPartyApps(func(contents []byte) error {
 		integrationMetadata := &metadata.IntegrationMetadata{}
-		err := parseAndValidateMetadata(contents, integrationMetadata)
+		err := metadata.UnmarshalAndValidate(contents, integrationMetadata)
 		if err != nil {
 			return err
 		}
@@ -89,19 +87,8 @@ func walkThirdPartyApps(fn func(contents []byte) error) error {
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := parseAndValidateMetadata(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
+	err := metadata.UnmarshalAndValidate(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}
-}
-
-func parseAndValidateMetadata(bytes []byte, i interface{}) error {
-	yamlStr := strings.ReplaceAll(string(bytes), "\r\n", "\n")
-
-	v := metadata.NewIntegrationMetadataValidator()
-	err := yaml.UnmarshalStrict([]byte(yamlStr), i)
-	if err != nil {
-		return err
-	}
-	return v.Struct(i)
 }
