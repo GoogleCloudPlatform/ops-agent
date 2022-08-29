@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/google/go-cmp/cmp"
 )
 
 var (
@@ -100,8 +101,10 @@ func testModifiedMetadata(t *testing.T, filePaths []string) {
 				t.Fatal(err)
 			}
 
-			if modifiedMetadata.MinimumSupportedAgentVersion != originalMetadata.MinimumSupportedAgentVersion {
-				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s", filePath))
+			modifiedMinimumSupportedAgentVersion := modifiedMetadata.MinimumSupportedAgentVersion
+			originalMinimumSupportedAgentVersion := originalMetadata.MinimumSupportedAgentVersion
+			if !cmp.Equal(modifiedMinimumSupportedAgentVersion, originalMinimumSupportedAgentVersion) {
+				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s\n modified: %+v\n original: %+v", modified, modifiedMinimumSupportedAgentVersion, originalMinimumSupportedAgentVersion))
 			}
 		})
 	}
