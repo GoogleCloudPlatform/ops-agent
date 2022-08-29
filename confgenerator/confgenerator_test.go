@@ -16,7 +16,9 @@ import (
 const (
 	validTestdataDirName   = "valid"
 	invalidTestdataDirName = "invalid"
+	builtinTestdataDirName = "builtin"
 	inputFileName          = "input.yaml"
+	builtinConfigFileName  = "builtin_conf.yaml"
 )
 
 type platformConfig struct {
@@ -68,31 +70,35 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 
 	t.Run("valid", func(t *testing.T) {
 		t.Parallel()
-
-		platformTestDir := filepath.Join(validTestdataDirName, platform.OS)
-		testNames := getTestsInDir(t, platformTestDir)
-
-		for _, testName := range testNames {
-			t.Run(testName, func(t *testing.T) {
-				testDir := filepath.Join(platformTestDir, testName)
-				testGenerateConfValid(t, platform, testDir)
-			})
-		}
+		runTestsInDir(t, platform, validTestdataDirName, testGenerateConfValid)
 	})
 
 	t.Run("invalid", func(t *testing.T) {
 		t.Parallel()
-
-		platformTestDir := filepath.Join(invalidTestdataDirName, platform.OS)
-		testNames := getTestsInDir(t, platformTestDir)
-
-		for _, testName := range testNames {
-			t.Run(testName, func(t *testing.T) {
-				testDir := filepath.Join(platformTestDir, testName)
-				testGenerateConfInvalid(t, platform, testDir)
-			})
-		}
+		runTestsInDir(t, platform, invalidTestdataDirName, testGenerateConfInvalid)
 	})
+
+	t.Run("builtin", func(t *testing.T) {
+		t.Parallel()
+		runBuiltinTest(t, platform)
+	})
+}
+
+func runTestsInDir(
+	t *testing.T,
+	platform platformConfig,
+	testDir string,
+	test func(*testing.T, platformConfig, string),
+) {
+	platformTestDir := filepath.Join(testDir, platform.OS)
+	testNames := getTestsInDir(t, platformTestDir)
+
+	for _, testName := range testNames {
+		t.Run(testName, func(t *testing.T) {
+			testDir := filepath.Join(platformTestDir, testName)
+			test(t, platform, testDir)
+		})
+	}
 }
 
 func getTestsInDir(t *testing.T, testDir string) []string {
@@ -116,8 +122,6 @@ func testGenerateConfValid(
 	platform platformConfig,
 	testDir string,
 ) {
-	t.Parallel()
-
 	_, confBytes, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
@@ -159,8 +163,6 @@ func testGenerateConfInvalid(
 	platform platformConfig,
 	testDir string,
 ) {
-	t.Parallel()
-
 	goldenErrorPath := filepath.Join(testDir, errorGolden)
 	inputPath := filepath.Join("testdata", testDir, inputFileName)
 
@@ -193,6 +195,47 @@ func testGenerateConfInvalid(
 	}
 
 	t.Fatal("expected config to fail merge or validation")
+}
+
+func runBuiltinTest(t *testing.T, platform platformConfig) {
+	testDir := filepath.Join(builtinTestdataDirName, platform.OS)
+
+	builtinConfBytes, confBytes, err := confgenerator.MergeConfFiles(
+		filepath.Join("testdata", testDir, inputFileName),
+		platform.OS,
+		apps.BuiltInConfStructs,
+	)
+	assert.NilError(t, err, "expected to successfully builtin config with empty input, failed with: %v", err)
+
+	golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
+
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
+	assert.NilError(t, err, "expected config to parse, failed with: %v", err)
+
+	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
+		platform.defaultLogsDir,
+		platform.defaultStateDir,
+		platform.InfoStat,
+	)
+	assert.NilError(t, err, "expected generating fluent-bit config to pass, failed with: %v", err)
+	golden.Assert(
+		t,
+		flbGeneratedConfigs[fluentbit.MainConfigFileName],
+		filepath.Join(testDir, flbConfigGolden),
+	)
+	golden.Assert(
+		t,
+		flbGeneratedConfigs[fluentbit.ParserConfigFileName],
+		filepath.Join(testDir, flbParserGolden),
+	)
+
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
+	assert.NilError(t, err, "expected generating otel config to pass, failed with: %v", err)
+	golden.Assert(
+		t,
+		otelGeneratedConfig,
+		filepath.Join(testDir, otelYamlGolden),
+	)
 }
 
 func TestMain(m *testing.M) {
