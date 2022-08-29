@@ -100,10 +100,8 @@ func testModifiedMetadata(t *testing.T, filePaths []string) {
 				t.Fatal(err)
 			}
 
-			modifiedMinimumSupportedAgentVersion := modifiedMetadata.MinimumSupportedAgentVersion
-			originalMinimumSupportedAgentVersion := originalMetadata.MinimumSupportedAgentVersion
-			if *modifiedMinimumSupportedAgentVersion != *originalMinimumSupportedAgentVersion {
-				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s\n modified: %+v\n original: %+v", filePath, modifiedMinimumSupportedAgentVersion, originalMinimumSupportedAgentVersion))
+			if *modifiedMetadata.MinimumSupportedAgentVersion != *originalMetadata.MinimumSupportedAgentVersion {
+				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s\n modified: %+v\n original: %+v", filePath, modifiedMetadata.MinimumSupportedAgentVersion, originalMetadata.MinimumSupportedAgentVersion))
 			}
 		})
 	}
