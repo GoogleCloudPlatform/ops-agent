@@ -9,10 +9,10 @@ description: |-
   collects logs and parses them into a JSON payload. The result includes fields
   for context, component, level, and message.
 minimum_supported_agent_version:
-  metrics: 2.11.0
+  metrics: 2.19.0
   logging: 2.10.0
 supported_operating_systems: linux
-supported_app_version: ["4.0+"]
+supported_app_version: ["2.6", "3.0+", "4.0+", "5.0"]
 expected_metrics:
 - type: workload.googleapis.com/mongodb.cache.operations
   value_type: INT64
@@ -81,6 +81,54 @@ expected_metrics:
   monitored_resource: gce_instance
   labels:
     database: .*
+- type: workload.googleapis.com/mongodb.database.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.index.access.count
+  value_type: INT64
+  monitored_resource: gce_instance
+  kind: GAUGE
+  labels:
+    collection: .*
+    database: .*
+- type: workload.googleapis.com/mongodb.document.operation.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    database: .*
+    operation: .*
+- type: workload.googleapis.com/mongodb.network.io.receive
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.network.io.transmit
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.network.request.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.operation.time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    operation: insert|query|update|delete|getmore|command
+- type: workload.googleapis.com/mongodb.session.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.cursor.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/mongodb.cursor.timeout.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
 expected_logs:
 - log_name: mongodb
   fields:
