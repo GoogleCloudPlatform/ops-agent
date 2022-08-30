@@ -15,108 +15,31 @@
 package self_metrics
 
 import (
+	"fmt"
 	"log"
 	"time"
+	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/api/monitoredres"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
+	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/contrib/detectors/gcp"
+	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/instrument"
 )
 
-type TimeSeries interface {
-	ToTimeSeries(instance_id, zone string) []*monitoringpb.TimeSeries
-}
-
-type Metric struct {
-	metricType   string
-	metricLabels map[string]string
-	metricKind   metricpb.MetricDescriptor_MetricKind
-	valueType    metricpb.MetricDescriptor_ValueType
-	value        *monitoringpb.TypedValue
-	timestamp    int64
-}
-
-func (m Metric) ToTimeSeries(instance_id, zone string) *monitoringpb.TimeSeries {
-	now := &timestamp.Timestamp{
-		Seconds: m.timestamp,
+var (
+	agentMetricsPrefixFormat = "agent.googleapis.com/%s"
+	formatter = func(d *sdkapi.Descriptor) string {
+		return fmt.Sprintf(agentMetricsPrefixFormat, d.Name())
 	}
-
-	return &monitoringpb.TimeSeries{
-		MetricKind: m.metricKind,
-		ValueType:  m.valueType,
-		Metric: &metricpb.Metric{
-			Type:   m.metricType,
-			Labels: m.metricLabels,
-		},
-		Resource: &monitoredres.MonitoredResource{
-			Type: "gce_instance",
-			Labels: map[string]string{
-				"instance_id": instance_id,
-				"zone":        zone,
-			},
-		},
-		Points: []*monitoringpb.Point{{
-			Interval: &monitoringpb.TimeInterval{
-				StartTime: now,
-				EndTime:   now,
-			},
-			Value: m.value,
-		}},
-	}
-}
+)
 
 type enabledReceivers struct {
 	metric map[string]int
 	log    map[string]int
-}
-
-func (e enabledReceivers) ToMetrics() []Metric {
-
-	metricList := make([]Metric, 0)
-
-	for rType, count := range e.metric {
-		m := Metric{
-			metricType: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metricLabels: map[string]string{
-				"receiver_type":  rType,
-				"telemetry_type": "metrics",
-			},
-			metricKind: metricpb.MetricDescriptor_GAUGE,
-			valueType:  metricpb.MetricDescriptor_INT64,
-			value: &monitoringpb.TypedValue{
-				Value: &monitoringpb.TypedValue_Int64Value{
-					Int64Value: int64(count),
-				},
-			},
-			timestamp: time.Now().Unix(),
-		}
-
-		metricList = append(metricList, m)
-	}
-
-	for rType, count := range e.log {
-		m := Metric{
-			metricType: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-			metricLabels: map[string]string{
-				"receiver_type":  rType,
-				"telemetry_type": "logs",
-			},
-			metricKind: metricpb.MetricDescriptor_GAUGE,
-			valueType:  metricpb.MetricDescriptor_INT64,
-			value: &monitoringpb.TypedValue{
-				Value: &monitoringpb.TypedValue_Int64Value{
-					Int64Value: int64(count),
-				},
-			},
-			timestamp: time.Now().Unix(),
-		}
-
-		metricList = append(metricList, m)
-	}
-
-	return metricList
 }
 
 func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, error) {
@@ -144,24 +67,67 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 	return eR, nil
 }
 
-type IntervalMetrics struct {
-	Metrics  []Metric
-	Interval int
-}
-
-func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) ([]IntervalMetrics, error) {
+func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool) error {
 	eR, err := GetEnabledReceivers(uc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	log.Println("Found Enabled Receivers : ", eR)
 
-	iM := []IntervalMetrics{
-		IntervalMetrics{
-			Metrics:  eR.ToMetrics(),
-			Interval: 1,
-		},
+	opts := []mexporter.Option{
+		mexporter.WithMetricDescriptorTypeFormatter(formatter),
+		mexporter.WithInterval(time.Minute),
 	}
 
-	return iM, nil
+	ctx := context.Background()
+
+	res, err := resource.New(ctx,
+        // Use the GCP resource detector to detect information about the GCP platform
+        resource.WithDetectors(gcp.NewDetector()),
+        // Keep the default detectors
+        resource.WithTelemetrySDK(),
+    )
+
+    resOpt := basic.WithResource(res)
+
+	pusher, err := mexporter.InstallNewPipeline(opts, resOpt)
+	if err != nil {
+		return fmt.Errorf("Failed to establish pipeline: %v", err)
+	}
+	defer pusher.Stop(ctx)
+
+	// Start meter
+	meter := pusher.Meter("cloudmonitoring/example")
+
+	gaugeObserver, err := meter.AsyncInt64().Gauge("agent/ops_agent/enabled_receivers")
+	if err != nil {
+		return fmt.Errorf("failed to initialize instrument: %v", err)
+	}
+	_ = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
+		
+		for key, value := range eR.metric {
+			labels := []attribute.KeyValue{
+				attribute.String("telemetry_type", "metrics"),
+				attribute.String("receiver_type", key),
+			}
+			gaugeObserver.Observe(ctx, int64(value), labels...)
+		}
+
+		for key, value := range eR.log {
+			labels := []attribute.KeyValue{
+				attribute.String("telemetry_type", "logs"),
+				attribute.String("receiver_type", key),
+			}
+			gaugeObserver.Observe(ctx, int64(value), labels...)
+		}
+	})
+
+	for {
+		select {
+		case <-death:
+			break
+		}
+	}
+
+	return nil
 }

@@ -70,11 +70,7 @@ func run() error {
 
 	// Only when used as main service
 	if *service == "" {
-		metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
-		if err != nil {
-			return err
-		}
-
+		
 		death := make(chan bool)
 
 		go func() {
@@ -89,10 +85,11 @@ func run() error {
 			}
 		}()
 
-		err = self_metrics.SendMetricsEveryInterval(metrics, death)
+		err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
 		if err != nil {
 			return err
 		}
+
 	}
 
 	return nil
