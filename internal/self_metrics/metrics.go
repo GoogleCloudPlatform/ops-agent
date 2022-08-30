@@ -122,12 +122,13 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 		}
 	})
 
-	for {
-		select {
-		case <-death:
-			break
+	waitForDeathSignal:
+		for {
+			select {
+			case <-death:
+				break waitForDeathSignal
+			}
 		}
-	}
 
 	return nil
 }

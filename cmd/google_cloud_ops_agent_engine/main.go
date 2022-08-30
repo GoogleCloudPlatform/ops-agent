@@ -76,13 +76,15 @@ func run() error {
 		go func() {
 			osSignal := make(chan os.Signal, 1)
 			signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
-			for {
-				select {
-				case <-osSignal:
-					death <- true
-					break
+
+			waitForSignal:
+				for {
+					select {
+					case <-osSignal:
+						death <- true
+						break waitForSignal
+					}
 				}
-			}
 		}()
 
 		err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
