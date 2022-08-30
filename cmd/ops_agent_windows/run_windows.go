@@ -66,12 +66,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}
 	s.log.Info(1, "started subagents")
 
-	metrics, err := self_metrics.CollectOpsAgentSelfMetrics(&uc)
-	if err != nil {
-		return false, 0
-	}
-	s.log.Info(1, "collected ops agent self metrics")
-
 	death := make(chan bool)
 
 	defer func() {
@@ -79,21 +73,21 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}()
 
 	go func() {
-		waitForSignal:
-			for {
-				select {
-				case c := <-r:
-					switch c.Cmd {
-					case svc.Interrogate:
-						changes <- c.CurrentStatus
-					case svc.Stop, svc.Shutdown:
-						death <- true
-						break waitForSignal
-					default:
-						s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
-					}
+	waitForSignal:
+		for {
+			select {
+			case c := <-r:
+				switch c.Cmd {
+				case svc.Interrogate:
+					changes <- c.CurrentStatus
+				case svc.Stop, svc.Shutdown:
+					death <- true
+					break waitForSignal
+				default:
+					s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 				}
 			}
+		}
 	}()
 
 	err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)

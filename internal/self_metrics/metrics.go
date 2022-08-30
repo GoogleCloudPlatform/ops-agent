@@ -15,24 +15,24 @@
 package self_metrics
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
-	"context"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/contrib/detectors/gcp"
-	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 var (
 	agentMetricsPrefixFormat = "agent.googleapis.com/%s"
-	formatter = func(d *sdkapi.Descriptor) string {
+	formatter                = func(d *sdkapi.Descriptor) string {
 		return fmt.Sprintf(agentMetricsPrefixFormat, d.Name())
 	}
 )
@@ -74,22 +74,22 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 	}
 	log.Println("Found Enabled Receivers : ", eR)
 
+	// Detect GCP credentials
+	ctx := context.Background()
+	res, err := resource.New(ctx,
+		resource.WithDetectors(gcp.NewDetector()),
+		resource.WithTelemetrySDK(),
+	)
+
+	resOpt := basic.WithResource(res)
+
+	// Exporter options
 	opts := []mexporter.Option{
 		mexporter.WithMetricDescriptorTypeFormatter(formatter),
 		mexporter.WithInterval(time.Minute),
 	}
 
-	ctx := context.Background()
-
-	res, err := resource.New(ctx,
-        // Use the GCP resource detector to detect information about the GCP platform
-        resource.WithDetectors(gcp.NewDetector()),
-        // Keep the default detectors
-        resource.WithTelemetrySDK(),
-    )
-
-    resOpt := basic.WithResource(res)
-
+	// Create exporter pipeline
 	pusher, err := mexporter.InstallNewPipeline(opts, resOpt)
 	if err != nil {
 		return fmt.Errorf("Failed to establish pipeline: %v", err)
@@ -97,14 +97,15 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 	defer pusher.Stop(ctx)
 
 	// Start meter
-	meter := pusher.Meter("cloudmonitoring/example")
+	meter := pusher.Meter("ops_agent/self_metrics")
 
+	// Collect GAUGE metric
 	gaugeObserver, err := meter.AsyncInt64().Gauge("agent/ops_agent/enabled_receivers")
 	if err != nil {
 		return fmt.Errorf("failed to initialize instrument: %v", err)
 	}
 	_ = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
-		
+
 		for key, value := range eR.metric {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "metrics"),
@@ -122,13 +123,13 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 		}
 	})
 
-	waitForDeathSignal:
-		for {
-			select {
-			case <-death:
-				break waitForDeathSignal
-			}
+waitForDeathSignal:
+	for {
+		select {
+		case <-death:
+			break waitForDeathSignal
 		}
+	}
 
 	return nil
 }

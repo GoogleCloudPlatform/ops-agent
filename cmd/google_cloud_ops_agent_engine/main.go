@@ -70,21 +70,21 @@ func run() error {
 
 	// Only when used as main service
 	if *service == "" {
-		
+
 		death := make(chan bool)
 
 		go func() {
 			osSignal := make(chan os.Signal, 1)
 			signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
-			waitForSignal:
-				for {
-					select {
-					case <-osSignal:
-						death <- true
-						break waitForSignal
-					}
+		waitForSignal:
+			for {
+				select {
+				case <-osSignal:
+					death <- true
+					break waitForSignal
 				}
+			}
 		}()
 
 		err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
