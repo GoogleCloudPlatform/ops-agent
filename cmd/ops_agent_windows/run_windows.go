@@ -90,9 +90,9 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
 	if err != nil {
-		return err
+		return false, 0
 	}
 
 	return
