@@ -1088,6 +1088,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		return strings.Contains(err.Error(), "Quota") ||
 			// Rarely, instance creation fails due to internal errors in the compute API.
 			strings.Contains(err.Error(), "Internal error") ||
+			// Instance creation can also fail due to service unavailability.
+			strings.Contains(err.Error(), "currently unavailable") ||
 			// Windows instances sometimes fail to initialize WinRM: b/185923886.
 			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
@@ -1500,9 +1502,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
-		// "sudo" is needed for debian-9, which doesn't have dbus, so systemctl
-		// needs to talk directly to systemd.
-		output, err := RunRemotely(ctx, logger, vm, "", "sudo systemctl is-system-running")
+		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
 		// https://www.freedesktop.org/software/systemd/man/systemctl.html#is-system-running

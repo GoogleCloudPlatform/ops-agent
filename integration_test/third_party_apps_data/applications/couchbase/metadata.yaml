@@ -10,12 +10,26 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: "Log message"
+    optional: true
   - name: jsonPayload.node_name
     type: string
     description: The name of the node issuing the log message
   - name: jsonPayload.module_name
     type: string
     description: The name of the module issuing the entry
+    optional: true
+  - name: jsonPayload.source
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.type
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
   - name: severity
     type: string
     description: ''
@@ -24,21 +38,51 @@ expected_logs:
     description: ''
 - log_name: couchbase_http_access
   fields:
+  - name: httpRequest.remoteIp
+    value_regex: ::1|127.0.0.1
+    type: string
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+    optional: true
+  - name: httpRequest.requestUrl
+    type: string
+    description: Request URL (typically just the path part of the URL)
+    optional: true
+  - name: httpRequest.protocol
+    type: string
+    description: Protocol used for the request
+    optional: true
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: HTTP method
+    optional: true
+  - name: httpRequest.status
+    type: number
+    description: HTTP status code
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
   - name: jsonPayload.message
     type: string
     description: "Log message"
-  - name: jsonPayload.client_ip
+  - name: jsonPayload.host
     type: string
     description: The IP address of the client invoking the HTTP request
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
   - name: jsonPayload.user
     type: string
     description: The name of the user making the HTTP request if basic auth is used.
-  - name: jsonPayload.method
-    type: string
-    description: The HTTP method of the request
-  - name: jsonPayload.status_code
-    type: integer
-    description: The status code of the response of the HTTP request
+    optional: true
   - name: severity
     type: string
     description: ''
@@ -50,9 +94,14 @@ expected_logs:
   - name: jsonPayload.message
     type: string
     description: "Log message"
-  - name: log_type
+  - name: jsonPayload.log_type
     type: string
-    description: The name of the component that is issuing the cross-datacenter log
+    description: ''
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
   - name: severity
     type: string
     description: ''

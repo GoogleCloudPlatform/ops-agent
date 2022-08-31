@@ -9,11 +9,8 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  #  TODO(b/240439767) Remove platform specific filter once its becomes available on windows
-  platform: linux
-#  TODO(b/205585572#comment2) Add response_code when it becomes available
-#  labels:
-#    response_code: \d+
+  labels:
+    response_code: \d+
 #  TODO(b/170138116): Enable this metric once it is being collected.
 #- type: agent.googleapis.com/agent/log_entry_retry_count
 #  value_type: INT64
@@ -36,9 +33,8 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-#  TODO(b/205585572#comment2) Add response_code when it becomes available
-#  labels:
-#    response_code: \d+
+  labels:
+    response_code: \d+
 - type: agent.googleapis.com/agent/uptime
   value_type: INT64
   kind: CUMULATIVE

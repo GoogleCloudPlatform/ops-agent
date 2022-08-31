@@ -15,11 +15,13 @@
 package metadata
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	yaml "github.com/goccy/go-yaml"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 )
@@ -38,7 +40,7 @@ type ExpectedMetric struct {
 	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels"`
+	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
@@ -54,6 +56,7 @@ type LogFields struct {
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
+	Optional    bool   `yaml:"optional,omitempty"`
 }
 
 type ExpectedLog struct {
@@ -62,8 +65,8 @@ type ExpectedLog struct {
 }
 
 type MinimumSupportedAgentVersion struct {
-	Logging string `yaml:"logging"`
-	Metrics string `yaml:"metrics"`
+	Logging string `yaml:"logging" validate:"required_without=Metrics"`
+	Metrics string `yaml:"metrics" validate:"required_without=Logging"`
 }
 
 type ConfigurationFields struct {
@@ -87,22 +90,31 @@ type ExpectedMetricsContainer struct {
 }
 
 type IntegrationMetadata struct {
-	PublicUrl                    string                       `yaml:"public_url"`
-	AppUrl                       string                       `yaml:"app_url" validate:"required,url"`
-	ShortName                    string                       `yaml:"short_name" validate:"required,excludesall=‘’“”"`
-	LongName                     string                       `yaml:"long_name" validate:"required,excludesall=‘’“”"`
-	LogoPath                     string                       `yaml:"logo_path"`
-	Description                  string                       `yaml:"description" validate:"required,excludesall=‘’“”"`
-	ConfigurationOptions         *ConfigurationOptions        `yaml:"configuration_options" validate:"required"`
-	ConfigureIntegration         string                       `yaml:"configure_integration"`
-	ExpectedLogs                 []*ExpectedLog               `yaml:"expected_logs" validate:"dive"`
-	MinimumSupportedAgentVersion MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
-	SupportedAppVersion          []string                     `yaml:"supported_app_version" validate:"required,unique,min=1"`
-	SupportedOperatingSystems    string                       `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
-	RestartAfterInstall          bool                         `yaml:"restart_after_install"`
-	Troubleshoot                 string                       `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
+	PublicUrl                    string                        `yaml:"public_url"`
+	AppUrl                       string                        `yaml:"app_url" validate:"required,url"`
+	ShortName                    string                        `yaml:"short_name" validate:"required,excludesall=‘’“”"`
+	LongName                     string                        `yaml:"long_name" validate:"required,excludesall=‘’“”"`
+	LogoPath                     string                        `yaml:"logo_path"`
+	Description                  string                        `yaml:"description" validate:"required,excludesall=‘’“”"`
+	ConfigurationOptions         *ConfigurationOptions         `yaml:"configuration_options" validate:"required"`
+	ConfigureIntegration         string                        `yaml:"configure_integration"`
+	ExpectedLogs                 []*ExpectedLog                `yaml:"expected_logs" validate:"dive"`
+	MinimumSupportedAgentVersion *MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
+	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
+	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
+	RestartAfterInstall          bool                          `yaml:"restart_after_install"`
+	Troubleshoot                 string                        `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
 	ExpectedMetricsContainer `yaml:",inline"`
+}
+
+func UnmarshalAndValidate(data []byte, i interface{}) error {
+	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+
+	v := NewIntegrationMetadataValidator()
+	// Note: Unmarshaler does not protect when only the key being declared.
+	// https://github.com/goccy/go-yaml/issues/313
+	return yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.Validator(v))
 }
 
 func SliceContains(slice []string, toFind string) bool {
