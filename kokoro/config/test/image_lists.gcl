@@ -27,11 +27,6 @@ local template _family {
 // DEB Linux distros.
 debian = _family {
   distros = {
-    stretch = _distro {
-      name = 'Debian 9'
-      release = ['debian-9']
-      presubmit = 'debian-9'
-    }
     buster = _distro {
       name = 'Debian 10'
       release = ['debian-10']

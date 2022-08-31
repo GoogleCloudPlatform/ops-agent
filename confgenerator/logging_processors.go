@@ -27,14 +27,14 @@ import (
 // TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
 type ParseMultilineGroup struct {
 	Type     string `yaml:"type" validate:"required,oneof=language_exceptions"`
-	Language string `yaml:"language" validate:"required,oneof=java"`
+	Language string `yaml:"language" validate:"required,oneof=java python go"`
 }
 
 type ParseMultiline struct {
 	ConfigComponent `yaml:",inline"`
 
 	// Make this a list so that it's forward compatible to support more `parse_multiline` type other than the build-in language exceptions.
-	MultilineGroups []*ParseMultilineGroup `yaml:"match_any" validate:"required,len=1"`
+	MultilineGroups []*ParseMultilineGroup `yaml:"match_any" validate:"required,min=1,max=3,unique"`
 }
 
 func (r ParseMultiline) Type() string {
@@ -53,20 +53,35 @@ var multilineRulesLanguageMap = map[string][]string{
 		`"java_after_exception" "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*(?:Caused by|Suppressed):/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*... \d+ (?:more|common frames omitted)/" "java_after_exception"`},
+	"python": {`"start_state, python_start_exception" "/^Traceback \(most recent call last\):$/" "python"`,
+		`"python" "/^[\t ]+File /" "python_code"`,
+		`"python_code" "/[^\t ]/" "python"`,
+		`"python" "/^(?:[^\s.():]+\.)*[^\s.():]+:/" "python_start_exception"`},
+	"go": {`"start_state" "/\bpanic: /" "go_after_panic"`,
+		`"start_state" "/http: panic serving/" "go_goroutine"`,
+		`"go_after_panic" "/^$/" "go_goroutine"`,
+		`"go_after_panic, go_after_signal, go_frame_1" "/^$/" "go_goroutine"`,
+		`"go_after_panic" "/^\[signal /" "go_after_signal"`,
+		`"go_goroutine" "/^goroutine \d+ \[[^\]]+\]:$/" "go_frame_1"`,
+		`"go_frame_1" "/^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by /" "go_frame_2"`,
+		`"go_frame_2" "/^\s/" "go_frame_1"`},
 }
 
 func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
 	var components []fluentbit.Component
+	// Fluent Bit multiline parser currently can't export using `message` as key.
+	// Thus we need to add one renaming component per pipeline
+	// Remove below two lines when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+	renameLogToMessage := modify.NewRenameOptions("log", "message")
+	components = append(components, renameLogToMessage.Component(tag))
+	var combinedRules []string
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
-			component := fluentbit.ParseMultilineComponent(tag, uid, multilineRulesLanguageMap[g.Language])
-			// Remove below line when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-			renameLogToMessage := modify.NewRenameOptions("log", "message")
-			components = append(components, renameLogToMessage.Component(tag))
-			components = append(components, component...)
+			combinedRules = append(combinedRules, multilineRulesLanguageMap[g.Language]...)
 		}
 	}
-
+	component := fluentbit.ParseMultilineComponent(tag, uid, combinedRules)
+	components = append(components, component...)
 	return components
 }
 
