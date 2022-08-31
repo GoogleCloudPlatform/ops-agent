@@ -413,22 +413,21 @@ index 2dc6708d4..a85deb15b 100644
 +  endif()
  endif()
 diff --git a/lib/monkey/mk_core/deps/libevent/CMakeLists.txt b/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
-index 7a839decf..9135099ab 100644
+index 7a839decf..e4f6beecc 100644
 --- a/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
 +++ b/lib/monkey/mk_core/deps/libevent/CMakeLists.txt
-@@ -746,7 +746,11 @@ if(WIN32)
-     list(APPEND HDR_PRIVATE WIN32-Code/getopt.h)
+@@ -860,6 +860,11 @@ if (EVENT__BUILD_SHARED_LIBRARIES)
  
-     set(EVENT__DNS_USE_FTIME_FOR_ID 1)
--    set(LIB_PLATFORM ws2_32)
-+    if(MSVC)
-+      set(LIB_PLATFORM ws2_32)
-+    else()
-+      set(LIB_PLATFORM -lws2_32)
+ else (EVENT__BUILD_SHARED_LIBRARIES)
+     set(EVENT_EXTRA_FOR_TEST event_extra)
++
++    if (WIN32 AND NOT MSVC)
++        # Add the winsock libraries even for static builds.
++        target_link_libraries(event ws2_32)
 +    endif()
-     add_definitions(
-             -D_CRT_SECURE_NO_WARNINGS
-             -D_CRT_NONSTDC_NO_DEPRECATE)
+ endif (EVENT__BUILD_SHARED_LIBRARIES)
+ 
+ #
 diff --git a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c b/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
 index 5ee3e5913..84bae9feb 100644
 --- a/lib/monkey/mk_core/deps/libevent/cmake/CheckFunctionExistsEx.c
