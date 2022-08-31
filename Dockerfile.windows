@@ -1,13 +1,18 @@
 FROM ubuntu:focal AS mingw
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noniteractive apt-get -y install golang git \
+    DEBIAN_FRONTEND=noniteractive apt-get -y install git \
     autoconf libtool libltdl-dev \
     build-essential cmake bison flex file \
-    devscripts cdbs \
+    devscripts cdbs openjdk-11-jdk zip \
     mingw-w64
 
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+
+RUN export PATH=/usr/local/go/bin:$PATH; \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
     go install github.com/google/addlicense@latest; \
     go install github.com/pavius/impi/cmd/impi@latest; \
     go install github.com/google/googet/v2/goopack@latest;
