@@ -106,7 +106,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/wildfly.jdbc.rollback.count
   value_type: INT64
   kind: CUMULATIVE
@@ -121,7 +120,7 @@ expected_logs:
     type: string
     description: Wildfly specific message code preceding the log, where applicable
   - name: jsonPayload.message
-    value_regex: .*WildFly Full.*
+    value_regex: (?s).*WildFly Full.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
     type: string
     description: Log message
   - name: jsonPayload.thread
@@ -132,6 +131,13 @@ expected_logs:
     value_regex: org.jboss.as
     type: string
     description: Source where the log originated
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: wildfly_system

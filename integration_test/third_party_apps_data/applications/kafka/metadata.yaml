@@ -42,7 +42,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/kafka.network.io
   value_type: INT64
@@ -54,17 +53,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/kafka.partition.offline
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/kafka.partition.under_replicated
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/kafka.purgatory.size
   value_type: INT64
   kind: GAUGE
@@ -104,6 +100,10 @@ expected_logs:
     value_regex: kafka.zookeeper.ZooKeeperClient
     type: string
     description: ''
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

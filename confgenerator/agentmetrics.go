@@ -128,12 +128,13 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.RenameLabel("status", "response_code"),
-					otel.AggregateLabels("sum"),
+					otel.AggregateLabels("sum", "response_code"),
 				),
 				otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
-					otel.AggregateLabels("sum"),
+					otel.RenameLabel("status", "response_code"),
+					otel.AggregateLabels("sum", "response_code"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),

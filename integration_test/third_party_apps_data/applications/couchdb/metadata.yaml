@@ -19,12 +19,10 @@ expected_metrics:
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/couchdb.database.open
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/couchdb.database.operations
   value_type: INT64
@@ -36,12 +34,10 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/couchdb.httpd.bulk_requests
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/couchdb.httpd.requests
   value_type: INT64
   kind: CUMULATIVE
@@ -88,24 +84,44 @@ expected_logs:
   - name: jsonPayload.host
     type: string
     description: host instance name
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: httpRequest.serverIp
     value_regex: "localhost:5984"
     type: string
     description: "The server's IP and port that was requested"
+    optional: true
   - name: httpRequest.remoteIp
     value_regex: "127.0.0.1"
     type: string
     description: "IP of the client that made the request"
+    optional: true
   - name: httpRequest.requestMethod
     value_regex: GET
     type: string
     description: "HTTP method"
+    optional: true
   - name: httpRequest.requestSize
     type: number
     description: "HTTP request size"
+    optional: true
   - name: httpRequest.status
     type: number
     description: "HTTP status code"
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: couchdb

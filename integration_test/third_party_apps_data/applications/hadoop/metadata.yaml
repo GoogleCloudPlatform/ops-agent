@@ -86,13 +86,20 @@ expected_logs:
 - log_name: hadoop
   fields:
   - name: jsonPayload.message
-    value_regex: STARTUP_MSG:.*
+    value_regex: (?s)STARTUP_MSG:.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
     type: string
     description: 'Log message'
   - name: jsonPayload.source
     value_regex: org.apache.hadoop.hdfs.server.namenode.NameNode
     type: string
     description: 'The source Java class of the log entry'
+  - name: jsonPayload.severity
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: hadoop

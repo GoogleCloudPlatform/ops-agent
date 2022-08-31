@@ -43,17 +43,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/hbase.master.regions_in_transition.oldest_age
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/hbase.master.regions_in_transition.over_threshold
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/hbase.region_server.active_handler.count
   value_type: INT64
   kind: GAUGE
@@ -360,6 +357,13 @@ expected_logs:
     value_regex: master.HMaster
     type: string
     description: 'source of where the log originated'
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: hbase_system
