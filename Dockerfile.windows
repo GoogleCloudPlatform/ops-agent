@@ -1,4 +1,4 @@
-FROM ubuntu:focal AS mingw
+FROM ubuntu:focal AS mingw-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noniteractive apt-get -y install git \
@@ -22,6 +22,6 @@ WORKDIR /work
 RUN patch -d ./submodules/fluent-bit/ -p 1 <./pkg/goo/mingw64-support.patch || true
 RUN ./pkg/goo/build.sh
 
-FROM scratch
-COPY --from=mingw /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-windows-ltsc2019.tgz
-COPY --from=mingw /google-cloud-ops-agent*.goo /
+FROM scratch as mingw
+COPY --from=mingw-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-windows-ltsc2019.tgz
+COPY --from=mingw-build /google-cloud-ops-agent*.goo /
