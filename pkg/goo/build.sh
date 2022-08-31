@@ -112,7 +112,7 @@ function build_opsagent() {
 (build_opsagent)
 # TODO: Build sample config file
 mkdir -p "$DESTDIR$sysconfdir/"
-cp "confgenerator/windows-default-config.yaml" "$DESTDIR$sysconfdir/config.yaml"
+cp "confgenerator/default-config.yaml" "$DESTDIR$sysconfdir/config.yaml"
 mkdir -p "$DESTDIR/pkg/goo/"
 cp "pkg/goo/maint.ps1" "$DESTDIR/pkg/goo/"
 
