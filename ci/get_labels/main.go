@@ -24,21 +24,32 @@ import (
 
 var prUrl = flag.String("url", "", "Url of pull request")
 
+type respLabels struct {
+	Name string
+}
+
 func main() {
 	flag.Parse()
-	labelsUrl := strings.Replace(*prUrl, "/pulls/", "/issues/", 1)
+
+	labelCollector := LabelCollector{Client: &http.Client{}}
+	fmt.Println(labelCollector.GetLabels(*prUrl))
+}
+
+type LabelCollector struct {
+	Client *http.Client
+}
+
+func (l *LabelCollector) GetLabels(prUrl string) string {
+	// We can only get the PR URL from Github Action, so we need to transform it into the issue URL
+	labelsUrl := strings.Replace(prUrl, "/pulls/", "/issues/", 1)
 	labelsUrl += "/labels"
-	resp, err := http.Get(labelsUrl)
+	resp, err := l.Client.Get(labelsUrl)
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
-	type Labels struct {
-		Name string
-	}
-
-	var responseLabels []Labels
+	var responseLabels []respLabels
 	err = json.NewDecoder(resp.Body).Decode(&responseLabels)
 	if err != nil {
 		panic(err)
@@ -49,5 +60,5 @@ func main() {
 		output += label.Name + " "
 	}
 
-	fmt.Println(output)
+	return output
 }
