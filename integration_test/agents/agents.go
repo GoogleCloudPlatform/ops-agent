@@ -685,52 +685,11 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 	return ctx, logger, vm
 }
 
-func globForAgentPackage(platform string) (string, error) {
-	if gce.IsWindows(platform) {
-		return "*.goo", nil
-	}
-
-	// Here is a real example of what package names look like once built:
-	// google-cloud-ops-agent-2.0.3-1.el7.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.el8.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles12.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles15.x86_64.rpm
-	// google-cloud-ops-agent_2.0.3~debian10_amd64.deb
-	// google-cloud-ops-agent_2.0.3~debian9.13_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu16.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu18.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu20.04_amd64.deb
-	//
-	// The goal of this function is to convert what we have (vm.Platform, e.g.
-	// debian-10)	into a glob that will pick out the appropriate package file for
-	// that distro.
-
-	// I honestly can't think of a better way to do this.
-	switch {
-	case strings.HasPrefix(platform, "centos-7") || strings.HasPrefix(platform, "rhel-7"):
-		return "*.el7.*.rpm", nil
-	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rhel-8") || strings.HasPrefix(platform, "rocky-linux-8"):
-		return "*.el8.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-12"):
-		return "*.sles12.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-15") || strings.HasPrefix(platform, "opensuse-leap"):
-		return "*.sles15.*.rpm", nil
-	case platform == "debian-10":
-		return "*~debian10*.deb", nil
-	case platform == "debian-11":
-		return "*~debian11*.deb", nil
-	case platform == "ubuntu-1804-lts" || platform == "ubuntu-minimal-1804-lts":
-		return "*~ubuntu18.04_*.deb", nil
-	case platform == "ubuntu-2004-lts" || platform == "ubuntu-minimal-2004-lts":
-		return "*~ubuntu20.04_*.deb", nil
-	default:
-		return "", fmt.Errorf("agents.go does not know how to convert platform %q into a glob that can pick the appropriate package out of a lineup", platform)
-	}
-}
-
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+// Packages with "dbgsym" in their name are skipped because customers don't
+// generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
@@ -738,17 +697,18 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
-	glob, err := globForAgentPackage(vm.Platform)
-	if err != nil {
-		return err
-	}
-
 	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s /tmp/agentUpload", gcsPath, glob)); err != nil {
-		logger.ToMainLog().Printf("picking agent package using glob %q", glob)
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
+	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+		return err
 	}
 	if IsRPMBased(vm.Platform) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {

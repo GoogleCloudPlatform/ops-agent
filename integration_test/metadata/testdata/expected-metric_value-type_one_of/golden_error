@@ -1,1 +1,1 @@
-Key: 'IntegrationMetadata.ExpectedMetrics[0].ValueType' Error:Field validation for 'ValueType' failed on the 'oneof' tag
+[13:15] Key: 'ExpectedMetric.ValueType' Error:Field validation for 'ValueType' failed on the 'oneof' tag

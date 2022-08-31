@@ -110,7 +110,6 @@ sles = _family {
       name = 'SLES 12'
       release = [
         'sles-12',
-        'sles-12-sp3-sap',
         'sles-12-sp4-sap',
         'sles-12-sp5-sap',
       ]
@@ -120,7 +119,6 @@ sles = _family {
       name = 'SLES 15'
       release = [
         'sles-15',
-        'sles-15-sap',
         'sles-15-sp1-sap',
         'sles-15-sp2-sap',
         'opensuse-leap',
@@ -145,7 +143,6 @@ windows = _family {
         'windows-2016-core',
         'windows-2019',
         'windows-2019-core',
-        'windows-20h2-core',
       ]
       presubmit = 'windows-2016'
     }

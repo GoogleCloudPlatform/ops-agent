@@ -43,14 +43,21 @@ template config go_test = common {
       // under test).
       USE_INTERNAL_IP = 'true'
 
+      // TRANSFERS_BUCKET and SERVICE_EMAIL are always modified as a pair.
+      // when the build is running trusted (reviewed) code, it's OK to set
+      // this to 'stackdriver-test-143416-file-transfers' and use
+      // 'build-and-test@'. When running unreviewed code, leave both at their
+      // default values. go/sdi-kokoro-security is an internal doc that talks
+      // about how this is set up.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-untrusted-file-transfers'
       SERVICE_EMAIL =
           'build-and-test-external@stackdriver-test-143416.iam.gserviceaccount.com'
+
       WINRM_IN_GCS = 'gs://stackdriver-test-143416-winrm/winrm.par'
     }
 
     artifacts = super.artifacts + [
-      '**/logs/**',
+      'logs/**',
     ]
   }
 }
