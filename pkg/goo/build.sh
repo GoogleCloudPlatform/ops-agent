@@ -110,6 +110,7 @@ function build_opsagent() {
 (build_fluentbit)
 (build_otel)
 (build_opsagent)
+
 # TODO: Build sample config file
 mkdir -p "$DESTDIR$sysconfdir/"
 cp "confgenerator/default-config.yaml" "$DESTDIR$sysconfdir/config.yaml"
@@ -117,7 +118,7 @@ mkdir -p "$DESTDIR/pkg/goo/"
 cp "pkg/goo/maint.ps1" "$DESTDIR/pkg/goo/"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
-(cd "$DESTDIR" && tar -cvzf /tmp/google-cloud-ops-agent.tgz *)
+(cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)
 
 set -ex
 
