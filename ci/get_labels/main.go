@@ -18,47 +18,58 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
 
 var prUrl = flag.String("url", "", "Url of pull request")
 
-type respLabels struct {
-	Name string
+type RespLabel struct {
+	Name string `json:"name"`
+}
+
+type RespLabelCollection []RespLabel
+
+func (lc RespLabelCollection) String() string {
+	var out string
+	for _, label := range lc {
+		out += label.Name + " "
+	}
+	return out
 }
 
 func main() {
 	flag.Parse()
 
 	labelCollector := LabelCollector{Client: &http.Client{}}
-	fmt.Println(labelCollector.GetLabels(*prUrl))
+	labels, err := labelCollector.GetLabels(*prUrl)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(labels)
 }
 
 type LabelCollector struct {
 	Client *http.Client
 }
 
-func (l *LabelCollector) GetLabels(prUrl string) string {
+func (l *LabelCollector) GetLabels(prUrl string) (RespLabelCollection, error) {
 	// We can only get the PR URL from Github Action, so we need to transform it into the issue URL
 	labelsUrl := strings.Replace(prUrl, "/pulls/", "/issues/", 1)
 	labelsUrl += "/labels"
 	resp, err := l.Client.Get(labelsUrl)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var responseLabels []respLabels
+	var responseLabels RespLabelCollection
 	err = json.NewDecoder(resp.Body).Decode(&responseLabels)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	var output string
-	for _, label := range responseLabels {
-		output += label.Name + " "
-	}
-
-	return output
+	return responseLabels, nil
 }
