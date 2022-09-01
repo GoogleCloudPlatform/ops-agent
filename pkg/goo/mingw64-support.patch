@@ -125,6 +125,57 @@ index 6da306829..54331bc9b 100644
  #include <langinfo.h>
  #else
  
+diff --git a/include/fluent-bit/flb_pthread.h b/include/fluent-bit/flb_pthread.h
+index 2bad3a62d..e9f76c9be 100644
+--- a/include/fluent-bit/flb_pthread.h
++++ b/include/fluent-bit/flb_pthread.h
+@@ -21,10 +21,6 @@
+ #define FLB_PTHREAD_H
+ 
+ #include <fluent-bit/flb_info.h>
+-#ifdef FLB_SYSTEM_WINDOWS
+-#include <monkey/mk_core/external/winpthreads.h>
+-#else
+-#include <pthread.h>
+-#endif
++#include <monkey/mk_core/mk_pthread.h>
+ 
+ #endif
+diff --git a/include/fluent-bit/flb_thread_pool.h b/include/fluent-bit/flb_thread_pool.h
+index d43b46f32..1e7b9d625 100644
+--- a/include/fluent-bit/flb_thread_pool.h
++++ b/include/fluent-bit/flb_thread_pool.h
+@@ -27,11 +27,7 @@
+ #define FLB_THREAD_POOL_STOPPED   2
+ 
+ #include <fluent-bit/flb_info.h>
+-#ifdef FLB_SYSTEM_WINDOWS
+-#include <monkey/mk_core/external/winpthreads.h>
+-#else
+-#include <pthread.h>
+-#endif
++#include <monkey/mk_core/mk_pthread.h>
+ 
+ struct worker_params {
+     void (*func) (void *);
+diff --git a/include/fluent-bit/flb_thread_storage.h b/include/fluent-bit/flb_thread_storage.h
+index 8ebb436f6..70c4e1682 100644
+--- a/include/fluent-bit/flb_thread_storage.h
++++ b/include/fluent-bit/flb_thread_storage.h
+@@ -21,12 +21,7 @@
+ #define FLB_THREAD_STORAGE_H
+ 
+ #include <fluent-bit/flb_info.h>
+-
+-#ifdef FLB_SYSTEM_WINDOWS
+-#include <monkey/mk_core/external/winpthreads.h>
+-#else
+-#include <pthread.h>
+-#endif
++#include <monkey/mk_core/mk_pthread.h>
+ 
+ /* Ideal case when the compiler support direct storage through __thread */
+ #ifdef FLB_HAVE_C_TLS
 diff --git a/lib/avro/src/errors.c b/lib/avro/src/errors.c
 index 8abd8c832..0eabedf23 100644
 --- a/lib/avro/src/errors.c
@@ -337,6 +388,19 @@ index b69c0ba38..e80091ca4 100644
  #else
  #include <sys/select.h>
  #endif
+diff --git a/lib/monkey/include/monkey/mk_core/mk_list.h b/lib/monkey/include/monkey/mk_core/mk_list.h
+index 7c1ea97b9..e5a5bc991 100644
+--- a/lib/monkey/include/monkey/mk_core/mk_list.h
++++ b/lib/monkey/include/monkey/mk_core/mk_list.h
+@@ -23,7 +23,7 @@
+ 
+ #include <stddef.h>
+ 
+-#ifdef _WIN32
++#ifdef MSC_VER
+ /* Windows */
+ #define container_of(address, type, field) ((type *)(                   \
+                                                      (PCHAR)(address) - \
 diff --git a/lib/monkey/include/monkey/mk_core/mk_macros.h b/lib/monkey/include/monkey/mk_core/mk_macros.h
 index f5179faa1..7d6e998b7 100644
 --- a/lib/monkey/include/monkey/mk_core/mk_macros.h
@@ -350,6 +414,20 @@ index f5179faa1..7d6e998b7 100644
      #define MK_INLINE __forceinline
  #else
      #define MK_INLINE inline __attribute__((always_inline))
+diff --git a/lib/monkey/include/monkey/mk_core/mk_pthread.h b/lib/monkey/include/monkey/mk_core/mk_pthread.h
+index d01963112..1067bc388 100644
+--- a/lib/monkey/include/monkey/mk_core/mk_pthread.h
++++ b/lib/monkey/include/monkey/mk_core/mk_pthread.h
+@@ -24,6 +24,9 @@
+ 
+ #if defined (MK_THREADS_POSIX)    /* Heaven */
+ #include <pthread.h>
++#  if ! defined (PTHREAD_STACK_MIN)
++#  define PTHREAD_STACK_MIN 65535
++#  endif
+ #elif defined (MK_THREADS_WIN32)  /* Not Heaven */
+ #include "external/winpthreads.h"
+ #endif
 diff --git a/lib/monkey/include/monkey/mk_core/mk_string.h b/lib/monkey/include/monkey/mk_core/mk_string.h
 index cdbe6d505..65c032de9 100644
 --- a/lib/monkey/include/monkey/mk_core/mk_string.h
@@ -401,10 +479,30 @@ index 67d290f08..8130d9acd 100644
  #include <arpa/inet.h>
  #include <netdb.h>
 diff --git a/lib/monkey/mk_core/CMakeLists.txt b/lib/monkey/mk_core/CMakeLists.txt
-index 2dc6708d4..a85deb15b 100644
+index 2dc6708d4..2c3c573ad 100644
 --- a/lib/monkey/mk_core/CMakeLists.txt
 +++ b/lib/monkey/mk_core/CMakeLists.txt
-@@ -153,4 +153,7 @@ target_link_libraries(mk_core ${CMAKE_THREAD_LIBS_INIT})
+@@ -17,14 +17,17 @@ macro(MK_DEFINITION var)
+   set(MK_CORE_BUILD_FLAGS "${MK_CORE_BUILD_FLAGS}#ifndef ${var}\n#define ${var}\n#endif\n")
+ endmacro()
+ 
+-# Set threading system
+ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
++  add_subdirectory(deps/)
++endif()
++
++# Set threading system
++if (MSVC)
+   MK_DEFINITION(MK_THREADS_WIN32)
+   set(src
+     ${src}
+     "external/winpthreads.c"
+     )
+-  add_subdirectory(deps/)
+ else()
+   MK_DEFINITION(MK_THREADS_POSIX)
+ endif()
+@@ -153,4 +156,7 @@ target_link_libraries(mk_core ${CMAKE_THREAD_LIBS_INIT})
  
  if (CMAKE_SYSTEM_NAME MATCHES "Windows")
    target_link_libraries(mk_core event)
@@ -788,7 +886,7 @@ index bba11849d..083254b02 100644
          flb_plg_error(ctx->ins, "Failed to create metadata directory");
          return -1;
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 630f875bf..a10451a2d 100644
+index 630f875bf..0dc089544 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -90,7 +90,9 @@ if(FLB_SYSTEM_WINDOWS)
@@ -830,13 +928,15 @@ index 630f875bf..a10451a2d 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
-@@ -397,12 +408,17 @@ if(FLB_SHARED_LIB)
+@@ -397,12 +408,19 @@ if(FLB_SHARED_LIB)
      PROPERTIES OUTPUT_NAME fluent-bit)
  
    # Windows doesn't provide pthread (see winpthreads.c in mk_core).
 -  if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 +  if(MSVC)
      target_link_libraries(fluent-bit-shared ${FLB_DEPS})
++  elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")  # MinGW
++    target_link_libraries(fluent-bit-shared ${FLB_DEPS} -static -lpthread)
    else()
      target_link_libraries(fluent-bit-shared ${FLB_DEPS} -lpthread)
    endif()
@@ -849,7 +949,19 @@ index 630f875bf..a10451a2d 100644
    if (MSVC)
      set_target_properties(fluent-bit-shared
        PROPERTIES PDB_NAME fluent-bit.dll)
-@@ -463,6 +479,10 @@ if(FLB_BINARY)
+@@ -429,6 +447,11 @@ else()
+   set_target_properties(fluent-bit-static PROPERTIES OUTPUT_NAME fluent-bit)
+ endif(MSVC)
+ 
++if(CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT MSVC)
++  # Avoid pulling in MinGW runtime pthread libraries.
++  target_link_libraries(fluent-bit-static -static -lpthread)
++endif()
++
+ if(FLB_JEMALLOC)
+   target_link_libraries(fluent-bit-static libjemalloc)
+ endif()
+@@ -463,6 +486,10 @@ if(FLB_BINARY)
  
    target_link_libraries(fluent-bit-bin fluent-bit-static ${CMAKE_THREAD_LIBS_INIT})
  
