@@ -33,7 +33,6 @@ func TestLabels(t *testing.T) {
 	}
 
 	for _, test := range testTable {
-		test := test
 		t.Run(test.Name, func(t *testing.T) {
 			testGetLabels(t, test.Labels)
 		})
@@ -53,10 +52,10 @@ func testGetLabels(t *testing.T, expected main.RespLabelCollection) {
 		t.Fatal(err)
 	}
 
-	assertRespLabelCollection(t, expected, actual)
+	assertRespLabelCollectionEqual(t, expected, actual)
 }
 
-func assertRespLabelCollection(t *testing.T, expected main.RespLabelCollection, actual main.RespLabelCollection) {
+func assertRespLabelCollectionEqual(t *testing.T, expected main.RespLabelCollection, actual main.RespLabelCollection) {
 	if len(actual) != len(expected) {
 		t.Fatalf("Actual did not meet expected.\nactual: \"%s\"\nexpected: \"%s\"", actual, expected)
 	}
