@@ -216,10 +216,6 @@ expected_metrics:
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
-- type: workload.googleapis.com/elasticsearch.node.open_files
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
 - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.current
   value_type: INT64
   kind: GAUGE
