@@ -113,6 +113,8 @@ RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
     build-essential cmake bison flex file libsystemd-dev \
+    # Temporary workaround for breakage caused by systemd update.
+    libsystemd0=237-3ubuntu10.53 \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
 ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
