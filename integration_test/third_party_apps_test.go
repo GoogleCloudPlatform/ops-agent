@@ -727,6 +727,10 @@ var defaultPlatforms = map[string]bool{
 }
 
 const (
+	// Chosen just because it is alphabetically first among apps that run and
+	// pass on all platforms. There may be a better choice.
+	defaultApp = "activemq"
+	
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 )
@@ -748,6 +752,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // test_config and impacted apps.  Always test all apps against the default
 // platform.  If a subset of apps is determined to be impacted, also test all
 // platforms for those apps.
+// TODO: talk about default app
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
@@ -755,6 +760,11 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
+			if len(impactedApps) == 0 {
+				// Override: run defaultApp even if it's not actually impacted.
+				// TODO: consider running a defaultApp in all cases, not just len(impactedApps) == 0
+				testApp = (test.App == defaultApp)
+			}
 			_, defaultPlatform := defaultPlatforms[test.platform]
 			if !defaultPlatform && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
