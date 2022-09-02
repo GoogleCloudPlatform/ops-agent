@@ -258,6 +258,10 @@ expected_logs:
     value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
     type: string
     description: ''
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
   - name: severity
     type: string
     description: ''

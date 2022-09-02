@@ -27,9 +27,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -43,9 +43,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -67,9 +67,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -83,9 +83,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -99,9 +99,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -115,9 +115,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -136,9 +136,9 @@ RUN set -x; yum -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -154,9 +154,30 @@ RUN set -x; yum -y update && \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/rpm/build.sh
+
+FROM rockylinux:9 AS centos9-build
+
+RUN set -x; dnf -y update && \
+    dnf -y install 'dnf-command(config-manager)' && \
+    dnf config-manager --set-enabled crb && \
+    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf -y install git systemd \
+    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+    expect rpm-sign zip
+
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -190,9 +211,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -209,9 +230,9 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -249,6 +270,10 @@ FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 
+FROM scratch AS centos9
+COPY --from=centos9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-9.tgz
+COPY --from=centos9-build /google-cloud-ops-agent*.rpm /
+
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
@@ -265,5 +290,6 @@ COPY --from=focal /* /
 COPY --from=bionic /* /
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
+COPY --from=centos9 /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /

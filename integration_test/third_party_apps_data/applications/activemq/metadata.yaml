@@ -17,7 +17,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/activemq.consumer.count
   value_type: INT64
   kind: GAUGE
@@ -30,12 +29,10 @@ expected_metrics:
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/activemq.disk.temp_usage
   value_type: DOUBLE
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/activemq.memory.usage
   value_type: DOUBLE
   kind: GAUGE

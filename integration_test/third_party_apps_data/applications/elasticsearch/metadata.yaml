@@ -24,7 +24,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.cluster.health
   value_type: INT64
   kind: GAUGE
@@ -35,7 +34,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.cluster.shards
   value_type: INT64
   kind: GAUGE
@@ -58,7 +56,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.cluster.io
   value_type: INT64
   kind: CUMULATIVE
@@ -75,17 +72,14 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.http.connections
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.open_files
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/elasticsearch.node.operations.completed
   value_type: INT64
@@ -103,7 +97,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
   value_type: INT64
   kind: CUMULATIVE
@@ -142,15 +135,34 @@ expected_logs:
   - name: jsonPayload.cluster.name
     type: string
     description: 'The name of the cluster emitting the log record'
+    optional: true
   - name: jsonPayload.cluster.uuid
     type: string
     description: 'The uuid of the cluster emitting the log record'
+    optional: true
   - name: jsonPayload.node.name
     type: string
     description: 'The name of the node emitting the log record'
+    optional: true
   - name: jsonPayload.node.uuid
     type: string
     description: 'The uuid of the node emitting the log record'
+    optional: true
+  - name: jsonPayload.cluster
+    type: string
+    description: 'The cluster emitting the log record'
+    optional: true
+  - name: jsonPayload.node
+    type: string
+    description: 'The node emitting the log record'
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 - log_name: elasticsearch_gc
   fields:
   - name: jsonPayload.message
@@ -164,6 +176,10 @@ expected_logs:
   - name: jsonPayload.gc_run
     type: number
     description: 'The run of the garbage collector'
+    optional: true
+  - name: severity
+    type: string
+    description: ''
 configuration_options:
   logs:
   - type: elasticsearch_json

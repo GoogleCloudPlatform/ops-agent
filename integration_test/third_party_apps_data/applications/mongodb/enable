@@ -2,11 +2,16 @@
 
 set -e
 
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Configure the Ops Agent.
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 metrics:
   receivers:
     mongodb:
       type: mongodb
+      insecure: true
   service:
     pipelines:
       mongo:

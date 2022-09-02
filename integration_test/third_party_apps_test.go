@@ -38,17 +38,23 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
@@ -73,6 +79,28 @@ func removeFromSlice(original []string, toRemove string) []string {
 		}
 	}
 	return result
+}
+
+// assertFilePresence returns an error if the provided file path doesn't exist on the VM.
+func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
+	var fileQuery string
+	if gce.IsWindows(vm.Platform) {
+		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
+	} else {
+		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
+	}
+
+	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
+	if err != nil {
+		return fmt.Errorf("error accessing backup file: %v", err)
+	}
+
+	// Windows returns False if the path doesn't exist.
+	if gce.IsWindows(vm.Platform) && strings.Contains(out.Stdout, "False") {
+		return fmt.Errorf("couldn't find file %s. Output response %s. Error response: %s", filePath, out.Stdout, out.Stderr)
+	}
+
+	return nil
 }
 
 // rejectDuplicates looks for duplicate entries in the input slice and returns
@@ -192,8 +220,226 @@ func constructQuery(logName string, fields []*metadata.LogFields) string {
 	return strings.Join(parts, " AND ")
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
+// logFieldsMapWithPrefix returns a field name => LogField mapping where all the fieldnames have the provided prefix.
+// Note that the map will omit the prefix in the returned map.
+func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string]*metadata.LogFields {
+	if log == nil {
+		return nil
+	}
 
+	fieldsMap := make(map[string]*metadata.LogFields)
+	for _, entry := range log.Fields {
+		if strings.HasPrefix(entry.Name, prefix) {
+			fieldsMap[strings.TrimPrefix(entry.Name, prefix)] = entry
+		}
+	}
+
+	return fieldsMap
+}
+
+// verifyLogField verifies that the actual field retrieved from Cloud Logging is as expected.
+func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
+	expectedField, ok := expectedFields[fieldName]
+	if !ok {
+		// Not expecting this field. It could however be populated with some default zero-values when we
+		// query it back. Check for zero values basued on expectedField.type? Not ideal for sure.
+		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
+			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+		}
+		return nil
+	}
+
+	if len(actualField) == 0 {
+		if expectedField.Optional {
+			return nil
+		} else {
+			return fmt.Errorf("expected non-empty value for log field %s\n", fieldName)
+		}
+	}
+
+	// The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
+	pattern := "(?s).*"
+	if expectedField.ValueRegex != "" {
+		pattern = expectedField.ValueRegex
+	}
+	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	if err != nil {
+		return err
+	}
+
+	if !match {
+		return fmt.Errorf("field %s of the actual log: %s didn't match regex pattern: %s\n", fieldName, actualField, pattern)
+	}
+
+	return nil
+}
+
+// verifyJsonPayload verifies that the jsonPayload component of th LogEntry is as expected.
+// TODO: We don't unpack the jsonPayload and assert that the nested substructure is as expected.
+//
+//	The way we could do this is flatten the nested payload into a single layer (using something like https://github.com/jeremywohl/flatten)
+//	and then verifying the fields against the expected fields.
+//
+// This should be added if some of the integrations expect to create nested fields.
+func verifyJsonPayload(actualPayload interface{}, expectedPayload map[string]*metadata.LogFields) error {
+	var multiErr error
+	actualPayloadFields := actualPayload.(*structpb.Struct).GetFields()
+	for expectedKey, expectedValue := range expectedPayload {
+		actualValue, ok := actualPayloadFields[expectedKey]
+		if !ok || actualValue == nil {
+			if !expectedValue.Optional {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload.%s but got nil\n", expectedKey))
+			}
+
+			continue
+		}
+
+		// Sanitize the actualValue string.
+		// TODO: Assert that the types are what we expect them to be. Left for anther day.
+		var actualValueStr string
+		switch v := actualValue.GetKind().(type) {
+		case *structpb.Value_NumberValue:
+			if v != nil {
+				switch {
+				case math.IsNaN(v.NumberValue):
+					actualValueStr = "NaN"
+				case math.IsInf(v.NumberValue, +1):
+					actualValueStr = "Infinity"
+				case math.IsInf(v.NumberValue, -1):
+					actualValueStr = "-Infinity"
+				default:
+					actualValueStr = strconv.FormatFloat(v.NumberValue, 'E', -1, 32)
+				}
+			}
+		case *structpb.Value_StringValue:
+			if v != nil {
+				actualValueStr = v.StringValue
+			}
+		case *structpb.Value_BoolValue:
+			if v != nil {
+				actualValueStr = strconv.FormatBool(v.BoolValue)
+			}
+		case *structpb.Value_StructValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.StructValue.AsMap())
+			}
+		case *structpb.Value_ListValue:
+			if v != nil {
+				actualValueStr = fmt.Sprint(v.ListValue.AsSlice())
+			}
+		}
+
+		if err := verifyLogField(expectedKey, actualValueStr, expectedPayload); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	for actualKey, actualValue := range actualPayloadFields {
+		if _, ok := expectedPayload[actualKey]; !ok {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected no value for field jsonPayload.%s but got %s\n", actualKey, actualValue.String()))
+		}
+	}
+
+	return multiErr
+}
+
+// verifyLog returns an error if the actualLog has some fields that weren't expected as specified. Or if it is missing
+// some required fields.
+func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog) error {
+	var multiErr error
+	if expectedLog.LogName == "syslog" {
+		// If the application writes to syslog directly (for example: activemq), the log formats are sometimes different
+		// per distro.
+		return nil
+	}
+
+	// Verify all fields in the actualLog match some field in the expectedLog.
+	expectedFields := logFieldsMapWithPrefix(expectedLog, "")
+
+	// Severity
+	if err := verifyLogField("severity", actualLog.Severity.String(), expectedFields); err != nil {
+		multiErr = multierr.Append(multiErr, err)
+	}
+
+	// SourceLocation
+	if actualLog.SourceLocation == nil {
+		_, fileOk := expectedFields["sourceLocation.file"]
+		_, lineOk := expectedFields["sourceLocation.line"]
+		if fileOk || lineOk {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+		}
+	} else {
+		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+		if err := verifyLogField("sourceLocation.line", strconv.FormatInt(actualLog.SourceLocation.Line, 10), expectedFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	// HTTP Request
+	// Taken from https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest
+	httpRequestFields := []string{"httpRequest.requestMethod", "httpRequest.requestUrl",
+		"httpRequest.requestSize", "httpRequest.status", "httpRequest.responseSize",
+		"httpRequest.userAgent", "httpRequest.remoteIp", "httpRequest.serverIp",
+		"httpRequest.referer", "httpRequest.latency", "httpRequest.cacheLookup",
+		"httpRequest.cacheHit", "httpRequest.cacheValidatedWithOriginServer",
+		"httpRequest.cacheFillBytes", "httpRequest.protocol"}
+	if actualLog.HTTPRequest == nil {
+		for _, field := range httpRequestFields {
+			if _, ok := expectedFields[field]; ok {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("expected value for field %s but got nil\n", field))
+			}
+		}
+	} else {
+		// Validate that the HTTP fields that are present match the expected log.
+		testPairs := [][2]string{
+			{"httpRequest.requestMethod", actualLog.HTTPRequest.Request.Method},
+			{"httpRequest.requestUrl", actualLog.HTTPRequest.Request.URL.String()},
+			{"httpRequest.requestSize", strconv.FormatInt(actualLog.HTTPRequest.RequestSize, 10)},
+			{"httpRequest.status", strconv.Itoa(actualLog.HTTPRequest.Status)},
+			{"httpRequest.responseSize", strconv.FormatInt(actualLog.HTTPRequest.ResponseSize, 10)},
+			{"httpRequest.userAgent", actualLog.HTTPRequest.Request.UserAgent()},
+			{"httpRequest.remoteIp", actualLog.HTTPRequest.RemoteIP},
+			{"httpRequest.serverIp", actualLog.HTTPRequest.LocalIP},
+			{"httpRequest.referer", actualLog.HTTPRequest.Request.Referer()},
+			{"httpRequest.latency", actualLog.HTTPRequest.Latency.String()},
+			{"httpRequest.cacheLookup", strconv.FormatBool(actualLog.HTTPRequest.CacheLookup)},
+			{"httpRequest.cacheHit", strconv.FormatBool(actualLog.HTTPRequest.CacheHit)},
+			{"httpRequest.cacheValidatedWithOriginServer", strconv.FormatBool(actualLog.HTTPRequest.CacheValidatedWithOriginServer)},
+			{"httpRequest.cacheFillBytes", strconv.FormatInt(actualLog.HTTPRequest.CacheFillBytes, 10)},
+			{"httpRequest.protocol", actualLog.HTTPRequest.Request.Proto},
+		}
+		for _, test := range testPairs {
+			expectedHTTPField, actualHTTPField := test[0], test[1]
+			if err := verifyLogField(expectedHTTPField, actualHTTPField, expectedFields); err != nil {
+				multiErr = multierr.Append(multiErr, err)
+			}
+		}
+	}
+
+	// Labels - Untested as of yet, since no application sets LogEntry labels.
+
+	// JSON Payload
+	expectedPayloadFields := logFieldsMapWithPrefix(expectedLog, "jsonPayload.")
+	if actualLog.Payload == nil {
+		if len(expectedPayloadFields) > 0 {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected values for field jsonPayload but got nil\n"))
+		}
+	} else {
+		if err := verifyJsonPayload(actualLog.Payload, expectedPayloadFields); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+	}
+
+	if multiErr != nil {
+		return fmt.Errorf("%s: %w", expectedLog.LogName, multiErr)
+	}
+
+	return nil
+}
+
+func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
@@ -202,7 +448,24 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			c <- gce.WaitForLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, constructQuery(entry.LogName, entry.Fields))
+			// Construct query using non-optional fields.
+			query := constructQuery(entry.LogName, entry.Fields)
+
+			// Query logging backend for log matching the query.
+			actualLog, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			// Verify the log is what was expected.
+			err = verifyLog(actualLog, entry)
+			if err != nil {
+				c <- err
+				return
+			}
+
+			c <- nil
 		}()
 	}
 	for range logs {
@@ -345,6 +608,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
+	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	if err = assertFilePresence(ctx, logger, vm, backupConfigFilePath); err != nil {
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
+	}
+
 	// Check if the exercise script exists, and run it if it does.
 	exerciseScript := path.Join("applications", app, "exercise")
 	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
@@ -383,19 +651,16 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	}
 	for _, file := range files {
 		app := file.Name()
-		var metadata metadata.IntegrationMetadata
+		var integrationMetadata metadata.IntegrationMetadata
 		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
-			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
+			t.Fatal(err)
 		}
-		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
 		if err != nil {
-			t.Fatalf("could not unmarshal contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
 			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 		}
-		allApps[app] = metadata
+		allApps[app] = integrationMetadata
 	}
 	log.Printf("found %v apps", len(allApps))
 	if len(allApps) == 0 {

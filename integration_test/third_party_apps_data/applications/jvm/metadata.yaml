@@ -35,7 +35,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.gc.collections.count
   value_type: INT64
   kind: CUMULATIVE
@@ -52,43 +51,35 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.heap.init
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.heap.max
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.heap.used
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
   representative: true
 - type: workload.googleapis.com/jvm.memory.nonheap.committed
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.nonheap.init
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.nonheap.max
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.nonheap.used
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 - type: workload.googleapis.com/jvm.memory.pool.committed
   value_type: INT64
   kind: GAUGE
@@ -117,7 +108,6 @@ expected_metrics:
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
-  labels: {}
 configuration_options:
   metrics:
   - type: jvm
