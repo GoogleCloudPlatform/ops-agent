@@ -16,11 +16,15 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -35,7 +39,7 @@ var (
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
-		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
+		log.Fatal(err)
 	}
 }
 func run() error {
@@ -57,7 +61,29 @@ func run() error {
 	}
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
 	if err != nil {
+		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
+	}
+
+	death := make(chan bool)
+
+	go func() {
+		osSignal := make(chan os.Signal, 1)
+		signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+
+	waitForSignal:
+		for {
+			select {
+			case <-osSignal:
+				death <- true
+				break waitForSignal
+			}
+		}
+	}()
+
+	err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	if err != nil {
 		return err
 	}
-	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
+
+	return nil
 }

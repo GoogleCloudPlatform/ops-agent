@@ -85,11 +85,18 @@ function build_fluentbit() {
   rm -r "${DESTDIR}${subagentdir}/fluent-bit/etc"
 }
 
-function build_opsagent() {
+function build_opsagentengine() {
   mkdir -p "$DESTDIR$prefix/libexec"
   go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" \
     -ldflags "$LD_FLAGS" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+}
+
+function build_opsagentdiagnostics() {
+  mkdir -p "$DESTDIR$prefix/libexec"
+  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_diagnostics" \
+    -ldflags "$LD_FLAGS" \
+    github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics
 }
 
 function build_systemd() {
@@ -117,7 +124,8 @@ function build_systemd() {
 
 (build_otel)
 (build_fluentbit)
-(build_opsagent)
+(build_opsagentdiagnostics)
+(build_opsagentengine)
 (build_systemd)
 
 # TODO: Build sample config file

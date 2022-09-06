@@ -13,15 +13,16 @@
 # limitations under the License.
 
 [Unit]
-Description=Google Cloud Ops Agent
-Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
+Description=Google Cloud Ops Agent - Diagnostics
+PartOf=google-cloud-ops-agent.service
+Requires=network-online.target
+After=network-online.target
 
 [Service]
-Type=oneshot
-# Validate the config.
-ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-ExecStart=/bin/true
-RemainAfterExit=yes
+Type=simple
+# Run diagnostics
+ExecStart=@PREFIX@/libexec/google_cloud_ops_agent_diagnostics -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
+RemainAfterExit=no
 
 [Install]
 WantedBy=multi-user.target
