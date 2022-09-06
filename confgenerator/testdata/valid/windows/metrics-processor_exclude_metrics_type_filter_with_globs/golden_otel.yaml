@@ -32,17 +32,23 @@ processors:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: []
+        metric_names:
+        - "^agent\\.googleapis\\.com/proce.*ses/.*$$"
+        - "^agent\\.googleapis\\.com/c.*u/.*$$"
   filter/default__pipeline_iis_3:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: []
+        metric_names:
+        - "^agent\\.googleapis\\.com/proce.*ses/.*$$"
+        - "^agent\\.googleapis\\.com/c.*u/.*$$"
   filter/default__pipeline_mssql_1:
     metrics:
       exclude:
         match_type: regexp
-        metric_names: []
+        metric_names:
+        - "^agent\\.googleapis\\.com/proce.*ses/.*$$"
+        - "^agent\\.googleapis\\.com/c.*u/.*$$"
   filter/fluentbit_0:
     metrics:
       include:

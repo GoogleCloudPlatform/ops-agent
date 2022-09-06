@@ -471,7 +471,7 @@ processors:
     - gce
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
-    collection_interval: 60s
+    collection_interval: 30s
     scrapers:
       cpu: {}
       disk: {}

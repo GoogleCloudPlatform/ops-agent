@@ -419,6 +419,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/iispipeline_iis__v2_1:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -466,6 +472,7 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/default__pipeline_iis_2: {}
+  normalizesums/iispipeline_iis__v2_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -483,6 +490,8 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  iis/iispipeline_iis__v2:
+    collection_interval: 60s
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -574,6 +583,15 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/iispipeline_iis__v2:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/iispipeline_iis__v2_0
+      - metricstransform/iispipeline_iis__v2_1
+      - resourcedetection/_global_0
+      receivers:
+      - iis/iispipeline_iis__v2
     metrics/otel:
       exporters:
       - googlecloud

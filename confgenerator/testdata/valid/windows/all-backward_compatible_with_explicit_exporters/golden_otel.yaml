@@ -28,21 +28,6 @@ processors:
         - system.filesystem.inodes.usage
         - system.paging.faults
         - system.disk.operation_time
-  filter/default__pipeline_hostmetrics_3:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
-  filter/default__pipeline_iis_3:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
-  filter/default__pipeline_mssql_1:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -541,7 +526,6 @@ service:
       - agentmetrics/default__pipeline_hostmetrics_0
       - filter/default__pipeline_hostmetrics_1
       - metricstransform/default__pipeline_hostmetrics_2
-      - filter/default__pipeline_hostmetrics_3
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/default__pipeline_hostmetrics
@@ -552,7 +536,6 @@ service:
       - metricstransform/default__pipeline_iis_0
       - casttosum/default__pipeline_iis_1
       - normalizesums/default__pipeline_iis_2
-      - filter/default__pipeline_iis_3
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/default__pipeline_iis
@@ -561,7 +544,6 @@ service:
       - googlecloud
       processors:
       - metricstransform/default__pipeline_mssql_0
-      - filter/default__pipeline_mssql_1
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/default__pipeline_mssql

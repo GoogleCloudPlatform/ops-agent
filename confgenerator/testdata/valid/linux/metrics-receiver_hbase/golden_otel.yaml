@@ -361,6 +361,19 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/hbase__pipeline_hbase__metrics_1:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
+    - action: update
+      include: hbase.region_server.*
+      operations:
+      - action: aggregate_labels
+        aggregation_type: max
+        label_set:
+        - state
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -407,6 +420,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/hbase__pipeline_hbase__metrics_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -424,6 +438,13 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  jmx/hbase__pipeline_hbase__metrics:
+    collection_interval: 60s
+    endpoint: localhost:10101
+    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
+    password: otelp
+    target_system: hbase,jvm
+    username: otelu
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -463,6 +484,15 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/hbase__pipeline_hbase__metrics:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/hbase__pipeline_hbase__metrics_0
+      - metricstransform/hbase__pipeline_hbase__metrics_1
+      - resourcedetection/_global_0
+      receivers:
+      - jmx/hbase__pipeline_hbase__metrics
     metrics/otel:
       exporters:
       - googlecloud

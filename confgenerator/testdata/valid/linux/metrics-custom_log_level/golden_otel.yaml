@@ -473,5 +473,7 @@ service:
       receivers:
       - prometheus/otel
   telemetry:
+    logs:
+      level: debug
     metrics:
       address: 0.0.0.0:20201

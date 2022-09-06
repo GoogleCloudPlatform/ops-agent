@@ -407,6 +407,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/postgresql_postgresql_1:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
+  normalizesums/postgresql_postgresql_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -424,6 +431,14 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  postgresql/postgresql_postgresql:
+    collection_interval: 30s
+    endpoint: localhost:3306
+    password: pwd
+    tls:
+      insecure: false
+    transport: tcp
+    username: usr
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -472,6 +487,15 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
+    metrics/postgresql_postgresql:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/postgresql_postgresql_0
+      - metricstransform/postgresql_postgresql_1
+      - resourcedetection/_global_0
+      receivers:
+      - postgresql/postgresql_postgresql
   telemetry:
     metrics:
       address: 0.0.0.0:20201

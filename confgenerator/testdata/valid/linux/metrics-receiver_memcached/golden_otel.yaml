@@ -36,6 +36,12 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+  filter/memcached_memcached_0:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+        - memcached.operation_hit_ratio
   filter/otel_0:
     metrics:
       include:
@@ -361,6 +367,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/memcached_memcached_2:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -407,6 +419,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/memcached_memcached_1: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -424,6 +437,9 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  memcached/memcached_memcached:
+    collection_interval: 60s
+    endpoint: localhost:11211
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -463,6 +479,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/memcached_memcached:
+      exporters:
+      - googlecloud
+      processors:
+      - filter/memcached_memcached_0
+      - normalizesums/memcached_memcached_1
+      - metricstransform/memcached_memcached_2
+      - resourcedetection/_global_0
+      receivers:
+      - memcached/memcached_memcached
     metrics/otel:
       exporters:
       - googlecloud
