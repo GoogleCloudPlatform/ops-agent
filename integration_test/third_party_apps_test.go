@@ -727,9 +727,9 @@ var defaultPlatforms = map[string]bool{
 }
 
 const (
-	// Chosen just because it is alphabetically first among apps that run and
-	// pass on all platforms. There may be a better choice.
-	defaultApp = "activemq"
+	// Chosen because it is relatively popular in the wild.
+	// There may be a better choice.
+	defaultApp = "postgres"
 	
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
@@ -752,7 +752,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // test_config and impacted apps.
 //   * Always test all apps against the default platform.
 //   * For all impacted apps, test on all platforms.
-//   * If there are no impacted apps, test the default app (activemq for now)
+//   * If there are no impacted apps, test the default app (postgres for now)
 //     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
