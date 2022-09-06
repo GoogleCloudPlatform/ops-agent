@@ -48,170 +48,170 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 supported_app_version: ["10.x", "9.0.x"]
 expected_metrics:
-  - type: workload.googleapis.com/tomcat.errors
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      proto_handler: .*
-  - type: workload.googleapis.com/tomcat.max_time
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      proto_handler: .*
-  - type: workload.googleapis.com/tomcat.processing_time
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      proto_handler: .*
-  - type: workload.googleapis.com/tomcat.request_count
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      proto_handler: .*
-  - type: workload.googleapis.com/tomcat.sessions
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/tomcat.threads
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      proto_handler: .*
-      state: .*
-    representative: true
-  - type: workload.googleapis.com/tomcat.traffic
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      direction: .*
-      proto_handler: .*
+- type: workload.googleapis.com/tomcat.errors
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    proto_handler: .*
+- type: workload.googleapis.com/tomcat.max_time
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    proto_handler: .*
+- type: workload.googleapis.com/tomcat.processing_time
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    proto_handler: .*
+- type: workload.googleapis.com/tomcat.request_count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    proto_handler: .*
+- type: workload.googleapis.com/tomcat.sessions
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/tomcat.threads
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    proto_handler: .*
+    state: .*
+  representative: true
+- type: workload.googleapis.com/tomcat.traffic
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    direction: .*
+    proto_handler: .*
 expected_logs:
-  - log_name: tomcat_system
-    fields:
-      - name: jsonPayload.message
-        value_regex: org.apache.catalina.startup.Catalina.start Server startup.*
-        type: string
-        description: Log message, including detailed stacktrace where provided
-      - name: jsonPayload.module
-        value_regex: main
-        type: string
-        description: Module of tomcat where the log originated
-      - name: jsonPayload.source
-        value_regex: org.apache.catalina.startup.Catalina.start
-        type: string
-        description: source of where the log originated
-      - name: jsonPayload.level
-        type: string
-        description: Log entry level
-        optional: true
-      - name: severity
-        type: string
-        description: ''
-  - log_name: tomcat_access
-    fields:
-      - name: httpRequest.remoteIp
-        value_regex: 127.0.0.1
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.requestUrl
-        value_regex: /forbidden.html
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.protocol
-        value_regex: HTTP/1.1
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.requestMethod
-        value_regex: GET
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.responseSize
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.userAgent
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.status
-        type: string
-        description: ''
-        optional: true
-      - name: jsonPayload.host
-        type: string
-        description: Contents of the Host header
-        optional: true
-      - name: jsonPayload.user
-        type: string
-        optional: true
-      - name: severity
-        type: string
-        description: ''
-        optional: true
+- log_name: tomcat_system
+  fields:
+  - name: jsonPayload.message
+    value_regex: org.apache.catalina.startup.Catalina.start Server startup.*
+    type: string
+    description: Log message, including detailed stacktrace where provided
+  - name: jsonPayload.module
+    value_regex: main
+    type: string
+    description: Module of tomcat where the log originated
+  - name: jsonPayload.source
+    value_regex: org.apache.catalina.startup.Catalina.start
+    type: string
+    description: source of where the log originated
+  - name: jsonPayload.level
+    type: string
+    description: Log entry level
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+- log_name: tomcat_access
+  fields:
+  - name: httpRequest.remoteIp
+    value_regex: 127.0.0.1
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.requestUrl
+    value_regex: /forbidden.html
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.protocol
+    value_regex: HTTP/1.1
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.status
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.host
+    type: string
+    description: Contents of the Host header
+    optional: true
+  - name: jsonPayload.user
+    type: string
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+    optional: true
 configuration_options:
   logs:
-    - type: tomcat_system
-      fields:
-        - name: type
-          default: null
-          description: The value must be tomcat_system.
-        - name: include_paths
-          default: '[/opt/tomcat/logs/catalina.out]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-        - name: exclude_paths
-          default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-        - name: record_log_file_path
-          default: false
-          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-        - name: wildcard_refresh_interval
-          default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-    - type: tomcat_access
-      fields:
-        - name: type
-          default: null
-          description: The value must be tomcat_access.
-        - name: include_paths
-          default: '[/opt/tomcat/logs/localhost_access_log.*.txt]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-        - name: exclude_paths
-          default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-        - name: record_log_file_path
-          default: false
-          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-        - name: wildcard_refresh_interval
-          default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  - type: tomcat_system
+    fields:
+    - name: type
+      default: null
+      description: The value must be tomcat_system.
+    - name: include_paths
+      default: '[/opt/tomcat/logs/catalina.out]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  - type: tomcat_access
+    fields:
+    - name: type
+      default: null
+      description: The value must be tomcat_access.
+    - name: include_paths
+      default: '[/opt/tomcat/logs/localhost_access_log.*.txt]'
+      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+    - name: exclude_paths
+      default: null
+      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+    - name: record_log_file_path
+      default: false
+      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+    - name: wildcard_refresh_interval
+      default: 60s
+      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
-    - type: tomcat
-      fields:
-        - name: type
-          default: null
-          description: This value must be tomcat.
-        - name: endpoint
-          default: localhost:8050
-          description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
-        - name: collect_jvm_metrics
-          default: true
-          description: Configures the receiver to also collect the supported JVM metrics.
-        - name: username
-          default: null
-          description: The configured username if JMX is configured to require authentication.
-        - name: password
-          default: null
-          description: The configured password if JMX is configured to require authentication.
-        - name: collection_interval
-          default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+  - type: tomcat
+    fields:
+    - name: type
+      default: null
+      description: This value must be tomcat.
+    - name: endpoint
+      default: localhost:8050
+      description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+    - name: collect_jvm_metrics
+      default: true
+      description: Configures the receiver to also collect the supported JVM metrics.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
