@@ -760,10 +760,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
-			if len(impactedApps) == 0 {
-				// Override: run defaultApp even if it's not actually impacted.
-				// TODO: consider running a defaultApp in all cases, not just len(impactedApps) == 0
-				testApp = (test.App == defaultApp)
+			if len(impactedApps) == 0 && test.app == defaultApp {
+				// Override: run defaultApp even though it's not considered impacted.
+				testApp = true
 			}
 			_, defaultPlatform := defaultPlatforms[test.platform]
 			if !defaultPlatform && !testApp {
