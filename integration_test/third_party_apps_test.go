@@ -749,10 +749,11 @@ func incompatibleOperatingSystem(testCase test) string {
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
-// test_config and impacted apps.  Always test all apps against the default
-// platform.  If a subset of apps is determined to be impacted, also test all
-// platforms for those apps.
-// TODO: talk about default app
+// test_config and impacted apps.
+//   * Always test all apps against the default platform.
+//   * For all impacted apps, test on all platforms.
+//   * If there are no impacted apps, test the default app (activemq for now)
+//     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
