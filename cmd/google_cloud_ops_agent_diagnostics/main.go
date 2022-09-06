@@ -80,7 +80,7 @@ func run() error {
 		}
 	}()
 
-	err := self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
 	if err != nil {
 		return err
 	}
