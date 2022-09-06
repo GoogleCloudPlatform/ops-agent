@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/apache"
 app_url: "http://httpd.apache.org/"
 short_name: Apache Web Server
@@ -39,162 +53,162 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 supported_app_version: ["2.4"]
 expected_metrics:
-- type: workload.googleapis.com/apache.current_connections
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-  representative: true
-- type: workload.googleapis.com/apache.requests
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-- type: workload.googleapis.com/apache.scoreboard
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-    state: .*
-- type: workload.googleapis.com/apache.traffic
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-- type: workload.googleapis.com/apache.workers
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels:
-    server_name: .*
-    state: .*
+  - type: workload.googleapis.com/apache.current_connections
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      server_name: .*
+    representative: true
+  - type: workload.googleapis.com/apache.requests
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      server_name: .*
+  - type: workload.googleapis.com/apache.scoreboard
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      server_name: .*
+      state: .*
+  - type: workload.googleapis.com/apache.traffic
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      server_name: .*
+  - type: workload.googleapis.com/apache.workers
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      server_name: .*
+      state: .*
 expected_logs:
-- log_name: apache_access
-  fields:
-  - name: httpRequest.remoteIp
-    value_regex: ::1|127.0.0.1
-    type: string
-    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
-    optional: true
-  - name: httpRequest.requestUrl
-    value_regex: /forbidden.html
-    type: string
-    description: Request URL (typically just the path part of the URL)
-    optional: true
-  - name: httpRequest.protocol
-    value_regex: HTTP/1.1
-    type: string
-    description: Protocol used for the request
-    optional: true
-  - name: httpRequest.requestMethod
-    value_regex: GET
-    type: string
-    description: HTTP method
-    optional: true
-  - name: httpRequest.status
-    type: number
-    description: HTTP status code
-    optional: true
-  - name: httpRequest.responseSize
-    type: string
-    description: ''
-    optional: true
-  - name: httpRequest.userAgent
-    type: string
-    description: ''
-    optional: true
-  - name: jsonPayload.host
-    type: string
-    description: Contents of the Host header
-    optional: true
-  - name: jsonPayload.user
-    type: string
-    description: Authenticated username for the request
-    optional: true
-  - name: severity
-    type: string
-    description: ''
-- log_name: apache_error
-  fields:
-  - name: jsonPayload.client
-    value_regex: ((::1)|(127.0.0.1)):[0-9]+ # Parentheses are required here since the regexp library and Cloud Monitoring regex match differently.
-    type: string
-    description: Client IP address (optional)
-  - name: jsonPayload.level
-    value_regex: error
-    type: string
-    description: Log entry level
-    optional: true
-  - name: jsonPayload.module
-    value_regex: core
-    type: string
-    description: apache module where the log originated
-  - name: jsonPayload.message
-    value_regex: .*file permissions deny server access.*
-    type: string
-    description: Log message
-  - name: jsonPayload.errorCode
-    value_regex: .*Permission denied.*
-    type: string
-    description: apache error code
-  - name: jsonPayload.pid
-    type: string
-    description: Process ID
-  - name: jsonPayload.tid
-    type: string
-    description: Thread ID
-  - name: severity
-    type: string
-    description: ''
+  - log_name: apache_access
+    fields:
+      - name: httpRequest.remoteIp
+        value_regex: ::1|127.0.0.1
+        type: string
+        description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+        optional: true
+      - name: httpRequest.requestUrl
+        value_regex: /forbidden.html
+        type: string
+        description: Request URL (typically just the path part of the URL)
+        optional: true
+      - name: httpRequest.protocol
+        value_regex: HTTP/1.1
+        type: string
+        description: Protocol used for the request
+        optional: true
+      - name: httpRequest.requestMethod
+        value_regex: GET
+        type: string
+        description: HTTP method
+        optional: true
+      - name: httpRequest.status
+        type: number
+        description: HTTP status code
+        optional: true
+      - name: httpRequest.responseSize
+        type: string
+        description: ''
+        optional: true
+      - name: httpRequest.userAgent
+        type: string
+        description: ''
+        optional: true
+      - name: jsonPayload.host
+        type: string
+        description: Contents of the Host header
+        optional: true
+      - name: jsonPayload.user
+        type: string
+        description: Authenticated username for the request
+        optional: true
+      - name: severity
+        type: string
+        description: ''
+  - log_name: apache_error
+    fields:
+      - name: jsonPayload.client
+        value_regex: ((::1)|(127.0.0.1)):[0-9]+ # Parentheses are required here since the regexp library and Cloud Monitoring regex match differently.
+        type: string
+        description: Client IP address (optional)
+      - name: jsonPayload.level
+        value_regex: error
+        type: string
+        description: Log entry level
+        optional: true
+      - name: jsonPayload.module
+        value_regex: core
+        type: string
+        description: apache module where the log originated
+      - name: jsonPayload.message
+        value_regex: .*file permissions deny server access.*
+        type: string
+        description: Log message
+      - name: jsonPayload.errorCode
+        value_regex: .*Permission denied.*
+        type: string
+        description: apache error code
+      - name: jsonPayload.pid
+        type: string
+        description: Process ID
+      - name: jsonPayload.tid
+        type: string
+        description: Thread ID
+      - name: severity
+        type: string
+        description: ''
 configuration_options:
   logs:
-  - type: apache_access
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache_access.
-    - name: include_paths
-      default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: apache_error
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache_error.
-    - name: include_paths
-      default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: apache_access
+      fields:
+        - name: type
+          default: null
+          description: This value must be apache_access.
+        - name: include_paths
+          default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+        - name: exclude_paths
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: apache_error
+      fields:
+        - name: type
+          default: null
+          description: This value must be apache_error.
+        - name: include_paths
+          default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+        - name: exclude_paths
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
-  - type: apache
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache.
-    - name: server_status_url
-      default: http://localhost:80/server-status?auto
-      description: The URL exposed by the mod_status module.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    - type: apache
+      fields:
+        - name: type
+          default: null
+          description: This value must be apache.
+        - name: server_status_url
+          default: http://localhost:80/server-status?auto
+          description: The URL exposed by the mod_status module.
+        - name: collection_interval
+          default: 60s
+          description: A time.Duration value, such as 30s or 5m.
