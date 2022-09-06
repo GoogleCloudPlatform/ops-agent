@@ -69,40 +69,9 @@ func TestGoldens(t *testing.T) {
 func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 	t.Parallel()
 
-	t.Run("valid", func(t *testing.T) {
-		t.Parallel()
-
-		platformTestDir := filepath.Join(validTestdataDirName, platform.OS)
-		testNames := getTestsInDir(t, platformTestDir)
-
-		for _, testName := range testNames {
-			t.Run(testName, func(t *testing.T) {
-				testDir := filepath.Join(platformTestDir, testName)
-				err := testGenerateConf(t, platform, testDir)
-				assert.NilError(t, err)
-			})
-		}
-	})
-
-	t.Run("invalid", func(t *testing.T) {
-		t.Parallel()
-
-		platformTestDir := filepath.Join(invalidTestdataDirName, platform.OS)
-		testNames := getTestsInDir(t, platformTestDir)
-
-		for _, testName := range testNames {
-			t.Run(testName, func(t *testing.T) {
-				testDir := filepath.Join(platformTestDir, testName)
-				err := testGenerateConf(t, platform, testDir)
-				assert.Assert(t, err != nil, "expected test %s config to be invalid, but was successful", testName)
-				goldenErrorPath := filepath.Join(testDir, errorGolden)
-				golden.Assert(t, err.Error(), goldenErrorPath)
-			})
-		}
-	})
-
 	t.Run("builtin", func(t *testing.T) {
 		t.Parallel()
+
 		testDir := filepath.Join(builtinTestdataDirName, platform.OS)
 		builtinConfBytes, _, err := confgenerator.MergeConfFiles(
 			filepath.Join("testdata", testDir, inputFileName),
@@ -114,6 +83,52 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 		err = testGenerateConf(t, platform, testDir)
 		assert.NilError(t, err)
 	})
+
+	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
+
+		runTestsInDir(
+			t,
+			platform,
+			validTestdataDirName,
+			func(t *testing.T, err error, _ string) {
+				assert.NilError(t, err)
+			},
+		)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		runTestsInDir(
+			t,
+			platform,
+			invalidTestdataDirName,
+			func(t *testing.T, err error, testDir string) {
+				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
+				goldenErrorPath := filepath.Join(testDir, errorGolden)
+				golden.Assert(t, err.Error(), goldenErrorPath)
+			},
+		)
+	})
+}
+
+func runTestsInDir(
+	t *testing.T,
+	platform platformConfig,
+	testTypeDir string,
+	errAssertion func(*testing.T, error, string),
+) {
+	platformTestDir := filepath.Join(testTypeDir, platform.OS)
+	testNames := getTestsInDir(t, platformTestDir)
+
+	for _, testName := range testNames {
+		t.Run(testName, func(t *testing.T) {
+			testDir := filepath.Join(platformTestDir, testName)
+			err := testGenerateConf(t, platform, testDir)
+			errAssertion(t, err, testDir)
+		})
+	}
 }
 
 func getTestsInDir(t *testing.T, testDir string) []string {
