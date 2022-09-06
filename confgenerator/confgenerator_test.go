@@ -137,7 +137,10 @@ func runTestsInDir(
 	testNames := getTestsInDir(t, platformTestDir)
 
 	for _, testName := range testNames {
+		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
+		testName := testName
 		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
 			testDir := filepath.Join(platformTestDir, testName)
 			err := testGenerateConf(t, platform, testDir)
 			errAssertion(t, err, testDir)
