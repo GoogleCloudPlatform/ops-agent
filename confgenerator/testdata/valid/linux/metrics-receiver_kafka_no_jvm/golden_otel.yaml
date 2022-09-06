@@ -36,21 +36,6 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
-  filter/kafka_kafka_0:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-        - kafka.message.count
-        - kafka.request.count
-        - kafka.request.failed
-        - kafka.request.time.total
-        - kafka.network.io
-        - kafka.purgatory.size
-        - kafka.partition.count
-        - kafka.partition.offline
-        - kafka.partition.under_replicated
-        - kafka.isr.operation.count
   filter/otel_0:
     metrics:
       include:
@@ -376,12 +361,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/kafka_kafka_2:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -428,7 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/kafka_kafka_1: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -446,13 +424,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  jmx/kafka_kafka:
-    collection_interval: 30s
-    endpoint: localhost:39999
-    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
-    password: otelp
-    target_system: kafka
-    username: otelu
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -492,16 +463,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/kafka_kafka:
-      exporters:
-      - googlecloud
-      processors:
-      - filter/kafka_kafka_0
-      - normalizesums/kafka_kafka_1
-      - metricstransform/kafka_kafka_2
-      - resourcedetection/_global_0
-      receivers:
-      - jmx/kafka_kafka
     metrics/otel:
       exporters:
       - googlecloud

@@ -60,12 +60,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/active__directory__ds_active__directory__ds_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -471,14 +465,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/active__directory__ds_active__directory__ds_0: {}
   normalizesums/default__pipeline_iis_2: {}
   resourcedetection/_global_0:
     detectors:
     - gce
 receivers:
-  active_directory_ds/active__directory__ds_active__directory__ds:
-    collection_interval: 60s
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -543,15 +534,6 @@ receivers:
       object: SQLServer:Databases
 service:
   pipelines:
-    metrics/active__directory__ds_active__directory__ds:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/active__directory__ds_active__directory__ds_0
-      - metricstransform/active__directory__ds_active__directory__ds_1
-      - resourcedetection/_global_0
-      receivers:
-      - active_directory_ds/active__directory__ds_active__directory__ds
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

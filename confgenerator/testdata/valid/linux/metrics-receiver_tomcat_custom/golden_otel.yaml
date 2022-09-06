@@ -407,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/tomcat_tomcat_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/tomcat_tomcat_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -431,13 +424,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  jmx/tomcat_tomcat:
-    collection_interval: 30s
-    endpoint: localhost:7199
-    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
-    password: otelp
-    target_system: tomcat
-    username: otelu
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -486,15 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/tomcat_tomcat:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/tomcat_tomcat_0
-      - metricstransform/tomcat_tomcat_1
-      - resourcedetection/_global_0
-      receivers:
-      - jmx/tomcat_tomcat
   telemetry:
     metrics:
       address: 0.0.0.0:20201

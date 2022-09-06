@@ -419,32 +419,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/mysqlpipeline_mysqlmetrics_1:
-    transforms:
-    - action: update
-      include: "^mysql\\.buffer_pool\\.(.*)$$"
-      match_type: regexp
-      new_name: mysql.buffer_pool_$${1}
-    - action: update
-      include: mysql.buffer_pool_pages
-      operations:
-      - action: toggle_scalar_data_type
-    - action: update
-      include: mysql.threads
-      operations:
-      - action: toggle_scalar_data_type
-    - action: update
-      include: mysql.buffer_pool_usage
-      new_name: mysql.buffer_pool_size
-      operations:
-      - action: update_label
-        label: status
-        new_label: kind
-      - action: toggle_scalar_data_type
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -492,7 +466,6 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/default__pipeline_iis_2: {}
-  normalizesums/mysqlpipeline_mysqlmetrics_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -510,12 +483,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  mysql/mysqlpipeline_mysqlmetrics:
-    collection_interval: 30s
-    endpoint: localhost:3306
-    password: pwd
-    transport: tcp
-    username: usr
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -607,15 +574,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/mysqlpipeline_mysqlmetrics:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/mysqlpipeline_mysqlmetrics_0
-      - metricstransform/mysqlpipeline_mysqlmetrics_1
-      - resourcedetection/_global_0
-      receivers:
-      - mysql/mysqlpipeline_mysqlmetrics
     metrics/otel:
       exporters:
       - googlecloud

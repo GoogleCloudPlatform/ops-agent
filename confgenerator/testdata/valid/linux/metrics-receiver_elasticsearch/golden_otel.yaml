@@ -319,12 +319,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/elasticsearch_elasticsearch_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -413,21 +407,10 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/elasticsearch_elasticsearch_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
 receivers:
-  elasticsearch/elasticsearch_elasticsearch:
-    collection_interval: 60s
-    endpoint: http://localhost:9200
-    nodes:
-    - _local
-    password: ""
-    skip_cluster_metrics: false
-    tls:
-      insecure: true
-    username: ""
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -471,15 +454,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/default__pipeline_hostmetrics
-    metrics/elasticsearch_elasticsearch:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/elasticsearch_elasticsearch_0
-      - metricstransform/elasticsearch_elasticsearch_1
-      - resourcedetection/_global_0
-      receivers:
-      - elasticsearch/elasticsearch_elasticsearch
     metrics/fluentbit:
       exporters:
       - googlecloud

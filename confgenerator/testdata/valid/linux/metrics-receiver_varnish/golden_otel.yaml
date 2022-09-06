@@ -407,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/varnish_varnish_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/varnish_varnish_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -448,10 +441,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  varnish/varnish_varnish:
-    cache_dir: ""
-    collection_interval: 60s
-    exec_dir: ""
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -483,15 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/varnish_varnish:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/varnish_varnish_0
-      - metricstransform/varnish_varnish_1
-      - resourcedetection/_global_0
-      receivers:
-      - varnish/varnish_varnish
   telemetry:
     metrics:
       address: 0.0.0.0:20201

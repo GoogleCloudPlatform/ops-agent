@@ -45,13 +45,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  filter/redis_redis_0:
-    metrics:
-      exclude:
-        match_type: strict
-        metric_names:
-        - redis.commands
-        - redis.uptime
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -414,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/redis_redis_2:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/redis_redis_1: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -455,13 +441,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  redis/redis_redis:
-    collection_interval: 30s
-    endpoint: localhost:6379
-    password: pwd
-    tls:
-      insecure: true
-    transport: tcp
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -493,16 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/redis_redis:
-      exporters:
-      - googlecloud
-      processors:
-      - filter/redis_redis_0
-      - normalizesums/redis_redis_1
-      - metricstransform/redis_redis_2
-      - resourcedetection/_global_0
-      receivers:
-      - redis/redis_redis
   telemetry:
     metrics:
       address: 0.0.0.0:20201

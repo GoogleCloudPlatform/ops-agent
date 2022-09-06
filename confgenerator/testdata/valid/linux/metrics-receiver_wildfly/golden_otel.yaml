@@ -407,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/wildfly_wildfly_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/wildfly_wildfly_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -431,15 +424,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  jmx/wildfly_wildfly:
-    additional_jars:
-    - /opt/wildfly/bin/client/jboss-client.jar
-    collection_interval: 60s
-    endpoint: service:jmx:remote+http://localhost:9990
-    jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
-    password: otelp
-    target_system: wildfly
-    username: otelu
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -488,15 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/wildfly_wildfly:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/wildfly_wildfly_0
-      - metricstransform/wildfly_wildfly_1
-      - resourcedetection/_global_0
-      receivers:
-      - jmx/wildfly_wildfly
   telemetry:
     metrics:
       address: 0.0.0.0:20201

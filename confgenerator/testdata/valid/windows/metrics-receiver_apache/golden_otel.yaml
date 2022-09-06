@@ -18,12 +18,6 @@ processors:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  filter/apache__pipeline_apache__metrics_0:
-    metrics:
-      exclude:
-        match_type: strict
-        metric_names:
-        - apache.uptime
   filter/default__pipeline_hostmetrics_1:
     metrics:
       exclude:
@@ -66,12 +60,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/apache__pipeline_apache__metrics_2:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -477,15 +465,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/apache__pipeline_apache__metrics_1: {}
   normalizesums/default__pipeline_iis_2: {}
   resourcedetection/_global_0:
     detectors:
     - gce
 receivers:
-  apache/apache__pipeline_apache__metrics:
-    collection_interval: 30s
-    endpoint: http://localhost/server-status?auto
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -550,16 +534,6 @@ receivers:
       object: SQLServer:Databases
 service:
   pipelines:
-    metrics/apache__pipeline_apache__metrics:
-      exporters:
-      - googlecloud
-      processors:
-      - filter/apache__pipeline_apache__metrics_0
-      - normalizesums/apache__pipeline_apache__metrics_1
-      - metricstransform/apache__pipeline_apache__metrics_2
-      - resourcedetection/_global_0
-      receivers:
-      - apache/apache__pipeline_apache__metrics
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

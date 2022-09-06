@@ -407,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/zookeeper_zookeeper_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/zookeeper_zookeeper_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -448,9 +441,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  zookeeper/zookeeper_zookeeper:
-    collection_interval: 60s
-    endpoint: localhost:2181
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -482,15 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/zookeeper_zookeeper:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/zookeeper_zookeeper_0
-      - metricstransform/zookeeper_zookeeper_1
-      - resourcedetection/_global_0
-      receivers:
-      - zookeeper/zookeeper_zookeeper
   telemetry:
     metrics:
       address: 0.0.0.0:20201

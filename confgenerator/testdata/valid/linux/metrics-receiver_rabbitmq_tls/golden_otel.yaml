@@ -407,13 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/rabbitmq_rabbitmq_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  normalizesums/rabbitmq_rabbitmq_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -448,13 +441,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  rabbitmq/rabbitmq_rabbitmq:
-    collection_interval: 30s
-    endpoint: http://localhost:15672
-    password: pwd
-    tls:
-      insecure: false
-    username: usr
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -486,15 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/rabbitmq_rabbitmq:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/rabbitmq_rabbitmq_0
-      - metricstransform/rabbitmq_rabbitmq_1
-      - resourcedetection/_global_0
-      receivers:
-      - rabbitmq/rabbitmq_rabbitmq
   telemetry:
     metrics:
       address: 0.0.0.0:20201

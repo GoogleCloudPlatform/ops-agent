@@ -1,6 +1,7 @@
 package confgenerator_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -70,35 +71,49 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 
 	t.Run("valid", func(t *testing.T) {
 		t.Parallel()
-		runTestsInDir(t, platform, validTestdataDirName, testGenerateConfValid)
+
+		platformTestDir := filepath.Join(validTestdataDirName, platform.OS)
+		testNames := getTestsInDir(t, platformTestDir)
+
+		for _, testName := range testNames {
+			t.Run(testName, func(t *testing.T) {
+				testDir := filepath.Join(platformTestDir, testName)
+				err := testGenerateConf(t, platform, testDir)
+				assert.NilError(t, err)
+			})
+		}
 	})
 
 	t.Run("invalid", func(t *testing.T) {
 		t.Parallel()
-		runTestsInDir(t, platform, invalidTestdataDirName, testGenerateConfInvalid)
+
+		platformTestDir := filepath.Join(invalidTestdataDirName, platform.OS)
+		testNames := getTestsInDir(t, platformTestDir)
+
+		for _, testName := range testNames {
+			t.Run(testName, func(t *testing.T) {
+				testDir := filepath.Join(platformTestDir, testName)
+				err := testGenerateConf(t, platform, testDir)
+				assert.Assert(t, err != nil, "expected test %s config to be invalid, but was successful", testName)
+				goldenErrorPath := filepath.Join(testDir, errorGolden)
+				golden.Assert(t, err.Error(), goldenErrorPath)
+			})
+		}
 	})
 
 	t.Run("builtin", func(t *testing.T) {
 		t.Parallel()
-		runBuiltinTest(t, platform)
+		testDir := filepath.Join(builtinTestdataDirName, platform.OS)
+		builtinConfBytes, _, err := confgenerator.MergeConfFiles(
+			filepath.Join("testdata", testDir, inputFileName),
+			platform.OS,
+			apps.BuiltInConfStructs,
+		)
+		assert.NilError(t, err)
+		golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
+		err = testGenerateConf(t, platform, testDir)
+		assert.NilError(t, err)
 	})
-}
-
-func runTestsInDir(
-	t *testing.T,
-	platform platformConfig,
-	testDir string,
-	test func(*testing.T, platformConfig, string),
-) {
-	platformTestDir := filepath.Join(testDir, platform.OS)
-	testNames := getTestsInDir(t, platformTestDir)
-
-	for _, testName := range testNames {
-		t.Run(testName, func(t *testing.T) {
-			testDir := filepath.Join(platformTestDir, testName)
-			test(t, platform, testDir)
-		})
-	}
 }
 
 func getTestsInDir(t *testing.T, testDir string) []string {
@@ -117,27 +132,30 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 	return testNames
 }
 
-func testGenerateConfValid(
-	t *testing.T,
-	platform platformConfig,
-	testDir string,
-) {
+func testGenerateConf(t *testing.T, platform platformConfig, testDir string) error {
+	// Merge Config
 	_, confBytes, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
 		apps.BuiltInConfStructs,
 	)
-	assert.NilError(t, err, "expected to successfully merge config, failed with: %v", err)
-
+	if err != nil {
+		return err
+	}
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
-	assert.NilError(t, err, "expected config to parse, failed with: %v", err)
+	if err != nil {
+		return err
+	}
 
+	// Fluent Bit configs
 	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
 		platform.defaultLogsDir,
 		platform.defaultStateDir,
 		platform.InfoStat,
 	)
-	assert.NilError(t, err, "expected generating fluent-bit config to pass, failed with: %v", err)
+	if err != nil {
+		return err
+	}
 	golden.Assert(
 		t,
 		flbGeneratedConfigs[fluentbit.MainConfigFileName],
@@ -148,94 +166,70 @@ func testGenerateConfValid(
 		flbGeneratedConfigs[fluentbit.ParserConfigFileName],
 		filepath.Join(testDir, flbParserGolden),
 	)
+	err = testGeneratedLuaFiles(t, flbGeneratedConfigs, testDir)
+	if err != nil {
+		// This error shouldn't result in a golden_error.
+		// An error here represents a failure to read something
+		// in the filesystem, and is an error state for the test.
+		t.Errorf("Testing generated lua files failed: %v", err)
+	}
 
+	// Otel configs
 	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
-	assert.NilError(t, err, "expected generating otel config to pass, failed with: %v", err)
+	if err != nil {
+		return err
+	}
 	golden.Assert(
 		t,
 		otelGeneratedConfig,
 		filepath.Join(testDir, otelYamlGolden),
 	)
+
+	return nil
 }
 
-func testGenerateConfInvalid(
-	t *testing.T,
-	platform platformConfig,
-	testDir string,
-) {
-	goldenErrorPath := filepath.Join(testDir, errorGolden)
-	inputPath := filepath.Join("testdata", testDir, inputFileName)
-
-	_, confBytes, err := confgenerator.MergeConfFiles(inputPath, platform.OS, apps.BuiltInConfStructs)
-	if err != nil {
-		golden.Assert(t, err.Error(), goldenErrorPath)
-		return
-	}
-
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
-	if err != nil {
-		golden.Assert(t, err.Error(), goldenErrorPath)
-		return
-	}
-
-	_, err = uc.GenerateFluentBitConfigs(
-		platform.defaultLogsDir,
-		platform.defaultStateDir,
-		platform.InfoStat,
+func testGeneratedLuaFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
+	// Find all lua files currently in this test directory
+	existingLuaFiles := map[string]struct{}{}
+	err := filepath.Walk(
+		filepath.Join("testdata", testDir),
+		func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(info.Name()) == ".lua" {
+				existingLuaFiles[info.Name()] = struct{}{}
+			}
+			return nil
+		},
 	)
 	if err != nil {
-		golden.Assert(t, err.Error(), goldenErrorPath)
-		return
+		return err
 	}
 
-	_, err = uc.GenerateOtelConfig(platform.InfoStat)
-	if err != nil {
-		golden.Assert(t, err.Error(), goldenErrorPath)
-		return
+	// Assert the goldens of all the generated files. Either the generated file
+	// matches a file already present in the directory, or the lua file is new.
+	// If the lua file is new, the test will fail if not currently doing a golden
+	// update (`-update` flag).
+	for file, content := range generatedFiles {
+		if filepath.Ext(file) != ".lua" {
+			continue
+		}
+		golden.Assert(t, content, filepath.Join(testDir, file))
+		delete(existingLuaFiles, file)
 	}
 
-	t.Fatal("expected config to fail merge or validation")
-}
+	// If there are any files left in the existing file map, then that means the
+	// test generated new files and we're currently in an update run. We now need
+	// to clean up the existing lua files left aren't being generated anymore.
+	for file := range existingLuaFiles {
+		err := os.Remove(filepath.Join("testdata", testDir, file))
+		if err != nil {
+			return err
+		}
+	}
 
-func runBuiltinTest(t *testing.T, platform platformConfig) {
-	testDir := filepath.Join(builtinTestdataDirName, platform.OS)
-
-	builtinConfBytes, confBytes, err := confgenerator.MergeConfFiles(
-		filepath.Join("testdata", testDir, inputFileName),
-		platform.OS,
-		apps.BuiltInConfStructs,
-	)
-	assert.NilError(t, err, "expected to successfully builtin config with empty input, failed with: %v", err)
-
-	golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
-
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
-	assert.NilError(t, err, "expected config to parse, failed with: %v", err)
-
-	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
-		platform.defaultLogsDir,
-		platform.defaultStateDir,
-		platform.InfoStat,
-	)
-	assert.NilError(t, err, "expected generating fluent-bit config to pass, failed with: %v", err)
-	golden.Assert(
-		t,
-		flbGeneratedConfigs[fluentbit.MainConfigFileName],
-		filepath.Join(testDir, flbConfigGolden),
-	)
-	golden.Assert(
-		t,
-		flbGeneratedConfigs[fluentbit.ParserConfigFileName],
-		filepath.Join(testDir, flbParserGolden),
-	)
-
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
-	assert.NilError(t, err, "expected generating otel config to pass, failed with: %v", err)
-	golden.Assert(
-		t,
-		otelGeneratedConfig,
-		filepath.Join(testDir, otelYamlGolden),
-	)
+	return nil
 }
 
 func TestMain(m *testing.M) {

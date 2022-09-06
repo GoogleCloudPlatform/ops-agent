@@ -13,6 +13,11 @@ processors:
   agentmetrics/default__pipeline_hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  casttosum/default__pipeline_iis_1:
+    metrics:
+    - agent.googleapis.com/iis/network/transferred_bytes_count
+    - agent.googleapis.com/iis/new_connection_count
+    - agent.googleapis.com/iis/request_count
   filter/default__pipeline_hostmetrics_1:
     metrics:
       exclude:
@@ -28,7 +33,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_iis_2:
+  filter/default__pipeline_iis_3:
     metrics:
       exclude:
         match_type: regexp
@@ -329,12 +334,34 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_iis_1:
+  metricstransform/default__pipeline_iis_0:
     transforms:
+    - action: update
+      include: "\\Web Service(_Total)\\Current Connections"
+      new_name: iis/current_connections
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total Bytes (?P<direction>.*)$$"
+      match_type: regexp
+      new_name: iis/network/transferred_bytes_count
+      operations:
+      - action: toggle_scalar_data_type
+      submatch_case: lower
+    - action: update
+      include: "\\Web Service(_Total)\\Total Connection Attempts (all instances)"
+      new_name: iis/new_connection_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total (?P<http_method>.*) Requests$$"
+      match_type: regexp
+      new_name: iis/request_count
+      operations:
+      - action: toggle_scalar_data_type
+      submatch_case: lower
     - action: update
       include: ^(.*)$$
       match_type: regexp
-      new_name: workload.googleapis.com/$${1}
+      new_name: agent.googleapis.com/$${1}
   metricstransform/default__pipeline_mssql_0:
     transforms:
     - action: update
@@ -392,12 +419,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/iispipeline_iis_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -444,8 +465,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/default__pipeline_iis_0: {}
-  normalizesums/iispipeline_iis_0: {}
+  normalizesums/default__pipeline_iis_2: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -463,10 +483,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  iis/default__pipeline_iis:
-    collection_interval: 60s
-  iis/iispipeline_iis:
-    collection_interval: 60s
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -484,6 +500,24 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
+  windowsperfcounters/default__pipeline_iis:
+    collection_interval: 60s
+    perfcounters:
+    - counters:
+      - name: Current Connections
+      - name: Total Bytes Received
+      - name: Total Bytes Sent
+      - name: Total Connection Attempts (all instances)
+      - name: Total Delete Requests
+      - name: Total Get Requests
+      - name: Total Head Requests
+      - name: Total Options Requests
+      - name: Total Post Requests
+      - name: Total Put Requests
+      - name: Total Trace Requests
+      instances:
+      - _Total
+      object: Web Service
   windowsperfcounters/default__pipeline_mssql:
     collection_interval: 60s
     perfcounters:
@@ -515,12 +549,13 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/default__pipeline_iis_0
-      - metricstransform/default__pipeline_iis_1
-      - filter/default__pipeline_iis_2
+      - metricstransform/default__pipeline_iis_0
+      - casttosum/default__pipeline_iis_1
+      - normalizesums/default__pipeline_iis_2
+      - filter/default__pipeline_iis_3
       - resourcedetection/_global_0
       receivers:
-      - iis/default__pipeline_iis
+      - windowsperfcounters/default__pipeline_iis
     metrics/default__pipeline_mssql:
       exporters:
       - googlecloud
@@ -539,15 +574,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/iispipeline_iis:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/iispipeline_iis_0
-      - metricstransform/iispipeline_iis_1
-      - resourcedetection/_global_0
-      receivers:
-      - iis/iispipeline_iis
     metrics/otel:
       exporters:
       - googlecloud

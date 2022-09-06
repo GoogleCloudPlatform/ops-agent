@@ -419,15 +419,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/mssql__v2_mssql__v2_0:
-    transforms:
-    - action: update
-      include: sqlserver.transaction_log.usage
-      new_name: sqlserver.transaction_log.percent_used
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -475,14 +466,9 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/default__pipeline_iis_2: {}
-  normalizesums/mssql__v2_mssql__v2_2: {}
   resourcedetection/_global_0:
     detectors:
     - gce
-  transform/mssql__v2_mssql__v2_1:
-    metrics:
-      queries:
-      - set(attributes["database"], resource.attributes["sqlserver.database.name"])
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
@@ -514,8 +500,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  sqlserver/mssql__v2_mssql__v2:
-    collection_interval: 60s
   windowsperfcounters/default__pipeline_iis:
     collection_interval: 60s
     perfcounters:
@@ -590,16 +574,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/mssql__v2_mssql__v2:
-      exporters:
-      - googlecloud
-      processors:
-      - metricstransform/mssql__v2_mssql__v2_0
-      - transform/mssql__v2_mssql__v2_1
-      - normalizesums/mssql__v2_mssql__v2_2
-      - resourcedetection/_global_0
-      receivers:
-      - sqlserver/mssql__v2_mssql__v2
     metrics/otel:
       exporters:
       - googlecloud

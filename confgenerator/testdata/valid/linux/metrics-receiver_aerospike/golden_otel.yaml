@@ -45,12 +45,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/aerospike_aerospike_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -413,23 +407,10 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/aerospike_aerospike_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
-  transform/aerospike_aerospike_2:
-    metrics:
-      queries:
-      - set(attributes["node_name"], resource.attributes["aerospike.node.name"])
-      - set(attributes["namespace_name"], resource.attributes["aerospike.namespace"])
 receivers:
-  aerospike/aerospike_aerospike:
-    collect_cluster_metrics: false
-    collection_interval: 1m0s
-    endpoint: localhost:3000
-    password: ""
-    timeout: 20s
-    username: ""
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -462,16 +443,6 @@ receivers:
           - 0.0.0.0:20201
 service:
   pipelines:
-    metrics/aerospike_aerospike:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/aerospike_aerospike_0
-      - metricstransform/aerospike_aerospike_1
-      - transform/aerospike_aerospike_2
-      - resourcedetection/_global_0
-      receivers:
-      - aerospike/aerospike_aerospike
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
