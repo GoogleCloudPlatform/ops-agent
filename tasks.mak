@@ -42,9 +42,6 @@ yaml_lint:
 test:
 	go test ./...
 
-test_precommit_update:
-	update_golden
-
 test_confgenerator:
 	go test ./confgenerator
 
