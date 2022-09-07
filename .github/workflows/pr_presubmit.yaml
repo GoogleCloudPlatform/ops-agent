@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 on: [pull_request]
 name: PR_Presubmit
 jobs:
@@ -18,6 +32,7 @@ jobs:
       with:
         ref: ${{ github.base_ref }}
         path: base_checkout
-      # `github.event.pull_request.labels.*.name` gives us the names of all labels for the PR
-    - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels=${{ join(github.event.pull_request.labels.*.name, ' ') }} -base-dir="base_checkout" -tags=ci
-
+      # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
+    - run: echo "::set-output name=labels::$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})"
+      id: get_labels
+    - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels="${{ steps.get_labels.outputs.labels }}" -base-dir="base_checkout" -tags=ci

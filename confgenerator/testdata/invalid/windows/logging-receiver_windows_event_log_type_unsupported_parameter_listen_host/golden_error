@@ -1,9 +1,9 @@
-[6:7] unknown field "listen_host"
-   3 |     receiver_1:
-   4 |       type: windows_event_log
-   5 |       channels: [System,Application,Security]
->  6 |       listen_host: 1.1.1.1
+[20:7] unknown field "listen_host"
+  17 |     receiver_1:
+  18 |       type: windows_event_log
+  19 |       channels: [System,Application,Security]
+> 20 |       listen_host: 1.1.1.1
              ^
-   7 |   service:
-   8 |     pipelines:
-   9 |       default_pipeline:
+  21 |   service:
+  22 |     pipelines:
+  23 |       default_pipeline:

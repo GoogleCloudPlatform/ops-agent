@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/iis"
 app_url: "https://www.iis.net/"
 short_name: IIS
@@ -16,171 +30,169 @@ minimum_supported_agent_version:
 supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
-# v1 metrics
-- type: agent.googleapis.com/iis/current_connections
-  value_type: DOUBLE
-  kind: GAUGE
-  monitored_resource: gce_instance
-- type: agent.googleapis.com/iis/network/transferred_bytes_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    direction: .*
-- type: agent.googleapis.com/iis/new_connection_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-- type: agent.googleapis.com/iis/request_count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    http_method: .*
-  representative: true
-
-# v2 metrics
-- type: workload.googleapis.com/iis.request.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    request: .*
-  # representative: true
-- type: workload.googleapis.com/iis.request.rejected
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.request.queue.count
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.request.queue.age.max
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  optional: true
-- type: workload.googleapis.com/iis.network.file.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    direction: .*
-- type: workload.googleapis.com/iis.network.blocked
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.network.io
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    direction: .*
-- type: workload.googleapis.com/iis.connection.attempt.count
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.connection.active
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.connection.anonymous
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.thread.active
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-- type: workload.googleapis.com/iis.uptime
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-
+  # v1 metrics
+  - type: agent.googleapis.com/iis/current_connections
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: agent.googleapis.com/iis/network/transferred_bytes_count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      direction: .*
+  - type: agent.googleapis.com/iis/new_connection_count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: agent.googleapis.com/iis/request_count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      http_method: .*
+    representative: true
+  # v2 metrics
+  - type: workload.googleapis.com/iis.request.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      request: .*
+      # representative: true
+  - type: workload.googleapis.com/iis.request.rejected
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.request.queue.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.request.queue.age.max
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    optional: true
+  - type: workload.googleapis.com/iis.network.file.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      direction: .*
+  - type: workload.googleapis.com/iis.network.blocked
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.network.io
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      direction: .*
+  - type: workload.googleapis.com/iis.connection.attempt.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.connection.active
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.connection.anonymous
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.thread.active
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/iis.uptime
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
 expected_logs:
-- log_name: iis_access
-  fields:
-  - name: httpRequest.serverIp
-    value_regex: "::1:80"
-    type: string
-    description: "The server's IP and port that was requested"
-    optional: true
-  - name: httpRequest.remoteIp
-    value_regex: "::1"
-    type: string
-    description: "IP of the client that made the request"
-    optional: true
-  - name: httpRequest.requestUrl
-    value_regex: '/forbidden\?something=something'
-    type: string
-    description: "Request URL (typically just the path part of the URL)"
-    optional: true
-  - name: httpRequest.requestMethod
-    value_regex: GET
-    type: string
-    description: "HTTP method"
-    optional: true
-  - name: httpRequest.status
-    type: number
-    description: "HTTP status code"
-    optional: true
-  - name: httpRequest.userAgent
-    value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
-    type: string
-    description: "Contents of the `User-Agent` header"
-    optional: true
-  - name: httpRequest.referer
-    type: string
-    description: "Contents of the `Referer` header"
-    optional: true
-  - name: httpRequest.userAgent
-    type: string
-    description: ""
-    optional: true
-  - name: jsonPayload.sc_substatus
-    type: string
-    description: "The server's IP and port that was requested"
-  - name: jsonPayload.sc_win32_status
-    type: string
-    description: "The server's IP and port that was requested"
-  - name: jsonPayload.time_taken
-    type: string
-    description: "The length of time that the action took, in milliseconds"
-  - name: jsonPayload.user
-    type: string
-    description: "Authenticated username for the request"
-    optional: true
-  - name: severity
-    type: string
-    description: ''
+  - log_name: iis_access
+    fields:
+      - name: httpRequest.serverIp
+        value_regex: "::1:80"
+        type: string
+        description: "The server's IP and port that was requested"
+        optional: true
+      - name: httpRequest.remoteIp
+        value_regex: "::1"
+        type: string
+        description: "IP of the client that made the request"
+        optional: true
+      - name: httpRequest.requestUrl
+        value_regex: '/forbidden\?something=something'
+        type: string
+        description: "Request URL (typically just the path part of the URL)"
+        optional: true
+      - name: httpRequest.requestMethod
+        value_regex: GET
+        type: string
+        description: "HTTP method"
+        optional: true
+      - name: httpRequest.status
+        type: number
+        description: "HTTP status code"
+        optional: true
+      - name: httpRequest.userAgent
+        value_regex: 'Mozilla\/5\.0\+\(Windows\+NT;\+Windows\+NT\+\d+\.\d+;\+en\-US\)\+WindowsPowerShell\/\d+\.\d+\.\d+\.\d+'
+        type: string
+        description: "Contents of the `User-Agent` header"
+        optional: true
+      - name: httpRequest.referer
+        type: string
+        description: "Contents of the `Referer` header"
+        optional: true
+      - name: httpRequest.userAgent
+        type: string
+        description: ""
+        optional: true
+      - name: jsonPayload.sc_substatus
+        type: string
+        description: "The server's IP and port that was requested"
+      - name: jsonPayload.sc_win32_status
+        type: string
+        description: "The server's IP and port that was requested"
+      - name: jsonPayload.time_taken
+        type: string
+        description: "The length of time that the action took, in milliseconds"
+      - name: jsonPayload.user
+        type: string
+        description: "Authenticated username for the request"
+        optional: true
+      - name: severity
+        type: string
+        description: ''
 configuration_options:
   logs:
-  - type: iis_access
-    fields:
-    - name: type
-      default: null
-      description: This value must be iis_access.
-    - name: include_paths
-      default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
-      description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: iis_access
+      fields:
+        - name: type
+          default: null
+          description: This value must be iis_access.
+        - name: include_paths
+          default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
+        - name: exclude_paths
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
-  - type: iis
-    fields:
-    - name: type
-      default: null
-      description: This value must be iis.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
-    - name: receiver_version
-      default: null
-      description: Establishes the version of the metric collection implementation.
+    - type: iis
+      fields:
+        - name: type
+          default: null
+          description: This value must be iis.
+        - name: collection_interval
+          default: 60s
+          description: A time.Duration value, such as 30s or 5m.
+        - name: receiver_version
+          default: null
+          description: Establishes the version of the metric collection implementation.
