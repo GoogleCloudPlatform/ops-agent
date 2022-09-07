@@ -23,18 +23,11 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
 
   sudo service postgresql restart
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
-  # NOTE - This should be reverted to a simple addrepo once https://download.postgresql.org/pub/repos/zypp/14/suse/ contains a repository for 15.4
-  curl https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo -o pg14.repo
-  sed -i 's/\$releasever/15.3/g' pg14.repo
-  sudo zypper addrepo pg14.repo
-
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
 
-  sudo systemctl enable postgresql-14
-
-  sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
-  sudo service postgresql-14 restart
+  sudo systemctl enable postgresql
+  sudo service postgresql restart
 
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
   sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
