@@ -24,6 +24,7 @@ require (
 	google.golang.org/grpc v1.40.1
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.2.3
+	gotest.tools/v3 v3.3.0
 )
 
 require (

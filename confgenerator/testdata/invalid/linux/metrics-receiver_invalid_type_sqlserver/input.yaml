@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-logging:
+metrics:
   receivers:
-    elasticsearch_json:
-      type: elasticsearch_json
-    elasticsearch_gc:
-      type: elasticsearch_gc
+    sqlserver:
+      type: sqlserver
   service:
     pipelines:
-      elasticsearch:
+      mssql:
         receivers:
-          - elasticsearch_json
-          - elasticsearch_gc
+          - sqlserver
