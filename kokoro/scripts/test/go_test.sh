@@ -81,8 +81,10 @@ sudo rm -rf /usr/local/go
 # GOPATH is semi-deprecated nowadays too.
 unset GOPATH
 
+GO_VERSION="1.19"
+
 # Download and install a newer version of go.
-wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go1.17.linux-amd64.tar.gz | \
+wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin
@@ -101,7 +103,7 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   # Make a module containing the latest dependencies from GitHub.
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
-  go mod tidy -compat=1.17
+  go mod tidy -compat=${GO_VERSION}
 else
   cd integration_test
 fi
