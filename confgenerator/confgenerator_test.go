@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,36 +15,25 @@
 package confgenerator_test
 
 import (
-	"flag"
-	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/shirou/gopsutil/host"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 )
 
 const (
-	// Relative paths to the confgenerator folder.
-	validTestdataDir   = "testdata/valid"
-	invalidTestdataDir = "testdata/invalid"
-	// Test name inside the confgenerator/testdata/valid/{linux|windows} folders.
-	builtInConfTestName = "all-built_in_config"
-)
-
-var (
-	// Usage:
-	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden
-	// Add "-v" to show details for which files are updated with what:
-	//   ops-agent$ go test -mod=mod github.com/GoogleCloudPlatform/ops-agent/confgenerator -update_golden -v
-	updateGolden = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-	goldenPrefix = "golden_"
+	validTestdataDirName   = "valid"
+	invalidTestdataDirName = "invalid"
+	builtinTestdataDirName = "builtin"
+	inputFileName          = "input.yaml"
+	builtinConfigFileName  = "builtin_conf.yaml"
 )
 
 type platformConfig struct {
@@ -53,179 +42,226 @@ type platformConfig struct {
 	*host.InfoStat
 }
 
-var platforms = []platformConfig{
-	{
-		defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
-		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-		InfoStat: &host.InfoStat{
-			OS:              "linux",
-			Platform:        "linux_platform",
-			PlatformVersion: "linux_platform_version",
+var (
+	platforms = []platformConfig{
+		{
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+			InfoStat: &host.InfoStat{
+				OS:              "linux",
+				Platform:        "linux_platform",
+				PlatformVersion: "linux_platform_version",
+			},
 		},
-	},
-	{
-		defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
-		defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-		InfoStat: &host.InfoStat{
-			OS:              "windows",
-			Platform:        "win_platform",
-			PlatformVersion: "win_platform_version",
+		{
+			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
+			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
+			InfoStat: &host.InfoStat{
+				OS:              "windows",
+				Platform:        "win_platform",
+				PlatformVersion: "win_platform_version",
+			},
 		},
-	},
-}
+	}
 
-func TestGenerateConfsWithValidInput(t *testing.T) {
-	testGenerateConfs(t, validTestdataDir)
-}
+	flbConfigGolden = "golden_" + fluentbit.MainConfigFileName
+	flbParserGolden = "golden_" + fluentbit.ParserConfigFileName
+	otelYamlGolden  = "golden_otel.yaml"
+	errorGolden     = "golden_error"
+)
 
-func TestGenerateConfsWithInvalidInput(t *testing.T) {
-	testGenerateConfs(t, invalidTestdataDir)
-}
-
-func testGenerateConfs(t *testing.T, dir string) {
+func TestGoldens(t *testing.T) {
 	t.Parallel()
+
 	for _, platform := range platforms {
-		platform := platform
 		t.Run(platform.OS, func(t *testing.T) {
-			t.Parallel()
-			testGenerateConfsPlatform(t, dir, platform)
+			testPlatformGenerateConfTests(t, platform)
 		})
 	}
 }
 
-func testGenerateConfsPlatform(t *testing.T, dir string, platform platformConfig) {
-	dirPath := filepath.Join(dir, platform.OS)
-	dirs, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, d := range dirs {
-		testName := d.Name()
+func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
+	t.Parallel()
+
+	t.Run("builtin", func(t *testing.T) {
+		t.Parallel()
+
+		testDir := filepath.Join(builtinTestdataDirName, platform.OS)
+		builtinConfBytes, _, err := confgenerator.MergeConfFiles(
+			filepath.Join("testdata", testDir, inputFileName),
+			platform.OS,
+			apps.BuiltInConfStructs,
+		)
+		assert.NilError(t, err)
+		golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
+		err = testGenerateConf(t, platform, testDir)
+		assert.NilError(t, err)
+	})
+
+	t.Run("valid", func(t *testing.T) {
+		t.Parallel()
+
+		runTestsInDir(
+			t,
+			platform,
+			validTestdataDirName,
+			func(t *testing.T, err error, _ string) {
+				assert.NilError(t, err)
+			},
+		)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Parallel()
+
+		runTestsInDir(
+			t,
+			platform,
+			invalidTestdataDirName,
+			func(t *testing.T, err error, testDir string) {
+				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
+				goldenErrorPath := filepath.Join(testDir, errorGolden)
+				golden.Assert(t, err.Error(), goldenErrorPath)
+			},
+		)
+	})
+}
+
+func runTestsInDir(
+	t *testing.T,
+	platform platformConfig,
+	testTypeDir string,
+	errAssertion func(*testing.T, error, string),
+) {
+	platformTestDir := filepath.Join(testTypeDir, platform.OS)
+	testNames := getTestsInDir(t, platformTestDir)
+
+	for _, testName := range testNames {
+		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
+		testName := testName
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			// Retrieve the expected golden conf files.
-			expectedFiles := readFileContents(t, testName, platform.OS, dir)
-
-			confDebugFolder := filepath.Join(dirPath, testName)
-			userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
-
-			// Generate the actual conf files.
-			got, err := generateConfigs(testName, userSpecifiedConfPath, apps.BuiltInConfStructs, platform)
-			if err != nil {
-				t.Logf("config generation returned %v", err)
-			}
-
-			// Compare the expected and actual and error out in case of diff.
-			for name, content := range got {
-				updateOrCompareGolden(t, testName, platform.OS, dir, name, content, expectedFiles[name])
-				delete(expectedFiles, name)
-			}
-
-			for f := range expectedFiles {
-				if *updateGolden {
-					t.Logf("Detected -update_golden flag. Removing obsolete golden file %q.", f)
-					if err := os.Remove(fmt.Sprintf("%s/%s/%s/%s%s", dir, platform.OS, testName, goldenPrefix, f)); err != nil {
-						t.Error(err)
-					}
-				} else {
-					t.Errorf("missing expected file %q", f)
-				}
-			}
+			testDir := filepath.Join(platformTestDir, testName)
+			err := testGenerateConf(t, platform, testDir)
+			errAssertion(t, err, testDir)
 		})
 	}
 }
 
-// readFileContents reads the expected config files for testName on goos in dir.
-// The returned map is the set of expected files and their contents.
-func readFileContents(t *testing.T, testName, goos, dir string) map[string]string {
+func getTestsInDir(t *testing.T, testDir string) []string {
 	t.Helper()
-	glob := fmt.Sprintf("%s/%s/%s/%s*", dir, goos, testName, goldenPrefix)
-	matches, err := filepath.Glob(glob)
-	if err != nil {
-		// No configs found, let the caller worry about it.
-		return nil
-	}
-	out := make(map[string]string)
-	for _, name := range matches {
-		contents, err := ioutil.ReadFile(name)
-		if err != nil {
-			t.Errorf("failed to read %q: %v", name, err)
+
+	testdataDir := filepath.Join("testdata", testDir)
+	testDirEntries, err := os.ReadDir(testdataDir)
+	assert.NilError(t, err, "couldn't read directory %s: %v", testdataDir, err)
+	testNames := []string{}
+	for _, testDirEntry := range testDirEntries {
+		if !testDirEntry.IsDir() {
 			continue
 		}
-		str := strings.ReplaceAll(string(contents), "\r\n", "\n")
-		out[strings.TrimPrefix(filepath.Base(name), goldenPrefix)] = str
+		testNames = append(testNames, testDirEntry.Name())
 	}
-	return out
+	return testNames
 }
 
-func updateOrCompareGolden(t *testing.T, testName, goos, dir, name, got, want string) {
-	t.Helper()
-	goldenPath := fmt.Sprintf("%s/%s/%s/%s%s", dir, goos, testName, goldenPrefix, name)
-	diff := cmp.Diff(
-		want, got,
-		// Diff each line separately for readability.
-		cmpopts.AcyclicTransformer("multiline", func(s string) []string {
-			return strings.Split(s, "\n")
-		}),
+func testGenerateConf(t *testing.T, platform platformConfig, testDir string) error {
+	// Merge Config
+	_, confBytes, err := confgenerator.MergeConfFiles(
+		filepath.Join("testdata", testDir, inputFileName),
+		platform.OS,
+		apps.BuiltInConfStructs,
 	)
-	if *updateGolden {
-		// If there is a diff, or if the actual is empty (it may be due to the file
-		// not existing), write the golden file with the expected content.
-		if diff != "" || got == "" {
-			// Update the expected to match the actual.
-			t.Logf("Detected -update_golden flag. Rewriting the %q golden file to apply the following diff\n%s.", goldenPath, diff)
-			if err := ioutil.WriteFile(goldenPath, []byte(got), 0644); err != nil {
-				t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
-			}
-		}
-	} else if diff != "" {
-		t.Errorf("test %q: golden file at %s mismatch (-want +got):\n%s", testName, goldenPath, diff)
+	if err != nil {
+		return err
 	}
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
+	if err != nil {
+		return err
+	}
+
+	// Fluent Bit configs
+	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
+		platform.defaultLogsDir,
+		platform.defaultStateDir,
+		platform.InfoStat,
+	)
+	if err != nil {
+		return err
+	}
+	golden.Assert(
+		t,
+		flbGeneratedConfigs[fluentbit.MainConfigFileName],
+		filepath.Join(testDir, flbConfigGolden),
+	)
+	golden.Assert(
+		t,
+		flbGeneratedConfigs[fluentbit.ParserConfigFileName],
+		filepath.Join(testDir, flbParserGolden),
+	)
+	err = testGeneratedLuaFiles(t, flbGeneratedConfigs, testDir)
+	if err != nil {
+		// This error shouldn't result in a golden_error.
+		// An error here represents a failure to read something
+		// in the filesystem, and is an error state for the test.
+		t.Errorf("Testing generated lua files failed: %v", err)
+	}
+
+	// Otel configs
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
+	if err != nil {
+		return err
+	}
+	golden.Assert(
+		t,
+		otelGeneratedConfig,
+		filepath.Join(testDir, otelYamlGolden),
+	)
+
+	return nil
 }
 
-// Generate all config files for a given config file input.
-// If an error occurs, it will be reported as a file called "error".
-// The expected error could be triggered by:
-// 1. Parsing phase of the agent config when the config is not YAML.
-// 2. Config generation phase when the config is invalid.
-// If at any point, an error is generated, immediately return it for validation.
-func generateConfigs(testName, userSpecifiedConfPath string, builtInConfStructs map[string]*confgenerator.UnifiedConfig, platform platformConfig) (got map[string]string, err error) {
-	got = make(map[string]string)
-	builtInConfBytes, mergedConfBytes, err := confgenerator.MergeConfFiles(userSpecifiedConfPath, platform.OS, apps.BuiltInConfStructs)
+func testGeneratedLuaFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
+	// Find all lua files currently in this test directory
+	existingLuaFiles := map[string]struct{}{}
+	err := filepath.Walk(
+		filepath.Join("testdata", testDir),
+		func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(info.Name()) == ".lua" {
+				existingLuaFiles[info.Name()] = struct{}{}
+			}
+			return nil
+		},
+	)
 	if err != nil {
-		got["error"] = err.Error()
-		return
+		return err
 	}
 
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfBytes, platform.OS)
-	if err != nil {
-		got["error"] = err.Error()
-		return
+	// Assert the goldens of all the generated files. Either the generated file
+	// matches a file already present in the directory, or the lua file is new.
+	// If the lua file is new, the test will fail if not currently doing a golden
+	// update (`-update` flag).
+	for file, content := range generatedFiles {
+		if filepath.Ext(file) != ".lua" {
+			continue
+		}
+		golden.Assert(t, content, filepath.Join(testDir, file))
+		delete(existingLuaFiles, file)
 	}
 
-	fbConfs, err := uc.GenerateFluentBitConfigs(platform.defaultLogsDir, platform.defaultStateDir, platform.InfoStat)
-	if err != nil {
-		got["error"] = err.Error()
-		return
-	}
-	for k, v := range fbConfs {
-		got[k] = v
-	}
-
-	otelConf, err := uc.GenerateOtelConfig(platform.InfoStat)
-	if err != nil {
-		got["error"] = err.Error()
-		return
-	} else {
-		got["otel.conf"] = otelConf
+	// If there are any files left in the existing file map, then that means the
+	// test generated new files and we're currently in an update run. We now need
+	// to clean up the existing lua files left aren't being generated anymore.
+	for file := range existingLuaFiles {
+		err := os.Remove(filepath.Join("testdata", testDir, file))
+		if err != nil {
+			return err
+		}
 	}
 
-	// Test that the built-in config file is as expected.
-	if testName == builtInConfTestName {
-		got["built-in-config.yaml"] = string(builtInConfBytes)
-	}
-
-	return
+	return nil
 }
 
 func TestMain(m *testing.M) {

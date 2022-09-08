@@ -42,14 +42,11 @@ yaml_lint:
 test:
 	go test ./...
 
-test_precommit_update:
-	update_golden
-
 test_confgenerator:
 	go test ./confgenerator
 
 test_confgenerator_update:
-	go test ./confgenerator -update_golden
+	go test ./confgenerator -update
 
 test_metadata:
 	go test ./integration_test/metadata

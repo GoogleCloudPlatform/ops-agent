@@ -30,6 +30,7 @@ jobs:
         go install github.com/mattn/goveralls@latest
     - run: |
         git config --global core.symlinks true
+        git config --global core.autocrlf false
     - uses: actions/checkout@v2
       with:
         submodules: true
