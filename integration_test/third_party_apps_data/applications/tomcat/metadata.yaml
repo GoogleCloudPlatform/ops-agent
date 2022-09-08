@@ -154,6 +154,7 @@ expected_logs:
       - name: jsonPayload.user
         type: string
         optional: true
+        description: Authenticated username for the request
       - name: severity
         type: string
         description: ''
