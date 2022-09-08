@@ -12,24 +12,31 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo service postgresql restart
 
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
+  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
+
   sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
   sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
 
   sudo service postgresql restart
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
-  # NOTE - This should be reverted to a simple addrepo once https://download.postgresql.org/pub/repos/zypp/14/suse/ contains a repository for 15.4
-  curl https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo -o pg14.repo
-  sed -i 's/\$releasever/15.3/g' pg14.repo
-  sudo zypper addrepo pg14.repo
-
   sudo zypper --non-interactive --no-gpg-checks ref
-  sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
+  sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14
 
-  sudo systemctl enable postgresql-14
-
-  sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
-  sudo service postgresql-14 restart
+  sudo systemctl enable postgresql
+  sudo service postgresql restart
 
   sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
-fi
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
+  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
+  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
 
+  sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
+  sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
+  sudo service postgresql restart
+fi
