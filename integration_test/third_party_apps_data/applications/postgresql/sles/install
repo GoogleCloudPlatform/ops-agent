@@ -13,8 +13,6 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
 fi
 
 sudo systemctl enable postgresql
-sudo service postgresql restart
-
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 
 cat <<EOF | sudo tee /var/lib/pgsql/data/pg_hba.conf >/dev/null
