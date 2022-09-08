@@ -5,38 +5,19 @@ SUSE_VERSION="${VERSION_ID%%.*}"
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-12-pg14.repo
-
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server=14.1-3.3.1 postgresql14-contrib=14.1-3.3.1 postgresql14-libs=14.1-1PGDG.sles12 postgresql14=14.1-3.3.1
-
-  sudo service postgresql restart
-
-  sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
-  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
-  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
-  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
-  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
-  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
-
-  sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
-  sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
-
-  sudo service postgresql restart
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14
-
-  sudo systemctl enable postgresql
-  sudo service postgresql restart
-
-  sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
-  sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
-  sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
-  sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
-  sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
-  sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
-
-  sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
-  sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
-  sudo service postgresql restart
 fi
+
+sudo systemctl enable postgresql
+sudo service postgresql restart
+
+sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+
+sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
+sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
+
+sudo service postgresql restart
