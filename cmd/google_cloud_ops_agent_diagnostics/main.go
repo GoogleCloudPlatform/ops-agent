@@ -16,7 +16,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -40,24 +39,17 @@ func main() {
 }
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*config, "linux", apps.BuiltInConfStructs)
+	_, mergedConfig, err := confgenerator.MergeConfFiles(*config, "linux", apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
-
-	// Log the built-in and merged config files to STDOUT. These are then written
-	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
-	// running.
-	log.Printf("Built-in config:\n%s", builtInConfig)
-	log.Printf("Merged config:\n%s", mergedConfig)
-
 	hostInfo, err := host.Info()
 	if err != nil {
 		return err
 	}
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
+	uc, err := confgenerator.UnmarshalYamlToUnifiedConfig(mergedConfig, hostInfo.OS)
 	if err != nil {
-		return fmt.Errorf("The agent config file is not valid. Detailed error: %s", err)
+		return err
 	}
 
 	death := make(chan bool)
