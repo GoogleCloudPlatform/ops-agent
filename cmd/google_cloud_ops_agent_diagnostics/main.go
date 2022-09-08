@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
+	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 }
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*config, "linux", apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
