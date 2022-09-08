@@ -1,0 +1,105 @@
+name: hostmetricsreceiver/process
+
+sem_conv_version: 1.9.0
+
+resource_attributes:
+  process.pid:
+    description: Process identifier (PID).
+    type: int
+  process.executable.name:
+    description: >-
+      The name of the process executable. On Linux based systems, can be set to the
+      Name in proc/[pid]/status. On Windows, can be set to the base name of
+      GetProcessImageFileNameW.
+    type: string
+  process.executable.path:
+    description: >-
+      The full path to the process executable. On Linux based systems, can be set to
+      the target of proc/[pid]/exe. On Windows, can be set to the result of
+      GetProcessImageFileNameW.
+    type: string
+  process.command:
+    description: >-
+      The command used to launch the process (i.e. the command name). On Linux based
+      systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can
+      be set to the first parameter extracted from GetCommandLineW.
+    type: string
+  process.command_line:
+    description: >-
+      The full command used to launch the process as a single string representing the
+      full command. On Windows, can be set to the result of GetCommandLineW. Do not
+      set this if you have to assemble it just for monitoring; use
+      process.command_args instead.
+    type: string
+  process.owner:
+    description: The username of the user that owns the process.
+    type: string
+
+attributes:
+  direction:
+    description: Direction of flow of bytes (read or write).
+    enum: [read, write]
+
+  state:
+    description: Breakdown of CPU usage by type.
+    enum: [system, user, wait]
+
+metrics:
+  process.cpu.time:
+    enabled: true
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    sum:
+      value_type: double
+      aggregation: cumulative
+      monotonic: true
+    attributes: [state]
+
+  process.memory.physical_usage:
+    enabled: true
+    description: The amount of physical memory in use.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual_usage:
+    enabled: true
+    description: Virtual memory size.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
+  process.disk.io:
+    enabled: true
+    description: Disk bytes transferred.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [direction]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  process.disk.io.read:
+    enabled: true
+    description: Disk bytes read.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  process.disk.io.write:
+    enabled: true
+    description: Disk bytes written.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true

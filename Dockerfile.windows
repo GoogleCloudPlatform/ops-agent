@@ -142,9 +142,13 @@ RUN ./gradlew --no-daemon :jmx-metrics:build; `
 ###############################################################################
 
 COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
+COPY internal/opentelemetry-collector-contrib /work/internal/opentelemetry-collector-contrib
 
 WORKDIR /work/submodules/opentelemetry-operations-collector
 
+# Vendor the hostmetrics receiver.
+RUN Add-Content -Path go.mod -Value 'replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../internal/opentelemetry-collector-contrib/receiver/hostmetricsreceiver'; `
+    go mod tidy -compat='1.17';
 RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
     go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
     -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `

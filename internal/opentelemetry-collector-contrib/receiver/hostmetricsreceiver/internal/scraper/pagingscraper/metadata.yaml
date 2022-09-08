@@ -1,0 +1,81 @@
+name: hostmetricsreceiver/paging
+
+sem_conv_version: 1.9.0
+
+attributes:
+  device:
+    description: Name of the page file.
+
+  direction:
+    description: Page In or Page Out.
+    enum: [page_in, page_out]
+
+  state:
+    description: Breakdown of paging usage by type.
+    enum: [cached, free, used]
+
+  type:
+    description: Type of fault.
+    enum: [major, minor]
+
+metrics:
+  system.paging.usage:
+    enabled: true
+    description: Swap (unix) or pagefile (windows) usage.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [device, state]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
+  system.paging.operations:
+    enabled: true
+    description: The number of paging operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [direction, type]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.paging.operations.page_in:
+    enabled: true
+    description: The number of page_in operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
+
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.paging.operations.page_out:
+    enabled: true
+    description: The number of page_out operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
+
+  system.paging.faults:
+    enabled: true
+    description: The number of page faults.
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
+
+  system.paging.utilization:
+    enabled: false
+    description: Swap (unix) or pagefile (windows) utilization.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [device, state]
