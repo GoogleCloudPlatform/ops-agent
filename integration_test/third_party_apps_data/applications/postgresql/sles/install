@@ -24,7 +24,7 @@ if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo service postgresql restart
 elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper --non-interactive --no-gpg-checks ref
-  sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14-libs postgresql14
+  sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14
 
   sudo systemctl enable postgresql
   sudo service postgresql restart
