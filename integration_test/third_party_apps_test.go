@@ -103,38 +103,6 @@ func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm
 	return nil
 }
 
-// rejectDuplicates looks for duplicate entries in the input slice and returns
-// an error if any is found.
-func rejectDuplicates(apps []string) error {
-	seen := make(map[string]bool)
-	for _, app := range apps {
-		if seen[app] {
-			return fmt.Errorf("application %q appears multiple times in supported_applications.txt", app)
-		}
-		seen[app] = true
-	}
-	return nil
-}
-
-// appsToTest reads which applications to test for the given agent+platform
-// combination from the appropriate supported_applications.txt file.
-func appsToTest(platform string) ([]string, error) {
-	contents, err := readFileFromScriptsDir(
-		path.Join("agent", gce.PlatformKind(platform), "supported_applications.txt"))
-	if err != nil {
-		return nil, fmt.Errorf("could not read supported_applications.txt: %v", err)
-	}
-
-	apps := strings.Split(strings.TrimSpace(string(contents)), "\n")
-	if err = rejectDuplicates(apps); err != nil {
-		return nil, err
-	}
-	if gce.IsWindows(platform) && !strings.HasPrefix(platform, "sql-") {
-		apps = removeFromSlice(apps, "mssql")
-	}
-	return apps, nil
-}
-
 const (
 	retryable    = true
 	nonRetryable = false
@@ -651,19 +619,16 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	}
 	for _, file := range files {
 		app := file.Name()
-		var metadata metadata.IntegrationMetadata
+		var integrationMetadata metadata.IntegrationMetadata
 		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
-			t.Fatalf("could not read applications/%v/metadata.yaml: %v", app, err)
+			t.Fatal(err)
 		}
-		err = yaml.UnmarshalStrict(testCaseBytes, &metadata)
+		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
 		if err != nil {
-			t.Fatalf("could not unmarshal contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		if err = validate.Struct(&metadata); err != nil {
 			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 		}
-		allApps[app] = metadata
+		allApps[app] = integrationMetadata
 	}
 	log.Printf("found %v apps", len(allApps))
 	if len(allApps) == 0 {

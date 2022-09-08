@@ -852,7 +852,6 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImages = map[string]string{
-		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
 		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
@@ -1502,9 +1501,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
-		// "sudo" is needed for debian-9, which doesn't have dbus, so systemctl
-		// needs to talk directly to systemd.
-		output, err := RunRemotely(ctx, logger, vm, "", "sudo systemctl is-system-running")
+		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
 		// https://www.freedesktop.org/software/systemd/man/systemctl.html#is-system-running

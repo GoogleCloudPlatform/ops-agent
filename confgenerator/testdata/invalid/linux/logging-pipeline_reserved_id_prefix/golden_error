@@ -1,7 +1,7 @@
-[10:21] "Pipelines[lib:pipeline_1]" must not start with "lib:"
-   7 |       - /var/log/syslog
-   8 |   service:
-   9 |     pipelines:
-> 10 |       lib:pipeline_1:
+[24:21] "Pipelines[lib:pipeline_1]" must not start with "lib:"
+  21 |       - /var/log/syslog
+  22 |   service:
+  23 |     pipelines:
+> 24 |       lib:pipeline_1:
                            ^
-  11 |         receivers: [syslog]
+  25 |         receivers: [syslog]
