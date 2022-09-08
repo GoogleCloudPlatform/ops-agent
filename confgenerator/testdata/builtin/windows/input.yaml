@@ -12,15 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-logging:
-  receivers:
-    elasticsearch_json:
-      type: elasticsearch_json
-    elasticsearch_gc:
-      type: elasticsearch_gc
-  service:
-    pipelines:
-      elasticsearch:
-        receivers:
-          - elasticsearch_json
-          - elasticsearch_gc
