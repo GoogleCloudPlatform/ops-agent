@@ -1,8 +1,7 @@
-
 set -e
 
-sudo su postgres -c "psql postgres -c \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
-sudo su postgres -c "psql postgres -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
-sudo su postgres -c "psql postgres -c \"CREATE INDEX otelindex ON test1(id);\""
-sudo su postgres -c "psql postgres -c \"CREATE INDEX otel2index ON test2(id);\""
-sudo su postgres -c "psql postgres -c \"INSERT INTO test2 (id) VALUES(67);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c  \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE INDEX otelindex ON test1(id);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE INDEX otel2index ON test2(id);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"INSERT INTO test2 (id) VALUES(67);\""
