@@ -36,6 +36,13 @@ yaml_lint:
 	yamlfmt -lint
 
 ############
+# Dependencies
+############
+
+update_dependencies:
+	go get -t -u ./...
+
+############
 # Unit Tests
 ############
 
