@@ -13,9 +13,8 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
 fi
 
 sudo systemctl enable postgresql
-sudo service postgresql start
+sudo service postgresql restart
 
-# have to modify user on startup
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 
 sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
