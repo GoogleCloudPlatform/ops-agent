@@ -195,6 +195,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
 	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "", "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("netstat.txt"), vm, "", "netstat -aon")
 
 	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "", "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 

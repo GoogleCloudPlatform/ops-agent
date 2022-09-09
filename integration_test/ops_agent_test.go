@@ -335,56 +335,88 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
-func TestCustomLogFile(t *testing.T) {
+func TestXYZStopStart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		for i := 0; i < 40; i += 1 {
+		for i := 0; i < 20; i += 1 {
 			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
 				t.Parallel()
 				ctx, logger, vm := agents.CommonSetup(t, platform)
-				logPath := logPathForPlatform(vm.Platform)
-				config := fmt.Sprintf(`logging:
-  receivers:
-    mylog_source:
-      type: files
-      include_paths:
-      - %s
-  exporters:
-    google:
-      type: google_cloud_logging
-  processors:
-    my_exclude:
-      type: exclude_logs
-      match_any:
-      - jsonPayload.missing_field = "value"
-      - jsonPayload.message =~ "test pattern"
-  service:
-    log_level: debug
-    pipelines:
-      my_pipeline:
-        receivers: [mylog_source]
-        processors: [my_exclude]
-        exporters: [google]
-`, logPath)
+				setupErr := setupOpsAgent(ctx, logger, vm, "")
 
-				if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
-					t.Fatal(err)
+				if setupErr != nil {
+					t.Fatalf("setup failed: setupErr=%v", setupErr)
 				}
 
-				if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
-					t.Fatalf("error writing dummy log line: %v", err)
+				dumpFilesCreated := func() string {
+					out, _ := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Get-ChildItem -Path C:\Users\windows_user\*.txt`)
+					gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Remove-Item C:\Users\windows_user\*.txt`)
+					return out.Stdout
 				}
 
-				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
-					t.Error(err)
+				for j := 0; j < 20; j += 1 {
+					_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "Stop-Service google-cloud-ops-agent -Force")
+
+					created := dumpFilesCreated()
+
+					if err != nil {
+						if strings.Contains(err.Error(), "Max retries exceeded with url: /wsman") {
+							// WinRM flakiness crops up from time to time, this is annoying but there's not much to do about it for now.
+							t.SkipNow()
+						}
+						t.Fatalf("stop failed: j=%v, err=%v, files_created=%v", j, err, created)
+					}
+
+					_, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "Start-Service google-cloud-ops-agent")
+
+					created = dumpFilesCreated()
+
+					if err != nil {
+						if strings.Contains(err.Error(), "Max retries exceeded with url: /wsman") {
+							// WinRM flakiness crops up from time to time, this is annoying but there's not much to do about it for now.
+							t.SkipNow()
+						}
+						t.Fatalf("start failed: j=%v, err=%v, files_created=%v", j, err, created)
+					}
 				}
-				time.Sleep(60 * time.Second)
-				_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-				if err == nil {
-					t.Error("expected log to be excluded but was included")
-				} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-					t.Fatalf("unexpected error: %v", err)
+			})
+		}
+	})
+}
+
+func TestXYZRestart(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		for i := 0; i < 20; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
+				ctx, logger, vm := agents.CommonSetup(t, platform)
+				setupErr := setupOpsAgent(ctx, logger, vm, "")
+
+				if setupErr != nil {
+					t.Fatalf("setup failed: setupErr=%v", setupErr)
+				}
+
+				dumpFilesCreated := func() string {
+					out, _ := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Get-ChildItem -Path C:\Users\windows_user\*.txt`)
+					gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Remove-Item C:\Users\windows_user\*.txt`)
+					return out.Stdout
+				}
+
+				for j := 0; j < 20; j += 1 {
+					_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "Restart-Service google-cloud-ops-agent -Force")
+
+					created := dumpFilesCreated()
+
+					if err != nil {
+						if strings.Contains(err.Error(), "Max retries exceeded with url: /wsman") {
+							// WinRM flakiness crops up from time to time, this is annoying but there's not much to do about it for now.
+							t.SkipNow()
+						}
+						t.Fatalf("restart failed: j=%v, err=%v, files_created=%v", j, err, created)
+					}
 				}
 			})
 		}
