@@ -107,7 +107,7 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:bionic AS bionic-build
+FROM ubuntu:bionic-20220801 AS bionic-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
