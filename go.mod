@@ -21,19 +21,19 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	go.opentelemetry.io/contrib/detectors/gcp v1.9.0
-	go.opentelemetry.io/otel v1.9.0
+	go.opentelemetry.io/otel v1.10.0
 	go.opentelemetry.io/otel/metric v0.31.0
-	go.opentelemetry.io/otel/sdk v1.9.0
+	go.opentelemetry.io/otel/sdk v1.10.0
 	go.opentelemetry.io/otel/sdk/metric v0.31.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
 	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2
 	golang.org/x/text v0.3.7
-	google.golang.org/api v0.84.0
-	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90
-	google.golang.org/grpc v1.47.0
-	google.golang.org/protobuf v1.28.0
-	gopkg.in/yaml.v2 v2.2.3
+	google.golang.org/api v0.95.0
+	google.golang.org/genproto v0.0.0-20220909194730-69f6226f97e5
+	google.golang.org/grpc v1.49.0
+	google.golang.org/protobuf v1.28.1
+	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/v3 v3.3.0
 )
 
@@ -60,7 +60,7 @@ require (
 	github.com/tklauser/numcpus v0.5.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
