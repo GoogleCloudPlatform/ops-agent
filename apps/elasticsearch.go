@@ -31,7 +31,7 @@ type MetricsReceiverElasticsearch struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:|startswith=https:"`
 
-	Username string `yaml:"username" validate:"required_with=Password"`
+	Username string `yaml:"username" validate:"required_with=Password" tracking:""`
 	Password string `yaml:"password" validate:"required_with=Username"`
 }
 
