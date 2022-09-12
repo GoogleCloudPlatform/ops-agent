@@ -17,7 +17,7 @@ Description=Google Cloud Ops Agent
 Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service
 
 [Service]
-Type=simple
+Type=notify
 # Validate the config.
 ExecStart=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 RemainAfterExit=no

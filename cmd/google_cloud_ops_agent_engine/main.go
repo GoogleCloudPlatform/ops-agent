@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/shirou/gopsutil/host"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 var (
@@ -67,6 +68,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	// Notify systemd
+	daemon.SdNotify(false, daemon.SdNotifyReady)
 
 	// Only when used as main service
 	if *service == "" {
