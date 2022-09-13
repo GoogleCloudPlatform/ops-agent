@@ -172,7 +172,7 @@ WORKDIR /work
 COPY . /work
 
 RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_ops_agent_diagnostics; `
-    Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/; `
+    Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
 
 ###############################################################################
 # Packaging
