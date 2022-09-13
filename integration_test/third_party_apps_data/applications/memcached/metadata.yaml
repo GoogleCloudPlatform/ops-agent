@@ -4,13 +4,13 @@ short_name: Memcached
 long_name: Memcached
 logo_path: /stackdriver/images/memcached.png # supplied by google technical writer
 description: |-
-  The Memcached integration primarily collects cache-usage metrics, such as the
-  number of items in a cache, the number of evictions, and the number of bytes
-  stored. It also collects general performance metrics for CPU usage and network
-  throughput.
+    The Memcached integration primarily collects cache-usage metrics, such as the
+    number of items in a cache, the number of evictions, and the number of bytes
+    stored. It also collects general performance metrics for CPU usage and network
+    throughput.
 minimum_supported_agent_version:
-  metrics: 2.8.0
-  logging: 2.15.0
+    metrics: 2.8.0
+    logging: 2.15.0
 supported_operating_systems: linux
 supported_app_version: ["1.6"]
 expected_metrics:
@@ -24,7 +24,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    command: .*
+      command: .*
 - type: workload.googleapis.com/memcached.connections.current
   value_type: INT64
   kind: GAUGE
@@ -38,7 +38,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    state: .*
+      state: .*
 - type: workload.googleapis.com/memcached.current_items
   value_type: INT64
   kind: GAUGE
@@ -52,14 +52,14 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: workload.googleapis.com/memcached.operations
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
-    type: .*
+      operation: .*
+      type: .*
 - type: workload.googleapis.com/memcached.threads
   value_type: INT64
   kind: GAUGE
@@ -72,16 +72,16 @@ expected_logs:
     type: string
     description: null
 configuration_options:
-  metrics:
-  - type: memcached
-    fields:
-    - name: type
-      default: null
-      description: memcached.
-    - name: endpoint
-      default: localhost:3306
-      description: The URL, or Unix socket file path, for your Memcached server.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    metrics:
+    - type: memcached
+      fields:
+      - name: type
+        default: null
+        description: memcached.
+      - name: endpoint
+        default: localhost:3306
+        description: The URL, or Unix socket file path, for your Memcached server.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
 

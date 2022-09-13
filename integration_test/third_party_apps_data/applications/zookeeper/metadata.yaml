@@ -4,13 +4,13 @@ short_name: ZooKeeper
 long_name: Apache ZooKeeper
 logo_path: /stackdriver/images/zookeeper.png # supplied by google technical writer
 description: |-
-  The Apache ZooKeeper integration collects traffic metrics for nodes, such as
-  latency, active requests, and active connections. The integration also collects
-  ZooKeeper logs and parses them into a JSON payload. The result includes fields
-  for node ID, source, level, and message.
+    The Apache ZooKeeper integration collects traffic metrics for nodes, such as
+    latency, active requests, and active connections. The integration also collects
+    ZooKeeper logs and parses them into a JSON payload. The result includes fields
+    for node ID, source, level, and message.
 minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.11.0
+    metrics: 2.10.0
+    logging: 2.11.0
 supported_operating_systems: linux
 supported_app_version: ["3.5", "3.6", "3.7"]
 expected_metrics:
@@ -58,7 +58,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: workload.googleapis.com/zookeeper.request.active
   value_type: INT64
   kind: GAUGE
@@ -101,34 +101,34 @@ expected_logs:
     type: string
     description: ''
 configuration_options:
-  logs:
-  - type: zookeeper_general
-    fields:
-    - name: type
-      default: null
-      description: The value must be zookeeper_general.
-    - name: include_paths
-      default: '[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/zookeeper*/*.log.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: zookeeper
-    fields:
-    - name: type
-      default: null
-      description: This value must be zookeeper.
-    - name: endpoint
-      default: localhost:2181
-      description: The URL exposed by ZooKeeper.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    logs:
+    - type: zookeeper_general
+      fields:
+      - name: type
+        default: null
+        description: The value must be zookeeper_general.
+      - name: include_paths
+        default: '[/opt/zookeeper/logs/zookeeper-*.out, /var/log/zookeeper/zookeeper.log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/zookeeper*/*.log.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: zookeeper
+      fields:
+      - name: type
+        default: null
+        description: This value must be zookeeper.
+      - name: endpoint
+        default: localhost:2181
+        description: The URL exposed by ZooKeeper.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
 

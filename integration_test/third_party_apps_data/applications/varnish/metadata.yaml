@@ -3,21 +3,21 @@ app_url: "https://varnish-cache.org/"
 long_name: Varnish HTTP Cache
 logo_path: /images/partners/varnish-logo.png # supplied by google technical writer
 description: |-
-  The Varnish integration collects cache and session metrics.
-  It monitors the number of objects entering and exiting the cache,
-  as well as the number of sessions and backend connections.
-  The integration also collects Varnish logs and parses them
-  into a standardized json payload.
+    The Varnish integration collects cache and session metrics.
+    It monitors the number of objects entering and exiting the cache,
+    as well as the number of sessions and backend connections.
+    The integration also collects Varnish logs and parses them
+    into a standardized json payload.
 supported_app_version: ["6.x", "7.0.x"]
 configure_integration: |-
-  The Varnish logging processor processes logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html){: .external}. Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/){: .external} guide depending on os. By default, logs write to /var/log/varnish/varnishncsa.log. If another file is chosen, the user will have to also update the receiver configuration. Logs are expected to be in the default format and a logrotation should be setup.
+    The Varnish logging processor processes logs using [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html){: .external}. Varnish can enable varnishncsa logging by following [this](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/){: .external} guide depending on os. By default, logs write to /var/log/varnish/varnishncsa.log. If another file is chosen, the user will have to also update the receiver configuration. Logs are expected to be in the default format and a logrotation should be setup.
 expected_metrics:
 - type: workload.googleapis.com/varnish.backend.connection.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    kind: .*
+      kind: .*
   representative: true
 - type: workload.googleapis.com/varnish.backend.request.count
   value_type: INT64
@@ -28,19 +28,19 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
+      operation: .*
 - type: workload.googleapis.com/varnish.client.request.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    state: .*
+      state: .*
 - type: workload.googleapis.com/varnish.client.request.error.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    status_code: .*
+      status_code: .*
 - type: workload.googleapis.com/varnish.object.count
   value_type: INT64
   kind: GAUGE
@@ -62,50 +62,50 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    kind: .*
+      kind: .*
 - type: workload.googleapis.com/varnish.thread.operation.count
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
+      operation: .*
 configuration_options:
-  logs:
-  - type: varnish
-    fields:
-    - name: type
-      default: null
-      description: This value must be varnish.
-    - name: include_paths
-      default: '[/var/log/varnish/varnishncsa.log]'
-      description: A varnishncsa default log path to read by tailing each file.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: varnish
-    fields:
-    - name: type
-      default: null
-      description: This value must be varnish.
-    - name: cache_dir
-      default: null
-      description: This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host.
-    - name: exec_dir
-      default: null
-      description: The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    logs:
+    - type: varnish
+      fields:
+      - name: type
+        default: null
+        description: This value must be varnish.
+      - name: include_paths
+        default: '[/var/log/varnish/varnishncsa.log]'
+        description: A varnishncsa default log path to read by tailing each file.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: varnish
+      fields:
+      - name: type
+        default: null
+        description: This value must be varnish.
+      - name: cache_dir
+        default: null
+        description: This specifies the cache dir instance name to use when collecting metrics. If not specified, this will default to the host.
+      - name: exec_dir
+        default: null
+        description: The directory where the varnishadm and varnishstat executables are located. If not provided, will default to relying on the executables being in the user's PATH.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
 minimum_supported_agent_version:
-  metrics: 2.15.0
-  logging: 2.16.0
+    metrics: 2.15.0
+    logging: 2.16.0
 supported_operating_systems: linux
 expected_logs:
 - log_name: varnish

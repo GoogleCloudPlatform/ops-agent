@@ -4,38 +4,38 @@ short_name: Apache Web Server
 long_name: Apache Web Server (httpd)
 logo_path: /stackdriver/images/apache.png # supplied by google technical writer
 description: |-
-  The Apache Web Server integration collects traffic-related metrics, such as the
-  number of open connections or incoming requests. The integration also collects
-  access and error logs. Access logs are parsed into a JSON payload focused on
-  request details, and error logs are parsed for their error code and message.
+    The Apache Web Server integration collects traffic-related metrics, such as the
+    number of open connections or incoming requests. The integration also collects
+    access and error logs. Access logs are parsed into a JSON payload focused on
+    request details, and error logs are parsed for their error code and message.
 configure_integration: |-
-  To collect telemetry from your Apache Web Server, you must configure the
-  server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
-  {: .external}.
+    To collect telemetry from your Apache Web Server, you must configure the
+    server's `httpd.conf` file to enable the
+    [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
+    {: .external}.
 
-  Many Apache installations enable this plugin by default. To see if the
-  plugin is enabled on your VM instance, run:
+    Many Apache installations enable this plugin by default. To see if the
+    plugin is enabled on your VM instance, run:
 
-  ```bash
-  curl localhost:80/server-status?auto
-  ```
+    ```bash
+    curl localhost:80/server-status?auto
+    ```
 
-  If the plugin is enabled, then the output includes lines similar to the
-  following:
+    If the plugin is enabled, then the output includes lines similar to the
+    following:
 
-  <pre>
-  Total Accesses: 2
-  Total kBytes: 1
-  BusyWorkers: 1
-  IdleWorkers: 4
-  </pre>
+    <pre>
+    Total Accesses: 2
+    Total kBytes: 1
+    BusyWorkers: 1
+    IdleWorkers: 4
+    </pre>
 
-  If you get a `404 Not Found` page instead, then the `mod_status` plugin is not
-  enabled.
+    If you get a `404 Not Found` page instead, then the `mod_status` plugin is not
+    enabled.
 minimum_supported_agent_version:
-  metrics: 2.7.0
-  logging: 2.4.0
+    metrics: 2.7.0
+    logging: 2.4.0
 supported_operating_systems: linux
 supported_app_version: ["2.4"]
 expected_metrics:
@@ -44,34 +44,34 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    server_name: .*
+      server_name: .*
   representative: true
 - type: workload.googleapis.com/apache.requests
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    server_name: .*
+      server_name: .*
 - type: workload.googleapis.com/apache.scoreboard
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    server_name: .*
-    state: .*
+      server_name: .*
+      state: .*
 - type: workload.googleapis.com/apache.traffic
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    server_name: .*
+      server_name: .*
 - type: workload.googleapis.com/apache.workers
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    server_name: .*
-    state: .*
+      server_name: .*
+      state: .*
 expected_logs:
 - log_name: apache_access
   fields:
@@ -151,50 +151,50 @@ expected_logs:
     type: string
     description: ''
 configuration_options:
-  logs:
-  - type: apache_access
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache_access.
-    - name: include_paths
-      default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: apache_error
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache_error.
-    - name: include_paths
-      default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: apache
-    fields:
-    - name: type
-      default: null
-      description: This value must be apache.
-    - name: server_status_url
-      default: http://localhost:80/server-status?auto
-      description: The URL exposed by the mod_status module.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    logs:
+    - type: apache_access
+      fields:
+      - name: type
+        default: null
+        description: This value must be apache_access.
+      - name: include_paths
+        default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: apache_error
+      fields:
+      - name: type
+        default: null
+        description: This value must be apache_error.
+      - name: include_paths
+        default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: apache
+      fields:
+      - name: type
+        default: null
+        description: This value must be apache.
+      - name: server_status_url
+        default: http://localhost:80/server-status?auto
+        description: The URL exposed by the mod_status module.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.

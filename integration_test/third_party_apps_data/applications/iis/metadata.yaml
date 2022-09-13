@@ -4,15 +4,15 @@ short_name: IIS
 long_name: IIS
 logo_path: /stackdriver/images/iis.png # supplied by google technical writer
 description: |-
-  The Internet Information Services (IIS) integration collects metrics from your
-  IIS web servers. The metrics provide connection information and also data on
-  transferred bytes.
+    The Internet Information Services (IIS) integration collects metrics from your
+    IIS web servers. The metrics provide connection information and also data on
+    transferred bytes.
 
-  When using the Ops Agent on a Microsoft Windows VM, the agent automatically
-  collects IIS metrics. No additional configuration is required.
+    When using the Ops Agent on a Microsoft Windows VM, the agent automatically
+    collects IIS metrics. No additional configuration is required.
 minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.10.0
+    metrics: 2.10.0
+    logging: 2.10.0
 supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
@@ -26,7 +26,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: agent.googleapis.com/iis/new_connection_count
   value_type: INT64
   kind: CUMULATIVE
@@ -36,7 +36,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    http_method: .*
+      http_method: .*
   representative: true
 
 # v2 metrics
@@ -45,7 +45,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    request: .*
+      request: .*
   # representative: true
 - type: workload.googleapis.com/iis.request.rejected
   value_type: INT64
@@ -65,7 +65,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: workload.googleapis.com/iis.network.blocked
   value_type: INT64
   kind: CUMULATIVE
@@ -75,7 +75,7 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: workload.googleapis.com/iis.connection.attempt.count
   value_type: INT64
   kind: CUMULATIVE
@@ -154,33 +154,33 @@ expected_logs:
     type: string
     description: ''
 configuration_options:
-  logs:
-  - type: iis_access
-    fields:
-    - name: type
-      default: null
-      description: This value must be iis_access.
-    - name: include_paths
-      default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
-      description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: iis
-    fields:
-    - name: type
-      default: null
-      description: This value must be iis.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
-    - name: receiver_version
-      default: null
-      description: Establishes the version of the metric collection implementation.
+    logs:
+    - type: iis_access
+      fields:
+      - name: type
+        default: null
+        description: This value must be iis_access.
+      - name: include_paths
+        default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+        description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: iis
+      fields:
+      - name: type
+        default: null
+        description: This value must be iis.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
+      - name: receiver_version
+        default: null
+        description: Establishes the version of the metric collection implementation.

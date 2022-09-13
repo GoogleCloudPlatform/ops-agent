@@ -4,99 +4,99 @@ short_name: nginx
 long_name: nginx
 logo_path: /images/partners/nginx.png # supplied by google technical writer
 description: |-
-  The nginx integration collects connection metrics and access logs. Connection
-  metrics capture the current state of the connection: active, reading, or
-  waiting. Access logs are parsed for their connection details, which include
-  fields mapped to request, client, server, and message.
+    The nginx integration collects connection metrics and access logs. Connection
+    metrics capture the current state of the connection: active, reading, or
+    waiting. Access logs are parsed for their connection details, which include
+    fields mapped to request, client, server, and message.
 configure_integration: |-
-  You must enable the `stub_status` module in the nginx configuration file to set
-  up a locally reachable URL, for example, `http://www.example.com/status` for the
-  status page. To enable the `stub_status` module, complete the following steps:
+    You must enable the `stub_status` module in the nginx configuration file to set
+    up a locally reachable URL, for example, `http://www.example.com/status` for the
+    status page. To enable the `stub_status` module, complete the following steps:
 
-  1. Edit the `status.conf` file, or create the file if it doesn't exist. You can
-     find this file in the nginx configuration directory, typically found at
-     `/etc/nginx/conf.d`.
+    1. Edit the `status.conf` file, or create the file if it doesn't exist. You can
+       find this file in the nginx configuration directory, typically found at
+       `/etc/nginx/conf.d`.
 
-  1. Add the following lines to the `server` section:
+    1. Add the following lines to the `server` section:
 
-     ```none
-     location /status {
-         stub_status on;
-         access_log off;
-         allow 127.0.0.1;
-         deny all;
-     }
-     ```
+       ```none
+       location /status {
+           stub_status on;
+           access_log off;
+           allow 127.0.0.1;
+           deny all;
+       }
+       ```
 
-     Your configuration file might look like the following example:
+       Your configuration file might look like the following example:
 
-     <pre>
-     server {
-         listen 80;
-         server_name 127.0.0.1;
-         location /status {
-             stub_status on;
-             access_log off;
-             allow 127.0.0.1;
-             deny all;
-         }
-         location / {
-             root /dev/null;
-         }
-     }
-     </pre>
+       <pre>
+       server {
+           listen 80;
+           server_name 127.0.0.1;
+           location /status {
+               stub_status on;
+               access_log off;
+               allow 127.0.0.1;
+               deny all;
+           }
+           location / {
+               root /dev/null;
+           }
+       }
+       </pre>
 
-  1. Reload the nginx configuration.
+    1. Reload the nginx configuration.
 
-     ```
-     sudo service nginx reload
-     ```
+       ```
+       sudo service nginx reload
+       ```
 
-  You can run the following command to automate the previous steps. It creates
-  a `status.conf` file if it doesn't exist or overwrites the existing one if it
-  does exist. The command turns on `stub_status`, reloads nginx, and verifies
-  that the expected information is exposed through the endpoint.
+    You can run the following command to automate the previous steps. It creates
+    a `status.conf` file if it doesn't exist or overwrites the existing one if it
+    does exist. The command turns on `stub_status`, reloads nginx, and verifies
+    that the expected information is exposed through the endpoint.
 
-  ```bash
-  sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
-  server {
-      listen 80;
-      server_name 127.0.0.1;
-      location /status {
-          stub_status on;
-          access_log off;
-          allow 127.0.0.1;
-          deny all;
-      }
-      location / {
-         root /dev/null;
-      }
-  }
-  EOF
-  sudo service nginx reload
-  curl http://127.0.0.1:80/status
-  ```
+    ```bash
+    sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
+    server {
+        listen 80;
+        server_name 127.0.0.1;
+        location /status {
+            stub_status on;
+            access_log off;
+            allow 127.0.0.1;
+            deny all;
+        }
+        location / {
+           root /dev/null;
+        }
+    }
+    EOF
+    sudo service nginx reload
+    curl http://127.0.0.1:80/status
+    ```
 
-  The sample output is:
+    The sample output is:
 
-  <pre>
-  Active connections: 1
-  server accepts handled requests
-   23 23 74
-  Reading: 0 Writing: 1 Waiting: 0
-  </pre>
+    <pre>
+    Active connections: 1
+    server accepts handled requests
+     23 23 74
+    Reading: 0 Writing: 1 Waiting: 0
+    </pre>
 
-  Note: `127.0.0.1` can be replaced with the real server name, for example,
-  `server_name mynginx.domain.com`. The curl command to verify would be
-  `curl http://mynginx.domain.com:80/status`.
+    Note: `127.0.0.1` can be replaced with the real server name, for example,
+    `server_name mynginx.domain.com`. The curl command to verify would be
+    `curl http://mynginx.domain.com:80/status`.
 
-  Alternately, instead of using a separate `status.conf` file, you can also
-  directly embed the lines to the main `nginx.conf` file, which
-  is typically located in one of the following directories: `/etc/nginx`,
-  `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
+    Alternately, instead of using a separate `status.conf` file, you can also
+    directly embed the lines to the main `nginx.conf` file, which
+    is typically located in one of the following directories: `/etc/nginx`,
+    `/usr/local/nginx/conf`, or `/usr/local/etc/nginx`.
 minimum_supported_agent_version:
-  metrics: 2.1.0
-  logging: 2.1.0
+    metrics: 2.1.0
+    logging: 2.1.0
 supported_operating_systems: linux
 supported_app_version: ["1.18", "1.20"]
 expected_metrics:
@@ -109,7 +109,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
+      state: .*
 - type: workload.googleapis.com/nginx.connections_handled
   value_type: INT64
   kind: CUMULATIVE
@@ -220,62 +220,62 @@ expected_logs:
     type: string
     description: ''
 configuration_options:
-  logs:
-  - type: nginx_access
-    fields:
-    - name: type
-      default: null
-      description: The value must be nginx_access.
-    - name: include_paths
-      default: '[/var/log/nginx/access.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: "nginx_error"
-    fields:
-    - name: type
-      default: null
-      description: The value must be nginx_error.
-    - name: include_paths
-      default: '[/var/log/nginx/error.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: nginx
-    fields:
-    - name: type
-      default: null
-      description: This value must be nginx.
-    - name: server_status_url
-      default: http://localhost/status
-      description: The URL exposed by the nginx stub status module.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
+    logs:
+    - type: nginx_access
+      fields:
+      - name: type
+        default: null
+        description: The value must be nginx_access.
+      - name: include_paths
+        default: '[/var/log/nginx/access.log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: "nginx_error"
+      fields:
+      - name: type
+        default: null
+        description: The value must be nginx_error.
+      - name: include_paths
+        default: '[/var/log/nginx/error.log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: nginx
+      fields:
+      - name: type
+        default: null
+        description: This value must be nginx.
+      - name: server_status_url
+        default: http://localhost/status
+        description: The URL exposed by the nginx stub status module.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
 troubleshoot: |-
-  On most distributions, nginx comes with `ngx_http_stub_status_module` enabled.
-  You can check if the module is enabled by running the following command:
+    On most distributions, nginx comes with `ngx_http_stub_status_module` enabled.
+    You can check if the module is enabled by running the following command:
 
-  ```
-  sudo nginx -V 2>&1 | grep -o with-http_stub_status_module
-  ```
+    ```
+    sudo nginx -V 2>&1 | grep -o with-http_stub_status_module
+    ```
 
-  The expected output is `with-http_stub_status_module`, which means the module
-  is enabled. In rare cases, if the command returns no output, you must compile
-  nginx from source with the `-with-http_stub_status_module` following the nginx
-  public documentation.
+    The expected output is `with-http_stub_status_module`, which means the module
+    is enabled. In rare cases, if the command returns no output, you must compile
+    nginx from source with the `-with-http_stub_status_module` following the nginx
+    public documentation.

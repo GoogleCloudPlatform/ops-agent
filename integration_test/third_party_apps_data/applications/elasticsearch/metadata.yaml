@@ -4,19 +4,19 @@ short_name: Elasticsearch
 long_name: Elasticsearch
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
-  Elasticsearch is an open-source search server, based on the
-  [Lucene](https://lucene.apache.org/){: .external} search library. It runs in a Java virtual
-  machine on top of a number of operating systems. The `elasticsearch` receiver
-  collects node- and cluster-level telemetry from your Elasticsearch instances.
+    Elasticsearch is an open-source search server, based on the
+    [Lucene](https://lucene.apache.org/){: .external} search library. It runs in a Java virtual
+    machine on top of a number of operating systems. The `elasticsearch` receiver
+    collects node- and cluster-level telemetry from your Elasticsearch instances.
 configure_integration: |-
-  If you enable [Elasticsearch security
-  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html){: .external},
-  you must configure a user with the `monitor` or `manage` [cluster
-  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster)
-  {: .external}.
+    If you enable [Elasticsearch security
+    features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html){: .external},
+    you must configure a user with the `monitor` or `manage` [cluster
+    privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster)
+    {: .external}.
 minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.9.0
+    metrics: 2.10.0
+    logging: 2.9.0
 supported_operating_systems: linux
 supported_app_version: ["7.9+"]
 expected_metrics:
@@ -29,7 +29,7 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    status: .*
+      status: .*
 - type: workload.googleapis.com/elasticsearch.cluster.nodes
   value_type: INT64
   kind: GAUGE
@@ -39,19 +39,19 @@ expected_metrics:
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
+      state: .*
 - type: workload.googleapis.com/elasticsearch.node.cache.evictions
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    cache_name: .*
+      cache_name: .*
 - type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    cache_name: .*
+      cache_name: .*
 - type: workload.googleapis.com/elasticsearch.node.cluster.connections
   value_type: INT64
   kind: GAUGE
@@ -61,13 +61,13 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    direction: .*
+      direction: .*
 - type: workload.googleapis.com/elasticsearch.node.documents
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
+      state: .*
 - type: workload.googleapis.com/elasticsearch.node.fs.disk.available
   value_type: INT64
   kind: GAUGE
@@ -86,13 +86,13 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
+      operation: .*
 - type: workload.googleapis.com/elasticsearch.node.operations.time
   value_type: INT64
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    operation: .*
+      operation: .*
 - type: workload.googleapis.com/elasticsearch.node.shards.size
   value_type: INT64
   kind: GAUGE
@@ -102,21 +102,21 @@ expected_metrics:
   kind: CUMULATIVE
   monitored_resource: gce_instance
   labels:
-    state: .*
-    thread_pool_name: .*
+      state: .*
+      thread_pool_name: .*
 - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    thread_pool_name: .*
+      thread_pool_name: .*
 - type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
   value_type: INT64
   kind: GAUGE
   monitored_resource: gce_instance
   labels:
-    state: .*
-    thread_pool_name: .*
+      state: .*
+      thread_pool_name: .*
 expected_logs:
 - log_name: elasticsearch_json
   fields:
@@ -181,71 +181,71 @@ expected_logs:
     type: string
     description: ''
 configuration_options:
-  logs:
-  - type: elasticsearch_json
-    fields:
-    - name: type
-      default: null
-      description: The value must be elasticsearch_json.
-    - name: include_paths
-      default: '[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  - type: elasticsearch_gc
-    fields:
-    - name: type
-      default: null
-      description: The value must be elasticsearch_gc.
-    - name: include_paths
-      default: '[/var/log/elasticsearch/gc.log]'
-      description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
-    - name: exclude_paths
-      default: null
-      description: A list of filesystem path patterns to exclude from the set matched by include_paths.
-    - name: record_log_file_path
-      default: false
-      description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
-    - name: wildcard_refresh_interval
-      default: 60s
-      description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
-  metrics:
-  - type: elasticsearch
-    fields:
-    - name: type
-      default: null
-      description: This value must be elasticsearch.
-    - name: endpoint
-      default: http://localhost:92002
-      description: The base URL for the Elasticsearch REST API.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
-    - name: username
-      default: null
-      description: Username for authentication with Elasticsearch. Required if password is set.
-    - name: password
-      default: null
-      description: Password for authentication with Elasticsearch. Required if username is set.
-    - name: insecure
-      default: true
-      description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
-    - name: insecure_skip_verify
-      default: false
-      description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
-    - name: cert_file
-      default: null
-      description: Path to the TLS certificate to use for mTLS-required connections.
-    - name: key_file
-      default: null
-      description: Path to the TLS key to use for mTLS-required connections.
-    - name: ca_file
-      default: null
-      description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
+    logs:
+    - type: elasticsearch_json
+      fields:
+      - name: type
+        default: null
+        description: The value must be elasticsearch_json.
+      - name: include_paths
+        default: '[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: elasticsearch_gc
+      fields:
+      - name: type
+        default: null
+        description: The value must be elasticsearch_gc.
+      - name: include_paths
+        default: '[/var/log/elasticsearch/gc.log]'
+        description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+      - name: exclude_paths
+        default: null
+        description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+      - name: record_log_file_path
+        default: false
+        description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+      - name: wildcard_refresh_interval
+        default: 60s
+        description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    metrics:
+    - type: elasticsearch
+      fields:
+      - name: type
+        default: null
+        description: This value must be elasticsearch.
+      - name: endpoint
+        default: http://localhost:92002
+        description: The base URL for the Elasticsearch REST API.
+      - name: collection_interval
+        default: 60s
+        description: A time.Duration value, such as 30s or 5m.
+      - name: username
+        default: null
+        description: Username for authentication with Elasticsearch. Required if password is set.
+      - name: password
+        default: null
+        description: Password for authentication with Elasticsearch. Required if username is set.
+      - name: insecure
+        default: true
+        description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+      - name: insecure_skip_verify
+        default: false
+        description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+      - name: cert_file
+        default: null
+        description: Path to the TLS certificate to use for mTLS-required connections.
+      - name: key_file
+        default: null
+        description: Path to the TLS key to use for mTLS-required connections.
+      - name: ca_file
+        default: null
+        description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
