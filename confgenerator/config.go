@@ -927,13 +927,6 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 func validateSSLConfig(receivers metricsReceiverMap) error {
 	for receiverId, receiver := range receivers {
 		for _, pipeline := range receiver.Pipelines() {
-			// TODO(ridwanmsharif): Verify that the SSL config is valid for prometheus receivers.
-			if pipeline.Receiver.Config == nil {
-				continue
-			}
-			if receiver.Type() == "prometheus" {
-				continue
-			}
 			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
 				cfg := tlsCfg.(map[string]interface{})
 				// If insecure, no other fields are allowed

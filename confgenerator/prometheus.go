@@ -32,6 +32,14 @@ import (
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
 
+	// The Prometheus receiver is configured via a Prometheus config file.
+	// See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+	// Note that since we use the OTel Prometheus receiver, there is a caveat in the regex
+	// capture group syntax. Since the collector configuration supports env variable substitution
+	// `$` characters in your prometheus configuration are interpreted as environment
+	// variables.  If you want to use $ characters in your prometheus configuration,
+	// you must escape them using `$$`.
 	PromConfig promconfig.Config `yaml:"config"`
 }
 
@@ -122,11 +130,13 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 			}
 		}
 	}
+
 	return "", nil
 
 }
 
 func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
+	// TODO(ridwanmsharif): Fix the issue we have with the regex capture group syntax.
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type:   "prometheus",
@@ -143,13 +153,6 @@ func validatePrometheusConfig(sl validator.StructLevel) {
 		fmt.Printf("Prometheus config validation failed with error: %v", err)
 		sl.ReportError(reflect.ValueOf(promConfig), "config", field, err.Error(), "")
 	}
-}
-
-func indirectType(v reflect.Type) reflect.Type {
-	for v.Kind() != reflect.Ptr {
-		return v
-	}
-	return v.Elem()
 }
 
 func init() {

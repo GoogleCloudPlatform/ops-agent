@@ -1,0 +1,9 @@
+[36:13] unknown field "file_sd_configs"
+  33 |         config:
+  34 |           scrape_configs:
+  35 |           - job_name: prometheus
+> 36 |             file_sd_configs:
+                   ^
+  37 |               - files:
+  38 |                   - nonexistent_file.yml
+  39 |   service:

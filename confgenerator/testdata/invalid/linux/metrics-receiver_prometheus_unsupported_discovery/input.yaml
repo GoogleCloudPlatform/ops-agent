@@ -1,0 +1,43 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+metrics:
+  receivers:
+    # This test verifies that the prometheus receiver fails when the discovery method is anything
+    # other than static_config.
+    #
+    # Note that the failure for this test is not happening due to the validation we added but rather
+    # a YAML parsing error. It seems as though the service discovery inlined struct for service discovery
+    # is not supported by the YAML parser. This is a known issue:
+    #
+    # See:
+    # https://github.com/go-yaml/yaml/issues/125
+    # https://github.com/go-yaml/yaml/issues/602
+    #
+    # Go get around this issue, the OTel collector unmarshals the prom config differently by ahving
+    # the receiver do its own unmarshal into YAML. Supporting that in the Ops Agent is not trivial
+    # and left for another time.
+    prometheus:
+        type: prometheus
+        config:
+          scrape_configs:
+          - job_name: prometheus
+            file_sd_configs:
+              - files:
+                  - nonexistent_file.yml 
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus

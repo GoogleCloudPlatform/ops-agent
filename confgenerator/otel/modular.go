@@ -81,6 +81,8 @@ func (c ModularConfig) Generate() (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
+	googleCloudExporter := c.GoogleCloudExporter.name("")
+	googleManagedPrometheusExporter := c.GoogleManagedPrometheusExporter.name("")
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
@@ -102,14 +104,12 @@ func (c ModularConfig) Generate() (string, error) {
 		"exporters":  exporters,
 		"service":    service,
 	}
-	exporterName := c.GoogleCloudExporter.name("")
-	exporters[exporterName] = c.GoogleCloudExporter.Config
+	exporters[googleCloudExporter] = c.GoogleCloudExporter.Config
 
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
 	if len(c.GoogleManagedPrometheusPipelines) > 0 {
-		exporterName = c.GoogleManagedPrometheusExporter.name("")
-		exporters[exporterName] = c.GoogleManagedPrometheusExporter.Config
+		exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
 	}
 
 	var globalProcessorNames []string
@@ -121,6 +121,7 @@ func (c ModularConfig) Generate() (string, error) {
 
 	for prefix, pipeline := range c.Pipelines {
 		receiverName := pipeline.Receiver.name(prefix)
+		exporter := googleCloudExporter
 		receivers[receiverName] = pipeline.Receiver.Config
 		var processorNames []string
 		for i, processor := range pipeline.Processors {
@@ -129,14 +130,8 @@ func (c ModularConfig) Generate() (string, error) {
 			processors[name] = processor.Config
 		}
 
-		exporterName = c.GoogleCloudExporter.name("")
 		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
-			exporterName = c.GoogleManagedPrometheusExporter.name("")
-
-			// Assert that no processors are defined for this pipeline.
-			if len(processorNames) > 0 {
-				return "", fmt.Errorf("prometheus pipelines cannot have processors")
-			}
+			exporter = googleManagedPrometheusExporter
 		}
 
 		processorNames = append(processorNames, globalProcessorNames...)
@@ -144,7 +139,7 @@ func (c ModularConfig) Generate() (string, error) {
 		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporterName},
+			"exporters":  []string{exporter},
 		}
 	}
 
