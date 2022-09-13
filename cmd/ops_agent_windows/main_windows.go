@@ -137,6 +137,12 @@ func initServices() error {
 				"--log_file", filepath.Join(logDirectory, "logging-module.log"),
 			},
 		},
+		{
+			fmt.Sprintf("%s-diagnostics", serviceName),
+			fmt.Sprintf("%s - Diagnostics", serviceDisplayName),
+			filepath.Join(base, "diagnostics.exe"),
+			nil,
+		},		
 	}
 	return nil
 }
