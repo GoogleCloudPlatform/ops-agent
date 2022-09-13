@@ -64,3 +64,12 @@ test_metadata_validate:
 precommit: addlicense_check yaml_lint test_confgenerator test_metadata validate_metadata
 
 precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update validate_metadata
+
+
+############
+# Build
+############
+
+build:
+	mkdir -p /tmp/google-cloud-ops-agent	
+	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
