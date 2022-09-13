@@ -19,180 +19,180 @@ description: |-
   The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the Prometheus server exposed on a node.
 supported_app_version: ["6.5", "6.6", "7.0"]
 expected_logs:
-  - log_name: couchbase_general
-    fields:
-      - name: jsonPayload.message
-        type: string
-        description: "Log message"
-        optional: true
-      - name: jsonPayload.node_name
-        type: string
-        description: The name of the node issuing the log message
-      - name: jsonPayload.module_name
-        type: string
-        description: The name of the module issuing the entry
-        optional: true
-      - name: jsonPayload.source
-        type: string
-        description: ''
-        optional: true
-      - name: jsonPayload.type
-        type: string
-        description: ''
-        optional: true
-      - name: jsonPayload.level
-        type: string
-        description: Log entry severity for the couchbase log
-        optional: true
-      - name: severity
-        type: string
-        description: ''
-      - name: timestamp
-        type: string
-        description: ''
-  - log_name: couchbase_http_access
-    fields:
-      - name: httpRequest.remoteIp
-        value_regex: ::1|127.0.0.1
-        type: string
-        description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
-        optional: true
-      - name: httpRequest.requestUrl
-        type: string
-        description: Request URL (typically just the path part of the URL)
-        optional: true
-      - name: httpRequest.protocol
-        type: string
-        description: Protocol used for the request
-        optional: true
-      - name: httpRequest.requestMethod
-        value_regex: GET
-        type: string
-        description: HTTP method
-        optional: true
-      - name: httpRequest.status
-        type: number
-        description: HTTP status code
-        optional: true
-      - name: httpRequest.responseSize
-        type: string
-        description: ''
-        optional: true
-      - name: httpRequest.userAgent
-        type: string
-        description: ''
-        optional: true
-      - name: jsonPayload.message
-        type: string
-        description: "Log message"
-      - name: jsonPayload.host
-        type: string
-        description: The IP address of the client invoking the HTTP request
-        optional: true
-      - name: jsonPayload.level
-        type: string
-        description: Log entry severity for the couchbase log
-        optional: true
-      - name: jsonPayload.user
-        type: string
-        description: The name of the user making the HTTP request if basic auth is used.
-        optional: true
-      - name: severity
-        type: string
-        description: ''
-      - name: timestamp
-        type: string
-        description: ''
-  - log_name: couchbase_goxdcr
-    fields:
-      - name: jsonPayload.message
-        type: string
-        description: "Log message"
-      - name: jsonPayload.log_type
-        type: string
-        description: ''
-        optional: true
-      - name: jsonPayload.level
-        type: string
-        description: Log entry severity for the couchbase log
-        optional: true
-      - name: severity
-        type: string
-        description: ''
-      - name: timestamp
-        type: string
-        description: ''
+- log_name: couchbase_general
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: "Log message"
+    optional: true
+  - name: jsonPayload.node_name
+    type: string
+    description: The name of the node issuing the log message
+  - name: jsonPayload.module_name
+    type: string
+    description: The name of the module issuing the entry
+    optional: true
+  - name: jsonPayload.source
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.type
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+  - name: timestamp
+    type: string
+    description: ''
+- log_name: couchbase_http_access
+  fields:
+  - name: httpRequest.remoteIp
+    value_regex: ::1|127.0.0.1
+    type: string
+    description: The IP address (IPv4 or IPv6) of the client that issued the HTTP request
+    optional: true
+  - name: httpRequest.requestUrl
+    type: string
+    description: Request URL (typically just the path part of the URL)
+    optional: true
+  - name: httpRequest.protocol
+    type: string
+    description: Protocol used for the request
+    optional: true
+  - name: httpRequest.requestMethod
+    value_regex: GET
+    type: string
+    description: HTTP method
+    optional: true
+  - name: httpRequest.status
+    type: number
+    description: HTTP status code
+    optional: true
+  - name: httpRequest.responseSize
+    type: string
+    description: ''
+    optional: true
+  - name: httpRequest.userAgent
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.message
+    type: string
+    description: "Log message"
+  - name: jsonPayload.host
+    type: string
+    description: The IP address of the client invoking the HTTP request
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
+  - name: jsonPayload.user
+    type: string
+    description: The name of the user making the HTTP request if basic auth is used.
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+  - name: timestamp
+    type: string
+    description: ''
+- log_name: couchbase_goxdcr
+  fields:
+  - name: jsonPayload.message
+    type: string
+    description: "Log message"
+  - name: jsonPayload.log_type
+    type: string
+    description: ''
+    optional: true
+  - name: jsonPayload.level
+    type: string
+    description: Log entry severity for the couchbase log
+    optional: true
+  - name: severity
+    type: string
+    description: ''
+  - name: timestamp
+    type: string
+    description: ''
 expected_metrics:
-  - type: workload.googleapis.com/couchbase.bucket.operation.count
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      bucket_name: .*
-      op: .*
-  - type: workload.googleapis.com/couchbase.bucket.item.count
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      bucket_name: .*
-      state: .*
-  - type: workload.googleapis.com/couchbase.bucket.vbucket.count
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      bucket_name: .*
-      state: .*
-  - type: workload.googleapis.com/couchbase.bucket.memory.usage
-    value_type: DOUBLE
-    kind: GAUGE
-    labels:
-      bucket_name: .*
-    monitored_resource: gce_instance
-    representative: true
-  - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      bucket_name: .*
-  - type: workload.googleapis.com/couchbase.bucket.error.oom.count
-    value_type: INT64
-    kind: CUMULATIVE
-    labels:
-      bucket_name: .*
-      error_type: .*
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
-    value_type: DOUBLE
-    kind: GAUGE
-    labels:
-      bucket_name: .*
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
-    value_type: DOUBLE
-    kind: GAUGE
-    labels:
-      bucket_name: .*
-    monitored_resource: gce_instance
+- type: workload.googleapis.com/couchbase.bucket.operation.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    bucket_name: .*
+    op: .*
+- type: workload.googleapis.com/couchbase.bucket.item.count
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    bucket_name: .*
+    state: .*
+- type: workload.googleapis.com/couchbase.bucket.vbucket.count
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    bucket_name: .*
+    state: .*
+- type: workload.googleapis.com/couchbase.bucket.memory.usage
+  value_type: DOUBLE
+  kind: GAUGE
+  labels:
+    bucket_name: .*
+  monitored_resource: gce_instance
+  representative: true
+- type: workload.googleapis.com/couchbase.bucket.item.ejection.count
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    bucket_name: .*
+- type: workload.googleapis.com/couchbase.bucket.error.oom.count
+  value_type: INT64
+  kind: CUMULATIVE
+  labels:
+    bucket_name: .*
+    error_type: .*
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
+  value_type: DOUBLE
+  kind: GAUGE
+  labels:
+    bucket_name: .*
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
+  value_type: DOUBLE
+  kind: GAUGE
+  labels:
+    bucket_name: .*
+  monitored_resource: gce_instance
 configuration_options:
   metrics:
-    - type: couchbase
-      fields:
-        - name: type
-          default: null
-          description: This value must be `couchbase`.
-        - name: endpoint
-          default: http://localhost:8091
-          description: The URL of the node to monitor.
-        - name: collection_interval
-          default: 60s
-          description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
-        - name: username
-          description: The username used to connect to the couchbase server.
-        - name: password
-          description: The password used to connect to the couchbase server.
+  - type: couchbase
+    fields:
+    - name: type
+      default: null
+      description: This value must be `couchbase`.
+    - name: endpoint
+      default: http://localhost:8091
+      description: The URL of the node to monitor.
+    - name: collection_interval
+      default: 60s
+      description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+    - name: username
+      description: The username used to connect to the couchbase server.
+    - name: password
+      description: The password used to connect to the couchbase server.
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.18.2
