@@ -1,0 +1,5 @@
+# Oracle DB is pre-installed on the images used for tests
+set -e
+
+# Check that the instance is up
+echo "select * from SYS.GLOBAL_NAME;" | sqlplus -s /nolog sys/password@localhost:1521/service

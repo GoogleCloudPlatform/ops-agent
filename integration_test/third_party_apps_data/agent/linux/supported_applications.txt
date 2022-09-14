@@ -15,6 +15,7 @@ memcached
 mongodb
 mysql
 nginx
+oracledb
 postgresql
 rabbitmq
 redis

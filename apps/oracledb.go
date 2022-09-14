@@ -713,10 +713,10 @@ var oracleQueries = []oracleQuery{
 				},
 			},
 			{
-				metric_name:       "oracle.network.received.size",
+				metric_name:       "oracle.network.data",
 				value_column:      "CLIENT_RECV_BY",
 				unit:              "by",
-				description:       "The total number of bytes received.",
+				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
 				monotonic:         "true",
 				value_type:        "int",
@@ -724,13 +724,14 @@ var oracleQueries = []oracleQuery{
 				static_attributes: map[string]string{
 					"db.system": "oracle",
 					"target":    "client",
+					"direction": "received",
 				},
 			},
 			{
-				metric_name:       "oracle.network.sent.size",
+				metric_name:       "oracle.network.data",
 				value_column:      "CLIENT_SENT_BY",
 				unit:              "by",
-				description:       "The total number of bytes sent.",
+				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
 				monotonic:         "true",
 				value_type:        "int",
@@ -738,13 +739,14 @@ var oracleQueries = []oracleQuery{
 				static_attributes: map[string]string{
 					"db.system": "oracle",
 					"target":    "client",
+					"direction": "sent",
 				},
 			},
 			{
-				metric_name:       "oracle.network.received.size",
+				metric_name:       "oracle.network.data",
 				value_column:      "DBLINK_RECV_BY",
 				unit:              "by",
-				description:       "The total number of bytes received.",
+				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
 				monotonic:         "true",
 				value_type:        "int",
@@ -752,13 +754,14 @@ var oracleQueries = []oracleQuery{
 				static_attributes: map[string]string{
 					"db.system": "oracle",
 					"target":    "dblink",
+					"direction": "received",
 				},
 			},
 			{
-				metric_name:       "oracle.network.sent.size",
+				metric_name:       "oracle.network.data",
 				value_column:      "DBLINK_SENT_BY",
 				unit:              "by",
-				description:       "The total number of bytes sent.",
+				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
 				monotonic:         "true",
 				value_type:        "int",
@@ -766,6 +769,7 @@ var oracleQueries = []oracleQuery{
 				static_attributes: map[string]string{
 					"db.system": "oracle",
 					"target":    "dblink",
+					"direction": "sent",
 				},
 			},
 			{

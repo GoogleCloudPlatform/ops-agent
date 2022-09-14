@@ -946,11 +946,12 @@ receivers:
         - GLOBAL_NAME
         - INSTANCE_ID
         data_type: sum
-        description: The total number of bytes received.
-        metric_name: oracle.network.received.size
+        description: The total number of bytes communicated on the network.
+        metric_name: oracle.network.data
         monotonic: "true"
         static_attributes:
           db.system: oracle
+          direction: received
           target: client
         unit: by
         value_column: CLIENT_RECV_BY
@@ -960,11 +961,12 @@ receivers:
         - GLOBAL_NAME
         - INSTANCE_ID
         data_type: sum
-        description: The total number of bytes sent.
-        metric_name: oracle.network.sent.size
+        description: The total number of bytes communicated on the network.
+        metric_name: oracle.network.data
         monotonic: "true"
         static_attributes:
           db.system: oracle
+          direction: sent
           target: client
         unit: by
         value_column: CLIENT_SENT_BY
@@ -974,11 +976,12 @@ receivers:
         - GLOBAL_NAME
         - INSTANCE_ID
         data_type: sum
-        description: The total number of bytes received.
-        metric_name: oracle.network.received.size
+        description: The total number of bytes communicated on the network.
+        metric_name: oracle.network.data
         monotonic: "true"
         static_attributes:
           db.system: oracle
+          direction: received
           target: dblink
         unit: by
         value_column: DBLINK_RECV_BY
@@ -988,11 +991,12 @@ receivers:
         - GLOBAL_NAME
         - INSTANCE_ID
         data_type: sum
-        description: The total number of bytes sent.
-        metric_name: oracle.network.sent.size
+        description: The total number of bytes communicated on the network.
+        metric_name: oracle.network.data
         monotonic: "true"
         static_attributes:
           db.system: oracle
+          direction: sent
           target: dblink
         unit: by
         value_column: DBLINK_SENT_BY
