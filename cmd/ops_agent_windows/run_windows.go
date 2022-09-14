@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -52,8 +51,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-	uc, err := s.generateConfigs()
-	if err != nil {
+	if err := s.generateConfigs(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
@@ -65,36 +63,22 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// TODO: Ignore failures for partial startup?
 	}
 	s.log.Info(1, "started subagents")
-
-	death := make(chan bool)
-
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
 	}()
-
-	go func() {
-	waitForSignal:
-		for {
-			select {
-			case c := <-r:
-				switch c.Cmd {
-				case svc.Interrogate:
-					changes <- c.CurrentStatus
-				case svc.Stop, svc.Shutdown:
-					death <- true
-					break waitForSignal
-				default:
-					s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
-				}
+	for {
+		select {
+		case c := <-r:
+			switch c.Cmd {
+			case svc.Interrogate:
+				changes <- c.CurrentStatus
+			case svc.Stop, svc.Shutdown:
+				return
+			default:
+				s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 			}
 		}
-	}()
-
-	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
-	if err != nil {
-		return false, 0
 	}
-
 	return
 }
 
@@ -139,21 +123,21 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
+func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return err
 	}
 
 	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
 	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return err
 	}
 	if err := s.checkForStandaloneAgents(&uc); err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return err
 	}
 	// TODO: Add flag for passing in log/run path?
 	for _, subagent := range []string{
@@ -166,10 +150,10 @@ func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
 			filepath.Join(s.outDirectory, subagent)); err != nil {
-			return confgenerator.UnifiedConfig{}, err
+			return err
 		}
 	}
-	return uc, nil
+	return nil
 }
 
 func (s *service) startSubagents() error {
