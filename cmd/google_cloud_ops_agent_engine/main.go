@@ -39,13 +39,6 @@ func main() {
 	}
 }
 func run() error {
-
-	ic, err := confgenerator.ReadUnifiedConfigFromFile(*input, "linux")
-	if err != nil {
-		return err
-	}
-
-	confgenerator.ExtractFeatures(&ic)
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {

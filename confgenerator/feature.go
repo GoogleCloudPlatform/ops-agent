@@ -1,106 +1,150 @@
 package confgenerator
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+)
+
+var ErrTrackingInlineStruct = errors.New("cannot have tracking on inline struct")
 
 type Feature struct {
 	Module, Kind, Type, Key, Value string
 }
 
-type featureExtractor struct {
-	Module, Kind, Type string
-	values             map[string]string
-}
+func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
+	allFeatures := getOverriddenDefaultPipelines(uc)
 
-type ValueWrapper interface {
-	AsString() string
-	IsZero() bool
-}
-
-func newFeatureExtractor(module, kind, typ string) featureExtractor {
-	return featureExtractor{
-		Module: module,
-		Kind:   kind,
-		Type:   typ,
-		values: make(map[string]string),
+	if uc.Metrics != nil {
+		for _, r := range uc.Metrics.Receivers {
+			features, err := trackingFeatures(r, MetricsReceiverTypes.Subagent, MetricsReceiverTypes.Kind, r.Type())
+			if err != nil {
+				return nil, err
+			}
+			allFeatures = append(allFeatures, features...)
+		}
+		for _, p := range uc.Metrics.Processors {
+			features, err := trackingFeatures(p, MetricsProcessorTypes.Subagent, MetricsProcessorTypes.Kind, p.Type())
+			if err != nil {
+				return nil, err
+			}
+			allFeatures = append(allFeatures, features...)
+		}
 	}
-}
-
-func (f *featureExtractor) Add(key string, value ValueWrapper) {
-	if value.IsZero() {
-		return
+	if uc.Logging != nil {
+		for _, r := range uc.Logging.Receivers {
+			features, err := trackingFeatures(r, LoggingReceiverTypes.Subagent, LoggingReceiverTypes.Kind, r.Type())
+			if err != nil {
+				return nil, err
+			}
+			allFeatures = append(allFeatures, features...)
+		}
+		for _, p := range uc.Logging.Processors {
+			features, err := trackingFeatures(p, LoggingProcessorTypes.Subagent, LoggingProcessorTypes.Kind, p.Type())
+			if err != nil {
+				return nil, err
+			}
+			allFeatures = append(allFeatures, features...)
+		}
 	}
-	f.values[key] = value.AsString()
+
+	return allFeatures, nil
 }
 
-func (f featureExtractor) ToFeatures() []Feature {
+func trackingFeatures(component interface{}, module, kind, typ string) ([]Feature, error) {
+	return trackingFeaturesHelper(component, module, kind, typ, "")
+}
+
+func trackingFeaturesHelper(component any, module, kind, typ, prefix string) ([]Feature, error) {
+	if component == nil {
+		return []Feature{}, nil
+	}
+	c := reflect.ValueOf(component)
+	t := c.Type()
+
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
 	var features []Feature
-	for k, v := range f.values {
-		features = append(features, Feature{
-			Module: f.Module,
-			Kind:   f.Kind,
-			Type:   f.Type,
-			Key:    k,
-			Value:  v,
-		})
+	// Iterate over all available fields and read the tag value
+	for i := 0; i < t.NumField(); i++ {
+		// Get the field, returns https://golang.org/pkg/reflect/#StructField
+		field := t.Field(i)
+
+		// Grab actual value instead of pointer
+		v := reflect.Indirect(reflect.Indirect(c).FieldByName(field.Name))
+		if v.IsZero() {
+			continue
+		}
+
+		// Get the field tag value
+		trackingTag := field.Tag.Get("tracking")
+		tags := strings.Split(trackingTag, ",")
+		trackingName := tags[0]
+
+		// Check to see if value needs to be overridden
+		var overridden string
+		if len(tags) > 1 {
+			overridden = tags[1]
+		}
+		yamlTag := field.Tag.Get("yaml")
+		isInline := strings.Contains(yamlTag, ",inline")
+
+		// Append prefix with dot notation for child features key
+		key := fmt.Sprintf("%s.%s", prefix, trackingName)
+		if prefix == "" || isInline {
+			key = trackingName
+		}
+
+		if v.Type().Kind() == reflect.Struct {
+			if isInline && trackingTag != "" {
+				return nil, ErrTrackingInlineStruct
+			}
+			tf, err := trackingFeaturesHelper(v.Interface(), module, kind, typ, key)
+			if err != nil {
+				return nil, err
+			}
+			features = append(features, tf...)
+		} else {
+			if trackingTag == "" {
+				continue
+			}
+			featureTrackingString, err := asString(v.Interface())
+			if err != nil {
+				return nil, err
+			}
+			if overridden != "" {
+				featureTrackingString = overridden
+			}
+			features = append(features, Feature{
+				Module: module,
+				Kind:   kind,
+				Type:   typ,
+				Key:    key,
+				Value:  featureTrackingString,
+			})
+		}
 	}
 
-	return features
+	return features, nil
 }
 
-type box[T bool | int | string] struct {
-	Value T
-}
-
-func (v box[T]) IsZero() bool {
-	switch x := interface{}(v.Value).(type) {
-	case int:
-		return x == 0
-	case string:
-		return x == ""
-	}
-	return false
-}
-
-func (v box[T]) AsString() string {
+func asString(v interface{}) (string, error) {
 	var s string
-	switch x := interface{}(v.Value).(type) {
+	switch x := v.(type) {
 	case bool:
 		s = fmt.Sprintf("%t", x)
 	case int:
 		s = fmt.Sprintf("%d", x)
 	case string:
 		s = x
+	default:
+		// TODO Add warning
+		return "", fmt.Errorf("cannot create string for type: %s", x)
 	}
-	return s
-}
-
-func newBox[T bool | int | string](t T) box[T] {
-	return box[T]{
-		Value: t,
-	}
-}
-
-func ExtractFeatures(uc *UnifiedConfig) []Feature {
-	allFeatures := getOverriddenDefaultPipelines(uc)
-
-	//if uc.Metrics != nil {
-	//	for _, r := range uc.Metrics.Receivers {
-	//		allFeatures = append(allFeatures, r.Features()...)
-	//	}
-	//	for _, p := range uc.Metrics.Processors {
-	//		allFeatures = append(allFeatures, p.Features()...)
-	//	}
-	//}
-	//if uc.Logging != nil {
-	//	for _, r := range uc.Logging.Receivers {
-	//		allFeatures = append(allFeatures, r.Features()...)
-	//	}
-	//	for _, p := range uc.Logging.Processors {
-	//		allFeatures = append(allFeatures, p.Features()...)
-	//	}
-	//}
-
-	return allFeatures
+	return s, nil
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {
