@@ -19,8 +19,6 @@ import (
 	"log"
 	"os"
 	"fmt"
-	"os/signal"
-	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -28,7 +26,6 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
-	"golang.org/x/sys/windows/svc/mgr"	
 )
 
 var (
@@ -38,7 +35,6 @@ var (
 type service struct {
 	log          debug.Log
 	userConf     string
-	outDirectory string
 }
 
 func main() {
@@ -51,14 +47,15 @@ func main() {
 }
 
 func run() error {
-        elog, err := eventlog.Open("google-cloud-ops-agent-diagnostics")
+	name := "google-cloud-ops-agent-diagnostics"
+        elog, err := eventlog.Open(name)
 	if err != nil {
 		// probably futile
 		return err
 	}
 	defer elog.Close()
 	
-	elog.Info(1, fmt.Sprintf("starting %s service", "google-cloud-ops-agent-diagnostics"))
+	elog.Info(1, fmt.Sprintf("starting %s service", name))
         err = svc.Run(name, &service{log: elog})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
@@ -120,8 +117,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
-	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
-	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
+	fs.StringVar(&s.userConf, "config", "", "path to the user specified agent config")
 
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
