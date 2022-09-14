@@ -8,7 +8,7 @@ record["logging.googleapis.com/labels"] = {}
 end
 record["logging.googleapis.com/labels"]["logging.googleapis.com/instrumentation_source"] = value
 end)(v)
-local v = "ALERT";
+local v = "INFO";
 (function(value)
 record["logging.googleapis.com/severity"] = value
 end)(v)

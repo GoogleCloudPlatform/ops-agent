@@ -96,7 +96,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 			Processors: []otel.Component{
 				otel.NormalizeSums(),
 				otel.MetricsTransform(
-					otel.UpdateAllMetrics(
+					otel.AddPrefix("workload.googleapis.com",
 						// sql query receiver is not able to create these attributes with lowercase names
 						otel.RenameLabel("DATABASE_ID", "database_id"),
 						otel.RenameLabel("GLOBAL_NAME", "global_name"),
@@ -106,7 +106,6 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 						otel.RenameLabel("STATUS", "status"),
 						otel.RenameLabel("PROGRAM", "program"),
 						otel.RenameLabel("WAIT_CLASS", "wait_class"),
-						otel.AddPrefix("workload.googleapis.com"),
 					),
 				),
 			},
@@ -848,12 +847,12 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:-\d+:\d+|Z)`,
+				Regex:     `^\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:-\d+:\d+|Z)).*$`,
+				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
 	}.Components(tag, uid)
@@ -899,22 +898,30 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
-					// Sample log: Wed Jul 25 16:10:33 2018 -04:00
-					//			   LENGTH : '306'
-					//			   ACTION :[52] 'BEGIN DBMS_OUTPUT>GET_LINES(:LINES, :NUMLINES); END;'
-					//			   DATABASE USER:[1] '/'
-					//			   PRIVILEGE :[6] 'SYSDBA'
-					//			   CLIENT USER:[6] 'oracle'
-					//			   CLIENT TERMINAL:[5] 'pts/0'
-					//			   STATUS:[1] '0'
-					//			   DBID:[10] '15123123123'
-					//			   SESSIONID:[10] '123123123'
-					//			   USERHOST:[10] 'my-db-1'
-					//			   CLIENT ADDRESS:[0] ''
-					//			   ACTION NUMBER:[2] '47'
-					Regex: `^(?<timestamp>\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z))\n` +
+					// Sample log:  Wed Sep 14 16:18:03 2022 +00:00
+					//				LENGTH : '623'
+					//				ACTION :[373] 'select distinct 'ALTER SYSTEM KILL SESSION ''' || stat.sid || ',' ||
+					//								sess.serial# ||
+					//								decode(substr(inst.version, 1, 4),
+					//										'12.1', ''' immediate ', ''' force timeout 0 ') ||
+					//								'-- process 73841'
+					//				from v$mystat stat, v$session sess, v$instance inst
+					//				where stat.sid=sess.sid
+					//				union all
+					//				select '/' from dual'
+					//				DATABASE USER:[1] '/'
+					//				PRIVILEGE :[6] 'SYSDBA'
+					//				CLIENT USER:[6] 'oracle'
+					//				CLIENT TERMINAL:[5] 'pts/1'
+					//				STATUS:[1] '0'
+					//				DBID:[10] '1643176521'
+					//				SESSIONID:[10] '4294967295'
+					//				USERHOST:[7] 'oradb19'
+					//				CLIENT ADDRESS:[0] ''
+					//				ACTION NUMBER:[1] '3'
+					Regex: `^(?<timestamp>\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z))\n` +
 						`LENGTH\s*:(?:\[\d*\])?\s*'(?<length>.*)'\n` +
-						`ACTION\s*:(?:\[\d*\])?\s*'(?<action>.*)'\n` +
+						`ACTION\s*:(?:\[\d*\])?\s*'(?<action>[\s\S]*)'\n` +
 						`DATABASE USER\s*:(?:\[\d*\])?\s*'(?<database_user>.*)'\n` +
 						`PRIVILEGE\s*:(?:\[\d*\])?\s*'(?<privilege>.*)'\n` +
 						`CLIENT USER\s*:(?:\[\d*\])?\s*'(?<client_user>.*)'\n` +
@@ -924,7 +931,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 						`SESSIONID\s*:(?:\[\d*\])?\s*'(?<sessionid>.*)'\n` +
 						`USERHOST\s*:(?:\[\d*\])?\s*'(?<user_host>.*)'\n` +
 						`CLIENT ADDRESS\s*:(?:\[\d*\])?\s*'(?<client_address>.*)'\n` +
-						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'`,
+						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'\n?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
 						TimeFormat: "%a %b %d %H:%M:%S %Y %Z",
@@ -936,17 +943,17 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z)`,
+				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z)).*$`,
+				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
 	}.Components(tag, uid)
 
-	severityVal := "ALERT"
+	severityVal := "INFO"
 
 	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{

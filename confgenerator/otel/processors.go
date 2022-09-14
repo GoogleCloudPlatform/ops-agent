@@ -68,15 +68,21 @@ func CastToSum(metrics ...string) Component {
 }
 
 // AddPrefix returns a config snippet that adds a prefix to all metrics.
-func AddPrefix(prefix string) map[string]interface{} {
+func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	// $ needs to be escaped because reasons.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"include":    `^(.*)$$`,
 		"match_type": "regexp",
 		"action":     "update",
 		"new_name":   path.Join(prefix, `$${1}`),
 	}
+
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+
+	return out
 }
 
 // ChangePrefix returns a config snippet that updates a prefix on all metrics.
@@ -169,19 +175,6 @@ func UpdateMetric(metric string, operations ...map[string]interface{}) map[strin
 	out := map[string]interface{}{
 		"include": metric,
 		"action":  "update",
-	}
-	if len(operations) > 0 {
-		out["operations"] = operations
-	}
-	return out
-}
-
-// UpdateAllMetrics returns a config snippet applies transformations to all metrics
-func UpdateAllMetrics(operations ...map[string]interface{}) map[string]interface{} {
-	out := map[string]interface{}{
-		"include":    `^(.*)$$`,
-		"action":     "update",
-		"match_type": "regexp",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations

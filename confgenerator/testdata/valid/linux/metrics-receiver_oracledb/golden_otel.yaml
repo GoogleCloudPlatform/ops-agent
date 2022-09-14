@@ -366,6 +366,7 @@ processors:
     - action: update
       include: ^(.*)$$
       match_type: regexp
+      new_name: workload.googleapis.com/$${1}
       operations:
       - action: update_label
         label: DATABASE_ID
@@ -391,10 +392,6 @@ processors:
       - action: update_label
         label: WAIT_CLASS
         new_label: wait_class
-      - action: update
-        include: ^(.*)$$
-        match_type: regexp
-        new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
