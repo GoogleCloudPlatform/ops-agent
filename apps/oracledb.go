@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
-// MetricsReceiverOracleDB is the struct for ops agent monitoring metrics for oracledb
 type MetricsReceiverOracleDB struct {
 	confgenerator.ConfigComponent          `yaml:",inline"`
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
@@ -43,12 +42,10 @@ type MetricsReceiverOracleDB struct {
 
 const defaultOracleDBEndpoint = "localhost:1521"
 
-// Type returns the configuration type key of the oracledb receiver
 func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-// Pipelines will construct the sql query receiver configuration
 func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
@@ -75,7 +72,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 		endpoint = defaultOracleDBEndpoint
 	}
 
-	// create a datasource in the form oracle://username:password@host:port/ServiceName?SID=sid&sslmode=enable&...
+	// create a datasource in the form oracle://username:password@host:port/ServiceName?SID=sid&ssl=enable&...
 	datasource := fmt.Sprintf("oracle://%s:%s@%s/%s?%s",
 		url.QueryEscape(r.Username),
 		url.QueryEscape(r.Password),
@@ -100,8 +97,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					otel.UpdateAllMetrics(
-						// sql query receiver is not able to create these attributes
-						// with lowercased names
+						// sql query receiver is not able to create these attributes with lowercase names
 						otel.RenameLabel("DATABASE_ID", "database_id"),
 						otel.RenameLabel("GLOBAL_NAME", "global_name"),
 						otel.RenameLabel("INSTANCE_ID", "instance_id"),
@@ -819,33 +815,27 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverOracleDB{} })
 }
 
-// LoggingReceiverOracleDB is a struct used for generating the fluentbit component for oracledb logs
-type LoggingReceiverOracleDB struct {
-	confgenerator.ConfigComponent           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingProcessorOracleDBAlert struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-// Type returns the string identifier for the general oracledb logs
-func (lr LoggingReceiverOracleDB) Type() string {
-	return "oracledb"
+func (lr LoggingProcessorOracleDBAlert) Type() string {
+	return "oracledb_alert"
 }
 
-// Components returns the logging components of the oracledb logs
-func (lr LoggingReceiverOracleDB) Components(tag string) []fluentbit.Component {
-	if len(lr.IncludePaths) == 0 {
-		lr.IncludePaths = []string{
-			"/oracle/log/paths",
-		}
-	}
-	components := lr.LoggingReceiverFilesMixin.Components(tag)
-	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
+func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []fluentbit.Component {
+	components := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
-					Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):([^:]+):(?<source>[^\]]+)\](?<message>.*)$`,
+					// Sample log:  2021-12-21T10:19:47.339827-05:00
+					//				Thread 1 opened at log sequence 1
+					//				Current log# 1 seq# 1 mem# 0: /u01/oracle/oradata/DB19C/redo01.log
+					//				Successful open of redo thread 1
+					Regex: `^(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z))\n(?<message>[\s\S]+)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
 					},
 				},
 			},
@@ -854,35 +844,136 @@ func (lr LoggingReceiverOracleDB) Components(tag string) []fluentbit.Component {
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\[([^\s+:]*):`,
+				Regex:     `^\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:-\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\[([^\s+:]*):).*$`,
+				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:-\d+:\d+|Z)).*$`,
 			},
 		},
-	}.Components(tag, lr.Type())...)
+	}.Components(tag, uid)
+
+	severityVal := "ALERT"
+	components = append(components,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity":                 {StaticValue: &severityVal},
+				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
+			},
+		}.Components(tag, uid)...)
+	return components
+}
+
+type LoggingReceiverOracleDBAlert struct {
+	LoggingProcessorOracleDBAlert           `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
+	if len(lr.IncludePaths) == 0 {
+		lr.IncludePaths = []string{
+			"$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log",
+		}
+	}
+
+	c := lr.LoggingReceiverFilesMixin.Components(tag)
+	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(tag, lr.Type())...)
+	return c
+}
+
+type LoggingProcessorOracleDBAudit struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (lr LoggingProcessorOracleDBAudit) Type() string {
+	return "oracledb_audit"
+}
+
+func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []fluentbit.Component {
+	components := confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					// Sample log: Wed Jul 25 16:10:33 2018 -04:00
+					//			   LENGTH : '306'
+					//			   ACTION :[52] 'BEGIN DBMS_OUTPUT>GET_LINES(:LINES, :NUMLINES); END;'
+					//			   DATABASE USER:[1] '/'
+					//			   PRIVILEGE :[6] 'SYSDBA'
+					//			   CLIENT USER:[6] 'oracle'
+					//			   CLIENT TERMINAL:[5] 'pts/0'
+					//			   STATUS:[1] '0'
+					//			   DBID:[10] '15123123123'
+					//			   SESSIONID:[10] '123123123'
+					//			   USERHOST:[10] 'my-db-1'
+					//			   CLIENT ADDRESS:[0] ''
+					//			   ACTION NUMBER:[2] '47'
+					Regex: `^(?<timestamp>\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z))\n` +
+						`LENGTH\s*:(?:\[\d*\])?\s*'(?<length>.*)'\n` +
+						`ACTION\s*:(?:\[\d*\])?\s*'(?<action>.*)'\n` +
+						`DATABASE USER\s*:(?:\[\d*\])?\s*'(?<database_user>.*)'\n` +
+						`PRIVILEGE\s*:(?:\[\d*\])?\s*'(?<privilege>.*)'\n` +
+						`CLIENT USER\s*:(?:\[\d*\])?\s*'(?<client_user>.*)'\n` +
+						`CLIENT TERMINAL\s*:(?:\[\d*\])?\s*'(?<client_terminal>.*)'\n` +
+						`STATUS\s*:(?:\[\d*\])?\s*'(?<status>.*)'\n` +
+						`DBID\s*:(?:\[\d*\])?\s*'(?<dbid>.*)'\n` +
+						`SESSIONID\s*:(?:\[\d*\])?\s*'(?<sessionid>.*)'\n` +
+						`USERHOST\s*:(?:\[\d*\])?\s*'(?<user_host>.*)'\n` +
+						`CLIENT ADDRESS\s*:(?:\[\d*\])?\s*'(?<client_address>.*)'\n` +
+						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: "%a %b %d %H:%M:%S %Y %Z",
+					},
+				},
+			},
+		},
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z)`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:-\d+:\d+|Z)).*$`,
+			},
+		},
+	}.Components(tag, uid)
+
+	severityVal := "ALERT"
 
 	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
-				"severity": {
-					CopyFrom: "jsonPayload.level",
-					MapValues: map[string]string{
-						"debug": "DEBUG",
-						"info":  "INFO",
-						"warn":  "WARNING",
-						"error": "ERROR",
-					},
-					MapValuesExclusive: true,
-				},
+				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, lr.Type())...)
+		}.Components(tag, uid)...)
 	return components
 }
 
+type LoggingReceiverOracleDBAudit struct {
+	LoggingProcessorOracleDBAudit           `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
+	if len(lr.IncludePaths) == 0 {
+		lr.IncludePaths = []string{
+			"$ORACLE_HOME/admin/*/adump/*.aud",
+		}
+	}
+
+	c := lr.LoggingReceiverFilesMixin.Components(tag)
+	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(tag, lr.Type())...)
+	return c
+}
+
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDB{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAlert{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAlert{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAudit{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAudit{} })
 }

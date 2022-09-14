@@ -1,0 +1,63 @@
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    oracledb_audit:
+      type: oracledb_audit
+    oracledb_alert:
+      type: oracledb_alert
+    oracledb_audit_custom:
+      type: oracledb_audit
+      include_paths:
+        - /srv/oracle/INSTANCE/audit.aud
+    oracledb_alert_custom:
+      type: oracledb_alert
+      include_paths:
+        - /srv/oracle/INSTANCE/alert.log
+    oracledb_syslog_audit:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 2
+    oracledb_syslog_alert:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 1.1.1.1
+      listen_port: 3
+  processors:
+    oracledb_syslog_audit:
+      type: oracledb_audit
+    oracledb_syslog_alert:
+      type: oracledb_alert
+  service:
+    pipelines:
+      oracledb_default:
+        receivers:
+          - oracledb_audit
+          - oracledb_alert
+      oracledb_custom:
+        receivers:
+          - oracledb_audit_custom
+          - oracledb_alert_custom
+      oracledb_syslog_audit:
+        receivers:
+          - oracledb_syslog_audit
+        processors:
+          - oracledb_syslog_audit
+      oracledb_syslog_alert:
+        receivers:
+          - oracledb_syslog_alert
+        processors:
+          - oracledb_syslog_alert
