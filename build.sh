@@ -95,7 +95,6 @@ function build_opsagentengine() {
 function build_opsagentdiagnostics() {
   mkdir -p "$DESTDIR$prefix/libexec"
   go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_diagnostics" \
-    -ldflags "$LD_FLAGS" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics
 }
 
