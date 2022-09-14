@@ -67,7 +67,7 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 	return eR, nil
 }
 
-func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
+func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool) error {
 	eR, err := GetEnabledReceivers(uc)
 	if err != nil {
 		return err
@@ -122,6 +122,14 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig) error {
 			gaugeObserver.Observe(ctx, int64(value), labels...)
 		}
 	})
+
+waitForDeathSignal:
+	for {
+		select {
+		case <-death:
+			break waitForDeathSignal
+		}
+	}
 
 	return nil
 }
