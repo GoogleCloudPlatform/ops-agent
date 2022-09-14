@@ -18,60 +18,112 @@ import (
 	"flag"
 	"log"
 	"os"
+	"fmt"
 	"os/signal"
 	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
-	"github.com/shirou/gopsutil/host"
+	"golang.org/x/sys/windows/svc"
+	"golang.org/x/sys/windows/svc/debug"
+	"golang.org/x/sys/windows/svc/eventlog"
+	"golang.org/x/sys/windows/svc/mgr"	
 )
 
 var (
 	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
 
+type service struct {
+	log          debug.Log
+	userConf     string
+	outDirectory string
+}
+
 func main() {
 	flag.Parse()
-	if err := run(); err != nil {
-		log.Fatal(err)
+	if ok, err := svc.IsWindowsService(); ok && err == nil {
+		if err := run(); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
+
 func run() error {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	_, mergedConfig, err := confgenerator.MergeConfFiles(*config, "linux", apps.BuiltInConfStructs)
+        elog, err := eventlog.Open("google-cloud-ops-agent-diagnostics")
 	if err != nil {
+		// probably futile
 		return err
 	}
-	hostInfo, err := host.Info()
+	defer elog.Close()
+	
+	elog.Info(1, fmt.Sprintf("starting %s service", "google-cloud-ops-agent-diagnostics"))
+        err = svc.Run(name, &service{log: elog})
 	if err != nil {
+		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
 		return err
 	}
-	uc, err := confgenerator.UnmarshalYamlToUnifiedConfig(mergedConfig, hostInfo.OS)
-	if err != nil {
-		return err
+	elog.Info(1, fmt.Sprintf("%s service stopped", name))
+	return nil
+}
+
+func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
+	changes <- svc.Status{State: svc.StartPending}
+	if err := s.parseFlags(args); err != nil {
+		s.log.Error(1, fmt.Sprintf("failed to parse arguments: %v", err))
+		// ERROR_INVALID_ARGUMENT
+		return false, 0x00000057
 	}
+	uc, err := s.generateConfigs()
+	if err != nil {
+		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
+		// 2 is "file not found"
+		return false, 2
+	}
+	s.log.Info(1, "generated configuration files")
+	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 	death := make(chan bool)
 
-	go func() {
-		osSignal := make(chan os.Signal, 1)
-		signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
+	defer func() {
+		changes <- svc.Status{State: svc.StopPending}
+	}()
 
+	go func() {
 	waitForSignal:
 		for {
 			select {
-			case <-osSignal:
-				death <- true
-				break waitForSignal
+			case c := <-r:
+				switch c.Cmd {
+				case svc.Interrogate:
+					changes <- c.CurrentStatus
+				case svc.Stop, svc.Shutdown:
+					death <- true
+					break waitForSignal
+				default:
+					s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+				}
 			}
 		}
 	}()
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
 	if err != nil {
-		return err
+		return false, 0
 	}
 
-	return nil
+	return
+}
+
+func (s *service) parseFlags(args []string) error {
+	s.log.Info(1, fmt.Sprintf("args: %#v", args))
+	var fs flag.FlagSet
+	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
+	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
+
+	allArgs := append([]string{}, os.Args[1:]...)
+	allArgs = append(allArgs, args[1:]...)
+	return fs.Parse(allArgs)
 }
