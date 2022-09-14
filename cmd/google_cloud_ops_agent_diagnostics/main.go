@@ -127,3 +127,20 @@ func (s *service) parseFlags(args []string) error {
 	allArgs = append(allArgs, args[1:]...)
 	return fs.Parse(allArgs)
 }
+
+func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
+	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
+	if err != nil {
+		return confgenerator.UnifiedConfig{}, err
+	}
+
+	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
+	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
+	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
+	if err != nil {
+		return confgenerator.UnifiedConfig{}, err
+	}
+	return uc, nil
+}
+
