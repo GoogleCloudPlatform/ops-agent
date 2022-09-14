@@ -141,7 +141,9 @@ func initServices() error {
 			fmt.Sprintf("%s-diagnostics", serviceName),
 			fmt.Sprintf("%s - Diagnostics", serviceDisplayName),
 			filepath.Join(base, "diagnostics.exe"),
-			nil,
+			[]string{
+				"-config", filepath.Join(base, "../config/config.yaml"),
+			},
 		},		
 	}
 	return nil
