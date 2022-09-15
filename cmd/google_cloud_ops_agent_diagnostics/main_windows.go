@@ -107,6 +107,7 @@ func (s *service) parseFlags(args []string) error {
 	s.log.Info(1, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "config", "", "path to the user specified agent config")
+	s.log.Info(1, s.userConf)
 
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
