@@ -19,7 +19,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"fmt"
 
@@ -29,10 +28,6 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
-)
-
-var (
-	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
 
 type service struct {
