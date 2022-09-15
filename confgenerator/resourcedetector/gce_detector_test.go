@@ -5,31 +5,31 @@ import (
 	"testing"
 )
 
-func TestGettingDetectorWithoutError(t *testing.T) {
+func TestGettingResourceWithoutError(t *testing.T) {
 	fakeProvider := FakeProvider{key: "some_key", value: "some_value"}
-	fakeBuilder := GCEDetectorBuilder{&fakeProvider}
-	actual, err := fakeBuilder.GetDetector()
+	fakeBuilder := GCEResourceBuilder{&fakeProvider}
+	actual, err := fakeBuilder.GetResource()
 	if err != nil {
 		t.Errorf("should not have error")
 	}
 	if actual == nil {
-		t.Errorf("should not return nil detector when no error")
-	} else if d, ok := actual.(GCEDetector); ok {
+		t.Errorf("should not return nil resource when no error")
+	} else if d, ok := actual.(GCEResource); ok {
 		if d.InstanceID != "some_value" {
-			t.Errorf("detector attribute InstanceID has wrong value")
+			t.Errorf("resource attribute InstanceID has wrong value")
 		}
 		if d.InterfaceIPv4["some_key"] != "some_value" {
-			t.Errorf("detector attribute InterfaceIPv4 has wrong value")
+			t.Errorf("resource attribute InterfaceIPv4 has wrong value")
 		}
 	} else {
-		t.Errorf("should have created GCEDetector")
+		t.Errorf("should have created GCEResource")
 	}
 }
 
-func TestErrorGettingDetector(t *testing.T) {
+func TestErrorGettingResource(t *testing.T) {
 	fakeProvider := FakeProvider{err: fmt.Errorf("some error")}
-	fakeBuilder := GCEDetectorBuilder{&fakeProvider}
-	actual, err := fakeBuilder.GetDetector()
+	fakeBuilder := GCEResourceBuilder{&fakeProvider}
+	actual, err := fakeBuilder.GetResource()
 	if err == nil {
 		t.Errorf("should have error")
 	}
@@ -37,7 +37,7 @@ func TestErrorGettingDetector(t *testing.T) {
 		t.Errorf("should have return the correct error message")
 	}
 	if actual != nil {
-		t.Errorf("should return nil detector when having error")
+		t.Errorf("should return nil resource when having error")
 	}
 }
 

@@ -36,6 +36,8 @@ func (gmp *GCEMetadataProvider) getNetwork() (string, error) {
 	return gmp.client.Get("instance/network-interfaces/0/network")
 }
 
+// TODO: b/246995894
+// The subnetwork url is currently not available from the metadata server
 func (gmp *GCEMetadataProvider) getSubnetwork() (string, error) {
 	return notAvailable, nil
 }
@@ -84,10 +86,7 @@ func (gmp *GCEMetadataProvider) getMetadata() (map[string]string, error) {
 	return metadata, nil
 }
 
-func (gmp *GCEMetadataProvider) getMetadataValue(key string) (string, error) {
-	return gmp.client.Get(fmt.Sprintf("instance/attributes/%s", key))
-}
-
+// TODO: b/246995462
 // GCE VM labels are currently not available in the metadata server
 func (gmp *GCEMetadataProvider) getLabels() (map[string]string, error) {
 	return map[string]string{}, nil

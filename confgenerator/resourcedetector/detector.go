@@ -4,30 +4,30 @@ import (
 	gcp_metadata "cloud.google.com/go/compute/metadata"
 )
 
-type Detector interface {
+type Resource interface {
 	GetType() string
 }
 
-// Get a Detector for the current environment, which can be used
+// Get a resource instance for the current environment, which can be used
 // to get all the attributes
-func GetDetector() (Detector, error) {
+func GetResource() (Resource, error) {
 	switch {
 	case gcp_metadata.OnGCE():
-		return GetGCEDetector()
+		return GetGCEResource()
 	default:
-		return GetUnrecognizedPlatformDetector()
+		return GetUnrecognizedPlatformResource()
 	}
 }
 
-// UnrecognizedPlatformDetector that returns an empty detector without any attributes
+// UnrecognizedPlatformResource that returns an empty resource instance without any attributes
 // for unrecognized environments
-type UnrecognizedPlatformDetector struct {
+type UnrecognizedPlatformResource struct {
 }
 
-func (UnrecognizedPlatformDetector) GetType() string {
+func (UnrecognizedPlatformResource) GetType() string {
 	return "unrecognized platform"
 }
 
-func GetUnrecognizedPlatformDetector() (Detector, error) {
-	return UnrecognizedPlatformDetector{}, nil
+func GetUnrecognizedPlatformResource() (Resource, error) {
+	return UnrecognizedPlatformResource{}, nil
 }

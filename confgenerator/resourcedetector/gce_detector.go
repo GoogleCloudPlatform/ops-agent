@@ -18,10 +18,10 @@ const (
 	interfaceIPv4
 )
 
-func GetGCEDetector() (Detector, error) {
+func GetGCEResource() (Resource, error) {
 	provider := NewGCEMetadataProvider()
-	dt := GCEDetectorBuilder{provider: provider}
-	return dt.GetDetector()
+	dt := GCEResourceBuilder{provider: provider}
+	return dt.GetResource()
 }
 
 // The data provider interface for GCE environment
@@ -64,8 +64,8 @@ var nestedAttributeSpec = map[gceAttribute]func(gceDataProvider) (map[string]str
 	label:         gceDataProvider.getLabels,
 }
 
-// GCEDetector implements the Detector interface and provide attributes of the VM when on GCE
-type GCEDetector struct {
+// GCEResource implements the Resource interface and provide attributes of the VM when on GCE
+type GCEResource struct {
 	Project       string
 	Zone          string
 	Network       string
@@ -81,17 +81,17 @@ type GCEDetector struct {
 	InterfaceIPv4 map[string]string
 }
 
-func (GCEDetector) GetType() string {
+func (GCEResource) GetType() string {
 	return "gce"
 }
 
-type GCEDetectorBuilder struct {
+type GCEResourceBuilder struct {
 	provider gceDataProvider
 }
 
-// Return a detector instance with all the attributes
+// Return a resource instance with all the attributes
 // based on the single and nested attributes spec
-func (gd *GCEDetectorBuilder) GetDetector() (Detector, error) {
+func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 	singleAttributes := map[gceAttribute]string{}
 	for attrName, attrGetter := range singleAttributeSpec {
 		attr, err := attrGetter(gd.provider)
@@ -109,7 +109,7 @@ func (gd *GCEDetectorBuilder) GetDetector() (Detector, error) {
 		nestedAttributes[attrName] = attr
 	}
 
-	res := GCEDetector{
+	res := GCEResource{
 		Project:       singleAttributes[project],
 		Zone:          singleAttributes[zone],
 		Network:       singleAttributes[network],
