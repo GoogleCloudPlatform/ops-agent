@@ -407,7 +407,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/postgresql_postgresql_1:
+  metricstransform/postgresql_postgresql_2:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -417,6 +417,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gce
+  transform/postgresql_postgresql_1:
+    metrics:
+      queries:
+      - set(attributes["database"], resource.attributes["postgresql.database.name"])
+      - set(attributes["table"], resource.attributes["postgresql.table.name"])
+      - set(attributes["index"], resource.attributes["postgresql.index.name"])
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
@@ -496,7 +502,8 @@ service:
       - googlecloud
       processors:
       - normalizesums/postgresql_postgresql_0
-      - metricstransform/postgresql_postgresql_1
+      - transform/postgresql_postgresql_1
+      - metricstransform/postgresql_postgresql_2
       - resourcedetection/_global_0
       receivers:
       - postgresql/postgresql_postgresql
