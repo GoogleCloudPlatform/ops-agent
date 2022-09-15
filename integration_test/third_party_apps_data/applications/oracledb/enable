@@ -11,8 +11,10 @@ logging:
   receivers:
     oracledb_audit:
       type: oracledb_audit
+      include_paths: [/opt/oracle/product/19c/dbhome_1/admin/*/adump/*.aud]
     oracledb_alert:
       type: oracledb_alert
+      include_paths: [/opt/oracle/product/19c/dbhome_1/diag/rdbms/*/*/trace/alert_*.log]
   service:
     pipelines:
       oracledb:
@@ -23,8 +25,9 @@ metrics:
   receivers:
     oracledb:
       type: oracledb
-      username: sys
-      password: password
+      username: system
+      password: ora19c
+      sid: ORCLCDB
   service:
     pipelines:
       oracledb:
