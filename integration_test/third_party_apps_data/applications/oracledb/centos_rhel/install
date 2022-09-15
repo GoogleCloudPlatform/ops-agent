@@ -1,2 +1,5 @@
-# SAP HANA is pre-installed on the images used for tests
+# Oracle DB is pre-installed on the images used for tests
 set -e
+
+# Check that the instance is up
+echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 sqlplus -s / as sysdba"
