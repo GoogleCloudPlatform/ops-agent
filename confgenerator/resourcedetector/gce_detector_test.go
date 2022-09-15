@@ -14,11 +14,11 @@ func TestGettingResourceWithoutError(t *testing.T) {
 	}
 	if actual == nil {
 		t.Errorf("should not return nil resource when no error")
-	} else if d, ok := actual.(GCEResource); ok {
-		if d.InstanceID != "some_value" {
+	} else if r, ok := actual.(GCEResource); ok {
+		if r.InstanceID != "some_value" {
 			t.Errorf("resource attribute InstanceID has wrong value")
 		}
-		if d.InterfaceIPv4["some_key"] != "some_value" {
+		if r.InterfaceIPv4["some_key"] != "some_value" {
 			t.Errorf("resource attribute InterfaceIPv4 has wrong value")
 		}
 	} else {
