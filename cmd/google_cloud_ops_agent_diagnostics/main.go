@@ -20,7 +20,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
