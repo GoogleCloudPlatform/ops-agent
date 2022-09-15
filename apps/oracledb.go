@@ -16,10 +16,8 @@ package apps
 
 import (
 	"fmt"
-	"math"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -131,15 +129,6 @@ type oracleQuery struct {
 }
 
 func (r MetricsReceiverOracleDB) queryConfig() []map[string]interface{} {
-	collectionIntervalSeconds := time.Second * 60
-	// Ignore error as there is no meaningful error handling available
-	// in this location in the code
-	if parsedInterval, err := time.ParseDuration(r.CollectionIntervalString()); err == nil {
-		collectionIntervalSeconds = parsedInterval
-	}
-
-	collectionIntervalString := fmt.Sprintf("%d", int(math.Round(collectionIntervalSeconds.Round(time.Second).Seconds())))
-
 	cfg := []map[string]interface{}{}
 	for _, q := range oracleQueries {
 		metrics := []map[string]interface{}{}
@@ -161,12 +150,8 @@ func (r MetricsReceiverOracleDB) queryConfig() []map[string]interface{} {
 			metrics = append(metrics, metric)
 		}
 
-		// Metrics being pulled from `GV_$$sysmetric` are limited to only metrics
-		// collected in the last collection interval to prevent repeat metric data points
-		sql := strings.ReplaceAll(q.query, "$$COLLECTION_INTERVAL", collectionIntervalString)
-
 		query := map[string]interface{}{
-			"sql":     sql,
+			"sql":     q.query,
 			"metrics": metrics,
 		}
 
@@ -477,8 +462,7 @@ var oracleQueries = []oracleQuery{
 			FROM (SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, END_TIME, RESPONSE_TIME, BUFFER_HIT_RATIO, ROW_HIT_RATIO 
 			FROM (SELECT * FROM GV_$$sysmetric
 				WHERE METRIC_NAME IN ('SQL Service Response Time', 'Buffer Cache Hit Ratio', 'Row Cache Hit Ratio')
-				AND INTSIZE_CSEC = 6001
-				AND (sysdate - END_TIME) * 86400 < $$COLLECTION_INTERVAL)
+				AND INTSIZE_CSEC = 6001)
 				PIVOT(
 					MAX(VALUE)
 					FOR METRIC_NAME
