@@ -19,10 +19,6 @@ import (
 	"log"
 )
 
-var (
-	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
-)
-
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
