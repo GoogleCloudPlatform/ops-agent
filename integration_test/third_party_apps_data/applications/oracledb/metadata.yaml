@@ -107,6 +107,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.logon.count
     value_type: INT64
     kind: CUMULATIVE
+    representative: true
     monitored_resource: gce_instance
     labels:
       database_id: .*
