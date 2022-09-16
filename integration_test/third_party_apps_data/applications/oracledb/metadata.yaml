@@ -59,22 +59,28 @@ expected_logs:
       - name: severity
         type: string
         description: ''
+
+        # UTC Info fields:{key:"action"  value:{string_value:"CONNECT"}}  fields:{key:"action_number"  value:{string_value:"100"}}  fields:{key:"client_terminal"  value:{string_value:"pts/0"}}  fields:{key:"client_user"  value:{string_value:"oracle"}}  fields:{key:"database_user"  value:{string_value:"/"}}  fields:{key:"length"  value:{string_value:"303"}}  fields:{key:"privilege"  value:{string_value:"SYSDBA"}}  fields:{key:"sessionid"  value:{string_value:"4294967295"}}  fields:{key:"status"  value:{string_value:"0"}}  fields:{key:"user_host"  value:{string_value:"github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799"}} map[compute.googleapis.com/resource_name:github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799 logging.googleapis.com/instrumentation_source:agent.googleapis.com/oracledb_audit] ajksmmf17r8g7 <nil> <nil> projects/stackdriver-test-143416/logs/oracledb_audit type:"gce_instance"  labels:{key:"instance_id"  value:"1038670580234678365"}  labels:{key:"project_id"  value:"stackdriver-test-143416"}  labels:{key:"zone"  value:"us-central1-b"}   false <nil>}
   - log_name: oracledb_audit
     fields:
       - name: jsonPayload.action
         type: string
+        value_regex: CONNECT
         description: Action being logged in the audit log
       - name: jsonPayload.action_number
         type: number
         description: Number identifying the type of action being logged
       - name: jsonPayload.client_terminal
         type: string
+        value_regex: pts.*
         description: Identifier of the client terminal where the action originated
       - name: jsonPayload.client_user
         type: string
+        value_regex: oracle
         description: Client user for the audited action
       - name: jsonPayload.database_user
         type: string
+        value_regex: /
         description: Database user for the audited action
       - name: jsonPayload.dbid
         type: number
@@ -84,6 +90,7 @@ expected_logs:
         description: Length of the string representing the action being logged
       - name: jsonPayload.privilege
         type: string
+        value_regex: SYSDBA
         description: Database privilege the action was executed under
       - name: jsonPayload.sessionid
         type: number
@@ -93,6 +100,7 @@ expected_logs:
         description: Status of the action
       - name: jsonPayload.user_host
         type: string
+        value_regex: github-test-.*
         description: Host where the audited action originated
       - name: severity
         type: string
