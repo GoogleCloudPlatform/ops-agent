@@ -903,7 +903,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 					//				USERHOST:[7] 'oradb19'
 					//				CLIENT ADDRESS:[0] ''
 					//				ACTION NUMBER:[1] '3'
-					Regex: `^(?<timestamp>\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z))\n` +
+					Regex: `^(?<timestamp>\w+\s+\w+\s+\d+\s+\d+:\d+:\d+\s+\d+\s+(?:[-+]\d+:\d+|Z))\n` +
 						`LENGTH\s*:(?:\[\d*\])?\s*'(?<length>.*)'\n` +
 						`ACTION\s*:(?:\[\d*\])?\s*'(?<action>[\s\S]*)'\n` +
 						`DATABASE USER\s*:(?:\[\d*\])?\s*'(?<database_user>.*)'\n` +
