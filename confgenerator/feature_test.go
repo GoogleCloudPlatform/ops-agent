@@ -52,7 +52,7 @@ func (m MetricsReceiverFoo) Pipelines() []otel.Pipeline {
 }
 
 type MetricsReceiverInlineFoo struct {
-	Foo string `yaml:"foo" tracking:"foo"`
+	Foo int32 `yaml:"foo" tracking:"foo"`
 }
 
 type MetricsReceiverInlineGoo struct {
@@ -64,7 +64,7 @@ func TestValidInlineStruct(t *testing.T) {
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["metricsReceiverFoo"] = MetricsReceiverFoo{
 		MetricsReceiverInlineFoo{
-			Foo: "foo",
+			Foo: int32(2),
 		},
 		MetricsReceiverInlineGoo{
 			Goo: "goo",
@@ -91,6 +91,7 @@ func TestValidInlineStruct(t *testing.T) {
 	}
 }
 
+// tracking tag is not allowed on inline struct
 type MetricsReceiverInvalid struct {
 	MetricsReceiverInlineInvalid `yaml:",inline" tracking:"metrics_receiver_inline_error"`
 }
@@ -182,7 +183,7 @@ func (m MetricsReceiverBlankPrefix) Pipelines() []otel.Pipeline {
 }
 
 type MetricsReceiverInnerBlankPrefix struct {
-	Foo string `yaml:"foo" tracking:"foo"`
+	Foo string `yaml:"foo" tracking:""`
 }
 
 func TestStructBlankPrefix(t *testing.T) {

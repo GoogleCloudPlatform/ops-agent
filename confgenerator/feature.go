@@ -52,7 +52,7 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	return allFeatures, nil
 }
 
-func trackingFeatures(component interface{}, module, kind, typ string) ([]Feature, error) {
+func trackingFeatures(component any, module, kind, typ string) ([]Feature, error) {
 	return trackingFeaturesHelper(component, module, kind, typ, "")
 }
 
@@ -80,6 +80,7 @@ func trackingFeaturesHelper(component any, module, kind, typ, prefix string) ([]
 		}
 
 		// Get the field tag value
+		// field.Tag.Lookup()
 		trackingTag := field.Tag.Get("tracking")
 		tags := strings.Split(trackingTag, ",")
 		trackingName := tags[0]
@@ -131,7 +132,7 @@ func trackingFeaturesHelper(component any, module, kind, typ, prefix string) ([]
 	return features, nil
 }
 
-func asString(v interface{}) (string, error) {
+func asString(v any) (string, error) {
 	var s string
 	switch x := v.(type) {
 	case bool:
