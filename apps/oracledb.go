@@ -194,7 +194,7 @@ var oracleQueries = []oracleQuery{
 				},
 			},
 			{
-				metric_name:       "oracle.db.tablespace.size",
+				metric_name:       "oracle.tablespace.size",
 				value_column:      "USED_SPACE",
 				unit:              "by",
 				description:       "The size of tablespaces in the database.",

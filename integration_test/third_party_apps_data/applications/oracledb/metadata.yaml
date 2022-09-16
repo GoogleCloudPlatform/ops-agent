@@ -48,7 +48,256 @@ configure_integration: |-
   </pre>
 supported_operating_systems: linux
 supported_app_version: ["12.2", "18c", "19c", "21c"]
-expected_metrics: [] #Work in progress
+expected_metrics:
+  - type: workload.googleapis.com/oracle.backup.latest
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+  - type: workload.googleapis.com/oracle.buffer.cache.ratio
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.cursor.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.cursor.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.disk.operation.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: read|write
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.disk.operation.size
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: read|write
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.logon.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.logon.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.network.data
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: sent|received
+      global_name: .*
+      instance_id: .*
+      target: dblink|client
+  - type: workload.googleapis.com/oracle.process.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.process.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.process.pga_memory.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      program: .*
+      state: free|used
+  - type: workload.googleapis.com/oracle.row.cache.ratio
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.service.response_time
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.session.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.session.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.sort.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: .*
+  - type: workload.googleapis.com/oracle.sort.row.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.tablespace.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      contents: UNDO|PERMANENT|TEMP
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      status: ONLINE|OFFLINE|READONLY
+  - type: workload.googleapis.com/oracle.tablespace.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      contents: UNDO|PERMANENT|TEMP
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      state: used|free
+      tablespace_name: .*
+  - type: workload.googleapis.com/oracle.user.calls
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.user.commits
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.user.rollbacks
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.wait.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
+  - type: workload.googleapis.com/oracle.wait.time
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
+  - type: workload.googleapis.com/oracle.wait.timeouts
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
 expected_logs:
   - log_name: oracledb_alert
     fields:

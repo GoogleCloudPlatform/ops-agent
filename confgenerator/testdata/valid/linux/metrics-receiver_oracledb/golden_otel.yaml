@@ -501,7 +501,7 @@ receivers:
         - CONTENTS
         data_type: sum
         description: The size of tablespaces in the database.
-        metric_name: oracle.db.tablespace.size
+        metric_name: oracle.tablespace.size
         monotonic: "false"
         static_attributes:
           db.system: oracle
