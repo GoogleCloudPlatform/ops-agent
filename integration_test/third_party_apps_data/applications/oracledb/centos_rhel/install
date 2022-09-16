@@ -2,11 +2,9 @@
 set -e
 
 sudo ls -la /opt/oracle/product/19c/dbhome_1/
-sudo ls -la /opt/oracle/product/19c/dbhome_1/admin/
-sudo ls -la /opt/oracle/product/19c/dbhome_1/admin/*/adump/*.aud
-sudo ls -la /opt/oracle/product/19c/dbhome_1/diag/
-sudo ls -la /opt/oracle/product/19c/dbhome_1/diag/rdbms/
-sudo ls -la /opt/oracle/product/19c/dbhome_1/diag/rdbms/*/*/trace/alert_*.log
+sudo ls -la /opt/oracle/
+
+sudo tree /opt/oracle/
 
 # Check that the instance is up
 echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 sqlplus -s / as sysdba"
