@@ -919,6 +919,13 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
 						TimeFormat: "%a %b %d %H:%M:%S %Y %Z",
+						Types: map[string]string{
+							"length":        "int",
+							"action_number": "int",
+							"dbid":          "int",
+							"sessionid":     "int",
+							"status":        "int",
+						},
 					},
 				},
 			},

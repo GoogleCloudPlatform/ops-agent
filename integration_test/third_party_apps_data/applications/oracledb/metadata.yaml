@@ -54,7 +54,46 @@ expected_logs:
     fields:
       - name: jsonPayload.message
         type: string
+        value_regex: .*Starting ORACLE instance.*
         description: Log message
+      - name: severity
+        type: string
+        description: ''
+  - log_name: oracledb_audit
+    fields:
+      - name: jsonPayload.action
+        type: string
+        description: Action being logged in the audit log
+      - name: jsonPayload.action_number
+        type: number
+        description: Number identifying the type of action being logged
+      - name: jsonPayload.client_terminal
+        type: string
+        description: Identifier of the client terminal where the action originated
+      - name: jsonPayload.client_user
+        type: string
+        description: Client user for the audited action
+      - name: jsonPayload.database_user
+        type: string
+        description: Database user for the audited action
+      - name: jsonPayload.dbid
+        type: number
+        description: Database identifier
+      - name: jsonPayload.length
+        type: number
+        description: Length of the string representing the action being logged
+      - name: jsonPayload.privilege
+        type: string
+        description: Database privilege the action was executed under
+      - name: jsonPayload.sessionid
+        type: number
+        description: Session identifier
+      - name: jsonPayload.status
+        type: string
+        description: Status of the action
+      - name: jsonPayload.user_host
+        type: string
+        description: Host where the audited action originated
       - name: severity
         type: string
         description: ''
