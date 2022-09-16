@@ -1,9 +1,9 @@
-[8:7] unknown field "field_1"
-   5 |       include_paths:
-   6 |       - /var/log/messages
-   7 |       - /var/log/syslog
->  8 |       field_1: value_1
+[22:7] unknown field "field_1"
+  19 |       include_paths:
+  20 |       - /var/log/messages
+  21 |       - /var/log/syslog
+> 22 |       field_1: value_1
              ^
-   9 |   service:
-  10 |     pipelines:
-  11 |       default_pipeline:
+  23 |   service:
+  24 |     pipelines:
+  25 |       default_pipeline:

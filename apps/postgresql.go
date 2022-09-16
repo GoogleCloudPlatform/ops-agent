@@ -73,6 +73,11 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		},
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
+				otel.FlattenResourceAttribute("postgresql.table.name", "table"),
+				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
+			),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
