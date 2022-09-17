@@ -29,6 +29,7 @@ metrics:
       password: ora19c
       endpoint: 127.0.0.1:1521
       sid: ORCLCDB
+      service_name: ORCLCDB
   service:
     pipelines:
       oracledb:
