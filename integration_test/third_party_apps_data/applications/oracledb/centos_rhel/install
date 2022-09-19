@@ -1,5 +1,5 @@
 # Oracle DB is pre-installed on the images used for tests
-set -e
+# set -e
 
 # Start instance
 echo "startup" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
@@ -8,6 +8,10 @@ echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB 
 
 # Check service name
 echo "select value from v\$parameter where name like '%service_name%';" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
+
+# Check tnsnames
+sudo cat /opt/oracle/network/admin/tnsnames.ora
+sudo cat /opt/oracle/product/19c/dbhome_1/network/admin/tnsnames.ora
 
 # Check tns listener function
 sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/tnsping ORCLCDB"
