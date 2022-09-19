@@ -18,17 +18,6 @@ sudo /etc/init.d/oracledb_ORCLCDB-19c configure
 
 set +e
 
-sudo su - oracle
-
-ORACLE_SID=ORCLCDB
-ORACLE_BASE=/opt/oracle
-ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
-LD_LIBRARY_PATH="${ORACLE_HOME}"/lib
-ORACLE_SID=ORCLCDB
-ORACLE_UNQNAME=ORCLCDB
-PATH="${PATH}":"${HOME}"/.local/bin:"${HOME}"/bin:"${ORACLE_BASE}":.:"${ORACLE_HOME}":"${ORACLE_HOME}"/bin:"${ORACLE_HOME}"/lib:"${LD_LIBRARY_PATH}":ORACLE_UNQNAME:
-export PATH ORACLE_BASE ORACLE_HOME LD_LIBRARY_PATH ORACLE_SID
-
 echo "alter user sys identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 
 echo "alter user system identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
