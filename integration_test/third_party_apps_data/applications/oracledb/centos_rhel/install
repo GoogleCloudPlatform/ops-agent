@@ -1,5 +1,25 @@
-# Oracle DB is pre-installed on the images used for tests
-# set -e
+set -e
+set -o pipefail
+
+INSTALL_DIR="$(mktemp --directory)"
+cd "${INSTALL_DIR}"
+
+PREINSTALL_RPM=oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm
+
+curl -o "${PREINSTALL_RPM}" https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/"${PREINSTALL_RPM}"
+sudo yum -y localinstall "${PREINSTALL_RPM}"
+rm "${PREINSTALL_RPM}"
+
+ORACLE_DB_RPM=oracle-database-ee-19c-1.0-1.x86_64.rpm
+gsutil cp gs://stackdriver-test-143416-oracle/"${ORACLE_DB_RPM}" .
+sudo yum -y localinstall "${ORACLE_DB_RPM}"
+
+sudo /etc/init.d/oracledb_ORCLCDB-19c configure
+
+# Set passwords
+echo "alter user sys identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
+
+echo "alter user system identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 
 # Start instance
 echo "startup" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
