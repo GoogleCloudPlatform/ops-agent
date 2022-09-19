@@ -144,7 +144,7 @@ func initServices() error {
 			[]string{
 				"-config", filepath.Join(base, "../config/config.yaml"),
 			},
-		},		
+		},
 	}
 	return nil
 }

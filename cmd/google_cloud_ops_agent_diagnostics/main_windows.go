@@ -19,8 +19,8 @@ package main
 
 import (
 	"flag"
-	"os"
 	"fmt"
+	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -31,21 +31,21 @@ import (
 )
 
 type service struct {
-	log          debug.Log
-	userConf     string
+	log      debug.Log
+	userConf string
 }
 
 func run() error {
 	name := "google-cloud-ops-agent-diagnostics"
-        elog, err := eventlog.Open(name)
+	elog, err := eventlog.Open(name)
 	if err != nil {
 		// probably futile
 		return err
 	}
 	defer elog.Close()
-	
+
 	elog.Info(1, fmt.Sprintf("starting %s service", name))
-        err = svc.Run(name, &service{log: elog})
+	err = svc.Run(name, &service{log: elog})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
 		return err
