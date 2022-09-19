@@ -698,8 +698,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBPlatform = "rhel-7-oracledb"
-	OracleDBApp      = "oracledb"
+	OracleDBApp = "oracledb"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -721,8 +720,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // platforms for those apps.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too. Same for `OracleDBPlatform` and
-// `OracleDBApp`.
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -741,15 +739,13 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
+		if test.app == OracleDBApp && test.platform != "rhel-7" {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on RHEL-7 at the moment", OracleDBApp)
+		}
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
-		}
-		isOracleDBPlatform := test.platform == OracleDBPlatform
-		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform != isOracleDBApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
@@ -802,8 +798,8 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
 					options.ImageProject = "stackdriver-test-143416"
 				}
-				if tc.platform == OracleDBPlatform {
-					options.ImageProject = "stackdriver-test-143416"
+				if tc.app == OracleDBApp {
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
