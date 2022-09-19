@@ -280,3 +280,10 @@ expected_metrics:
     labels:
       device: .*
       state: cached|free|reserved|used
+  - type: agent.googleapis.com/agent/ops_agent/enabled_receivers
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      receiver_type: .*
+      telemetry_type: logs|metrics
