@@ -2,9 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['centos-7']
+    platforms = ['rhel-7']
 
-    environment = {
+    environment {
       INSTANCE_SIZE = n2-highmem-8
     }
   }
