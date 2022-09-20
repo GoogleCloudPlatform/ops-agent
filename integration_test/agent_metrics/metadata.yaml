@@ -56,6 +56,13 @@ expected_metrics:
     labels:
       version: google-cloud-ops-agent-(metrics|logging)/\d+[.]\d+[.]\d+.*
     representative: true
+  - type: agent.googleapis.com/agent/ops_agent/enabled_receivers
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      receiver_type: .*
+      telemetry_type: logs|metrics
   - type: agent.googleapis.com/cpu/load_15m
     value_type: DOUBLE
     kind: GAUGE
@@ -280,10 +287,3 @@ expected_metrics:
     labels:
       device: .*
       state: cached|free|reserved|used
-  - type: agent.googleapis.com/agent/ops_agent/enabled_receivers
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      receiver_type: .*
-      telemetry_type: logs|metrics

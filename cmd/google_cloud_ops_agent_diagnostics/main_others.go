@@ -23,10 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
-	"github.com/shirou/gopsutil/host"
 )
 
 var (
@@ -34,15 +31,7 @@ var (
 )
 
 func run() error {
-	_, mergedConfig, err := confgenerator.MergeConfFiles(*config, "linux", apps.BuiltInConfStructs)
-	if err != nil {
-		return err
-	}
-	hostInfo, err := host.Info()
-	if err != nil {
-		return err
-	}
-	uc, err := confgenerator.UnmarshalYamlToUnifiedConfig(mergedConfig, hostInfo.OS)
+	uc, err := GetUnifiedConfigAndValidate(*config, "linux")
 	if err != nil {
 		return err
 	}

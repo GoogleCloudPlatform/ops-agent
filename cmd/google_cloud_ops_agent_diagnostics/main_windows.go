@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -62,13 +60,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-	uc, err := s.generateConfigs()
+	uc, err := GetUnifiedConfigAndValidate(s.userConf, "windows")
 	if err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
+		s.log.Error(1, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
-	s.log.Info(1, "generated configuration files")
+	s.log.Info(1, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 	death := make(chan bool)
@@ -112,20 +110,4 @@ func (s *service) parseFlags(args []string) error {
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
 	return fs.Parse(allArgs)
-}
-
-func (s *service) generateConfigs() (confgenerator.UnifiedConfig, error) {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
-	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
-	}
-
-	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", builtInConfig))
-	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", mergedConfig))
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, "windows")
-	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
-	}
-	return uc, nil
 }
