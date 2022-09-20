@@ -33,6 +33,7 @@ metrics:
       sid: ORCLCDB
       service_name: ORCLCDB
   service:
+    log_level: debug
     pipelines:
       oracledb:
         receivers:
