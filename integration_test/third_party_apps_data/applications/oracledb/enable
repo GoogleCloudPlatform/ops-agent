@@ -27,7 +27,7 @@ metrics:
   receivers:
     oracledb:
       type: oracledb
-      username: system
+      username: sys
       password: ora19c
       endpoint: $INTERNAL_HOSTNAME:1521
       sid: ORCLCDB
