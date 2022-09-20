@@ -5,7 +5,7 @@ config build = common.third_party_apps_test {
     platforms = ['rhel-7']
 
     environment {
-      INSTANCE_SIZE = n2-highmem-8
+      INSTANCE_SIZE = 'n2-highmem-8'
     }
   }
 }
