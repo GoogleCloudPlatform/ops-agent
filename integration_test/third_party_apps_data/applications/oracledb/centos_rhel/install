@@ -21,8 +21,6 @@ echo "alter user sys identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=OR
 
 echo "alter user system identified by ora19c;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 
-# Start instance
-echo "startup" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 # Check that the instance is up
 echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 
@@ -30,7 +28,6 @@ echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB 
 echo "select value from v\$parameter where name like '%service_name%';" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
 
 # Check tnsnames
-sudo cat /opt/oracle/network/admin/tnsnames.ora
 sudo cat /opt/oracle/product/19c/dbhome_1/network/admin/tnsnames.ora
 
 # Check tns listener function

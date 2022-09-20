@@ -745,8 +745,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
-		if test.app == OracleDBApp && test.platform != "centos-7" {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on centos-7 at the moment", OracleDBApp)
+		if test.app == OracleDBApp && test.platform != "rhel-7" {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rhel-7 at the moment", OracleDBApp)
 		}
 	}
 }
