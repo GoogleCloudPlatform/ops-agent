@@ -5,6 +5,8 @@ set -e
 # Create a back up of the existing file so existing configurations are not lost.
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
+INTERNAL_HOSTNAME=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/hostname" -H "Metadata-Flavor: Google")
+
 # Configure the Ops Agent.
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 logging:
@@ -27,7 +29,7 @@ metrics:
       type: oracledb
       username: system
       password: ora19c
-      endpoint: 127.0.0.1:1521
+      endpoint: $INTERNAL_HOSTNAME:1521
       sid: ORCLCDB
       service_name: ORCLCDB
   service:
