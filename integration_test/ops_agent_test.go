@@ -2003,11 +2003,9 @@ func TestWindowsMonitoringAgentConflict(t *testing.T) {
 }
 
 func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return multierr.Combine(
+	return multierr.Append(
 		loggingLivenessChecker(ctx, logger, vm),
-		metricsLivenessChecker(ctx, logger, vm),
-		diagnosticsLivenessChecker(ctx, logger, vm),
-	)
+		metricsLivenessChecker(ctx, logger, vm))
 }
 
 func TestUpgradeOpsAgent(t *testing.T) {
