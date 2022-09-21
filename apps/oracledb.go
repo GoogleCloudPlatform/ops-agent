@@ -163,19 +163,19 @@ func (r MetricsReceiverOracleDB) queryConfig() []map[string]interface{} {
 
 var oracleQueries = []oracleQuery{
 	{
-		query: `SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.TABLESPACE_NAME, ts.CONTENTS,
+		query: `SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.TABLESPACE_NAME, ts.CONTENTS,
 				(select sum(df.bytes) from sys.dba_data_files df where df.tablespace_name=ts.tablespace_name)-(select sum(fs.bytes) from sys.dba_free_space fs where fs.tablespace_name=ts.tablespace_name) AS USED_SPACE,
 				(select sum(fs.bytes) from sys.dba_free_space fs where fs.tablespace_name=ts.tablespace_name) AS FREE_SPACE
 			FROM sys.dba_tablespaces ts 
 			WHERE ts.contents <> 'TEMPORARY'
 			UNION ALL
-			SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.NAME TABLESPACE_NAME, 'TEMPORARY' as CONTENTS,
+			SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.NAME TABLESPACE_NAME, 'TEMPORARY' as CONTENTS,
 					SUM(ss.USED_BLOCKS * t.BLOCK_SIZE) USED_SPACE, 
 					SUM(t.BYTES) - SUM(ss.USED_BLOCKS * t.BLOCK_SIZE) FREE_SPACE
-			FROM v_$$sort_segment ss
-			JOIN v_$$tablespace ts
+			FROM SYS.V_$$sort_segment ss
+			JOIN sys.v_$$tablespace ts
 			ON ss.TABLESPACE_NAME = ts.NAME
-			JOIN v_$$tempfile t
+			JOIN sys.v_$$tempfile t
 			ON t.TS# = ss.TS#
 			GROUP BY ts.NAME`,
 		metrics: []oracleMetric{
@@ -210,7 +210,7 @@ var oracleQueries = []oracleQuery{
 		},
 	},
 	{
-		query: "SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, CONTENTS, STATUS, COUNT(*) COUNT FROM sys.dba_tablespaces GROUP BY STATUS, CONTENTS",
+		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, CONTENTS, STATUS, COUNT(*) COUNT FROM sys.dba_tablespaces GROUP BY STATUS, CONTENTS",
 		metrics: []oracleMetric{
 			{
 				metric_name:       "oracle.tablespace.count",
@@ -229,7 +229,7 @@ var oracleQueries = []oracleQuery{
 	},
 	// remove uptime until there is a consistent plan for support
 	// {
-	// 	query: "SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, INSTANCE_ROLE, (sysdate - startup_time) * 86400 UPTIME FROM GV_$$instance",
+	// 	query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, INSTANCE_ROLE, (sysdate - startup_time) * 86400 UPTIME FROM SYS.GV_$$instance",
 	// 	metrics: []oracleMetric{
 	// 		{
 	// 			metric_name:       "oracle.uptime",
@@ -247,7 +247,7 @@ var oracleQueries = []oracleQuery{
 	// 	},
 	// },
 	{
-		query: "SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, (SELECT round(case when max(start_time) is null then -1 when sysdate - max(start_time) > 0 then (sysdate - max(start_time)) * 86400 else 0 end) FROM v_$$rman_backup_job_details ) LATEST_BACKUP FROM DUAL",
+		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, (SELECT round(case when max(start_time) is null then -1 when sysdate - max(start_time) > 0 then (sysdate - max(start_time)) * 86400 else 0 end) FROM SYS.V_$$rman_backup_job_details ) LATEST_BACKUP FROM DUAL",
 		metrics: []oracleMetric{
 			{
 				metric_name:       "oracle.backup.latest",
@@ -266,8 +266,8 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: `SELECT DATABASE_ID, GLOBAL_NAME, INST_ID INSTANCE_ID, MAX(PROCESSES_UTIL) PROCESSES_UTIL, MAX(PROCESSES_LIMIT_VAL) PROCESSES_LIMIT_VAL, MAX(SESSIONS_UTIL) SESSIONS_UTIL, MAX(SESSIONS_LIMIT_VAL) SESSIONS_LIMIT_VAL
-			FROM (SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, PROCESSES_UTIL, PROCESSES_LIMIT_VAL, SESSIONS_UTIL, SESSIONS_LIMIT_VAL 
-			FROM (SELECT * FROM GV_$$resource_limit
+			FROM (SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, PROCESSES_UTIL, PROCESSES_LIMIT_VAL, SESSIONS_UTIL, SESSIONS_LIMIT_VAL 
+			FROM (SELECT * FROM SYS.GV_$$resource_limit
 				WHERE RESOURCE_NAME IN ('processes', 'sessions'))
 				PIVOT(
 					MAX(TRIM(CURRENT_UTILIZATION)) UTIL,
@@ -336,7 +336,7 @@ var oracleQueries = []oracleQuery{
 		},
 	},
 	{
-		query: "SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, PROGRAM, SUM(PGA_USED_MEM) USED_MEM, SUM(PGA_ALLOC_MEM) - SUM(PGA_USED_MEM) FREE_MEM FROM GV_$$PROCESS WHERE PROGRAM <> 'PSEUDO' GROUP BY PROGRAM, INST_ID",
+		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, PROGRAM, SUM(PGA_USED_MEM) USED_MEM, SUM(PGA_ALLOC_MEM) - SUM(PGA_USED_MEM) FREE_MEM FROM SYS.GV_$$PROCESS WHERE PROGRAM <> 'PSEUDO' GROUP BY PROGRAM, INST_ID",
 		metrics: []oracleMetric{
 			{
 				metric_name:       "oracle.process.pga_memory.size",
@@ -369,7 +369,7 @@ var oracleQueries = []oracleQuery{
 		},
 	},
 	{
-		query: "SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, WAIT_CLASS, SUM(total_waits_fg) AS TOTAL_WAITS_FG, SUM(total_waits)-SUM(total_waits_fg) AS TOTAL_WAITS_BG, SUM(total_timeouts_fg) AS TOTAL_TIMEOUTS_FG, SUM(total_timeouts)-SUM(TOTAL_TIMEOUTS_FG) AS TOTAL_TIMEOUTS_BG, SUM(time_waited_fg) AS TIME_WAITED_FG, SUM(time_waited)-SUM(TIME_WAITED_FG) AS TIME_WAITED_BG FROM GV_$$system_event WHERE wait_class <> 'Idle' GROUP BY INST_ID, WAIT_CLASS",
+		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, WAIT_CLASS, SUM(total_waits_fg) AS TOTAL_WAITS_FG, SUM(total_waits)-SUM(total_waits_fg) AS TOTAL_WAITS_BG, SUM(total_timeouts_fg) AS TOTAL_TIMEOUTS_FG, SUM(total_timeouts)-SUM(TOTAL_TIMEOUTS_FG) AS TOTAL_TIMEOUTS_BG, SUM(time_waited_fg) AS TIME_WAITED_FG, SUM(time_waited)-SUM(TIME_WAITED_FG) AS TIME_WAITED_BG FROM SYS.GV_$$system_event WHERE wait_class <> 'Idle' GROUP BY INST_ID, WAIT_CLASS",
 		metrics: []oracleMetric{
 			{
 				metric_name:       "oracle.wait.count",
@@ -459,8 +459,8 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: `SELECT DATABASE_ID, GLOBAL_NAME, INST_ID INSTANCE_ID, MAX(RESPONSE_TIME) RESPONSE_TIME, MAX(BUFFER_HIT_RATIO) BUFFER_HIT_RATIO, MAX(ROW_HIT_RATIO) ROW_HIT_RATIO 
-			FROM (SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, END_TIME, RESPONSE_TIME, BUFFER_HIT_RATIO, ROW_HIT_RATIO 
-			FROM (SELECT * FROM GV_$$sysmetric
+			FROM (SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, END_TIME, RESPONSE_TIME, BUFFER_HIT_RATIO, ROW_HIT_RATIO 
+			FROM (SELECT * FROM SYS.GV_$$sysmetric
 				WHERE METRIC_NAME IN ('SQL Service Response Time', 'Buffer Cache Hit Ratio', 'Row Cache Hit Ratio')
 				AND GROUP_ID = 2)
 				PIVOT(
@@ -515,8 +515,8 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: `SELECT DATABASE_ID, GLOBAL_NAME, INST_ID INSTANCE_ID, MAX(CURSORS_CUMULATIVE) CURSORS_CUMULATIVE, MAX(CURSORS_CURRENT) CURSORS_CURRENT, MAX(SORTS_MEM) SORTS_MEM, MAX(SORTS_DISK) SORTS_DISK, MAX(SORTS_ROWS) SORTS_ROWS, MAX(READ_TOTAL) READ_TOTAL, MAX(WRITE_TOTAL) WRITE_TOTAL, MAX(READ_TOTAL_BY) READ_TOTAL_BY, MAX(WRITE_TOTAL_BY) WRITE_TOTAL_BY, MAX(LOGONS_CURRENT) LOGONS_CURRENT, MAX(CLIENT_RECV_BY) CLIENT_RECV_BY, MAX(DBLINK_RECV_BY) DBLINK_RECV_BY, MAX(CLIENT_SENT_BY) CLIENT_SENT_BY, MAX(DBLINK_SENT_BY) DBLINK_SENT_BY, MAX(LOGONS_CUMULATIVE) LOGONS_CUMULATIVE, MAX(USER_CALLS) USER_CALLS, MAX(USER_COMMITS) USER_COMMITS, MAX(USER_ROLLBACKS) USER_ROLLBACKS 
-			FROM (SELECT (SELECT DBID FROM GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, CURSORS_CUMULATIVE, CURSORS_CURRENT, SORTS_MEM, SORTS_DISK, SORTS_ROWS, READ_TOTAL, WRITE_TOTAL, READ_TOTAL_BY, WRITE_TOTAL_BY, LOGONS_CURRENT, CLIENT_RECV_BY, DBLINK_RECV_BY, CLIENT_SENT_BY, DBLINK_SENT_BY, LOGONS_CUMULATIVE, USER_CALLS, USER_COMMITS, USER_ROLLBACKS 
-			FROM (SELECT * FROM GV_$$sysstat
+			FROM (SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID, CURSORS_CUMULATIVE, CURSORS_CURRENT, SORTS_MEM, SORTS_DISK, SORTS_ROWS, READ_TOTAL, WRITE_TOTAL, READ_TOTAL_BY, WRITE_TOTAL_BY, LOGONS_CURRENT, CLIENT_RECV_BY, DBLINK_RECV_BY, CLIENT_SENT_BY, DBLINK_SENT_BY, LOGONS_CUMULATIVE, USER_CALLS, USER_COMMITS, USER_ROLLBACKS 
+			FROM (SELECT * FROM SYS.GV_$$sysstat
 				WHERE NAME IN ('opened cursors cumulative', 'opened cursors current', 'sorts (memory)', 'sorts (disk)', 'sorts (rows)', 'physical read total IO requests', 'physical write total IO requests', 'physical read total bytes', 'physical write total bytes', 'logons current', 'bytes received via SQL*Net from client', 'bytes received via SQL*Net from dblink', 'bytes sent via SQL*Net to client', 'bytes sent via SQL*Net to dblink', 'logons cumulative', 'user calls', 'user commits', 'user rollbacks')
 				)
 				PIVOT(
@@ -889,7 +889,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 					//								decode(substr(inst.version, 1, 4),
 					//										'12.1', ''' immediate ', ''' force timeout 0 ') ||
 					//								'-- process 73841'
-					//				from v$mystat stat, v$session sess, v$instance inst
+					//				FROM SYS.V$mystat stat, v$session sess, v$instance inst
 					//				where stat.sid=sess.sid
 					//				union all
 					//				select '/' from dual'
