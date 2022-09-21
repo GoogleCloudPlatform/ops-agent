@@ -1866,7 +1866,7 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Stop-Process -Name '%s' -PassThru -Force", processName)
 	} else {
-		cmd = "sudo pkill -f -SIGABRT " + processName
+		cmd = "sudo pkill -SIGABRT -f " + processName
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
