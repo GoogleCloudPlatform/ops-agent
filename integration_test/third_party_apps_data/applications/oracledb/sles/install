@@ -1,2 +1,0 @@
-# Oracle DB is currently only tested on rhel7
-set -e
