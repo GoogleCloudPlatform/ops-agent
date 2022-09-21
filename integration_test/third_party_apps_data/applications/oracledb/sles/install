@@ -1,2 +1,2 @@
-# Oracle DB is pre-installed on the images used for tests
+# Oracle DB is currently only tested on rhel7
 set -e
