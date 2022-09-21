@@ -1939,6 +1939,25 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
+func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric from the last minute. Sleep for 3 minutes first
+	// to make sure we aren't picking up metrics from a previous instance
+	// of the metrics agent.
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil)
+	return err
+}
+
+func TestDiagnosticsCrashRestart(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		testAgentCrashRestart(ctx, t, logger, vm, []string{"diagnostics"}, diagnosticsLivenessChecker)
+	})
+}
+
 func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx context.Context, logger *log.Logger, vm *gce.VM) error, wantError string) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -1986,7 +2005,8 @@ func TestWindowsMonitoringAgentConflict(t *testing.T) {
 func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	return multierr.Append(
 		loggingLivenessChecker(ctx, logger, vm),
-		metricsLivenessChecker(ctx, logger, vm))
+		metricsLivenessChecker(ctx, logger, vm),
+		diagnosticsLivenessChecker(ctx, logger, vm))
 }
 
 func TestUpgradeOpsAgent(t *testing.T) {
