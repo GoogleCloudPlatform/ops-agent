@@ -450,58 +450,22 @@ receivers:
         scrape_timeout: 10s
         evaluation_interval: 1m
       scrape_configs:
-      - job_name: prometheus
+      - job_name: node
         honor_timestamps: true
         scrape_interval: 10s
         scrape_timeout: 10s
         metrics_path: /metrics
         scheme: http
+        tls_config:
+          ca_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/ca
+          cert_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/cert
+          key_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/key
+          insecure_skip_verify: true
         follow_redirects: true
         enable_http2: true
         static_configs:
         - targets:
           - localhost:1234
-      - job_name: drop
-        honor_timestamps: true
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        metrics_path: /metrics
-        scheme: http
-        follow_redirects: true
-        enable_http2: true
-        relabel_configs:
-        - source_labels: [__address__]
-          separator: ;
-          regex: (.*)
-          target_label: location
-          replacement: new_location
-          action: replace
-        - source_labels: [__address__]
-          separator: ;
-          regex: (.*)
-          target_label: cluster
-          replacement: new_cluster
-          action: replace
-        - source_labels: [__meta_gce_machine_type]
-          separator: ;
-          regex: (.+)
-          target_label: machine_type
-          replacement: $${1}
-          action: replace
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          separator: ;
-          regex: <dropped_metric_regex_1>
-          replacement: $1
-          action: drop
-        - source_labels: [__name__]
-          separator: ;
-          regex: <dropped_metric_regex_2>
-          replacement: $1
-          action: drop
-        static_configs:
-        - targets:
-          - 0.0.0.0:9100
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:

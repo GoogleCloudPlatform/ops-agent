@@ -27,6 +27,7 @@ import (
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 )
 
 type PrometheusMetrics struct {
@@ -45,6 +46,26 @@ type PrometheusMetrics struct {
 
 func (r PrometheusMetrics) Type() string {
 	return "prometheus"
+}
+
+func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
+	// TODO(b/248268653): Fix the issue we have with the regex capture group syntax.
+	return []otel.Pipeline{{
+		Receiver: otel.Component{
+			Type:   "prometheus",
+			Config: map[string]interface{}{"config": r.PromConfig},
+		},
+	}}
+}
+
+func validatePrometheusConfig(sl validator.StructLevel) {
+	promConfig := sl.Current().Interface().(promconfig.Config)
+
+	// Validate that the Prometheus config is valid.
+	if field, err := validatePrometheus(promConfig); err != nil {
+		fmt.Printf("Prometheus config validation failed with error: %v", err)
+		sl.ReportError(reflect.ValueOf(promConfig), "config", field, err.Error(), "")
+	}
 }
 
 func checkFile(fn string) error {
@@ -133,26 +154,6 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 
 	return "", nil
 
-}
-
-func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
-	// TODO(ridwanmsharif): Fix the issue we have with the regex capture group syntax.
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "prometheus",
-			Config: map[string]interface{}{"config": r.PromConfig},
-		},
-	}}
-}
-
-func validatePrometheusConfig(sl validator.StructLevel) {
-	promConfig := sl.Current().Interface().(promconfig.Config)
-
-	// Validate that the Prometheus config is valid.
-	if field, err := validatePrometheus(promConfig); err != nil {
-		fmt.Printf("Prometheus config validation failed with error: %v", err)
-		sl.ReportError(reflect.ValueOf(promConfig), "config", field, err.Error(), "")
-	}
 }
 
 func init() {

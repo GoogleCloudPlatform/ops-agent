@@ -18,10 +18,15 @@ metrics:
         type: prometheus
         config:
           scrape_configs:
-          - job_name: prometheus
-            file_sd_configs:
-              - files:
-                  - nonexistent_file.yml 
+            - job_name: 'node'
+              scrape_interval: 10s
+              static_configs:
+                - targets: ['localhost:1234']
+              tls_config:
+                cert_file: /path/to/cert
+                key_file: /path/to/key
+                ca_file: /path/to/ca
+                insecure_skip_verify: true
   service:
     pipelines:
       prometheus_pipeline:

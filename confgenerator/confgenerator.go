@@ -127,6 +127,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
+// getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
 func (m *Metrics) getCustomPrometheusOTelPipelines() ([]string, error) {
 	out := []string{}
 	for pID, p := range m.Service.Pipelines {
@@ -153,6 +154,7 @@ func (m *Metrics) getCustomPrometheusOTelPipelines() ([]string, error) {
 	return out, nil
 }
 
+// generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	out := make(map[string]otel.Pipeline)
 	for pID, p := range m.Service.Pipelines {

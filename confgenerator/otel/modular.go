@@ -64,6 +64,8 @@ type ModularConfig struct {
 
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
+	//
+	// Note: GlobalProcessors are not applied to GoogleManagedPrometheusPipelines.
 	GlobalProcessors                []Component
 	GoogleCloudExporter             Component
 	GoogleManagedPrometheusExporter Component
@@ -132,9 +134,10 @@ func (c ModularConfig) Generate() (string, error) {
 
 		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
 			exporter = googleManagedPrometheusExporter
+		} else {
+			processorNames = append(processorNames, globalProcessorNames...)
 		}
 
-		processorNames = append(processorNames, globalProcessorNames...)
 		// For now, we always generate pipelines of type "metrics".
 		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},

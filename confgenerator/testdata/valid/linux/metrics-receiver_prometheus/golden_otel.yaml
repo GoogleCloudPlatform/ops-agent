@@ -502,8 +502,7 @@ service:
     metrics/prometheus__pipeline_prometheus:
       exporters:
       - googlemanagedprometheus
-      processors:
-      - resourcedetection/_global_0
+      processors: []
       receivers:
       - prometheus/prometheus__pipeline_prometheus
   telemetry:
