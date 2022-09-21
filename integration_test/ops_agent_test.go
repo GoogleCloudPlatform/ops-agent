@@ -111,6 +111,13 @@ func metricsAgentProcessNamesForPlatform(platform string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
+func diagnosticsProcessNamesForPlatform(platform string) []string {
+	if gce.IsWindows(platform) {
+		return []string{"google-cloud-ops-agent-diagnostics"}
+	}
+	return []string{"google_cloud_ops_agent_diagnostics"}
+}
+
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
 	// If this is the first time we're trying to write to logName, we need to
 	// register a fake log source with New-EventLog.
@@ -1954,7 +1961,7 @@ func TestDiagnosticsCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"google_cloud_ops_agent_diagnostics"}, diagnosticsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
 	})
 }
 
