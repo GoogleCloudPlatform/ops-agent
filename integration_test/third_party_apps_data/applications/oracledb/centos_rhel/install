@@ -27,6 +27,7 @@ sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbho
 ## Configure instance for monitoring
 # Create user & assign permissions
 sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba <<EOF
+alter session set \"_ORACLE_SCRIPT\"=true;
 CREATE USER otel IDENTIFIED BY ora19c;
 GRANT CONNECT TO otel;
 GRANT SELECT ON GV_$$DATABASE to otel;
