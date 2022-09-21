@@ -22,7 +22,7 @@ After=network-online.target
 Type=simple
 # Run diagnostics
 ExecStart=@PREFIX@/libexec/google_cloud_ops_agent_diagnostics -config @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-RemainAfterExit=no
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
