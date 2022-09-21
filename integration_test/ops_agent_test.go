@@ -1831,7 +1831,7 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
 	} else {
-		cmd = "sudo pgrep -f" + processName
+		cmd = "sudo pgrep -f " + processName
 	}
 	output, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
