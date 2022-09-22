@@ -32,15 +32,69 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
+func googleCloudExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "googlecloud",
+		Config: map[string]interface{}{
+			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+			// recommends disabling this.
+			"retry_on_failure": map[string]interface{}{
+				"enabled": false,
+			},
+			"user_agent": userAgent,
+			"metric": map[string]interface{}{
+				// Receivers are responsible for sending fully-qualified metric names.
+				// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
+				// TODO(b/197129428): Write a test to make sure this doesn't happen.
+				"prefix": "",
+				// OT calls CreateMetricDescriptor by default. Skip because we want
+				// descriptors to be created implicitly with new time series.
+				"skip_create_descriptor": true,
+				// Omit instrumentation labels, which break agent metrics.
+				"instrumentation_library_labels": false,
+				// Omit service labels, which break agent metrics.
+				"service_resource_labels": false,
+				"resource_filters":        []map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func googleManagedPrometheusExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "googlemanagedprometheus",
+		Config: map[string]interface{}{
+			"user_agent": userAgent,
+		},
+	}
+}
+
+func gceResourceDetector() otel.Component {
+	return otel.Component{
+		Type: "resourcedetection",
+		Config: map[string]interface{}{
+			"detectors": []string{"gce"},
+		},
+	}
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
 
 	pipelines := make(map[string]otel.Pipeline)
+	var prometheusCustomMetricPipelines []string
+	var err error
+
 	if uc.Metrics != nil {
 		var err error
 		pipelines, err = uc.Metrics.generateOtelPipelines()
+		if err != nil {
+			return "", err
+		}
+		prometheusCustomMetricPipelines, err = uc.Metrics.getCustomPrometheusOTelPipelines()
 		if err != nil {
 			return "", err
 		}
@@ -60,40 +114,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:  uc.Metrics.Service.LogLevel,
-		Pipelines: pipelines,
-		GlobalProcessors: []otel.Component{{
-			Type: "resourcedetection",
-			Config: map[string]interface{}{
-				"detectors": []string{"gce"},
-			},
-		}},
-		Exporter: otel.Component{
-			Type: "googlecloud",
-			Config: map[string]interface{}{
-				// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
-				// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
-				// recommends disabling this.
-				"retry_on_failure": map[string]interface{}{
-					"enabled": false,
-				},
-				"user_agent": userAgent,
-				"metric": map[string]interface{}{
-					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
-					// TODO(b/197129428): Write a test to make sure this doesn't happen.
-					"prefix": "",
-					// OT calls CreateMetricDescriptor by default. Skip because we want
-					// descriptors to be created implicitly with new time series.
-					"skip_create_descriptor": true,
-					// Omit instrumentation labels, which break agent metrics.
-					"instrumentation_library_labels": false,
-					// Omit service labels, which break agent metrics.
-					"service_resource_labels": false,
-					"resource_filters":        []map[string]interface{}{},
-				},
-			},
-		},
+		LogLevel:                         uc.Metrics.Service.LogLevel,
+		Pipelines:                        pipelines,
+		GoogleManagedPrometheusPipelines: prometheusCustomMetricPipelines,
+		GlobalProcessors:                 []otel.Component{gceResourceDetector()},
+		GoogleCloudExporter:              googleCloudExporter(userAgent),
+		GoogleManagedPrometheusExporter:  googleManagedPrometheusExporter(userAgent),
 	}.Generate()
 	if err != nil {
 		return "", err
@@ -101,6 +127,34 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
+// getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
+func (m *Metrics) getCustomPrometheusOTelPipelines() ([]string, error) {
+	out := []string{}
+	for pID, p := range m.Service.Pipelines {
+		for _, rID := range p.ReceiverIDs {
+			receiver, ok := m.Receivers[rID]
+			if !ok {
+				return nil, fmt.Errorf("receiver %q not found", rID)
+			}
+
+			for i := range receiver.Pipelines() {
+				otelPipeline := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
+				if i > 0 {
+					otelPipeline = fmt.Sprintf("%s_%d", otelPipeline, i)
+				}
+
+				// Check the Ops Agent receiver type.
+				if receiver.Type() == "prometheus" {
+					out = append(out, otelPipeline)
+				}
+			}
+		}
+	}
+
+	return out, nil
+}
+
+// generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 	out := make(map[string]otel.Pipeline)
 	for pID, p := range m.Service.Pipelines {
@@ -109,10 +163,19 @@ func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
 			if !ok {
 				return nil, fmt.Errorf("receiver %q not found", rID)
 			}
+
 			for i, receiverPipeline := range receiver.Pipelines() {
 				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
 				if i > 0 {
 					prefix = fmt.Sprintf("%s_%d", prefix, i)
+				}
+
+				// Check the Ops Agent receiver type.
+				if receiver.Type() == "prometheus" {
+					// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
+					if len(p.ProcessorIDs) > 0 {
+						return nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+					}
 				}
 				for _, pID := range p.ProcessorIDs {
 					processor, ok := m.Processors[pID]
