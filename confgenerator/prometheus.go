@@ -74,7 +74,15 @@ func checkFile(fn string) error {
 		return nil
 	}
 	_, err := os.Stat(fn)
-	return err
+	if err != nil {
+		// Report that the file could not be found in a platform-agnostic way.
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file %q does not exist", fn)
+		} else {
+			return fmt.Errorf("error checking file %q", fn)
+		}
+	}
+	return nil
 }
 
 func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
