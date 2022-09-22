@@ -50,6 +50,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
@@ -2381,6 +2382,121 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestResourceDetectorOnGCE(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		type fileToUpload struct {
+			local, remote string
+		}
+
+		filesToUpload := []fileToUpload{
+			{local: "./cmd/run_resource_detector/run_resource_detector.go",
+				remote: "run_resource_detector.go"},
+			{local: "../confgenerator/resourcedetector/detector.go",
+				remote: "confgenerator/resourcedetector/detector.go"},
+			{local: "../confgenerator/resourcedetector/gce_detector.go",
+				remote: "confgenerator/resourcedetector/gce_detector.go"},
+			{local: "../confgenerator/resourcedetector/gce_metadata_provider.go",
+				remote: "confgenerator/resourcedetector/gce_metadata_provider.go"},
+			{local: "../go.mod",
+				remote: "go.mod"},
+			{local: "../go.sum",
+				remote: "go.sum"},
+		}
+
+		workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
+
+		for _, file := range filesToUpload {
+			f, err := os.Open(file.local)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if err := InstallGolang(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		cmd := fmt.Sprintf("cd %s && go run run_resource_detector.go", workDir)
+		test_out, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd)
+
+		if err != nil {
+			t.Fatalf("failed to run resource detector in VM: %s", test_out.Stderr)
+		}
+
+		d, err := unmarshalDetector(test_out.Stdout)
+
+		if err != nil {
+			t.Fatalf("can't unmarshal a detector from JSON: %v", err)
+		}
+
+		if d.InstanceName != vm.Name {
+			t.Errorf("detector attribute InstanceName has value %q; expected %q", d.InstanceName, vm.Name)
+		}
+		if d.Project != vm.Project {
+			t.Errorf("detector attribute Project has value %q; expected %q", d.Project, vm.Project)
+		}
+		expectedNetworkURL := fmt.Sprintf("projects/%s/networks/%s", vm.Project, vm.Network)
+		if d.Network != expectedNetworkURL {
+			t.Errorf("detector attribute Network has value %q; expected %q", d.Network, expectedNetworkURL)
+		}
+		if d.Zone != vm.Zone {
+			t.Errorf("detector attribute Zone has value %q; expected %q", d.Zone, vm.Zone)
+		}
+		expectedMachineType := fmt.Sprintf("projects/%s/machineTypes/%s", vm.Project, vm.MachineType)
+		if d.MachineType != expectedMachineType {
+			t.Errorf("detector attribute MachineType has value %q; expected %q", d.MachineType, expectedMachineType)
+		}
+		if d.InstanceID != fmt.Sprint(vm.ID) {
+			t.Errorf("detector attribute InstanceID has value %q; expected %q", d.InstanceID, fmt.Sprint(vm.ID))
+		}
+		if len(d.InterfaceIPv4) == 0 {
+			t.Errorf("detector attribute InterfaceIPv4 should have at least one value")
+		}
+		if d.PrivateIP != vm.IPAddress && d.PublicIP != vm.IPAddress {
+			t.Errorf("detector attribute PrivateIP has value %q and PublicIP has value %q; expected at least one to be %q", d.PrivateIP, d.PublicIP, vm.IPAddress)
+		}
+	})
+}
+
+func unmarshalDetector(in string) (resourcedetector.GCEResource, error) {
+	r := regexp.MustCompile("{(\"(Project|Zone|Network|Subnetwork|PublicIP|PrivateIP|InstanceID|InstanceName|Tags|MachineType|Metadata|Label|InterfaceIPv4)\":.*)+}")
+	match := r.FindString(in)
+	in_byte := []byte(match)
+	var detector resourcedetector.GCEResource
+	err := json.Unmarshal(in_byte, &detector)
+	return detector, err
+}
+
+func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if gce.IsWindows(vm.Platform) {
+		return fmt.Errorf("Installing Golang on Windows is not implementated.")
+	}
+	logger.Printf("Installing go...")
+
+	err := agents.InstallPackages(ctx, logger, vm, []string{"wget"})
+	if err != nil {
+		return err
+	}
+	installCmd := `wget https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go 
+sudo tar -C /usr/local -xzf go1.19.1.linux-amd64.tar.gz
+sudo ln -s /usr/local/go/bin/go /usr/bin/go 
+`
+	_, err = gce.RunRemotely(ctx, logger, vm, "", installCmd)
+	return err
 }
 
 func TestMain(m *testing.M) {
