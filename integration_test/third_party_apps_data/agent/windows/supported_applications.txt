@@ -1,3 +1,0 @@
-iis
-mssql
-active_directory_ds
