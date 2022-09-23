@@ -22,21 +22,16 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-const (
-	testdataDir           = "testdata"
-	builtinConfigFileName = "built-in-config-%s.yaml"
-)
-
 var (
 	platforms               = []string{"linux", "windows"}
 	defaultEnabledReceivers = map[string]enabledReceivers{
 		"linux": enabledReceivers{
-			metric: map[string]int{"hostmetrics": 1},
-			log:    map[string]int{"files": 1},
+			metricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+			logsReceiverCountsByType:    map[string]int{"files": 1},
 		},
 		"windows": enabledReceivers{
-			metric: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
-			log:    map[string]int{"windows_event_log": 1},
+			metricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
+			logsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
 		},
 	}
 )
@@ -46,7 +41,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 	for _, p := range platforms {
 		uc := apps.BuiltInConfStructs[p]
 
-		eR, err := GetEnabledReceivers(uc)
+		eR, err := CountEnabledReceivers(uc)
 		if err != nil {
 			t.Fatal(err)
 		}

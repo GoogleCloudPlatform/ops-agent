@@ -20,10 +20,10 @@ import (
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	meter "go.opentelemetry.io/otel/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
@@ -38,21 +38,21 @@ var (
 )
 
 type enabledReceivers struct {
-	metric map[string]int
-	log    map[string]int
+	metricsReceiverCountsByType map[string]int
+	logsReceiverCountsByType    map[string]int
 }
 
-func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, error) {
+func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, error) {
 	eR := enabledReceivers{
-		metric: make(map[string]int),
-		log:    make(map[string]int),
+		metricsReceiverCountsByType: make(map[string]int),
+		logsReceiverCountsByType:    make(map[string]int),
 	}
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
 			rType := uc.Logging.Receivers[rID].Type()
-			eR.log[rType] += 1
+			eR.logsReceiverCountsByType[rType] += 1
 		}
 	}
 
@@ -60,15 +60,15 @@ func GetEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, err
 	for _, p := range uc.Metrics.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
 			rType := uc.Metrics.Receivers[rID].Type()
-			eR.metric[rType] += 1
+			eR.metricsReceiverCountsByType[rType] += 1
 		}
 	}
 
 	return eR, nil
 }
 
-func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter meter.Meter) error {
-	eR, err := GetEnabledReceivers(uc)
+func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metric.Meter) error {
+	eR, err := CountEnabledReceivers(uc)
 	if err != nil {
 		return err
 	}
@@ -78,9 +78,10 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 	if err != nil {
 		return fmt.Errorf("failed to initialize instrument: %v", err)
 	}
-	_ = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
 
-		for rType, count := range eR.metric {
+	return meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
+
+		for rType, count := range eR.metricsReceiverCountsByType {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "metrics"),
 				attribute.String("receiver_type", rType),
@@ -88,7 +89,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 			gaugeObserver.Observe(ctx, int64(count), labels...)
 		}
 
-		for rType, count := range eR.log {
+		for rType, count := range eR.logsReceiverCountsByType {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "logs"),
 				attribute.String("receiver_type", rType),
@@ -96,8 +97,6 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 			gaugeObserver.Observe(ctx, int64(count), labels...)
 		}
 	})
-
-	return nil
 }
 
 func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool) error {
@@ -126,7 +125,10 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 	// Start meter
 	meter := pusher.Meter("ops_agent/self_metrics")
 
-	InstrumentEnabledReceiversMetric(uc, meter)
+	err = InstrumentEnabledReceiversMetric(uc, meter)
+	if err != nil {
+		return err
+	}
 
 waitForDeathSignal:
 	for {
