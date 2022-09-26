@@ -11,6 +11,8 @@ curl -o "${PREINSTALL_RPM}" https://yum.oracle.com/repo/OracleLinux/OL7/latest/x
 sudo yum -y localinstall "${PREINSTALL_RPM}"
 rm "${PREINSTALL_RPM}"
 
+# This RPM was downloaded from http://www.oracle.com/technetwork/indexes/downloads/index.html
+# using martijnvans's Oracle account (any account should work).
 ORACLE_DB_RPM=oracle-database-ee-19c-1.0-1.x86_64.rpm
 gsutil cp gs://stackdriver-test-143416-oracle/"${ORACLE_DB_RPM}" .
 sudo yum -y localinstall "${ORACLE_DB_RPM}"
