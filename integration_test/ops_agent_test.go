@@ -2397,6 +2397,8 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 			local, remote string
 		}
 
+		// Update the resourcedetector package and the go.mod and go.sum
+		// So that the main function can resolve it from the work directory
 		filesToUpload := []fileToUpload{
 			{local: "./cmd/run_resource_detector/run_resource_detector.go",
 				remote: "run_resource_detector.go"},
@@ -2436,7 +2438,7 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 			t.Fatalf("failed to run resource detector in VM: %s", test_out.Stderr)
 		}
 
-		d, err := unmarshalDetector(test_out.Stdout)
+		d, err := unmarshalResource(test_out.Stdout)
 
 		if err != nil {
 			t.Fatalf("can't unmarshal a detector from JSON: %v", err)
@@ -2448,16 +2450,16 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 		if d.Project != vm.Project {
 			t.Errorf("detector attribute Project has value %q; expected %q", d.Project, vm.Project)
 		}
-		expectedNetworkURL := fmt.Sprintf("projects/%s/networks/%s", vm.Project, vm.Network)
-		if d.Network != expectedNetworkURL {
-			t.Errorf("detector attribute Network has value %q; expected %q", d.Network, expectedNetworkURL)
+		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+		if !expectedNetworkURL.MatchString(d.Network) {
+			t.Errorf("detector attribute Network has value %q; expected %q", d.Network, expectedNetworkURL.String())
 		}
 		if d.Zone != vm.Zone {
 			t.Errorf("detector attribute Zone has value %q; expected %q", d.Zone, vm.Zone)
 		}
-		expectedMachineType := fmt.Sprintf("projects/%s/machineTypes/%s", vm.Project, vm.MachineType)
-		if d.MachineType != expectedMachineType {
-			t.Errorf("detector attribute MachineType has value %q; expected %q", d.MachineType, expectedMachineType)
+		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+		if !expectedMachineType.MatchString(d.MachineType) {
+			t.Errorf("detector attribute MachineType has value %q; expected %q", d.MachineType, expectedMachineType.String())
 		}
 		if d.InstanceID != fmt.Sprint(vm.ID) {
 			t.Errorf("detector attribute InstanceID has value %q; expected %q", d.InstanceID, fmt.Sprint(vm.ID))
@@ -2465,21 +2467,32 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 		if len(d.InterfaceIPv4) == 0 {
 			t.Errorf("detector attribute InterfaceIPv4 should have at least one value")
 		}
+		// Depends on the setup of the integration test, vm.IPAddress can be either the public or the private IP
 		if d.PrivateIP != vm.IPAddress && d.PublicIP != vm.IPAddress {
 			t.Errorf("detector attribute PrivateIP has value %q and PublicIP has value %q; expected at least one to be %q", d.PrivateIP, d.PublicIP, vm.IPAddress)
+		}
+		// For the current integration tests we always attach the following metadata
+		if v, ok := d.Metadata["serial-port-logging-enable"]; ok {
+			if v != "true" {
+				t.Errorf("detector attribute Metadata has values %v; expected to have %q as %q", d.Metadata, "serial-port-logging-enable", "true")
+			}
+		} else {
+			t.Errorf("detector attribute Metadata has values %v; expected to have %q", d.Metadata, "serial-port-logging-enable")
 		}
 	})
 }
 
-func unmarshalDetector(in string) (resourcedetector.GCEResource, error) {
+// Unmarshal the output to a GCEResource
+func unmarshalResource(in string) (resourcedetector.GCEResource, error) {
 	r := regexp.MustCompile("{(\"(Project|Zone|Network|Subnetwork|PublicIP|PrivateIP|InstanceID|InstanceName|Tags|MachineType|Metadata|Label|InterfaceIPv4)\":.*)+}")
 	match := r.FindString(in)
 	in_byte := []byte(match)
-	var detector resourcedetector.GCEResource
-	err := json.Unmarshal(in_byte, &detector)
-	return detector, err
+	var resource resourcedetector.GCEResource
+	err := json.Unmarshal(in_byte, &resource)
+	return resource, err
 }
 
+// Install golang by downloading the binary and create link to /usr/bin/go
 func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if gce.IsWindows(vm.Platform) {
 		return fmt.Errorf("Installing Golang on Windows is not implementated.")
