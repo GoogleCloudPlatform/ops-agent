@@ -118,16 +118,23 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 	// Log levels are just log4j log levels
 	// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", true,
-			[]struct{ SrcVal, DestVal string }{
-				{"TRACE", "TRACE"},
-				{"DEBUG", "DEBUG"},
-				{"INFO", "INFO"},
-				{"ERROR", "ERROR"},
-				{"WARN", "WARNING"},
-				{"FATAL", "CRITICAL"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"TRACE": "TRACE",
+						"DEBUG": "DEBUG",
+						"INFO":  "INFO",
+						"ERROR": "ERROR",
+						"WARN":  "WARNING",
+						"FATAL": "CRITICAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
 
 	return c

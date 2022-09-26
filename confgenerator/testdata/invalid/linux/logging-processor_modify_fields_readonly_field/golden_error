@@ -1,0 +1,9 @@
+[20:63] "labels.\"logging.googleapis.com/instrumentation_source\"" is not a writable field
+  17 |     processor_1:
+  18 |       type: modify_fields
+  19 |       fields:
+> 20 |         labels."logging.googleapis.com/instrumentation_source":
+                                                                     ^
+  21 |           static_value: hello
+  22 |   service:
+  23 |     pipelines:

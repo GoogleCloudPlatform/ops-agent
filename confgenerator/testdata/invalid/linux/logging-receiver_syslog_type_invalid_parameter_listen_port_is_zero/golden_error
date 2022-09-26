@@ -1,9 +1,9 @@
-[6:20] "listen_port" is a required field
-   3 |     receiver_1:
-   4 |       type: syslog
-   5 |       listen_host: "1.1.1.1"
->  6 |       listen_port: 0
+[20:20] "listen_port" is a required field
+  17 |     receiver_1:
+  18 |       type: syslog
+  19 |       listen_host: "1.1.1.1"
+> 20 |       listen_port: 0
                           ^
-   7 |       transport_protocol: tcp
-   8 |   service:
-   9 |     pipelines:
+  21 |       transport_protocol: tcp
+  22 |   service:
+  23 |     pipelines:

@@ -1,0 +1,16 @@
+#!/usr/bin/expect -f
+
+# Sign RPM packages using a key with an empty passphrase. The environment
+# variable GPG_NAME must contain the key name ("Real Name <email@example.org").
+# That private key must exist in GPG.
+
+spawn rpm --define "_gpg_name $env(GPG_NAME)" --resign {*}$argv
+expect {
+  -exact "Enter pass phrase: " { send -- "\r"; expect eof }
+  # GnuPG 2 does not prompt for a passphrase when it's empty.
+  eof {}
+}
+
+# Return the exit status of the spawned command.
+catch wait result
+exit [lindex $result 3]

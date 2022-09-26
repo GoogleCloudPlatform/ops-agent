@@ -1,0 +1,27 @@
+logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [test.log]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: python
+    multiline_parser_2:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: python
+      - type: language_exceptions
+        language: java
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]
+      p2:
+        receivers: [files_1]
+        processors: [multiline_parser_2]

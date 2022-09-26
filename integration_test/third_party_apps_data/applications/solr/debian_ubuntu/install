@@ -1,12 +1,11 @@
 set -e
 
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install \
-    -y default-jdk default-jdk-headless curl lsof
+sudo apt-get install -y default-jdk default-jdk-headless curl lsof
 
 curl -L -o \
     solr-8.11.1.tgz \
-    https://downloads.apache.org/lucene/solr/8.11.1/solr-8.11.1.tgz
+    https://archive.apache.org/dist/lucene/solr/8.11.1/solr-8.11.1.tgz
 
 tar -xzf \
     solr-8.11.1.tgz \

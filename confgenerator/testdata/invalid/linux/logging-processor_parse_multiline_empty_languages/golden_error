@@ -1,6 +1,6 @@
-[15:18] "language" is a required field
-> 15 | null
+[29:18] "language" is a required field
+> 29 | null
                         ^
-  16 |   service:
-  17 |     pipelines:
-  18 |       p1:
+  30 |   service:
+  31 |     pipelines:
+  32 |       p1:

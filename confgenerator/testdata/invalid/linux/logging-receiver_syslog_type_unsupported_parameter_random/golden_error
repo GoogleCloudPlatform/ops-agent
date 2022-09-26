@@ -1,9 +1,9 @@
-[8:7] unknown field "unsupported_parameter"
-   5 |       listen_host: 1.1.1.1
-   6 |       listen_port: 1111
-   7 |       transport_protocol: tcp
->  8 |       unsupported_parameter: value_1
+[22:7] unknown field "unsupported_parameter"
+  19 |       listen_host: 1.1.1.1
+  20 |       listen_port: 1111
+  21 |       transport_protocol: tcp
+> 22 |       unsupported_parameter: value_1
              ^
-   9 |   service:
-  10 |     pipelines:
-  11 |       default_pipeline:
+  23 |   service:
+  24 |     pipelines:
+  25 |       default_pipeline:

@@ -1,6 +1,6 @@
 # Integration Testing
 
-Integration tests are implemented as Kokoko builds that run on each PR. The
+Integration tests are implemented as Kokoro builds that run on each PR. The
 builds first build the Ops Agent and then run tests on that agent. The Kokoro
 builds are split up by distro.
 
@@ -192,8 +192,7 @@ With `optional: true`, the metric will be skipped during the test. This can be u
 ```
 PROJECT="${PROJECT}" \
 SCRIPTS_DIR=third_party_apps_data \
-go run -tags=integration_test \
-./cmd/generate_expected_metrics
+go run ./cmd/generate_expected_metrics
 ```
 
 This queries all metric descriptors under `workload.googleapis.com/`, `agent.googleapis.com/iis/`, and `agent.googleapis.com/mssql/`. The optional variable `FILTER` is also provided to make it quicker to test individual integrations. For example:
@@ -202,8 +201,7 @@ This queries all metric descriptors under `workload.googleapis.com/`, `agent.goo
 PROJECT="${PROJECT}" \
 SCRIPTS_DIR=third_party_apps_data \
 FILTER='metric.type=starts_with("workload.googleapis.com/apache")' \
-go run -tags=integration_test \
-./cmd/generate_expected_metrics
+go run ./cmd/generate_expected_metrics
 ```
 
 Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.

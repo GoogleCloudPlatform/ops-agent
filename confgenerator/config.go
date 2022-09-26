@@ -122,6 +122,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	case "distinctfield":
 		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
+	case "writablefield":
+		return fmt.Sprintf("%q is not a writable field", ve.Value().(string))
 	}
 
 	return ve.FieldError.Error()
@@ -220,6 +222,20 @@ func newValidator() *validator.Validate {
 			}
 		}
 		return true
+	})
+	// writablefield checks to make sure the field is writable
+	v.RegisterValidation("writablefield", func(fl validator.FieldLevel) bool {
+		m1, err := filter.NewMember(fl.Field().String())
+		if err != nil {
+			// The "field" validator will handle this better.
+			return true
+		}
+		// Currently, instrumentation_source is the only field that is not writable.
+		m2, err := filter.NewMember(InstrumentationSourceLabel)
+		if err != nil {
+			panic(err)
+		}
+		return !m2.Equals(*m1)
 	})
 	// multipleof_time validates that the value duration is a multiple of the parameter
 	v.RegisterValidation("multipleof_time", func(fl validator.FieldLevel) bool {
@@ -395,6 +411,12 @@ var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiv
 
 func (m *loggingReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 	return LoggingReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
+}
+
+// Logging receivers that listen on a port of the host
+type LoggingNetworkReceiver interface {
+	LoggingReceiver
+	GetListenPort() uint16
 }
 
 type LoggingProcessor interface {
@@ -658,6 +680,7 @@ func (l *Logging) Validate(platform string) error {
 	if l.Service == nil {
 		return nil
 	}
+	portTaken := map[uint16]string{} // port -> receiverId map
 	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
 		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
@@ -677,6 +700,10 @@ func (l *Logging) Validate(platform string) error {
 			return err
 		}
 		if _, err := validateComponentTypeCounts(l.Processors, p.ProcessorIDs, subagent, "processor"); err != nil {
+			return err
+		}
+		// portTaken will be modified/updated by the validation function
+		if _, err := validateReceiverPorts(portTaken, l.Receivers, p.ReceiverIDs); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
@@ -757,6 +784,10 @@ var (
 		"iis":                     1,
 		"mssql":                   1,
 	}
+
+	receiverPortLimits = []string{
+		"syslog", "tcp", "fluent_forward",
+	}
 )
 
 // mapKeys returns keys from a map[string]Any as a map[string]bool.
@@ -819,6 +850,34 @@ func validateComponentTypeCounts[V any, M ~map[string]V](components M, refs []st
 		}
 	}
 	return r, nil
+}
+
+// Validate that no two receivers are using the same port; adding new port usage to the input map `taken`
+func validateReceiverPorts(taken map[uint16]string, components interface{}, pipelineRIDs []string) (map[uint16]string, error) {
+	cm := reflect.ValueOf(components)
+	for _, pipelineRID := range pipelineRIDs {
+		v := cm.MapIndex(reflect.ValueOf(pipelineRID)) // For receivers, ids always exist in the component/receiver lists
+		t := v.Interface().(Component).Type()
+		for _, limitType := range receiverPortLimits {
+			if t == limitType {
+				// Since the type of this receiver is in the receiverPortLimits, then this receiver must be a LoggingNetworkReceiver
+				port := v.Interface().(LoggingNetworkReceiver).GetListenPort()
+				if portRID, ok := taken[port]; ok {
+					if portRID == pipelineRID {
+						// One network receiver is used by two pipelines
+						return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
+					} else {
+						// Two network receivers are using the same port
+						return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
+					}
+				} else {
+					// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
+					taken[port] = pipelineRID
+				}
+			}
+		}
+	}
+	return taken, nil
 }
 
 func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {

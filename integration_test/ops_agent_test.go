@@ -28,10 +28,11 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs.
+.deb/.rpm/.goo files to install on the testing VMs.
+
 REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-    version of the Ops Agent to install first, before installing the version
-	from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+version of the Ops Agent to install first, before installing the version
+from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -41,15 +42,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
@@ -58,7 +66,7 @@ import (
 
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "C:/mylog"
+		return `C:\mylog`
 	}
 	return "/tmp/mylog"
 }
@@ -112,7 +120,7 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// *somewhere*. So the workaround is to make the log source's name unique
 	// per logName.
 	source := logName + "__ops_agent_test"
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog –LogName '%s' –Source '%s' }", source, logName, source)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
 	}
 
@@ -213,7 +221,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), configPathForPlatform(vm.Platform)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
@@ -228,7 +236,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	return nil
 }
 
-func TestParseMultilineFile(t *testing.T) {
+func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -312,7 +320,7 @@ com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS
 	... 12 more
 Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
 `), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
+			t.Fatalf("error writing dummy log lines for Java: %v", err)
 		}
 
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -323,6 +331,380 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Error(err)
 		}
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseMultilineFileJavaPython(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: java
+      - type: language_exceptions
+        language: python
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from 3 java and 3 python exception stacktraces, thus expect 6 logEntries.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
+  at com.my.app.Object.do$a1(MakeLog.java:50)
+  at java.lang.Thing.call(Thing.java:10)
+Traceback (most recent call last):
+  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+    return get()
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+    raise Exception('spam', 'eggs')
+Exception: ('spam', 'eggs')
+javax.servlet.ServletException: Something bad happened
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
+    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)
+    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)
+    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)
+    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)
+    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)
+    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)
+    at org.mortbay.jetty.Server.handle(Server.java:326)
+    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)
+    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)
+    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)
+    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)
+    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)
+    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)
+    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)
+Caused by: com.example.myproject.MyProjectServletException
+    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
+    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
+    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
+    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
+    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
+    ... 27 common frames omitted
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+Traceback (most recent call last):
+  File "/test/exception.py", line 21, in <module>
+    conn.request("GET", "/")
+  File "/usr/lib/python3.10/http/client.py", line 1282, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1328, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1277, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/usr/lib/python3.10/http/client.py", line 1037, in _send_output
+    self.send(msg)
+  File "/usr/lib/python3.10/http/client.py", line 975, in send
+    self.connect()
+  File "/usr/lib/python3.10/http/client.py", line 941, in connect
+    self.sock = self._create_connection(
+  File "/usr/lib/python3.10/socket.py", line 824, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+  File "/usr/lib/python3.10/socket.py", line 955, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+socket.gaierror: [Errno -2] Name or service not known
+Traceback (most recent call last):
+  File "/usr/local/google/home/lujieduan/source/test/exception.py", line 11, in <module>
+    '2' + 2
+TypeError: can only concatenate str (not "int") to str
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// 1st one is Java
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 2nd Python
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 3rd Java
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 4th Java
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 5th Python
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/test/exception.py\", line 21, in <module>\n    conn.request(\"GET\", \"/\")\n  File \"/usr/lib/python3.10/http/client.py\", line 1282, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1328, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1277, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1037, in _send_output\n    self.send(msg)\n  File \"/usr/lib/python3.10/http/client.py\", line 975, in send\n    self.connect()\n  File \"/usr/lib/python3.10/http/client.py\", line 941, in connect\n    self.sock = self._create_connection(\n  File \"/usr/lib/python3.10/socket.py\", line 824, in create_connection\n    for res in getaddrinfo(host, port, 0, SOCK_STREAM):\n  File \"/usr/lib/python3.10/socket.py\", line 955, in getaddrinfo\n    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\nsocket.gaierror: [Errno -2] Name or service not known\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 6th Python
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/usr/local/google/home/lujieduan/source/test/exception.py\", line 11, in <module>\n    '2' + 2\nTypeError: can only concatenate str (not \"int\") to str\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseMultilineFileGolangJavaPython(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: go
+      - type: language_exceptions
+        language: java
+      - type: language_exceptions
+        language: python
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from Go, Python and Java exception stacktraces.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+goroutine 24 [running]:
+net/http.(*conn).serve.func1(0xc00007eaa0)
+	/usr/local/go/src/net/http/server.go:1746 +0xd0
+panic(0x12472a0, 0x12ece10)
+	/usr/local/go/src/runtime/panic.go:513 +0x1b9
+main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
+net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:1964 +0x44
+net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2361 +0x127
+net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2741 +0xab
+net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
+	/usr/local/go/src/net/http/server.go:1847 +0x646
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2851 +0x2f5
+Traceback (most recent call last):
+  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+    return get()
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+    raise Exception('spam', 'eggs')
+Exception: ('spam', 'eggs')
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// 1st one is Golang
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 2nd Python
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 3rd Java
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestParseMultilineFileMissingParser(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		// In the config file, only match for Golang exceptions
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+      wildcard_refresh_interval: 30s
+  processors:
+    multiline_parser_1:
+      type: parse_multiline
+      match_any:
+      - type: language_exceptions
+        language: go
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+        processors: [multiline_parser_1]`, logPath)
+
+		//Below lines comes from Go, Python and Java exception stacktraces.
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+goroutine 24 [running]:
+net/http.(*conn).serve.func1(0xc00007eaa0)
+	/usr/local/go/src/net/http/server.go:1746 +0xd0
+panic(0x12472a0, 0x12ece10)
+	/usr/local/go/src/runtime/panic.go:513 +0x1b9
+main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
+net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:1964 +0x44
+net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2361 +0x127
+net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+	/usr/local/go/src/net/http/server.go:2741 +0xab
+net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
+	/usr/local/go/src/net/http/server.go:1847 +0x646
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2851 +0x2f5
+Traceback (most recent call last):
+  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+    return get()
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+    raise Exception('spam', 'eggs')
+Exception: ('spam', 'eggs')
+java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+	at java.util.Optional.ifPresent(Optional.java:159)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.base/java.lang.Thread.run(Thread.java:748)
+Caused by: javax.mail.SendFailedException: Invalid Addresses;
+  nested exception is:
+com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+	... 12 more
+Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+`), logPath); err != nil {
+			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// 1st one is Golang
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 2nd one is Python - the golang parser will send those lines as single-line logs
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n"`); err != nil {
+			t.Error(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="    raise Exception('spam', 'eggs')\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 3rd one is Java - the golang parser will send those lines as single-line logs
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n"`); err != nil {
+			t.Error(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -422,6 +804,134 @@ func TestCustomLogFormat(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func TestHTTPRequestLog(t *testing.T) {
+	t.Parallel()
+
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
+  processors:
+    json1:
+      type: parse_json
+      field: message
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+        exporters: [google]`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// The HTTP request data that will be used in each log
+		httpRequestBody := map[string]interface{}{
+			"requestMethod": "GET",
+			"requestUrl":    "https://cool.site.net",
+			"status":        200,
+		}
+
+		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
+		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestLogId = "new_request_log"
+		newLogBody := map[string]interface{}{
+			"logId":           newHTTPRequestLogId,
+			newHTTPRequestKey: httpRequestBody,
+		}
+		newLogBytes, err := json.Marshal(newLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal new test log: %v", err)
+		}
+
+		// Log with HTTP request data nested under "logging.googleapis.com/http_request".
+		const oldHTTPRequestKey = "logging.googleapis.com/http_request"
+		const oldHTTPRequestLogId = "old_request_log"
+		oldLogBody := map[string]interface{}{
+			"logId":           oldHTTPRequestLogId,
+			oldHTTPRequestKey: httpRequestBody,
+		}
+		oldLogBytes, err := json.Marshal(oldLogBody)
+		if err != nil {
+			t.Fatalf("could not marshal old test log: %v", err)
+		}
+
+		// Write both logs to log source file at the same time.
+		err = gce.UploadContent(
+			ctx,
+			logger,
+			vm,
+			strings.NewReader(fmt.Sprintf("%s\n%s\n", string(newLogBytes), string(oldLogBytes))),
+			logPath)
+		if err != nil {
+			t.Fatalf("error writing log line: %v", err)
+		}
+
+		queryLogById := func(logId string) (*cloudlogging.Entry, error) {
+			return gce.QueryLog(
+				ctx,
+				logger.ToMainLog(),
+				vm,
+				"mylog_source",
+				time.Hour,
+				fmt.Sprintf("jsonPayload.logId=%q", logId),
+				gce.QueryMaxAttempts)
+		}
+
+		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
+			payload := entry.Payload.(*structpb.Struct)
+			for k := range payload.GetFields() {
+				if k == httpRequestKey {
+					return true
+				}
+			}
+			return false
+		}
+
+		// Test that the new documented field, "logging.googleapis.com/httpRequest", will be
+		// parsed as expected by Fluent Bit.
+		t.Run("parse new HTTPRequest key", func(t *testing.T) {
+			t.Parallel()
+			entry, err := queryLogById(newHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", newHTTPRequestLogId, err)
+			}
+			if entry.HTTPRequest == nil {
+				t.Fatal("expected log entry to have HTTPRequest field")
+			}
+			if isKeyInPayload(newHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be stripped out of the payload", newHTTPRequestKey)
+			}
+		})
+
+		// Test that the old field, "logging.googleapis.com/http_request", is no longer
+		// parsed by Fluent Bit.
+		t.Run("don't parse old HTTPRequest key", func(t *testing.T) {
+			t.Parallel()
+			entry, err := queryLogById(oldHTTPRequestLogId)
+			if err != nil {
+				t.Fatalf("could not find written log with id %s: %v", oldHTTPRequestLogId, err)
+			}
+			if entry.HTTPRequest != nil {
+				t.Fatal("expected log entry not to have HTTPRequest field")
+			}
+			if !isKeyInPayload(oldHTTPRequestKey, entry) {
+				t.Fatalf("expected %s key to be present in payload", oldHTTPRequestKey)
+			}
+		})
 	})
 }
 
@@ -779,6 +1289,73 @@ func TestModifyFields(t *testing.T) {
 	})
 }
 
+func TestParseWithConflictsWithRecord(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  processors:
+    modify:
+      type: modify_fields
+      fields:
+        labels."non-overwritten-label":
+          static_value: non-overwritten
+        labels."overwritten-label":
+          static_value: non-overwritten
+        labels."original-label":
+          static_value: original-label
+        severity:
+          static_value: WARNING
+        sourceLocation.file:
+          static_value: non-overwritten-file-path
+        jsonPayload."non-overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."overwritten-field":
+          static_value: non-overwritten
+        jsonPayload."original-field":
+          static_value: original-value
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+        processors:
+          - modify
+          - json
+        exporters:
+          - google
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
+			`jsonPayload.original-field="original-value" AND jsonPayload.parsed-field="parsed-value" AND jsonPayload.non-overwritten-field="non-overwritten" AND jsonPayload.overwritten-field="overwritten" AND labels.original-label="original-label" AND labels.parsed-label="parsed-label" AND labels.non-overwritten-label="non-overwritten" AND labels.overwritten-label="overwritten" AND severity="WARNING" AND sourceLocation.file="overwritten-file-path"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestResourceNameLabel(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -813,6 +1390,54 @@ func TestResourceNameLabel(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestLogFilePathLabel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      record_log_file_path: true
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// When constructing the query in WaithForLog the backslashes are escaped so
+		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		if gce.IsWindows(platform) {
+			file1 = strings.Replace(file1, `\`, `\\`, 1)
+		}
+
+		// Expect to see log with label added.
+		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
 			t.Error(err)
 		}
@@ -999,97 +1624,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-// agentVersionRegexesForPlatform returns a slice containing all agents that
-// we expect to upload an uptime metric on the given platform. This function
-// returns a list of regexes that we can match against the "version" field of the
-// uptime metric.
-func agentVersionRegexesForPlatform(platform string) []string {
-	// TODO(b/191363559): Remove this whole `gce.IsWindows(platform)` section after we
-	// release a stable Ops Agent version that changes user agent to
-	// google-cloud-ops-agent-metrics/ for Windows as well.
-	if gce.IsWindows(platform) {
-		return []string{
-			// TODO(b/176832677): The Logging agent does not currently upload an uptime metric.
-			// TODO(b/191362867): Update the regex to be more strict after a version of
-			// Ops Agent has been released with the expected user agent.
-			// strings.Join([]string{
-			// 	 "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-			// 	 "Google Cloud Metrics Agent/.*",
-			// }, "|"),
-			strings.Join([]string{
-				"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9].*",
-				"Google Cloud Metrics Agent/.*",
-			}, "|"),
-		}
-	}
-	return []string{
-		// TODO(jschulz): Enable this label once it exists.
-		//"google-cloud-ops-agent-engine/",
-		// TODO(b/170138116): Enable this label once it is being collected.
-		//"google-cloud-ops-agent-logs/",
-		// TODO(b/191362867): Update the regex to be more strict after a version of
-		// Ops Agent has been released with the expected user agent.
-		// "google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*-.+",
-		"google-cloud-ops-agent-metrics/[0-9]+[.][0-9]+[.][0-9]+.*",
-	}
-}
-
-func metricsForPlatform(platform string) []string {
-	commonMetrics := []string{
-		"agent.googleapis.com/agent/api_request_count",
-		"agent.googleapis.com/agent/memory_usage",
-		"agent.googleapis.com/agent/monitoring/point_count",
-
-		// TODO(b/170138116): Enable these metrics once they are being collected.
-		"agent.googleapis.com/agent/log_entry_count",
-		// "agent.googleapis.com/agent/log_entry_retry_count",
-		"agent.googleapis.com/agent/request_count",
-
-		"agent.googleapis.com/cpu/load_1m",
-		"agent.googleapis.com/cpu/load_5m",
-		"agent.googleapis.com/cpu/load_15m",
-		"agent.googleapis.com/cpu/utilization",
-
-		"agent.googleapis.com/disk/bytes_used",
-		"agent.googleapis.com/disk/io_time",
-		"agent.googleapis.com/disk/operation_count",
-		"agent.googleapis.com/disk/operation_time",
-		"agent.googleapis.com/disk/percent_used",
-		"agent.googleapis.com/disk/read_bytes_count",
-		"agent.googleapis.com/disk/write_bytes_count",
-
-		"agent.googleapis.com/interface/errors",
-		"agent.googleapis.com/interface/packets",
-		"agent.googleapis.com/interface/traffic",
-
-		"agent.googleapis.com/memory/bytes_used",
-		"agent.googleapis.com/memory/percent_used",
-
-		"agent.googleapis.com/network/tcp_connections",
-
-		"agent.googleapis.com/processes/cpu_time",
-		"agent.googleapis.com/processes/disk/read_bytes_count",
-		"agent.googleapis.com/processes/disk/write_bytes_count",
-		"agent.googleapis.com/processes/rss_usage",
-		"agent.googleapis.com/processes/vm_usage",
-
-		"agent.googleapis.com/swap/bytes_used",
-		"agent.googleapis.com/swap/io",
-	}
-	if gce.IsWindows(platform) {
-		windowsOnlyMetrics := []string{
-			"agent.googleapis.com/pagefile/percent_used",
-		}
-		return append(commonMetrics, windowsOnlyMetrics...)
-	}
-
-	linuxOnlyMetrics := []string{
-		"agent.googleapis.com/disk/merged_operations",
-		"agent.googleapis.com/processes/count_by_state",
-	}
-	return append(commonMetrics, linuxOnlyMetrics...)
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1105,22 +1639,40 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	// First make sure that the uptime metrics are being uploaded.
-	var uptimeWaitGroup sync.WaitGroup
-	regexes := agentVersionRegexesForPlatform(vm.Platform)
-	for _, versionRegex := range regexes {
-		versionRegex := versionRegex
-		uptimeWaitGroup.Add(1)
-		go func() {
-			defer uptimeWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/uptime", window,
-				[]string{fmt.Sprintf("metric.labels.version = monitoring.regex.full_match(%q)", versionRegex)},
-			); err != nil {
-				t.Error(err)
-			}
-		}()
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	uptimeWaitGroup.Wait()
+
+	var agentMetrics struct {
+		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
+	}
+
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMetrics := agentMetrics.ExpectedMetrics
+
+	// First make sure that the representative metric is being uploaded.
+	for _, metric := range expectedMetrics {
+		if !metric.Representative {
+			continue
+		}
+
+		var series *monitoring.TimeSeries
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = metadata.AssertMetric(metric, series)
+		if err != nil {
+			t.Error(err)
+		}
+
+	}
 
 	if t.Failed() {
 		// Return early instead of waiting up to 7 minutes for the second round
@@ -1133,13 +1685,36 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
+	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, metric := range metricsForPlatform(vm.Platform) {
+	for _, metric := range expectedMetrics {
 		metric := metric
+
+		// Already validated the representative metric
+		if metric.Representative {
+			continue
+		}
+
+		// Don't validate optional metrics
+		if metric.Optional {
+			continue
+		}
+
+		if metric.Platform != "" && metric.Platform != platformKind {
+			continue
+		}
+
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric, window, nil); err != nil {
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			err = metadata.AssertMetric(metric, series)
+			if err != nil {
 				t.Error(err)
 			}
 		}()

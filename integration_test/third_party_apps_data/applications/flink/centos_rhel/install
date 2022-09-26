@@ -1,0 +1,29 @@
+set -e
+
+sudo yum -y install \
+    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
+
+curl -L -o flink.tgz https://archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
+
+sudo mkdir /opt/flink
+sudo tar -xzf flink.tgz -C /opt/flink --strip-components 1
+
+cat <<EOF | sudo tee /etc/systemd/system/flink.service
+[Unit]
+Description=Apache Flink
+           
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/opt/flink/bin/start-cluster.sh
+ExecStop=/opt/flink/bin/stop-cluster.sh
+Restart=always
+           
+[Install]
+WantedBy=default.target
+EOF
+
+sudo systemctl enable flink
+
+sudo systemctl restart flink

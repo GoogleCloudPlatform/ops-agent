@@ -21,7 +21,16 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
-func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
+const InstrumentationSourceLabel = confgenerator.InstrumentationSourceLabel
+
+func instrumentationSourceValue(processorType string) *confgenerator.ModifyField {
+	val := fmt.Sprintf("agent.googleapis.com/%s", processorType)
+	return &confgenerator.ModifyField{
+		StaticValue: &val,
+	}
+}
+
+func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -39,35 +48,41 @@ func genericAccessLogParser(tag string, uid string) []fluentbit.Component {
 			},
 		},
 	}.Components(tag, uid)
+	mf := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
+		},
+	}
 	// apache/nginx/varnish logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{
-		"http_request_remoteIp",
-		"host",
-		"user",
-		"http_request_responseSize",
-		"http_request_referer",
+		"jsonPayload.host",
+		"jsonPayload.user",
 	} {
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":      "modify",
-				"Match":     tag,
-				"Condition": fmt.Sprintf("Key_Value_Equals %s -", field),
-				"Remove":    field,
-			},
-		})
+		mf.Fields[field] = &confgenerator.ModifyField{
+			OmitIf: fmt.Sprintf(`%s = "-"`, field),
+		}
 	}
 	// Generate the httpRequest structure.
-	c = append(c, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "http_request_*",
-			"Nest_under":    "logging.googleapis.com/http_request",
-			"Remove_prefix": "http_request_",
-		},
-	})
+	for _, field := range []string{
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"protocol",
+		"status",
+		"responseSize",
+		"referer",
+		"userAgent",
+	} {
+		dest := fmt.Sprintf("httpRequest.%s", field)
+		src := fmt.Sprintf("jsonPayload.http_request_%s", field)
+		mf.Fields[dest] = &confgenerator.ModifyField{
+			MoveFrom: src,
+		}
+		if field == "referer" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		}
+	}
+
+	c = append(c, mf.Components(tag, uid)...)
 	return c
 }

@@ -1,0 +1,11 @@
+import '../common.gcl' as common
+
+config build = common.build {
+  params {
+    environment {
+      // The testing image is based on SLES 15, see b/230338826.
+      DISTRO = 'sles15'
+      PKGFORMAT = 'rpm'
+    }
+  }
+}

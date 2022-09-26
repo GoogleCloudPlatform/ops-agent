@@ -1,0 +1,7 @@
+import '../common.gcl' as common
+
+template config ops_agent_test = common.go_test {
+  params {
+    test_suite = 'ops_agent_test'
+  }
+}

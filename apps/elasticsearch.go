@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package apps
 
 import (
@@ -105,7 +119,7 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 	c := []fluentbit.Component{}
 
 	// sample log line:
-	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-impish", "message": "initialized" }
+	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-jammy", "message": "initialized" }
 	// Logs are formatted based on configuration (log4j);
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
@@ -125,20 +139,25 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 }
 
 func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []fluentbit.Component {
-	severityKey := "logging.googleapis.com/severity"
-	return fluentbit.TranslationComponents(tag, "level", severityKey, true, []struct {
-		SrcVal  string
-		DestVal string
-	}{
-		{"TRACE", "DEBUG"},
-		{"DEBUG", "DEBUG"},
-		{"INFO", "INFO"},
-		{"WARN", "WARNING"},
-		{"DEPRECATION", "WARNING"},
-		{"ERROR", "ERROR"},
-		{"CRITICAL", "ERROR"},
-		{"FATAL", "FATAL"},
-	})
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"TRACE":       "DEBUG",
+					"DEBUG":       "DEBUG",
+					"INFO":        "INFO",
+					"WARN":        "WARNING",
+					"DEPRECATION": "WARNING",
+					"ERROR":       "ERROR",
+					"CRITICAL":    "ERROR",
+					"FATAL":       "FATAL",
+				},
+				MapValuesExclusive: true,
+			},
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}.Components(tag, uid)
 }
 
 func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
@@ -200,7 +219,13 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 	}
 
 	c = append(c, regexParser.Components(tag, uid)...)
-
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 

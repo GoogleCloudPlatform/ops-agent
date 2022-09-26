@@ -1,0 +1,2 @@
+sudo /opt/flink/bin/start-cluster.sh
+sudo /opt/flink/bin/flink run --detached /opt/flink/examples/streaming/StateMachineExample.jar

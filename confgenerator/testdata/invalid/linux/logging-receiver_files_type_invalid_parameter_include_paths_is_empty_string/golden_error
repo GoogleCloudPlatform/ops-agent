@@ -1,9 +1,9 @@
-[5:22] string was used where sequence is expected
-   2 |   receivers:
-   3 |     receiver_1:
-   4 |       type: files
->  5 |       include_paths: ""
+[19:22] string was used where sequence is expected
+  16 |   receivers:
+  17 |     receiver_1:
+  18 |       type: files
+> 19 |       include_paths: ""
                             ^
-   6 |   service:
-   7 |     pipelines:
-   8 |       test_pipeline:
+  20 |   service:
+  21 |     pipelines:
+  22 |       test_pipeline:

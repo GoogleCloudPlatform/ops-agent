@@ -140,19 +140,27 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 	}.Components(tag, uid)
 
 	c = append(c,
-		fluentbit.TranslationComponents(tag, "level", "logging.googleapis.com/severity", false,
-			[]struct{ SrcVal, DestVal string }{
-				{"ERROR", "ERROR"},
-				{"Error", "ERROR"},
-				{"WARNING", "WARNING"},
-				{"Warning", "WARNING"},
-				{"SYSTEM", "INFO"},
-				{"System", "INFO"},
-				{"NOTE", "NOTICE"},
-				{"Note", "NOTICE"},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.level",
+					MapValues: map[string]string{
+						"ERROR":   "ERROR",
+						"Error":   "ERROR",
+						"WARNING": "WARNING",
+						"Warning": "WARNING",
+						"SYSTEM":  "INFO",
+						"System":  "INFO",
+						"NOTE":    "NOTICE",
+						"Note":    "NOTICE",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		)...,
+		}.Components(tag, uid)...,
 	)
+
 	return c
 }
 
@@ -197,6 +205,13 @@ func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluen
 		},
 	}.Components(tag, uid)
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 
@@ -302,6 +317,13 @@ func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbi
 		},
 	}.Components(tag, uid)
 
+	c = append(c,
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		}.Components(tag, uid)...,
+	)
 	return c
 }
 

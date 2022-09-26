@@ -46,12 +46,12 @@ logging:
       type: syslog
       transport_protocol: udp
       listen_host: 1.1.1.1
-      listen_port: 1
+      listen_port: 2
     cassandra_syslog_gc:
       type: syslog
       transport_protocol: udp
       listen_host: 1.1.1.1
-      listen_port: 1
+      listen_port: 3
   processors:
     cassandra_syslog_system:
       type: cassandra_system

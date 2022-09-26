@@ -1,9 +1,9 @@
-[9:16] "regex" is a required field
-   6 |       - /var/log/messages
-   7 |       - /var/log/syslog
-   8 |   processors:
->  9 |     processor_1:
+[23:16] "regex" is a required field
+  20 |       - /var/log/messages
+  21 |       - /var/log/syslog
+  22 |   processors:
+> 23 |     processor_1:
                       ^
-  10 |       type: parse_regex
-  11 |       field: field_1
-  12 |   service:
+  24 |       type: parse_regex
+  25 |       field: field_1
+  26 |   service:

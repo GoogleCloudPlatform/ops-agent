@@ -1,0 +1,17 @@
+import '../common.gcl' as common
+
+// Proper release builds need access to the RPM signing key. This key should not
+// be used for any presubmits triggered by external folks on unreviewed PRs from
+// GitHub. We don't want to expose the RPM signing key to any potential leak
+// from malicious PRs. Note that the key is hidden from GitHub presubmits via
+// Keystore ACLs, which is the way that this is actually enforced.
+config build = common.build {
+  params {
+    keystore_keys = super.keystore_keys + [
+      { id = 71565, name = 'rpm-signing-key' },
+    ]
+    environment {
+      SKIP_SIGNING = null
+    }
+  }
+}

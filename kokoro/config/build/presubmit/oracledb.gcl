@@ -1,0 +1,11 @@
+import '../common.gcl' as common
+
+config build = common.build {
+  params {
+    environment {
+      // The testing image is based on RHEL 7, see b/245339285.
+      DISTRO = 'centos7'
+      PKGFORMAT = 'rpm'
+    }
+  }
+}

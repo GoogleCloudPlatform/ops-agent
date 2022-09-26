@@ -1,5 +1,5 @@
-[3:16] "log_level" must be one of [error warn info debug]
-   1 | metrics:
-   2 |   service:
->  3 |     log_level: haha
+[17:16] "log_level" must be one of [error warn info debug]
+  15 | metrics:
+  16 |   service:
+> 17 |     log_level: haha
                       ^
