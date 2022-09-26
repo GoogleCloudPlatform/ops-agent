@@ -739,8 +739,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
-		if test.app == OracleDBApp && test.platform != "rhel-7" {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on RHEL-7 at the moment", OracleDBApp)
+		if test.app == OracleDBApp && test.platform != "rocky-linux-8" {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rocky-linux-8 at the moment", OracleDBApp)
 		}
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
 		isSAPHANAApp := test.app == SAPHANAApp
