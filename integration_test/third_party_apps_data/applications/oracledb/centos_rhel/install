@@ -4,9 +4,8 @@ set -o pipefail
 INSTALL_DIR="$(mktemp --directory)"
 cd "${INSTALL_DIR}"
 
-PREINSTALL_RPM=oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm
-
-curl -o "${PREINSTALL_RPM}" https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/"${PREINSTALL_RPM}"
+PREINSTALL_RPM=oracle-database-preinstall-19c-1.0-1.el8.x86_64.rpm
+curl -o "${PREINSTALL_RPM}" https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64/getPackage/"${PREINSTALL_RPM}"
 sudo yum -y localinstall "${PREINSTALL_RPM}"
 rm "${PREINSTALL_RPM}"
 
