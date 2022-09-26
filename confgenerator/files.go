@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -53,6 +54,13 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 			}
 		}
 	case "otel":
+		// Fetch resoure metadata.
+		var err error
+		MetadataResource, err = resourcedetector.GetResource()
+		if err != nil {
+			return fmt.Errorf("can't get resource metadata: %w", err)
+		}
+
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)

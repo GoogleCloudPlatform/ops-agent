@@ -384,7 +384,7 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	end := timestamppb.New(now)
 	filters := []string{
 		fmt.Sprintf("metric.type = %q", metric),
-		fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID),
+		// fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID),
 	}
 
 	req := &monitoringpb.ListTimeSeriesRequest{

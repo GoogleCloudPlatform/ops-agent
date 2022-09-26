@@ -54,6 +54,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"github.com/davecgh/go-spew/spew"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -1768,6 +1769,91 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func TestPrometheusMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		promConfig := `logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
+metrics:
+  receivers:
+    prometheus:
+	  type: prometheus
+	  config:
+	    scrape_configs:
+		  - job_name: 'prometheus'
+		    static_configs:
+			  - targets: ['localhost:20202']
+			relabel_configs:
+			  - source_labels: [__meta_gce_instance_id]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_instance_id
+			  - source_labels: [__meta_gce_instance_name]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_instance_name
+			  - source_labels: [__meta_gce_machine_type]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_machine_type
+			  - source_labels: [__meta_gce_zone]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_zone
+			  - source_labels: [__meta_gce_project_id]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_project_id
+			  - source_labels: [__meta_gce_network]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_network
+			  - source_labels: [__meta_gce_subnetwork]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_subnetwork
+			  - source_labels: [__meta_gce_tags]
+			    regex: '.*'
+				replacement: '$${1}'
+				target_label: meta_gce_tags
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prometheus]
+        processors: [metrics_filter]
+`
+
+		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil)
+		if err != nil {
+			t.Error(err)
+		}
+		spew.Dump(metric)
+	})
+}
 func TestExcludeMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
