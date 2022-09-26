@@ -43,6 +43,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -54,7 +55,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"github.com/davecgh/go-spew/spew"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -1782,10 +1782,10 @@ func TestPrometheusMetrics(t *testing.T) {
       type: prometheus
       config:
         scrape_configs:
-          - job_name: 'Job_1'
+          - job_name: 'prometheus'
             scrape_interval: 10s
             static_configs:
-              - targets: ['localhost:1234']
+              - targets: ['localhost:20202']
             relabel_configs:
               - source_labels: [__meta_gce_instance_name]
                 regex: '(.+)'
@@ -1799,7 +1799,7 @@ func TestPrometheusMetrics(t *testing.T) {
                 regex: '(.+)'
                 replacement: '$${1}'
                 target_label: machine_type
-              - source_labels: [__meta_gce_project_id]
+              - source_labels: [__meta_gce_project]
                 regex: '(.+)'
                 replacement: '$${1}'
                 target_label: instance_project_id
@@ -1827,11 +1827,11 @@ func TestPrometheusMetrics(t *testing.T) {
                 regex: '(.+)'
                 replacement: '$${1}'
                 target_label: private_ip
-service:
-  pipelines:
-    prometheus_pipeline:
-      receivers:
-        - prometheus
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus
 `
 
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
@@ -1843,13 +1843,54 @@ service:
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime"
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
 		window := time.Minute
 		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
 		}
-		spew.Dump(metric)
+
+		var multiErr error
+		metricValueType := metric.ValueType.String()
+		metricKind := metric.MetricKind.String()
+		metricResource := metric.Resource.Type
+		metricLabels := metric.Metric.Labels
+
+		if metricValueType != "DOUBLE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+		}
+		if metricKind != "CUMULATIVE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+		}
+		if metricResource != "prometheus_target" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+		}
+		if metricLabels["instance_name"] != vm.Name {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+		}
+		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+		}
+		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
+		}
+		if metricLabels["instance_project_id"] != vm.Project {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
+		}
+		if metricLabels["zone"] != vm.Zone {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
+		}
+		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
+		}
+		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
 	})
 }
 func TestExcludeMetrics(t *testing.T) {

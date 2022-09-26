@@ -378,7 +378,7 @@ func isRetriableLookupMetricError(err error) bool {
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
-func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, ignoreInstance bool) *monitoring.TimeSeriesIterator {
+func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) *monitoring.TimeSeriesIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
@@ -386,7 +386,9 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 		fmt.Sprintf("metric.type = %q", metric),
 	}
 
-	if !ignoreInstance {
+	if isPrometheus {
+		filters = append(filters, fmt.Sprintf(`resource.labels.namespace = "%d"`, vm.ID))
+	} else {
 		filters = append(filters, fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID))
 	}
 
@@ -431,9 +433,9 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, ignoreInstance bool) (*monitoringpb.TimeSeries, error) {
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, ignoreInstance)
+		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		series, err := nonEmptySeries(logger, it)
 		if series != nil && err == nil {
 			// Success.

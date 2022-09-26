@@ -54,7 +54,7 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 			}
 		}
 	case "otel":
-		// Fetch resoure metadata.
+		// Fetch resource information from the metadata server.
 		var err error
 		MetadataResource, err = resourcedetector.GetResource()
 		if err != nil {

@@ -30,6 +30,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	strutil "github.com/prometheus/prometheus/util/strutil"
 )
 
 var (
@@ -96,18 +97,20 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	metaLabels := map[string]string{
 		"__meta_gce_instance_id":   gceMetadata.InstanceID,
 		"__meta_gce_instance_name": gceMetadata.InstanceName,
-		"__meta_gce_project_id":    gceMetadata.Project,
+		"__meta_gce_project":       gceMetadata.Project,
 		"__meta_gce_zone":          gceMetadata.Zone,
 		"__meta_gce_network":       gceMetadata.Network,
-		"__meta_gce_subnetwork":    gceMetadata.Subnetwork,
-		"__meta_gce_public_ip":     gceMetadata.PublicIP,
-		"__meta_gce_private_ip":    gceMetadata.PrivateIP,
-		"__meta_gce_tags":          gceMetadata.Tags,
-		"__meta_gce_machine_type":  gceMetadata.MachineType,
+		// TODO(b/b/246995894): Add support for subnetwork label.
+		// "__meta_gce_subnetwork":    gceMetadata.Subnetwork,
+		"__meta_gce_public_ip":    gceMetadata.PublicIP,
+		"__meta_gce_private_ip":   gceMetadata.PrivateIP,
+		"__meta_gce_tags":         gceMetadata.Tags,
+		"__meta_gce_machine_type": gceMetadata.MachineType,
 	}
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
-		metaLabels[prefix+"metadata_"+k] = v
+		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = v
 	}
 
 	// Labels are not available using the GCE metadata API.
@@ -118,7 +121,8 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	// }
 
 	for k, v := range gceMetadata.InterfaceIPv4 {
-		metaLabels[prefix+"interface_ipv4_nic"+k] = v
+		sanitizedKey := "interface_ipv4_nic" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = v
 	}
 
 	// Set the location, namespace and cluster labels.
