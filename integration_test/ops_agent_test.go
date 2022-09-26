@@ -1663,7 +1663,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 
 		var series *monitoring.TimeSeries
-		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1708,7 +1708,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 			if err != nil {
 				t.Error(err)
 				return
@@ -1776,64 +1776,62 @@ func TestPrometheusMetrics(t *testing.T) {
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		promConfig := `logging:
-  receivers:
-    syslog:
-      type: files
-      include_paths:
-      - /var/log/messages
-      - /var/log/syslog
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [syslog]
-metrics:
+		promConfig := `metrics:
   receivers:
     prometheus:
-	  type: prometheus
-	  config:
-	    scrape_configs:
-		  - job_name: 'prometheus'
-		    static_configs:
-			  - targets: ['localhost:20202']
-			relabel_configs:
-			  - source_labels: [__meta_gce_instance_id]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_instance_id
-			  - source_labels: [__meta_gce_instance_name]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_instance_name
-			  - source_labels: [__meta_gce_machine_type]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_machine_type
-			  - source_labels: [__meta_gce_zone]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_zone
-			  - source_labels: [__meta_gce_project_id]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_project_id
-			  - source_labels: [__meta_gce_network]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_network
-			  - source_labels: [__meta_gce_subnetwork]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_subnetwork
-			  - source_labels: [__meta_gce_tags]
-			    regex: '.*'
-				replacement: '$${1}'
-				target_label: meta_gce_tags
-  service:
-    pipelines:
-      prom_pipeline:
-        receivers: [prometheus]
-        processors: [metrics_filter]
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'Job_1'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['localhost:1234']
+            relabel_configs:
+              - source_labels: [__meta_gce_instance_name]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: instance_name
+              - source_labels: [__meta_gce_instance_id]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: instance_id
+              - source_labels: [__meta_gce_machine_type]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: machine_type
+              - source_labels: [__meta_gce_project_id]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: instance_project_id
+              - source_labels: [__meta_gce_zone]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: zone
+              - source_labels: [__meta_gce_tags]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: tags
+              - source_labels: [__meta_gce_network]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: network
+              - source_labels: [__meta_gce_subnetwork]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: subnetwork
+              - source_labels: [__meta_gce_public_ip]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: public_ip
+              - source_labels: [__meta_gce_private_ip]
+                regex: '(.+)'
+                replacement: '$${1}'
+                target_label: private_ip
+service:
+  pipelines:
+    prometheus_pipeline:
+      receivers:
+        - prometheus
 `
 
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
@@ -1847,7 +1845,7 @@ metrics:
 
 		existingMetric := "prometheus.googleapis.com/fluentbit_uptime"
 		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil)
+		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1902,7 +1900,7 @@ metrics:
 		excludedMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
-		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
+		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
 		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
@@ -1992,7 +1990,7 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	// Query for a metric from the last minute. Sleep for 3 minutes first
 	// to make sure we aren't picking up metrics from a previous instance
 	// of the metrics agent.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil, false)
 	return err
 }
 

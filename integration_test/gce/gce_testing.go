@@ -378,13 +378,16 @@ func isRetriableLookupMetricError(err error) bool {
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
-func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) *monitoring.TimeSeriesIterator {
+func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, ignoreInstance bool) *monitoring.TimeSeriesIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
 	filters := []string{
 		fmt.Sprintf("metric.type = %q", metric),
-		// fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID),
+	}
+
+	if !ignoreInstance {
+		filters = append(filters, fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID))
 	}
 
 	req := &monitoringpb.ListTimeSeriesRequest{
@@ -428,9 +431,9 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, ignoreInstance bool) (*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
+		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, ignoreInstance)
 		series, err := nonEmptySeries(logger, it)
 		if series != nil && err == nil {
 			// Success.
@@ -460,7 +463,7 @@ func IsExhaustedRetriesMetricError(err error) bool {
 // the backend we make queryMaxAttemptsMetricMissing query attempts.
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, nil)
+		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
 		series, err := nonEmptySeries(logger, it)
 		found := series != nil
 		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
