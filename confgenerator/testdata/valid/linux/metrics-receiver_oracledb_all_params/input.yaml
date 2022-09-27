@@ -17,7 +17,7 @@ metrics:
     oracledb:
       type: oracledb
       endpoint: myhost.domain:1111
-      wallet: /my/oracle/wallet/path here/cwallet.sso
+      wallet: /my/oracle/wallet/path here/
       insecure: false
       insecure_skip_verify: false
       password: p@ssword

@@ -70,13 +70,17 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 		endpoint = defaultOracleDBEndpoint
 	}
 
+	auth := url.QueryEscape(r.Username)
+	if len(r.Password) > 0 {
+		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(r.Password))
+	}
+
 	// create a datasource in the form oracle://username:password@host:port/ServiceName?SID=sid&ssl=enable&...
-	datasource := fmt.Sprintf("oracle://%s:%s@%s/%s?%s",
-		url.QueryEscape(r.Username),
-		url.QueryEscape(r.Password),
+	datasource := fmt.Sprintf("oracle://%s@%s/%s?%s",
+		auth,
 		endpoint,
 		url.QueryEscape(r.ServiceName),
-		url.QueryEscape(params.Encode()),
+		params.Encode(),
 	)
 
 	config := map[string]interface{}{

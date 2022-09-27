@@ -475,7 +475,7 @@ receivers:
           - 0.0.0.0:20201
   sqlquery/oracledb_oracledb:
     collection_interval: 60s
-    datasource: oracle://sys:p%40ssword@myhost.domain:1111/db19c.domain?SSL%3DENABLE%26SSL%2BVERIFY%3DENABLE%26WALLET%3D%252Fmy%252Foracle%252Fwallet%252Fpath%2Bhere%252Fcwallet.sso
+    datasource: oracle://sys:p%40ssword@myhost.domain:1111/db19c.domain?SSL=ENABLE&SSL+VERIFY=ENABLE&WALLET=%2Fmy%2Foracle%2Fwallet%2Fpath+here%2F
     driver: oracle
     queries:
     - metrics:

@@ -475,7 +475,7 @@ receivers:
           - 0.0.0.0:20201
   sqlquery/oracledb_oracledb:
     collection_interval: 60s
-    datasource: oracle://:@localhost:1521/?SID%3Ddb19c%26UNIX%2BSOCKET%3D%252Ftmp%252Foracle%252Fsocket
+    datasource: oracle://@localhost:1521/?SID=db19c&UNIX+SOCKET=%2Ftmp%2Foracle%2Fsocket
     driver: oracle
     queries:
     - metrics:

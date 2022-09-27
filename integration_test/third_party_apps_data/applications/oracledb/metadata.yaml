@@ -381,7 +381,7 @@ configuration_options:
           description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
           name: insecure_skip_verify
         - default: null
-          description: Path to the oracle wallet optionally used for authentication and securing connections.
+          description: Path to the directory containing the oracle wallet optionally used for authentication and securing connections.
           name: wallet
         - default: null
           description: The SID of the Oracle database being monitored. Use this _or_ service_name as appropriate.
