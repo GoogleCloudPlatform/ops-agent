@@ -864,7 +864,7 @@ type LoggingReceiverOracleDBAlert struct {
 func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
 	if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
-			"$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log",
+			"${ORACLE_HOME}/diag/rdbms/*/*/trace/alert_*.log",
 		}
 	}
 
@@ -968,7 +968,7 @@ type LoggingReceiverOracleDBAudit struct {
 func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
 	if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
-			"$ORACLE_HOME/admin/*/adump/*.aud",
+			"${ORACLE_HOME}/admin/*/adump/*.aud",
 		}
 	}
 
