@@ -322,7 +322,7 @@ expected_logs:
         description: Number identifying the type of action being logged
       - name: jsonPayload.client_terminal
         type: string
-        value_regex: pts.*
+        value_regex: pts/.+
         description: Identifier of the client terminal where the action originated
       - name: jsonPayload.client_user
         type: string
@@ -350,7 +350,7 @@ expected_logs:
         description: Status of the action
       - name: jsonPayload.user_host
         type: string
-        value_regex: github-test-.*
+        value_regex: .*
         description: Host where the audited action originated
       - name: severity
         type: string
@@ -362,7 +362,7 @@ configuration_options:
         - default: null
           description: This value must be oracledb.
           name: type
-        - default: localhost:1522
+        - default: localhost:1521
           description: The endpoint used to connect to the oracle DB instance. This field supports either host:port or a unix socket path.
           name: endpoint
         - default: 60s
