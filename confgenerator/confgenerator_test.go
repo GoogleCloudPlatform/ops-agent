@@ -162,6 +162,13 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 		if !testDirEntry.IsDir() {
 			continue
 		}
+		userSpecifiedConfPath := filepath.Join(testdataDir, testDirEntry.Name(), inputFileName)
+		if _, err := os.Stat(userSpecifiedConfPath + ".missing"); err == nil {
+			// Intentionally missing
+		} else if _, err := os.Stat(userSpecifiedConfPath); errors.Is(err, os.ErrNotExist) {
+			// Empty directory; probably a leftover with backup files.
+			continue
+		}
 		testNames = append(testNames, testDirEntry.Name())
 	}
 	return testNames
