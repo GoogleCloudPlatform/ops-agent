@@ -90,7 +90,7 @@ expected_logs:
   - log_name: syslog
     fields:
       - name: jsonPayload.message
-        value_regex: 'asd(\[[0-9]+\])*:'
+        value_regex: ' asd(\[[0-9]+\])*:'
         type: string
         description: Aerospike application logs written to Journald.
 configuration_options:

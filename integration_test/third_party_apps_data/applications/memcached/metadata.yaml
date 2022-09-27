@@ -82,7 +82,7 @@ expected_logs:
   - log_name: syslog
     fields:
       - name: jsonPayload.message
-        value_regex: '(systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'
+        value_regex: ' (systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'
         type: string
         description: Memcached application logs written to Journald.
 configuration_options:
