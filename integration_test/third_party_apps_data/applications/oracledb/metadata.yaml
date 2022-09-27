@@ -322,7 +322,7 @@ expected_logs:
         description: Number identifying the type of action being logged
       - name: jsonPayload.client_terminal
         type: string
-        value_regex: pts.*
+        value_regex: pts/.+
         description: Identifier of the client terminal where the action originated
       - name: jsonPayload.client_user
         type: string
