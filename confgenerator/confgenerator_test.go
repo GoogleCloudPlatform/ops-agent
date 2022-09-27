@@ -71,16 +71,7 @@ var (
 func TestGoldens(t *testing.T) {
 	t.Parallel()
 
-	for _, platform := range platforms {
-		t.Run(platform.OS, func(t *testing.T) {
-			testPlatformGenerateConfTests(t, platform)
-		})
-	}
-}
-
-func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
-	t.Parallel()
-
+	// Iterate platforms inside test directories so the test name hierarchy matches the testdata hierarchy.
 	for _, test := range []struct {
 		dirName      string
 		errAssertion func(t *testing.T, err error, got map[string]string)
@@ -107,12 +98,19 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 	} {
 		test := test
 		t.Run(test.dirName, func(t *testing.T) {
-			runTestsInDir(
-				t,
-				platform,
-				test.dirName,
-				test.errAssertion,
-			)
+			t.Parallel()
+			for _, platform := range platforms {
+				platform := platform
+				t.Run(platform.OS, func(t *testing.T) {
+					t.Parallel()
+					runTestsInDir(
+						t,
+						platform,
+						test.dirName,
+						test.errAssertion,
+					)
+				})
+			}
 		})
 	}
 }
