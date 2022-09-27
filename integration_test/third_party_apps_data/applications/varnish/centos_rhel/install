@@ -1,8 +1,25 @@
 set -e
 
-# Centos Stream / RHEL 8: Varnish 6.0.8
+source /etc/os-release
+if [ "$ID" = centos ] && [ "$VERSION_ID" = 7 ]; then
+    sudo yum install -y epel-release
+    sudo tee /etc/yum.repos.d/varnishcache_varnish60lts.repo > /dev/null <<-EOF
+[varnishcache_varnish60lts]
+name=varnishcache_varnish60lts
+baseurl=https://packagecloud.io/varnishcache/varnish60lts/el/${VERSION_ID%%.*}/$(arch)
+repo_gpgcheck=0
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/varnishcache/varnish60lts/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+EOF
+fi
 
+# Centos Stream / RHEL 8: Varnish 6.0.8
 sudo yum install -y varnish nginx curl
+
 sudo systemctl enable --now varnish
 sudo systemctl enable --now nginx
 
