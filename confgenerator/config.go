@@ -35,9 +35,9 @@ import (
 
 // Ops Agent config.
 type UnifiedConfig struct {
-	GenericReceivers genericReceiverMap `yaml:"generic_receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
-	Logging          *Logging           `yaml:"logging"`
-	Metrics          *Metrics           `yaml:"metrics"`
+	Combined *Combined `yaml:"combined,omitempty"`
+	Logging  *Logging  `yaml:"logging"`
+	Metrics  *Metrics  `yaml:"metrics"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -59,6 +59,10 @@ func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
 	}
 
 	return fromYaml, nil
+}
+
+type Combined struct {
+	Receivers combinedReceiverMap `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type validatorContext struct {
@@ -618,19 +622,19 @@ func (m *metricsReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(i
 	return MetricsReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
-type GenericReceiver interface {
+type CombinedReceiver interface {
 	// TODO: Add more types of signals
 	MetricsReceiver
 }
 
-var GenericReceiverTypes = &componentTypeRegistry[GenericReceiver, genericReceiverMap]{
+var CombinedReceiverTypes = &componentTypeRegistry[CombinedReceiver, combinedReceiverMap]{
 	Subagent: "generic", Kind: "receiver",
 }
 
-type genericReceiverMap map[string]GenericReceiver
+type combinedReceiverMap map[string]CombinedReceiver
 
-func (m *genericReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return GenericReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
+func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return CombinedReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsProcessor interface {
@@ -718,12 +722,14 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	for k, v := range uc.Metrics.Receivers {
 		validReceivers[k] = v
 	}
-	for k, v := range uc.GenericReceivers {
-		if _, ok := uc.Metrics.Receivers[k]; ok {
-			return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
-		}
-		if v, ok := v.(MetricsReceiver); ok {
-			validReceivers[k] = v
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := uc.Metrics.Receivers[k]; ok {
+				return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+			}
+			if v, ok := v.(MetricsReceiver); ok {
+				validReceivers[k] = v
+			}
 		}
 	}
 	return validReceivers, nil
