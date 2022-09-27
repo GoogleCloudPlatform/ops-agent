@@ -30,11 +30,11 @@ metrics:
                 - source_labels: [ __address__ ]
                   action: replace
                   replacement: 'new_location'
-                  target_label: location
+                  target_label: exported_location
                 - source_labels: [ __address__ ]
                   action: replace
                   replacement: 'new_cluster'
-                  target_label: cluster
+                  target_label: exported_cluster
                 - source_labels: [__meta_gce_machine_type]
                   regex: '(.+)'
                   replacement: '$${1}'

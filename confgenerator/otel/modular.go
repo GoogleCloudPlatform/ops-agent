@@ -112,6 +112,9 @@ func (c ModularConfig) Generate() (string, error) {
 	// If so, add the googlemanagedprometheus exporter.
 	if len(c.GoogleManagedPrometheusPipelines) > 0 {
 		exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
+
+		// Add the groupbyattrs processor so prometheus pipelines can use it.
+		processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
 	}
 
 	var globalProcessorNames []string
@@ -134,6 +137,7 @@ func (c ModularConfig) Generate() (string, error) {
 
 		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
 			exporter = googleManagedPrometheusExporter
+			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {
 			processorNames = append(processorNames, globalProcessorNames...)
 		}
@@ -162,4 +166,13 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func gceGroupByAttrs() Component {
+	return Component{
+		Type: "groupbyattrs",
+		Config: map[string]interface{}{
+			"keys": []string{"namespace", "cluster", "location"},
+		},
+	}
 }

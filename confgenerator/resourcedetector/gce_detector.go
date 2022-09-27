@@ -85,6 +85,10 @@ func (GCEResource) GetType() string {
 	return "gce"
 }
 
+type GCEResourceBuilderInterface interface {
+	GetResource() (Resource, error)
+}
+
 type GCEResourceBuilder struct {
 	provider gceDataProvider
 }

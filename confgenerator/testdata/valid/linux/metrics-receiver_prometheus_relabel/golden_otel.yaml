@@ -455,22 +455,78 @@ receivers:
         scrape_timeout: 10s
         evaluation_interval: 1m
       scrape_configs:
-      - job_name: node
+      - job_name: Job_1
         honor_timestamps: true
         scrape_interval: 10s
         scrape_timeout: 10s
         metrics_path: /metrics
         scheme: http
-        tls_config:
-          ca_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/ca
-          cert_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/cert
-          key_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/key
-          insecure_skip_verify: true
         follow_redirects: true
         enable_http2: true
+        relabel_configs:
+        - source_labels: [__meta_gce_instance_name]
+          separator: ;
+          regex: (.+)
+          target_label: instance_name
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_instance_id]
+          separator: ;
+          regex: (.+)
+          target_label: instance_id
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_machine_type]
+          separator: ;
+          regex: (.+)
+          target_label: machine_type
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_project_id]
+          separator: ;
+          regex: (.+)
+          target_label: instance_project_id
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_zone]
+          separator: ;
+          regex: (.+)
+          target_label: zone
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_tags]
+          separator: ;
+          regex: (.+)
+          target_label: tags
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_network]
+          separator: ;
+          regex: (.+)
+          target_label: network
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_subnetwork]
+          separator: ;
+          regex: (.+)
+          target_label: subnetwork
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_public_ip]
+          separator: ;
+          regex: (.+)
+          target_label: public_ip
+          replacement: $${1}
+          action: replace
+        - source_labels: [__meta_gce_private_ip]
+          separator: ;
+          regex: (.+)
+          target_label: private_ip
+          replacement: $${1}
+          action: replace
         static_configs:
         - targets:
-          - localhost:1234
+          - 0.0.0.0:9100
           labels:
             __meta_gce_instance_id: test-instance-id
             __meta_gce_instance_name: test-instance-name

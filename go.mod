@@ -9,6 +9,7 @@ require (
 	cloud.google.com/go/storage v1.22.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/davecgh/go-spew v1.1.1
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/goccy/go-yaml v1.9.4
 	github.com/google/go-cmp v0.5.8
@@ -53,7 +54,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/digitalocean/godo v1.82.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
