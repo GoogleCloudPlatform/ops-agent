@@ -41,8 +41,10 @@ func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{
-				"grpc": map[string]interface{}{
-					"endpoint": endpoint,
+				"protocols": map[string]interface{}{
+					"grpc": map[string]interface{}{
+						"endpoint": endpoint,
+					},
 				},
 			},
 		},
