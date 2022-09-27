@@ -58,5 +58,5 @@ func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.GenericReceiverTypes.RegisterType(func() confgenerator.GenericReceiver { return &ReceiverOTLP{} })
+	confgenerator.CombinedReceiverTypes.RegisterType(func() confgenerator.CombinedReceiver { return &ReceiverOTLP{} })
 }
