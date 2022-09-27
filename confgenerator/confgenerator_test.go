@@ -33,6 +33,8 @@ const (
 	validTestdataDirName   = "valid"
 	invalidTestdataDirName = "invalid"
 	builtinTestdataDirName = "builtin"
+	goldenDir              = "golden"
+	errorGolden            = goldenDir + "/error"
 	inputFileName          = "input.yaml"
 	builtinConfigFileName  = "builtin_conf.yaml"
 )
@@ -66,11 +68,6 @@ var (
 	}
 )
 
-const (
-	goldenDir   = "golden"
-	errorGolden = goldenDir + "/error"
-)
-
 func TestGoldens(t *testing.T) {
 	t.Parallel()
 
@@ -84,57 +81,47 @@ func TestGoldens(t *testing.T) {
 func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 	t.Parallel()
 
-	t.Run("builtin", func(t *testing.T) {
-		t.Parallel()
-
-		testDir := filepath.Join(builtinTestdataDirName, platform.OS)
-		builtinConfBytes, _, err := confgenerator.MergeConfFiles(
-			filepath.Join("testdata", testDir, inputFileName),
-			platform.OS,
-			apps.BuiltInConfStructs,
-		)
-		assert.NilError(t, err)
-		golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
-		got, err := generateConfigs(platform, testDir)
-		assert.NilError(t, err)
-		if err := testGeneratedFiles(t, got, testDir); err != nil {
-			t.Errorf("Failed to check generated configs: %v", err)
-		}
-	})
-
-	t.Run("valid", func(t *testing.T) {
-		t.Parallel()
-
-		runTestsInDir(
-			t,
-			platform,
+	for _, test := range []struct {
+		dirName      string
+		errAssertion func(t *testing.T, err error, got map[string]string)
+	}{
+		{
 			validTestdataDirName,
-			func(t *testing.T, err error, _ string) {
+			func(t *testing.T, err error, got map[string]string) {
 				assert.NilError(t, err)
+				delete(got, builtinConfigFileName)
 			},
-		)
-	})
-
-	t.Run("invalid", func(t *testing.T) {
-		t.Parallel()
-
-		runTestsInDir(
-			t,
-			platform,
+		},
+		{
 			invalidTestdataDirName,
-			func(t *testing.T, err error, testDir string) {
+			func(t *testing.T, err error, got map[string]string) {
 				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
 				// Error is checked by runTestsInDir
+				delete(got, builtinConfigFileName)
 			},
-		)
-	})
+		},
+		{
+			builtinTestdataDirName,
+			nil,
+		},
+	} {
+		test := test
+		t.Run(test.dirName, func(t *testing.T) {
+			runTestsInDir(
+				t,
+				platform,
+				test.dirName,
+				test.errAssertion,
+			)
+		})
+	}
 }
 
 func runTestsInDir(
 	t *testing.T,
 	platform platformConfig,
 	testTypeDir string,
-	errAssertion func(*testing.T, error, string),
+	errAssertion func(*testing.T, error, map[string]string),
 ) {
 	platformTestDir := filepath.Join(testTypeDir, platform.OS)
 	testNames := getTestsInDir(t, platformTestDir)
@@ -156,7 +143,9 @@ func runTestsInDir(
 			t.Parallel()
 			testDir := filepath.Join(platformTestDir, testName)
 			got, err := generateConfigs(platform, testDir)
-			errAssertion(t, err, testDir)
+			if errAssertion != nil {
+				errAssertion(t, err, got)
+			}
 			if err := testGeneratedFiles(t, got, testDir); err != nil {
 				t.Errorf("Failed to check generated configs: %v", err)
 			}
@@ -188,7 +177,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 		}
 	}()
 	// Merge Config
-	_, confBytes, err := confgenerator.MergeConfFiles(
+	builtInConfBytes, confBytes, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
 		apps.BuiltInConfStructs,
@@ -196,6 +185,8 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	if err != nil {
 		return
 	}
+	got[builtinConfigFileName] = string(builtInConfBytes)
+
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
 	if err != nil {
 		return
