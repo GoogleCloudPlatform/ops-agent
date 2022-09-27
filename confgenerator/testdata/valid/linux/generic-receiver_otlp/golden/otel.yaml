@@ -424,6 +424,10 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  otlp/otlp_otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   prometheus/fluentbit:
     config:
       scrape_configs:
