@@ -362,7 +362,7 @@ configuration_options:
         - default: null
           description: This value must be oracledb.
           name: type
-        - default: localhost:1522
+        - default: localhost:1521
           description: The endpoint used to connect to the oracle DB instance. This field supports either host:port or a unix socket path.
           name: endpoint
         - default: 60s
