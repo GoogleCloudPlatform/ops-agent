@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
@@ -65,11 +64,11 @@ var (
 			},
 		},
 	}
+)
 
-	flbConfigGolden = "golden_" + fluentbit.MainConfigFileName
-	flbParserGolden = "golden_" + fluentbit.ParserConfigFileName
-	otelYamlGolden  = "golden_otel.yaml"
-	errorGolden     = "golden_error"
+const (
+	goldenDir   = "golden"
+	errorGolden = goldenDir + "/error"
 )
 
 func TestGoldens(t *testing.T) {
@@ -96,8 +95,11 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 		)
 		assert.NilError(t, err)
 		golden.Assert(t, string(builtinConfBytes), filepath.Join(testDir, builtinConfigFileName))
-		err = testGenerateConf(t, platform, testDir)
+		got, err := generateConfigs(platform, testDir)
 		assert.NilError(t, err)
+		if err := testGeneratedFiles(t, got, testDir); err != nil {
+			t.Errorf("Failed to check generated configs: %v", err)
+		}
 	})
 
 	t.Run("valid", func(t *testing.T) {
@@ -122,8 +124,7 @@ func testPlatformGenerateConfTests(t *testing.T, platform platformConfig) {
 			invalidTestdataDirName,
 			func(t *testing.T, err error, testDir string) {
 				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
-				goldenErrorPath := filepath.Join(testDir, errorGolden)
-				golden.Assert(t, err.Error(), goldenErrorPath)
+				// Error is checked by runTestsInDir
 			},
 		)
 	})
@@ -154,8 +155,11 @@ func runTestsInDir(
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			testDir := filepath.Join(platformTestDir, testName)
-			err := testGenerateConf(t, platform, testDir)
+			got, err := generateConfigs(platform, testDir)
 			errAssertion(t, err, testDir)
+			if err := testGeneratedFiles(t, got, testDir); err != nil {
+				t.Errorf("Failed to check generated configs: %v", err)
+			}
 		})
 	}
 }
@@ -176,7 +180,13 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 	return testNames
 }
 
-func testGenerateConf(t *testing.T, platform platformConfig, testDir string) error {
+func generateConfigs(platform platformConfig, testDir string) (got map[string]string, err error) {
+	got = make(map[string]string)
+	defer func() {
+		if err != nil {
+			got["error"] = err.Error()
+		}
+	}()
 	// Merge Config
 	_, confBytes, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
@@ -184,11 +194,11 @@ func testGenerateConf(t *testing.T, platform platformConfig, testDir string) err
 		apps.BuiltInConfStructs,
 	)
 	if err != nil {
-		return err
+		return
 	}
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
 	if err != nil {
-		return err
+		return
 	}
 
 	// Fluent Bit configs
@@ -197,52 +207,34 @@ func testGenerateConf(t *testing.T, platform platformConfig, testDir string) err
 		platform.defaultStateDir,
 		platform.InfoStat,
 	)
-	if err != nil {
-		return err
+	for k, v := range flbGeneratedConfigs {
+		got[k] = v
 	}
-	golden.Assert(
-		t,
-		flbGeneratedConfigs[fluentbit.MainConfigFileName],
-		filepath.Join(testDir, flbConfigGolden),
-	)
-	golden.Assert(
-		t,
-		flbGeneratedConfigs[fluentbit.ParserConfigFileName],
-		filepath.Join(testDir, flbParserGolden),
-	)
-	err = testGeneratedLuaFiles(t, flbGeneratedConfigs, testDir)
 	if err != nil {
-		// This error shouldn't result in a golden_error.
-		// An error here represents a failure to read something
-		// in the filesystem, and is an error state for the test.
-		t.Errorf("Testing generated lua files failed: %v", err)
+		return
 	}
 
 	// Otel configs
 	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
 	if err != nil {
-		return err
+		return
 	}
-	golden.Assert(
-		t,
-		otelGeneratedConfig,
-		filepath.Join(testDir, otelYamlGolden),
-	)
+	got["otel.yaml"] = otelGeneratedConfig
 
-	return nil
+	return
 }
 
-func testGeneratedLuaFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
-	// Find all lua files currently in this test directory
-	existingLuaFiles := map[string]struct{}{}
+func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
+	// Find all files currently in this test directory
+	existingFiles := map[string]struct{}{}
 	err := filepath.Walk(
-		filepath.Join("testdata", testDir),
+		filepath.Join("testdata", testDir, goldenDir),
 		func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			if filepath.Ext(info.Name()) == ".lua" {
-				existingLuaFiles[info.Name()] = struct{}{}
+			if info.Mode().IsRegular() {
+				existingFiles[info.Name()] = struct{}{}
 			}
 			return nil
 		},
@@ -252,24 +244,25 @@ func testGeneratedLuaFiles(t *testing.T, generatedFiles map[string]string, testD
 	}
 
 	// Assert the goldens of all the generated files. Either the generated file
-	// matches a file already present in the directory, or the lua file is new.
-	// If the lua file is new, the test will fail if not currently doing a golden
+	// matches a file already present in the directory, or the file is new.
+	// If the file is new, the test will fail if not currently doing a golden
 	// update (`-update` flag).
 	for file, content := range generatedFiles {
-		if filepath.Ext(file) != ".lua" {
-			continue
-		}
-		golden.Assert(t, content, filepath.Join(testDir, file))
-		delete(existingLuaFiles, file)
+		golden.Assert(t, content, filepath.Join(testDir, goldenDir, file))
+		delete(existingFiles, file)
 	}
 
 	// If there are any files left in the existing file map, then that means the
 	// test generated new files and we're currently in an update run. We now need
 	// to clean up the existing lua files left aren't being generated anymore.
-	for file := range existingLuaFiles {
-		err := os.Remove(filepath.Join("testdata", testDir, file))
-		if err != nil {
-			return err
+	for file := range existingFiles {
+		if golden.FlagUpdate() {
+			err := os.Remove(filepath.Join("testdata", testDir, file))
+			if err != nil {
+				return err
+			}
+		} else {
+			t.Errorf("unexpected existing file: %q", file)
 		}
 	}
 

@@ -3,6 +3,7 @@ exporters:
     metric:
       instrumentation_library_labels: false
       prefix: ""
+      resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
     retry_on_failure:
@@ -342,15 +343,20 @@ processors:
         new_label: response_code
       - action: aggregate_labels
         aggregation_type: sum
-        label_set: []
+        label_set:
+        - response_code
     - action: update
       include: fluentbit_stackdriver_proc_records_total
       new_name: agent/log_entry_count
       operations:
       - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
       - action: aggregate_labels
         aggregation_type: sum
-        label_set: []
+        label_set:
+        - response_code
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -401,12 +407,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otlp_otlp_0:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -424,9 +424,6 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  otlp/otlp_otlp:
-    grpc:
-      endpoint: 0.0.0.0:4317
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -475,14 +472,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/otlp_otlp:
-      exporters:
-      - googlecloud
-      processors:
-      - metricstransform/otlp_otlp_0
-      - resourcedetection/_global_0
-      receivers:
-      - otlp/otlp_otlp
   telemetry:
     metrics:
       address: 0.0.0.0:20201
