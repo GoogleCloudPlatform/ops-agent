@@ -55,6 +55,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -77,6 +78,13 @@ func configPathForPlatform(platform string) string {
 		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
 	}
 	return "/etc/google-cloud-ops-agent/config.yaml"
+}
+
+func workDirForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return `C:\`
+	}
+	return "/tmp/"
 }
 
 func restartCommandForPlatform(platform string) string {
@@ -1893,6 +1901,153 @@ func TestPrometheusMetrics(t *testing.T) {
 		}
 	})
 }
+
+// Test the Counter and Gauge metric types using a JSON Prometheus exporter
+// The JSON exporter will connect to a Python http server that serve static JSON files
+func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		type fileToUpload struct {
+			local, remote string
+		}
+
+		filesToUpload := []fileToUpload{
+			{local: "testdata/data.json",
+				remote: "data.json"},
+			{local: "testdata/json_exporter_config.yaml",
+				remote: "json_exporter_config.yaml"},
+		}
+
+		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
+
+		for _, file := range filesToUpload {
+			f, err := os.Open(file.local)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		packages := []string{"wget", "python3"}
+		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		if err != nil {
+			t.Fatalf("failed to install %v with err: %s", packages, err)
+		}
+
+		// Install either tmux or screen to run the JSON exporter and the http server in the background
+		tmux_err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, []string{"tmux"})
+		if tmux_err != nil {
+			screen_err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, []string{"screen"})
+			if screen_err != nil {
+				t.Fatalf("failed to install either tmux or screen with err: %s and %s", tmux_err, screen_err)
+			}
+		}
+
+		// Run the setup script to run the Python http server and the JSON exporter using tmux/screen
+		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
+
+		if err != nil {
+			t.Fatalf("failed to open setup script: %s", err)
+		}
+
+		env := map[string]string{"WORKDIR": workDir}
+		test_out, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+
+		if err != nil {
+			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, test_out.Stderr)
+		}
+
+		config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: json
+          metrics_path: /probe
+          params:
+            module: [default]
+          static_configs:
+            - targets:
+              - http://localhost:8000/data.json 
+          relabel_configs:
+            - source_labels: [__address__]
+              target_label: __param_target
+              replacement: '$$1'
+            - source_labels: [__param_target]
+              target_label: instance
+              replacement: '$$1'
+            - target_label: __address__
+              replacement: localhost:7979 
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+
+		// Gauge type
+		gaugeMetric := "prometheus.googleapis.com/test_gauge_value/gauge"
+
+		if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, gaugeMetric, window, nil, true); err != nil {
+			t.Error(err)
+		} else {
+			if pts.MetricKind != metric.MetricDescriptor_GAUGE {
+				t.Errorf("Metric %s has metric kind %s; expected kind %s", gaugeMetric, pts.MetricKind, metric.MetricDescriptor_GAUGE)
+			}
+			if pts.ValueType != metric.MetricDescriptor_DOUBLE {
+				t.Errorf("Metric %s has value type %s; expected type %s", gaugeMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE)
+			}
+			var expectedDoubleValue float64 = 789
+			if len(pts.Points) == 0 {
+				t.Errorf("Metric %s has at least one data points in the time windows", gaugeMetric)
+			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
+				t.Errorf("Metric %s has value %f; expected %f", gaugeMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue)
+			}
+		}
+
+		// Counter type
+		counterMetric := "prometheus.googleapis.com/test_counter_value/counter"
+
+		if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, counterMetric, window, nil, true); err != nil {
+			t.Error(err)
+		} else {
+			if pts.MetricKind != metric.MetricDescriptor_CUMULATIVE {
+				t.Errorf("Metric %s has metric kind %s; expected kind %s", counterMetric, pts.MetricKind, metric.MetricDescriptor_CUMULATIVE)
+			}
+			if pts.ValueType != metric.MetricDescriptor_DOUBLE {
+				t.Errorf("Metric %s has value type %s; expected type %s", counterMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE)
+			}
+			// Since we are sending the same number at every time point, the cumulative counter metric will return 0 as no change in values
+			var expectedDoubleValue float64 = 0
+			if len(pts.Points) == 0 {
+				t.Errorf("Metric %s has at least one data points in the time windows", counterMetric)
+			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
+				t.Errorf("Metric %s has value %f; expected %f", counterMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue)
+			}
+		}
+
+	})
+}
+
 func TestExcludeMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
