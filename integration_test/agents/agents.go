@@ -232,7 +232,7 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 			}
 			_, err := gce.WaitForMetric(
 				ctx, logger, vm, "agent.googleapis.com/agent/uptime", TrailingQueryWindow,
-				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)})
+				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)}, false)
 			c <- err
 		}()
 	}

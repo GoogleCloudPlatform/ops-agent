@@ -23,11 +23,20 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/go-playground/validator/v10"
 	commonconfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	strutil "github.com/prometheus/prometheus/util/strutil"
+)
+
+var (
+	// MetadataResource is the resource metadata for the instance we're running on.
+	// Note: This is a global variable so that it can be set in tests.
+	MetadataResource resourcedetector.Resource
 )
 
 type PrometheusMetrics struct {
@@ -49,6 +58,32 @@ func (r PrometheusMetrics) Type() string {
 }
 
 func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
+	// Get the resource metadata for the instance we're running on.
+	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+		// Create a prometheus style mapping for the GCE metadata.
+		gceMetadataMap := createPrometheusStyleGCEMetadata(gceMetadata)
+
+		// Add the GCE metadata to the prometheus config.
+		for i := range r.PromConfig.ScrapeConfigs {
+			// Iterate over the static configs.
+			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
+				staticConfigs := r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
+				for k := range staticConfigs {
+					labels := staticConfigs[k].Labels
+					if labels == nil {
+						labels = model.LabelSet{}
+					}
+					for k, v := range gceMetadataMap {
+						// If there are conflicts, the GCE metadata should take precedence.
+						labels[model.LabelName(k)] = model.LabelValue(v)
+					}
+
+					staticConfigs[k].Labels = labels
+				}
+			}
+		}
+	}
+
 	// TODO(b/248268653): Fix the issue we have with the regex capture group syntax.
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
@@ -56,6 +91,46 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 			Config: map[string]interface{}{"config": r.PromConfig},
 		},
 	}}
+}
+
+func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) map[string]string {
+	metaLabels := map[string]string{
+		"__meta_gce_instance_id":   gceMetadata.InstanceID,
+		"__meta_gce_instance_name": gceMetadata.InstanceName,
+		"__meta_gce_project":       gceMetadata.Project,
+		"__meta_gce_zone":          gceMetadata.Zone,
+		"__meta_gce_network":       gceMetadata.Network,
+		// TODO(b/b/246995894): Add support for subnetwork label.
+		// "__meta_gce_subnetwork":    gceMetadata.Subnetwork,
+		"__meta_gce_public_ip":    gceMetadata.PublicIP,
+		"__meta_gce_private_ip":   gceMetadata.PrivateIP,
+		"__meta_gce_tags":         gceMetadata.Tags,
+		"__meta_gce_machine_type": gceMetadata.MachineType,
+	}
+	prefix := "__meta_gce_"
+	for k, v := range gceMetadata.Metadata {
+		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = v
+	}
+
+	// Labels are not available using the GCE metadata API.
+	// TODO(b/246995462): Add support for labels.
+	//
+	// for k, v := range gceMetadata.Label {
+	// 	metaLabels[prefix+"label_"+k] = v
+	// }
+
+	for k, v := range gceMetadata.InterfaceIPv4 {
+		sanitizedKey := "interface_ipv4_nic" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = v
+	}
+
+	// Set the location, namespace and cluster labels.
+	metaLabels["location"] = gceMetadata.Zone
+	metaLabels["namespace"] = gceMetadata.InstanceID
+	metaLabels["cluster"] = "gce"
+
+	return metaLabels
 }
 
 func validatePrometheusConfig(sl validator.StructLevel) {
@@ -134,10 +209,18 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 	}
 
 	for _, sc := range promConfig.ScrapeConfigs {
+		for _, rc := range sc.RelabelConfigs {
+			if rc.TargetLabel == "location" || rc.TargetLabel == "namespace" || rc.TargetLabel == "cluster" {
+				return "relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "relabel_configs cannot rename location, namespace or cluster")
+			}
+		}
 		for _, rc := range sc.MetricRelabelConfigs {
 			if rc.TargetLabel == "__name__" {
 				// TODO(#2297): Remove validation after renaming is fixed
 				return "metric_relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename __name__")
+			}
+			if rc.TargetLabel == "location" || rc.TargetLabel == "namespace" || rc.TargetLabel == "cluster" {
+				return "metric_relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename location, namespace or cluster")
 			}
 		}
 
