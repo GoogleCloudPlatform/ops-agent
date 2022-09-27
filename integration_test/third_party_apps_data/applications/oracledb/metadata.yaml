@@ -350,7 +350,7 @@ expected_logs:
         description: Status of the action
       - name: jsonPayload.user_host
         type: string
-        value_regex: github-test-.*
+        value_regex: .*
         description: Host where the audited action originated
       - name: severity
         type: string
