@@ -10,17 +10,16 @@ You will need a GCP project to run VMs in. This is referred to as `${PROJECT}` i
 the following instructions.
 
 The project needs sufficient quota to run many tests in parallel. It also needs
-(when testing Windows) a firewall that allows connections over port 5986. In the
-case of Google-owned projects, such a firewall is difficult to obtain, so for this
-reason and quota reasons it is recommended for Googlers to use our prebuilt testing
-project. Ask a teammate (e.g. martijnvs@) for the project ID.
+a firewall that allows connections over port 22 for ssh. It is recommended for
+Googlers to use our prebuilt testing project. Ask a teammate (e.g. martijnvs@)
+for the project ID.
 
 You will also need a GCS bucket that is used to transfer files onto the 
 testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
 `stackdriver-test-143416-untrusted-file-transfers` is recommended.
 
 You will need `gcloud` to be installed. Run `gcloud auth login` to set up `gcloud`
-    authentication (if you haven't done that already).
+authentication (if you haven't done that already).
 
 To give the tests credentials to be able to access Google APIs as you,
 run the following command and do what it says (it may ask you to run
@@ -41,8 +40,7 @@ of Kokoro with some setup (see above).
 
 ### Testing Command
 
-When the setup steps are complete, you can run ops_agent_test (for Linux)
-like this:
+When the setup steps are complete, you can run ops_agent_test like this:
 
 ```
 PROJECT="${PROJECT}" \
@@ -54,10 +52,6 @@ go test -v ops_agent_test.go \
  -tags=integration_test \
  -timeout=4h
 ```
-
-Testing on Windows is tricky because it requires a suitable value of
-WINRM_PAR_PATH, and for now only Googlers can build winrm.par to supply it at
-runtime.
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the
