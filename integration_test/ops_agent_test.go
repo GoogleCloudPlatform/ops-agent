@@ -1937,7 +1937,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			}
 		}
 
-		packages := []string{"wget", "python3"}
+		packages := []string{"wget", "python3", "at"}
 		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 		if err != nil {
 			t.Fatalf("failed to install %v with err: %s", packages, err)
