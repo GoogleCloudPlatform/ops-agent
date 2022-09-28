@@ -16,12 +16,12 @@ package main
 
 import (
 	"log"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 func GetUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, error) {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
 		return confgenerator.UnifiedConfig{}, err
