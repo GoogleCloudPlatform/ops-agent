@@ -27,98 +27,98 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 supported_app_version: ["Classic 5.8.x-5.16.x", "Artemis 2.x"]
 expected_metrics:
-  - type: workload.googleapis.com/activemq.connection.count
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/activemq.consumer.count
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-    representative: true
-  - type: workload.googleapis.com/activemq.disk.store_usage
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/activemq.disk.temp_usage
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/activemq.memory.usage
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.message.current
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.message.dequeued
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.message.enqueued
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.message.expired
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.message.wait_time.avg
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
-  - type: workload.googleapis.com/activemq.producer.count
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      broker: .*
-      destination: .*
+- type: workload.googleapis.com/activemq.connection.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/activemq.consumer.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+  representative: true
+- type: workload.googleapis.com/activemq.disk.store_usage
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/activemq.disk.temp_usage
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+- type: workload.googleapis.com/activemq.memory.usage
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.message.current
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.message.dequeued
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.message.enqueued
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.message.expired
+  value_type: INT64
+  kind: CUMULATIVE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.message.wait_time.avg
+  value_type: DOUBLE
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
+- type: workload.googleapis.com/activemq.producer.count
+  value_type: INT64
+  kind: GAUGE
+  monitored_resource: gce_instance
+  labels:
+    broker: .*
+    destination: .*
 expected_logs:
-  - log_name: syslog
-    fields:
-      - name: jsonPayload.message
-        value_regex: '(activemq\[[0-9]+\]|activemq):'
-        type: string
-        description: null
+- log_name: syslog
+  fields:
+  - name: jsonPayload.message
+    value_regex: '(activemq\[[0-9]+\]|activemq):'
+    type: string
+    description: null
 configuration_options:
   metrics:
-    - type: activemq
-      fields:
-        - name: type
-          default: null
-          description: This value must be activemq.
-        - name: endpoint
-          default: http://localhost:1099
-          description: The URL of the node to monitor.
-        - name: username
-          default: null
-          description: The configured username if JMX is configured to require authentication.
-        - name: password
-          default: null
-          description: The configured password if JMX is configured to require authentication.
-        - name: collection_interval
-          default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+  - type: activemq
+    fields:
+    - name: type
+      default: null
+      description: This value must be activemq.
+    - name: endpoint
+      default: http://localhost:1099
+      description: The URL of the node to monitor.
+    - name: username
+      default: null
+      description: The configured username if JMX is configured to require authentication.
+    - name: password
+      default: null
+      description: The configured password if JMX is configured to require authentication.
+    - name: collection_interval
+      default: 60s
+      description: A time.Duration value, such as 30s or 5m.
