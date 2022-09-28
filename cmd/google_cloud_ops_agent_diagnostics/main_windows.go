@@ -28,6 +28,14 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
+const (
+	eventID                 unint32 = 1
+	ERROR_SUCCESS           unint32 = 0
+	ERROR_FILE_NOT_FOUND    unint32 = 2
+	ERROR_INVALID_DATA      unint32 = 13
+	ERROR_INVALID_PARAMETER unint32 = 87
+)
+
 type service struct {
 	log      debug.Log
 	userConf string
@@ -42,13 +50,13 @@ func run() error {
 	}
 	defer elog.Close()
 
-	elog.Info(1, fmt.Sprintf("starting %s service", name))
+	elog.Info(eventID, fmt.Sprintf("starting %s service", name))
 	err = svc.Run(name, &service{log: elog})
 	if err != nil {
-		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
+		elog.Error(eventID, fmt.Sprintf("%s service failed: %v", name, err))
 		return err
 	}
-	elog.Info(1, fmt.Sprintf("%s service stopped", name))
+	elog.Info(eventID, fmt.Sprintf("%s service stopped", name))
 	return nil
 }
 
@@ -56,15 +64,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to parse arguments: %v", err))
-		// ERROR_INVALID_ARGUMENT
-		return false, 0x00000057
+		s.log.Error(eventID, fmt.Sprintf("failed to parse arguments: %v", err))
+		return false, ERROR_INVALID_PARAMETER
 	}
 	uc, err := GetUnifiedConfigAndValidate(s.userConf, "windows")
 	if err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to obtain unified configuration: %v", err))
-		// 2 is "file not found"
-		return false, 2
+		s.log.Error(eventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
+		return false, ERROR_FILE_NOT_FOUND
 	}
 	s.log.Info(1, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
@@ -87,7 +93,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 					death <- true
 					break waitForSignal
 				default:
-					s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+					s.log.Error(eventID, fmt.Sprintf("unexpected control request #%d", c))
 				}
 			}
 		}
@@ -95,10 +101,11 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
 	if err != nil {
-		return false, 0
+		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
+		return false, ERROR_INVALID_DATA
 	}
 
-	return
+	return false, ERROR_SUCCESS
 }
 
 func (s *service) parseFlags(args []string) error {
