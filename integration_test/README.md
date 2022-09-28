@@ -64,7 +64,7 @@ against a pre-built but unreleased agent, you can use add the
 AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/agent_packages \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/result \
 ```
 
 You can obtain such a URI by:
@@ -74,7 +74,7 @@ You can obtain such a URI by:
     For example:
     `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259`
 2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
-    of the URL with `gs://` and put `/agent_packages` on the end and pass that as
+    of the URL with `gs://` and put `/result` on the end and pass that as
     `AGENT_PACKAGES_IN_GCS`.
 
 ## Third Party Apps Test
