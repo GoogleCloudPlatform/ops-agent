@@ -1943,16 +1943,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Fatalf("failed to install %v with err: %s", packages, err)
 		}
 
-		// Install either tmux or screen to run the JSON exporter and the http server in the background
-		tmux_err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, []string{"tmux"})
-		if tmux_err != nil {
-			screen_err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, []string{"screen"})
-			if screen_err != nil {
-				t.Fatalf("failed to install either tmux or screen with err: %s and %s", tmux_err, screen_err)
-			}
-		}
-
-		// Run the setup script to run the Python http server and the JSON exporter using tmux/screen
+		// Run the setup script to run the Python http server and the JSON exporter
 		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
 
 		if err != nil {
