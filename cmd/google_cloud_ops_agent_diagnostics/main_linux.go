@@ -42,12 +42,12 @@ func run() error {
 		osSignal := make(chan os.Signal, 1)
 		signal.Notify(osSignal, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGINT)
 
-	waitForSignal:
+		// Wait for stop signal
 		for {
 			select {
 			case <-osSignal:
 				death <- true
-				break waitForSignal
+				return
 			}
 		}
 	}()

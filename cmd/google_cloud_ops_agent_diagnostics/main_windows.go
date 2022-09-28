@@ -29,11 +29,11 @@ import (
 )
 
 const (
-	eventID                 unint32 = 1
-	ERROR_SUCCESS           unint32 = 0
-	ERROR_FILE_NOT_FOUND    unint32 = 2
-	ERROR_INVALID_DATA      unint32 = 13
-	ERROR_INVALID_PARAMETER unint32 = 87
+	eventID                 uint32 = 1
+	ERROR_SUCCESS           uint32 = 0
+	ERROR_FILE_NOT_FOUND    uint32 = 2
+	ERROR_INVALID_DATA      uint32 = 13
+	ERROR_INVALID_PARAMETER uint32 = 87
 )
 
 type service struct {
@@ -82,7 +82,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}()
 
 	go func() {
-	waitForSignal:
+		// Manage windows service signals
 		for {
 			select {
 			case c := <-r:
@@ -91,7 +91,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 					changes <- c.CurrentStatus
 				case svc.Stop, svc.Shutdown:
 					death <- true
-					break waitForSignal
+					return
 				default:
 					s.log.Error(eventID, fmt.Sprintf("unexpected control request #%d", c))
 				}
