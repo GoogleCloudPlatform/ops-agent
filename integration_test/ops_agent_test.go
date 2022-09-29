@@ -1937,16 +1937,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			}
 		}
 
-		packages := []string{"wget", "python3", "at"}
+		packages := []string{"wget", "python3"}
 		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 		if err != nil {
 			t.Fatalf("failed to install %v with err: %s", packages, err)
-		}
-
-		atd_out, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo systemctl start atd")
-
-		if err != nil {
-			t.Fatalf("failed to enable atd in VM with err: %v, stderr: %s", err, atd_out.Stderr)
 		}
 
 		// Run the setup script to run the Python http server and the JSON exporter
