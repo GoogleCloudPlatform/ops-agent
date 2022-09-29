@@ -35,8 +35,8 @@ import (
 
 // Ops Agent config.
 type UnifiedConfig struct {
-	Logging *Logging `yaml:"logging"`
-	Metrics *Metrics `yaml:"metrics"`
+	Logging *Logging `yaml:"logging" tracking:""`
+	Metrics *Metrics `yaml:"metrics" tracking:""`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -283,7 +283,7 @@ type Component interface {
 // ConfigComponent holds the shared configuration fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
-	Type string `yaml:"type" validate:"required"`
+	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
 // componentFactory is the value type for the componentTypeRegistry map.
@@ -353,8 +353,8 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
 type Logging struct {
-	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
-	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"`
+	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"  tracking:""`
+	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"  tracking:""`
 	// Exporters are deprecated and ignored, so do not have any validation.
 	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
 	Service   *LoggingService        `yaml:"service"`
@@ -363,6 +363,17 @@ type Logging struct {
 type LoggingReceiver interface {
 	Component
 	Components(tag string) []fluentbit.Component
+}
+
+type LoggingReceiverMixin struct {
+}
+
+func (l LoggingReceiverMixin) Module() string {
+	return LoggingReceiverTypes.Subagent
+}
+
+func (l LoggingReceiverMixin) Kind() string {
+	return LoggingReceiverTypes.Kind
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry{
@@ -448,8 +459,8 @@ type LoggingPipeline struct {
 type metricsReceiverMap map[string]MetricsReceiver
 type metricsProcessorMap map[string]MetricsProcessor
 type Metrics struct {
-	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"`
-	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"`
+	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"  tracking:""`
+	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"  tracking:""`
 	// Exporters are deprecated and ignored, so do not have any validation.
 	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
 	Service   *MetricsService        `yaml:"service"`
