@@ -43,10 +43,26 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				},
 			},
 			Processors: []otel.Component{
-				otel.NormalizeSums(),
+				otel.TransformationMetrics(
+					otel.FlattenResourceAttribute("iis.site", "site"),
+					otel.FlattenResourceAttribute("iis.application_pool", "app_pool"),
+				),
+				// Drop all resource keys; Must be done in a separate transform,
+				// otherwise the above flatten resource attribute queries will only
+				// work for the first datapoint
+				otel.TransformationMetrics(
+					otel.RetainResource(),
+				),
+				otel.CondenseResourceMetrics(),
 				otel.MetricsTransform(
+					otel.AggregateLabels(
+						"sum",
+						"direction",
+						"request",
+					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.NormalizeSums(),
 			},
 		}}
 	}

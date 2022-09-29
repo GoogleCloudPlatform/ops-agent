@@ -28,7 +28,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_iis_2:
+  filter/default__pipeline_iis_5:
     metrics:
       exclude:
         match_type: regexp
@@ -55,6 +55,8 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
+  groupbyattrs/default__pipeline_iis_2: {}
+  groupbyattrs/iispipeline_iis_2: {}
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -329,8 +331,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_iis_1:
+  metricstransform/default__pipeline_iis_3:
     transforms:
+    - action: aggregate_labels
+      aggregation_type: sum
+      label_set:
+      - direction
+      - request
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -392,8 +399,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/iispipeline_iis_1:
+  metricstransform/iispipeline_iis_3:
     transforms:
+    - action: aggregate_labels
+      aggregation_type: sum
+      label_set:
+      - direction
+      - request
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -444,11 +456,29 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/default__pipeline_iis_0: {}
-  normalizesums/iispipeline_iis_0: {}
+  normalizesums/default__pipeline_iis_4: {}
+  normalizesums/iispipeline_iis_4: {}
   resourcedetection/_global_0:
     detectors:
     - gce
+  transform/default__pipeline_iis_0:
+    metrics:
+      queries:
+      - set(attributes["site"], resource.attributes["iis.site"])
+      - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
+  transform/default__pipeline_iis_1:
+    metrics:
+      queries:
+      - keep_keys(resource.attributes)
+  transform/iispipeline_iis_0:
+    metrics:
+      queries:
+      - set(attributes["site"], resource.attributes["iis.site"])
+      - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
+  transform/iispipeline_iis_1:
+    metrics:
+      queries:
+      - keep_keys(resource.attributes)
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
@@ -515,9 +545,12 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/default__pipeline_iis_0
-      - metricstransform/default__pipeline_iis_1
-      - filter/default__pipeline_iis_2
+      - transform/default__pipeline_iis_0
+      - transform/default__pipeline_iis_1
+      - groupbyattrs/default__pipeline_iis_2
+      - metricstransform/default__pipeline_iis_3
+      - normalizesums/default__pipeline_iis_4
+      - filter/default__pipeline_iis_5
       - resourcedetection/_global_0
       receivers:
       - iis/default__pipeline_iis
@@ -543,8 +576,11 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/iispipeline_iis_0
-      - metricstransform/iispipeline_iis_1
+      - transform/iispipeline_iis_0
+      - transform/iispipeline_iis_1
+      - groupbyattrs/iispipeline_iis_2
+      - metricstransform/iispipeline_iis_3
+      - normalizesums/iispipeline_iis_4
       - resourcedetection/_global_0
       receivers:
       - iis/iispipeline_iis

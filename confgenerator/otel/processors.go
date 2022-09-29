@@ -157,6 +157,15 @@ func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) Tran
 	return TransformQuery(fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
 }
 
+// RetainResource retains the resource attributes provided, and drops all other attributes.
+func RetainResource(resourceAttributeKeys ...string) TransformQuery {
+	keyList := ""
+	for _, key := range resourceAttributeKeys {
+		keyList += fmt.Sprintf(`, "%s"`, key)
+	}
+	return TransformQuery(fmt.Sprintf(`keep_keys(resource.attributes%s)`, keyList))
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
@@ -284,5 +293,15 @@ func AggregateLabelValues(aggregationType string, label string, new string, old 
 		"label":             label,
 		"new_value":         new,
 		"aggregated_values": old,
+	}
+}
+
+// CondenseResourceMetrics merges multiple resource metrics on
+// a slice of metrics to a single resource metrics payload, if they have the same
+// resource.
+func CondenseResourceMetrics() Component {
+	return Component{
+		Type:   "groupbyattrs",
+		Config: map[string]any{},
 	}
 }
