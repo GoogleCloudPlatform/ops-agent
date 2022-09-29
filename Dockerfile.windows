@@ -12,9 +12,6 @@ RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 RUN export PATH=/usr/local/go/bin:$PATH; \
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
-    go install github.com/google/addlicense@latest; \
-    go install github.com/pavius/impi/cmd/impi@latest; \
     go install github.com/google/googet/v2/goopack@latest;
 
 COPY . /work
