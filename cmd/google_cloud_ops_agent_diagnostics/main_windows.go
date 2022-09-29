@@ -72,7 +72,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		s.log.Error(eventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND
 	}
-	s.log.Info(1, "obtained unified configuration")
+	s.log.Info(eventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 	death := make(chan bool)
@@ -109,10 +109,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 }
 
 func (s *service) parseFlags(args []string) error {
-	s.log.Info(1, fmt.Sprintf("args: %#v", args))
+	s.log.Info(eventID, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "config", "", "path to the user specified agent config")
-	s.log.Info(1, s.userConf)
+	s.log.Info(eventID, s.userConf)
 
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)
