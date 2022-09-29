@@ -55,10 +55,12 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				),
 				otel.CondenseResourceMetrics(),
 				otel.MetricsTransform(
-					otel.AggregateLabels(
-						"sum",
-						"direction",
-						"request",
+					otel.UpdateMetricRegexp("^iis",
+						otel.AggregateLabels(
+							"sum",
+							"direction",
+							"request",
+						),
 					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),

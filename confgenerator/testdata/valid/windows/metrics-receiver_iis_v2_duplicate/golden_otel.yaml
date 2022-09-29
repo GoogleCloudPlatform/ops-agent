@@ -422,11 +422,15 @@ processors:
       new_name: agent.googleapis.com/$${1}
   metricstransform/iispipeline_iis__v2_3:
     transforms:
-    - action: aggregate_labels
-      aggregation_type: sum
-      label_set:
-      - direction
-      - request
+    - action: update
+      include: ^iis
+      match_type: regexp
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - direction
+        - request
     - action: update
       include: ^(.*)$$
       match_type: regexp

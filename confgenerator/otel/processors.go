@@ -191,6 +191,19 @@ func UpdateMetric(metric string, operations ...map[string]interface{}) map[strin
 	return out
 }
 
+// UpdateMetricRegexp returns a config snippet applies transformations to the given metric name regex
+func UpdateMetricRegexp(metricRegex string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"include":    metricRegex,
+		"match_type": "regexp",
+		"action":     "update",
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
 // DuplicateMetric returns a config snippet that copies old to new, applying zero or more transformations.
 func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
