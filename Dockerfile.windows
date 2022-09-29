@@ -1,7 +1,7 @@
 FROM ubuntu:focal AS mingw-build
 
 RUN set -x; apt-get update && \
-    DEBIAN_FRONTEND=noniteractive apt-get -y install git \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install git \
     autoconf libtool libltdl-dev \
     build-essential cmake bison flex file \
     devscripts cdbs openjdk-11-jdk zip \
