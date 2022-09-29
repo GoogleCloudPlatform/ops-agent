@@ -51,6 +51,7 @@ sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
 sudo DOCKER_BUILDKIT=1 docker build . \
+  -f "${DOCKERFILE:-Dockerfile}" \
   --target "${DISTRO}-build" \
   -t build_image
 
