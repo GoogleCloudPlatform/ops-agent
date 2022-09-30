@@ -11,8 +11,10 @@ logging:
   receivers:
     oracledb_audit:
       type: oracledb_audit
+      oracle_home: /opt/oracle
     oracledb_alert:
       type: oracledb_alert
+      oracle_home: /opt/oracle
   service:
     pipelines:
       oracledb:
