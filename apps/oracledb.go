@@ -25,9 +25,11 @@ import (
 )
 
 type MetricsReceiverOracleDB struct {
-	confgenerator.ConfigComponent          `yaml:",inline"`
-	confgenerator.MetricsReceiverShared    `yaml:",inline"`
-	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
+	confgenerator.ConfigComponent       `yaml:",inline"`
+	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	Insecure           *bool `yaml:"insecure" validate:"omitempty"`
+	InsecureSkipVerify *bool `yaml:"insecure_skip_verify" validate:"omitempty"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 	Username string `yaml:"username"`
@@ -859,10 +861,23 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 type LoggingReceiverOracleDBAlert struct {
 	LoggingProcessorOracleDBAlert           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                              string `yaml:"oracle_home,omitempty"`
+}
+
+func (lr LoggingReceiverOracleDBAlert) CustomValidate(id string) error {
+	if len(lr.OracleHome) > 0 && len(lr.IncludePaths) > 0 {
+		return fmt.Errorf("\"oracle_home\" and \"include_paths\" cannot both be specified for %s receiver \"%s\"", lr.Type(), id)
+	}
+
+	return nil
 }
 
 func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
-	if len(lr.IncludePaths) == 0 {
+	if len(lr.OracleHome) > 0 {
+		lr.IncludePaths = []string{
+			fmt.Sprintf("%s/diag/rdbms/*/*/trace/alert_*.log", lr.OracleHome),
+		}
+	} else if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
 			"${ORACLE_HOME}/diag/rdbms/*/*/trace/alert_*.log",
 		}
@@ -963,10 +978,23 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 type LoggingReceiverOracleDBAudit struct {
 	LoggingProcessorOracleDBAudit           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                              string `yaml:"oracle_home,omitempty"`
+}
+
+func (lr LoggingReceiverOracleDBAudit) CustomValidate(id string) error {
+	if len(lr.OracleHome) > 0 && len(lr.IncludePaths) > 0 {
+		return fmt.Errorf("\"oracle_home\" and \"include_paths\" cannot both be specified for %s receiver \"%s\"", lr.Type(), id)
+	}
+
+	return nil
 }
 
 func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
-	if len(lr.IncludePaths) == 0 {
+	if len(lr.OracleHome) > 0 {
+		lr.IncludePaths = []string{
+			fmt.Sprintf("%s/admin/*/adump/*.aud", lr.OracleHome),
+		}
+	} else if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
 			"${ORACLE_HOME}/admin/*/adump/*.aud",
 		}

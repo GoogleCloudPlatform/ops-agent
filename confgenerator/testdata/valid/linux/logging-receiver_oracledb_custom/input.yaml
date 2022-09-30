@@ -16,8 +16,10 @@ logging:
   receivers:
     oracledb_audit:
       type: oracledb_audit
+      oracle_home: /my/oracle/home
     oracledb_alert:
       type: oracledb_alert
+      oracle_home: /my/oracle/home
     oracledb_audit_custom:
       type: oracledb_audit
       include_paths:
