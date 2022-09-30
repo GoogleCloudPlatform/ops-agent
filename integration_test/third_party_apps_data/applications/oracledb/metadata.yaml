@@ -399,7 +399,7 @@ configuration_options:
           default: null
           description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
         - name: oracle_home
-          detault: null
+          default: null
           description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with include_paths.
         - name: exclude_paths
           default: '[]'
@@ -419,7 +419,7 @@ configuration_options:
           default: null
           description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
         - name: oracle_home
-          detault: null
+          default: null
           description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with include_paths.
         - name: exclude_paths
           default: '[]'
