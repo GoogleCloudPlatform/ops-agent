@@ -3,6 +3,7 @@ module github.com/GoogleCloudPlatform/ops-agent
 go 1.19
 
 require (
+	cloud.google.com/go/compute v0.1.0
 	cloud.google.com/go/logging v1.4.2
 	cloud.google.com/go/monitoring v1.2.0
 	cloud.google.com/go/storage v1.18.2
@@ -29,7 +30,6 @@ require (
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
-	cloud.google.com/go/compute v0.1.0 // indirect
 	cloud.google.com/go/iam v0.1.0 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/fatih/color v1.10.0 // indirect

@@ -184,7 +184,7 @@ configuration_options:
           default: null
           description: This value must be `couchbase`.
         - name: endpoint
-          default: http://localhost:8091
+          default: localhost:8091
           description: The URL of the node to monitor.
         - name: collection_interval
           default: 60s
