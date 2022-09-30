@@ -17,6 +17,7 @@ package apps
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -861,28 +862,18 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 type LoggingReceiverOracleDBAlert struct {
 	LoggingProcessorOracleDBAlert           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string `yaml:"oracle_home,omitempty"`
-}
-
-func (lr LoggingReceiverOracleDBAlert) CustomValidate(id string) error {
-	if len(lr.OracleHome) > 0 && len(lr.IncludePaths) > 0 {
-		return fmt.Errorf("\"oracle_home\" and \"include_paths\" cannot both be specified for %s receiver \"%s\"", lr.Type(), id)
-	}
-
-	return nil
+	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
-			fmt.Sprintf("%s/diag/rdbms/*/*/trace/alert_*.log", lr.OracleHome),
 			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
 		}
-	} else if len(lr.IncludePaths) == 0 {
-		lr.IncludePaths = []string{
-			"${ORACLE_HOME}/diag/rdbms/*/*/trace/alert_*.log",
-		}
 	}
+
+	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
 	c := lr.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(tag, lr.Type())...)
@@ -979,27 +970,18 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 type LoggingReceiverOracleDBAudit struct {
 	LoggingProcessorOracleDBAudit           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string `yaml:"oracle_home,omitempty"`
-}
-
-func (lr LoggingReceiverOracleDBAudit) CustomValidate(id string) error {
-	if len(lr.OracleHome) > 0 && len(lr.IncludePaths) > 0 {
-		return fmt.Errorf("\"oracle_home\" and \"include_paths\" cannot both be specified for %s receiver \"%s\"", lr.Type(), id)
-	}
-
-	return nil
+	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
-			fmt.Sprintf("%s/admin/*/adump/*.aud", lr.OracleHome),
-		}
-	} else if len(lr.IncludePaths) == 0 {
-		lr.IncludePaths = []string{
-			"${ORACLE_HOME}/admin/*/adump/*.aud",
+			path.Join(lr.OracleHome, "/admin/*/adump/*.aud"),
 		}
 	}
+
+	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
 	c := lr.LoggingReceiverFilesMixin.Components(tag)
 	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(tag, lr.Type())...)

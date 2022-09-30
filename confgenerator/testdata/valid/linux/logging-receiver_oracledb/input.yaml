@@ -16,8 +16,12 @@ logging:
   receivers:
     oracledb_audit:
       type: oracledb_audit
+      include_paths:
+      - /opt/oracle/audit/*.aud
     oracledb_alert:
       type: oracledb_alert
+      include_paths:
+      - /opt/oracle/alert/*.log
   service:
     pipelines:
       oracledb:

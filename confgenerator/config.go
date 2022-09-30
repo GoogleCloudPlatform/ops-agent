@@ -349,12 +349,6 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	return unmarshal(*inner)
 }
 
-// Interface that a logging or metrics receiver can implement
-// to have custom validation executed
-type CustomValidator interface {
-	CustomValidate(id string) error
-}
-
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
@@ -740,22 +734,6 @@ func (l *Logging) Validate(platform string) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
-
-		for k, v := range l.Processors {
-			if customValidator, ok := v.(CustomValidator); ok {
-				if err := customValidator.CustomValidate(k); err != nil {
-					return err
-				}
-			}
-		}
-
-		for k, v := range l.Receivers {
-			if customValidator, ok := v.(CustomValidator); ok {
-				if err := customValidator.CustomValidate(k); err != nil {
-					return err
-				}
-			}
-		}
 	}
 	return nil
 }
@@ -794,22 +772,6 @@ func (m *Metrics) Validate(platform string) error {
 
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
-		}
-
-		for k, v := range m.Processors {
-			if customValidator, ok := v.(CustomValidator); ok {
-				if err := customValidator.CustomValidate(k); err != nil {
-					return err
-				}
-			}
-		}
-
-		for k, v := range m.Receivers {
-			if customValidator, ok := v.(CustomValidator); ok {
-				if err := customValidator.CustomValidate(k); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return nil

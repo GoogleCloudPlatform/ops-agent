@@ -396,8 +396,11 @@ configuration_options:
           default: null
           description: The value must be oracledb_audit.
         - name: include_paths
-          default: '[$ORACLE_HOME/admin/*/adump/*.aud]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          default: null
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+        - name: oracle_home
+          detault: null
+          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with include_paths.
         - name: exclude_paths
           default: '[]'
           description: A list of filesystem path patterns to exclude from the set matched by include_paths.
@@ -413,8 +416,11 @@ configuration_options:
           default: null
           description: The value must be oracledb_alert.
         - name: include_paths
-          default: '[$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          default: null
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+        - name: oracle_home
+          detault: null
+          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with include_paths.
         - name: exclude_paths
           default: '[]'
           description: A list of filesystem path patterns to exclude from the set matched by include_paths.
