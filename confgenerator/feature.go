@@ -7,8 +7,12 @@ import (
 	"strings"
 )
 
-var ErrTrackingInlineStruct = errors.New("cannot have tracking on inline struct")
-var ErrInvalidType = errors.New("object in path must be of type Component")
+// Errors returned by ExtractFeatures can be tested against these errors using
+// errors.Is
+var (
+	ErrTrackingInlineStruct = errors.New("cannot have tracking on inline struct")
+	ErrInvalidType          = errors.New("object in path must be of type Component")
+)
 
 type Feature struct {
 	// Module defines the sub-agent: metrics or logging
