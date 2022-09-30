@@ -191,7 +191,8 @@ func UpdateMetric(metric string, operations ...map[string]interface{}) map[strin
 	return out
 }
 
-// UpdateMetricRegexp returns a config snippet applies transformations to the given metric name regex
+// UpdateMetricRegexp returns a config snippet that applies transformations to metrics matching
+// the input regex
 func UpdateMetricRegexp(metricRegex string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
 		"include":    metricRegex,
