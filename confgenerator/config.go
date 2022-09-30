@@ -717,7 +717,6 @@ func (l *Logging) Validate(platform string) error {
 		for _, k := range defaultProcessors {
 			validProcessors[k] = nil
 		}
-
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
