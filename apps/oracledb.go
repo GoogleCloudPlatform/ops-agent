@@ -876,6 +876,7 @@ func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Compon
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			fmt.Sprintf("%s/diag/rdbms/*/*/trace/alert_*.log", lr.OracleHome),
+			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
 		}
 	} else if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
