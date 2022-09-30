@@ -16,3 +16,10 @@ modules:
       path: '{.gauge}'
       labels:
         test_label: gauge_label
+    - name: test_untyped_value
+      type: value
+      valuetype: untyped
+      help: Test untyped type metric
+      path: '{.untyped}'
+      labels:
+        test_label: untyped_label

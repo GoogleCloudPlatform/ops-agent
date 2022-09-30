@@ -1945,16 +1945,35 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 
 		// Run the setup script to run the Python http server and the JSON exporter
 		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
-
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
 
 		env := map[string]string{"WORKDIR": workDir}
-		test_out, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+		maxAttampts := 5
+		attempt := 0
+		for ; attempt < maxAttampts; attempt++ {
+			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+			if err != nil {
+				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
+			}
 
-		if err != nil {
-			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, test_out.Stderr)
+			liveCheckOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			if err != nil {
+				t.Fatalf("failed to run command in VM: %s", err)
+			}
+
+			// We will retry when:
+			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
+			// If neither cases - break the retrying loop
+			if liveCheckOut.Stderr != "" && strings.Contains(liveCheckOut.Stdout, "test_counter_value{test_label=\"counter_label\"} 1234") {
+				break
+			}
+
+		}
+		if attempt == maxAttampts {
+			t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries")
 		}
 
 		config := `metrics:
@@ -1995,47 +2014,64 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
 
+		var multiErr error
 		// Gauge type
 		gaugeMetric := "prometheus.googleapis.com/test_gauge_value/gauge"
-
 		if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, gaugeMetric, window, nil, true); err != nil {
-			t.Error(err)
+			multiErr = multierr.Append(multiErr, err)
 		} else {
 			if pts.MetricKind != metric.MetricDescriptor_GAUGE {
-				t.Errorf("Metric %s has metric kind %s; expected kind %s", gaugeMetric, pts.MetricKind, metric.MetricDescriptor_GAUGE)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", gaugeMetric, pts.MetricKind, metric.MetricDescriptor_GAUGE))
 			}
 			if pts.ValueType != metric.MetricDescriptor_DOUBLE {
-				t.Errorf("Metric %s has value type %s; expected type %s", gaugeMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", gaugeMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE))
 			}
 			var expectedDoubleValue float64 = 789
 			if len(pts.Points) == 0 {
-				t.Errorf("Metric %s has at least one data points in the time windows", gaugeMetric)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", gaugeMetric))
 			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
-				t.Errorf("Metric %s has value %f; expected %f", gaugeMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", gaugeMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue))
 			}
 		}
 
 		// Counter type
 		counterMetric := "prometheus.googleapis.com/test_counter_value/counter"
-
 		if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, counterMetric, window, nil, true); err != nil {
-			t.Error(err)
+			multiErr = multierr.Append(multiErr, err)
 		} else {
 			if pts.MetricKind != metric.MetricDescriptor_CUMULATIVE {
-				t.Errorf("Metric %s has metric kind %s; expected kind %s", counterMetric, pts.MetricKind, metric.MetricDescriptor_CUMULATIVE)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", counterMetric, pts.MetricKind, metric.MetricDescriptor_CUMULATIVE))
 			}
 			if pts.ValueType != metric.MetricDescriptor_DOUBLE {
-				t.Errorf("Metric %s has value type %s; expected type %s", counterMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", counterMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE))
 			}
 			// Since we are sending the same number at every time point, the cumulative counter metric will return 0 as no change in values
 			var expectedDoubleValue float64 = 0
 			if len(pts.Points) == 0 {
-				t.Errorf("Metric %s has at least one data points in the time windows", counterMetric)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", counterMetric))
 			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
-				t.Errorf("Metric %s has value %f; expected %f", counterMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue)
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", counterMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue))
 			}
 		}
 
+		// Untyped type - GCM will have untyped metrics as gauge type
+		untypedMetric := "prometheus.googleapis.com/test_untyped_value/gauge"
+		if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, untypedMetric, window, nil, true); err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		} else {
+			if pts.MetricKind != metric.MetricDescriptor_GAUGE {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", untypedMetric, pts.MetricKind, metric.MetricDescriptor_GAUGE))
+			}
+			if pts.ValueType != metric.MetricDescriptor_DOUBLE {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", untypedMetric, pts.ValueType, metric.MetricDescriptor_DOUBLE))
+			}
+			var expectedDoubleValue float64 = 56
+			if len(pts.Points) == 0 {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", untypedMetric))
+			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", untypedMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue))
+			}
+		}
 	})
 }
 
