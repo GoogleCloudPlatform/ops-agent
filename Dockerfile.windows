@@ -17,7 +17,7 @@ RUN export PATH=/usr/local/go/bin:$PATH; \
 WORKDIR /src
 RUN git clone https://github.com/openssl/openssl.git --branch OpenSSL_1_1_1q; \
     cd openssl; \
-    ./Configure --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/usr/share/mingw-w64 mingw64; \
+    ./Configure --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/usr/share/mingw-w64 --libdir=/usr/lib/mingw-w64 mingw64; \
     make; \
     make install
 
