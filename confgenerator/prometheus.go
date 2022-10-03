@@ -25,12 +25,13 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/go-playground/validator/v10"
+	yaml "github.com/goccy/go-yaml"
+	"github.com/mitchellh/mapstructure"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
-	"github.com/prometheus/prometheus/model/relabel"
 	strutil "github.com/prometheus/prometheus/util/strutil"
 )
 
@@ -85,7 +86,6 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 		}
 	}
 
-	// TODO(b/248268653): Fix the issue we have with the regex capture group syntax.
 	return []otel.Pipeline{{
 		Receiver: prometheusToOtelComponent(r.PromConfig),
 	}}
@@ -97,57 +97,49 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 // Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
 // will return the same result everytime and not change the original prometheus config.
 func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
-	copyPromConfig := promConfig
-	copiedScrapeConfigs := make([]*promconfig.ScrapeConfig, len(promConfig.ScrapeConfigs))
-	for i := range promConfig.ScrapeConfigs {
-		relabelConfigs := make([]*relabel.Config, 0, len(copyPromConfig.ScrapeConfigs[i].RelabelConfigs))
-		metricRelabelConfigs := make([]*relabel.Config, 0, len(copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs))
-		for _, origRelabelConfig := range copyPromConfig.ScrapeConfigs[i].RelabelConfigs {
-			relabelConfig := relabel.Config{
-				SourceLabels: origRelabelConfig.SourceLabels,
-				Separator:    origRelabelConfig.Separator,
-				TargetLabel:  origRelabelConfig.TargetLabel,
-				Regex:        origRelabelConfig.Regex,
-				Modulus:      origRelabelConfig.Modulus,
-				Replacement:  prometheusToOtelRegex(origRelabelConfig.Replacement),
-				Action:       relabel.Action(origRelabelConfig.Action),
-			}
-			relabelConfigs = append(relabelConfigs, &relabelConfig)
-		}
-		for _, origMetricRelabelConfig := range copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs {
-			metricRelabelConfig := relabel.Config{
-				SourceLabels: origMetricRelabelConfig.SourceLabels,
-				Separator:    origMetricRelabelConfig.Separator,
-				TargetLabel:  origMetricRelabelConfig.TargetLabel,
-				Regex:        origMetricRelabelConfig.Regex,
-				Modulus:      origMetricRelabelConfig.Modulus,
-				Replacement:  prometheusToOtelRegex(origMetricRelabelConfig.Replacement),
-				Action:       relabel.Action(origMetricRelabelConfig.Action),
-			}
-			metricRelabelConfigs = append(metricRelabelConfigs, &metricRelabelConfig)
-		}
-		copyScraptedConfig := promconfig.ScrapeConfig{
-			JobName:                 copyPromConfig.ScrapeConfigs[i].JobName,
-			ScrapeInterval:          copyPromConfig.ScrapeConfigs[i].ScrapeInterval,
-			ScrapeTimeout:           copyPromConfig.ScrapeConfigs[i].ScrapeTimeout,
-			Scheme:                  copyPromConfig.ScrapeConfigs[i].Scheme,
-			MetricsPath:             copyPromConfig.ScrapeConfigs[i].MetricsPath,
-			HonorLabels:             copyPromConfig.ScrapeConfigs[i].HonorLabels,
-			HonorTimestamps:         copyPromConfig.ScrapeConfigs[i].HonorTimestamps,
-			Params:                  copyPromConfig.ScrapeConfigs[i].Params,
-			HTTPClientConfig:        copyPromConfig.ScrapeConfigs[i].HTTPClientConfig,
-			RelabelConfigs:          relabelConfigs,
-			MetricRelabelConfigs:    metricRelabelConfigs,
-			ServiceDiscoveryConfigs: copyPromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs,
-		}
-		copiedScrapeConfigs[i] = &copyScraptedConfig
+	copyPromConfig, err := deepCopy(promConfig)
+	if err != nil {
+		// This should never happen since we already validated the prometheus config.
+		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
 	}
 
-	copyPromConfig.ScrapeConfigs = copiedScrapeConfigs
+	for i := range promConfig.ScrapeConfigs {
+		for j := range copyPromConfig.ScrapeConfigs[i].RelabelConfigs {
+			// Escape the $ characters in the regexes.
+			replacement := copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j].Replacement
+			replacement = strings.ReplaceAll(replacement, "$", "$$")
+			copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j].Replacement = replacement
+		}
+		for j := range copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs {
+			// Escape the $ characters in the regexes.
+			replacement := copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j].Replacement
+			replacement = strings.ReplaceAll(replacement, "$", "$$")
+			copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j].Replacement = replacement
+		}
+	}
+
 	return otel.Component{
 		Type:   "prometheus",
 		Config: map[string]interface{}{"config": copyPromConfig},
 	}
+}
+
+func deepCopy(config promconfig.Config) (promconfig.Config, error) {
+	var out any
+	if err := mapstructure.Decode(config, &out); err != nil {
+		return promconfig.Config{}, err
+	}
+
+	marshalledBytes, err := yaml.Marshal(out)
+	if err != nil {
+		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
+	}
+	copyConfig := promconfig.Config{}
+	if err := yaml.Unmarshal(marshalledBytes, &copyConfig); err != nil {
+		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w.", err)
+	}
+
+	return copyConfig, nil
 }
 
 func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) map[string]string {
@@ -302,13 +294,6 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 
 	return "", nil
 
-}
-
-// OTel the collector configuration supports env variable substitution. `$` characters in the prometheus
-// configuration are interpreted as environment variables.
-// If you want to use $ characters in your prometheus configuration, you must escape them using $$.
-func prometheusToOtelRegex(regex string) string {
-	return strings.ReplaceAll(regex, "$", "$$")
 }
 
 func init() {
