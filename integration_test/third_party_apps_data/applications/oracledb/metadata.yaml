@@ -1,0 +1,432 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+app_url: "https://www.oracle.com/database/"
+short_name: Oracle DB
+long_name: Oracle Database
+description: |-
+  The Oracle DB integration collects Oracle DB metrics and logs. The metrics are collected by querying
+  relevant monitoring views. This integration writes structured trace logs.
+configure_integration: |-
+  To collect metrics, a monitoring user requires `SELECT` access to the relevant views. The following sql
+  script should create a monitoring user and give it the appropriate permissions if executed by
+  a user with sufficient permissions connected to the Oracle DB instance as SYSDBA or SYSOPER.
+
+  <pre>
+  -- Create the monitoring user "otel"
+  CREATE USER otel IDENTIFIED BY <authentication password>;
+
+  -- Grant the "otel" user the required permissions
+  GRANT CONNECT TO otel;
+  GRANT SELECT ON SYS.GV_$DATABASE to otel;
+  GRANT SELECT ON SYS.GV_$INSTANCE to otel;
+  GRANT SELECT ON SYS.GV_$PROCESS to otel;
+  GRANT SELECT ON SYS.GV_$RESOURCE_LIMIT to otel;
+  GRANT SELECT ON SYS.GV_$SYSMETRIC to otel;
+  GRANT SELECT ON SYS.GV_$SYSSTAT to otel;
+  GRANT SELECT ON SYS.GV_$SYSTEM_EVENT to otel;
+  GRANT SELECT ON SYS.V_$RMAN_BACKUP_JOB_DETAILS to otel;
+  GRANT SELECT ON SYS.V_$SORT_SEGMENT to otel;
+  GRANT SELECT ON SYS.V_$TABLESPACE to otel;
+  GRANT SELECT ON SYS.V_$TEMPFILE to otel;
+  GRANT SELECT ON SYS.DBA_DATA_FILES to otel;
+  GRANT SELECT ON SYS.DBA_FREE_SPACE to otel;
+  GRANT SELECT ON SYS.DBA_TABLESPACE_USAGE_METRICS to otel;
+  GRANT SELECT ON SYS.DBA_TABLESPACES to otel;
+  GRANT SELECT ON SYS.GLOBAL_NAME to otel;
+  </pre>
+supported_operating_systems: linux
+supported_app_version: ["12.2", "18c", "19c", "21c"]
+expected_metrics:
+  - type: workload.googleapis.com/oracle.backup.latest
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+  - type: workload.googleapis.com/oracle.buffer.cache.ratio
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.cursor.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.cursor.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.disk.operation.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: read|write
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.disk.operation.size
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: read|write
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.logon.count
+    value_type: INT64
+    kind: CUMULATIVE
+    representative: true
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.logon.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.network.data
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      direction: sent|received
+      global_name: .*
+      instance_id: .*
+      target: dblink|client
+  - type: workload.googleapis.com/oracle.process.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.process.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.process.pga_memory.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      program: .*
+      state: free|used
+  - type: workload.googleapis.com/oracle.row.cache.ratio
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.service.response_time
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.session.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.session.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.sort.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: .*
+  - type: workload.googleapis.com/oracle.sort.row.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.tablespace.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      contents: UNDO|PERMANENT|TEMP
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      status: ONLINE|OFFLINE|READONLY
+  - type: workload.googleapis.com/oracle.tablespace.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      contents: UNDO|PERMANENT|TEMP
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      state: used|free
+      tablespace_name: .*
+  - type: workload.googleapis.com/oracle.user.calls
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.user.commits
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.user.rollbacks
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+  - type: workload.googleapis.com/oracle.wait.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
+  - type: workload.googleapis.com/oracle.wait.time
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
+  - type: workload.googleapis.com/oracle.wait.timeouts
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      database_id: .*
+      db_system: oracle
+      global_name: .*
+      instance_id: .*
+      type: foreground|background
+      wait_class: .*
+expected_logs:
+  - log_name: oracledb_alert
+    fields:
+      - name: jsonPayload.message
+        type: string
+        value_regex: .*Starting ORACLE instance.*
+        description: Log message
+      - name: severity
+        type: string
+        description: ''
+
+        # UTC Info fields:{key:"action"  value:{string_value:"CONNECT"}}  fields:{key:"action_number"  value:{string_value:"100"}}  fields:{key:"client_terminal"  value:{string_value:"pts/0"}}  fields:{key:"client_user"  value:{string_value:"oracle"}}  fields:{key:"database_user"  value:{string_value:"/"}}  fields:{key:"length"  value:{string_value:"303"}}  fields:{key:"privilege"  value:{string_value:"SYSDBA"}}  fields:{key:"sessionid"  value:{string_value:"4294967295"}}  fields:{key:"status"  value:{string_value:"0"}}  fields:{key:"user_host"  value:{string_value:"github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799"}} map[compute.googleapis.com/resource_name:github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799 logging.googleapis.com/instrumentation_source:agent.googleapis.com/oracledb_audit] ajksmmf17r8g7 <nil> <nil> projects/stackdriver-test-143416/logs/oracledb_audit type:"gce_instance"  labels:{key:"instance_id"  value:"1038670580234678365"}  labels:{key:"project_id"  value:"stackdriver-test-143416"}  labels:{key:"zone"  value:"us-central1-b"}   false <nil>}
+  - log_name: oracledb_audit
+    fields:
+      - name: jsonPayload.action
+        type: string
+        value_regex: CONNECT
+        description: Action being logged in the audit log
+      - name: jsonPayload.action_number
+        type: number
+        description: Number identifying the type of action being logged
+      - name: jsonPayload.client_terminal
+        type: string
+        value_regex: pts/.+
+        description: Identifier of the client terminal where the action originated
+      - name: jsonPayload.client_user
+        type: string
+        value_regex: oracle
+        description: Client user for the audited action
+      - name: jsonPayload.database_user
+        type: string
+        value_regex: /
+        description: Database user for the audited action
+      - name: jsonPayload.dbid
+        type: number
+        description: Database identifier
+      - name: jsonPayload.length
+        type: number
+        description: Length of the string representing the action being logged
+      - name: jsonPayload.privilege
+        type: string
+        value_regex: SYSDBA
+        description: Database privilege the action was executed under
+      - name: jsonPayload.sessionid
+        type: number
+        description: Session identifier
+      - name: jsonPayload.status
+        type: string
+        description: Status of the action
+      - name: jsonPayload.user_host
+        type: string
+        value_regex: .*
+        description: Host where the audited action originated
+      - name: severity
+        type: string
+        description: ''
+configuration_options:
+  metrics:
+    - type: oracledb
+      fields:
+        - default: null
+          description: This value must be oracledb.
+          name: type
+        - default: localhost:1521
+          description: The endpoint used to connect to the oracle DB instance. This field supports either host:port or a unix socket path.
+          name: endpoint
+        - default: 60s
+          description: A time.Duration value, such as 30s or 5m.
+          name: collection_interval
+        - default: null
+          description: The username used to connect to the instance.
+          name: username
+        - default: null
+          description: The password used to connect to the instance.
+          name: password
+        - default: true
+          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+          name: insecure
+        - default: false
+          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+          name: insecure_skip_verify
+        - default: null
+          description: Path to the directory containing the oracle wallet optionally used for authentication and securing connections.
+          name: wallet
+        - default: null
+          description: The SID of the Oracle database being monitored. Use this _or_ service_name as appropriate.
+          name: sid
+        - default: null
+          description: The Service Name of the Oracle database being monitored. Use this _or_ sid as appropriate.
+          name: service_name
+  logs:
+    - type: oracledb_audit
+      fields:
+        - name: type
+          default: null
+          description: The value must be oracledb_audit.
+        - name: include_paths
+          default: null
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+        - name: oracle_home
+          default: null
+          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with include_paths.
+        - name: exclude_paths
+          default: '[]'
+          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: oracledb_alert
+      fields:
+        - name: type
+          default: null
+          description: The value must be oracledb_alert.
+        - name: include_paths
+          default: null
+          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+        - name: oracle_home
+          default: null
+          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with include_paths.
+        - name: exclude_paths
+          default: '[]'
+          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.

@@ -93,10 +93,7 @@ RUN Start-Process msiexec.exe `
 # Run these in a directory with a go.mod file so that "go get" doesn't need
 # a working Git installation.
 WORKDIR /goget
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; `
-    go install github.com/google/addlicense@latest; `
-    go install github.com/pavius/impi/cmd/impi@latest; `
-    go install github.com/google/googet/v2/goopack@latest;
+RUN go install github.com/google/googet/v2/goopack@latest;
 
 ###############################################################################
 # Build fluent-bit
