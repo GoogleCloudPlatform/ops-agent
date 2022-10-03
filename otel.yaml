@@ -8,9 +8,9 @@ exporters:
       skip_create_descriptor: true
     retry_on_failure:
       enabled: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=debian;ShortVersion=)
   googlemanagedprometheus:
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=debian;ShortVersion=)
 processors:
   agentmetrics/default__pipeline_hostmetrics_0:
     blank_label_metrics:
@@ -449,94 +449,101 @@ receivers:
         - targets:
           - 0.0.0.0:20201
   prometheus/prometheus__pipeline_prometheus:
-    config:
-      global:
-        scrape_interval: 1m
-        scrape_timeout: 10s
-        evaluation_interval: 1m
-      scrape_configs:
-      - job_name: prometheus
-        honor_timestamps: true
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        metrics_path: /metrics
-        scheme: http
-        follow_redirects: true
-        enable_http2: true
-        static_configs:
-        - targets:
-          - localhost:1234
-          labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: gce
-            location: test-zone
-            namespace: test-instance-id
-      - job_name: drop
-        honor_timestamps: true
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        metrics_path: /metrics
-        scheme: http
-        follow_redirects: true
-        enable_http2: true
-        relabel_configs:
-        - source_labels: [__address__]
-          separator: ;
-          regex: (.*)
-          target_label: exported_location
-          replacement: new_location
-          action: replace
-        - source_labels: [__address__]
-          separator: ;
-          regex: (.*)
-          target_label: exported_cluster
-          replacement: new_cluster
-          action: replace
-        - source_labels: [__meta_gce_machine_type]
-          separator: ;
-          regex: (.+)
-          target_label: machine_type
-          replacement: $${1}
-          action: replace
-        metric_relabel_configs:
-        - source_labels: [__name__]
-          separator: ;
-          regex: <dropped_metric_regex_1>
-          replacement: $$1
-          action: drop
-        - source_labels: [__name__]
-          separator: ;
-          regex: <dropped_metric_regex_2>
-          replacement: $$1
-          action: drop
-        static_configs:
-        - targets:
-          - 0.0.0.0:9100
-          labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: gce
-            location: test-zone
-            namespace: test-instance-id
+    global:
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      evaluation_interval: 1m
+    scrape_configs:
+    - job_name: Job_1
+      honor_timestamps: true
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      metrics_path: /metrics
+      scheme: http
+      follow_redirects: true
+      enable_http2: true
+      relabel_configs:
+      - source_labels: [__meta_gce_instance_name]
+        separator: ;
+        regex: (.+)
+        target_label: instance_name
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_instance_id]
+        separator: ;
+        regex: (.+)
+        target_label: instance_id
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_machine_type]
+        separator: ;
+        regex: (.+)
+        target_label: machine_type
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_project_id]
+        separator: ;
+        regex: (.+)
+        target_label: instance_project_id
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_zone]
+        separator: ;
+        regex: (.+)
+        target_label: zone
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_tags]
+        separator: ;
+        regex: (.+)
+        target_label: tags
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_network]
+        separator: ;
+        regex: (.+)
+        target_label: network
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_subnetwork]
+        separator: ;
+        regex: (.+)
+        target_label: subnetwork
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_public_ip]
+        separator: ;
+        regex: (.+)
+        target_label: public_ip
+        replacement: $${1}
+        action: replace
+      - source_labels: [__meta_gce_private_ip]
+        separator: ;
+        regex: (.+)
+        target_label: private_ip
+        replacement: $${1}
+        action: replace
+      static_configs:
+      - targets:
+        - 0.0.0.0:9100
+        labels:
+          __meta_gce_instance_id: "5419019893359268345"
+          __meta_gce_instance_name: ridwanmsharif
+          __meta_gce_interface_ipv4_nic0: 192.168.56.43
+          __meta_gce_machine_type: projects/233510669893/machineTypes/e2-standard-16
+          __meta_gce_metadata_glinux_encrypt_disk: "False"
+          __meta_gce_metadata_glinux_role: desktop
+          __meta_gce_metadata_goobuntu_provisioning_user: ridwanmsharif
+          __meta_gce_metadata_google_virgil_cloudtop_create_job_id: 01868999931736430379:GcpCreateCloudtop
+          __meta_gce_network: projects/233510669893/networks/cloudtop-us-east1-7
+          __meta_gce_private_ip: 192.168.56.43
+          __meta_gce_project: google.com:cloudtop-prod
+          __meta_gce_public_ip: ""
+          __meta_gce_tags: uberproxy-vips-via-cloudpath-v34
+          __meta_gce_zone: us-east1-c
+          cluster: gce
+          location: us-east1-c
+          namespace: "5419019893359268345"
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:

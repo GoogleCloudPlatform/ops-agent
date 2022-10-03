@@ -30,6 +30,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	"github.com/prometheus/prometheus/model/relabel"
 	strutil "github.com/prometheus/prometheus/util/strutil"
 )
 
@@ -86,11 +87,67 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 
 	// TODO(b/248268653): Fix the issue we have with the regex capture group syntax.
 	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "prometheus",
-			Config: map[string]interface{}{"config": r.PromConfig},
-		},
+		Receiver: prometheusToOtelComponent(r.PromConfig),
 	}}
+}
+
+// Generate otel components for the prometheus config used. It is the same config except
+// we need to escape the $ characters in the regexes.
+//
+// Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
+// will return the same result everytime and not change the original prometheus config.
+func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
+	copyPromConfig := promConfig
+	copiedScrapeConfigs := make([]*promconfig.ScrapeConfig, len(promConfig.ScrapeConfigs))
+	for i := range promConfig.ScrapeConfigs {
+		relabelConfigs := make([]*relabel.Config, 0, len(copyPromConfig.ScrapeConfigs[i].RelabelConfigs))
+		metricRelabelConfigs := make([]*relabel.Config, 0, len(copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs))
+		for _, origRelabelConfig := range copyPromConfig.ScrapeConfigs[i].RelabelConfigs {
+			relabelConfig := relabel.Config{
+				SourceLabels: origRelabelConfig.SourceLabels,
+				Separator:    origRelabelConfig.Separator,
+				TargetLabel:  origRelabelConfig.TargetLabel,
+				Regex:        origRelabelConfig.Regex,
+				Modulus:      origRelabelConfig.Modulus,
+				Replacement:  prometheusToOtelRegex(origRelabelConfig.Replacement),
+				Action:       relabel.Action(origRelabelConfig.Action),
+			}
+			relabelConfigs = append(relabelConfigs, &relabelConfig)
+		}
+		for _, origMetricRelabelConfig := range copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs {
+			metricRelabelConfig := relabel.Config{
+				SourceLabels: origMetricRelabelConfig.SourceLabels,
+				Separator:    origMetricRelabelConfig.Separator,
+				TargetLabel:  origMetricRelabelConfig.TargetLabel,
+				Regex:        origMetricRelabelConfig.Regex,
+				Modulus:      origMetricRelabelConfig.Modulus,
+				Replacement:  prometheusToOtelRegex(origMetricRelabelConfig.Replacement),
+				Action:       relabel.Action(origMetricRelabelConfig.Action),
+			}
+			metricRelabelConfigs = append(metricRelabelConfigs, &metricRelabelConfig)
+		}
+		copyScraptedConfig := promconfig.ScrapeConfig{
+			JobName:                 copyPromConfig.ScrapeConfigs[i].JobName,
+			ScrapeInterval:          copyPromConfig.ScrapeConfigs[i].ScrapeInterval,
+			ScrapeTimeout:           copyPromConfig.ScrapeConfigs[i].ScrapeTimeout,
+			Scheme:                  copyPromConfig.ScrapeConfigs[i].Scheme,
+			MetricsPath:             copyPromConfig.ScrapeConfigs[i].MetricsPath,
+			HonorLabels:             copyPromConfig.ScrapeConfigs[i].HonorLabels,
+			HonorTimestamps:         copyPromConfig.ScrapeConfigs[i].HonorTimestamps,
+			Params:                  copyPromConfig.ScrapeConfigs[i].Params,
+			HTTPClientConfig:        copyPromConfig.ScrapeConfigs[i].HTTPClientConfig,
+			RelabelConfigs:          relabelConfigs,
+			MetricRelabelConfigs:    metricRelabelConfigs,
+			ServiceDiscoveryConfigs: copyPromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs,
+		}
+		copiedScrapeConfigs[i] = &copyScraptedConfig
+	}
+
+	copyPromConfig.ScrapeConfigs = copiedScrapeConfigs
+	return otel.Component{
+		Type:   "prometheus",
+		Config: map[string]interface{}{"config": copyPromConfig},
+	}
 }
 
 func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) map[string]string {
@@ -245,6 +302,13 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 
 	return "", nil
 
+}
+
+// OTel the collector configuration supports env variable substitution. `$` characters in the prometheus
+// configuration are interpreted as environment variables.
+// If you want to use $ characters in your prometheus configuration, you must escape them using $$.
+func prometheusToOtelRegex(regex string) string {
+	return strings.ReplaceAll(regex, "$", "$$")
 }
 
 func init() {
