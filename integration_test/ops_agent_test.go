@@ -1954,20 +1954,18 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		attempt := 0
 		for ; attempt < maxAttampts; attempt++ {
 			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+			// Since the script will start the processes in the background, the script should finish without error
 			if err != nil {
 				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 			}
-
+			// Wait until both are ready
+			time.Sleep(30 * time.Second)
 			liveCheckOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-			if err != nil {
-				t.Fatalf("failed to run command in VM: %s", err)
-			}
-
 			// We will retry when:
 			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
 			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
 			// If neither cases - break the retrying loop
-			if liveCheckOut.Stderr != "" && strings.Contains(liveCheckOut.Stdout, "test_counter_value{test_label=\"counter_label\"} 1234") {
+			if err == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
 				break
 			}
 
@@ -2071,6 +2069,9 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			} else if pts.Points[0].Value.GetDoubleValue() != expectedDoubleValue {
 				multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", untypedMetric, pts.Points[0].Value.GetDoubleValue(), expectedDoubleValue))
 			}
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
 		}
 	})
 }
