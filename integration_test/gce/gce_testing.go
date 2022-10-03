@@ -995,6 +995,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
+		// Don't assign an external IP address. This is to avoid using up
+		// a very limited budget of external IPv4 addresses. The instances
+		// will talk to the external internet by routing through a Cloud NAT
+		// gateway that is configured in our testing project.
+		args = append(args, "--no-address")
+	}
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
