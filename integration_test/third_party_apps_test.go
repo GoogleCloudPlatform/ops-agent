@@ -720,8 +720,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // platforms for those apps.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too. Same for `OracleDBPlatform` and
-// `OracleDBApp`.
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -744,9 +743,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
-		}
-		if test.app == OracleDBApp && test.platform != "rhel-7" {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rhel-7 at the moment", OracleDBApp)
 		}
 	}
 }
