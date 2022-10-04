@@ -17,23 +17,22 @@ package self_metrics
 import (
 	"context"
 	"fmt"
-	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
+	metricapi "go.opentelemetry.io/otel/metric"
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 var (
 	agentMetricsPrefixFormat = "agent.googleapis.com/%s"
-	formatter                = func(d *sdkapi.Descriptor) string {
-		return fmt.Sprintf(agentMetricsPrefixFormat, d.Name())
+	formatter                = func(d metricdata.Metrics) string {
+		return fmt.Sprintf(agentMetricsPrefixFormat, d.Name)
 	}
 )
 
@@ -67,7 +66,7 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, e
 	return eR, nil
 }
 
-func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metric.Meter) error {
+func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
 	eR, err := CountEnabledReceivers(uc)
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 		return fmt.Errorf("failed to initialize instrument: %v", err)
 	}
 
-	return meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
+	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
 
 		for rType, count := range eR.metricsReceiverCountsByType {
 			labels := []attribute.KeyValue{
@@ -97,34 +96,35 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 			gaugeObserver.Observe(ctx, int64(count), labels...)
 		}
 	})
+	if err != nil {
+		return fmt.Errorf("failed to register callback: %v", err)
+	}
+	return nil
 }
 
 func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool) error {
-	// Detect GCP credentials
+	// Resource for GCP and SDK detectors
 	ctx := context.Background()
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
 	)
 
-	resOpt := basic.WithResource(res)
-
-	// GCP exporter options
-	opts := []mexporter.Option{
-		mexporter.WithMetricDescriptorTypeFormatter(formatter),
-		mexporter.WithInterval(time.Minute),
-	}
-
 	// Create exporter pipeline
-	pusher, err := mexporter.InstallNewPipeline(opts, resOpt)
+	exporter, err := mexporter.New(
+		mexporter.WithMetricDescriptorTypeFormatter(formatter),
+	)
 	if err != nil {
-		return fmt.Errorf("Failed to establish pipeline: %v", err)
+		return fmt.Errorf("Failed to create exporter: %v", err)
 	}
-	defer pusher.Stop(ctx)
 
-	// Start meter
-	meter := pusher.Meter("ops_agent/self_metrics")
+	// Create provider which periodically exports to the GCP exporter
+	provider := metricsdk.NewMeterProvider(
+		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
+		metricsdk.WithResource(res),
+	)
 
+	meter := provider.Meter("ops_agent/self_metrics")
 	err = InstrumentEnabledReceiversMetric(uc, meter)
 	if err != nil {
 		return err
@@ -138,5 +138,8 @@ waitForDeathSignal:
 		}
 	}
 
+	if err = provider.Shutdown(ctx); err != nil {
+		return fmt.Errorf("failed to shutdown meter provider: %v", err)
+	}
 	return nil
 }
