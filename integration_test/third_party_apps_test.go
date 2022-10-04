@@ -796,6 +796,7 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
+					options.MachineType = "e2-highmem-8"
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
