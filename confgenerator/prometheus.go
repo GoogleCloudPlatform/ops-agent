@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/go-playground/validator/v10"
+	yaml "github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -84,13 +85,52 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 		}
 	}
 
-	// TODO(b/248268653): Fix the issue we have with the regex capture group syntax.
 	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type:   "prometheus",
-			Config: map[string]interface{}{"config": r.PromConfig},
-		},
+		Receiver: prometheusToOtelComponent(r.PromConfig),
 	}}
+}
+
+// Generate otel components for the prometheus config used. It is the same config except
+// we need to escape the $ characters in the regexes.
+//
+// Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
+// will return the same result everytime and not change the original prometheus config.
+func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
+	copyPromConfig, err := deepCopy(promConfig)
+	if err != nil {
+		// This should never happen since we already validated the prometheus config.
+		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
+	}
+
+	// Escape the $ characters in the regexes.
+	for i := range copyPromConfig.ScrapeConfigs {
+		for j := range copyPromConfig.ScrapeConfigs[i].RelabelConfigs {
+			rc := copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j]
+			rc.Replacement = strings.ReplaceAll(rc.Replacement, "$", "$$")
+		}
+		for j := range copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs {
+			mrc := copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j]
+			mrc.Replacement = strings.ReplaceAll(mrc.Replacement, "$", "$$")
+		}
+	}
+
+	return otel.Component{
+		Type:   "prometheus",
+		Config: map[string]interface{}{"config": copyPromConfig},
+	}
+}
+
+func deepCopy(config promconfig.Config) (promconfig.Config, error) {
+	marshalledBytes, err := yaml.Marshal(config)
+	if err != nil {
+		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
+	}
+	copyConfig := promconfig.Config{}
+	if err := yaml.Unmarshal(marshalledBytes, &copyConfig); err != nil {
+		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w.", err)
+	}
+
+	return copyConfig, nil
 }
 
 func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) map[string]string {

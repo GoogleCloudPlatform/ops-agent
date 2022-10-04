@@ -1837,43 +1837,43 @@ func TestPrometheusMetrics(t *testing.T) {
             relabel_configs:
               - source_labels: [__meta_gce_instance_name]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: instance_name
               - source_labels: [__meta_gce_instance_id]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: instance_id
               - source_labels: [__meta_gce_machine_type]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: machine_type
               - source_labels: [__meta_gce_project]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: instance_project_id
               - source_labels: [__meta_gce_zone]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: zone
               - source_labels: [__meta_gce_tags]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: tags
               - source_labels: [__meta_gce_network]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: network
               - source_labels: [__meta_gce_subnetwork]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: subnetwork
               - source_labels: [__meta_gce_public_ip]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: public_ip
               - source_labels: [__meta_gce_private_ip]
                 regex: '(.+)'
-                replacement: '$${1}'
+                replacement: '${1}'
                 target_label: private_ip
   service:
     pipelines:

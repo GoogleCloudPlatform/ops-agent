@@ -24,9 +24,9 @@ metrics:
                 - targets: ['localhost:1234']
               relabel_configs:
               - source_labels: [__meta_gce_machine_type]
-                regex: '(.+)'
-                replacement: '${1}'
                 target_label: machine_type
+                regex: (.*)
+                replacement: $1-$2
   service:
     pipelines:
       prometheus_pipeline:

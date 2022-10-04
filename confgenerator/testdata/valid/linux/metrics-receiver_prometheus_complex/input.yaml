@@ -37,7 +37,7 @@ metrics:
                   target_label: exported_cluster
                 - source_labels: [__meta_gce_machine_type]
                   regex: '(.+)'
-                  replacement: '$${1}'
+                  replacement: ${1}
                   target_label: machine_type
               metric_relabel_configs:
                 - source_labels: [ __name__ ]
