@@ -1990,10 +1990,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
           relabel_configs:
             - source_labels: [__address__]
               target_label: __param_target
-              replacement: '$$1'
+              replacement: '$1'
             - source_labels: [__param_target]
               target_label: instance
-              replacement: '$$1'
+              replacement: '$1'
             - target_label: __address__
               replacement: localhost:7979 
   service:
