@@ -64,7 +64,7 @@ triggered from GitHub.
 USE_INTERNAL_IP: If set to "true", pass --no-address to gcloud when creating
 VMs. This will not create an external IP address for that VM (because those are
 expensive), and instead the VM will use cloud NAT to get to the external
-interet. ssh-ing to the VM is done via its internal IP address.
+internet. ssh-ing to the VM is done via its internal IP address.
 Only useful on Kokoro.
 
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
