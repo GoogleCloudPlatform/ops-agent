@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
-	"github.com/mitchellh/mapstructure"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -103,18 +102,15 @@ func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
 		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
 	}
 
-	for i := range promConfig.ScrapeConfigs {
+	// Escape the $ characters in the regexes.
+	for i := range copyPromConfig.ScrapeConfigs {
 		for j := range copyPromConfig.ScrapeConfigs[i].RelabelConfigs {
-			// Escape the $ characters in the regexes.
-			replacement := copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j].Replacement
-			replacement = strings.ReplaceAll(replacement, "$", "$$")
-			copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j].Replacement = replacement
+			rc := copyPromConfig.ScrapeConfigs[i].RelabelConfigs[j]
+			rc.Replacement = strings.ReplaceAll(rc.Replacement, "$", "$$")
 		}
 		for j := range copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs {
-			// Escape the $ characters in the regexes.
-			replacement := copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j].Replacement
-			replacement = strings.ReplaceAll(replacement, "$", "$$")
-			copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j].Replacement = replacement
+			mrc := copyPromConfig.ScrapeConfigs[i].MetricRelabelConfigs[j]
+			mrc.Replacement = strings.ReplaceAll(mrc.Replacement, "$", "$$")
 		}
 	}
 
@@ -125,12 +121,7 @@ func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
-	var out any
-	if err := mapstructure.Decode(config, &out); err != nil {
-		return promconfig.Config{}, err
-	}
-
-	marshalledBytes, err := yaml.Marshal(out)
+	marshalledBytes, err := yaml.Marshal(config)
 	if err != nil {
 		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
 	}
