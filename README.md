@@ -13,7 +13,7 @@ See documentation at:
 * Install agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/install-index
 * Configure agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration
 * Troubleshoot agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshooting
-* Monitoring 3rd party app: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party
+* Monitor 3rd party apps: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party
 
 ## License and Copyright
 
