@@ -12,6 +12,9 @@ template config common = {
       // Note: if we ever need to change regions, we will need to set up a new
       // Cloud Router and Cloud NAT gateway for that region. This is because
       // we use --no-address on Kokoro, because of b/169084857.
+      // The new Cloud NAT gateway must have "Minimum ports per VM instance"
+      // set to something >160 as per this article:
+      // https://www.suse.com/support/kb/doc/?id=000019662
       ZONE = 'us-central1-b'
 
       PLATFORMS = join(platforms, ',')
