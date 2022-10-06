@@ -9,6 +9,9 @@ template config common = {
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
+      // Note: if we ever need to change regions, we will need to set up a new
+      // Cloud Router and Cloud NAT gateway for that region. This is because
+      // we use --no-address on Kokoro, because of b/169084857.
       ZONE = 'us-central1-b'
 
       PLATFORMS = join(platforms, ',')
