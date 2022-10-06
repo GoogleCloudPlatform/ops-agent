@@ -1611,6 +1611,41 @@ func TestWindowsEventLog(t *testing.T) {
 	})
 }
 
+func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
+			t.Fatal(err)
+		}
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Write an event and record its approximate time
+		testMessage := "TestWindowsEventLogWithNonDefaultTimeZone"
+		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, testMessage); err != nil {
+			t.Fatal(err)
+		}
+		eventTime := time.Now()
+
+		// Validate that the log written to Cloud Logging has a timestamp that's
+		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
+		logEntry, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "windows_event_log", 24*time.Hour, logMessageQueryForPlatform(platform, testMessage), gce.QueryMaxAttempts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		timeDiff := eventTime.Sub(logEntry.Timestamp).Abs()
+		if timeDiff.Minutes() > 5 {
+			t.Fatalf("timestamp differs by %v minutes", timeDiff.Minutes())
+		}
+	})
+}
+
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
