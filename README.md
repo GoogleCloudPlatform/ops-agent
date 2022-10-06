@@ -7,7 +7,13 @@ Monitoring).
 The agents gather logs and metrics from your Google Compute Engine instances and
 send them to Cloud Logging and Cloud Monitoring.
 
-See documentation at https://cloud.google.com/stackdriver/docs/solutions/ops-agent.
+See documentation at:
+
+* Overview: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent
+* Install agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/install-index
+* Configure agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration
+* Troubleshoot agent: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshooting
+* Monitor 3rd party apps: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party
 
 ## License and Copyright
 
