@@ -1840,7 +1840,7 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 	} else {
 		// pgrep has a limit of 15 characters to lookup processes
 		// using -f uses the full command line for lookup
-		// using the pattern "[p]rocessName" avoids matching itself
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
 		// https://linux.die.net/man/1/pgrep
 		if len(processName) > 15 {
 			cmd = "sudo pgrep -f " + "[" + processName[:1] + "]" + processName[1:]
@@ -1876,7 +1876,7 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	} else {
 		// pkill has a limit of 15 characters to lookup processes
 		// using -f uses the full command line for lookup
-		// using the pattern "[p]rocessName" avoids matching itself
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
 		// https://linux.die.net/man/1/pkill
 		if len(processName) > 15 {
 			cmd = "sudo pkill -SIGABRT -f " + "[" + processName[:1] + "]" + processName[1:]
