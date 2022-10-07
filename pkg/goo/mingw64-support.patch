@@ -1124,6 +1124,50 @@ index 7bbd79aef..2768163f1 100644
      struct utsname uts;
      uname(&uts);
  
+diff --git a/src/tls/mbedtls.c.in b/src/tls/mbedtls.c.in
+index ca298e943..93e80d98a 100644
+--- a/src/tls/mbedtls.c.in
++++ b/src/tls/mbedtls.c.in
+@@ -70,7 +70,7 @@ static int tls_init(void)
+     return 0;
+ }
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+ static int windows_load_system_certificates(struct tls_context *ctx)
+ {
+     int ret;
+@@ -113,7 +113,7 @@ static int load_system_certificates(struct tls_context *ctx)
+ #endif
+ 
+     /* For Windows use specific API to read the certs store */
+-#ifdef _MSC_VER
++#ifdef _WIN32
+     return windows_load_system_certificates(ctx);
+ #endif
+ 
+diff --git a/src/tls/openssl.c b/src/tls/openssl.c
+index b78bc83e2..346444b93 100644
+--- a/src/tls/openssl.c
++++ b/src/tls/openssl.c
+@@ -135,7 +135,7 @@ static void tls_context_destroy(void *ctx_backend)
+     flb_free(ctx);
+ }
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+ static int windows_load_system_certificates(struct tls_context *ctx)
+ {
+     int ret;
+@@ -190,7 +190,7 @@ static int load_system_certificates(struct tls_context *ctx)
+     const char ca_path[] = "/etc/ssl/certs/";
+ 
+     /* For Windows use specific API to read the certs store */
+-#ifdef _MSC_VER
++#ifdef _WIN32
+     return windows_load_system_certificates(ctx);
+ #endif
+ 
 diff --git a/src/win32/winsvc.c b/src/win32/winsvc.c
 index 9e0942ee5..b82f2780b 100644
 --- a/src/win32/winsvc.c
