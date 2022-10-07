@@ -86,6 +86,14 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.memory.free
     value_type: INT64
+# TODO (b/239240173#comment5): Re-enable once we get SLES 15 logs to go to syslog instead of a local file during tests.
+# expected_logs:
+#   - log_name: syslog
+#     fields:
+#       - name: jsonPayload.message
+#         value_regex: ' asd(\[[0-9]+\])*:'
+#         type: string
+#         description: Aerospike application logs written to Journald.
 configuration_options:
   metrics:
     - type: aerospike

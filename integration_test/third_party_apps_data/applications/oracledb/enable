@@ -1,0 +1,40 @@
+# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+
+set -e
+
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Configure the Ops Agent.
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+logging:
+  receivers:
+    oracledb_audit:
+      type: oracledb_audit
+      oracle_home: /opt/oracle
+    oracledb_alert:
+      type: oracledb_alert
+      oracle_home: /opt/oracle
+  service:
+    pipelines:
+      oracledb:
+        receivers:
+          - oracledb_audit
+          - oracledb_alert
+metrics:
+  receivers:
+    oracledb:
+      type: oracledb
+      username: otel
+      password: ora19c
+      sid: ORCLCDB
+      service_name: ORCLCDB
+  service:
+    log_level: debug
+    pipelines:
+      oracledb:
+        receivers:
+          - oracledb
+EOF
+
+sudo service google-cloud-ops-agent restart
