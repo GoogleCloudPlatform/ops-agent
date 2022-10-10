@@ -517,7 +517,9 @@ func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRege
 		}
 		logger.Printf("Found matching log entry: %v", entry)
 		found = true
-		first = entry
+		if first == nil {
+			first = entry
+		}
 	}
 	return found, first, nil
 }
