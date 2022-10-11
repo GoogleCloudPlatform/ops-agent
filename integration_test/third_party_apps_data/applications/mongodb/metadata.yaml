@@ -159,6 +159,7 @@ expected_logs:
       - name: jsonPayload.message
         type: string
         description: Log message
+        value_regex: .+
       - name: jsonPayload.attributes
         type: object (optional)
         description: Object containing one or more key-value pairs for any additional attributes provided
