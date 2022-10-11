@@ -1951,8 +1951,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 
 		env := map[string]string{"WORKDIR": workDir}
 		maxAttampts := 5
-		attempt := 0
-		for ; attempt < maxAttampts; attempt++ {
+		for attempt := 0; attempt < maxAttampts; attempt++ {
 			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
 			// Since the script will start the processes in the background, the script should finish without error
 			if err != nil {
@@ -1960,18 +1959,23 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			}
 			// Wait until both are ready
 			time.Sleep(30 * time.Second)
-			liveCheckOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
 			// We will retry when:
 			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
 			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
 			// If neither cases - break the retrying loop
-			if err == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
 				break
 			}
 
-		}
-		if attempt == maxAttampts {
-			t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries")
+			// Out of attempts
+			if attempt == maxAttampts-1 {
+				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+				if liveCheckErr != nil {
+					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
+				}
+				t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries. %s", errString)
+			}
 		}
 
 		config := `metrics:
@@ -2039,7 +2043,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 				if pts.MetricKind != test.expectedMetricKind {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.metricName, pts.MetricKind, test.expectedMetricKind))
 				}
-				if pts.ValueType != metric.MetricDescriptor_DOUBLE {
+				if pts.ValueType != test.expectedValueType {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.metricName, pts.ValueType, test.expectedValueType))
 				}
 				if len(pts.Points) == 0 {
