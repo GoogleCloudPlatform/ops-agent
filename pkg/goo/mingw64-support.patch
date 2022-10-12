@@ -49,7 +49,7 @@ index 7741805a9..63d697510 100644
  # luajit (Windows)
  # ================
 diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
-index 37f3f9c66..6b6097b6a 100644
+index 37f3f9c66..da1d3fa2f 100644
 --- a/include/fluent-bit/flb_compat.h
 +++ b/include/fluent-bit/flb_compat.h
 @@ -27,17 +27,12 @@
@@ -72,7 +72,17 @@ index 37f3f9c66..6b6097b6a 100644
  
  #include <monkey/mk_core/mk_sleep.h>
  #include <fluent-bit/flb_dlfcn_win32.h>
-@@ -62,12 +57,14 @@
+@@ -50,9 +45,6 @@
+ #define SHUT_WR   SD_SEND
+ #define SHUT_RDWR SD_BOTH
+ 
+-/* monkey exposes a broken vsnprintf macro. Undo it  */
+-#undef vsnprintf
+-
+ /*
+  * Windows prefer to add an underscore to each POSIX function.
+  * To suppress compiler warnings, we need these trivial macros.
+@@ -62,12 +54,14 @@
  #define strncasecmp _strnicmp
  #define timegm _mkgmtime
  
@@ -87,7 +97,7 @@ index 37f3f9c66..6b6097b6a 100644
  
  static inline struct tm *gmtime_r(const time_t *timep, struct tm *result)
  {
-@@ -122,11 +119,13 @@ static inline char* realpath(char *path, char *buf)
+@@ -122,11 +116,13 @@ static inline char* realpath(char *path, char *buf)
      return _fullpath(NULL, path, 0);
  }
  
@@ -101,7 +111,7 @@ index 37f3f9c66..6b6097b6a 100644
  #else
  #include <netdb.h>
  #include <netinet/in.h>
-@@ -139,4 +138,10 @@ static inline int usleep(LONGLONG usec)
+@@ -139,4 +135,13 @@ static inline int usleep(LONGLONG usec)
  #define FLB_DIRCHAR '/'
  #endif
  
@@ -110,6 +120,9 @@ index 37f3f9c66..6b6097b6a 100644
 + * so include the header here.
 + */
 +#include <monkey/mk_core.h>
++
++/* monkey exposes a broken vsnprintf macro. Undo it  */
++#undef vsnprintf
 +
  #endif
 diff --git a/include/fluent-bit/flb_langinfo.h b/include/fluent-bit/flb_langinfo.h
