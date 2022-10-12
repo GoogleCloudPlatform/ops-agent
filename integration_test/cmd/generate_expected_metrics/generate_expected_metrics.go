@@ -238,7 +238,8 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 	}
 	expectedMetrics := make([]*metadata.ExpectedMetric, 0)
 	for _, m := range metrics {
-		expectedMetrics = append(expectedMetrics, &m)
+		metric := m
+		expectedMetrics = append(expectedMetrics, &metric)
 	}
 	sort.Slice(expectedMetrics, func(i, j int) bool { return expectedMetrics[i].Type < expectedMetrics[j].Type })
 	appMetadata.ExpectedMetrics = expectedMetrics
