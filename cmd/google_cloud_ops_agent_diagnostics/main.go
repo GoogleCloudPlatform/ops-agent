@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func GetUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, error) {
+func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, error) {
 	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
 		return confgenerator.UnifiedConfig{}, err

@@ -31,7 +31,7 @@ var (
 )
 
 func run() error {
-	uc, err := GetUnifiedConfigAndValidate(*config, "linux")
+	uc, err := getUnifiedConfigAndValidate(*config, "linux")
 	if err != nil {
 		return err
 	}
