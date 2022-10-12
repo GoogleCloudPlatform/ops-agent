@@ -78,7 +78,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 	// Collect GAUGE metric
 	gaugeObserver, err := meter.AsyncInt64().Gauge("agent/ops_agent/enabled_receivers")
 	if err != nil {
-		return fmt.Errorf("failed to initialize instrument: %v", err)
+		return fmt.Errorf("failed to initialize instrument: %w", err)
 	}
 
 	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
@@ -99,7 +99,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 		}
 	})
 	if err != nil {
-		return fmt.Errorf("failed to register callback: %v", err)
+		return fmt.Errorf("failed to register callback: %w", err)
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 		mexporter.WithMetricDescriptorTypeFormatter(formatter),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create exporter: %v", err)
+		return fmt.Errorf("failed to create exporter: %w", err)
 	}
 
 	// Create provider which periodically exports to the GCP exporter
@@ -141,7 +141,7 @@ waitForDeathSignal:
 	}
 
 	if err = provider.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown meter provider: %v", err)
+		return fmt.Errorf("failed to shutdown meter provider: %w", err)
 	}
 	return nil
 }
