@@ -29,37 +29,40 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
-var (
-	agentMetricsPrefixFormat = "agent.googleapis.com/%s"
-	formatter                = func(d metricdata.Metrics) string {
-		return fmt.Sprintf(agentMetricsPrefixFormat, d.Name)
-	}
-)
-
-type enabledReceivers struct {
-	metricsReceiverCountsByType map[string]int
-	logsReceiverCountsByType    map[string]int
+func formatter(d metricdata.Metrics) string {
+	return fmt.Sprintf("agent.googleapis.com/%s", d.Name)
 }
 
-func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (enabledReceivers, error) {
-	eR := enabledReceivers{
-		metricsReceiverCountsByType: make(map[string]int),
-		logsReceiverCountsByType:    make(map[string]int),
+type EnabledReceivers struct {
+	MetricsReceiverCountsByType map[string]int
+	LogsReceiverCountsByType    map[string]int
+}
+
+func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, error) {
+	eR := EnabledReceivers{
+		MetricsReceiverCountsByType: make(map[string]int),
+		LogsReceiverCountsByType:    make(map[string]int),
 	}
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
-			rType := uc.Logging.Receivers[rID].Type()
-			eR.logsReceiverCountsByType[rType] += 1
+			if r, ok := uc.Logging.Receivers[rID]; ok {
+				eR.LogsReceiverCountsByType[r.Type()] += 1
+			} else {
+				return eR, fmt.Errorf("receiver id %s not found in unified config", rID)
+			}
 		}
 	}
 
 	// Metrics Pipelines
 	for _, p := range uc.Metrics.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
-			rType := uc.Metrics.Receivers[rID].Type()
-			eR.metricsReceiverCountsByType[rType] += 1
+			if r, ok := uc.Metrics.Receivers[rID]; ok {
+				eR.MetricsReceiverCountsByType[r.Type()] += 1
+			} else {
+				return eR, fmt.Errorf("receiver id %s not found in unified config", rID)
+			}
 		}
 	}
 
@@ -79,8 +82,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 	}
 
 	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
-
-		for rType, count := range eR.metricsReceiverCountsByType {
+		for rType, count := range eR.MetricsReceiverCountsByType {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "metrics"),
 				attribute.String("receiver_type", rType),
@@ -88,7 +90,7 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 			gaugeObserver.Observe(ctx, int64(count), labels...)
 		}
 
-		for rType, count := range eR.logsReceiverCountsByType {
+		for rType, count := range eR.LogsReceiverCountsByType {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "logs"),
 				attribute.String("receiver_type", rType),
@@ -115,7 +117,7 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 		mexporter.WithMetricDescriptorTypeFormatter(formatter),
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to create exporter: %v", err)
+		return fmt.Errorf("failed to create exporter: %v", err)
 	}
 
 	// Create provider which periodically exports to the GCP exporter

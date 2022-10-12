@@ -12,40 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package self_metrics
+package self_metrics_test
 
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	platforms               = []string{"linux", "windows"}
-	defaultEnabledReceivers = map[string]enabledReceivers{
-		"linux": enabledReceivers{
-			metricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
-			logsReceiverCountsByType:    map[string]int{"files": 1},
+	defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
+		"linux": self_metrics.EnabledReceivers{
+			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+			LogsReceiverCountsByType:    map[string]int{"files": 1},
 		},
-		"windows": enabledReceivers{
-			metricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
-			logsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
+		"windows": self_metrics.EnabledReceivers{
+			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
+			LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
 		},
 	}
 )
 
 func TestEnabledReceiversDefaultConfig(t *testing.T) {
-
 	for _, p := range platforms {
-		uc := apps.BuiltInConfStructs[p]
-
-		eR, err := CountEnabledReceivers(uc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assert.DeepEqual(t, eR, defaultEnabledReceivers[p], cmp.AllowUnexported(enabledReceivers{}))
+		t.Run(p, func(t *testing.T) {
+			uc := apps.BuiltInConfStructs[p]
+			eR, err := self_metrics.CountEnabledReceivers(uc)
+			assert.NilError(t, err)
+			assert.DeepEqual(t, eR, defaultEnabledReceivers[p])
+		})
 	}
 }
