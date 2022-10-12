@@ -1,16 +1,3 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9eca7a696..048570a9c 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -493,7 +493,7 @@ if(FLB_TLS)
-   add_subdirectory(${FLB_PATH_LIB_MBEDTLS} EXCLUDE_FROM_ALL)
- 
-   # Link OpenSSL statically on Windows.
--  if (FLB_SYSTEM_WINDOWS)
-+  if (FLB_SYSTEM_WINDOWS AND MSVC)
-     set(OPENSSL_USE_STATIC_LIBS ON)
-     set(OPENSSL_MSVC_STATIC_RT  ON)
-   endif()
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
 index 7741805a9..63d697510 100644
 --- a/cmake/luajit.cmake
