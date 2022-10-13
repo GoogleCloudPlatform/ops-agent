@@ -698,8 +698,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBPlatform = "rhel-7-oracledb"
-	OracleDBApp      = "oracledb"
+	OracleDBApp = "oracledb"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -746,10 +745,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
-		isOracleDBPlatform := test.platform == OracleDBPlatform
-		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform != isOracleDBApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
+		if test.app == OracleDBApp && test.platform != "rhel-7" {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rhel-7 at the moment", OracleDBApp)
 		}
 	}
 }
@@ -802,8 +799,8 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
 					options.ImageProject = "stackdriver-test-143416"
 				}
-				if tc.platform == OracleDBPlatform {
-					options.ImageProject = "stackdriver-test-143416"
+				if tc.app == OracleDBApp {
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)

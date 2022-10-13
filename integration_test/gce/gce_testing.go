@@ -59,8 +59,10 @@ logs will be uploaded. If unset, this will point to
 ops-agents-public-buckets-test-logs, which should work for all tests
 triggered from GitHub.
 
-USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
-(if set to "true"), or external IP addresses (in all other cases).
+USE_INTERNAL_IP: If set to "true", pass --no-address to gcloud when creating
+VMs. This will not create an external IP address for that VM (because those are
+expensive), and instead the VM will use cloud NAT to get to the external
+internet. ssh-ing to the VM is done via its internal IP address.
 Only useful on Kokoro.
 
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
@@ -493,7 +495,9 @@ func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRege
 		}
 		logger.Printf("Found matching log entry: %v", entry)
 		found = true
-		first = entry
+		if first == nil {
+			first = entry
+		}
 	}
 	return found, first, nil
 }
@@ -955,6 +959,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
+	}
+	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
+		// Don't assign an external IP address. This is to avoid using up
+		// a very limited budget of external IPv4 addresses. The instances
+		// will talk to the external internet by routing through a Cloud NAT
+		// gateway that is configured in our testing project.
+		args = append(args, "--no-address")
 	}
 	args = append(args, options.ExtraCreateArguments...)
 
