@@ -42,18 +42,15 @@ of Kokoro with some setup (see above).
 ### Testing Command
 
 When the setup steps are complete, you can run ops_agent_test (for Linux)
-like this:
-
+from the [Makefile](tasks.mak):
 ```
-PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
-ZONE=us-central1-b \
-PLATFORMS=debian-10 \
-go test -v ops_agent_test.go \
- -test.parallel=1000 \
- -tags=integration_test \
- -timeout=4h
+make integration_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
+Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
+environment and simply call the target.  
+You can also specify the `ZONE` and `PLATFORMS` variables if you would like
+to run the tests on something other than the defaults (`us-central1-b` for 
+ZONE and `debian-11` for `PLATFORMS`).
 
 Testing on Windows is tricky because it requires a suitable value of
 WINRM_PAR_PATH, and for now only Googlers can build winrm.par to supply it at
@@ -75,6 +72,8 @@ You can obtain such a URI by:
     `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
 2.  Replace `logs/+build_and_test.txt` at the end of the URI with
     `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+
+Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release scripts.
 
 ## Third Party Apps Test
 
@@ -208,22 +207,14 @@ Existing `expected_metrics` files are updated with any new metrics that are retr
 
 ### Testing Command
 
-This needs the same setup steps as the Ops Agent test (see above). The command
-is nearly the same, just replace `ops_agent_test.go` with
-`third_party_apps_test.go`:
+The make target `third_party_apps_test` similarly requires `PROJECT` and
+`TRANSFERS_BUCKET` to be specified in the environment or the command.
 
 ```
-PROJECT="${PROJECT}" \
-TRANSFERS_BUCKET="${TRANSFERS_BUCKET}" \
-ZONE=us-central1-b \
-PLATFORMS=debian-10 \
-go test -v third_party_apps_test.go \
- -test.parallel=1000 \
- -tags=integration_test \
- -timeout=4h
+make third_party_apps_test
 ```
 
-As above, you can supply `AGENT_PACKAGES_IN_GCS` to test a pre-built agent.
+As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
 # Test Logs
 
