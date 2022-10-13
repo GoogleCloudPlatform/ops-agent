@@ -42,7 +42,7 @@ of Kokoro with some setup (see above).
 ### Testing Command
 
 When the setup steps are complete, you can run ops_agent_test (for Linux)
-from the Makefile:
+from the [Makefile](tasks.mak):
 ```
 make integration_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```

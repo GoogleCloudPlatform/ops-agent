@@ -8,7 +8,7 @@ We are unable to use the actual `Makefile` name in this repo; because we build t
 
 ## Usage
 
-For convenience it helps to make a symlink from `tasks.mak` to `Makefile`. There is a target to do this, to run it:
+For convenience it helps to make a symlink from `Makefile` to `tasks.mak` . There is a target to do this, to run it:
 ```
 make -f tasks.mak makefile_symlink
 ```
