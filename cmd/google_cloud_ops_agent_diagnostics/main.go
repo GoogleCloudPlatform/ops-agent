@@ -36,6 +36,11 @@ func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.U
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatal("Recovered in run", r)
+		}
+	}()
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
