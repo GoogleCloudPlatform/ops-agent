@@ -46,27 +46,32 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, e
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			if r, ok := uc.Logging.Receivers[rID]; ok {
-				eR.LogsReceiverCountsByType[r.Type()] += 1
-			} else {
-				return eR, fmt.Errorf("receiver id %s not found in unified config", rID)
-			}
+		err := countReceivers(eR.LogsReceiverCountsByType, p, uc.Logging.Receivers)
+		if err != nil {
+			return eR, err
 		}
 	}
 
 	// Metrics Pipelines
 	for _, p := range uc.Metrics.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			if r, ok := uc.Metrics.Receivers[rID]; ok {
-				eR.MetricsReceiverCountsByType[r.Type()] += 1
-			} else {
-				return eR, fmt.Errorf("receiver id %s not found in unified config", rID)
-			}
+		err := countReceivers(eR.MetricsReceiverCountsByType, p, uc.Metrics.Receivers)
+		if err != nil {
+			return eR, err
 		}
 	}
 
 	return eR, nil
+}
+
+func countReceivers[C confgenerator.Component](receiverCounts map[string]int, p *confgenerator.Pipeline, receivers map[string]C) error {
+	for _, rID := range p.ReceiverIDs {
+		if r, ok := receivers[rID]; ok {
+			receiverCounts[r.Type()] += 1
+		} else {
+			return fmt.Errorf("receiver id %s not found in unified config", rID)
+		}
+	}
+	return nil
 }
 
 func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {

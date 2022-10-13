@@ -28,7 +28,7 @@ var (
 				},
 				Processors: map[string]cg.LoggingProcessor{},
 				Service: &cg.LoggingService{
-					Pipelines: map[string]*cg.LoggingPipeline{
+					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
 							ReceiverIDs: []string{"syslog"},
 						},
@@ -48,7 +48,7 @@ var (
 					},
 				},
 				Service: &cg.MetricsService{
-					Pipelines: map[string]*cg.MetricsPipeline{
+					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
 							ReceiverIDs:  []string{"hostmetrics"},
 							ProcessorIDs: []string{"metrics_filter"},
@@ -67,7 +67,7 @@ var (
 				},
 				Processors: map[string]cg.LoggingProcessor{},
 				Service: &cg.LoggingService{
-					Pipelines: map[string]*cg.LoggingPipeline{
+					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
 							ReceiverIDs: []string{"windows_event_log"},
 						},
@@ -95,7 +95,7 @@ var (
 					},
 				},
 				Service: &cg.MetricsService{
-					Pipelines: map[string]*cg.MetricsPipeline{
+					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
 							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
 							ProcessorIDs: []string{"metrics_filter"},
