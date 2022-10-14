@@ -111,6 +111,13 @@ func metricsAgentProcessNamesForPlatform(platform string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
+func diagnosticsProcessNamesForPlatform(platform string) []string {
+	if gce.IsWindows(platform) {
+		return []string{"google-cloud-ops-agent-diagnostics"}
+	}
+	return []string{"google_cloud_ops_agent_diagnostics"}
+}
+
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
 	// If this is the first time we're trying to write to logName, we need to
 	// register a fake log source with New-EventLog.
@@ -1831,7 +1838,15 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
 	} else {
-		cmd = "sudo pgrep " + processName
+		// pgrep has a limit of 15 characters to lookup processes
+		// using -f uses the full command line for lookup
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
+		// https://linux.die.net/man/1/pgrep
+		if len(processName) > 15 {
+			cmd = "sudo pgrep -f " + "[" + processName[:1] + "]" + processName[1:]
+		} else {
+			cmd = "sudo pgrep " + processName
+		}
 	}
 	output, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
@@ -1859,7 +1874,15 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Stop-Process -Name '%s' -PassThru -Force", processName)
 	} else {
-		cmd = "sudo pkill -SIGABRT " + processName
+		// pkill has a limit of 15 characters to lookup processes
+		// using -f uses the full command line for lookup
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
+		// https://linux.die.net/man/1/pkill
+		if len(processName) > 15 {
+			cmd = "sudo pkill -SIGABRT -f " + "[" + processName[:1] + "]" + processName[1:]
+		} else {
+			cmd = "sudo pkill -SIGABRT " + processName
+		}
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
@@ -1936,6 +1959,25 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+	})
+}
+
+func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric sent by the diagnostics service from the last
+	// minute. Sleep for 3 minutes first to make sure we aren't picking
+	// up metrics from a previous instance of the diagnostics service.
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil)
+	return err
+}
+
+func TestDiagnosticsCrashRestart(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
 	})
 }
 
