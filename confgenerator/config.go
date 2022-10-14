@@ -813,21 +813,12 @@ func sortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
 	return keys
 }
 
-// findInvalid returns all strings from a slice that are not in allowed.
-func findInvalid(actual []string, s set.Set[string]) string {
-	for _, v := range actual {
-		if !s.Contains(v) {
-			return v
-		}
-	}
-	return ""
-}
-
 func validateComponentKeys[V any](components map[string]V, refs []string, subagent string, kind string, pipeline string) error {
-	componentSet := set.ToSet(components)
-	invalid := findInvalid(refs, componentSet)
-	if invalid != "" {
-		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid, pipeline)
+	componentSet := set.MapToSet(components)
+	for _, componentRef := range refs {
+		if !componentSet.Contains(componentRef) {
+			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
+		}
 	}
 	return nil
 }

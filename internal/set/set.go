@@ -16,16 +16,28 @@ package set
 
 type Set[T comparable] map[T]struct{}
 
-func ToSet[K comparable, V any](m map[K]V) Set[K] {
-	s := map[K]struct{}{}
+func SliceToSet[T comparable](sl []T) Set[T] {
+	s := Set[T]{}
+	for _, v := range sl {
+		s.Add(v)
+	}
+	return s
+}
+
+func MapToSet[K comparable, V any](m map[K]V) Set[K] {
+	s := Set[K]{}
 	for k := range m {
-		s[k] = struct{}{}
+		s.Add(k)
 	}
 	return s
 }
 
 func (s Set[T]) Add(k T) {
 	s[k] = struct{}{}
+}
+
+func (s Set[T]) Remove(k T) {
+	delete(s, k)
 }
 
 func (s Set[T]) Contains(k T) bool {
