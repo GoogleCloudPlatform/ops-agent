@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
-func formatter(d metricdata.Metrics) string {
+func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
 	return fmt.Sprintf("agent.googleapis.com/%s", d.Name)
 }
 
@@ -119,7 +119,7 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 
 	// Create exporter pipeline
 	exporter, err := mexporter.New(
-		mexporter.WithMetricDescriptorTypeFormatter(formatter),
+		mexporter.WithMetricDescriptorTypeFormatter(agentMetricsPrefixFormatter),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create exporter: %w", err)
