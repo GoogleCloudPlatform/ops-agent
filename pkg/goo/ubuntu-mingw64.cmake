@@ -24,7 +24,7 @@ set(CMAKE_HOST_C_COMPILER gcc)
 set(CMAKE_HOST_CXX_COMPILER g++)
 
 # target environment on the build host system
-set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX} /usr/lib/gcc/${TOOLCHAIN_PREFIX}/7.3-posix)
+set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX} /usr/lib/gcc/${TOOLCHAIN_PREFIX}/7.3-posix /usr/share/mingw-w64)
 
 
 # modify default behavior of FIND_XXX() commands to

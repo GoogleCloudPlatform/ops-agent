@@ -90,7 +90,7 @@ function build_fluentbit() {
   export LDFLAGS="-L${LIBTOOL_DIR}/bin -L${LIBTOOL_DIR}/lib ${LDFLAGS}"
   popd
 
-  export OPENSSL_ROOT_DIR=/usr/share/mingw-w64 OPENSSL_CRYPTO_LIBRARY=/usr/share/mingw-w64/lib/libcrypto.a
+  export OPENSSL_ROOT_DIR=/usr/share/mingw-w64
 
   cmake .. -DCMAKE_TOOLCHAIN_FILE=../../pkg/goo/ubuntu-mingw64.cmake -DCMAKE_INSTALL_PREFIX=$prefix/ \
     -DFLB_HTTP_SERVER=On -DCMAKE_BUILD_TYPE=RelWithDebInfo
