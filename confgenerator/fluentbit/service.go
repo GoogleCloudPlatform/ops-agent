@@ -40,7 +40,7 @@ func (s Service) Component() Component {
 			// Most users do not enforce checksum.
 			"storage.checksum": "off",
 			// The maximum amount of data to load into the memory when processing old chunks from the backlog that is from previous Fluent Bit processes (e.g. Fluent Bit may have crashed or restarted).
-			"storage.backlog.mem_limit": "50M",
+			"storage.backlog.mem_limit": "50kb",
 			// Enable storage metrics in the built-in HTTP server.
 			"storage.metrics": "on",
 			// This is exclusive to filesystem storage type. It specifies the number of chunks (every chunk is a file) that can be up in memory.
