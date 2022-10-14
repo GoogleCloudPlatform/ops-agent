@@ -1,3 +1,18 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9eca7a696..dad5cc9a4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -495,7 +495,9 @@ if(FLB_TLS)
+   # Link OpenSSL statically on Windows.
+   if (FLB_SYSTEM_WINDOWS)
+     set(OPENSSL_USE_STATIC_LIBS ON)
+-    set(OPENSSL_MSVC_STATIC_RT  ON)
++    if(MSVC)
++      set(OPENSSL_MSVC_STATIC_RT  ON)
++    endif()
+   endif()
+ 
+   # find OpenSSL (our preferred choice now)
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
 index 7741805a9..63d697510 100644
 --- a/cmake/luajit.cmake
