@@ -1,3 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9eca7a696..96dd565aa 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -43,6 +43,7 @@ if (MSVC)
+   # Generator does not notice /MT in CMAKE_C_FLAGS.
+   add_compile_options(/MT)
+ else()
++  add_definitions(-D_UCRT)
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+ endif()
+ 
 diff --git a/cmake/luajit.cmake b/cmake/luajit.cmake
 index 7741805a9..63d697510 100644
 --- a/cmake/luajit.cmake
@@ -36,7 +48,7 @@ index 7741805a9..63d697510 100644
  # luajit (Windows)
  # ================
 diff --git a/include/fluent-bit/flb_compat.h b/include/fluent-bit/flb_compat.h
-index 37f3f9c66..da1d3fa2f 100644
+index 37f3f9c66..6ffafe6a6 100644
 --- a/include/fluent-bit/flb_compat.h
 +++ b/include/fluent-bit/flb_compat.h
 @@ -27,17 +27,12 @@
@@ -98,7 +110,7 @@ index 37f3f9c66..da1d3fa2f 100644
  #else
  #include <netdb.h>
  #include <netinet/in.h>
-@@ -139,4 +135,13 @@ static inline int usleep(LONGLONG usec)
+@@ -139,4 +135,40 @@ static inline int usleep(LONGLONG usec)
  #define FLB_DIRCHAR '/'
  #endif
  
@@ -110,6 +122,33 @@ index 37f3f9c66..da1d3fa2f 100644
 +
 +/* monkey exposes a broken vsnprintf macro. Undo it  */
 +#undef vsnprintf
++
++#ifdef __MINGW32__
++#define vsnprint __mingw_vsnprintf
++
++/* fall back to the original strftime in case we can't find the UCRT version */
++static size_t __strftime_fallback(char *s, size_t max, const char *format, const struct tm *tm)
++{
++  return strftime(s, max, format, tm);
++}
++static inline size_t __mingw_strftime(char *s, size_t max, const char *format, const struct tm *tm)
++{
++  size_t ret;
++  static size_t (*strftime_func)(char *, size_t, const char *, const struct tm *) = NULL;
++  if (strftime_func == NULL) {
++    HANDLE ucrtbase;
++    ucrtbase = LoadLibraryExA("ucrtbase.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    if (ucrtbase) {
++      strftime_func = GetProcAddress(ucrtbase, "strftime");
++    }
++    if (strftime_func == NULL) {
++      strftime_func = __strftime_fallback;
++    }
++  }
++  return strftime_func(s, max, format, tm);
++}
++#define strftime __mingw_strftime
++#endif
 +
  #endif
 diff --git a/include/fluent-bit/flb_langinfo.h b/include/fluent-bit/flb_langinfo.h
@@ -886,7 +925,7 @@ index bba11849d..083254b02 100644
          flb_plg_error(ctx->ins, "Failed to create metadata directory");
          return -1;
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 630f875bf..0dc089544 100644
+index 630f875bf..3dbc125c3 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -90,7 +90,9 @@ if(FLB_SYSTEM_WINDOWS)
@@ -966,7 +1005,7 @@ index 630f875bf..0dc089544 100644
    target_link_libraries(fluent-bit-bin fluent-bit-static ${CMAKE_THREAD_LIBS_INIT})
  
 +  if(FLB_SYSTEM_WINDOWS AND NOT MSVC)
-+    target_link_libraries(fluent-bit-bin -lws2_32 -lpsapi)
++    target_link_libraries(fluent-bit-bin -lws2_32 -lpsapi -lucrtbase)
 +  endif()
 +
    set_target_properties(fluent-bit-bin
