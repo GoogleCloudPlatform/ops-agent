@@ -38,6 +38,9 @@ var (
 	// MetadataResource is the resource metadata for the instance we're running on.
 	// Note: This is a global variable so that it can be set in tests.
 	MetadataResource resourcedetector.Resource
+
+	// PrometheusFeatureGate is the feature gate for the Prometheus receiver.
+	PrometheusFeatureGate = os.Getenv("UNSUPPORTED_BETA_PROMETHEUS_RECEIVER")
 )
 
 type PrometheusMetrics struct {
@@ -218,6 +221,10 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 
 // validatePrometheus checks the receiver configuration is valid.
 func validatePrometheus(promConfig promconfig.Config) (string, error) {
+	if PrometheusFeatureGate != "enabled" {
+		return "prometheus", fmt.Errorf("this receiver is not available for the current Ops Agent version")
+	}
+
 	if len(promConfig.ScrapeConfigs) == 0 {
 		return "scrape_config", errors.New("no Prometheus scrape_configs")
 	}

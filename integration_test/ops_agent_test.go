@@ -1890,6 +1890,10 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+			t.Fatal(err)
+		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -2053,7 +2057,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+			t.Fatal(err)
+		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
@@ -2300,7 +2307,7 @@ func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce
 	// Query for a metric sent by the diagnostics service from the last
 	// minute. Sleep for 3 minutes first to make sure we aren't picking
 	// up metrics from a previous instance of the diagnostics service.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil)
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
 	return err
 }
 

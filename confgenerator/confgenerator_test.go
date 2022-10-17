@@ -182,7 +182,9 @@ func testGenerateConf(t *testing.T, platform platformConfig, testDir string) err
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}
 
+	// Set up the test environment with mocked data.
 	confgenerator.MetadataResource = testResource
+	confgenerator.PrometheusFeatureGate = "enabled"
 
 	// Merge Config
 	_, confBytes, err := confgenerator.MergeConfFiles(
