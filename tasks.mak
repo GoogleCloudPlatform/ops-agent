@@ -96,10 +96,10 @@ integration_tests:
 	-tags=integration_test \
 	-timeout=4h
 
-third_party_apps_tests:
+third_party_apps_test:
 	ZONE="${ZONE}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/third_party_apps_tests.go \
+	go test -v ./integration_test/third_party_apps_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h
