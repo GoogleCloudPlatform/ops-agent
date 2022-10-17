@@ -17,11 +17,27 @@
 # targets. Building the Ops Agent should be done through the Dockerfile.
 
 ############
-# Tools
+# Setup
 ############
+
+makefile_symlink:
+	ln -s tasks.mak Makefile
+
 install_tools:
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 	go install github.com/google/addlicense@master
+
+############
+# Build
+############
+
+build:
+	mkdir -p /tmp/google-cloud-ops-agent	
+	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
+
+############
+# Tools
+############
 
 addlicense:
 	addlicense -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache . 
@@ -58,18 +74,57 @@ test_metadata_validate:
 	go test ./integration_test/validate_metadata_test.go
 
 ############
+# Integration Tests
+############
+
+# NOTE: You will need to set/export PROJECT and TRANSFERS_BUCKET manually for 
+# these targets. The Makefile will not ascribe defaults for these, since they 
+# are specific to different user environments.
+#
+# Defaults are provided for ZONE and PLATFORMS.
+#
+# If you would like to use a custom build you can provide a REPO_SUFFIX or
+# AGENT_PACKAGES_IN_GCS. These targets function fine without either specified.
+ZONE ?= us-central1-b
+PLATFORMS ?= debian-11
+
+integration_tests:
+	ZONE="${ZONE}" \
+	PLATFORMS="${PLATFORMS}" \
+	go test -v ./integration_test/ops_agent_test.go \
+	-test.parallel=1000 \
+	-tags=integration_test \
+	-timeout=4h
+
+third_party_apps_tests:
+	ZONE="${ZONE}" \
+	PLATFORMS="${PLATFORMS}" \
+	go test -v ./integration_test/third_party_apps_tests.go \
+	-test.parallel=1000 \
+	-tags=integration_test \
+	-timeout=4h
+
+############
 # Precommit
 ############
 
-precommit: addlicense_check yaml_lint test_confgenerator test_metadata validate_metadata
+precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate
 
-precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update validate_metadata
-
+precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate
 
 ############
-# Build
+# Convenience
 ############
 
-build:
-	mkdir -p /tmp/google-cloud-ops-agent	
-	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
+reset_submodules:
+	git submodule foreach --recursive git clean -xfd
+	git submodule foreach --recursive git reset --hard
+	git submodule update --init --recursive
+
+sync_fork:
+	git fetch upstream
+	git rebase upstream/main
+	git push -f
+
+update_go_modules:
+	go get -t -u ./...
