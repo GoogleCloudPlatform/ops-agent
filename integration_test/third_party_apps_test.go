@@ -659,6 +659,17 @@ func modifiedFiles(t *testing.T) []string {
 func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	for _, f := range mf {
+		// File names: submodules/fluent-bit
+		if strings.HasPrefix(f, "submodules/") {
+			for app, _ := range allApps {
+				impactedApps[app] = true
+			}
+			log.Printf("impacted apps: %v", impactedApps)
+			return impactedApps
+		}
+	}
+
+	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
 
 			// File names: apps/<appname>.go
