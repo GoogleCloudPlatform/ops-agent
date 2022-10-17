@@ -19,7 +19,7 @@ RUN git clone https://github.com/openssl/openssl.git --branch OpenSSL_1_1_1q; \
     cd openssl; \
     # The OpenSSL_1_1_1* branches have broken support for MinGW cross-compilation.
     sed -i 's@/\^mingw/@/^-mingw/@g' Configurations/unix-Makefile.tmpl; \
-    ./Configure --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/usr/share/mingw-w64 --openssldir=ssl --libdir=/usr/lib/mingw-w64 mingw64; \
+    ./Configure --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/usr/share/mingw-w64 --openssldir=ssl mingw64; \
     make; \
     make install
 
