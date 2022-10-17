@@ -925,21 +925,23 @@ index bba11849d..083254b02 100644
          flb_plg_error(ctx->ins, "Failed to create metadata directory");
          return -1;
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 630f875bf..3dbc125c3 100644
+index 630f875bf..df89b7652 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -90,7 +90,9 @@ if(FLB_SYSTEM_WINDOWS)
+@@ -90,7 +90,11 @@ if(FLB_SYSTEM_WINDOWS)
      ${src}
      flb_dlfcn_win32.c
      )
 -  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
 +  if(MSVC)
 +    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W2")
++  else()
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 +  endif()
  endif()
  
  if(FLB_PARSER)
-@@ -236,12 +238,21 @@ check_symbol_exists(accept4 "sys/socket.h" HAVE_ACCEPT4)
+@@ -236,12 +240,21 @@ check_symbol_exists(accept4 "sys/socket.h" HAVE_ACCEPT4)
  
  # Core dependencies
  if(FLB_SYSTEM_WINDOWS)
@@ -967,7 +969,7 @@ index 630f875bf..3dbc125c3 100644
  else()
    set(FLB_DEPS
      ${FLB_DEPS}
-@@ -397,12 +408,19 @@ if(FLB_SHARED_LIB)
+@@ -397,12 +410,19 @@ if(FLB_SHARED_LIB)
      PROPERTIES OUTPUT_NAME fluent-bit)
  
    # Windows doesn't provide pthread (see winpthreads.c in mk_core).
@@ -988,7 +990,7 @@ index 630f875bf..3dbc125c3 100644
    if (MSVC)
      set_target_properties(fluent-bit-shared
        PROPERTIES PDB_NAME fluent-bit.dll)
-@@ -429,6 +447,11 @@ else()
+@@ -429,6 +449,11 @@ else()
    set_target_properties(fluent-bit-static PROPERTIES OUTPUT_NAME fluent-bit)
  endif(MSVC)
  
@@ -1000,7 +1002,7 @@ index 630f875bf..3dbc125c3 100644
  if(FLB_JEMALLOC)
    target_link_libraries(fluent-bit-static libjemalloc)
  endif()
-@@ -463,6 +486,10 @@ if(FLB_BINARY)
+@@ -463,6 +488,10 @@ if(FLB_BINARY)
  
    target_link_libraries(fluent-bit-bin fluent-bit-static ${CMAKE_THREAD_LIBS_INIT})
  
