@@ -349,6 +349,16 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	return unmarshal(*inner)
 }
 
+func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
+	components := make([]Component, len(c.TypeMap))
+	i := 0
+	for _, comp := range c.TypeMap {
+		components[i] = comp.constructor()
+		i++
+	}
+	return components
+}
+
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor

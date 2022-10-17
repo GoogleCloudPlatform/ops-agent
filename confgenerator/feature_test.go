@@ -1,12 +1,21 @@
 package confgenerator_test
 
 import (
+	"bytes"
+	"encoding/csv"
 	"errors"
+	"fmt"
+	"log"
+	"reflect"
+	"sort"
+	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
+	"gotest.tools/v3/golden"
 )
 
 var emptyUc = confgenerator.UnifiedConfig{}
@@ -180,6 +189,65 @@ func TestValidInlineStructWithMapValue(t *testing.T) {
 			Foo: map[string]string{
 				"foo": "goo",
 				"bar": "baz",
+			},
+		},
+	}
+	uc.Metrics = &confgenerator.Metrics{
+		Receivers: receivers,
+	}
+	features, err := confgenerator.ExtractFeatures(&uc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := expectedFeatureBase
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"0", "fooMap", "0"},
+		Value:  "goo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"0", "fooMap", "1"},
+		Value:  "baz",
+	})
+	if !cmp.Equal(features, expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, features)
+	}
+}
+
+type MetricsReceiverFooMapStruct struct {
+	MetricsReceiverInlineFooMapStruct `yaml:",inline"`
+}
+
+func (m MetricsReceiverFooMapStruct) Type() string {
+	return "metricsReceiverFooMapStruct"
+}
+
+func (m MetricsReceiverFooMapStruct) Pipelines() []otel.Pipeline {
+	return nil
+}
+
+type MetricsReceiverInlineFooMapStruct struct {
+	Foo map[string]interface{} `yaml:"fooMap" tracking:""`
+}
+
+func TestValidInlineStructWithMapStructValue(t *testing.T) {
+	uc := emptyUc
+	receivers := make(map[string]confgenerator.MetricsReceiver)
+	receivers["metricsReceiverFoo"] = MetricsReceiverFooMapStruct{
+		MetricsReceiverInlineFooMapStruct{
+			Foo: map[string]interface{}{
+				"a": map[string]interface{}{
+					"bar": true,
+				},
+				"b": map[string]interface{}{
+					"bar": 1,
+				},
 			},
 		},
 	}
@@ -449,4 +517,89 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 	if !cmp.Equal(features, expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, features)
 	}
+}
+
+func TestGolden(t *testing.T) {
+	_ = apps.BuiltInConfStructs
+	components := confgenerator.GetComponentsFromRegistry(confgenerator.LoggingReceiverTypes)
+	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.LoggingProcessorTypes)...)
+	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.MetricsReceiverTypes)...)
+	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.MetricsProcessorTypes)...)
+
+	features := getFeatures(components)
+
+	bufferString := bytes.NewBufferString("")
+	csvWriter := csv.NewWriter(bufferString)
+	err := csvWriter.WriteAll(features)
+	if err != nil {
+		log.Fatal(err)
+	}
+	csvWriter.Flush()
+
+	// Remove extra newline before sorting
+	bufStr := bufferString.String()
+	bufStr = bufStr[:len(bufStr)-1]
+
+	// Sort results for assertion is consistent
+	s := strings.Split(bufStr, "\n")
+	sort.Strings(s)
+	// Add title after re-ordering
+	title := []string{"App,Field,Override,"}
+	s = append(title, s...)
+	// Add newline back
+	actual := fmt.Sprintf("%s\n", strings.Join(s, "\n"))
+	golden.Assert(t, actual, "feature/golden.csv")
+}
+
+func getFeatures(components []confgenerator.Component) [][]string {
+	points := make([][]string, 0)
+	for _, c := range components {
+		p := []string{reflect.TypeOf(c).String()}
+		points = append(points, getFeaturesForComponent(c, p)...)
+	}
+	return points
+}
+
+func getFeaturesForComponent(i interface{}, parent []string) [][]string {
+	features := make([][]string, 0)
+
+	v := reflect.Indirect(reflect.ValueOf(i))
+	t := v.Type()
+
+	for j := 0; j < t.NumField(); j++ {
+		f := t.Field(j)
+		override, ok := f.Tag.Lookup("tracking")
+		switch f.Type.Kind() {
+		case reflect.Struct:
+			p := appendFieldName(parent, f.Type.String())
+			features = append(features, getFeaturesForComponent(v.Field(j).Interface(), p)...)
+		case reflect.Map:
+			m := v.Field(j)
+			if ok {
+				for _, k := range m.MapKeys() {
+					features = append(features, getFeaturesForComponent(m.MapIndex(k).Interface(), append(parent, k.String()))...)
+				}
+			}
+		case reflect.Slice, reflect.Array, reflect.String:
+			if ok {
+				p := append(appendFieldName(parent, f.Name), override)
+				features = append(features, p)
+			}
+		default:
+			p := append(appendFieldName(parent, f.Name), override)
+			features = append(features, p)
+		}
+	}
+	return features
+}
+
+func appendFieldName(parent []string, fieldName string) []string {
+	p := make([]string, len(parent))
+	p[0] = parent[0]
+	if len(p) > 1 {
+		p[1] = fmt.Sprintf("%v.%v", parent[1], fieldName)
+	} else {
+		p = append(p, fieldName)
+	}
+	return p
 }
