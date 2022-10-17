@@ -536,6 +536,32 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
 
+// WaitForMetricWithCondition uses WaitForMetric to get the metric, and then
+// run the condition function on the metric. This is useful if looking for specific
+// metric points when testing. This function will stop early if WaitForMetric gives
+// error (metric with name not exist, exhausted retires, etc.), or if the condition
+// function gives error.
+func WaitForMetricWithCondition(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool, condition func(*monitoringpb.TimeSeries) (bool, error)) (*monitoringpb.TimeSeries, error) {
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		series, err := WaitForMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
+		// WaitForMetric encounters error - not need to retry here again
+		if err != nil {
+			return nil, err
+		}
+		if ok, err := condition(series); ok {
+			// Success.
+			return series, nil
+		} else if err != nil {
+			// Unable to check condition, returning
+			return nil, err
+		}
+		logger.Printf("WaitForMetricWithCondition(metric=%q, extraFilters=%v): condition not satisfied - retrying (%d/%d)...",
+			metric, extraFilters, attempt, QueryMaxAttempts)
+		time.Sleep(queryBackoffDuration)
+	}
+	return nil, fmt.Errorf("WaitForMetricWithCondition(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
 // IsExhaustedRetriesMetricError returns true if the given error is an
 // "exhausted retries" error returned from WaitForMetric.
 func IsExhaustedRetriesMetricError(err error) bool {

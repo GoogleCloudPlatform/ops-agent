@@ -1,0 +1,17 @@
+# HELP test_histogram Test Histogram.
+# TYPE test_histogram histogram
+test_histogram_bucket{le="0"} 2
+test_histogram_bucket{le="20"} 6
+test_histogram_bucket{le="40"} 10
+test_histogram_bucket{le="60"} 14
+test_histogram_bucket{le="80"} 18
+test_histogram_bucket{le="+Inf"} 20
+test_histogram_sum 900
+test_histogram_count 20
+# HELP test_summary Test Summary.
+# TYPE test_summary summary
+test_summary{quantile="0.5"} 40
+test_summary{quantile="0.9"} 80
+test_summary{quantile="0.99"} 90
+test_summary_sum 900
+test_summary_count 20

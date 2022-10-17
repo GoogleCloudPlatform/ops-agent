@@ -60,8 +60,15 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"golang.org/x/exp/slices"
+	"google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"gopkg.in/yaml.v2"
+
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
+	distribution "google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
@@ -2116,6 +2123,380 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Error(multiErr)
 		}
 	})
+}
+
+// Test the Histogram and Summary metric types using static testing files
+// The files will contain metrics in the right format and
+// hosted by a simple Python HTTP server so that the agent can scrape the metrics
+// The test will send two sets of metric points, to verify the cumulative metrics
+// are correctly received and processed
+func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// 1. Upload the step one metric points
+		workDir := path.Join(workDirForPlatform(vm.Platform), "sample_data")
+		stepOneMetrics := "testdata/sample_histogram_summary_1.txt"
+		f, err := os.Open(stepOneMetrics)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, "data.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 2. Setup the Python env and start the http server
+		packages := []string{"python3"}
+		err = agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		if err != nil {
+			t.Fatalf("failed to install %v with err: %s", packages, err)
+		}
+
+		// Run the setup script to start the Python http server
+		setupScript, err := os.ReadFile("testdata/setup_python_server.sh")
+		if err != nil {
+			t.Fatalf("failed to open setup script: %s", err)
+		}
+
+		env := map[string]string{"WORKDIR": workDir}
+		maxAttampts := 5
+		for attempt := 0; attempt < maxAttampts; attempt++ {
+			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+			// Since the script will start the processes in the background, the
+			// script should finish without error
+			if err != nil {
+				t.Fatalf("failed to run the http server in VM with err: %v, stderr: %s", err, setupOut.Stderr)
+			}
+			// Wait until the http server is ready
+			time.Sleep(30 * time.Second)
+			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data.json"`)
+			// We will retry when the Python HTTP server is not started:
+			// the stderr will have: "curl: (7) Failed to connect to localhost port 8000 after 1 ms: Connection refused"
+			// Otherwise - break the retrying loop
+			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+				break
+			}
+
+			// Out of attempts
+			if attempt == maxAttampts-1 {
+				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+				if liveCheckErr != nil {
+					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
+				}
+				t.Fatalf("failed to start the HTTP server - exhausted retries. %s", errString)
+			}
+		}
+
+		// 3. Config and start the agent
+		// Set the scrape interval to 10 second, so that metrics points can be
+		// received faster to shorten the duration of this test
+		config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: json
+          metrics_path: /data.json
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+		var multiErr error
+
+		// 4. Wait for the initial set of metrics and check
+		// For Histogram: We use prometheus.LinearBuckets(0, 20, 5), to have
+		// buckets w/ le=[0, 20, 40, 60, 80] plus the +inf final bucket
+		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+		// And get:
+		// Bounds (less than or equal) |0  |20     |40     |60     |80     |+inf
+		// Points                      |[0]|[10,20]|[30,40]|[50,60]|[70,80]|[90]
+		// Count                       |1  |2      |2      |2      |2      |1
+		// And histogram metrics are stored as cumulative type metrics, so for
+		// this initial step, Count/Mean/SumOfSquaredDeviation are all zeros,
+		// and the BucketCounts is nil
+		stepOneExpectedHistogram := &distribution.Distribution{
+			Count:                 0,
+			Mean:                  0,
+			SumOfSquaredDeviation: 0,
+			BucketOptions: &distribution.Distribution_BucketOptions{
+				Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+					ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+						Bounds: []float64{0, 20, 40, 60, 80},
+					},
+				},
+			},
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpectedHistogram))
+		// For Summary: We use Objectives [0.5, 0.9, 0.99]
+		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+		// And get:
+		// Objectives |0.5            |0.9               |0.99
+		// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
+		// Quantile   |40             |80                |90
+		// And summary metrics' quantiles are stored as gauge type metrics, so
+		// for this initial step, quantiles have the actual values.
+		// But count and sum are stored as cumulative values, so those two are 0
+		stepOneExpectedSummary := prometheusSummaryMetric{
+			Quantiles: map[string]float64{
+				"0.5":  40,
+				"0.9":  80,
+				"0.99": 90,
+			},
+			Count: 0,
+			Sum:   0,
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpectedSummary))
+
+		// 5. Replace the text file with the step two metrics
+		stepTwoMetrics := "testdata/sample_histogram_summary_2.txt"
+		f, err = os.Open(stepTwoMetrics)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, "data.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 6. Wait until the new points have arrived
+		// Note: We could wait for 3 mins here again and assume the new points
+		// are available, but in most case it should need less than 3 mins; we
+		// also want to make sure the new points are indeed available before we
+		// check them against the step 2 expected values, otherwise the error
+		// message won't be useful
+		time.Sleep(1 * time.Minute)
+		// Since test_summary_count/summary is a cumulative type metric, as long
+		// as it is greater than 0, we know the step 2 points have arrived
+		testMetricName := "prometheus.googleapis.com/test_summary_count/summary"
+		var previousTotal float64 = 0
+		totalGreaterThanPreviousTotal := func(series *monitoring.TimeSeries) (bool, error) {
+			if series.ValueType == metric.MetricDescriptor_DOUBLE {
+				lastPoint := series.Points[len(series.Points)-1]
+				return lastPoint.Value.GetDoubleValue() > previousTotal, nil
+			}
+			return false, fmt.Errorf("wrong metric value type")
+		}
+		if _, err := gce.WaitForMetricWithCondition(ctx, logger.ToMainLog(), vm, testMetricName, window, nil, true, totalGreaterThanPreviousTotal); err != nil {
+			t.Fatal(err)
+		}
+
+		// 7. Get the step 2 metrics and check against expected values
+		// For Histogram:
+		// For step 2, we repeat and observe points
+		// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+		// And get:
+		// Bounds (less than or equal)  |0  |20     |40     |60     |80     |+inf
+		// Total Observed in step 1 & 2 |2  |4      |4      |4      |4      |2
+		// Delta                        |1  |2      |2      |2      |2      |1
+		// Again, histogram metrics are stored as cumulative type metrics, so
+		// for this second step, the BucketCounts is the delta value in the
+		// above table.
+		// Count is the # of new points 10.
+		// Mean is (delta of sum) / (# of new points) = (900 - 450) / 10 = 45
+		// SumOfSquaredDeviation is not part of the Prometheus histogram. The
+		// value is calculated by the googlemanagedprometheusexporter. since the
+		// exporter does not have the actual observed values, the calculation
+		// assumes all points are in the middle of the bucket, and for +inf
+		// the points are at the largest boundary. See:
+		// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/36f91511cfd7be17370e23c36ee839a70cdc914d/exporter/collector/metrics.go#L560
+		// So here SumOfSquaredDeviation = (x_i - mean)^2 for x_i in
+		// [0, 10, 10, 30, 30, 50, 50, 70, 70, 80] and mean 45
+		stepTwoExpectedHistogram := &distribution.Distribution{
+			Count:                 10,
+			Mean:                  45,
+			SumOfSquaredDeviation: 7450,
+			BucketOptions: &distribution.Distribution_BucketOptions{
+				Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+					ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+						Bounds: []float64{0, 20, 40, 60, 80},
+					},
+				},
+			},
+			BucketCounts: []int64{1, 2, 2, 2, 2, 1},
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpectedHistogram))
+		// For Summary:
+		// For step 2, we repeat and observe points
+		// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+		// And get:
+		// Objectives |0.5            |0.9               |0.99
+		// Quantile   |40             |80                |90
+		// And summary metrics' quantiles are stored as gauge type metrics, so
+		// for this second step, quantiles have the actual values.
+		// But count and sum are stored as cumulative values, thus:
+		// Count = (delta of count) = 20 - 10 = 10
+		// Sum = (delta of sum) = 900 - 450 = 450
+		stepTwoExpectedSummary := prometheusSummaryMetric{
+			Quantiles: map[string]float64{
+				"0.5":  40,
+				"0.9":  80,
+				"0.99": 90,
+			},
+			Count: 10,
+			Sum:   450,
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepTwoExpectedSummary))
+
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+}
+
+// assertPrometheusHistogramMetric Check if the last point of the time series is
+// the expected Prometheus histogram metric point
+func assertPrometheusHistogramMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, name string, window time.Duration, expected *distribution.Distribution) error {
+	// GCM map Prometheus histogram to cumulative distribution
+	test := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/histogram", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DISTRIBUTION,
+		ExpectedValue:      expected,
+	}
+	return assertPrometheusMetric(ctx, logger, vm, window, test)
+}
+
+// A sample of the Prometheus summary metric with name 'test_summary':
+// # HELP test_summary Test Summary.
+// # TYPE test_summary summary
+// test_summary{quantile="0.5"} 40
+// test_summary{quantile="0.9"} 80
+// test_summary{quantile="0.99"} 90
+// test_summary_sum 450
+// test_summary_count 10
+type prometheusSummaryMetric struct {
+	Quantiles  map[string]float64
+	Count, Sum float64
+}
+
+// assertPrometheusSummaryMetric checks if the last point of the time series is
+// the expected prometheus summary metric point
+func assertPrometheusSummaryMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, name string, window time.Duration, expected prometheusSummaryMetric) error {
+	var multiErr error
+	// There is no direct mapping of Prometheus summary type. Instead, GCM
+	// would store the quantiles into prometheus.googleapis.com/NAME/summary
+	// with the actual quantile as a metric label, of type gauge
+	for quantile, value := range expected.Quantiles {
+		test := prometheusMetricTest{
+			MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/summary", name),
+			ExtraFilter:        []string{fmt.Sprintf(`metric.labels.quantile = "%s"`, quantile)},
+			ExpectedMetricKind: metric.MetricDescriptor_GAUGE,
+			ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+			ExpectedValue:      value,
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+	}
+	// The count value in Prometheus summary goes to
+	// prometheus.googleapis.com/NAME_count/summary of type cumulative
+	testCount := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_count/summary", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+		ExpectedValue:      expected.Count,
+	}
+	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testCount))
+	// The sum value in Prometheus summary goes to
+	// prometheus.googleapis.com/NAME_sum/summary:counter of type cumulative
+	testSummary := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_sum/summary:counter", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+		ExpectedValue:      expected.Sum,
+	}
+	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testSummary))
+	return multiErr
+}
+
+// prometheusMetricTest specify a test to use 'MetricName' and 'ExtraFilter' to
+// get the metric and compare with the expected kind, type and value
+type prometheusMetricTest struct {
+	MetricName         string
+	ExtraFilter        []string
+	ExpectedMetricKind metric.MetricDescriptor_MetricKind
+	ExpectedValueType  metric.MetricDescriptor_ValueType
+	ExpectedValue      any
+}
+
+// assertPrometheusMetric with a given test, wait for the metric, and thenuse
+// the latest point as the actual value and compare with the expected value
+func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, test prometheusMetricTest) error {
+	var multiErr error
+	if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, test.MetricName, window, test.ExtraFilter, true); err != nil {
+		multiErr = multierr.Append(multiErr, err)
+	} else {
+		if pts.MetricKind != test.ExpectedMetricKind {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.MetricName, pts.MetricKind, test.ExpectedMetricKind))
+		}
+		if pts.ValueType != test.ExpectedValueType {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.MetricName, pts.ValueType, test.ExpectedValueType))
+		}
+		if len(pts.Points) == 0 {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.MetricName))
+		} else {
+			// Use the last/latest point
+			actual := pts.Points[len(pts.Points)-1]
+			switch test.ExpectedValueType {
+			case metric.MetricDescriptor_DOUBLE:
+				expectedValue := test.ExpectedValue.(float64)
+				actualValue := actual.Value.GetDoubleValue()
+				if actualValue != expectedValue {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.MetricName, actualValue, expectedValue))
+				}
+			case metric.MetricDescriptor_DISTRIBUTION:
+				expectedValue := test.ExpectedValue.(*distribution.Distribution)
+				actualValue := actual.Value.GetDistributionValue()
+				if !slices.Equal(actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()) {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets bounds %v; expected %v",
+						test.MetricName, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
+				}
+				if !slices.Equal(actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()) {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets with counts %v; expected %v",
+						test.MetricName, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
+				}
+				if actualValue.Count != expectedValue.Count {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has count %d; expected %d",
+						test.MetricName, actualValue.Count, expectedValue.Count))
+				}
+				if actualValue.Mean != expectedValue.Mean {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has mean %f; expected %f",
+						test.MetricName, actualValue.Mean, expectedValue.Mean))
+				}
+				if actualValue.SumOfSquaredDeviation != expectedValue.SumOfSquaredDeviation {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has sum of squared deviation %f; expected %f",
+						test.MetricName, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
+				}
+			default:
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ExpectedValueType))
+			}
+
+		}
+	}
+	return multiErr
 }
 
 func TestExcludeMetrics(t *testing.T) {
