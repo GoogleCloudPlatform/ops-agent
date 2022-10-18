@@ -21,7 +21,13 @@ description: |-
   and connections. The integration collects these metrics using the official
   client API provided by Aerospike.
 supported_app_version: ["4.9", "5.x", "6.x"]
-configure_integration: ""
+configure_integration: |-
+  Aerospike logs are not supported on systems such as SLES where Aerospike
+  does not normally run as a `systemd` service. Instead, you can manually
+  configure a
+  [`files`](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#logging-receivers)
+  receiver which points to Aerospike's log file, which is usually located at
+  `/home/<user>/aerospike-server/var/log/aerospike.log`.
 expected_metrics:
   - kind: CUMULATIVE
     labels:
