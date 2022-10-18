@@ -765,7 +765,7 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(nil, allApps), testConfig)
 
 	// Execute tests
 	for _, tc := range tests {
