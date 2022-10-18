@@ -613,23 +613,18 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata {
 	allApps := make(map[string]metadata.IntegrationMetadata)
 
-	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
+	app := "kafka"
+	var integrationMetadata metadata.IntegrationMetadata
+	testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 	if err != nil {
-		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
+		t.Fatal(err)
 	}
-	for _, file := range files {
-		app := file.Name()
-		var integrationMetadata metadata.IntegrationMetadata
-		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
-		if err != nil {
-			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
-		}
-		allApps[app] = integrationMetadata
+	err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
+	if err != nil {
+		t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 	}
+	allApps[app] = integrationMetadata
+
 	log.Printf("found %v apps", len(allApps))
 	if len(allApps) == 0 {
 		t.Fatal("Found no applications inside third_party_apps_data/applications")
