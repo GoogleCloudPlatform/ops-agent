@@ -667,8 +667,9 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	// 2. We saw a variety of flaky issues when using gcloud, see b/171810719#comment6.
 	//    "gcloud compute ssh" does not work reliably when run concurrently with itself.
 	args := []string{"ssh"}
-	args = append(args, "-l", vm.SSHUserName)
-	args = append(args, vm.IPAddress)
+	args = append(args, vm.SSHUserName+"@"+vm.IPAddress)
+	//args = append(args, "-l", vm.SSHUserName)
+	//args = append(args, vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
