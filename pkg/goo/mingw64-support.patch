@@ -351,6 +351,23 @@ index 2ed39ed15..7d1a6584f 100644
  #include <shlwapi.h>
  
  #include "dirent.h"
+diff --git a/lib/mbedtls-2.28.0/CMakeLists.txt b/lib/mbedtls-2.28.0/CMakeLists.txt
+index d76bddccd..8b503b93b 100644
+--- a/lib/mbedtls-2.28.0/CMakeLists.txt
++++ b/lib/mbedtls-2.28.0/CMakeLists.txt
+@@ -173,8 +173,11 @@ string(REGEX MATCH "Clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER_ID}")
+ 
+ include(CheckCCompilerFlag)
+ 
+-if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
++if(NOT CMAKE_COMPILER_IS_MSVC)
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
++  if (CMAKE_COMPILER_IS_GNU AND CMAKE_SYSTEM_NAME MATCHES "Windows") # MinGW
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__USE_MINGW_ANSI_STDIO=1")
++  endif()
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNU)
 diff --git a/lib/monkey/CMakeLists.txt b/lib/monkey/CMakeLists.txt
 index f11894f3d..29d400363 100644
 --- a/lib/monkey/CMakeLists.txt
