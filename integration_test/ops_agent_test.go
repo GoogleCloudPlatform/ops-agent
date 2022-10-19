@@ -226,6 +226,17 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
 }
 
+// restartOpsAgent restarts the Ops Agent and waits for it to become available.
+func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+	}
+	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
+	// is 5 seconds, so we should probably give it at least that long.
+	time.Sleep(10 * time.Second)
+	return nil
+}
+
 // setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
@@ -242,12 +253,9 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgent() failed to restart ops agent: %v", err)
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+			return err
 		}
-		// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-		// is 5 seconds, so we should probably give it at least that long.
-		time.Sleep(10 * time.Second)
 	}
 	// Give agents time to start up.
 	time.Sleep(startupDelay)
