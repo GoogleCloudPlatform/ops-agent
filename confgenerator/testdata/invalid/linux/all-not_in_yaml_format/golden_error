@@ -1,4 +1,7 @@
-[1:1] unknown field "logs"
->  1 | logs:
+[15:1] unknown field "logs"
+  12 | # See the License for the specific language governing permissions and
+  13 | # limitations under the License.
+  14 | 
+> 15 | logs:
        ^
-   2 |   files: "b"c
+  16 |   files: "b"c

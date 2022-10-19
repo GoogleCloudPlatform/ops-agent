@@ -433,11 +433,11 @@ func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type LoggingService struct {
-	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
-	Pipelines map[string]*LoggingPipeline `validate:"dive,keys,startsnotwith=lib:"`
+	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
+	Pipelines map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
 
-type LoggingPipeline struct {
+type Pipeline struct {
 	ReceiverIDs  []string `yaml:"receivers,omitempty,flow"`
 	ProcessorIDs []string `yaml:"processors,omitempty,flow"`
 	// ExporterIDs is deprecated and ignored.
@@ -671,15 +671,8 @@ func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) e
 }
 
 type MetricsService struct {
-	LogLevel  string                      `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
-	Pipelines map[string]*MetricsPipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
-}
-
-type MetricsPipeline struct {
-	ReceiverIDs  []string `yaml:"receivers,flow"`
-	ProcessorIDs []string `yaml:"processors,flow"`
-	// ExporterIDs is deprecated and ignored.
-	ExporterIDs []string `yaml:"exporters,omitempty,flow"`
+	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
+	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
@@ -805,7 +798,7 @@ func mapKeys(m interface{}) map[string]bool {
 		for k := range m {
 			keys[k] = true
 		}
-	case map[string]*LoggingPipeline:
+	case map[string]*Pipeline:
 		for k := range m {
 			keys[k] = true
 		}
@@ -814,10 +807,6 @@ func mapKeys(m interface{}) map[string]bool {
 			keys[k] = true
 		}
 	case metricsProcessorMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]*MetricsPipeline:
 		for k := range m {
 			keys[k] = true
 		}

@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 app_url: "https://aerospike.com/"
 short_name: Aerospike
 long_name: Aerospike
@@ -9,96 +23,102 @@ description: |-
 supported_app_version: ["4.9", "5.x", "6.x"]
 configure_integration: ""
 expected_metrics:
-- kind: CUMULATIVE
-  labels:
-    result: error|filtered_out|not_found|success|timeout
-    type: delete|read|udf|write
-    node_name: .*
-    namespace_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.namespace.transaction.count
-  value_type: INT64
-- kind: GAUGE
-  labels:
-    node_name: .*
-    namespace_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.namespace.disk.available
-  optional: true
-  value_type: INT64
-- kind: GAUGE
-  labels:
-    node_name: .*
-    namespace_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.namespace.memory.free
-  value_type: INT64
-- kind: GAUGE
-  labels:
-    component: data|index|set_index|secondary_index
-    node_name: .*
-    namespace_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.namespace.memory.usage
-  value_type: INT64
-- kind: CUMULATIVE
-  labels:
-    result: abort|complete|error
-    type: aggregation|basic|ops_background|udf_background
-    node_name: .*
-    namespace_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.namespace.scan.count
-  value_type: INT64
-- kind: CUMULATIVE
-  labels:
-    operation: close|open
-    type: client|fabric|heartbeat
-    node_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.node.connection.count
-  value_type: INT64
-- kind: GAUGE
-  labels:
-    type: client|fabric|heartbeat
-    node_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.node.connection.open
-  value_type: INT64
-  representative: true
-- kind: GAUGE
-  labels:
-    node_name: .*
-  monitored_resource: gce_instance
-  type: workload.googleapis.com/aerospike.node.memory.free
-  value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      result: error|filtered_out|not_found|success|timeout
+      type: delete|read|udf|write
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.transaction.count
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.disk.available
+    optional: true
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.free
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      component: data|index|set_index|secondary_index
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.memory.usage
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      result: abort|complete|error
+      type: aggregation|basic|ops_background|udf_background
+      node_name: .*
+      namespace_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.namespace.scan.count
+    value_type: INT64
+  - kind: CUMULATIVE
+    labels:
+      operation: close|open
+      type: client|fabric|heartbeat
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.count
+    value_type: INT64
+  - kind: GAUGE
+    labels:
+      type: client|fabric|heartbeat
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.connection.open
+    value_type: INT64
+    representative: true
+  - kind: GAUGE
+    labels:
+      node_name: .*
+    monitored_resource: gce_instance
+    type: workload.googleapis.com/aerospike.node.memory.free
+    value_type: INT64
+expected_logs:
+  - log_name: syslog
+    fields:
+      - name: jsonPayload.message
+        value_regex: ' asd(\[[0-9]+\])*:'
+        type: string
+        description: Aerospike application logs written to Journald.
 configuration_options:
   metrics:
-  - type: aerospike
-    fields:
-    - name: type
-      default: aerospike
-      description: This value must be `aerospike`.
-    - name: collection_interval
-      default: 60s
-      description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
-    - name: endpoint
-      default: localhost:3000
-      description: Address of the Aerospike system, formatted as host:port.
-    - name: collect_cluster_metrics
-      default: true
-      description: Configures the receiver to collect metrics from peer nodes of the Aerospike system.
-    - name: username
-      default: null
-      description: The configured username if Aerospike is configured to require authentication.
-    - name: password
-      default: null
-      description: The configured password if Aerospike is configured to require authentication.
-    - name: timeout
-      default: 20s
-      description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
+    - type: aerospike
+      fields:
+        - name: type
+          default: aerospike
+          description: This value must be `aerospike`.
+        - name: collection_interval
+          default: 60s
+          description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+        - name: endpoint
+          default: localhost:3000
+          description: Address of the Aerospike system, formatted as host:port.
+        - name: collect_cluster_metrics
+          default: true
+          description: Configures the receiver to collect metrics from peer nodes of the Aerospike system.
+        - name: username
+          default: null
+          description: The configured username if Aerospike is configured to require authentication.
+        - name: password
+          default: null
+          description: The configured password if Aerospike is configured to require authentication.
+        - name: timeout
+          default: 20s
+          description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.18.2
 supported_operating_systems: linux
-
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/aerospike

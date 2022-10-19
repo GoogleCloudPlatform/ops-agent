@@ -1,0 +1,51 @@
+set -e
+set -o pipefail
+
+## Install Oracle DB from package(s)
+INSTALL_DIR="$(mktemp --directory)"
+cd "${INSTALL_DIR}"
+
+PREINSTALL_RPM=oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm
+
+curl -o "${PREINSTALL_RPM}" https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/"${PREINSTALL_RPM}"
+sudo yum -y localinstall "${PREINSTALL_RPM}"
+rm "${PREINSTALL_RPM}"
+
+# This RPM was downloaded from http://www.oracle.com/technetwork/indexes/downloads/index.html
+# using martijnvans's Oracle account (any account should work).
+ORACLE_DB_RPM=oracle-database-ee-19c-1.0-1.x86_64.rpm
+gsutil cp gs://stackdriver-test-143416-oracle/"${ORACLE_DB_RPM}" .
+sudo yum -y localinstall "${ORACLE_DB_RPM}"
+
+sudo /etc/init.d/oracledb_ORCLCDB-19c configure
+
+## Confirm that instance is up and listening
+# Check that the instance is up
+echo "select * from SYS.GLOBAL_NAME;" | sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba"
+
+# Check tns listener function
+sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/tnsping ORCLCDB"
+
+## Configure instance for monitoring
+# Create user & assign permissions
+sudo su - oracle -c "ORACLE_SID=ORCLCDB ORACLE_HOME=/opt/oracle/product/19c/dbhome_1 /opt/oracle/product/19c/dbhome_1/bin/sqlplus -s / as sysdba <<EOF
+alter session set \"_ORACLE_SCRIPT\"=true;
+CREATE USER otel IDENTIFIED BY ora19c;
+GRANT CONNECT TO otel;
+GRANT SELECT ON SYS.GV_\\\$DATABASE to otel;
+GRANT SELECT ON SYS.GV_\\\$INSTANCE to otel;
+GRANT SELECT ON SYS.GV_\\\$PROCESS to otel;
+GRANT SELECT ON SYS.GV_\\\$RESOURCE_LIMIT to otel;
+GRANT SELECT ON SYS.GV_\\\$SYSMETRIC to otel;
+GRANT SELECT ON SYS.GV_\\\$SYSSTAT to otel;
+GRANT SELECT ON SYS.GV_\\\$SYSTEM_EVENT to otel;
+GRANT SELECT ON SYS.V_\\\$RMAN_BACKUP_JOB_DETAILS to otel;
+GRANT SELECT ON SYS.V_\\\$SORT_SEGMENT to otel;
+GRANT SELECT ON SYS.V_\\\$TABLESPACE to otel;
+GRANT SELECT ON SYS.V_\\\$TEMPFILE to otel;
+GRANT SELECT ON SYS.DBA_DATA_FILES to otel;
+GRANT SELECT ON SYS.DBA_FREE_SPACE to otel;
+GRANT SELECT ON SYS.DBA_TABLESPACE_USAGE_METRICS to otel;
+GRANT SELECT ON SYS.DBA_TABLESPACES to otel;
+GRANT SELECT ON SYS.GLOBAL_NAME to otel;
+EOF"

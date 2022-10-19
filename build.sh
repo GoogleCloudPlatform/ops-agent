@@ -75,7 +75,8 @@ function build_fluentbit() {
   cmake .. -DCMAKE_INSTALL_PREFIX=$subagentdir/fluent-bit \
     -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF \
-    -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10
+    -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10 \
+    -DFLB_CONFIG_YAML=OFF
   make -j8
   make DESTDIR="$DESTDIR" install
   # We don't want fluent-bit's service or configuration, but there are no cmake
@@ -84,11 +85,17 @@ function build_fluentbit() {
   rm -r "${DESTDIR}${subagentdir}/fluent-bit/etc"
 }
 
-function build_opsagent() {
+function build_opsagentengine() {
   mkdir -p "$DESTDIR$prefix/libexec"
   go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" \
     -ldflags "$LD_FLAGS" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
+}
+
+function build_opsagentdiagnostics() {
+  mkdir -p "$DESTDIR$prefix/libexec"
+  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_diagnostics" \
+    github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics
 }
 
 function build_systemd() {
@@ -116,7 +123,8 @@ function build_systemd() {
 
 (build_otel)
 (build_fluentbit)
-(build_opsagent)
+(build_opsagentdiagnostics)
+(build_opsagentengine)
 (build_systemd)
 
 # TODO: Build sample config file

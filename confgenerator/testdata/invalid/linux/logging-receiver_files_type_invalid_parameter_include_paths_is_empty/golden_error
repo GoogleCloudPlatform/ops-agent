@@ -1,6 +1,6 @@
-[5:21] "include_paths" is a required field
->  5 | null
+[19:21] "include_paths" is a required field
+> 19 | null
                            ^
-   6 |   service:
-   7 |     pipelines:
-   8 |       test_pipeline:
+  20 |   service:
+  21 |     pipelines:
+  22 |       test_pipeline:
