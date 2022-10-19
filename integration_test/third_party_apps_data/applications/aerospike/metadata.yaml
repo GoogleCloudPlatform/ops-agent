@@ -27,7 +27,7 @@ configure_integration: |-
   configure a
   [`files`](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#logging-receivers)
   receiver which points to Aerospike's log file, which is usually located at
-  `/home/<user>/aerospike-server/var/log/aerospike.log`.
+  `$HOME/aerospike-server/var/log/aerospike.log`.
 expected_metrics:
   - kind: CUMULATIVE
     labels:
