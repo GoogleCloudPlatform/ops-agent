@@ -22,8 +22,8 @@ description: |-
   client API provided by Aerospike.
 supported_app_version: ["4.9", "5.x", "6.x"]
 configure_integration: |-
-  Aerospike logs are not automatically ingested on systems such as SLES where Aerospike
-  does not normally run as a `systemd` service. Instead, you can manually
+  Aerospike logs are automatically ingested on systems where Aerospike runs as
+  a `systemd` service. On other systems such as SLES, you can manually
   configure a
   [`files`](/stackdriver/docs/solutions/agents/ops-agent/configuration#logging-receivers)
   receiver which points to Aerospike's log file, which is usually located at
