@@ -560,7 +560,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	if app == "active_directory_ds" {
-		vm.SSHUserName = `example.com\\` + vm.SSHUserName
+		vm.SSHUserName = `example.com\` + vm.SSHUserName
 	}
 
 	if metadata.RestartAfterInstall {
