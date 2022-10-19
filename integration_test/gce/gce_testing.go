@@ -185,7 +185,7 @@ func init() {
 		log.Fatalf("init() failed to make a temporary directory for ssh keys: %v", err)
 	}
 	privateKeyFile = filepath.Join(keysDir, "gce_testing_key")
-	if _, err := runCommand(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
+	if _, err := runCommand(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-N", ""}); err != nil {
 		log.Fatalf("init() failed to generate new public+private key pair: %v", err)
 	}
 	publicKeyFile = privateKeyFile + ".pub"
@@ -260,6 +260,7 @@ type VM struct {
 	Zone        string
 	MachineType string
 	ID          int64
+	SSHUserName string
 	// The IP address to ssh to. This is the external IP address, unless
 	// USE_INTERNAL_IP is set to 'true'. See comment on extractIPAddress() for
 	// rationale.
@@ -624,6 +625,8 @@ var (
 		// (even though UserKnownHostsFile is /dev/null).
 		// If you are debugging ssh problems, you'll probably want to remove this option.
 		"-oLogLevel=ERROR",
+		"-oPasswordAuthentication=no",
+		"-oNumberOfPasswordPrompts=0",
 	}
 )
 
@@ -664,7 +667,8 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	// 2. We saw a variety of flaky issues when using gcloud, see b/171810719#comment6.
 	//    "gcloud compute ssh" does not work reliably when run concurrently with itself.
 	args := []string{"ssh"}
-	args = append(args, sshUserName+"@"+vm.IPAddress)
+	args = append(args, "-l", vm.SSHUserName)
+	args = append(args, vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
@@ -820,7 +824,7 @@ var (
 	}
 )
 
-func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map[string]string, error) {
+func addFrameworkMetadata(platform, sshName string, inputMetadata map[string]string) (map[string]string, error) {
 	metadataCopy := make(map[string]string)
 
 	// Set serial-port-logging-enable to true by default to help diagnose startup
@@ -846,7 +850,7 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	if err != nil {
 		return nil, fmt.Errorf("could not read local public key file %v: %v", publicKeyFile, err)
 	}
-	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
+	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshName, string(publicKey))
 
 	if IsWindows(platform) {
 		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
@@ -891,10 +895,11 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
 	vm := &VM{
-		Project:  options.Project,
-		Platform: options.Platform,
-		Network:  os.Getenv("NETWORK_NAME"),
-		Zone:     options.Zone,
+		Project:     options.Project,
+		Platform:    options.Platform,
+		Network:     os.Getenv("NETWORK_NAME"),
+		Zone:        options.Zone,
+		SSHUserName: sshUserName,
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -925,7 +930,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
 		}
 	}
-	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
+	newMetadata, err := addFrameworkMetadata(vm.Platform, vm.SSHUserName, options.Metadata)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
 	}
@@ -1169,7 +1174,7 @@ func StopInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // StartInstance boots a previously-stopped VM instance.
 // Also waits for the instance to be reachable over ssh.
 func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*20)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*10)
 	defer cancel()
 
 	var output CommandOutput

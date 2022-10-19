@@ -468,7 +468,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	time.Sleep(70 * time.Second)
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
-	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/486
+	//       See https://github.com/GoogleCloudPlatform/ops-agent/issues/86
 	var requiredMetrics []*metadata.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
@@ -559,6 +559,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
+	if app == "active_directory_ds" {
+		vm.SSHUserName = vm.SSHUserName + "@example.com"
+	}
+
 	if metadata.RestartAfterInstall {
 		logger.ToMainLog().Printf("Restarting vm instance...")
 		err := gce.RestartInstance(ctx, logger, vm)
@@ -567,6 +571,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 		logger.ToMainLog().Printf("vm instance restarted")
 	}
+	return nonRetryable, nil
 
 	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
 		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
@@ -786,7 +791,7 @@ func TestThirdPartyApps(t *testing.T) {
 			defer cancel()
 
 			var err error
-			for attempt := 1; attempt <= 4; attempt++ {
+			for attempt := 1; attempt <= 1; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
