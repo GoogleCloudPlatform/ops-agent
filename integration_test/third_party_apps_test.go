@@ -726,11 +726,16 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
-const (
+var defaultApps = map[string]bool{
 	// Chosen because it is relatively popular in the wild.
 	// There may be a better choice.
-	defaultApp = "postgres"
-	
+	"postgres": true,
+	// Chosen because it is the most nontrivial Windows app currently
+	// implemented.
+	"active_directory_ds": true,
+}
+
+const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 )
@@ -750,9 +755,9 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * Always test all apps against the default platform.
 //   * For all impacted apps, test on all platforms.
-//   * If there are no impacted apps, test the default app (postgres for now)
+//   * Always test all apps against the default platform.
+//   * Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
@@ -761,12 +766,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
-			if len(impactedApps) == 0 && test.app == defaultApp {
-				// Override: run defaultApp even though it's not considered impacted.
-				testApp = true
-			}
+			_, defaultApp := defaultApps[test.app]
 			_, defaultPlatform := defaultPlatforms[test.platform]
-			if !defaultPlatform && !testApp {
+			if !defaultPlatform && !defaultApp && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
