@@ -439,7 +439,7 @@ receivers:
         scrape_interval: 1m
         static_configs:
         - targets:
-          - 0.0.0.0:20202
+          - 127.0.0.1:20202
   prometheus/otel:
     config:
       scrape_configs:
@@ -447,7 +447,7 @@ receivers:
         scrape_interval: 1m
         static_configs:
         - targets:
-          - 0.0.0.0:20201
+          - 127.0.0.1:20201
   varnish/varnish_varnish:
     cache_dir: ""
     collection_interval: 60s

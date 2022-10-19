@@ -36,7 +36,7 @@ func MetricsOutputComponent() Component {
 			// https://docs.fluentbit.io/manual/pipeline/outputs/prometheus-exporter
 			"Name":  "prometheus_exporter",
 			"Match": "*",
-			"host":  "0.0.0.0",
+			"host":  "127.0.0.1",
 			"port":  strconv.Itoa(MetricsPort),
 		},
 	}

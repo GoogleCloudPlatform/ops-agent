@@ -39,7 +39,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 						"scrape_interval": "1m",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.Port)},
+							"targets": []string{fmt.Sprintf("127.0.0.1:%d", r.Port)},
 						}},
 					}},
 				},
@@ -102,7 +102,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 						"metrics_path":    "/metrics",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.Port)},
+							"targets": []string{fmt.Sprintf("127.0.0.1:%d", r.Port)},
 						}},
 					}},
 				},
