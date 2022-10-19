@@ -658,13 +658,14 @@ func modifiedFiles(t *testing.T) []string {
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
+	defer log.Printf("impacted apps: %v", impactedApps)
+
 	for _, f := range mf {
 		// File names: submodules/fluent-bit
 		if strings.HasPrefix(f, "submodules/") {
 			for app, _ := range allApps {
 				impactedApps[app] = true
 			}
-			log.Printf("impacted apps: %v", impactedApps)
 			return impactedApps
 		}
 	}
@@ -689,7 +690,6 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 
 		}
 	}
-	log.Printf("impacted apps: %v", impactedApps)
 	return impactedApps
 }
 
