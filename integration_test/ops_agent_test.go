@@ -80,7 +80,18 @@ func configPathForPlatform(platform string) string {
 
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
+		return `
+Restart-Service google-cloud-ops-agent -Force
+if (!$?) {
+	Write-Output 'Could not restart services gracefully. Killing processes directly...'
+	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {
+		Stop-Process -Force $_.ProcessId
+		if (!$?) {
+			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
+		}
+	}
+	# The SCM will automatically restart services after the processes are killed
+}`
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
