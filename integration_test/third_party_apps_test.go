@@ -700,7 +700,7 @@ var defaultPlatforms = map[string]bool{
 var defaultApps = map[string]bool{
 	// Chosen because it is relatively popular in the wild.
 	// There may be a better choice.
-	"postgres": true,
+	"postgresql": true,
 	// Chosen because it is the most nontrivial Windows app currently
 	// implemented.
 	"active_directory_ds": true,
