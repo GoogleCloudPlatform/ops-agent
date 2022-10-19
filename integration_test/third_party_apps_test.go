@@ -646,7 +646,7 @@ func modifiedFiles(t *testing.T) []string {
         	if exitError := err.(*exec.ExitError); exitError != nil {
 			stderr = string(exitError.Stderr)
 		}
-		t.Fatalf("got error calling `git diff`: %v,stderr=%v,stdout=%v", err, stderr, stdout)
+		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
 	}
 	log.Printf("git diff output:\n\tstdout:%v", stdout)
 
