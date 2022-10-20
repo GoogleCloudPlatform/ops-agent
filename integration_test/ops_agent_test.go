@@ -84,13 +84,16 @@ func restartCommandForPlatform(platform string) string {
 Restart-Service google-cloud-ops-agent -Force
 if (!$?) {
 	Write-Output 'Could not restart services gracefully. Killing processes directly...'
-	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
+	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
+	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
 		Stop-Process -Force $_.ProcessId
 		if (!$?) {
 			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
 		}
 	}
-	# The SCM will automatically restart services after the processes are killed
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Automatic
+	Start-Service -Name 'google-cloud-ops-agent'
 }`
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
@@ -228,7 +231,8 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 // restartOpsAgent restarts the Ops Agent and waits for it to become available.
 func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+	if output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+		logger.ToMainLog().Printf("stdout=%s\nstderr=%s", output.Stdout, output.Stderr)
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
