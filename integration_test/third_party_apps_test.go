@@ -710,6 +710,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
+	OracleDBPlatform = "rhel-7"
 	OracleDBApp = "oracledb"
 
 	AerospikeApp = "aerospike"
@@ -762,8 +763,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
-		if test.app == OracleDBApp && test.platform != "rhel-7" {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rhel-7 at the moment", OracleDBApp)
+		isOracleDBPlatform := test.platform == OracleDBPlatform
+		isOracleDBApp := test.app == OracleDBApp
+		if isOracleDBPlatform != isOracleDBApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
