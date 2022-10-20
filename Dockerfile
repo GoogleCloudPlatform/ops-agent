@@ -194,8 +194,8 @@ RUN set -x; \
     # Remove expired root certificate.
     mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
     update-ca-certificates && \
-    # Add home:Ledest:devel repo to install >3.4 bison
-    zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo && \
+    # Add home:odassau repo to install >3.4 bison
+    zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     # zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
