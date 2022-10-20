@@ -166,6 +166,23 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
+// updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
+// given VM by prepending the given domain and a backslash onto the username.
+func updateSSHKeysForActiveDirectory(ctx context.Context, logger *logging.Logger, vm *gce.VM, domain string) error {
+	metadata, err := gce.FetchMetadata(ctx, logger, vm)
+	if err != nil {
+		return nonRetryable, err
+	}
+	if _, err = gce.RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "add-metadata", vm.Name,
+		"--project="+vm.Project,
+		"--zone="+vm.Zone,
+		"--metadata=ssh-keys="+domain+`\`+metadata["ssh-keys"],
+	}); err != nil {
+		return nonRetryable, fmt.Errorf("error setting new ssh keys metadata for vm %v: %w", vm.Name, err)
+	}
+}
+
 // constructQuery converts the given struct of:
 //
 //	field name => field value regex
@@ -242,7 +259,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	return nil
 }
 
-// verifyJsonPayload verifies that the jsonPayload component of th LogEntry is as expected.
+// verifyJsonPayload verifies that the jsonPayload component of the LogEntry is as expected.
 // TODO: We don't unpack the jsonPayload and assert that the nested substructure is as expected.
 //
 //	The way we could do this is flatten the nested payload into a single layer (using something like https://github.com/jeremywohl/flatten)
@@ -560,7 +577,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	if app == "active_directory_ds" {
-		vm.SSHUserName = `example.com\` + vm.SSHUserName
+		// This will allow us to be able to access the machine over ssh after it restarts.
+		if err = updateSSHKeysForActiveDirectory(ctx, logger.ToMainLog(), vm, "example"); err != nil {
+			return nonRetryable, err
+		}
 	}
 
 	if metadata.RestartAfterInstall {

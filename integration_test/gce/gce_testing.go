@@ -1306,6 +1306,12 @@ type instance struct {
 			NatIP string
 		}
 	}
+	Metadata struct {
+		Items []struct {
+			Key string
+			Value string
+		}
+	}
 }
 
 // extractSingleInstances parses the input serialized JSON description of a
@@ -1321,6 +1327,28 @@ func extractSingleInstance(stdout string) (instance, error) {
 		return instance{}, fmt.Errorf("should be exactly one instance in list. stdout: %q. Parsed result: %#v", stdout, instances)
 	}
 	return instances[0], nil
+}
+
+// FetchMetadata retrieves the instance metadata for the given VM.
+func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
+	output, err := gce.RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "describe", vm.Name,
+		"--project="+vm.Project,
+		"--zone="+vm.Zone,
+		"--format=json(metadata)",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error fetching metadata for VM %v: %w", vm.Name, err)
+	}
+	var inst instance
+	if err := json.Unmarshal([]byte(output.Stdout), &inst); err != nil {
+		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
+	}
+	metadata := make(map[string]string)
+	for _, entry := range instance.Metadata {
+		metadata[entry.Key] = entry.Value
+	}
+	return metadata, nil
 }
 
 // extractIPAddress pulls the IP address out of the stdout from a gcloud
