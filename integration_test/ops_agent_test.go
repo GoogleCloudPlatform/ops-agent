@@ -717,18 +717,6 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
-func TestRestart(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-	})
-}
-
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
