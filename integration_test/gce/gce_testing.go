@@ -1308,7 +1308,7 @@ type instance struct {
 	}
 	Metadata struct {
 		Items []struct {
-			Key string
+			Key   string
 			Value string
 		}
 	}
@@ -1331,10 +1331,10 @@ func extractSingleInstance(stdout string) (instance, error) {
 
 // FetchMetadata retrieves the instance metadata for the given VM.
 func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
-	output, err := gce.RunGcloud(ctx, logger, "", []string{
+	output, err := RunGcloud(ctx, logger, "", []string{
 		"compute", "instances", "describe", vm.Name,
-		"--project="+vm.Project,
-		"--zone="+vm.Zone,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
 		"--format=json(metadata)",
 	})
 	if err != nil {
@@ -1345,8 +1345,8 @@ func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]
 		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
 	}
 	metadata := make(map[string]string)
-	for _, entry := range instance.Metadata {
-		metadata[entry.Key] = entry.Value
+	for _, item := range inst.Metadata.Items {
+		metadata[item.Key] = item.Value
 	}
 	return metadata, nil
 }

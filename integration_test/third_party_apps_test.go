@@ -168,19 +168,20 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 
 // updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
 // given VM by prepending the given domain and a backslash onto the username.
-func updateSSHKeysForActiveDirectory(ctx context.Context, logger *logging.Logger, vm *gce.VM, domain string) error {
+func updateSSHKeysForActiveDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, domain string) error {
 	metadata, err := gce.FetchMetadata(ctx, logger, vm)
 	if err != nil {
-		return nonRetryable, err
+		return err
 	}
 	if _, err = gce.RunGcloud(ctx, logger, "", []string{
 		"compute", "instances", "add-metadata", vm.Name,
-		"--project="+vm.Project,
-		"--zone="+vm.Zone,
-		"--metadata=ssh-keys="+domain+`\`+metadata["ssh-keys"],
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--metadata=ssh-keys=" + domain + `\` + metadata["ssh-keys"],
 	}); err != nil {
-		return nonRetryable, fmt.Errorf("error setting new ssh keys metadata for vm %v: %w", vm.Name, err)
+		return fmt.Errorf("error setting new ssh keys metadata for vm %v: %w", vm.Name, err)
 	}
+	return nil
 }
 
 // constructQuery converts the given struct of:
@@ -578,7 +579,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if app == "active_directory_ds" {
 		// This will allow us to be able to access the machine over ssh after it restarts.
-		if err = updateSSHKeysForActiveDirectory(ctx, logger.ToMainLog(), vm, "example"); err != nil {
+		if err = updateSSHKeysForActiveDirectory(ctx, logger.ToMainLog(), vm, "test"); err != nil {
 			return nonRetryable, err
 		}
 	}
