@@ -642,9 +642,8 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 // on a Windows VM.
 func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/logging/docs/agent/installation#joint-install
-	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/windows/StackdriverLogging-v1-16.exe", "${env:UserProfile}\StackdriverLogging-v1-16.exe")
-		Start-Process -FilePath "${env:UserProfile}\StackdriverLogging-v1-16.exe" -ArgumentList "/S" -Wait -NoNewWindow`
+		& "${env:UserProfile}\StackdriverLogging-v1-16.exe" /S`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }
@@ -653,9 +652,8 @@ func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logge
 // agent on a Windows VM.
 func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/monitoring/agent/installation#joint-install
-	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://repo.stackdriver.com/windows/StackdriverMonitoring-GCM-46.exe", "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe")
-		Start-Process -FilePath "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" -ArgumentList "/S" -Wait -NoNewWindow`
+		& "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" /S`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }
