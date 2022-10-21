@@ -50,7 +50,24 @@ echo \
 sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
+GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+CACHE_LOCATION=gcr.io/stackdriver-test-143416/google-cloud-ops-agent-build-cache
+CACHE_LOCATION_MASTER="${CACHE_LOCATION}:master"
+CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${GIT_BRANCH}"
+
+# Let's see if this is necessary
+# TODO: if unnecessary, remember to inline CACHE_LOCATION_MASTER and CACHE_LOCATION_BRANCH
+docker pull "${CACHE_LOCATION_BRANCH}" || \
+  docker pull "${CACHE_LOCATION_MASTER}" || \
+  true
+
+# The --cache-from and --cache-to arguments are following the recommendations
+# at https://docs.docker.com/build/building/cache/backends/#command-syntax.
 sudo DOCKER_BUILDKIT=1 docker build . \
+  --build-arg BUILDKIT_INLINE_CACHE=1 \
+  --cache-from="${CACHE_LOCATION_MASTER}" \
+  --cache-from="${CACHE_LOCATION_BRANCH}" \
+  --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH},mode=max" \
   --target "${DISTRO}-build" \
   -t build_image
 
