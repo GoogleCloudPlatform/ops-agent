@@ -88,7 +88,7 @@ if (!$?) {
 	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
 	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
 	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
-		Stop-Process -Force $_.ProcessId
+		Stop-Process -Force $_.ProcessId -ErrorAction SilentlyContinue
 		if (!$?) {
 			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
 		}
