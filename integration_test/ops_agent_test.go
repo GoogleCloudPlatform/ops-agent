@@ -82,6 +82,7 @@ func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `
 Restart-Service google-cloud-ops-agent -Force
+#TODO(b/240564518): remove process-killing once bug is fixed
 if (!$?) {
 	Write-Output 'Could not restart services gracefully. Killing processes directly...'
 	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
@@ -231,8 +232,7 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 // restartOpsAgent restarts the Ops Agent and waits for it to become available.
 func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-		logger.ToMainLog().Printf("stdout=%s\nstderr=%s", output.Stdout, output.Stderr)
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
