@@ -652,8 +652,32 @@ func modifiedFiles(t *testing.T) []string {
 	return strings.Split(stdout, "\n")
 }
 
-// Determine what apps are impacted by current code changes.
-// Extracts app names as follows:
+// isCriticalFile returns true if the given modified source file
+// means we should test all applications.
+func isCriticalFile(f string) bool {
+	if strings.HasPrefix(f, "submodules/") ||
+	   strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
+		return true
+	}
+	for _, criticalFile := []string{
+		"go.mod",
+		"integration_test/agents/agents.go",
+		"integration_test/gce/gce_testing.go",
+		"integration_test/third_party_apps_test.go",
+		"integration_test/third_party_apps_data/test_config.yaml",
+	} {
+		if f == criticalFile {
+			return true
+		}
+	}
+	return false
+}
+
+// determineImpactedApps determines what apps are impacted by current code
+// changes. Some code changes are considered critical, like changing
+// submodules.
+// For critical code changes, all apps are considered impacted.
+// For non-critical code changes, extracts app names as follows:
 //
 //	apps/<appname>.go
 //	integration_test/third_party_apps_data/<appname>/
@@ -664,8 +688,8 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 	defer log.Printf("impacted apps: %v", impactedApps)
 
 	for _, f := range mf {
-		// File names: submodules/fluent-bit
-		if strings.HasPrefix(f, "submodules/") {
+		if isCriticalFile(f) {
+			// Consider all apps as impacted.
 			for app, _ := range allApps {
 				impactedApps[app] = true
 			}
