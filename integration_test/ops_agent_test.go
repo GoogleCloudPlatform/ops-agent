@@ -82,7 +82,7 @@ func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `
 Restart-Service google-cloud-ops-agent -Force
-#TODO(b/240564518): remove process-killing once bug is fixed
+# TODO(b/240564518): remove process-killing once bug is fixed
 if (!$?) {
 	Write-Output 'Could not restart services gracefully. Killing processes directly...'
 	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
