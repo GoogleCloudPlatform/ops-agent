@@ -51,6 +51,8 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
+exit 0
+
 # If a built agent was passed in from Kokoro directly, use that. The file will
 # always be in $KOKORO_GFILE_DIR/result or $KOKORO_GFILE_DIR/out.
 if [[ -d "${KOKORO_GFILE_DIR}" ]]; then
