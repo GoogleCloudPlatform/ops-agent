@@ -659,7 +659,7 @@ func isCriticalFile(f string) bool {
 	   strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
 		return true
 	}
-	for _, criticalFile := []string{
+	for _, criticalFile := range []string{
 		"go.mod",
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
