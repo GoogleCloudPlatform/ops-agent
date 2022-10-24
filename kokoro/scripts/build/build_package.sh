@@ -75,7 +75,6 @@ sudo DOCKER_BUILDKIT=1 docker buildx build . \
   --builder=container-driver \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --cache-from="${CACHE_LOCATION_MASTER}" \
-  --cache-from="${CACHE_LOCATION_BRANCH}" \
   --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH}" \
   --load \
   --target "${DISTRO}-build" \
