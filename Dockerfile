@@ -71,18 +71,8 @@ ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.
 RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
-COPY build-fluent-bit.sh /work/build-fluent-bit.sh
-WORKDIR /work
-RUN ./build-fluent-bit.sh
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
-COPY build-otel.sh /work/build-otel.sh
-RUN ./build-otel.sh
-
 COPY . /work
-RUN ./build-ops-agent.sh
+WORKDIR /work
 RUN ./pkg/deb/build.sh
 
 FROM ubuntu:jammy AS jammy-build
@@ -97,18 +87,8 @@ ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.
 RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
-COPY build-fluent-bit.sh /work/build-fluent-bit.sh
-WORKDIR /work
-RUN ./build-fluent-bit.sh
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
-COPY build-otel.sh /work/build-otel.sh
-RUN ./build-otel.sh
-
 COPY . /work
-RUN ./build-ops-agent.sh
+WORKDIR /work
 RUN ./pkg/deb/build.sh
 
 FROM ubuntu:focal AS focal-build
@@ -123,18 +103,8 @@ ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.
 RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
-COPY build-fluent-bit.sh /work/build-fluent-bit.sh
-WORKDIR /work
-RUN ./build-fluent-bit.sh
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
-COPY build-otel.sh /work/build-otel.sh
-RUN ./build-otel.sh
-
 COPY . /work
-RUN ./build-ops-agent.sh
+WORKDIR /work
 RUN ./pkg/deb/build.sh
 
 FROM ubuntu:bionic-20220801 AS bionic-build
@@ -149,18 +119,8 @@ ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.
 RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
-COPY build-fluent-bit.sh /work/build-fluent-bit.sh
-WORKDIR /work
-RUN ./build-fluent-bit.sh
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
-COPY build-otel.sh /work/build-otel.sh
-RUN ./build-otel.sh
-
 COPY . /work
-RUN ./build-ops-agent.sh
+WORKDIR /work
 RUN ./pkg/deb/build.sh
 
 FROM centos:7 AS centos7-build
@@ -180,18 +140,8 @@ ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.
 RUN set -xe; \
     tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
-COPY submodules/fluent-bit /work/submodules/fluent-bit
-COPY build-fluent-bit.sh /work/build-fluent-bit.sh
-WORKDIR /work
-RUN ./build-fluent-bit.sh
-
-COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
-COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
-COPY build-otel.sh /work/build-otel.sh
-RUN ./build-otel.sh
-
 COPY . /work
-RUN ./build-ops-agent.sh
+WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 FROM rockylinux:8 AS centos8-build
