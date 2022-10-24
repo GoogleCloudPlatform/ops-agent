@@ -65,7 +65,8 @@ docker pull "${CACHE_LOCATION_BRANCH}" || \
 # https://docs.docker.com/build/building/drivers/
 docker buildx create \
   --name container-driver \
-  --driver=docker-container
+  --driver=docker-container \
+  --use
 
 # The --cache-from and --cache-to arguments are following the recommendations
 # at https://docs.docker.com/build/building/cache/backends/#command-syntax.
