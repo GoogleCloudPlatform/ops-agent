@@ -57,16 +57,15 @@ CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${DISTRO}-${GIT_BRANCH}"
 
 # Let's see if this is necessary
 # TODO: if unnecessary, remember to inline CACHE_LOCATION_MASTER and CACHE_LOCATION_BRANCH
-docker pull "${CACHE_LOCATION_BRANCH}" || \
-  docker pull "${CACHE_LOCATION_MASTER}" || \
+sudo docker pull "${CACHE_LOCATION_BRANCH}" || \
+  sudo docker pull "${CACHE_LOCATION_MASTER}" || \
   true
 
 # Create a driver so that we can use the --cache-{from,to} flags below.
 # https://docs.docker.com/build/building/drivers/
-docker buildx create \
+sudo docker buildx create \
   --name container-driver \
-  --driver=docker-container \
-  --use
+  --driver=docker-container
 
 # The --cache-from and --cache-to arguments are following the recommendations
 # at https://docs.docker.com/build/building/cache/backends/#command-syntax.
