@@ -51,7 +51,7 @@ sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-CACHE_LOCATION=gcr.io/stackdriver-test-143416/google-cloud-ops-agent-build-cache
+CACHE_LOCATION=us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache
 CACHE_LOCATION_MASTER="${CACHE_LOCATION}:${DISTRO}-master"
 CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${DISTRO}-${GIT_BRANCH}"
 
