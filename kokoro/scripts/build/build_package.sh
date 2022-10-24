@@ -67,6 +67,8 @@ sudo docker buildx create \
   --name container-driver \
   --driver=docker-container
 
+sudo gcloud auth configure-docker us-docker.pkg.dev || true
+
 # The --cache-from and --cache-to arguments are following the recommendations
 # at https://docs.docker.com/build/building/cache/backends/#command-syntax.
 # --load is necessary because of:
