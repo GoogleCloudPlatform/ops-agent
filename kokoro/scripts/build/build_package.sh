@@ -61,13 +61,23 @@ docker pull "${CACHE_LOCATION_BRANCH}" || \
   docker pull "${CACHE_LOCATION_MASTER}" || \
   true
 
+# Create a driver so that we can use the --cache-{from,to} flags below.
+# https://docs.docker.com/build/building/drivers/
+docker buildx create \
+  --name container-driver \
+  --driver=docker-container
+
 # The --cache-from and --cache-to arguments are following the recommendations
 # at https://docs.docker.com/build/building/cache/backends/#command-syntax.
+# --load is necessary because of:
+# https://docs.docker.com/build/building/drivers/docker-container/#loading-to-local-image-store
 sudo DOCKER_BUILDKIT=1 docker buildx build . \
+  --builder=container-driver \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --cache-from="${CACHE_LOCATION_MASTER}" \
   --cache-from="${CACHE_LOCATION_BRANCH}" \
   --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH},mode=max" \
+  --load \
   --target "${DISTRO}-build" \
   -t build_image
 
