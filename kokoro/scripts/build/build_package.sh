@@ -73,9 +73,9 @@ sudo docker buildx create \
 # https://docs.docker.com/build/building/drivers/docker-container/#loading-to-local-image-store
 sudo DOCKER_BUILDKIT=1 docker buildx build . \
   --builder=container-driver \
-  --build-arg BUILDKIT_INLINE_CACHE=1 \
   --cache-from="${CACHE_LOCATION_MASTER}" \
-  --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH}" \
+  --cache-from="${CACHE_LOCATION_BRANCH}" \
+  --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH},mode=max" \
   --load \
   --target "${DISTRO}-build" \
   -t build_image
