@@ -722,10 +722,20 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
+var defaultApps = map[string]bool{
+	// Chosen because it is relatively popular in the wild.
+	// There may be a better choice.
+	"postgresql": true,
+	// Chosen because it is the most nontrivial Windows app currently
+	// implemented.
+	"active_directory_ds": true,
+}
+
 const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
+	OracleDBPlatform = "rhel-7"
 	OracleDBApp = "oracledb"
 
 	AerospikeApp = "aerospike"
@@ -745,9 +755,11 @@ func incompatibleOperatingSystem(testCase test) string {
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
-// test_config and impacted apps.  Always test all apps against the default
-// platform.  If a subset of apps is determined to be impacted, also test all
-// platforms for those apps.
+// test_config and impacted apps.
+//   * For all impacted apps, test on all platforms.
+//   * Always test all apps against the default platform.
+//   * Always test the default app (postgres/active_directory_ds for now)
+//     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too. Same for `OracleDBPlatform` and
@@ -756,8 +768,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
+			_, defaultApp := defaultApps[test.app]
 			_, defaultPlatform := defaultPlatforms[test.platform]
-			if !defaultPlatform && !testApp {
+			if !defaultPlatform && !defaultApp && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
@@ -775,8 +788,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
-		if test.app == OracleDBApp && test.platform != "rhel-7" {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because it is only supported on rhel-7 at the moment", OracleDBApp)
+		isOracleDBPlatform := test.platform == OracleDBPlatform
+		isOracleDBApp := test.app == OracleDBApp
+		if isOracleDBPlatform != isOracleDBApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
