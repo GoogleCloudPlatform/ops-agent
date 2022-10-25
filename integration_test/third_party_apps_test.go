@@ -166,6 +166,24 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
 }
 
+// updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
+// given VM by prepending the given domain and a backslash onto the username.
+func updateSSHKeysForActiveDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, domain string) error {
+	metadata, err := gce.FetchMetadata(ctx, logger, vm)
+	if err != nil {
+		return err
+	}
+	if _, err = gce.RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "add-metadata", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--metadata=ssh-keys=" + domain + `\` + metadata["ssh-keys"],
+	}); err != nil {
+		return fmt.Errorf("error setting new ssh keys metadata for vm %v: %w", vm.Name, err)
+	}
+	return nil
+}
+
 // constructQuery converts the given struct of:
 //
 //	field name => field value regex
@@ -242,7 +260,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	return nil
 }
 
-// verifyJsonPayload verifies that the jsonPayload component of th LogEntry is as expected.
+// verifyJsonPayload verifies that the jsonPayload component of the LogEntry is as expected.
 // TODO: We don't unpack the jsonPayload and assert that the nested substructure is as expected.
 //
 //	The way we could do this is flatten the nested payload into a single layer (using something like https://github.com/jeremywohl/flatten)
@@ -559,6 +577,13 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
+	if app == "active_directory_ds" {
+		// This will allow us to be able to access the machine over ssh after it restarts.
+		if err = updateSSHKeysForActiveDirectory(ctx, logger.ToMainLog(), vm, "test"); err != nil {
+			return nonRetryable, err
+		}
+	}
+
 	if metadata.RestartAfterInstall {
 		logger.ToMainLog().Printf("Restarting vm instance...")
 		err := gce.RestartInstance(ctx, logger, vm)
@@ -592,7 +617,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-		if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
+		// TODO(b/239240173): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
+		if app == AerospikeApp && folder == "sles" {
+			logger.ToMainLog().Printf("skipping aerospike logging tests (b/239240173)")
+		} else if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -694,11 +722,23 @@ var defaultPlatforms = map[string]bool{
 	"windows-2019": true,
 }
 
+var defaultApps = map[string]bool{
+	// Chosen because it is relatively popular in the wild.
+	// There may be a better choice.
+	"postgresql": true,
+	// Chosen because it is the most nontrivial Windows app currently
+	// implemented.
+	"active_directory_ds": true,
+}
+
 const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
+	OracleDBPlatform = "rhel-7"
 	OracleDBApp = "oracledb"
+
+	AerospikeApp = "aerospike"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -715,9 +755,11 @@ func incompatibleOperatingSystem(testCase test) string {
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
-// test_config and impacted apps.  Always test all apps against the default
-// platform.  If a subset of apps is determined to be impacted, also test all
-// platforms for those apps.
+// test_config and impacted apps.
+//   * For all impacted apps, test on all platforms.
+//   * Always test all apps against the default platform.
+//   * Always test the default app (postgres/active_directory_ds for now)
+//     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
@@ -725,8 +767,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
+			_, defaultApp := defaultApps[test.app]
 			_, defaultPlatform := defaultPlatforms[test.platform]
-			if !defaultPlatform && !testApp {
+			if !defaultPlatform && !defaultApp && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
@@ -743,6 +786,12 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
+		}
+    // TODO(martijnvans): Delete this special case when deleting the special Oracle DB Kokoro build.
+		isOracleDBPlatform := test.platform == OracleDBPlatform
+		isOracleDBApp := test.app == OracleDBApp
+		if isOracleDBPlatform && !isOracleDBApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }

@@ -1300,6 +1300,12 @@ type instance struct {
 			NatIP string
 		}
 	}
+	Metadata struct {
+		Items []struct {
+			Key   string
+			Value string
+		}
+	}
 }
 
 // extractSingleInstances parses the input serialized JSON description of a
@@ -1361,6 +1367,28 @@ func extractID(stdout string) (int64, error) {
 		return 0, err
 	}
 	return strconv.ParseInt(instance.ID, 10, 64)
+}
+
+// FetchMetadata retrieves the instance metadata for the given VM.
+func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
+	output, err := RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json(metadata)",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error fetching metadata for VM %v: %w", vm.Name, err)
+	}
+	var inst instance
+	if err := json.Unmarshal([]byte(output.Stdout), &inst); err != nil {
+		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
+	}
+	metadata := make(map[string]string)
+	for _, item := range inst.Metadata.Items {
+		metadata[item.Key] = item.Value
+	}
+	return metadata, nil
 }
 
 const (
