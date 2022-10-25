@@ -54,7 +54,6 @@ ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
-sudo docker pull "${CACHE_LOCATION}" || true
 
 # Create a driver so that we can use the --cache-{from,to} flags below.
 # https://docs.docker.com/build/building/drivers/
