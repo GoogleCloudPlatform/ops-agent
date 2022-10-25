@@ -50,10 +50,21 @@ echo \
 sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
-GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-CACHE_LOCATION=us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache
+# Set up a BRANCH_NAME to use to tag the docker image with for the cache.
+# On Kokoro, `git rev-parse --abbrev-ref HEAD` just prints "HEAD", so we
+# need to use the pull request number instead of the actual branch name.
+if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then
+  BRANCH_NAME="pr-${KOKORO_GITHUB_PULL_REQUEST_NUMBER}"
+else
+  BRANCH_NAME="branch-$(git rev-parse --abbrev-ref HEAD)"
+fi
+
+ARTIFACT_REGISTRY_LOCATION="us-docker.pkg.dev"
+sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY_LOCATION}"
+
+CACHE_LOCATION="${ARTIFACT_REGISTRY_LOCATION}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache"
 CACHE_LOCATION_MASTER="${CACHE_LOCATION}:${DISTRO}-master"
-CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${DISTRO}-${GIT_BRANCH}"
+CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${DISTRO}-${BRANCH_NAME}"
 
 # Let's see if this is necessary
 # TODO: if unnecessary, remember to inline CACHE_LOCATION_MASTER and CACHE_LOCATION_BRANCH
@@ -66,8 +77,6 @@ sudo docker pull "${CACHE_LOCATION_BRANCH}" || \
 sudo docker buildx create \
   --name container-driver \
   --driver=docker-container
-
-sudo gcloud auth configure-docker us-docker.pkg.dev || true
 
 # The --cache-from and --cache-to arguments are following the recommendations
 # at https://docs.docker.com/build/building/cache/backends/#command-syntax.
