@@ -1,3 +1,4 @@
 .git
 Dockerfile
 .dockerignore
+integration_test
