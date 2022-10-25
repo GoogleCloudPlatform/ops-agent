@@ -1,4 +1,7 @@
 .git
 Dockerfile
 .dockerignore
+
 integration_test
+kokoro/config
+kokoro/scripts/test

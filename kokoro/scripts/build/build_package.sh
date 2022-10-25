@@ -73,17 +73,15 @@ BUILD_ARGS=(
   -t build_image
 )
 
-# TODO: uncomment the if statement.
-
 # Tell our continuous build to populate the cache. Our other builds do not
 # write to any kind of cache, for example a per-PR cache, because the
 # --cache-to step takes a few minutes and adds little value over just using
 # the continuous build's cache.
 # mode=max is described here:
 # https://docs.docker.com/build/building/cache/backends/#cache-mode
-#if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS" ]]; then
+if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS" ]]; then
   BUILD_ARGS+=( --cache-to="type=registry,ref=${CACHE_LOCATION},mode=max" )
-#fi
+fi
 
 sudo DOCKER_BUILDKIT=1 docker buildx build . "${BUILD_ARGS[@]}"
 
