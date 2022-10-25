@@ -50,27 +50,11 @@ echo \
 sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
-# Set up a BRANCH_NAME to use to tag the docker image with for the cache.
-# On Kokoro, `git rev-parse --abbrev-ref HEAD` just prints "HEAD", so we
-# need to use the pull request number instead of the actual branch name.
-if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then
-  BRANCH_NAME="pr-${KOKORO_GITHUB_PULL_REQUEST_NUMBER}"
-else
-  BRANCH_NAME="branch-$(git rev-parse --abbrev-ref HEAD)"
-fi
+ARTIFACT_REGISTRY="us-docker.pkg.dev"
+sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 
-ARTIFACT_REGISTRY_LOCATION="us-docker.pkg.dev"
-sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY_LOCATION}"
-
-CACHE_LOCATION="${ARTIFACT_REGISTRY_LOCATION}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache"
-CACHE_LOCATION_MASTER="${CACHE_LOCATION}:${DISTRO}-master"
-CACHE_LOCATION_BRANCH="${CACHE_LOCATION}:${DISTRO}-${BRANCH_NAME}"
-
-# Let's see if this is necessary
-# TODO: if unnecessary, remember to inline CACHE_LOCATION_MASTER and CACHE_LOCATION_BRANCH
-sudo docker pull "${CACHE_LOCATION_BRANCH}" || \
-  sudo docker pull "${CACHE_LOCATION_MASTER}" || \
-  true
+CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
+sudo docker pull "${CACHE_LOCATION}" || true
 
 # Create a driver so that we can use the --cache-{from,to} flags below.
 # https://docs.docker.com/build/building/drivers/
@@ -78,18 +62,30 @@ sudo docker buildx create \
   --name container-driver \
   --driver=docker-container
 
-# The --cache-from and --cache-to arguments are following the recommendations
-# at https://docs.docker.com/build/building/cache/backends/#command-syntax.
+# Set up some command line flags for "docker buildx build".
 # --load is necessary because of:
 # https://docs.docker.com/build/building/drivers/docker-container/#loading-to-local-image-store
-sudo DOCKER_BUILDKIT=1 docker buildx build . \
-  --builder=container-driver \
-  --cache-from="${CACHE_LOCATION_MASTER}" \
-  --cache-from="${CACHE_LOCATION_BRANCH}" \
-  --cache-to="type=registry,ref=${CACHE_LOCATION_BRANCH},mode=max" \
-  --load \
-  --target "${DISTRO}-build" \
+BUILD_ARGS=(
+  --builder=container-driver
+  --cache-from="${CACHE_LOCATION}"
+  --load
+  --target "${DISTRO}-build"
   -t build_image
+)
+
+# TODO: uncomment the if statement.
+
+# Tell our continuous build to populate the cache. Our other builds do not
+# write to any kind of cache, for example a per-PR cache, because the
+# --cache-to step takes a few minutes and adds little value over just using
+# the continuous build's cache.
+# mode=max is described here:
+# https://docs.docker.com/build/building/cache/backends/#cache-mode
+#if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS" ]]; then
+  BUILD_ARGS+=( --cache-to="type=registry,ref=${CACHE_LOCATION},mode=max" )
+#fi
+
+sudo DOCKER_BUILDKIT=1 docker buildx build . "${BUILD_ARGS[@]}"
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
