@@ -38,7 +38,6 @@ require (
 	cloud.google.com/go v0.104.0 // indirect
 	cloud.google.com/go/iam v0.5.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.33.0 // indirect
-	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
