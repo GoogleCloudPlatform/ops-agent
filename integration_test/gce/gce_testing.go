@@ -627,7 +627,6 @@ var (
 		// Sometimes you can be prompted to auth with a password if OpenSSH isn't
 		// ready yet on Windows, which hangs the test. We only ever auth with keys so
 		// let's disable password auth.
-		// TODO(b/255311117): revert when we switch back to sysprep
 		"-oPreferredAuthentications=publickey",
 	}
 )
