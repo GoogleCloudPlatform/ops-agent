@@ -624,6 +624,10 @@ var (
 		// (even though UserKnownHostsFile is /dev/null).
 		// If you are debugging ssh problems, you'll probably want to remove this option.
 		"-oLogLevel=ERROR",
+		// Sometimes you can be prompted to auth with a password if OpenSSH isn't
+		// ready yet on Windows, which hangs the test. We only ever auth with keys so
+		// let's disable password auth.
+		"-oPreferredAuthentications=publickey",
 	}
 )
 
@@ -849,11 +853,12 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
-			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		// TODO(b/255311117): change back to sysprep-specialize-script-cmd
+		if _, ok := metadataCopy["windows-startup-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
-		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+		metadataCopy["windows-startup-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
@@ -1300,6 +1305,12 @@ type instance struct {
 			NatIP string
 		}
 	}
+	Metadata struct {
+		Items []struct {
+			Key   string
+			Value string
+		}
+	}
 }
 
 // extractSingleInstances parses the input serialized JSON description of a
@@ -1361,6 +1372,28 @@ func extractID(stdout string) (int64, error) {
 		return 0, err
 	}
 	return strconv.ParseInt(instance.ID, 10, 64)
+}
+
+// FetchMetadata retrieves the instance metadata for the given VM.
+func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
+	output, err := RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json(metadata)",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error fetching metadata for VM %v: %w", vm.Name, err)
+	}
+	var inst instance
+	if err := json.Unmarshal([]byte(output.Stdout), &inst); err != nil {
+		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
+	}
+	metadata := make(map[string]string)
+	for _, item := range inst.Metadata.Items {
+		metadata[item.Key] = item.Value
+	}
+	return metadata, nil
 }
 
 const (
