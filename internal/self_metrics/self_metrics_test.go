@@ -17,19 +17,19 @@ package self_metrics_test
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"gotest.tools/v3/assert"
 )
 
 var (
 	platforms               = []string{"linux", "windows"}
 	defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
-		"linux": self_metrics.EnabledReceivers{
+		"linux": {
 			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
 			LogsReceiverCountsByType:    map[string]int{"files": 1},
 		},
-		"windows": self_metrics.EnabledReceivers{
+		"windows": {
 			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
 			LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
 		},

@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	metricapi "go.opentelemetry.io/otel/metric"
-	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
+	metricapi "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 )

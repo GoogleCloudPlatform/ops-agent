@@ -693,7 +693,7 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 	for _, f := range mf {
 		// File names: submodules/fluent-bit
 		if strings.HasPrefix(f, "submodules/") {
-			for app, _ := range allApps {
+			for app := range allApps {
 				impactedApps[app] = true
 			}
 			return impactedApps
@@ -749,7 +749,7 @@ const (
 	SAPHANAApp      = "saphana"
 
 	OracleDBPlatform = "rhel-7"
-	OracleDBApp = "oracledb"
+	OracleDBApp      = "oracledb"
 
 	AerospikeApp = "aerospike"
 )
@@ -769,10 +769,11 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * For all impacted apps, test on all platforms.
-//   * Always test all apps against the default platform.
-//   * Always test the default app (postgres/active_directory_ds for now)
+//   - For all impacted apps, test on all platforms.
+//   - Always test all apps against the default platform.
+//   - Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
+//
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too. Same for `OracleDBPlatform` and
