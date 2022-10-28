@@ -70,7 +70,7 @@ AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_
 You can obtain such a URI by:
 
 1.  take a previous Kokoro run with a successful build and go to the
-    `Invocation Details` page. Get the value correspondinig to the `GCS` key.
+    `Invocation Details` page. Get the value corresponding to the `GCS` key.
     For example:
     `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259`
 2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
