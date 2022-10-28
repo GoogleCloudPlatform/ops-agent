@@ -20,7 +20,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/ci/get_labels"
+	main "github.com/GoogleCloudPlatform/ops-agent/ci/get_labels"
 )
 
 type Test struct {
