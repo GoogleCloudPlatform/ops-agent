@@ -57,17 +57,18 @@ against a pre-built but unreleased agent, you can use add the
 AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/result \
 ```
 
 You can obtain such a URI by:
 
-1.  take a previous Kokoro run with a successful build and get the
-    "gsutil URI" to `+build_and_test.txt` from the Google Cloud Storage browser
-    page. For example:
-    `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
-2.  Replace `logs/+build_and_test.txt` at the end of the URI with
-    `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+1.  take a previous Kokoro run with a successful build and go to the
+    `Invocation Details` page. Get the value corresponding to the `GCS` key.
+    For example:
+    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259`
+2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
+    of the URL with `gs://` and put `/result` on the end and pass that as
+    `AGENT_PACKAGES_IN_GCS`.
 
 Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release scripts.
 
