@@ -80,7 +80,22 @@ func configPathForPlatform(platform string) string {
 
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
+		return `
+Restart-Service google-cloud-ops-agent -Force
+# TODO(b/240564518): remove process-killing once bug is fixed
+if (!$?) {
+	Write-Output 'Could not restart services gracefully. Killing processes directly...'
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
+	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
+	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
+		Stop-Process -Force $_.ProcessId -ErrorAction SilentlyContinue
+		if (!$?) {
+			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
+		}
+	}
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Automatic
+	Start-Service -Name 'google-cloud-ops-agent'
+}`
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
@@ -215,6 +230,17 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
 }
 
+// restartOpsAgent restarts the Ops Agent and waits for it to become available.
+func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+	}
+	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
+	// is 5 seconds, so we should probably give it at least that long.
+	time.Sleep(10 * time.Second)
+	return nil
+}
+
 // setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
@@ -231,12 +257,9 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgent() failed to restart ops agent: %v", err)
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+			return err
 		}
-		// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-		// is 5 seconds, so we should probably give it at least that long.
-		time.Sleep(10 * time.Second)
 	}
 	// Give agents time to start up.
 	time.Sleep(startupDelay)
