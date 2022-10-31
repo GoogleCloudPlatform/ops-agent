@@ -10,8 +10,11 @@ import (
 // Errors returned by ExtractFeatures can be tested against these errors using
 // errors.Is
 var (
-	ErrTrackingInlineStruct = errors.New("cannot have tracking on inline struct")
-	ErrInvalidType          = errors.New("object in path must be of type Component")
+	ErrTrackingInlineStruct   = errors.New("cannot have tracking on inline struct")
+	ErrTrackingOverrideStruct = errors.New("struct that has tracking tag must not be empty")
+	ErrMapAsField             = errors.New("map type for a field is not supported")
+	ErrTrackingOverrideMap    = errors.New("map that has tracking tag must not be empty")
+	ErrInvalidType            = errors.New("object in path must be of type Component")
 )
 
 type Feature struct {
@@ -41,6 +44,9 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 }
 
 func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
+	if m.IsExcluded {
+		return nil, nil
+	}
 	t := c.Type()
 
 	if t.Kind() == reflect.Ptr {
@@ -56,15 +62,32 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
+		// If struct is inline there is no associated name for key generation
+		// By default inline structs of a tracked field are also tracked
 		if m.IsInline && m.HasTracking {
 			return nil, ErrTrackingInlineStruct
 		}
+
+		// If struct has tracking it must have a value
+		if m.HasTracking && !m.HasOverride {
+			return nil, ErrTrackingOverrideStruct
+		}
+
+		// Path for execution is coupled with the UnifiedConfig structure, feature
+		// gets populated as we iterate through each level of the struct
 		if feature.Module == "" {
-			feature.Module = m.PathName
+			feature.Module = m.FieldTag
 		} else if feature.Kind == "" {
-			feature.Kind = m.PathName
+			feature.Kind = m.FieldTag
 		} else if !m.IsInline {
-			feature.Key = append(feature.Key, m.PathName)
+			feature.Key = append(feature.Key, m.FieldTag)
+		}
+
+		// For structs that in a Component
+		if m.HasTracking && feature.Module != "" && feature.Kind != "" && feature.Type != "" && feature.Key != nil {
+			ftr := feature
+			ftr.Value = m.OverrideValue
+			features = append(features, ftr)
 		}
 
 		// Iterate over all available fields and read the tag value
@@ -87,32 +110,37 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			features = append(features, tf...)
 		}
 	case kind == reflect.Map:
-		if !m.HasTracking {
-			return nil, nil
+		if m.HasTracking && !m.HasOverride {
+			return nil, ErrTrackingOverrideMap
 		}
+
 		keys := feature.Key
 
+		if m.HasTracking {
+			ftr := feature
+			ftr.Key = append(ftr.Key, m.FieldTag)
+			ftr.Value = m.OverrideValue
+			features = append(features, ftr)
+		}
+
+		// Maps as a field are not supported yet
+		if feature.Type != "" {
+			return nil, ErrMapAsField
+		}
+
 		// Iterate over all values from map. Keys of map are replaced with an index.
-		// If the map is a Component only the index will append to the key.
-		// Else both the name of the field and the index of the item is appended to
-		// the key respectively.
+		// If the map is a Receiver or Processor its values will all be Components.
 		for i, key := range v.MapKeys() {
 			obj := v.MapIndex(key)
 			md := m
 			ftr := feature
-			index := fmt.Sprintf("%d", i)
 
-			if ftr.Type == "" {
-				comp, ok := obj.Interface().(Component)
-				if !ok {
-					return nil, ErrInvalidType
-				}
-				ftr.Type = comp.Type()
-				ftr.Key = append(keys, index)
-			} else {
-				ftr.Key = append(keys, m.PathName)
-				md.PathName = index
+			comp, ok := obj.Interface().(Component)
+			if !ok {
+				return nil, ErrInvalidType
 			}
+			ftr.Type = comp.Type()
+			ftr.Key = append(keys, fmt.Sprintf("[%d]", i))
 
 			f, err := trackingFeatures(reflect.ValueOf(obj.Interface()), md, ftr)
 			if err != nil {
@@ -121,10 +149,10 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			features = append(features, f...)
 		}
 	default:
-		if skipField(v, m.HasTracking) {
+		if skipField(v, m) {
 			return nil, nil
 		}
-		feature.Key = append(feature.Key, m.PathName)
+		feature.Key = append(feature.Key, m.FieldTag)
 		if m.HasOverride {
 			feature.Value = m.OverrideValue
 		} else {
@@ -136,9 +164,12 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 	return features, nil
 }
 
-func skipField(value reflect.Value, hasTracking bool) bool {
-	if hasTracking {
+func skipField(value reflect.Value, m metadata) bool {
+	if m.HasTracking {
 		return false
+	}
+	if m.IsExcluded {
+		return true
 	}
 	switch value.Type().Kind() {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int32:
@@ -149,10 +180,11 @@ func skipField(value reflect.Value, hasTracking bool) bool {
 }
 
 type metadata struct {
+	IsExcluded    bool
 	IsInline      bool
 	HasTracking   bool
 	HasOverride   bool
-	PathName      string
+	FieldTag      string
 	OverrideValue string
 }
 
@@ -162,6 +194,7 @@ func getMetadata(field reflect.StructField) metadata {
 	if trackingTag != "" {
 		hasOverride = true
 	}
+	isExcluded := trackingTag == "-"
 
 	yamlTag, _ := field.Tag.Lookup("yaml")
 	hasInline := false
@@ -175,9 +208,12 @@ func getMetadata(field reflect.StructField) metadata {
 	return metadata{
 		HasTracking:   hasTracking,
 		HasOverride:   hasOverride,
+		IsExcluded:    isExcluded,
 		IsInline:      hasInline,
 		OverrideValue: trackingTag,
-		PathName:      yamlTags[0],
+		// The first tag is the field identifier
+		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
+		FieldTag: yamlTags[0],
 	}
 }
 

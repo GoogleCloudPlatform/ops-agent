@@ -129,35 +129,35 @@ func TestValidInlineStruct(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
-		Key:    []string{"0", "enabled"},
+		Key:    []string{"[0]", "enabled"},
 		Value:  "true",
 	})
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
-		Key:    []string{"0", "foo"},
+		Key:    []string{"[0]", "foo"},
 		Value:  "foo",
 	})
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
-		Key:    []string{"0", "bar"},
+		Key:    []string{"[0]", "bar"},
 		Value:  "baz",
 	})
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverGoo",
-		Key:    []string{"1", "enabled"},
+		Key:    []string{"[1]", "enabled"},
 		Value:  "true",
 	})
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverGoo",
-		Key:    []string{"1", "bar"},
+		Key:    []string{"[1]", "bar"},
 		Value:  "baz",
 	})
 	if !cmp.Equal(features, expected) {
@@ -178,7 +178,7 @@ func (m MetricsReceiverFooMap) Pipelines() []otel.Pipeline {
 }
 
 type MetricsReceiverInlineFooMap struct {
-	Foo map[string]string `yaml:"fooMap" tracking:""`
+	Foo map[string]string `yaml:"fooMap" tracking:"fooMapOverride"`
 }
 
 func TestValidInlineStructWithMapValue(t *testing.T) {
@@ -195,87 +195,9 @@ func TestValidInlineStructWithMapValue(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
-	features, err := confgenerator.ExtractFeatures(&uc)
-	if err != nil {
+	_, err := confgenerator.ExtractFeatures(&uc)
+	if !errors.Is(err, confgenerator.ErrMapAsField) {
 		t.Fatal(err)
-	}
-
-	expected := expectedFeatureBase
-	expected = append(expected, confgenerator.Feature{
-		Module: confgenerator.MetricsReceiverTypes.Subagent,
-		Kind:   "receivers",
-		Type:   "metricsReceiverFooMap",
-		Key:    []string{"0", "fooMap", "0"},
-		Value:  "goo",
-	})
-	expected = append(expected, confgenerator.Feature{
-		Module: confgenerator.MetricsReceiverTypes.Subagent,
-		Kind:   "receivers",
-		Type:   "metricsReceiverFooMap",
-		Key:    []string{"0", "fooMap", "1"},
-		Value:  "baz",
-	})
-	if !cmp.Equal(features, expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, features)
-	}
-}
-
-type MetricsReceiverFooMapStruct struct {
-	MetricsReceiverInlineFooMapStruct `yaml:",inline"`
-}
-
-func (m MetricsReceiverFooMapStruct) Type() string {
-	return "metricsReceiverFooMapStruct"
-}
-
-func (m MetricsReceiverFooMapStruct) Pipelines() []otel.Pipeline {
-	return nil
-}
-
-type MetricsReceiverInlineFooMapStruct struct {
-	Foo map[string]interface{} `yaml:"fooMap" tracking:""`
-}
-
-func TestValidInlineStructWithMapStructValue(t *testing.T) {
-	uc := emptyUc
-	receivers := make(map[string]confgenerator.MetricsReceiver)
-	receivers["metricsReceiverFoo"] = MetricsReceiverFooMapStruct{
-		MetricsReceiverInlineFooMapStruct{
-			Foo: map[string]interface{}{
-				"a": map[string]interface{}{
-					"bar": true,
-				},
-				"b": map[string]interface{}{
-					"bar": 1,
-				},
-			},
-		},
-	}
-	uc.Metrics = &confgenerator.Metrics{
-		Receivers: receivers,
-	}
-	features, err := confgenerator.ExtractFeatures(&uc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expected := expectedFeatureBase
-	expected = append(expected, confgenerator.Feature{
-		Module: confgenerator.MetricsReceiverTypes.Subagent,
-		Kind:   "receivers",
-		Type:   "metricsReceiverFooMap",
-		Key:    []string{"0", "fooMap", "0"},
-		Value:  "goo",
-	})
-	expected = append(expected, confgenerator.Feature{
-		Module: confgenerator.MetricsReceiverTypes.Subagent,
-		Kind:   "receivers",
-		Type:   "metricsReceiverFooMap",
-		Key:    []string{"0", "fooMap", "1"},
-		Value:  "baz",
-	})
-	if !cmp.Equal(features, expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, features)
 	}
 }
 
@@ -316,7 +238,7 @@ func TestValidInlineStructWithSliceValue(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverInlineFooSlice",
-		Key:    []string{"0", "foo"},
+		Key:    []string{"[0]", "foo"},
 		Value:  "[foo goo bar baz]",
 	})
 	if !cmp.Equal(features, expected) {
@@ -341,7 +263,7 @@ type MetricsReceiverInlineInvalid struct {
 	Foo string `yaml:"foo" tracking:"foo"`
 }
 
-func TestInValidInlineStruct(t *testing.T) {
+func TestInvalidInlineStruct(t *testing.T) {
 	uc := emptyUc
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["metricsReceiverInlineInvalid"] = MetricsReceiverInvalid{
@@ -359,7 +281,7 @@ func TestInValidInlineStruct(t *testing.T) {
 }
 
 type MetricsReceiverPrefix struct {
-	MetricsReceiverInnerPrefix `yaml:"metrics_receiver_prefix" tracking:"metrics_receiver_prefix"`
+	MetricsReceiverInnerPrefix `yaml:"metrics_receiver_prefix" tracking:"metrics_receiver_override"`
 }
 
 func (m MetricsReceiverPrefix) Type() string {
@@ -395,7 +317,14 @@ func TestStructPrefix(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverPrefix",
-		Key:    []string{"0", "metrics_receiver_prefix", "foo"},
+		Key:    []string{"[0]", "metrics_receiver_prefix"},
+		Value:  "metrics_receiver_override",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverPrefix",
+		Key:    []string{"[0]", "metrics_receiver_prefix", "foo"},
 		Value:  "foo",
 	})
 	if !cmp.Equal(features, expected) {
@@ -440,7 +369,7 @@ func TestOverride(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverOverride",
-		Key:    []string{"0", "foo"},
+		Key:    []string{"[0]", "foo"},
 		Value:  "goo",
 	})
 	if !cmp.Equal(features, expected) {
@@ -486,7 +415,7 @@ func TestPointer(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverPointer",
-		Key:    []string{"0", "foo"},
+		Key:    []string{"[0]", "foo"},
 		Value:  "true",
 	})
 	if !cmp.Equal(features, expected) {
