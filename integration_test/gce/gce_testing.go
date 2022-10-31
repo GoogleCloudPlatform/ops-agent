@@ -23,8 +23,8 @@ To run a test based on this library, you can either:
 in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
-a project whose firewall allows WinRM connections.
-[Kokoro can use stackdriver-test-143416, which does not allow WinRM
+a project whose firewall allows ssh connections.
+[Kokoro can use stackdriver-test-143416, which does not allow ssh
 connections, because our Kokoro workers are also running in that project.]
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
@@ -45,8 +45,6 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
-WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
-Windows VMs.
 
 The following variables are optional:
 
@@ -61,8 +59,10 @@ logs will be uploaded. If unset, this will point to
 ops-agents-public-buckets-test-logs, which should work for all tests
 triggered from GitHub.
 
-USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
-(if set to "true"), or external IP addresses (in all other cases).
+USE_INTERNAL_IP: If set to "true", pass --no-address to gcloud when creating
+VMs. This will not create an external IP address for that VM (because those are
+expensive), and instead the VM will use cloud NAT to get to the external
+internet. ssh-ing to the VM is done via its internal IP address.
 Only useful on Kokoro.
 
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
@@ -161,11 +161,6 @@ const (
 func init() {
 	ctx := context.Background()
 	var err error
-
-	if strings.Contains(os.Getenv("PLATFORMS"), "windows") && os.Getenv("WINRM_PAR_PATH") == "" {
-		log.Fatal("WINRM_PAR_PATH must be nonempty when testing Windows VMs")
-	}
-
 	storageClient, err = storage.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("storage.NewClient() failed: %v:", err)
@@ -256,13 +251,6 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	return logClient, nil
 }
 
-// WindowsCredentials is a low-security way to hold login credentials for
-// a Windows VM.
-type WindowsCredentials struct {
-	Username string
-	Password string
-}
-
 // VM represents an individual virtual machine.
 type VM struct {
 	Name        string
@@ -272,13 +260,11 @@ type VM struct {
 	Zone        string
 	MachineType string
 	ID          int64
-	// The IP address to ssh/WinRM to. This is the external IP address, unless
+	// The IP address to ssh to. This is the external IP address, unless
 	// USE_INTERNAL_IP is set to 'true'. See comment on extractIPAddress() for
 	// rationale.
-	IPAddress string
-	// WindowsCredentials is only populated for Windows VMs.
-	WindowsCredentials *WindowsCredentials
-	AlreadyDeleted     bool
+	IPAddress      string
+	AlreadyDeleted bool
 }
 
 // imageProject returns the image project providing the given image family.
@@ -346,12 +332,6 @@ var (
 // instead of the default gcloud installed on the system.
 func SetGcloudPath(path string) {
 	gcloudPath = path
-}
-
-// winRM() returns the path to the winrm.par binary to use to connect to
-// Windows VMs.
-func winRM() string {
-	return os.Getenv("WINRM_PAR_PATH")
 }
 
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
@@ -515,7 +495,9 @@ func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRege
 		}
 		logger.Printf("Found matching log entry: %v", entry)
 		found = true
-		first = entry
+		if first == nil {
+			first = entry
+		}
 	}
 	return found, first, nil
 }
@@ -576,12 +558,6 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
-	if !strings.HasSuffix(args[0], "winrm.par") {
-		// Print out the command we're running. Skip this for winrm.par commands
-		// because they are base64 encoded and the real command is already printed
-		// inside runRemotelyWindows() anyway.
-		logger.Printf("Running command: %v", args)
-	}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
@@ -627,29 +603,8 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 // Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+	logger.Printf("Running command: gcloud %v", args)
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
-}
-
-// runRemotelyWindows runs the provided powershell command on the provided Windows VM.
-// The command is base64 encoded in transit because that is an effective way to run
-// complex commands, such as commands with nested quoting.
-func runRemotelyWindows(ctx context.Context, logger *log.Logger, vm *VM, command string) (CommandOutput, error) {
-	logger.Printf("Running command %q", command)
-
-	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
-	encoded, err := uni.NewEncoder().String(command)
-	if err != nil {
-		return CommandOutput{}, err
-	}
-	return runCommand(ctx, logger, "",
-		[]string{winRM(),
-			"--host=" + vm.IPAddress,
-			"--username=" + vm.WindowsCredentials.Username,
-			"--password=" + vm.WindowsCredentials.Password,
-			fmt.Sprintf("--command=powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))),
-			"--stderrthreshold=fatal",
-			"--verbosity=-2",
-		})
 }
 
 var (
@@ -669,8 +624,21 @@ var (
 		// (even though UserKnownHostsFile is /dev/null).
 		// If you are debugging ssh problems, you'll probably want to remove this option.
 		"-oLogLevel=ERROR",
+		// Sometimes you can be prompted to auth with a password if OpenSSH isn't
+		// ready yet on Windows, which hangs the test. We only ever auth with keys so
+		// let's disable password auth.
+		"-oPreferredAuthentications=publickey",
 	}
 )
+
+func wrapPowershellCommand(command string) (string, error) {
+	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	encoded, err := uni.NewEncoder().String(command)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+}
 
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
@@ -679,22 +647,21 @@ var (
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-// on Windows.
+// TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	logger.Printf("Running command remotely: %v", command)
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("Command failed: %v\n%v", command, err)
 		}
 	}()
+	wrappedCommand := command
 	if IsWindows(vm.Platform) {
-		if stdin != "" {
-			// TODO(martijnvs): Support stdin on Windows, if we see a need for it.
-			return CommandOutput{}, errors.New("RunRemotely() does not support stdin when run on Windows")
+		wrappedCommand, err = wrapPowershellCommand(command)
+		if err != nil {
+			return CommandOutput{}, err
 		}
-		return runRemotelyWindows(ctx, logger, vm, command)
 	}
-
 	// Raw ssh is used instead of "gcloud compute ssh" with OS Login because:
 	// 1. OS Login will generate new ssh keys for each kokoro run and they don't carry over.
 	//    This means that they pile up and need to be deleted periodically.
@@ -704,7 +671,7 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, sshUserName+"@"+vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
-	args = append(args, command)
+	args = append(args, wrappedCommand)
 	return runCommand(ctx, logger, stdin, args)
 }
 
@@ -868,36 +835,39 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		metadataCopy[k] = v
 	}
 
+	if _, ok := metadataCopy["enable-oslogin"]; ok {
+		return nil, errors.New("the 'enable-oslogin' metadata key is reserved for framework use")
+	}
+	// We manage our own ssh keys, so we don't need OS Login. For a while, it
+	// worked to leave it enabled anyway, but one day that broke (b/181867249).
+	// Disabling OS Login fixed the issue.
+	metadataCopy["enable-oslogin"] = "false"
+
+	if _, ok := metadataCopy["ssh-keys"]; ok {
+		return nil, errors.New("the 'ssh-keys' metadata key is reserved for framework use")
+	}
+	publicKey, err := os.ReadFile(publicKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("could not read local public key file %v: %v", publicKeyFile, err)
+	}
+	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
+
 	if IsWindows(platform) {
-		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
-			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		// TODO(b/255311117): change back to sysprep-specialize-script-cmd
+		if _, ok := metadataCopy["windows-startup-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
-		metadataCopy["windows-startup-script-ps1"] = `
-$port = new-Object System.IO.Ports.SerialPort 'COM3'
-$port.Open()
-$port.WriteLine("STARTUP_SCRIPT_DONE")
-$port.Close()
-`
+		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
+		metadataCopy["windows-startup-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+
+		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
+			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
+		}
+		metadataCopy["enable-windows-ssh"] = "TRUE"
 	} else {
 		if _, ok := metadataCopy["startup-script"]; ok {
 			return nil, errors.New("the 'startup-script' metadata key is reserved for future use. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
-		if _, ok := metadataCopy["enable-oslogin"]; ok {
-			return nil, errors.New("the 'enable-oslogin' metadata key is reserved for framework use")
-		}
-		// We manage our own ssh keys, so we don't need OS Login. For a while, it
-		// worked to leave it enabled anyway, but one day that broke (b/181867249).
-		// Disabling OS Login fixed the issue.
-		metadataCopy["enable-oslogin"] = "false"
-
-		if _, ok := metadataCopy["ssh-keys"]; ok {
-			return nil, errors.New("the 'ssh-keys' metadata key is reserved for framework use")
-		}
-		publicKey, err := os.ReadFile(publicKeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("could not read local public key file %v: %v", publicKeyFile, err)
-		}
-		metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 	}
 	return metadataCopy, nil
 }
@@ -995,6 +965,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
+		// Don't assign an external IP address. This is to avoid using up
+		// a very limited budget of external IPv4 addresses. The instances
+		// will talk to the external internet by routing through a Cloud NAT
+		// gateway that is configured in our testing project.
+		args = append(args, "--no-address")
+	}
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
@@ -1089,8 +1066,6 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
-			// Windows instances sometimes fail to initialize WinRM: b/185923886.
-			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
 			(isSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
@@ -1330,6 +1305,12 @@ type instance struct {
 			NatIP string
 		}
 	}
+	Metadata struct {
+		Items []struct {
+			Key   string
+			Value string
+		}
+	}
 }
 
 // extractSingleInstances parses the input serialized JSON description of a
@@ -1393,74 +1374,35 @@ func extractID(stdout string) (int64, error) {
 	return strconv.ParseInt(instance.ID, 10, 64)
 }
 
-func resetAndFetchWindowsCredentials(ctx context.Context, logger *log.Logger, vm *VM) (*WindowsCredentials, error) {
-	output, err := RunGcloud(ctx, logger, "",
-		[]string{"compute", "reset-windows-password", vm.Name,
-			// The username can be anything; it just has to comply with the requirements here:
-			// https://docs.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netuseradd
-			"--user=windows_user",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			"--format=json",
-		})
+// FetchMetadata retrieves the instance metadata for the given VM.
+func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
+	output, err := RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json(metadata)",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to reset Windows password: %v", err)
+		return nil, fmt.Errorf("error fetching metadata for VM %v: %w", vm.Name, err)
 	}
-	var creds WindowsCredentials
-	if err := json.Unmarshal([]byte(output.Stdout), &creds); err != nil {
-		return nil, fmt.Errorf("could not parse JSON for %q: %v", output.Stdout, err)
+	var inst instance
+	if err := json.Unmarshal([]byte(output.Stdout), &inst); err != nil {
+		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
 	}
-	if creds.Username == "" || creds.Password == "" {
-		return nil, fmt.Errorf("username or password was empty when parsing %q. Parsed result: %#v", output.Stdout, creds)
+	metadata := make(map[string]string)
+	for _, item := range inst.Metadata.Items {
+		metadata[item.Key] = item.Value
 	}
-	return &creds, nil
+	return metadata, nil
 }
 
 const (
-	// Retry errors that look like b/185923886.
-	winRMDummyCommandMessage = "waitForStartWindows() failed: dummy command could not run over WinRM"
-
 	// Retry errors that look like b/186426190.
 	startupFailedMessage = "waitForStartLinux() failed: waiting for startup timed out"
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
-	lookForReadyMessages := func() error {
-		output, err := RunGcloud(ctx, logger, "", []string{
-			"compute", "instances", "get-serial-port-output",
-			"--port=3",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			vm.Name})
-		if err != nil {
-			return fmt.Errorf("error getting COM3 serial port output: %v", err)
-		}
-		if strings.Contains(output.Stdout, "STARTUP_SCRIPT_DONE") {
-			// Success.
-			return nil
-		}
-		return fmt.Errorf("STARTUP_SCRIPT_DONE not found in serial port output: %v", output)
-	}
-	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
-	if err := backoff.Retry(lookForReadyMessages, backoffPolicy); err != nil {
-		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
-	}
-
-	resetCredentials := func() error {
-		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
-		if err != nil {
-			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
-		}
-		vm.WindowsCredentials = creds
-		return nil
-	}
-
-	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
-	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
-		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
-	}
-
-	// Now, make sure the server is really ready to run remote commands by
+	// Make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
 	attempt := 0
 	printFoo := func() error {
@@ -1471,11 +1413,9 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return err
 	}
 
-	gracePeriod := 3 * time.Minute // I'm not sure what's a good value here.
-	maxAttempts := uint64(gracePeriod / vmInitBackoffDuration)
-	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(vmInitBackoffDuration), maxAttempts), ctx)
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("%v, even after %v of attempts. err=%v", winRMDummyCommandMessage, gracePeriod, err)
+		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
 	}
 	return nil
 }
