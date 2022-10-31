@@ -53,36 +53,22 @@ sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 
-CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
-
-# Create a driver so that we can use the --cache-{from,to} flags below.
-# https://docs.docker.com/build/building/drivers/
-sudo docker buildx create \
-  --name container-driver \
-  --driver=docker-container
+CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:experimental-${DISTRO}"
 
 # Set up some command line flags for "docker buildx build".
 # --load is necessary because of:
 # https://docs.docker.com/build/building/drivers/docker-container/#loading-to-local-image-store
 BUILD_ARGS=(
-  --builder=container-driver
   --cache-from="${CACHE_LOCATION}"
-  --load
+  --build-arg BUILDKIT_INLINE_CACHE=1
   --target "${DISTRO}-build"
   -t build_image
 )
 
-# Tell our continuous build to populate the cache. Our other builds do not
-# write to any kind of cache, for example a per-PR cache, because the
-# --cache-to step takes a few minutes and adds little value over just using
-# the continuous build's cache.
-# mode=max is described here:
-# https://docs.docker.com/build/building/cache/backends/#cache-mode
-if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
-  BUILD_ARGS+=( --cache-to="type=registry,ref=${CACHE_LOCATION},mode=max" )
-fi
+sudo DOCKER_BUILDKIT=1 docker build . "${BUILD_ARGS[@]}"
 
-sudo DOCKER_BUILDKIT=1 docker buildx build . "${BUILD_ARGS[@]}"
+sudo docker image tag build_image "${CACHE_LOCATION}"
+sudo docker push "${CACHE_LOCATION}"
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
@@ -102,3 +88,5 @@ sudo docker run \
       bash /signing/sign.sh /artifacts/*.rpm
     fi
 EOF
+
+docker push 
