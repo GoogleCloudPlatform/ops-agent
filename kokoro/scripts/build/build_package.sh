@@ -78,7 +78,7 @@ BUILD_ARGS=(
 # the continuous build's cache.
 # mode=max is described here:
 # https://docs.docker.com/build/building/cache/backends/#cache-mode
-if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS" ]]; then
+if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
   BUILD_ARGS+=( --cache-to="type=registry,ref=${CACHE_LOCATION},mode=max" )
 fi
 
