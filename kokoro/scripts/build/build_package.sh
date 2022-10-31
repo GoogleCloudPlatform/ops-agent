@@ -60,12 +60,6 @@ sudo DOCKER_BUILDKIT=1 docker build . \
   --target "${DISTRO}-build" \
   -t build_image
 
-
-# DO NOT MERGE THIS PART
-sudo docker image tag build_image "${CACHE_LOCATION}"
-sudo docker push "${CACHE_LOCATION}"
-
-
 # Tell our continuous build to update the cache. Our other builds do not
 # write to any kind of cache, for example a per-PR cache, because the
 # push takes a few minutes and adds little value over just using the continuous
