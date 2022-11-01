@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-asdf
+exit 1
 
 # cd to the root of the git repo containing this script.
 cd "$(readlink -f "$(dirname "$0")")"
@@ -25,6 +25,8 @@ source "kokoro/scripts/utils/common.sh"
 set -e
 set -x
 set -o pipefail
+
+asdf
 
 RESULT_DIR=${RESULT_DIR:-"${KOKORO_ARTIFACTS_DIR}/result"}
 export RESULT_DIR
