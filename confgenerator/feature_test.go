@@ -425,13 +425,12 @@ func TestPointer(t *testing.T) {
 
 func TestOverrideDefaultPipeline(t *testing.T) {
 	uc := emptyUc
-	pipelines := &confgenerator.MetricsPipeline{
-		ReceiverIDs: []string{"foo", "goo", "bar"},
-	}
 	uc.Metrics = &confgenerator.Metrics{
 		Service: &confgenerator.MetricsService{
-			Pipelines: map[string]*confgenerator.MetricsPipeline{
-				"default_pipeline": pipelines,
+			Pipelines: map[string]*confgenerator.Pipeline{
+				"default_pipeline": {
+					ReceiverIDs: []string{"foo", "goo", "bar"},
+				},
 			},
 		},
 	}
