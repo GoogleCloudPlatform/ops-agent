@@ -99,11 +99,13 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/storage"
+	trace "cloud.google.com/go/trace/apiv1"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
+	"google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -114,8 +116,9 @@ var (
 	storageClient   *storage.Client
 	transfersBucket string
 
-	monClient  *monitoring.MetricClient
-	logClients *logClientFactory
+	monClient   *monitoring.MetricClient
+	logClients  *logClientFactory
+	traceClient *trace.Client
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -180,6 +183,11 @@ func init() {
 	logClients = &logClientFactory{
 		clients: make(map[string]*logadmin.Client),
 	}
+	traceClient, err = trace.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
 	// Some useful options to pass to gcloud.
 	os.Setenv("CLOUDSDK_PYTHON", "/usr/bin/python3")
 	os.Setenv("CLOUDSDK_CORE_DISABLE_PROMPTS", "1")
@@ -388,6 +396,21 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
+// lookupTrace does a single lookup of any trace from the given VM in the backend.
+func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+	now := time.Now()
+	start := timestamppb.New(now.Add(-window))
+	end := timestamppb.New(now)
+	filter := fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID)
+	req := &cloudtrace.ListTracesRequest{
+		ProjectId: vm.Project,
+		Filter:    filter,
+		StartTime: start,
+		EndTime:   end,
+	}
+	return traceClient.ListTraces(ctx, req)
+}
+
 // nonEmptySeries evaluates the given iterator, returning its first non-empty
 // time series. An error is returned if the evaluation fails.
 // A return value of (nil, nil) indicates that the evaluation succeeded
@@ -413,6 +436,16 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 	}
 }
 
+// firstTrace evaluates the given iterator, returning its first trace,
+// or nil if the iterator is empty.
+func firstTrace(it *trace.TraceIterator) *cloudtrace.Trace {
+	trace, err := it.Next()
+	if err == iterator.Done {
+		return nil
+	}
+	return trace
+}
+
 // WaitForMetric looks for the given metric in the backend and returns it if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
@@ -436,6 +469,28 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 		time.Sleep(queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// WaitForTrace looks for any trace from the given VM in the backend and returns
+// it if it exists. An error is returned otherwise. This function will retry
+// "no data" errors a fixed number of times. This is useful because it takes
+// time for trace data to become visible after it has been uploaded.
+//
+// Only the ProjectId and TraceId fields are populated. To get other fields,
+// including spans, call traceClient.GetTrace with the TraceID returned from
+// this function.
+func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, logger, vm, window)
+		trace := firstTrace(it)
+		if trace != nil {
+			return trace, nil
+		}
+		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
+			attempt, QueryMaxAttempts)
+		time.Sleep(queryBackoffDuration)
+	}
+	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
 
 // IsExhaustedRetriesMetricError returns true if the given error is an
