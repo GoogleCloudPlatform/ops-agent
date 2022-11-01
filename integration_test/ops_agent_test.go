@@ -80,7 +80,22 @@ func configPathForPlatform(platform string) string {
 
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
+		return `
+Restart-Service google-cloud-ops-agent -Force
+# TODO(b/240564518): remove process-killing once bug is fixed
+if (!$?) {
+	Write-Output 'Could not restart services gracefully. Killing processes directly...'
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
+	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
+	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
+		Stop-Process -Force $_.ProcessId -ErrorAction SilentlyContinue
+		if (!$?) {
+			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
+		}
+	}
+	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Automatic
+	Start-Service -Name 'google-cloud-ops-agent'
+}`
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
@@ -109,6 +124,13 @@ func metricsAgentProcessNamesForPlatform(platform string) []string {
 		return []string{"google-cloud-metrics-agent_windows_amd64"}
 	}
 	return []string{"otelopscol", "collectd"}
+}
+
+func diagnosticsProcessNamesForPlatform(platform string) []string {
+	if gce.IsWindows(platform) {
+		return []string{"google-cloud-ops-agent-diagnostics"}
+	}
+	return []string{"google_cloud_ops_agent_diagnostics"}
 }
 
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
@@ -208,6 +230,17 @@ func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
 }
 
+// restartOpsAgent restarts the Ops Agent and waits for it to become available.
+func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+	}
+	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
+	// is 5 seconds, so we should probably give it at least that long.
+	time.Sleep(10 * time.Second)
+	return nil
+}
+
 // setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
@@ -224,12 +257,9 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgent() failed to restart ops agent: %v", err)
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+			return err
 		}
-		// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-		// is 5 seconds, so we should probably give it at least that long.
-		time.Sleep(10 * time.Second)
 	}
 	// Give agents time to start up.
 	time.Sleep(startupDelay)
@@ -1831,7 +1861,15 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
 	} else {
-		cmd = "sudo pgrep " + processName
+		// pgrep has a limit of 15 characters to lookup processes
+		// using -f uses the full command line for lookup
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
+		// https://linux.die.net/man/1/pgrep
+		if len(processName) > 15 {
+			cmd = "sudo pgrep -f " + "[" + processName[:1] + "]" + processName[1:]
+		} else {
+			cmd = "sudo pgrep " + processName
+		}
 	}
 	output, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
@@ -1859,7 +1897,15 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	if gce.IsWindows(vm.Platform) {
 		cmd = fmt.Sprintf("Stop-Process -Name '%s' -PassThru -Force", processName)
 	} else {
-		cmd = "sudo pkill -SIGABRT " + processName
+		// pkill has a limit of 15 characters to lookup processes
+		// using -f uses the full command line for lookup
+		// using the pattern "[p]rocessName" avoids matching the ssh remote shell
+		// https://linux.die.net/man/1/pkill
+		if len(processName) > 15 {
+			cmd = "sudo pkill -SIGABRT -f " + "[" + processName[:1] + "]" + processName[1:]
+		} else {
+			cmd = "sudo pkill -SIGABRT " + processName
+		}
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
@@ -1936,6 +1982,25 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+	})
+}
+
+func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	time.Sleep(3 * time.Minute)
+	// Query for a metric sent by the diagnostics service from the last
+	// minute. Sleep for 3 minutes first to make sure we aren't picking
+	// up metrics from a previous instance of the diagnostics service.
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil)
+	return err
+}
+
+func TestDiagnosticsCrashRestart(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
 	})
 }
 
