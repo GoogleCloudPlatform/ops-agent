@@ -16,7 +16,7 @@ package set
 
 type Set[T comparable] map[T]struct{}
 
-func SliceToSet[T comparable](sl []T) Set[T] {
+func FromSlice[T comparable](sl []T) Set[T] {
 	s := Set[T]{}
 	for _, v := range sl {
 		s.Add(v)
@@ -24,7 +24,7 @@ func SliceToSet[T comparable](sl []T) Set[T] {
 	return s
 }
 
-func MapToSet[K comparable, V any](m map[K]V) Set[K] {
+func FromMapKeys[K comparable, V any](m map[K]V) Set[K] {
 	s := Set[K]{}
 	for k := range m {
 		s.Add(k)

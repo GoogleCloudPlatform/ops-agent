@@ -814,7 +814,7 @@ func sortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
 }
 
 func validateComponentKeys[V any](components map[string]V, refs []string, subagent string, kind string, pipeline string) error {
-	componentSet := set.MapToSet(components)
+	componentSet := set.FromMapKeys(components)
 	for _, componentRef := range refs {
 		if !componentSet.Contains(componentRef) {
 			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)

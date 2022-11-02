@@ -13,7 +13,7 @@ func TestSliceToSet(t *testing.T) {
 		1,
 		2,
 	}
-	testSet := set.SliceToSet(testSlice)
+	testSet := set.FromSlice(testSlice)
 	assert.Equal(t, len(testSet), len(testSlice))
 	for _, v := range testSlice {
 		assert.Assert(
@@ -31,7 +31,7 @@ func TestMapToSet(t *testing.T) {
 		"key2": "",
 		"key3": "",
 	}
-	testSet := set.MapToSet(testMap)
+	testSet := set.FromMapKeys(testMap)
 	assert.Equal(t, len(testSet), len(testMap))
 	for k := range testMap {
 		assert.Assert(
@@ -57,6 +57,7 @@ func TestRemove(t *testing.T) {
 		key: struct{}{},
 	}
 	testSet.Remove(key)
+	assert.Assert(t, !testSet.Contains(key))
 	assert.Equal(t, len(testSet), 0)
 }
 

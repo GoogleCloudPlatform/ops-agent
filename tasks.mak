@@ -61,9 +61,6 @@ test_confgenerator_update:
 test_metadata_update:
 	go test ./integration_test/metadata -update
 
-test_set:
-	go test ./internal/set
-
 ############
 # Integration Tests
 ############
