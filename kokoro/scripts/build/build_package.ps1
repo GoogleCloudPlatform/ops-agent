@@ -49,9 +49,15 @@ PACKAGE_VERSION,$env:PKG_VERSION
 Invoke-Program git submodule update --init
 $artifact_registry="us-docker.pkg.dev"
 Invoke-Program gcloud version
-Invoke-Program gcloud components update
+& gcloud components update
 Invoke-Program gcloud version
-Invoke-Program gcloud auth 'configure-docker' 'us-docker.pkg.dev'
+& gcloud auth 'configure-docker' 'us-docker.pkg.dev'
+
+if ( $LastExitCode -ne 0 ) {
+  throw "gcloud failed"
+}
+
+Asdf
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows"
 Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
