@@ -49,6 +49,8 @@ PACKAGE_VERSION,$env:PKG_VERSION
 Invoke-Program git submodule update --init
 $artifact_registry="us-docker.pkg.dev"
 Invoke-Program gcloud version
+Invoke-Program gcloud components update
+Invoke-Program gcloud version
 Invoke-Program gcloud auth 'configure-docker' 'us-docker.pkg.dev'
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows"
