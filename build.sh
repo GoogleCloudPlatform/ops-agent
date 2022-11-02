@@ -60,7 +60,7 @@ function build_otel() {
   cd ../opentelemetry-operations-collector
   # Using array assignment to drop the filename from the sha256sum output
   JAR_SHA_256=($(sha256sum "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar"))
-  go build -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
+  go build -buildvcs=false -o "$DESTDIR$subagentdir/opentelemetry-collector/otelopscol" \
     -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
     ./cmd/otelopscol
 }
@@ -87,14 +87,14 @@ function build_fluentbit() {
 
 function build_opsagentengine() {
   mkdir -p "$DESTDIR$prefix/libexec"
-  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" \
+  go build -buildvcs=false -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_engine" \
     -ldflags "$LD_FLAGS" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_engine
 }
 
 function build_opsagentdiagnostics() {
   mkdir -p "$DESTDIR$prefix/libexec"
-  go build -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_diagnostics" \
+  go build -buildvcs=false -o "$DESTDIR$prefix/libexec/google_cloud_ops_agent_diagnostics" \
     github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics
 }
 

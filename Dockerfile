@@ -219,11 +219,11 @@ COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
-FROM opensuse/leap:15.1 AS sles15-build
+FROM opensuse/leap:15.3 AS sles15-build
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip && \
-    # Add home:ptrommler:formal repo to install >3.4 bison
-    zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
+    # Add home:d4vid:co22 repo to install >3.4 bison
+    zypper addrepo https://download.opensuse.org/repositories/home:/d4vid:/co22/15.3/home:d4vid:co22.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     zypper -n install bison>3.4 && \

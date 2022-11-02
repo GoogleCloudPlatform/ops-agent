@@ -228,7 +228,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	expectedField, ok := expectedFields[fieldName]
 	if !ok {
 		// Not expecting this field. It could however be populated with some default zero-values when we
-		// query it back. Check for zero values basued on expectedField.type? Not ideal for sure.
+		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
 			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
 		}
@@ -666,12 +666,18 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 }
 
 func modifiedFiles(t *testing.T) []string {
-	cmd := exec.Command("git", "diff", "--name-only", "origin/master")
+	// This command gets the files that have changed since the current branch
+	// diverged from official master. See https://stackoverflow.com/a/65166745.
+	cmd := exec.Command("git", "diff", "--name-only", "origin/master...")
 	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("got error calling `git diff`: %v", err)
-	}
 	stdout := string(out)
+	if err != nil {
+		stderr := ""
+        	if exitError := err.(*exec.ExitError); exitError != nil {
+			stderr = string(exitError.Stderr)
+		}
+		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
+	}
 	log.Printf("git diff output:\n\tstdout:%v", stdout)
 
 	return strings.Split(stdout, "\n")
@@ -686,6 +692,18 @@ func modifiedFiles(t *testing.T) []string {
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
+	defer log.Printf("impacted apps: %v", impactedApps)
+
+	for _, f := range mf {
+		// File names: submodules/fluent-bit
+		if strings.HasPrefix(f, "submodules/") {
+			for app, _ := range allApps {
+				impactedApps[app] = true
+			}
+			return impactedApps
+		}
+	}
+
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
 
@@ -706,7 +724,6 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 
 		}
 	}
-	log.Printf("impacted apps: %v", impactedApps)
 	return impactedApps
 }
 
