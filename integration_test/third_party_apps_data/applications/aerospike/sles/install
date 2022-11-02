@@ -16,6 +16,6 @@ sudo ./bin/aerospike start
 
 cd -
 
-wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.0.5/aerospike-tools-7.0.5-el8.tgz"
+wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.1.1/aerospike-tools-7.1.1-el8.tgz"
 tar -xzf aerospike-tools.tgz
-(cd aerospike-tools-7.0.5-el8 && sudo ./asinstall)
+(cd aerospike-tools-7.1.1-el8 && sudo ./asinstall)
