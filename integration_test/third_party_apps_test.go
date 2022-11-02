@@ -667,13 +667,17 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 
 func modifiedFiles(t *testing.T) []string {
 	// This command gets the files that have changed since the current branch
-	// diverged from master. See https://stackoverflow.com/a/65166745.
-	cmd := exec.Command("git", "diff", "--name-only", "master...")
+	// diverged from official master. See https://stackoverflow.com/a/65166745.
+	cmd := exec.Command("git", "diff", "--name-only", "origin/master...")
 	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("got error calling `git diff`: %v", err)
-	}
 	stdout := string(out)
+	if err != nil {
+		stderr := ""
+        	if exitError := err.(*exec.ExitError); exitError != nil {
+			stderr = string(exitError.Stderr)
+		}
+		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
+	}
 	log.Printf("git diff output:\n\tstdout:%v", stdout)
 
 	return strings.Split(stdout, "\n")
