@@ -3,7 +3,7 @@ set -e
 # aerospike-init requires `python` in $PATH
 sudo ln -s /usr/bin/python3 /usr/bin/python
 
-curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/5.7.0.17/aerospike-server-community-5.7.0.17.tar.gz
+curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/6.1.0.1/aerospike-server-community-6.1.0.1.tar.gz
 tar -xzf aerospike.tar.gz
 cd aerospike-server
 ./bin/aerospike init
