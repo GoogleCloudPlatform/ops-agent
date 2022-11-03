@@ -299,30 +299,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		},
-	},
-		{
-			Receiver: otel.Component{
-				Type: "nvml",
-				Config: map[string]interface{}{
-					"collection_interval": r.CollectionIntervalString(),
-				},
-			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.RenameMetric(
-						"nvml.gpu.utilization",
-						"gpu/utilization",
-					),
-					otel.RenameMetric(
-						"nvml.gpu.memory.bytes_used",
-						"gpu/memory/bytes_used",
-					),
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-			},
-		},
-	}
+	}}
 }
 
 func init() {
