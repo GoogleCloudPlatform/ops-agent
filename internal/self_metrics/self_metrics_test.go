@@ -26,7 +26,7 @@ var (
 	platforms               = []string{"linux", "windows"}
 	defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
 		"linux": self_metrics.EnabledReceivers{
-			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "nvml": 1},
 			LogsReceiverCountsByType:    map[string]int{"files": 1},
 		},
 		"windows": self_metrics.EnabledReceivers{
