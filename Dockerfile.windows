@@ -99,8 +99,6 @@ RUN go install github.com/google/googet/v2/goopack@latest;
 # Build fluent-bit
 ###############################################################################
 
-FROM base as fluentbit
-
 COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
@@ -116,8 +114,6 @@ RUN cmake --build . --config Release; `
 ###############################################################################
 # Build Go code in one container to exploit Go build caching
 ###############################################################################
-
-FROM base as gobuilder
 
 ###############################################################################
 # Build JMX Project here so it can be hashed for
@@ -178,13 +174,8 @@ RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_op
 # Packaging
 ###############################################################################
 
-FROM base as packaging
-
 WORKDIR /work
 
 COPY . /work
-
-COPY --from=fluentbit /work/out /work/out
-COPY --from=gobuilder /work/out /work/out
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
