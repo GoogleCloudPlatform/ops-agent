@@ -1,2 +1,7 @@
 include:
 - integration_test/**/*.yaml
+
+formatter:
+  type: basic
+  retain_line_breaks: true
+  emoji_support: true

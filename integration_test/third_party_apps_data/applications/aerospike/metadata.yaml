@@ -21,7 +21,13 @@ description: |-
   and connections. The integration collects these metrics using the official
   client API provided by Aerospike.
 supported_app_version: ["4.9", "5.x", "6.x"]
-configure_integration: ""
+configure_integration: |-
+  Aerospike logs are automatically ingested on systems where Aerospike runs as
+  a `systemd` service. On other systems such as SLES, you can manually
+  configure a
+  [`files`](/stackdriver/docs/solutions/agents/ops-agent/configuration#logging-receivers)
+  receiver which points to Aerospike's log file, which is usually located at
+  `$HOME/aerospike-server/var/log/aerospike.log`.
 expected_metrics:
   - kind: CUMULATIVE
     labels:
@@ -86,14 +92,13 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.memory.free
     value_type: INT64
-# TODO (b/239240173#comment5): Re-enable once we get SLES 15 logs to go to syslog instead of a local file during tests.
-# expected_logs:
-#   - log_name: syslog
-#     fields:
-#       - name: jsonPayload.message
-#         value_regex: ' asd(\[[0-9]+\])*:'
-#         type: string
-#         description: Aerospike application logs written to Journald.
+expected_logs:
+  - log_name: syslog
+    fields:
+      - name: jsonPayload.message
+        value_regex: ' asd(\[[0-9]+\])*:'
+        type: string
+        description: Aerospike application logs written to Journald.
 configuration_options:
   metrics:
     - type: aerospike
