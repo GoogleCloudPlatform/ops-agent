@@ -44,7 +44,7 @@ When the setup steps are complete, you can run ops_agent_test from the
 [Makefile](tasks.mak):
 
 ```
-make integration_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
+make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
@@ -208,7 +208,7 @@ The make target `third_party_apps_test` similarly requires `PROJECT` and
 `TRANSFERS_BUCKET` to be specified in the environment or the command.
 
 ```
-make third_party_apps_test
+make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
