@@ -57,6 +57,10 @@ Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
+# Tell our continuous build to update the cache. Our other builds do not
+# write to any kind of cache, for example a per-PR cache, because the
+# push takes a few minutes and adds little value over just using the continuous
+# build's cache.
 if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
   Invoke-Program docker image tag $tag $cache_location
   Invoke-Program docker push $cache_location
