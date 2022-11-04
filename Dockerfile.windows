@@ -112,10 +112,6 @@ RUN cmake --build . --config Release; `
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
 ###############################################################################
-# Build Go code in one container to exploit Go build caching
-###############################################################################
-
-###############################################################################
 # Build JMX Project here so it can be hashed for
 # a required build flag to support jmx receiver in operations-collector
 ###############################################################################
