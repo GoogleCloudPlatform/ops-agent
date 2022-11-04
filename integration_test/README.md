@@ -44,7 +44,7 @@ When the setup steps are complete, you can run ops_agent_test from the
 [Makefile](tasks.mak):
 
 ```
-make integration_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
+make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
@@ -77,6 +77,19 @@ Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release 
 This test attempts to verify, for each application in `supported_applications.txt`,
 that the application can be installed on a real GCE VM and that a single
 representative metric is successfully uploaded to Google Cloud Monitoring.
+
+### Testing Command
+
+The make target `third_party_apps_test` similarly requires `PROJECT` and
+`TRANSFERS_BUCKET` to be specified in the environment or the command.
+
+```
+make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
+```
+
+As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
+
+### Testing Flow
 
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
@@ -201,17 +214,6 @@ go run ./cmd/generate_expected_metrics
 ```
 
 Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
-
-### Testing Command
-
-The make target `third_party_apps_test` similarly requires `PROJECT` and
-`TRANSFERS_BUCKET` to be specified in the environment or the command.
-
-```
-make third_party_apps_test
-```
-
-As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
 # Test Logs
 
