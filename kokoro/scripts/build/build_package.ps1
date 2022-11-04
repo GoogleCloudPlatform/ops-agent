@@ -7,10 +7,11 @@ $global:ProgressPreference = 'SilentlyContinue'
 # nonzero exit code.
 #   Example: Invoke-Program git submodule update --init
 function Invoke-Program() {
-  Start-Process -Wait -NoNewWindow -FilePath $Args[0] -ArgumentList $Args[1..$Args.Length]
+  $outpluserr = cmd /c $Args 2`>`&1
   if ( $LastExitCode -ne 0 ) {
-    throw "failed: $Args"
+      throw "failed: $Args"
   }
+  return $outpluserr
 }
 
 $tag = 'build'
