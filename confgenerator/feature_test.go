@@ -532,3 +532,91 @@ func appendFieldName(parent []string, fieldName string) []string {
 	}
 	return p
 }
+
+type Example struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+	A                             Nested `yaml:"a" tracking:"nestedOverride"`
+	B                             Nested `yaml:"b"`
+}
+
+type Nested struct {
+	Str string `yaml:"str" tracking:""`
+	In  int    `yaml:"int"`
+}
+
+func (m Example) Type() string {
+	return "example"
+}
+
+func (m Example) Pipelines() []otel.Pipeline {
+	return nil
+}
+
+func TestNestedStructs(t *testing.T) {
+	uc := emptyUc
+	receivers := make(map[string]confgenerator.MetricsReceiver)
+	receivers["example"] = Example{
+		ConfigComponent: confgenerator.ConfigComponent{Type: "Example"},
+		A: Nested{
+			In:  32,
+			Str: "foo",
+		},
+		B: Nested{
+			In:  64,
+			Str: "goo",
+		},
+	}
+	uc.Metrics = &confgenerator.Metrics{
+		Receivers: receivers,
+	}
+	features, err := confgenerator.ExtractFeatures(&uc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := expectedFeatureBase
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "enabled"},
+		Value:  "true",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "a"},
+		Value:  "nestedOverride",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "a", "str"},
+		Value:  "foo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "a", "int"},
+		Value:  "32",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "b", "str"},
+		Value:  "goo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "example",
+		Key:    []string{"[0]", "b", "int"},
+		Value:  "64",
+	})
+	if !cmp.Equal(features, expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, features)
+	}
+}

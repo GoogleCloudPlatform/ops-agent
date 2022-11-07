@@ -35,12 +35,61 @@ type Feature struct {
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
-	f, err := trackingFeatures(reflect.ValueOf(uc), metadata{}, Feature{})
-	if err != nil {
-		return nil, err
+
+	var err error
+	var tempTrackedFeatures []Feature
+	if uc.HasMetrics() {
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "receivers", uc.Metrics.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "processors", uc.Metrics.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
-	allFeatures = append(allFeatures, f...)
+
+	if uc.HasLogging() {
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "receivers", uc.Logging.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", uc.Logging.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
 	return allFeatures, nil
+}
+
+func trackedMappedComponents[C Component](module string, kind string, m map[string]C) ([]Feature, error) {
+	if m == nil {
+		return nil, nil
+	}
+	var features []Feature
+	index := 0
+	for _, c := range m {
+		feature := Feature{
+			Module: module,
+			Kind:   kind,
+			Type:   c.Type(),
+			Key:    []string{fmt.Sprintf("[%d]", index)},
+		}
+		index++
+		trackedFeatures, err := trackingFeatures(reflect.ValueOf(c), metadata{}, feature)
+		if err != nil {
+			return nil, err
+		}
+		features = append(features, trackedFeatures...)
+	}
+
+	return features, nil
 }
 
 func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
@@ -62,32 +111,27 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
-		// If struct is inline there is no associated name for key generation
-		// By default inline structs of a tracked field are also tracked
-		if m.IsInline && m.HasTracking {
-			return nil, ErrTrackingInlineStruct
-		}
-
 		// If struct has tracking it must have a value
 		if m.HasTracking && !m.HasOverride {
 			return nil, ErrTrackingOverrideStruct
 		}
 
-		// Path for execution is coupled with the UnifiedConfig structure, feature
-		// gets populated as we iterate through each level of the struct
-		if feature.Module == "" {
-			feature.Module = m.FieldTag
-		} else if feature.Kind == "" {
-			feature.Kind = m.FieldTag
-		} else if !m.IsInline {
-			feature.Key = append(feature.Key, m.FieldTag)
+		if m.YamlTag != "" {
+			feature.Key = append(feature.Key, m.YamlTag)
 		}
 
-		// For structs that in a Component
-		if m.HasTracking && feature.Module != "" && feature.Kind != "" && feature.Type != "" && feature.Key != nil {
-			ftr := feature
-			ftr.Value = m.OverrideValue
-			features = append(features, ftr)
+		if m.HasTracking {
+			// If struct is inline there is no associated name for key generation
+			// By default inline structs of a tracked field are also tracked
+			if m.IsInline {
+				return nil, ErrTrackingInlineStruct
+			} else {
+				// For structs that are in a Component. An extra metric is added with
+				// the value being the override value from the yaml tag
+				ftr := feature
+				ftr.Value = m.OverrideValue
+				features = append(features, ftr)
+			}
 		}
 
 		// Iterate over all available fields and read the tag value
@@ -110,49 +154,17 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			features = append(features, tf...)
 		}
 	case kind == reflect.Map:
-		if m.HasTracking && !m.HasOverride {
-			return nil, ErrTrackingOverrideMap
-		}
-
-		keys := feature.Key
-
-		if m.HasTracking {
-			ftr := feature
-			ftr.Key = append(ftr.Key, m.FieldTag)
-			ftr.Value = m.OverrideValue
-			features = append(features, ftr)
-		}
 
 		// Maps as a field are not supported yet
 		if feature.Type != "" {
 			return nil, ErrMapAsField
 		}
 
-		// Iterate over all values from map. Keys of map are replaced with an index.
-		// If the map is a Receiver or Processor its values will all be Components.
-		for i, key := range v.MapKeys() {
-			obj := v.MapIndex(key)
-			md := m
-			ftr := feature
-
-			comp, ok := obj.Interface().(Component)
-			if !ok {
-				return nil, ErrInvalidType
-			}
-			ftr.Type = comp.Type()
-			ftr.Key = append(keys, fmt.Sprintf("[%d]", i))
-
-			f, err := trackingFeatures(reflect.ValueOf(obj.Interface()), md, ftr)
-			if err != nil {
-				return nil, err
-			}
-			features = append(features, f...)
-		}
 	default:
 		if skipField(v, m) {
 			return nil, nil
 		}
-		feature.Key = append(feature.Key, m.FieldTag)
+		feature.Key = append(feature.Key, m.YamlTag)
 		if m.HasOverride {
 			feature.Value = m.OverrideValue
 		} else {
@@ -180,12 +192,13 @@ func skipField(value reflect.Value, m metadata) bool {
 }
 
 type metadata struct {
-	IsExcluded    bool
-	IsInline      bool
-	HasTracking   bool
-	HasOverride   bool
-	FieldTag      string
-	OverrideValue string
+	IsExcluded     bool
+	IsInline       bool
+	HasTracking    bool
+	HasOverride    bool
+	YamlTag        string
+	OverrideValue  string
+	ComponentIndex int
 }
 
 func getMetadata(field reflect.StructField) metadata {
@@ -196,7 +209,10 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 	isExcluded := trackingTag == "-"
 
-	yamlTag, _ := field.Tag.Lookup("yaml")
+	yamlTag, ok := field.Tag.Lookup("yaml")
+	if !ok {
+		panic("field must have a yaml tag")
+	}
 	hasInline := false
 	yamlTags := strings.Split(yamlTag, ",")
 	for _, tag := range yamlTags {
@@ -213,7 +229,7 @@ func getMetadata(field reflect.StructField) metadata {
 		OverrideValue: trackingTag,
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
-		FieldTag: yamlTags[0],
+		YamlTag: yamlTags[0],
 	}
 }
 

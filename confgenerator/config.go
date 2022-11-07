@@ -366,8 +366,8 @@ type Logging struct {
 	Receivers  loggingReceiverMap  `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	Processors loggingProcessorMap `yaml:"processors,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 	// Exporters are deprecated and ignored, so do not have any validation.
-	Exporters map[string]interface{} `yaml:"exporters,omitempty" tracking:"-"`
-	Service   *LoggingService        `yaml:"service" tracking:"-"`
+	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
+	Service   *LoggingService        `yaml:"service"`
 }
 
 type LoggingReceiver interface {
@@ -461,8 +461,8 @@ type Metrics struct {
 	Receivers  metricsReceiverMap  `yaml:"receivers" validate:"dive,keys,startsnotwith=lib:"`
 	Processors metricsProcessorMap `yaml:"processors" validate:"dive,keys,startsnotwith=lib:"`
 	// Exporters are deprecated and ignored, so do not have any validation.
-	Exporters map[string]interface{} `yaml:"exporters,omitempty" tracking:"-"`
-	Service   *MetricsService        `yaml:"service" tracking:"-"`
+	Exporters map[string]interface{} `yaml:"exporters,omitempty"`
+	Service   *MetricsService        `yaml:"service"`
 }
 
 type MetricsReceiver interface {
