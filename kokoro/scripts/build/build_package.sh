@@ -21,6 +21,9 @@ cd "$(git rev-parse --show-toplevel)"
 # Source the common scripts.
 source "kokoro/scripts/utils/common.sh"
 
+docker-credential-gcr version
+exit 1
+
 set -e
 set -x
 set -o pipefail
