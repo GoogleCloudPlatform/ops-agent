@@ -25,6 +25,9 @@ set -e
 set -x
 set -o pipefail
 
+docker pull us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:bullseye
+exit 1
+
 RESULT_DIR=${RESULT_DIR:-"${KOKORO_ARTIFACTS_DIR}/result"}
 export RESULT_DIR
 
