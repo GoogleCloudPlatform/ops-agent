@@ -48,6 +48,9 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+docker version || echo continuing
+docker --version || echo continuing
+
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
