@@ -253,9 +253,27 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			// Sleep to avoid some flaky errors when restarting the agent because the
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
+			// TODO(b/240564518): Workaround for fluent-bit startup hang on 2012. This requires
+			// a restart of the agents, so perform this step before restartOpsAgent below.
+			if strings.Contains(vm.Platform, "2012") {
+				if _, err := gce.RunScriptRemotely(
+					ctx,
+					logger,
+					vm,
+					`$ErrorActionPreference = "Stop"
+					$key = "HKLM:\SYSTEM\CurrentControlSet\Services\google-cloud-ops-agent-fluent-bit"
+					$old_path = (Get-ItemProperty -Path $key -Name "ImagePath").ImagePath
+					$new_path = "cmd.exe /k start /AFFINITY FF /WAIT `+"`\"`\""+` $old_path"
+					Set-ItemProperty -Path $key -Name "ImagePath" $new_path`,
+					nil,
+					nil,
+				); err != nil {
+					return fmt.Errorf("setupOpsAgentFrom() windows-2012 workaround failed: %v", err)
+				}
+			}
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
+			return fmt.Errorf("setupOpsAgentFrom() failed to upload config file: %v", err)
 		}
 		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			return err
