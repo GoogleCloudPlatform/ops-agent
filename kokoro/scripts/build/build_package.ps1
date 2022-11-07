@@ -13,6 +13,10 @@ function Invoke-Program() {
   }
 }
 
+Asdf
+
+throw "deliberate error"
+
 $tag = 'build'
 $name = 'build-result'
 
