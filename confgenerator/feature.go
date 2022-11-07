@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -68,13 +69,23 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	return allFeatures, nil
 }
 
+func getSortedKeys[C Component](m map[string]C) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func trackedMappedComponents[C Component](module string, kind string, m map[string]C) ([]Feature, error) {
 	if m == nil {
 		return nil, nil
 	}
 	var features []Feature
 	index := 0
-	for _, c := range m {
+	for _, k := range getSortedKeys(m) {
+		c := m[k]
 		feature := Feature{
 			Module: module,
 			Kind:   kind,
