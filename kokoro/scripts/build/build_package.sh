@@ -25,7 +25,9 @@ set -e
 set -x
 set -o pipefail
 
-gcloud auth configure-docker "us-docker.pkg.dev"
+cat /home/kbuilder/.docker/config.json || echo keep going
+docker-credential-gcr configure-docker --registries="us-docker.pkg.dev"
+
 docker pull us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:bullseye
 exit 1
 
