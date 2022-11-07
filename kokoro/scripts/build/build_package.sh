@@ -26,6 +26,10 @@ set -x
 set -o pipefail
 
 cat /home/kbuilder/.docker/config.json || echo keep going
+docker-credential-gcr version
+
+# foo
+
 docker-credential-gcr configure-docker --registries="us-docker.pkg.dev"
 
 docker pull us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:bullseye
