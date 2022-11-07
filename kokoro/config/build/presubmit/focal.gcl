@@ -3,7 +3,7 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      DISTRO = 'focal'
+      DISTRO = 'hirsute'
       PKGFORMAT = 'deb'
     }
   }
