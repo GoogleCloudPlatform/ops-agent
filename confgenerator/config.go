@@ -283,7 +283,7 @@ type Component interface {
 // ConfigComponent holds the shared configuration fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
-	Type string `yaml:"type" validate:"required"`
+	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
 // componentFactory is the value type for the componentTypeRegistry map.
@@ -347,6 +347,17 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	}
 	*inner = o
 	return unmarshal(*inner)
+}
+
+// GetComponentsFromRegistry returns all components that belong to the associated registry
+func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
+	components := make([]Component, len(c.TypeMap))
+	i := 0
+	for _, comp := range c.TypeMap {
+		components[i] = comp.constructor()
+		i++
+	}
+	return components
 }
 
 // Ops Agent logging config.
