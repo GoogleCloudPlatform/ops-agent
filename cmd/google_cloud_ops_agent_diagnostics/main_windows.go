@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -68,12 +67,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		s.log.Error(eventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		return false, ERROR_INVALID_PARAMETER
 	}
-	userUc, err := confgenerator.ReadUnifiedConfigFromFile(s.userConf, "windows")
-	if err != nil {
-		return err
-	}
 
-	mergedUc, err := getUnifiedConfigAndValidate(s.userConf, "windows")
+	userUc, mergedUc, err := getUnifiedConfigAndValidate(s.userConf, "windows")
 	if err != nil {
 		s.log.Error(eventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND

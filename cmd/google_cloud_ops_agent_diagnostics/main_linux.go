@@ -23,7 +23,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
 
@@ -32,12 +31,7 @@ var (
 )
 
 func run() error {
-	userUc, err := confgenerator.ReadUnifiedConfigFromFile(*config, "linux")
-	if err != nil {
-		return err
-	}
-
-	mergedUc, err := getUnifiedConfigAndValidate(*config, "linux")
+	userUc, mergedUc, err := getUnifiedConfigAndValidate(*config, "linux")
 	if err != nil {
 		return err
 	}

@@ -21,18 +21,23 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, error) {
+func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(*config, "linux")
+	if err != nil {
+		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
+	}
 	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
+
 	}
 
 	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, platform)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
 	}
 
-	return uc, nil
+	return userUc, uc, nil
 }
 
 func main() {
