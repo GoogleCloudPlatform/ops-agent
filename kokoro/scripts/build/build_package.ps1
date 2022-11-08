@@ -67,6 +67,8 @@ if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
   Invoke-Program docker image tag $tag $cache_location
   Invoke-Program docker push $cache_location
 }
+Invoke-Program docker image tag $tag $cache_location
+Invoke-Program docker push $cache_location
 
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
