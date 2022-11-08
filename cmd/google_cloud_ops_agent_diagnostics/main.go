@@ -22,7 +22,7 @@ import (
 )
 
 func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, confgenerator.UnifiedConfig, error) {
-	userUc, err := confgenerator.ReadUnifiedConfigFromFile(*config, "linux")
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
 	if err != nil {
 		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
 	}
