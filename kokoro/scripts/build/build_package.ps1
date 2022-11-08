@@ -9,7 +9,7 @@ $global:ProgressPreference = 'SilentlyContinue'
 function Invoke-Program() {
   $outpluserr = cmd /c $Args 2`>`&1
   if ( $LastExitCode -ne 0 ) {
-      throw "failed: $Args, output: $outpluserr"
+    throw "failed: $Args, output: $outpluserr"
   }
   return $outpluserr
 }
