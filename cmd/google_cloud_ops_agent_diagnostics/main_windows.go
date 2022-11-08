@@ -67,7 +67,12 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		s.log.Error(eventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		return false, ERROR_INVALID_PARAMETER
 	}
-	uc, err := getUnifiedConfigAndValidate(s.userConf, "windows")
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(s.userConf, "windows")
+	if err != nil {
+		return err
+	}
+
+	mergedUc, err := getUnifiedConfigAndValidate(s.userConf, "windows")
 	if err != nil {
 		s.log.Error(eventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND
@@ -99,7 +104,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {
 		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA

@@ -17,6 +17,7 @@ package self_metrics
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
@@ -122,18 +123,18 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 
 func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
 	// Call Feature Extraction
-	eR, err := CountEnabledReceivers(uc)
+	features, err := confgenerator.ExtractFeatures(uc)
 	if err != nil {
 		return err
 	}
 
 	err = AddGaugeObserver(meter, "agent/internal/ops/feature_tracking", func(gaugeObserver asyncint64.Gauge, ctx context.Context) {
-		for rType, _ := range eR.MetricsReceiverCountsByType {
+		for _, f := range features {
 			labels := []attribute.KeyValue{
-				attribute.String("module", "metrics"),
-				attribute.String("feature", rType),
-				attribute.String("kind", rType),
-				attribute.String("value", rType),
+				attribute.String("module", f.Module),
+				attribute.String("feature", fmt.Sprintf("%s:%s", f.Kind, f.Type)),
+				attribute.String("key", strings.Join(f.Key, ".")),
+				attribute.String("value", f.Value),
 			}
 			gaugeObserver.Observe(ctx, int64(1), labels...)
 		}
@@ -145,7 +146,7 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 	return nil
 }
 
-func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool) error {
+func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, death chan bool) error {
 	// Resource for GCP and SDK detectors
 	ctx := context.Background()
 	res, err := resource.New(ctx,
@@ -161,12 +162,12 @@ func CollectOpsAgentSelfMetrics(uc *confgenerator.UnifiedConfig, death chan bool
 		return fmt.Errorf("failed to create exporter: %w", err)
 	}
 
-	enableReceiverProvider, err := getEnabledReceiverProvider(uc, exporter, res)
+	enableReceiverProvider, err := getEnabledReceiverProvider(mergedUc, exporter, res)
 	if err != nil {
 		return err
 	}
 
-	featureTrackingProvider, err := getFeatureTrackingProvider(uc, exporter, res)
+	featureTrackingProvider, err := getFeatureTrackingProvider(userUc, exporter, res)
 	if err != nil {
 		return err
 	}
