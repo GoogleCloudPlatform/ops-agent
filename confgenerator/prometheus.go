@@ -54,7 +54,7 @@ type PrometheusMetrics struct {
 	// `$` characters in your prometheus configuration are interpreted as environment
 	// variables.  If you want to use $ characters in your prometheus configuration,
 	// you must escape them using `$$`.
-	PromConfig promconfig.Config `yaml:"config"`
+	PromConfig promconfig.Config `yaml:"config" tracking:"-"`
 }
 
 func (r PrometheusMetrics) Type() string {
