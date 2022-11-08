@@ -283,7 +283,7 @@ type Component interface {
 // ConfigComponent holds the shared configuration fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
-	Type string `yaml:"type" validate:"required"`
+	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
 // componentFactory is the value type for the componentTypeRegistry map.
@@ -349,6 +349,17 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	return unmarshal(*inner)
 }
 
+// GetComponentsFromRegistry returns all components that belong to the associated registry
+func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
+	components := make([]Component, len(c.TypeMap))
+	i := 0
+	for _, comp := range c.TypeMap {
+		components[i] = comp.constructor()
+		i++
+	}
+	return components
+}
+
 // Ops Agent logging config.
 type loggingReceiverMap map[string]LoggingReceiver
 type loggingProcessorMap map[string]LoggingProcessor
@@ -400,7 +411,7 @@ type LoggingNetworkReceiver interface {
 
 type LoggingProcessor interface {
 	Component
-	// Components returns fluentbit components that implement this procesor.
+	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(tag string, uid string) []fluentbit.Component
 }

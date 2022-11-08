@@ -170,7 +170,7 @@ expected_logs:
   - log_name: cassandra_gc
     fields:
       - name: jsonPayload.message
-        value_regex: .*Total time for which application threads were stopped.*
+        value_regex: (?s).*Total time for which application threads were stopped.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68 
         type: string
         description: Log message
       - name: jsonPayload.uptime

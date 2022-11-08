@@ -17,6 +17,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
 
@@ -25,4 +27,19 @@ func ConfigPathForPlatform(platform string) string {
 		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
 	}
 	return "/etc/google-cloud-ops-agent/config.yaml"
+}
+
+// DumpPointerArray formats the given array of pointers-to-structs as a strings
+// using the given format, rather than just formatting them as addresses.
+// format is usually either "%v" or "%+v".
+func DumpPointerArray[T any](array []*T, format string) string {
+	s := "["
+	for i, element := range array {
+		if i > 0 {
+			s += ", "
+		}
+		s += fmt.Sprintf(format, element)
+	}
+	s += "]"
+	return s
 }
