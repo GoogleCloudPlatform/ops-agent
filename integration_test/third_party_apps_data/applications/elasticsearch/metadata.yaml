@@ -288,6 +288,15 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       state: free|used
+  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      module: metrics|logging
+      feature: .*
+      key: .*
+      value: .*
 expected_logs:
   - log_name: elasticsearch_json
     fields:
