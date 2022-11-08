@@ -349,6 +349,7 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	return unmarshal(*inner)
 }
 
+// GetComponentsFromRegistry returns all components that belong to the associated registry
 func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
 	components := make([]Component, len(c.TypeMap))
 	i := 0

@@ -69,7 +69,7 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	return allFeatures, nil
 }
 
-func getSortedKeys[C Component](m map[string]C) []string {
+func getSortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -83,16 +83,14 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 		return nil, nil
 	}
 	var features []Feature
-	index := 0
-	for _, k := range getSortedKeys(m) {
+	for i, k := range getSortedKeys(m) {
 		c := m[k]
 		feature := Feature{
 			Module: module,
 			Kind:   kind,
 			Type:   c.Type(),
-			Key:    []string{fmt.Sprintf("[%d]", index)},
+			Key:    []string{fmt.Sprintf("[%d]", i)},
 		}
-		index++
 		trackedFeatures, err := trackingFeatures(reflect.ValueOf(c), metadata{}, feature)
 		if err != nil {
 			return nil, err
@@ -104,7 +102,7 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 }
 
 func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
-	if m.IsExcluded {
+	if m.isExcluded {
 		return nil, nil
 	}
 	t := c.Type()
@@ -123,24 +121,24 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
 		// If struct has tracking it must have a value
-		if m.HasTracking && !m.HasOverride {
+		if m.hasTracking && !m.hasOverride {
 			return nil, ErrTrackingOverrideStruct
 		}
 
-		if m.YamlTag != "" {
-			feature.Key = append(feature.Key, m.YamlTag)
+		if m.yamlTag != "" {
+			feature.Key = append(feature.Key, m.yamlTag)
 		}
 
-		if m.HasTracking {
+		if m.hasTracking {
 			// If struct is inline there is no associated name for key generation
 			// By default inline structs of a tracked field are also tracked
-			if m.IsInline {
+			if m.isInline {
 				return nil, ErrTrackingInlineStruct
 			} else {
 				// For structs that are in a Component. An extra metric is added with
 				// the value being the override value from the yaml tag
 				ftr := feature
-				ftr.Value = m.OverrideValue
+				ftr.Value = m.overrideValue
 				features = append(features, ftr)
 			}
 		}
@@ -149,8 +147,11 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		for i := 0; i < t.NumField(); i++ {
 			// Get the field, returns https://golang.org/pkg/reflect/#StructField
 			field := t.Field(i)
+			// Type field name is part of the ConfigComponent definition.
+			// All user visible component inlines that component, this field can help
+			// us assert that a certain component is enabled.
+			// Capture special metrics for enabled receiver or processor
 			if field.Name == "Type" {
-				// Capture special metrics for enabled receiver or processor
 				f := feature
 				f.Key = append(f.Key, "enabled")
 				f.Value = "true"
@@ -166,7 +167,7 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		}
 	case kind == reflect.Map:
 
-		// Maps as a field are not supported yet
+		// TODO(b/258211839): Add support for tracking maps using feature tracking
 		if feature.Type != "" {
 			return nil, ErrMapAsField
 		}
@@ -175,9 +176,9 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		if skipField(v, m) {
 			return nil, nil
 		}
-		feature.Key = append(feature.Key, m.YamlTag)
-		if m.HasOverride {
-			feature.Value = m.OverrideValue
+		feature.Key = append(feature.Key, m.yamlTag)
+		if m.hasOverride {
+			feature.Value = m.overrideValue
 		} else {
 			feature.Value = fmt.Sprintf("%v", v.Interface())
 		}
@@ -188,10 +189,10 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 }
 
 func skipField(value reflect.Value, m metadata) bool {
-	if m.HasTracking {
+	if m.hasTracking {
 		return false
 	}
-	if m.IsExcluded {
+	if m.isExcluded {
 		return true
 	}
 	switch value.Type().Kind() {
@@ -203,13 +204,13 @@ func skipField(value reflect.Value, m metadata) bool {
 }
 
 type metadata struct {
-	IsExcluded     bool
-	IsInline       bool
-	HasTracking    bool
-	HasOverride    bool
-	YamlTag        string
-	OverrideValue  string
-	ComponentIndex int
+	isExcluded     bool
+	isInline       bool
+	hasTracking    bool
+	hasOverride    bool
+	yamlTag        string
+	overrideValue  string
+	componentIndex int
 }
 
 func getMetadata(field reflect.StructField) metadata {
@@ -233,14 +234,14 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 
 	return metadata{
-		HasTracking:   hasTracking,
-		HasOverride:   hasOverride,
-		IsExcluded:    isExcluded,
-		IsInline:      hasInline,
-		OverrideValue: trackingTag,
+		hasTracking:   hasTracking,
+		hasOverride:   hasOverride,
+		isExcluded:    isExcluded,
+		isInline:      hasInline,
+		overrideValue: trackingTag,
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
-		YamlTag: yamlTags[0],
+		yamlTag: yamlTags[0],
 	}
 }
 
