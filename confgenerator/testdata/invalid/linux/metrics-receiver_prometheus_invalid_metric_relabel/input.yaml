@@ -25,12 +25,12 @@ metrics:
             relabel_configs:
             - source_labels: [__meta_gce_zone]
               regex: '(.+)'
-              replacement: '$${1}'
+              replacement: '${1}'
               target_label: new_location
             metric_relabel_configs:
             - source_labels: [new_location]
               regex: '(.+)'
-              replacement: '$${1}'
+              replacement: '${1}'
               target_label: location
   service:
     pipelines:

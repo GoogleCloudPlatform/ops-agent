@@ -65,6 +65,12 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlemanagedprometheus",
 		Config: map[string]interface{}{
+			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+			// recommends disabling this.
+			"retry_on_failure": map[string]interface{}{
+				"enabled": false,
+			},
 			"user_agent": userAgent,
 		},
 	}
