@@ -756,6 +756,8 @@ const (
 	OracleDBApp = "oracledb"
 
 	AerospikeApp = "aerospike"
+
+	NvmlApp = "nvml"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -856,6 +858,9 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
+            if tc.app == NvmlApp {
+               options.MachineType = "a2-highgpu-1g"
+            }
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
