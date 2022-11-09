@@ -58,25 +58,33 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel  string
-	Pipelines map[string]Pipeline
+	LogLevel                         string
+	Pipelines                        map[string]Pipeline
+	GoogleManagedPrometheusPipelines []string
+
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
-	GlobalProcessors []Component
-	Exporter         Component
+	//
+	// Note: GlobalProcessors are not applied to GoogleManagedPrometheusPipelines.
+	GlobalProcessors                []Component
+	GoogleCloudExporter             Component
+	GoogleManagedPrometheusExporter Component
 }
 
 // Generate an OT YAML config file for c.
 // Each pipeline gets generated as a receiver, per-pipeline processors, global processors, and then global exporter.
 // For example:
 // metrics/mypipe:
-//   receivers: [hostmetrics/mypipe]
-//   processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
-//   exporters: [googlecloud]
+//
+//	receivers: [hostmetrics/mypipe]
+//	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
+//	exporters: [googlecloud]
 func (c ModularConfig) Generate() (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
+	googleCloudExporter := c.GoogleCloudExporter.name("")
+	googleManagedPrometheusExporter := c.GoogleManagedPrometheusExporter.name("")
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
@@ -98,8 +106,16 @@ func (c ModularConfig) Generate() (string, error) {
 		"exporters":  exporters,
 		"service":    service,
 	}
-	exporterName := c.Exporter.name("")
-	exporters[exporterName] = c.Exporter.Config
+	exporters[googleCloudExporter] = c.GoogleCloudExporter.Config
+
+	// Check if there are any prometheus receivers in the pipelines.
+	// If so, add the googlemanagedprometheus exporter.
+	if len(c.GoogleManagedPrometheusPipelines) > 0 {
+		exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
+
+		// Add the groupbyattrs processor so prometheus pipelines can use it.
+		processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+	}
 
 	var globalProcessorNames []string
 	for i, processor := range c.GlobalProcessors {
@@ -110,6 +126,7 @@ func (c ModularConfig) Generate() (string, error) {
 
 	for prefix, pipeline := range c.Pipelines {
 		receiverName := pipeline.Receiver.name(prefix)
+		exporter := googleCloudExporter
 		receivers[receiverName] = pipeline.Receiver.Config
 		var processorNames []string
 		for i, processor := range pipeline.Processors {
@@ -117,12 +134,19 @@ func (c ModularConfig) Generate() (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
-		processorNames = append(processorNames, globalProcessorNames...)
+
+		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
+			exporter = googleManagedPrometheusExporter
+			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
+		} else {
+			processorNames = append(processorNames, globalProcessorNames...)
+		}
+
 		// For now, we always generate pipelines of type "metrics".
 		pipelines["metrics/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporterName},
+			"exporters":  []string{exporter},
 		}
 	}
 
@@ -132,4 +156,23 @@ func (c ModularConfig) Generate() (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func gceGroupByAttrs() Component {
+	return Component{
+		Type: "groupbyattrs",
+		Config: map[string]interface{}{
+			"keys": []string{"namespace", "cluster", "location"},
+		},
+	}
 }

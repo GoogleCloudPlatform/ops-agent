@@ -17,6 +17,48 @@ short_name: Vault
 long_name: Hashicorp Vault
 description: |-
   Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
+configure_integration: |-
+  To collect telemetry from your Vault instance, you must enable the prometheus_retention_time to a non-zero value in your HCL or JSON Vault configuration file.
+
+  <pre>
+  Full configuration options can be found at https://www.vaultproject.io/docs/configuration
+  telemetry {
+    prometheus_retention_time = "10m"
+    disable_hostname = false
+  }
+  </pre>
+
+  Additionally a root user is required to enable audit log collection and to create a prometheus-metrics ACL policy.
+  A root token is used to add a policy that has read capabilities to /sys/metrics.
+  This policy is used to create a Vault token with sufficient permission to collect Vault metrics.
+  The following script is a quick start to get up and running.
+
+  ```bash
+  # If you are initializing Vault for the first time, use this script to generate a root token.
+  # Otherwise see [here](https://developer.hashicorp.com/vault/tutorials/operations/generate-root) how to generate a root token.
+
+  export VAULT_ADDR=http://localhost:8200
+  # Create simple Vault initialization with 1 key share and a key threshold of 1.
+  vault operator init -key-shares=1 -key-threshold=1 | head -n3 | cat > .vault-init
+  VAULT_KEY=$(grep 'Unseal Key 1'  .vault-init | awk '{print $NF}')
+  VAULT_TOKEN=$(grep 'Initial Root Token:' .vault-init | awk '{print $NF}')
+  export VAULT_TOKEN
+  vault operator unseal $VAULT_KEY
+
+  # Enable audit logs.
+  vault audit enable file file_path=/var/log/vault_audit.log
+
+  # Create Prometheus ACL policy to access metrics endpoint.
+  vault policy write prometheus-metrics - << EOF
+  path "/sys/metrics" {
+    capabilities = ["read"]
+  }
+  EOF
+
+  # Create an example token with the prometheus-metrics policy to access Vault metrics.
+  # This token is used as a `$VAULT_TOKEN` in your Ops Agent configuration for Vault.
+  vault token create -field=token -policy prometheus-metrics > prometheus-token
+  ```
 supported_operating_systems: linux
 supported_app_version: ["1.6+"]
 expected_metrics:

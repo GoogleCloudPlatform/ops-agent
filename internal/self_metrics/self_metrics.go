@@ -26,9 +26,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	metricapi "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/asyncint64"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
@@ -77,27 +78,19 @@ func countReceivers[C confgenerator.Component](receiverCounts map[string]int, p 
 	return nil
 }
 
-func AddGaugeObserver(meter metricapi.Meter, name string, function func(gaugeObserver asyncint64.Gauge, ctx context.Context)) error {
-	gaugeObserver, err := meter.AsyncInt64().Gauge(name)
-	if err != nil {
-		return fmt.Errorf("failed to initialize instrument: %w", err)
-	}
-	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
-		function(gaugeObserver, ctx)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to register callback: %w", err)
-	}
-	return nil
-}
-
 func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
 	eR, err := CountEnabledReceivers(uc)
 	if err != nil {
 		return err
 	}
 
-	err = AddGaugeObserver(meter, "agent/ops_agent/enabled_receivers", func(gaugeObserver asyncint64.Gauge, ctx context.Context) {
+	// Collect GAUGE metric
+	gaugeObserver, err := meter.AsyncInt64().Gauge("agent/ops_agent/enabled_receivers")
+	if err != nil {
+		return fmt.Errorf("failed to initialize instrument: %w", err)
+	}
+
+	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
 		for rType, count := range eR.MetricsReceiverCountsByType {
 			labels := []attribute.KeyValue{
 				attribute.String("telemetry_type", "metrics"),
@@ -114,7 +107,6 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 			gaugeObserver.Observe(ctx, int64(count), labels...)
 		}
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to register callback: %w", err)
 	}
@@ -122,13 +114,18 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 }
 
 func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
-	// Call Feature Extraction
 	features, err := confgenerator.ExtractFeatures(uc)
 	if err != nil {
 		return err
 	}
 
-	err = AddGaugeObserver(meter, "agent/internal/ops/feature_tracking", func(gaugeObserver asyncint64.Gauge, ctx context.Context) {
+	// Collect GAUGE metric
+	gaugeObserver, err := meter.AsyncInt64().Gauge("agent/internal/ops/feature_tracking")
+	if err != nil {
+		return fmt.Errorf("failed to initialize instrument: %w", err)
+	}
+
+	err = meter.RegisterCallback([]instrument.Asynchronous{gaugeObserver}, func(ctx context.Context) {
 		for _, f := range features {
 			labels := []attribute.KeyValue{
 				attribute.String("module", f.Module),
@@ -139,7 +136,6 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 			gaugeObserver.Observe(ctx, int64(1), labels...)
 		}
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to register callback: %w", err)
 	}
@@ -149,6 +145,8 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, death chan bool) error {
 	// Resource for GCP and SDK detectors
 	ctx := context.Background()
+
+	//ENABLED RECEIVERS
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
@@ -157,22 +155,48 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 	// Create exporter pipeline
 	exporter, err := mexporter.New(
 		mexporter.WithMetricDescriptorTypeFormatter(agentMetricsPrefixFormatter),
+		mexporter.WithDisableCreateMetricDescriptors(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create exporter: %w", err)
 	}
 
-	enableReceiverProvider, err := getEnabledReceiverProvider(mergedUc, exporter, res)
+	// View filters are required so readers do not send metrics at wrong intervals
+	v1, err := view.New(view.MatchInstrumentName("*"), view.WithSetAggregation(aggregation.Drop{}))
+	v2, err := view.New(view.MatchInstrumentName("agent/ops_agent/enabled_receivers"))
+	v3, err := view.New(view.MatchInstrumentName("*"), view.WithSetAggregation(aggregation.Drop{}))
+	v4, err := view.New(view.MatchInstrumentName("agent/internal/ops/feature_tracking"))
+
+	// Create provider which periodically exports to the GCP exporter
+	enabledReceiverReader := metricsdk.NewPeriodicReader(exporter)
+	featureTrackingReader := metricsdk.NewPeriodicReader(exporter, metricsdk.WithInterval(2*time.Hour))
+	provider := metricsdk.NewMeterProvider(
+		// Enabled Receiver reader
+		metricsdk.WithReader(enabledReceiverReader, v1, v2),
+		// Feature Tracking reader
+		metricsdk.WithReader(featureTrackingReader, v3, v4),
+		metricsdk.WithResource(res),
+	)
+
+	meter := provider.Meter("ops_agent/self_metrics")
+	err = InstrumentEnabledReceiversMetric(mergedUc, meter)
 	if err != nil {
 		return err
 	}
 
-	featureTrackingProvider, err := getFeatureTrackingProvider(userUc, exporter, res)
+	featureMeter := provider.Meter("ops_agent/feature_tracking")
+	err = InstrumentFeatureTrackingMetric(userUc, featureMeter)
+	if err != nil {
+		return err
+	}
+
+	err = provider.ForceFlush(ctx)
 	if err != nil {
 		return err
 	}
 
 waitForDeathSignal:
+
 	for {
 		select {
 		case <-death:
@@ -180,35 +204,8 @@ waitForDeathSignal:
 		}
 	}
 
-	if err = enableReceiverProvider.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown meter provider: %w", err)
-	}
-	if err = featureTrackingProvider.Shutdown(ctx); err != nil {
+	if err = provider.Shutdown(ctx); err != nil {
 		return fmt.Errorf("failed to shutdown meter provider: %w", err)
 	}
 	return nil
-}
-
-func getEnabledReceiverProvider(uc *confgenerator.UnifiedConfig, exporter metricsdk.Exporter, res *resource.Resource) (*metricsdk.MeterProvider, error) {
-	// Create provider which periodically exports to the GCP exporter
-	provider := metricsdk.NewMeterProvider(
-		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
-		metricsdk.WithResource(res),
-	)
-
-	meter := provider.Meter("ops_agent/self_metrics")
-	err := InstrumentEnabledReceiversMetric(uc, meter)
-	return provider, err
-}
-
-func getFeatureTrackingProvider(uc *confgenerator.UnifiedConfig, exporter metricsdk.Exporter, res *resource.Resource) (*metricsdk.MeterProvider, error) {
-	// Create provider which periodically exports to the GCP exporter
-	provider := metricsdk.NewMeterProvider(
-		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter, metricsdk.WithInterval(2*time.Hour))),
-		metricsdk.WithResource(res),
-	)
-
-	meter := provider.Meter("ops_agent/feature_tracking")
-	err := InstrumentFeatureTrackingMetric(uc, meter)
-	return provider, err
 }
