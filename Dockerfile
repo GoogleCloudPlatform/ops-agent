@@ -231,8 +231,8 @@ enabled=1
 autorefresh=0
 repo_gpgcheck=0
 gpgcheck=0
-EOF && \
-    zypper addrepo agent-vendor.repo && \
+EOF
+RUN set -x; zypper addrepo agent-vendor.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     zypper -n install bison>3.4 && \
