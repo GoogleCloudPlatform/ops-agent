@@ -63,7 +63,6 @@ Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 # write to any kind of cache, for example a per-PR cache, because the
 # push takes a few minutes and adds little value over just using the continuous
 # build's cache.
-# dummy edit
 if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
   Invoke-Program docker image tag $tag $cache_location
   Invoke-Program docker push $cache_location
