@@ -67,4 +67,4 @@ Invoke-Program docker push $cache_location
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
-Asdf
+Asdfqwerty
