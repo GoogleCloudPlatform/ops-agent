@@ -509,7 +509,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
-	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
+	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil, false)
 	if err != nil {
 		// Optional metrics can be missing
 		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
