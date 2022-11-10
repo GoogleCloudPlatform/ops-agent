@@ -37,10 +37,10 @@ git submodule update --init --recursive
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
-sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
+gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
 
-sudo DOCKER_BUILDKIT=1 docker build . \
+DOCKER_BUILDKIT=1 docker build . \
   --cache-from="${CACHE_LOCATION}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --target "${DISTRO}-build" \
@@ -51,8 +51,8 @@ sudo DOCKER_BUILDKIT=1 docker build . \
 # push takes a few minutes and adds little value over just using the continuous
 # build's cache.
 if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
-  sudo docker image tag build_image "${CACHE_LOCATION}"
-  sudo docker push "${CACHE_LOCATION}"
+  docker image tag build_image "${CACHE_LOCATION}"
+  docker push "${CACHE_LOCATION}"
 fi
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
@@ -61,7 +61,7 @@ if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
 fi
 
-sudo docker run \
+docker run \
   -i \
   -v "${RESULT_DIR}":/artifacts \
   -v "${SIGNING_DIR}":/signing \
