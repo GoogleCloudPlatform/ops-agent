@@ -6,12 +6,12 @@ $global:ProgressPreference = 'SilentlyContinue'
 # the rest of the arguments. Throws an error if the program finishes with a
 # nonzero exit code.
 #   Example: Invoke-Program git submodule update --init
-# foo
 function Invoke-Program() {
-  & $Args[0] $Args[1..$Args.Length]
+  $outpluserr = cmd /c $Args 2`>`&1
   if ( $LastExitCode -ne 0 ) {
-    throw "failed: $Args"
+      throw "failed: $Args"
   }
+  return $outpluserr
 }
 
 $tag = 'build'
@@ -49,13 +49,12 @@ PACKAGE_VERSION,$env:PKG_VERSION
 
 Invoke-Program git submodule update --init
 $artifact_registry='us-docker.pkg.dev'
-gcloud auth configure-docker $artifact_registry
-Invoke-Program docker images
+Invoke-Program gcloud auth configure-docker $artifact_registry
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments2"
-docker pull $cache_location
+Invoke-Program docker pull $cache_location
 
-Invoke-Program docker build -t $tag -f './Dockerfile.windows' . --cache-from="${cache_location}" 
+Invoke-Program docker build -t $tag -f './Dockerfile.windows' . --cache-from="$cache_location"
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
