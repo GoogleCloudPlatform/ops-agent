@@ -54,7 +54,7 @@ docker images
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments3"
 docker pull $cache_location
-Invoke-Program docker pull 'mcr.microsoft.com/windows/servercore:ltsc2019'
+# Invoke-Program docker pull 'mcr.microsoft.com/windows/servercore:ltsc2019'
 
 Invoke-Program docker build -t $tag -f './Dockerfile.windows' . --cache-from="$cache_location"
 Invoke-Program docker create --name $name $tag
