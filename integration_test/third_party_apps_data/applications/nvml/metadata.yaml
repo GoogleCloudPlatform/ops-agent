@@ -34,6 +34,7 @@ expected_metrics:
     labels:
       model: .*
       gpu: .*
+    representative: true
   - type: workload.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
     kind: GAUGE
