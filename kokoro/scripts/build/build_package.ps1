@@ -52,7 +52,7 @@ $artifact_registry='us-docker.pkg.dev'
 Invoke-Program gcloud auth configure-docker $artifact_registry
 docker images
 
-$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments2"
+$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments3"
 Invoke-Program docker pull $cache_location
 Invoke-Program docker pull 'mcr.microsoft.com/windows/servercore:ltsc2019'
 
