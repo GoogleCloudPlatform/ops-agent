@@ -53,7 +53,7 @@ Invoke-Program gcloud auth configure-docker $artifact_registry
 Invoke-Program docker images
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments"
-# Invoke-Program docker pull $cache_location
+Invoke-Program docker pull $cache_location
 
 Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
