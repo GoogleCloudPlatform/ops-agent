@@ -89,22 +89,7 @@ func workDirForPlatform(platform string) string {
 
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return `
-Restart-Service google-cloud-ops-agent -Force
-# TODO(b/240564518): remove process-killing once bug is fixed
-if (!$?) {
-	Write-Output 'Could not restart services gracefully. Killing processes directly...'
-	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
-	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
-	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
-		Stop-Process -Force $_.ProcessId -ErrorAction SilentlyContinue
-		if (!$?) {
-			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
-		}
-	}
-	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Automatic
-	Start-Service -Name 'google-cloud-ops-agent'
-}`
+		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
@@ -262,24 +247,6 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			// Sleep to avoid some flaky errors when restarting the agent because the
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
-			// TODO(b/240564518): Workaround for fluent-bit startup hang on 2012. This requires
-			// a restart of the agents, so perform this step before restartOpsAgent below.
-			if strings.Contains(vm.Platform, "2012") {
-				if _, err := gce.RunScriptRemotely(
-					ctx,
-					logger,
-					vm,
-					`$ErrorActionPreference = "Stop"
-					$key = "HKLM:\SYSTEM\CurrentControlSet\Services\google-cloud-ops-agent-fluent-bit"
-					$old_path = (Get-ItemProperty -Path $key -Name "ImagePath").ImagePath
-					$new_path = "cmd.exe /k start /AFFINITY FF /WAIT `+"`\"`\""+` $old_path"
-					Set-ItemProperty -Path $key -Name "ImagePath" $new_path`,
-					nil,
-					nil,
-				); err != nil {
-					return fmt.Errorf("setupOpsAgentFrom() windows-2012 workaround failed: %v", err)
-				}
-			}
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("setupOpsAgentFrom() failed to upload config file: %v", err)
