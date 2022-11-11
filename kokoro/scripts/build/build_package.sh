@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-exit 3
 
 # cd to the root of the git repo containing this script.
 cd "$(readlink -f "$(dirname "$0")")"
