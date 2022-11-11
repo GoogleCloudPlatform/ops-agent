@@ -1799,7 +1799,7 @@ func TestPrometheusMetrics(t *testing.T) {
 		// TODO: Enable this test for all distros once the prometheus receiver is GA.
 		// For some reason, the featuregate, when set in the default systemd environment
 		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsCentOS(platform) {
+		if gce.IsCentOS(platform) || gce.IsRHEL(platform) {
 			t.SkipNow()
 		}
 
@@ -1936,7 +1936,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		// TODO: Enable this test for all distros once the prometheus receiver is GA.
 		// For some reason, the featuregate, when set in the default systemd environment
 		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsWindows(platform) || gce.IsCentOS(platform) {
+		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
