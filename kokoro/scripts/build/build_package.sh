@@ -51,7 +51,7 @@ sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
-sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
+sudo docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
 
 sudo DOCKER_BUILDKIT=1 docker build . \
