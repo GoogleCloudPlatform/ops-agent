@@ -40,6 +40,8 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 # to fix issues like b/227486796.
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
+docker images || echo images failed
+
 # Install Docker.
 # https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
@@ -49,6 +51,8 @@ echo \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get -y update
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io
+
+sudo docker images
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
@@ -87,3 +91,5 @@ sudo docker run \
       bash /signing/sign.sh /artifacts/*.rpm
     fi
 EOF
+
+exit 3
