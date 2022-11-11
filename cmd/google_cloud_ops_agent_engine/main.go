@@ -18,10 +18,18 @@ import (
 	"flag"
 	"log"
 	"os"
+	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/shirou/gopsutil/host"
+
+	"context"
+
+    apikeys "cloud.google.com/go/apikeys/apiv2"
+    "google.golang.org/api/iterator"
+
+    apikeyspb "google.golang.org/genproto/googleapis/api/apikeys/v2"
 )
 
 var (
@@ -32,11 +40,56 @@ var (
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
 
+func Health_Checks() error {
+
+	fmt.Println("Health_Checks")
+	ctx := context.Background()
+    // This snippet has been automatically generated and should be regarded as a code template only.
+    // It will require modifications to work:
+    // - It may require correct/in-range values for request initialization.
+    // - It may require specifying regional endpoints when creating the service client as shown in:
+    //   https://pkg.go.dev/cloud.google.com/go#hdr-Client_Options
+    c, err := apikeys.NewClient(ctx)
+    fmt.Println(c)
+    if err != nil {
+            // TODO: Handle error.
+    }
+    defer c.Close()
+
+    req := &apikeyspb.ListKeysRequest{
+    	Parent: "fcovalente-dev",
+        // TODO: Fill request struct fields.
+        // See https://pkg.go.dev/google.golang.org/genproto/googleapis/api/apikeys/v2#ListKeysRequest.
+    }
+    it := c.ListKeys(ctx, req)
+    for {
+            resp, err := it.Next()
+            fmt.Println(resp)
+            if err == iterator.Done {
+                    break
+            }
+            if err != nil {
+            		fmt.Println(err)
+                    // TODO: Handle error.
+                    break
+            }
+            // TODO: Use resp.
+            _ = resp
+    }
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
-	if err := run(); err != nil {
-		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
+	
+	if err := Health_Checks(); err != nil {
+		log.Fatalf("Health_Checks : %s", err)
 	}
+
+	/*if err := run(); err != nil {
+		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
+	}*/
 }
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.

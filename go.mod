@@ -38,6 +38,7 @@ require (
 
 require (
 	cloud.google.com/go v0.104.0 // indirect
+	cloud.google.com/go/apikeys v0.2.0 // indirect
 	cloud.google.com/go/iam v0.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
