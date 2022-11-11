@@ -92,7 +92,7 @@ func restartCommandForPlatform(platform string) string {
 		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
+	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target || sudo systemctl restart google-cloud-ops-agent"
 }
 
 func systemLogTagForPlatform(platform string) string {
