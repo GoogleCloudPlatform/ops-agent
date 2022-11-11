@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/kardianos/osext"
+	"golang.org/x/sys/windows/registry"
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -100,6 +101,26 @@ func initServices() error {
 	if err := os.MkdirAll(logDirectory, 0644); err != nil {
 		return err
 	}
+	fluentbitExe := filepath.Join(base, "fluent-bit.exe")
+	fluentbitArgs := []string{
+		"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
+		"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
+		"--storage_path", fluentbitStoragePath,
+		"--log_file", filepath.Join(logDirectory, "logging-module.log"),
+	}
+	// TODO(b/240564518): Workaround for fluent-bit lockups on Windows 2012
+	if isWindows2012() {
+		fluentbitArgs = append([]string{
+			"/k",
+			"start",
+			"/AFFINITY",
+			"FF",
+			"/WAIT",
+			"",
+			fluentbitExe,
+		}, fluentbitArgs...)
+		fluentbitExe = "cmd.exe"
+	}
 	// TODO: Write meaningful descriptions for these services
 	services = []struct {
 		name        string
@@ -129,13 +150,8 @@ func initServices() error {
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
 			fmt.Sprintf("%s-fluent-bit", serviceName),
 			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
-			filepath.Join(base, "fluent-bit.exe"),
-			[]string{
-				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
-				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
-				"--storage_path", fluentbitStoragePath,
-				"--log_file", filepath.Join(logDirectory, "logging-module.log"),
-			},
+			fluentbitExe,
+			fluentbitArgs,
 		},
 		{
 			fmt.Sprintf("%s-diagnostics", serviceName),
@@ -147,4 +163,18 @@ func initServices() error {
 		},
 	}
 	return nil
+}
+
+func isWindows2012() bool {
+	key, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows NT\CurrentVersion`, registry.QUERY_VALUE)
+	if err != nil {
+		log.Fatalf("could not open CurrentVersion key: %v", err)
+	}
+	defer key.Close()
+	data, _, err := key.GetStringValue("CurrentBuildNumber")
+	if err != nil {
+		log.Fatalf("could not read CurrentBuildNumber: %v", err)
+	}
+	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
+	return data == "9200" || data == "9600"
 }
