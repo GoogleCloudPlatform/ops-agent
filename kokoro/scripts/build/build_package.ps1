@@ -52,7 +52,7 @@ $artifact_registry='us-docker.pkg.dev'
 Invoke-Program gcloud auth configure-docker $artifact_registry
 docker images
 
-$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-experiments3"
+$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows"
 docker pull $cache_location
 # Invoke-Program docker pull 'mcr.microsoft.com/windows/servercore:ltsc2019'
 
@@ -60,8 +60,8 @@ Invoke-Program docker build -t $tag -f './Dockerfile.windows' . --cache-from="$c
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
-Invoke-Program docker image tag $tag $cache_location
-Invoke-Program docker push $cache_location
+#Invoke-Program docker image tag $tag $cache_location
+#Invoke-Program docker push $cache_location
 
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
