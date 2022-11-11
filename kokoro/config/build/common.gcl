@@ -3,7 +3,7 @@
 import '../utils/functions.gcl' as functions
 
 template config build = {
-  build_file = 'unified_agents/kokoro/scripts/build/build_package.sh'
+  build_file = null
 
   params {
     environment = {
