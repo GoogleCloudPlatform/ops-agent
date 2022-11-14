@@ -109,13 +109,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't get resource metadata: %w", err)
 	}
-	fmt.Println(MetadataResource.Project)
 
-	if err := APIChecks(MetadataResource.Project); err != nil {
+	var projectId string
+	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+	    projectId = gceMetadata.Project
+	} else {
+	    // Not on GCE
+	    projectId = "Not-on-GCE"
+	}
+	fmt.Println(projectId)
+
+	if err := APIChecks(projectId); err != nil {
 		log.Fatalf("APIChecks : %s", err)
 	}
 	
-	if err := Health_Checks(MetadataResource.Project); err != nil {
+	if err := Health_Checks(projectId); err != nil {
 		log.Fatalf("Health_Checks : %s", err)
 	}
 
