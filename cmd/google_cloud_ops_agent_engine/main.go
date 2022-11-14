@@ -23,6 +23,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/shirou/gopsutil/host"
+	"cloud.google.com/go/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 
 	"context"
 
@@ -38,9 +40,13 @@ var (
 	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+
+	// MetadataResource is the resource metadata for the instance we're running on.
+	// Note: This is a global variable so that it can be set in tests.
+	MetadataResource resourcedetector.Resource
 )
 
-func Health_Checks() error {
+func Health_Checks(project string) error {
 
 	fmt.Println("Health_Checks")
 	ctx := context.Background()
@@ -80,10 +86,35 @@ func Health_Checks() error {
 	return nil
 }
 
+func APIChecks(project string) error {
+
+	ctx := context.Background()
+    client, err := logging.NewClient(ctx, "my-project")
+    if err != nil {
+            // TODO: Handle error.
+            fmt.Println(err)
+    }
+    if err := client.Ping(ctx); err != nil {
+            // TODO: Handle error.
+            fmt.Println(err)
+    }
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
+
+	MetadataResource, err = resourcedetector.GetResource()
+	if err != nil {
+		return fmt.Errorf("can't get resource metadata: %w", err)
+	}
+
+	if err := APIChecks(MetadataResource.Project; err != nil {
+		log.Fatalf("APIChecks : %s", err)
+	}
 	
-	if err := Health_Checks(); err != nil {
+	if err := Health_Checks(MetadataResource.Project); err != nil {
 		log.Fatalf("Health_Checks : %s", err)
 	}
 
