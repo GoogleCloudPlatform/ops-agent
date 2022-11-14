@@ -30,15 +30,15 @@ configure_integration: |-
 
   Additionally a root user is required to enable audit log collection and to create a prometheus-metrics ACL policy.
   A root token is used to add a policy that has read capabilities to /sys/metrics.
-  This policy is used to create a vault token with sufficient permission to collect vault metrics.
+  This policy is used to create a Vault token with sufficient permission to collect Vault metrics.
   The following script is a quick start to get up and running.
   
   ```bash
-  # If you are initializing vault for the first time, use this script to generate a root token.
+  # If you are initializing Vault for the first time, use this script to generate a root token.
   # Otherwise see [here](https://developer.hashicorp.com/vault/tutorials/operations/generate-root) how to generate a root token.
 
   export VAULT_ADDR=http://localhost:8200
-  # Create simple vault initialization with 1 key share and a key threshold of 1.
+  # Create simple Vault initialization with 1 key share and a key threshold of 1.
   vault operator init -key-shares=1 -key-threshold=1 | head -n3 | cat > .vault-init
   VAULT_KEY=$(grep 'Unseal Key 1'  .vault-init | awk '{print $NF}')
   VAULT_TOKEN=$(grep 'Initial Root Token:' .vault-init | awk '{print $NF}')
