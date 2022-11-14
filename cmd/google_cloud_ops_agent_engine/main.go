@@ -105,9 +105,9 @@ func APIChecks(project string) error {
 func main() {
 	flag.Parse()
 
-	MetadataResource, err = resourcedetector.GetResource()
+	MetadataResource, err := resourcedetector.GetResource()
 	if err != nil {
-		return fmt.Errorf("can't get resource metadata: %w", err)
+		log.Fatalf("can't get resource metadata: %w", err)
 	}
 	fmt.Println(MetadataResource.Project)
 
