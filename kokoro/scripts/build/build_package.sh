@@ -41,6 +41,7 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
 docker images || echo images failed
+#foo
 
 # Install Docker.
 # https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
