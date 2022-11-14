@@ -127,16 +127,6 @@ func runTestsInDir(
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
-		confDebugFolder := filepath.Join(platformTestDir, testName)
-		userSpecifiedConfPath := filepath.Join(confDebugFolder, "/input.yaml")
-
-		if _, err := os.Stat(userSpecifiedConfPath + ".missing"); err == nil {
-			// Intentionally missing
-		} else if _, err := os.Stat(userSpecifiedConfPath); errors.Is(err, os.ErrNotExist) {
-			// Empty directory; probably a leftover with backup files.
-			continue
-		}
-
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			testDir := filepath.Join(platformTestDir, testName)

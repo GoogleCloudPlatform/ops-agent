@@ -407,6 +407,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/otlp_otlp_0:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -476,6 +482,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
+    metrics/otlp_otlp:
+      exporters:
+      - googlecloud
+      processors:
+      - metricstransform/otlp_otlp_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlp/otlp_otlp
   telemetry:
     metrics:
       address: 0.0.0.0:20201

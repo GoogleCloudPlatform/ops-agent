@@ -100,7 +100,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		if err != nil {
 			return "", err
 		}
-		prometheusCustomMetricPipelines, err = uc.Metrics.getCustomPrometheusOTelPipelines()
+		prometheusCustomMetricPipelines, err = uc.getCustomPrometheusOTelPipelines()
 		if err != nil {
 			return "", err
 		}
@@ -134,11 +134,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 }
 
 // getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
-func (m *Metrics) getCustomPrometheusOTelPipelines() ([]string, error) {
+func (uc *UnifiedConfig) getCustomPrometheusOTelPipelines() ([]string, error) {
 	out := []string{}
+	m := uc.Metrics
+	receivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return nil, err
+	}
 	for pID, p := range m.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
-			receiver, ok := m.Receivers[rID]
+			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("receiver %q not found", rID)
 			}
