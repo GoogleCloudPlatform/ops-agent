@@ -153,6 +153,7 @@ const (
 	vmInitBackoffDuration             = 10 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
+	slesStartupDelay        = 60 * time.Second
 	slesInitMaxAttempts     = 5
 	slesInitBackoffDuration = 5 * time.Second
 
@@ -1487,6 +1488,13 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if err := backoff.Retry(isStartupDone, backoffPolicy); err != nil {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
+
+	// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
+	// sensible/deterministic workarounds for each of the individual problems.
+	if IsSUSE(vm.Platform) {
+		time.Sleep(slesStartupDelay)
+	}
+
 	return nil
 }
 
