@@ -1050,6 +1050,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if IsSUSE(vm.Platform) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return nil, err
+		}
+	}
+
 	return vm, nil
 }
 
