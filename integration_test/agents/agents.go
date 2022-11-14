@@ -334,7 +334,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		strings.HasPrefix(vm.Platform, "rhel-") ||
 		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "sles-") {
+	} else if gce.IsSUSE(vm.Platform) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "debian-") ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
