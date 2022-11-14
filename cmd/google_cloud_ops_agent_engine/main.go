@@ -109,8 +109,9 @@ func main() {
 	if err != nil {
 		return fmt.Errorf("can't get resource metadata: %w", err)
 	}
+	fmt.Println(MetadataResource.Project)
 
-	if err := APIChecks(MetadataResource.Project; err != nil {
+	if err := APIChecks(MetadataResource.Project); err != nil {
 		log.Fatalf("APIChecks : %s", err)
 	}
 	
