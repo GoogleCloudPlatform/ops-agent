@@ -98,6 +98,7 @@ func APIChecks(project string) error {
             // TODO: Handle error.
             fmt.Println(err)
     }
+    fmt.Println("Ping succeded")
 
 	return nil
 }
