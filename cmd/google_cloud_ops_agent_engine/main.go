@@ -89,7 +89,7 @@ func Health_Checks(project string) error {
 func APIChecks(project string) error {
 
 	ctx := context.Background()
-    client, err := logging.NewClient(ctx, "my-project")
+    client, err := logging.NewClient(ctx, project)
     if err != nil {
             // TODO: Handle error.
             fmt.Println(err)
