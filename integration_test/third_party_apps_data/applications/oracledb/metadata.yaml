@@ -309,7 +309,6 @@ expected_logs:
       - name: severity
         type: string
         description: ''
-
         # UTC Info fields:{key:"action"  value:{string_value:"CONNECT"}}  fields:{key:"action_number"  value:{string_value:"100"}}  fields:{key:"client_terminal"  value:{string_value:"pts/0"}}  fields:{key:"client_user"  value:{string_value:"oracle"}}  fields:{key:"database_user"  value:{string_value:"/"}}  fields:{key:"length"  value:{string_value:"303"}}  fields:{key:"privilege"  value:{string_value:"SYSDBA"}}  fields:{key:"sessionid"  value:{string_value:"4294967295"}}  fields:{key:"status"  value:{string_value:"0"}}  fields:{key:"user_host"  value:{string_value:"github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799"}} map[compute.googleapis.com/resource_name:github-test-20220916-6c61b-56871926-2b15-45e7-b64f-a9c523de4799 logging.googleapis.com/instrumentation_source:agent.googleapis.com/oracledb_audit] ajksmmf17r8g7 <nil> <nil> projects/stackdriver-test-143416/logs/oracledb_audit type:"gce_instance"  labels:{key:"instance_id"  value:"1038670580234678365"}  labels:{key:"project_id"  value:"stackdriver-test-143416"}  labels:{key:"zone"  value:"us-central1-b"}   false <nil>}
   - log_name: oracledb_audit
     fields:

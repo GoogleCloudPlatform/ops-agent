@@ -51,25 +51,16 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
-# If a built agent was passed in from Kokoro directly, use that. The file will
-# always be in $KOKORO_GFILE_DIR/result or $KOKORO_GFILE_DIR/out.
-if [[ -d "${KOKORO_GFILE_DIR}" ]]; then
-  if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
-    RESULT_DIR="${KOKORO_GFILE_DIR}/result"
-  elif compgen -G "${KOKORO_GFILE_DIR}/out/google-cloud-ops-agent*" > /dev/null; then
-    RESULT_DIR="${KOKORO_GFILE_DIR}/out"
-  fi
+# If a built agent was passed in from Kokoro directly, use that.
+if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
+  # Upload the agent packages to GCS.
+  AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
+  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*" "${AGENT_PACKAGES_IN_GCS}/"
 
-  if [[ -n "${RESULT_DIR-}" ]]; then
-    # Upload the agent packages to GCS.
-    AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
-    gsutil cp -r "${RESULT_DIR}/*" "${AGENT_PACKAGES_IN_GCS}/"
-
-    # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
-    # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)
-    # to install and use this custom build of the agent instead.
-    export AGENT_PACKAGES_IN_GCS
-  fi
+  # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
+  # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)
+  # to install and use this custom build of the agent instead.
+  export AGENT_PACKAGES_IN_GCS
 fi
 
 LOGS_DIR="${KOKORO_ARTIFACTS_DIR}/logs"
@@ -84,7 +75,8 @@ unset GOPATH
 GO_VERSION="1.19"
 
 # Download and install a newer version of go.
-wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
+# Install from a GCS bucket to avoid being throttled by go.dev.
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin
