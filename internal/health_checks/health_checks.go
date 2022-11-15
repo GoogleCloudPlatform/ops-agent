@@ -53,7 +53,7 @@ func Health_Checks() error {
     if err := APIChecks(projectId); err != nil {
         log.Fatalf("APIChecks : %s", err)
     }
-    
+
 	fmt.Println("Health_Checks")
 	ctx := context.Background()
     // This snippet has been automatically generated and should be regarded as a code template only.
