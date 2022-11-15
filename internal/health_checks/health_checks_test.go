@@ -12,109 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package health_checks
+package health_checks_test
 
-import (
-    "log"
-    "fmt"
+// import (
+    //"testing"
+    //"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+    // "github.com/GoogleCloudPlatform/ops-agent/apps"
+    // "gotest.tools/v3/assert"
+//)
 
-    "cloud.google.com/go/logging"
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+// var (
+//     platforms               = []string{"linux", "windows"}
+//     defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
+//         "linux": self_metrics.EnabledReceivers{
+//             MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+//             LogsReceiverCountsByType:    map[string]int{"files": 1},
+//         },
+//         "windows": self_metrics.EnabledReceivers{
+//             MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
+//             LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
+//         },
+//     }
+// )
 
-    "context"
-
-    apikeys "cloud.google.com/go/apikeys/apiv2"
-    "google.golang.org/api/iterator"
-
-    apikeyspb "google.golang.org/genproto/googleapis/api/apikeys/v2"
-    metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
-)
-
-var (
-    // MetadataResource is the resource metadata for the instance we're running on.
-    // Note: This is a global variable so that it can be set in tests.
-    MetadataResource resourcedetector.Resource
-)
-
-func Health_Checks(uc *confgenerator.UnifiedConfig) error {
-
-    MetadataResource, err := resourcedetector.GetResource()
-    if err != nil {
-        log.Fatalf("can't get resource metadata: %w", err)
-    }
-
-    var projectId string
-    if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-        projectId = gceMetadata.Project
-    } else {
-        // Not on GCE
-        projectId = "Not-on-GCE"
-    }
-    fmt.Println(projectId)
-
-    fmt.Println("Get MetadataResource : ")
-    fmt.Println("%+v", gceMetadata)
-
-    fmt.Println("Health_Checks")
-
-    if err := APICheck(projectId); err != nil {
-        log.Fatalf("APICheck : %s", err)
-    }
-
-    if err := PermissionsCheck(projectId); err != nil {
-        log.Fatalf("PortsCheck : %s", err)
-    }
-
-    if err := PortsCheck(uc); err != nil {
-        log.Fatalf("PortsCheck : %s", err)
-    }
-
-	return nil
-}
-
-func APICheck(project string) error {
-
-	ctx := context.Background()
-    client, err := logging.NewClient(ctx, project)
-    if err != nil {
-            fmt.Println(err)
-            return err
-    }
-    if err := client.Ping(ctx); err != nil {
-            fmt.Println(err)
-            return err
-    }
-    fmt.Println("Ping succeded")
-
-	return nil
-}
-
-func PermissionsCheck(project string) error {
-
-    ctx := context.Background()
-    c, err := metricsscope.NewMetricsScopesClient(ctx)
-    if err != nil {
-        return err
-    }
-    defer c.Close()
-
-    req := &metricsscopepb.ListMetricsScopesByMonitoredProjectRequest{
-        // TODO: Fill request struct fields.
-        // See https://pkg.go.dev/cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb#ListMetricsScopesByMonitoredProjectRequest.
-        
-    }
-    resp, err := c.ListMetricsScopesByMonitoredProject(ctx, req)
-    if err != nil {
-        return err
-    }
-    _ = resp
-
-    return nil
-}
-
-func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-
-    return nil
-}
+// func TestEnabledReceiversDefaultConfig(t *testing.T) {
+//     for _, p := range platforms {
+//         t.Run(p, func(t *testing.T) {
+//             uc := apps.BuiltInConfStructs[p]
+//             eR, err := self_metrics.CountEnabledReceivers(uc)
+//             assert.NilError(t, err)
+//             assert.DeepEqual(t, eR, defaultEnabledReceivers[p])
+//         })
+//     }
+// }

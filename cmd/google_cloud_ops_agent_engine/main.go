@@ -36,10 +36,6 @@ var (
 func main() {
 	flag.Parse()
 
-	if err := health_checks.Health_Checks(); err != nil {
-		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
-	}
-
 	if err := run(); err != nil {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
 	}
@@ -65,5 +61,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	if err := health_checks.Health_Checks(&uc); err != nil {
+		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
+	}
+
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
 }

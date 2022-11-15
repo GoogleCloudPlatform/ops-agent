@@ -24,10 +24,6 @@ import (
 
     "context"
 
-    apikeys "cloud.google.com/go/apikeys/apiv2"
-    "google.golang.org/api/iterator"
-
-    apikeyspb "google.golang.org/genproto/googleapis/api/apikeys/v2"
     metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
     metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
 )
@@ -46,32 +42,32 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
     }
 
     var projectId string
+    fmt.Println("Get MetadataResource : ")
     if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+        fmt.Println(fmt.Sprintf("gceMetadata : %+v \n \n", gceMetadata))
         projectId = gceMetadata.Project
     } else {
         // Not on GCE
         projectId = "Not-on-GCE"
     }
-    fmt.Println(projectId)
+    fmt.Println(fmt.Sprintf("projectId : %s \n \n", projectId))
 
-    fmt.Println("Get MetadataResource : ")
-    fmt.Println("%+v", gceMetadata)
 
-    fmt.Println("Health_Checks")
+    fmt.Println("Health_Checks \n \n")
 
     if err := APICheck(projectId); err != nil {
-        log.Fatalf("APICheck : %s", err)
+        log.Fatalf("APICheck : %s \n \n", err)
     }
 
     if err := PortsCheck(uc); err != nil {
-        log.Fatalf("PortsCheck : %s", err)
+        log.Fatalf("PortsCheck : %s \n \n", err)
     }
 
 	return nil
 }
 
 func APICheck(project string) error {
-
+    fmt.Println("APICheck \n \n")
 	ctx := context.Background()
     client, err := logging.NewClient(ctx, project)
     if err != nil {
@@ -88,12 +84,12 @@ func APICheck(project string) error {
 }
 
 func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-
+    fmt.Println("PortsCheck \n \n")
     return nil
 }
 
 func PermissionsCheck(project string) error {
-
+    fmt.Println("PermissionsCheck \n \n")
     ctx := context.Background()
     c, err := metricsscope.NewMetricsScopesClient(ctx)
     if err != nil {
