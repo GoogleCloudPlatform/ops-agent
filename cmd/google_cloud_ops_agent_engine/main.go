@@ -18,18 +18,11 @@ import (
 	"flag"
 	"log"
 	"os"
-	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"github.com/shirou/gopsutil/host"
-	"context"
-
-    apikeys "cloud.google.com/go/apikeys/apiv2"
-    "google.golang.org/api/iterator"
-
-    apikeyspb "google.golang.org/genproto/googleapis/api/apikeys/v2"
 )
 
 var (
