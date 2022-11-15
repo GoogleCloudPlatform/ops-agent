@@ -153,6 +153,7 @@ const (
 	vmInitBackoffDuration             = 10 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
+	slesStartupDelay        = 60 * time.Second
 	slesInitMaxAttempts     = 5
 	slesInitBackoffDuration = 5 * time.Second
 
@@ -1050,6 +1051,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if IsSUSE(vm.Platform) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return nil, err
+		}
+	}
+
 	return vm, nil
 }
 
@@ -1487,6 +1496,13 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if err := backoff.Retry(isStartupDone, backoffPolicy); err != nil {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
+
+	// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
+	// sensible/deterministic workarounds for each of the individual problems.
+	if IsSUSE(vm.Platform) {
+		time.Sleep(slesStartupDelay)
+	}
+
 	return nil
 }
 
