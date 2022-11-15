@@ -43,6 +43,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -54,6 +55,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
@@ -78,27 +80,19 @@ func configPathForPlatform(platform string) string {
 	return "/etc/google-cloud-ops-agent/config.yaml"
 }
 
+func workDirForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return `C:\`
+	}
+	return "/tmp/"
+}
+
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return `
-Restart-Service google-cloud-ops-agent -Force
-# TODO(b/240564518): remove process-killing once bug is fixed
-if (!$?) {
-	Write-Output 'Could not restart services gracefully. Killing processes directly...'
-	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Disabled
-	# TODO: use 'sc failure google-cloud-ops-agent reset= 0 actions= ""' to disable automatic recovery in case it interferes with Start-Service
-	Get-WmiObject -Class Win32_Service -Filter "Name LIKE 'google-cloud-ops-agent%'" | ForEach-Object {		
-		Stop-Process -Force $_.ProcessId -ErrorAction SilentlyContinue
-		if (!$?) {
-			Write-Output "Could not stop process $($_.ProcessId); proceeding anyway"
-		}
-	}
-	Get-Service -Name 'google-cloud-ops-agent*' | Set-Service -StartupType Automatic
-	Start-Service -Name 'google-cloud-ops-agent'
-}`
+		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent.target"
+	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
 }
 
 func systemLogTagForPlatform(platform string) string {
@@ -255,7 +249,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 			time.Sleep(startupDelay)
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgent() failed to upload config file: %v", err)
+			return fmt.Errorf("setupOpsAgentFrom() failed to upload config file: %v", err)
 		}
 		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			return err
@@ -1692,7 +1686,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 
 		var series *monitoring.TimeSeries
-		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1737,7 +1731,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil)
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 			if err != nil {
 				t.Error(err)
 				return
@@ -1798,6 +1792,305 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func TestPrometheusMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		// TODO: Enable this test for all distros once the prometheus receiver is GA.
+		// For some reason, the featuregate, when set in the default systemd environment
+		// file, is not being picked up on centOS distros. This is a temporary workaround.
+		if gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		promConfig := `metrics:
+  receivers:
+    prometheus:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['localhost:20202']
+            relabel_configs:
+              - source_labels: [__meta_gce_instance_name]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_name
+              - source_labels: [__meta_gce_instance_id]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_id
+              - source_labels: [__meta_gce_machine_type]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: machine_type
+              - source_labels: [__meta_gce_project]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_project_id
+              - source_labels: [__meta_gce_zone]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: zone
+              - source_labels: [__meta_gce_tags]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: tags
+              - source_labels: [__meta_gce_network]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: network
+              - source_labels: [__meta_gce_subnetwork]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: subnetwork
+              - source_labels: [__meta_gce_public_ip]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: public_ip
+              - source_labels: [__meta_gce_private_ip]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: private_ip
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus
+`
+
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		}
+
+		var multiErr error
+		metricValueType := metric.ValueType.String()
+		metricKind := metric.MetricKind.String()
+		metricResource := metric.Resource.Type
+		metricLabels := metric.Metric.Labels
+
+		if metricValueType != "DOUBLE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+		}
+		if metricKind != "CUMULATIVE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+		}
+		if metricResource != "prometheus_target" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+		}
+		if metricLabels["instance_name"] != vm.Name {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+		}
+		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+		}
+		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
+		}
+		if metricLabels["instance_project_id"] != vm.Project {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
+		}
+		if metricLabels["zone"] != vm.Zone {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
+		}
+		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
+		}
+		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+}
+
+// Test the Counter and Gauge metric types using a JSON Prometheus exporter
+// The JSON exporter will connect to a Python http server that serve static JSON files
+func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		// TODO: Enable this test for all distros once the prometheus receiver is GA.
+		// For some reason, the featuregate, when set in the default systemd environment
+		// file, is not being picked up on centOS distros. This is a temporary workaround.
+		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		type fileToUpload struct {
+			local, remote string
+		}
+
+		filesToUpload := []fileToUpload{
+			{local: "testdata/data.json",
+				remote: "data.json"},
+			{local: "testdata/json_exporter_config.yaml",
+				remote: "json_exporter_config.yaml"},
+		}
+
+		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
+
+		for _, file := range filesToUpload {
+			f, err := os.Open(file.local)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		packages := []string{"wget", "python3"}
+		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		if err != nil {
+			t.Fatalf("failed to install %v with err: %s", packages, err)
+		}
+
+		// Run the setup script to run the Python http server and the JSON exporter
+		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
+		if err != nil {
+			t.Fatalf("failed to open setup script: %s", err)
+		}
+
+		env := map[string]string{"WORKDIR": workDir}
+		maxAttampts := 5
+		for attempt := 0; attempt < maxAttampts; attempt++ {
+			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
+			// Since the script will start the processes in the background, the script should finish without error
+			if err != nil {
+				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
+			}
+			// Wait until both are ready
+			time.Sleep(30 * time.Second)
+			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			// We will retry when:
+			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
+			// If neither cases - break the retrying loop
+			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+				break
+			}
+
+			// Out of attempts
+			if attempt == maxAttampts-1 {
+				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+				if liveCheckErr != nil {
+					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
+				}
+				t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries. %s", errString)
+			}
+		}
+
+		config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: json
+          metrics_path: /probe
+          params:
+            module: [default]
+          static_configs:
+            - targets:
+              - http://localhost:8000/data.json 
+          relabel_configs:
+            - source_labels: [__address__]
+              target_label: __param_target
+              replacement: '$1'
+            - source_labels: [__param_target]
+              target_label: instance
+              replacement: '$1'
+            - target_label: __address__
+              replacement: localhost:7979 
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+
+		type promMetricTest struct {
+			metricName         string
+			expectedMetricKind metric.MetricDescriptor_MetricKind
+			expectedValueType  metric.MetricDescriptor_ValueType
+			expectedValue      float64
+		}
+
+		testData := []promMetricTest{
+			{"prometheus.googleapis.com/test_gauge_value/gauge",
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789},
+			// Since we are sending the same number at every time point,
+			// the cumulative counter metric will return 0 as no change in values
+			{"prometheus.googleapis.com/test_counter_value/counter",
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0},
+			// Untyped type - GCM will have untyped metrics as gauge type
+			{"prometheus.googleapis.com/test_untyped_value/gauge",
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56},
+		}
+
+		var multiErr error
+		for _, test := range testData {
+			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, test.metricName, window, nil, true); err != nil {
+				multiErr = multierr.Append(multiErr, err)
+			} else {
+				if pts.MetricKind != test.expectedMetricKind {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.metricName, pts.MetricKind, test.expectedMetricKind))
+				}
+				if pts.ValueType != test.expectedValueType {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.metricName, pts.ValueType, test.expectedValueType))
+				}
+				if len(pts.Points) == 0 {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.metricName))
+				} else if pts.Points[0].Value.GetDoubleValue() != test.expectedValue {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.metricName, pts.Points[0].Value.GetDoubleValue(), test.expectedValue))
+				}
+			}
+		}
+
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+}
+
 func TestExcludeMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -1846,7 +2139,7 @@ metrics:
 		excludedMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
-		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil); err != nil {
+		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
 		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
@@ -1952,7 +2245,7 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	// Query for a metric from the last minute. Sleep for 3 minutes first
 	// to make sure we aren't picking up metrics from a previous instance
 	// of the metrics agent.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil)
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/cpu/utilization", time.Minute, nil, false)
 	return err
 }
 
@@ -1990,7 +2283,7 @@ func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce
 	// Query for a metric sent by the diagnostics service from the last
 	// minute. Sleep for 3 minutes first to make sure we aren't picking
 	// up metrics from a previous instance of the diagnostics service.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil)
+	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
 	return err
 }
 
