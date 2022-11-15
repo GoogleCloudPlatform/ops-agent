@@ -22,10 +22,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"github.com/shirou/gopsutil/host"
-	"cloud.google.com/go/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-
 	"context"
 
     apikeys "cloud.google.com/go/apikeys/apiv2"
@@ -40,97 +38,18 @@ var (
 	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
-
-	// MetadataResource is the resource metadata for the instance we're running on.
-	// Note: This is a global variable so that it can be set in tests.
-	MetadataResource resourcedetector.Resource
 )
-
-func Health_Checks(project string) error {
-
-	fmt.Println("Health_Checks")
-	ctx := context.Background()
-    // This snippet has been automatically generated and should be regarded as a code template only.
-    // It will require modifications to work:
-    // - It may require correct/in-range values for request initialization.
-    // - It may require specifying regional endpoints when creating the service client as shown in:
-    //   https://pkg.go.dev/cloud.google.com/go#hdr-Client_Options
-    c, err := apikeys.NewClient(ctx)
-    fmt.Println(c)
-    if err != nil {
-            // TODO: Handle error.
-    }
-    defer c.Close()
-
-    req := &apikeyspb.ListKeysRequest{
-    	Parent: "fcovalente-dev",
-        // TODO: Fill request struct fields.
-        // See https://pkg.go.dev/google.golang.org/genproto/googleapis/api/apikeys/v2#ListKeysRequest.
-    }
-    it := c.ListKeys(ctx, req)
-    for {
-            resp, err := it.Next()
-            fmt.Println(resp)
-            if err == iterator.Done {
-                    break
-            }
-            if err != nil {
-            		fmt.Println(err)
-                    // TODO: Handle error.
-                    break
-            }
-            // TODO: Use resp.
-            _ = resp
-    }
-
-	return nil
-}
-
-func APIChecks(project string) error {
-
-	ctx := context.Background()
-    client, err := logging.NewClient(ctx, project)
-    if err != nil {
-            // TODO: Handle error.
-            fmt.Println(err)
-    }
-    if err := client.Ping(ctx); err != nil {
-            // TODO: Handle error.
-            fmt.Println(err)
-    }
-    fmt.Println("Ping succeded")
-
-	return nil
-}
 
 func main() {
 	flag.Parse()
 
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		log.Fatalf("can't get resource metadata: %w", err)
+	if err := health_checks.Health_Checks(); err != nil {
+		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
 	}
 
-	var projectId string
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-	    projectId = gceMetadata.Project
-	} else {
-	    // Not on GCE
-	    projectId = "Not-on-GCE"
-	}
-	fmt.Println(projectId)
-
-	if err := APIChecks(projectId); err != nil {
-		log.Fatalf("APIChecks : %s", err)
-	}
-	
-	if err := Health_Checks(projectId); err != nil {
-		log.Fatalf("Health_Checks : %s", err)
-	}
-
-	/*if err := run(); err != nil {
+	if err := run(); err != nil {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
-	}*/
+	}
 }
 func run() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
