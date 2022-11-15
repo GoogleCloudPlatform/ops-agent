@@ -63,6 +63,10 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
         log.Fatalf("APICheck : %s", err)
     }
 
+    if err := PermissionsCheck(projectId); err != nil {
+        log.Fatalf("PortsCheck : %s", err)
+    }
+
     if err := PortsCheck(uc); err != nil {
         log.Fatalf("PortsCheck : %s", err)
     }
@@ -87,11 +91,6 @@ func APICheck(project string) error {
 	return nil
 }
 
-func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-
-    return nil
-}
-
 func PermissionsCheck(project string) error {
 
     ctx := context.Background()
@@ -111,6 +110,11 @@ func PermissionsCheck(project string) error {
         return err
     }
     _ = resp
+
+    return nil
+}
+
+func PortsCheck(uc *confgenerator.UnifiedConfig) error {
 
     return nil
 }
