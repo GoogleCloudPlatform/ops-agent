@@ -2134,7 +2134,10 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		// TODO: Enable this test for all distros once the prometheus receiver is GA.
+		// For some reason, the featuregate, when set in the default systemd environment
+		// file, is not being picked up on centOS distros. This is a temporary workaround.
+		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
@@ -2213,7 +2216,10 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+			t.Fatal(err)
+		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
