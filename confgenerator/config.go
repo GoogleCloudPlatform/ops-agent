@@ -31,6 +31,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
+	promconfig "github.com/prometheus/prometheus/config"
 )
 
 // Ops Agent config.
@@ -177,6 +178,7 @@ func newValidator() *validator.Validate {
 		}
 		return t >= tmin
 	})
+	v.RegisterStructValidation(validatePrometheusConfig, &promconfig.Config{})
 	// filter validates that a Cloud Logging filter condition is valid
 	v.RegisterValidation("filter", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewFilter(fl.Field().String())
@@ -283,7 +285,7 @@ type Component interface {
 // ConfigComponent holds the shared configuration fields that all components have.
 // It is also used by itself when unmarshaling a component's configuration.
 type ConfigComponent struct {
-	Type string `yaml:"type" validate:"required"`
+	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
 // componentFactory is the value type for the componentTypeRegistry map.
@@ -347,6 +349,17 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 	}
 	*inner = o
 	return unmarshal(*inner)
+}
+
+// GetComponentsFromRegistry returns all components that belong to the associated registry
+func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
+	components := make([]Component, len(c.TypeMap))
+	i := 0
+	for _, comp := range c.TypeMap {
+		components[i] = comp.constructor()
+		i++
+	}
+	return components
 }
 
 // Ops Agent logging config.
