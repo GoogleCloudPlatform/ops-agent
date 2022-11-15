@@ -2511,11 +2511,13 @@ func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if err != nil {
 		return err
 	}
-	installCmd := `wget https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
-sudo rm -rf /usr/local/go 
-sudo tar -C /usr/local -xzf go1.19.1.linux-amd64.tar.gz
+	// TODO: use runtime.Version() to extract the go version
+	goVersion := "1.19"
+	installCmd := fmt.Sprintf(`gsutil cp \
+"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
+sudo tar --directory /usr/local -xzf /dev/stdin
 sudo ln -s /usr/local/go/bin/go /usr/bin/go 
-`
+`, goVersion)
 	_, err = gce.RunRemotely(ctx, logger, vm, "", installCmd)
 	return err
 }
