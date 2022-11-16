@@ -35,6 +35,9 @@ func TestGettingResourceWithoutError(t *testing.T) {
 		if r.InterfaceIPv4["some_key"] != "some_value" {
 			t.Errorf("resource attribute InterfaceIPv4 has wrong value")
 		}
+		if r.DefaultScopes[0] != "some_value" {
+			t.Errorf("resource attribute DefaultScopes has wrong value")
+		}
 	} else {
 		t.Errorf("should have created GCEResource")
 	}
