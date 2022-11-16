@@ -334,6 +334,7 @@ expected_logs:
       - name: jsonPayload.dbid
         type: number
         description: Database identifier
+        optional: true
       - name: jsonPayload.length
         type: number
         description: Length of the string representing the action being logged
