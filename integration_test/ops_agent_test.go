@@ -1655,8 +1655,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", strings.Join([]string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
-			"sudo /usr/sbin/mkswap /swapfile",
-			"sudo /usr/sbin/swapon /swapfile",
+			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
+			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
 		}, " && "))
 		if err != nil {
 			t.Fatalf("Failed to enable swap file: %v", err)
