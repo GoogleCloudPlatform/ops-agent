@@ -1,0 +1,5 @@
+{
+    "counter": 1234,
+    "gauge": 789,
+    "untyped": 56 
+}
