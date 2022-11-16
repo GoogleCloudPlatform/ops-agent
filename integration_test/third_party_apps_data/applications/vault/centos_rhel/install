@@ -32,9 +32,20 @@ sudo systemctl enable --now vault
 # initialize and unseal vault
 export VAULT_ADDR=http://localhost:8200
 export VAULT_SKIP_VERIFY=true
-vault operator init -key-shares=1 -key-threshold=1 > init.out
-VAULT_KEY=$(grep 'Unseal Key 1' init.out | awk '{print $4}')
-VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
+vault operator init -key-shares=1 -key-threshold=1 | head -n3 | cat > .vault-init
+VAULT_KEY=$(grep 'Unseal Key 1'  .vault-init | awk '{print $NF}')
+VAULT_TOKEN=$(grep 'Initial Root Token:' .vault-init | awk '{print $NF}')
 export VAULT_TOKEN
 vault operator unseal $VAULT_KEY
 vault audit enable file file_path=/var/log/vault_audit.log
+
+
+# Create Prometheus ACL policy to access metrics endpoint
+vault policy write prometheus-metrics - << EOF
+    path "/sys/metrics" {
+      capabilities = ["read"]
+    }
+EOF
+
+# Create a example token with the prometheus-metrics policy to access vault metrics
+vault token create -field=token -policy prometheus-metrics > prometheus-token

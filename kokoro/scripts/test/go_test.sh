@@ -18,7 +18,6 @@
 # 1. various KOKORO_* variables
 # 2. TEST_SUITE_NAME: name of the test file, minus the .go suffix. For example,
 #    ops_agent_test or third_party_apps_test.
-# 3. WINRM_PAR_BLAZE_PATH: path to a copy of winrm.par to use for testing.
 #
 # And also the following, documented at the top of gce_testing.go and
 # $TEST_SUITE_NAME.go:
@@ -75,7 +74,8 @@ unset GOPATH
 GO_VERSION="1.19"
 
 # Download and install a newer version of go.
-wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
+# Install from a GCS bucket to avoid being throttled by go.dev.
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin
@@ -103,12 +103,6 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_LITE_BLAZE_PATH}"
   export GCLOUD_TO_TEST
 fi
-
-# Copy down winrm.par from GCS.
-WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
-gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
-chmod u+x "${WINRM_PAR_PATH}"
-export WINRM_PAR_PATH
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
