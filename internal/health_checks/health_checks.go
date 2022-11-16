@@ -26,6 +26,7 @@ import (
 
     metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
     metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
+    monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
 var (
@@ -63,29 +64,46 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
         log.Fatalf("PortsCheck : %s \n \n", err)
     }
 
+    if err := PermissionsCheck(projectId); err != nil {
+        log.Fatalf("PermissionsCheck : %s \n \n", err)
+    }
+
+    if err := NetworkCheck(); err != nil {
+        log.Fatalf("NetworkCheck : %s \n \n", err)
+    }
+
 	return nil
 }
 
 func APICheck(project string) error {
     fmt.Println("APICheck \n \n")
 	ctx := context.Background()
-    client, err := logging.NewClient(ctx, project)
+
+
+    // New Logging Client
+    fmt.Println("New Logging Client \n \n")
+    logClient, err := logging.NewClient(ctx, project)
     if err != nil {
-            fmt.Println(err)
-            return err
+        fmt.Println(err)
+        return err
     }
-    if err := client.Ping(ctx); err != nil {
-            fmt.Println(err)
-            return err
+    if err := logClient.Ping(ctx); err != nil {
+        fmt.Println(err)
+        return err
     }
     fmt.Println("Ping succeded")
+    logClient.Close()
+
+    // New Monitoring Client
+    fmt.Println("New Monitoring Client \n \n")
+    monClient, err := monitoring.NewMetricClient(ctx)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
+    monClient.Close()
 
 	return nil
-}
-
-func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-    fmt.Println("PortsCheck \n \n")
-    return nil
 }
 
 func PermissionsCheck(project string) error {
@@ -108,5 +126,15 @@ func PermissionsCheck(project string) error {
     }
     _ = resp
 
+    return nil
+}
+
+func PortsCheck(uc *confgenerator.UnifiedConfig) error {
+    fmt.Println("PortsCheck \n \n")
+    return nil
+}
+
+func NetworkCheck() error {
+    fmt.Println("NetworkCheck \n \n")
     return nil
 }
