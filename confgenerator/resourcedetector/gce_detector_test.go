@@ -68,6 +68,13 @@ func (fp *FakeProvider) get() (string, error) {
 	return fp.value, nil
 }
 
+func (fp *FakeProvider) getSlice() ([]string, error) {
+	if fp.err != nil {
+		return []string{}, fp.err
+	}
+	return []string{fp.value}, nil
+}
+
 func (fp *FakeProvider) getMap() (map[string]string, error) {
 	if fp.err != nil {
 		return map[string]string{}, fp.err
@@ -116,7 +123,7 @@ func (fp *FakeProvider) getMachineType() (string, error) {
 }
 
 func (fp *FakeProvider) getDefaultScopes() ([]string, error) {
-	return fp.getMap()
+	return fp.getSlice()
 }
 
 func (fp *FakeProvider) getMetadata() (map[string]string, error) {
