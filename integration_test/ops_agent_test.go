@@ -38,6 +38,7 @@ package integration_test
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -66,6 +67,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
+
+//go:embed testdata
+var testdataDir embed.FS
 
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
@@ -1947,19 +1951,20 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 
 		filesToUpload := []fileToUpload{
-			{local: "testdata/data.json",
+			{local: path.Join("testdata", "prometheus", "data.json"),
 				remote: "data.json"},
-			{local: "testdata/json_exporter_config.yaml",
+			{local: path.Join("testdata", "prometheus", "json_exporter_config.yaml"),
 				remote: "json_exporter_config.yaml"},
 		}
 
 		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
 
 		for _, file := range filesToUpload {
-			f, err := os.Open(file.local)
+			f, err := testdataDir.Open(file.local)
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer f.Close()
 			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
 			if err != nil {
 				t.Fatal(err)
@@ -1973,7 +1978,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 
 		// Run the setup script to run the Python http server and the JSON exporter
-		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
+		setupScript, err := testdataDir.ReadFile(path.Join("testdata", "prometheus", "setup_json_exporter.sh"))
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
