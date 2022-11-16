@@ -17,7 +17,10 @@ package health_checks
 import (
     "log"
     "fmt"
+    "time"
+    "net"
 
+    "go.uber.org/multierr"
     "cloud.google.com/go/logging"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -53,35 +56,38 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
     }
     fmt.Println(fmt.Sprintf("projectId : %s \n \n", projectId))
 
-
+    var multiErr error
     fmt.Println("Health_Checks \n \n")
 
     if err := APICheck(projectId); err != nil {
-        log.Fatalf("APICheck : %s \n \n", err)
+        fmt.Println(fmt.Sprintf("APICheckErr : %s \n \n", err))
     }
+    multiErr = multierr.Append(multiErr, err)
 
     if err := PortsCheck(uc); err != nil {
-        log.Fatalf("PortsCheck : %s \n \n", err)
+        fmt.Println(fmt.Sprintf("PortsCheckErr : %s \n \n", err))
     }
+    multiErr = multierr.Append(multiErr, err)
 
     if err := PermissionsCheck(projectId); err != nil {
-        log.Fatalf("PermissionsCheck : %s \n \n", err)
+        fmt.Println(fmt.Sprintf("PermissionsCheckErr : %s \n \n", err))
     }
+    multiErr = multierr.Append(multiErr, err)
 
     if err := NetworkCheck(); err != nil {
-        log.Fatalf("NetworkCheck : %s \n \n", err)
+        fmt.Println(fmt.Sprintf("NetworkCheckErr : %s \n \n", err))
     }
+    multiErr = multierr.Append(multiErr, err)
 
-	return nil
+	return multiErr
 }
 
 func APICheck(project string) error {
-    fmt.Println("APICheck \n \n")
+    fmt.Println("\n APICheck \n \n")
 	ctx := context.Background()
 
-
     // New Logging Client
-    fmt.Println("New Logging Client \n \n")
+    fmt.Println("New Logging Client \n")
     logClient, err := logging.NewClient(ctx, project)
     if err != nil {
         fmt.Println(err)
@@ -91,7 +97,7 @@ func APICheck(project string) error {
         fmt.Println(err)
         return err
     }
-    fmt.Println("Ping succeded")
+    fmt.Println("==> Ping succeded")
     logClient.Close()
 
     // New Monitoring Client
@@ -107,7 +113,7 @@ func APICheck(project string) error {
 }
 
 func PermissionsCheck(project string) error {
-    fmt.Println("PermissionsCheck \n \n")
+    fmt.Println("\n PermissionsCheck \n \n")
     ctx := context.Background()
     c, err := metricsscope.NewMetricsScopesClient(ctx)
     if err != nil {
@@ -129,12 +135,30 @@ func PermissionsCheck(project string) error {
     return nil
 }
 
+func check_port(host string, port string) {
+
+    timeout := time.Second
+    c, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
+    if err != nil {
+        fmt.Println("Connection Error:", err)
+    }
+    if c != nil {
+        defer c.Close()
+        fmt.Println("Opened", net.JoinHostPort(host, port))    
+    }
+}
+
 func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-    fmt.Println("PortsCheck \n \n")
+    fmt.Println("\n PortsCheck \n \n")
+
+    // Check prometheus exporter host port : 0.0.0.0 : 20202
+    host := "0.0.0.0"
+    port := "20202"
+    check_port(host, port)
     return nil
 }
 
 func NetworkCheck() error {
-    fmt.Println("NetworkCheck \n \n")
+    fmt.Println("\n NetworkCheck \n \n")
     return nil
 }
