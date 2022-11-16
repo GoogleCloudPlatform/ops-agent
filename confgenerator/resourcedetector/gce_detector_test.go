@@ -115,6 +115,10 @@ func (fp *FakeProvider) getMachineType() (string, error) {
 	return fp.get()
 }
 
+func (fp *FakeProvider) getDefaultScopes() ([]string, error) {
+	return fp.getMap()
+}
+
 func (fp *FakeProvider) getMetadata() (map[string]string, error) {
 	return fp.getMap()
 }
