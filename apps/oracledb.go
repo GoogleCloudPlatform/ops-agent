@@ -929,7 +929,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'\n?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%a %b %d %H:%M:%S %Y %Z",
+						TimeFormat: "%a %b %d %H:%M:%S %Y %z",
 						Types: map[string]string{
 							"length":        "int",
 							"action_number": "int",
