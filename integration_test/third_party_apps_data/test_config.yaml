@@ -40,6 +40,14 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   nginx:
     platforms_to_skip: *common_skips
+  oracledb:
+    # Oracle DB is difficult to install on these platforms.
+    platforms_to_skip:
+      - debian-10
+      - debian-11
+      - ubuntu-2004-lts
+      - sles-12
+      - sles-15
   redis:
     platforms_to_skip: *common_skips
   # As wildfly does not have package installers & is installed from tar,
