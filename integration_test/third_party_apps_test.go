@@ -462,7 +462,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
 	var err error
-	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
+	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
 	// if it does exist, we go on to the other metrics in parallel, by which point they
@@ -509,7 +509,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
-	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
+	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil, false)
 	if err != nil {
 		// Optional metrics can be missing
 		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
@@ -781,8 +781,7 @@ func incompatibleOperatingSystem(testCase test) string {
 //     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too. Same for `OracleDBPlatform` and
-// `OracleDBApp`.
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -807,9 +806,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
 		}
+    // TODO(martijnvans): Delete this special case when deleting the special Oracle DB Kokoro build.
 		isOracleDBPlatform := test.platform == OracleDBPlatform
 		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform != isOracleDBApp {
+		if isOracleDBPlatform && !isOracleDBApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
@@ -872,6 +872,7 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
+					options.MachineType = "e2-highmem-8"
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
