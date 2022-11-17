@@ -22,8 +22,6 @@ description: |-
   and GPU used memory metrics from NVIDIA GPUs.
 configure_integration: |-
   You must install the NVIDIA driver on a host with NVIDIA GPUs. 
-minimum_supported_agent_version:
-  metrics: 2.23.0
 supported_operating_systems: linux
 supported_app_version: ["515.65.01"]
 expected_metrics:
