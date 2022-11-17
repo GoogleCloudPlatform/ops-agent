@@ -19,7 +19,7 @@ description: |-
   Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
 configure_integration: |-
   To collect telemetry from your Vault instance, you must enable the prometheus_retention_time to a non-zero value in your HCL or JSON Vault configuration file.
-  
+
   <pre>
   Full configuration options can be found at https://www.vaultproject.io/docs/configuration
   telemetry {
@@ -32,7 +32,7 @@ configure_integration: |-
   A root token is used to add a policy that has read capabilities to /sys/metrics.
   This policy is used to create a Vault token with sufficient permission to collect Vault metrics.
   The following script is a quick start to get up and running.
-  
+
   ```bash
   # If you are initializing Vault for the first time, use this script to generate a root token.
   # Otherwise see [here](https://developer.hashicorp.com/vault/tutorials/operations/generate-root) how to generate a root token.
