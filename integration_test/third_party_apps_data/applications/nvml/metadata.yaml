@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-public_url: "todo"
 app_url: "https://developer.nvidia.com/nvidia-management-library-nvml"
 short_name: nvml
 long_name: nvml
