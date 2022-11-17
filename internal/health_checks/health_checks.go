@@ -15,10 +15,12 @@
 package health_checks
 
 import (
+    "io"
     "log"
     "fmt"
     "time"
     "net"
+    "net/http"
 
     "go.uber.org/multierr"
     "cloud.google.com/go/logging"
@@ -27,8 +29,8 @@ import (
 
     "context"
 
-    metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
+    // metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
+    // metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
     monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
@@ -36,6 +38,20 @@ var (
     // MetadataResource is the resource metadata for the instance we're running on.
     // Note: This is a global variable so that it can be set in tests.
     MetadataResource resourcedetector.Resource
+
+    // Expected scopes
+    requiredLoggingScopes = []string{
+        "https://www.googleapis.com/auth/logging.write",
+        "https://www.googleapis.com/auth/logging.admin",
+    }
+    requiredMonitoringScopes = []string{
+        "https://www.googleapis.com/auth/monitoring.write",
+        "https://www.googleapis.com/auth/monitoring.admin",
+    }
+
+    // API urls
+    loggingAPIUrl = "https://logging.googleapis.com/$discovery/rest"
+    monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
 )
 
 func Health_Checks(uc *confgenerator.UnifiedConfig) error {
@@ -46,10 +62,12 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
     }
 
     var projectId string
+    var defaultScopes []string
     fmt.Println("Get MetadataResource : ")
     if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
         fmt.Println(fmt.Sprintf("gceMetadata : %+v \n \n", gceMetadata))
         projectId = gceMetadata.Project
+        defaultScopes = gceMetadata.DefaultScopes
     } else {
         // Not on GCE
         projectId = "Not-on-GCE"
@@ -58,6 +76,16 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
 
     var multiErr error
     fmt.Println("Health_Checks \n \n")
+
+    if err := NetworkCheck(); err != nil {
+        fmt.Println(fmt.Sprintf("NetworkCheckErr : %s \n \n", err))
+    }
+    multiErr = multierr.Append(multiErr, err)
+
+    if err := PermissionsCheck(defaultScopes); err != nil {
+        fmt.Println(fmt.Sprintf("PermissionsCheckErr : %s \n \n", err))
+    }
+    multiErr = multierr.Append(multiErr, err)
 
     if err := APICheck(projectId); err != nil {
         fmt.Println(fmt.Sprintf("APICheckErr : %s \n \n", err))
@@ -69,17 +97,58 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
     }
     multiErr = multierr.Append(multiErr, err)
 
-    if err := PermissionsCheck(projectId); err != nil {
-        fmt.Println(fmt.Sprintf("PermissionsCheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
-    if err := NetworkCheck(); err != nil {
-        fmt.Println(fmt.Sprintf("NetworkCheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
 	return multiErr
+}
+
+func runGetHTTPRequest(url string) (string, string, error) {
+    resp, err := http.Get(url)
+    if err != nil {
+        return "", "", err
+    }
+    defer resp.Body.Close()
+
+    status := resp.Status
+    b, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return "", "", err
+    }
+
+    return status, string(b), nil
+}
+
+func NetworkCheck() error {
+    fmt.Println("\n NetworkCheck \n \n")
+
+    // Request to logging API
+    status, response, err := runGetHTTPRequest(loggingAPIUrl)
+    fmt.Println(status)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
+    if status == "200 OK" {
+        fmt.Println("Query to loggingAPIUrl was successful.")
+    } else {
+        fmt.Println("Query to loggingAPIUrl was not successful.")
+        return fmt.Errorf("Query to loggingAPIUrl was not successful.")
+    }
+
+    // Request to monitoring API
+    status, response, err = runGetHTTPRequest(monitoringAPIUrl)
+    fmt.Println(status)
+    if err != nil {
+        fmt.Println(err)
+        return err
+    }
+    if status == "200 OK" {
+        fmt.Println("Query to monitoringAPIUrl was successful.")
+    } else {
+        fmt.Println("Query to monitoringAPIUrl was not successful.")
+        return fmt.Errorf("Query to monitoringAPIUrl was not successful.")
+    }
+
+    response = response + ""
+    return nil
 }
 
 func APICheck(project string) error {
@@ -97,7 +166,7 @@ func APICheck(project string) error {
         fmt.Println(err)
         return err
     }
-    fmt.Println("==> Ping succeded")
+    fmt.Println("==> Logging API Ping succeded")
     logClient.Close()
 
     // New Monitoring Client
@@ -107,30 +176,47 @@ func APICheck(project string) error {
         fmt.Println(err)
         return err
     }
+    fmt.Println("==> Monitoring Client successfully created")
     monClient.Close()
 
 	return nil
 }
 
-func PermissionsCheck(project string) error {
-    fmt.Println("\n PermissionsCheck \n \n")
-    ctx := context.Background()
-    c, err := metricsscope.NewMetricsScopesClient(ctx)
-    if err != nil {
-        return err
+func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error) {
+    for _, query := range querySlice {
+        for _, searchElement := range searchSlice {
+            if query == searchElement {
+                return true, nil
+            }
+        }
     }
-    defer c.Close()
+    return false, nil
+}
 
-    req := &metricsscopepb.ListMetricsScopesByMonitoredProjectRequest{
-        // TODO: Fill request struct fields.
-        // See https://pkg.go.dev/cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb#ListMetricsScopesByMonitoredProjectRequest.
-        
-    }
-    resp, err := c.ListMetricsScopesByMonitoredProject(ctx, req)
+func PermissionsCheck(defaultScopes []string) error {
+    fmt.Println("\n PermissionsCheck \n \n")
+    
+    found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
     if err != nil {
         return err
+    } else if found {
+        fmt.Println("Logging Scopes are enough to run the Ops Agent.")
+    } else {
+        fmt.Println("Logging Scopes are not enough to run the Ops Agent.")
+        return fmt.Errorf("Logging Scopes are not enough to run the Ops Agent.")
     }
-    _ = resp
+
+    found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
+    if err != nil {
+        return err
+    } else if found {
+        fmt.Println("Monitoring Scopes are enough to run the Ops Agent.")
+    } else {
+        fmt.Println("Monitoring Scopes are not enough to run the Ops Agent.")
+        return fmt.Errorf("Monitoring Scopes are not enough to run the Ops Agent.")
+    }
+
+    fmt.Println("\n PermissionsCheck PASSED \n \n")
 
     return nil
 }
@@ -155,10 +241,5 @@ func PortsCheck(uc *confgenerator.UnifiedConfig) error {
     host := "0.0.0.0"
     port := "20202"
     check_port(host, port)
-    return nil
-}
-
-func NetworkCheck() error {
-    fmt.Println("\n NetworkCheck \n \n")
     return nil
 }
