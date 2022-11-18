@@ -121,7 +121,7 @@ func NetworkCheck() error {
 
     // Request to logging API
     status, response, err := runGetHTTPRequest(loggingAPIUrl)
-    fmt.Println(status)
+    fmt.Println("==>" + status)
     if err != nil {
         fmt.Println(err)
         return err
@@ -135,7 +135,7 @@ func NetworkCheck() error {
 
     // Request to monitoring API
     status, response, err = runGetHTTPRequest(monitoringAPIUrl)
-    fmt.Println(status)
+    fmt.Println("==>" + status)
     if err != nil {
         fmt.Println(err)
         return err
@@ -156,7 +156,7 @@ func APICheck(project string) error {
 	ctx := context.Background()
 
     // New Logging Client
-    fmt.Println("New Logging Client \n")
+    fmt.Println("==> New Logging Client \n")
     logClient, err := logging.NewClient(ctx, project)
     if err != nil {
         fmt.Println(err)
@@ -170,7 +170,7 @@ func APICheck(project string) error {
     logClient.Close()
 
     // New Monitoring Client
-    fmt.Println("New Monitoring Client \n \n")
+    fmt.Println("==> New Monitoring Client \n \n")
     monClient, err := monitoring.NewMetricClient(ctx)
     if err != nil {
         fmt.Println(err)
@@ -226,7 +226,7 @@ func check_port(host string, port string) {
     timeout := time.Second
     c, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
     if err != nil {
-        fmt.Println("Connection Error:", err)
+        fmt.Println("==>Connection Error:", err)
     }
     if c != nil {
         defer c.Close()
