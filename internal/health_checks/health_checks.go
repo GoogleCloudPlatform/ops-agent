@@ -65,35 +65,35 @@ func Health_Checks(uc *confgenerator.UnifiedConfig) error {
     var defaultScopes []string
     fmt.Println("Get MetadataResource : ")
     if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-        fmt.Println(fmt.Sprintf("gceMetadata : %+v \n \n", gceMetadata))
+        fmt.Println(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
         projectId = gceMetadata.Project
         defaultScopes = gceMetadata.DefaultScopes
     } else {
         // Not on GCE
         projectId = "Not-on-GCE"
     }
-    fmt.Println(fmt.Sprintf("projectId : %s \n \n", projectId))
+    fmt.Println(fmt.Sprintf("==> projectId : %s \n \n", projectId))
 
     var multiErr error
     fmt.Println("Health_Checks \n \n")
 
     if err := NetworkCheck(); err != nil {
-        fmt.Println(fmt.Sprintf("NetworkCheckErr : %s \n \n", err))
+        fmt.Println(fmt.Sprintf("==> NetworkCheckErr : %s \n \n", err))
     }
     multiErr = multierr.Append(multiErr, err)
 
     if err := PermissionsCheck(defaultScopes); err != nil {
-        fmt.Println(fmt.Sprintf("PermissionsCheckErr : %s \n \n", err))
+        fmt.Println(fmt.Sprintf("==> PermissionsCheckErr : %s \n \n", err))
     }
     multiErr = multierr.Append(multiErr, err)
 
     if err := APICheck(projectId); err != nil {
-        fmt.Println(fmt.Sprintf("APICheckErr : %s \n \n", err))
+        fmt.Println(fmt.Sprintf("==> APICheckErr : %s \n \n", err))
     }
     multiErr = multierr.Append(multiErr, err)
 
     if err := PortsCheck(uc); err != nil {
-        fmt.Println(fmt.Sprintf("PortsCheckErr : %s \n \n", err))
+        fmt.Println(fmt.Sprintf("==> PortsCheckErr : %s \n \n", err))
     }
     multiErr = multierr.Append(multiErr, err)
 
@@ -117,7 +117,7 @@ func runGetHTTPRequest(url string) (string, string, error) {
 }
 
 func NetworkCheck() error {
-    fmt.Println("\n NetworkCheck \n \n")
+    fmt.Println("\n> NetworkCheck \n \n")
 
     // Request to logging API
     status, response, err := runGetHTTPRequest(loggingAPIUrl)
@@ -127,9 +127,9 @@ func NetworkCheck() error {
         return err
     }
     if status == "200 OK" {
-        fmt.Println("Query to loggingAPIUrl was successful.")
+        fmt.Println("==> Query to loggingAPIUrl was successful.")
     } else {
-        fmt.Println("Query to loggingAPIUrl was not successful.")
+        fmt.Println("==> Query to loggingAPIUrl was not successful.")
         return fmt.Errorf("Query to loggingAPIUrl was not successful.")
     }
 
@@ -141,9 +141,9 @@ func NetworkCheck() error {
         return err
     }
     if status == "200 OK" {
-        fmt.Println("Query to monitoringAPIUrl was successful.")
+        fmt.Println("==> Query to monitoringAPIUrl was successful.")
     } else {
-        fmt.Println("Query to monitoringAPIUrl was not successful.")
+        fmt.Println("==> Query to monitoringAPIUrl was not successful.")
         return fmt.Errorf("Query to monitoringAPIUrl was not successful.")
     }
 
@@ -152,7 +152,7 @@ func NetworkCheck() error {
 }
 
 func APICheck(project string) error {
-    fmt.Println("\n APICheck \n \n")
+    fmt.Println("\n> APICheck \n \n")
 	ctx := context.Background()
 
     // New Logging Client
@@ -194,15 +194,15 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
 }
 
 func PermissionsCheck(defaultScopes []string) error {
-    fmt.Println("\n PermissionsCheck \n \n")
+    fmt.Println("\n> PermissionsCheck \n \n")
     
     found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
     if err != nil {
         return err
     } else if found {
-        fmt.Println("Logging Scopes are enough to run the Ops Agent.")
+        fmt.Println("==> Logging Scopes are enough to run the Ops Agent.")
     } else {
-        fmt.Println("Logging Scopes are not enough to run the Ops Agent.")
+        fmt.Println("==> Logging Scopes are not enough to run the Ops Agent.")
         return fmt.Errorf("Logging Scopes are not enough to run the Ops Agent.")
     }
 
@@ -210,13 +210,13 @@ func PermissionsCheck(defaultScopes []string) error {
     if err != nil {
         return err
     } else if found {
-        fmt.Println("Monitoring Scopes are enough to run the Ops Agent.")
+        fmt.Println("==> Monitoring Scopes are enough to run the Ops Agent.")
     } else {
-        fmt.Println("Monitoring Scopes are not enough to run the Ops Agent.")
+        fmt.Println("==> Monitoring Scopes are not enough to run the Ops Agent.")
         return fmt.Errorf("Monitoring Scopes are not enough to run the Ops Agent.")
     }
 
-    fmt.Println("\n PermissionsCheck PASSED \n \n")
+    fmt.Println("\n> PermissionsCheck PASSED \n \n")
 
     return nil
 }
@@ -235,7 +235,7 @@ func check_port(host string, port string) {
 }
 
 func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-    fmt.Println("\n PortsCheck \n \n")
+    fmt.Println("\n> PortsCheck \n \n")
 
     // Check prometheus exporter host port : 0.0.0.0 : 20202
     host := "0.0.0.0"
