@@ -18,7 +18,6 @@ import (
     "io"
     "log"
     "fmt"
-    "time"
     "net"
     "net/http"
 
@@ -221,17 +220,18 @@ func PermissionsCheck(defaultScopes []string) error {
     return nil
 }
 
-func check_port(host string, port string) {
-
-    timeout := time.Second
-    c, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
+func check_port(host string, port string) error {
+    lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
     if err != nil {
-        fmt.Println("==>Connection Error:", err)
+        fmt.Println("==> Connection Error:", err)
+        return err
     }
-    if c != nil {
-        defer c.Close()
-        fmt.Println("Opened", net.JoinHostPort(host, port))    
+    fmt.Println("==> Listening on:", lsnr.Addr())
+    if lsnr != nil {
+        defer lsnr.Close()
+        fmt.Println("==> Opened", net.JoinHostPort(host, port))    
     }
+    return nil
 }
 
 func PortsCheck(uc *confgenerator.UnifiedConfig) error {
@@ -240,6 +240,9 @@ func PortsCheck(uc *confgenerator.UnifiedConfig) error {
     // Check prometheus exporter host port : 0.0.0.0 : 20202
     host := "0.0.0.0"
     port := "20202"
-    check_port(host, port)
+    err := check_port(host, port)
+    if err != nil {
+        return err
+    }
     return nil
 }
