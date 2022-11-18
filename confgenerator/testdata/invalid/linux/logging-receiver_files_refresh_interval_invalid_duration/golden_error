@@ -1,9 +1,1 @@
-[21:34] cannot unmarshal uint64 into Go struct field UnifiedConfig.Logging of type time.Duration
-  18 |       type: files
-  19 |       include_paths:
-  20 |       - /path/to/log/1/*
-> 21 |       wildcard_refresh_interval: 30
-                                        ^
-  22 |   service:
-  23 |     pipelines:
-  24 |       pipeline1:
+cannot unmarshal uint64 into Go struct field UnifiedConfig.Logging of type time.Duration
