@@ -3,7 +3,7 @@ set -e
 
 sudo yum clean all
 sudo yum update -y --skip-broken
-sudo yum update -y kernel kernel-headers kernel-devel epel-release pciutils gcc make dkms acpid pkgconfig
+sudo yum install -y kernel kernel-headers kernel-devel epel-release pciutils gcc make dkms acpid pkgconfig
 
 BASE_URL=https://us.download.nvidia.com/tesla
 DRIVER_VERSION=515.65.07
