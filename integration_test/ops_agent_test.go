@@ -1696,24 +1696,24 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 
 func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, expectedMetrics []*metadata.ExpectedMetric) {
 	// First make sure that the representative metric is being uploaded.
-	for _, metric := range expectedMetrics {
-		if !metric.Representative {
+	for _, m := range expectedMetrics {
+		if !m.Representative {
 			continue
 		}
 
 		var series *monitoring.TimeSeries
-		series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
+		series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, m.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
 		}
-		logger.ToMainLog().Printf("checking metric: %s", metric.Type)
-		if metric.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
-			for k, v := range metric.Labels {
+		logger.ToMainLog().Printf("checking metric: %s", m.Type)
+		if m.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
+			for k, v := range m.Labels {
 				match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", v), series.Metric.Labels[k])
-				logger.ToMainLog().Printf("xlp: %s | actual: %s | match: %v | matchErr", v, series.Metric.Labels[k], match, matchErr)
+				logger.ToMainLog().Printf("xlp: %s | actual: %s | match: %v | matchErr %s", v, series.Metric.Labels[k], match, matchErr)
 			}
 		}
-		err = metadata.AssertMetric(metric, series)
+		err = metadata.AssertMetric(m, series)
 		if err != nil {
 			t.Error(err)
 		}
@@ -1732,33 +1732,33 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 	// quota (b/185363780).
 	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, metric := range expectedMetrics {
-		metric := metric
+	for _, m := range expectedMetrics {
+		m := m
 
 		// Already validated the representative metric
-		if metric.Representative {
+		if m.Representative {
 			continue
 		}
 
 		// Don't validate optional metrics
-		if metric.Optional {
+		if m.Optional {
 			continue
 		}
 
-		if metric.Platform != "" && metric.Platform != platformKind {
+		if m.Platform != "" && m.Platform != platformKind {
 			continue
 		}
 
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, m.Type, window, nil, false)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 
-			err = metadata.AssertMetric(metric, series)
+			err = metadata.AssertMetric(m, series)
 			if err != nil {
 				t.Error(err)
 			}
