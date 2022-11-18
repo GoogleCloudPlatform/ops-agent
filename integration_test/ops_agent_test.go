@@ -1706,7 +1706,7 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 		if err != nil {
 			t.Error(err)
 		}
-
+		logger.ToMainLog().Printf("checking metric: %s", metric.Type)
 		if metric.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
 			for k, v := range metric.Labels {
 				match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", v), series.Metric.Labels[k])
