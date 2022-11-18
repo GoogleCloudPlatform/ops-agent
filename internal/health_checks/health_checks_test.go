@@ -13,35 +13,3 @@
 // limitations under the License.
 
 package health_checks_test
-
-// import (
-    //"testing"
-    //"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
-    // "github.com/GoogleCloudPlatform/ops-agent/apps"
-    // "gotest.tools/v3/assert"
-//)
-
-// var (
-//     platforms               = []string{"linux", "windows"}
-//     defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
-//         "linux": self_metrics.EnabledReceivers{
-//             MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
-//             LogsReceiverCountsByType:    map[string]int{"files": 1},
-//         },
-//         "windows": self_metrics.EnabledReceivers{
-//             MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
-//             LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
-//         },
-//     }
-// )
-
-// func TestEnabledReceiversDefaultConfig(t *testing.T) {
-//     for _, p := range platforms {
-//         t.Run(p, func(t *testing.T) {
-//             uc := apps.BuiltInConfStructs[p]
-//             eR, err := self_metrics.CountEnabledReceivers(uc)
-//             assert.NilError(t, err)
-//             assert.DeepEqual(t, eR, defaultEnabledReceivers[p])
-//         })
-//     }
-// }
