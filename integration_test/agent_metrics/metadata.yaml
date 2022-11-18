@@ -287,12 +287,3 @@ expected_metrics:
     labels:
       device: .*
       state: cached|free|reserved|used
-  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      module: metrics|logging
-      feature: service:pipelines
-      key: default_pipeline_overridden
-      value: false

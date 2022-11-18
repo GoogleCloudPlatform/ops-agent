@@ -1663,30 +1663,45 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	agentBytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var agentMetrics struct {
+	internalBytes, err := os.ReadFile(path.Join("agent_metrics", "internal.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type expectedMetrics struct {
 		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
 
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	var agentMetrics expectedMetrics
+	err = yaml.UnmarshalStrict(agentBytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedMetrics := agentMetrics.ExpectedMetrics
+	var internalMetrics expectedMetrics
+	err = yaml.UnmarshalStrict(internalBytes, &internalMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	testExpectedMetrics(ctx, t, logger, vm, window, agentMetrics.ExpectedMetrics)
+	testExpectedMetrics(ctx, t, logger, vm, window, internalMetrics.ExpectedMetrics)
+}
+
+func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, expectedMetrics []*metadata.ExpectedMetric) {
 	// First make sure that the representative metric is being uploaded.
-	for i, metric := range expectedMetrics {
+	for _, metric := range expectedMetrics {
 		if !metric.Representative {
 			continue
 		}
 
 		var series *monitoring.TimeSeries
-		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
+		series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
 		}
