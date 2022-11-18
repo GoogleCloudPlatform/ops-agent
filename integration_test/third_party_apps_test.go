@@ -572,8 +572,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
+	installCtx, cancel := context.WithTimeout(context.Background(), 30 * time.Minute)
+	defer cancel()
+
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
+		installCtx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
