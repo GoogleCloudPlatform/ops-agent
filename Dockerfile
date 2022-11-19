@@ -220,10 +220,16 @@ WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
-
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip && \
-    # Add home:ptrommler:formal repo to install >3.4 bison
-    zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+# Add agent-vendor.repo to install >3.4 bison
+RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
+name=google-cloud-monitoring-sles15-x86_64-test \n\
+baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+enabled         = 1 \n\
+autorefresh     = 0 \n\
+repo_gpgcheck   = 0 \n\
+gpgcheck        = 0' > agent-vendor.repo
+RUN set -x; zypper addrepo agent-vendor.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     zypper -n install bison>3.4 && \

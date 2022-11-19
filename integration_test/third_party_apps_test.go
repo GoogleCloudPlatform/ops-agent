@@ -228,7 +228,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	expectedField, ok := expectedFields[fieldName]
 	if !ok {
 		// Not expecting this field. It could however be populated with some default zero-values when we
-		// query it back. Check for zero values basued on expectedField.type? Not ideal for sure.
+		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
 			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
 		}
@@ -462,7 +462,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 
 func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
 	var err error
-	logger.ToMainLog().Printf("Parsed expectedMetrics: %+v", metrics)
+	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
 	// if it does exist, we go on to the other metrics in parallel, by which point they
@@ -509,7 +509,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
-	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil)
+	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil, false)
 	if err != nil {
 		// Optional metrics can be missing
 		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
@@ -666,12 +666,18 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 }
 
 func modifiedFiles(t *testing.T) []string {
-	cmd := exec.Command("git", "diff", "--name-only", "origin/master")
+	// This command gets the files that have changed since the current branch
+	// diverged from official master. See https://stackoverflow.com/a/65166745.
+	cmd := exec.Command("git", "diff", "--name-only", "origin/master...")
 	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("got error calling `git diff`: %v", err)
-	}
 	stdout := string(out)
+	if err != nil {
+		stderr := ""
+        	if exitError := err.(*exec.ExitError); exitError != nil {
+			stderr = string(exitError.Stderr)
+		}
+		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
+	}
 	log.Printf("git diff output:\n\tstdout:%v", stdout)
 
 	return strings.Split(stdout, "\n")
@@ -686,6 +692,18 @@ func modifiedFiles(t *testing.T) []string {
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
+	defer log.Printf("impacted apps: %v", impactedApps)
+
+	for _, f := range mf {
+		// File names: submodules/fluent-bit
+		if strings.HasPrefix(f, "submodules/") {
+			for app, _ := range allApps {
+				impactedApps[app] = true
+			}
+			return impactedApps
+		}
+	}
+
 	for _, f := range mf {
 		if strings.HasPrefix(f, "apps/") {
 
@@ -706,7 +724,6 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 
 		}
 	}
-	log.Printf("impacted apps: %v", impactedApps)
 	return impactedApps
 }
 
@@ -735,9 +752,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBPlatform = "rhel-7"
 	OracleDBApp = "oracledb"
-
 	AerospikeApp = "aerospike"
 )
 
@@ -762,8 +777,7 @@ func incompatibleOperatingSystem(testCase test) string {
 //     on all platforms.
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too. Same for `OracleDBPlatform` and
-// `OracleDBApp`.
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -787,11 +801,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
-		}
-		isOracleDBPlatform := test.platform == OracleDBPlatform
-		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform != isOracleDBApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
@@ -845,6 +854,7 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
+					options.MachineType = "e2-highmem-8"
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 

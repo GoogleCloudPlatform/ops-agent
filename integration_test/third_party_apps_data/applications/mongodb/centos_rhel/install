@@ -14,12 +14,12 @@ sudo chown root:root /etc/yum.repos.d/mongodb-org-5.0.repo
 sudo chmod 0644 /etc/yum.repos.d/mongodb-org-5.0.repo
 
 sudo yum install -y \
-    mongodb-org-5.0.5 \
-    mongodb-org-database-5.0.5 \
-    mongodb-org-server-5.0.5 \
-    mongodb-org-shell-5.0.5 \
-    mongodb-org-mongos-5.0.5 \
-    mongodb-org-tools-5.0.5
+    mongodb-org-5.0.14 \
+    mongodb-org-database-5.0.14 \
+    mongodb-org-server-5.0.14 \
+    mongodb-org-shell-5.0.14 \
+    mongodb-org-mongos-5.0.14 \
+    mongodb-org-tools-5.0.14
 
 sudo systemctl enable mongod 
 sudo systemctl restart mongod 

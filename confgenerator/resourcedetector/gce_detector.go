@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package resourcedetector
 
 type gceAttribute int
@@ -16,6 +30,7 @@ const (
 	metadata
 	label
 	interfaceIPv4
+	defaultScopes
 )
 
 func GetGCEResource() (Resource, error) {
@@ -38,6 +53,7 @@ type gceDataProvider interface {
 	getInstanceName() (string, error)
 	getTags() (string, error)
 	getMachineType() (string, error)
+	getDefaultScopes() ([]string, error)
 	getLabels() (map[string]string, error)
 	getMetadata() (map[string]string, error)
 	getInterfaceIPv4s() (map[string]string, error)
@@ -55,6 +71,11 @@ var singleAttributeSpec = map[gceAttribute]func(gceDataProvider) (string, error)
 	instanceName: gceDataProvider.getInstanceName,
 	tags:         gceDataProvider.getTags,
 	machineType:  gceDataProvider.getMachineType,
+}
+
+// List of multi-valued attributes (non-nested)
+var multiAttributeSpec = map[gceAttribute]func(gceDataProvider) ([]string, error){
+	defaultScopes: gceDataProvider.getDefaultScopes,
 }
 
 // List of nested attributes
@@ -76,6 +97,7 @@ type GCEResource struct {
 	InstanceName  string
 	Tags          string
 	MachineType   string
+	DefaultScopes []string
 	Metadata      map[string]string
 	Label         map[string]string
 	InterfaceIPv4 map[string]string
@@ -83,6 +105,10 @@ type GCEResource struct {
 
 func (GCEResource) GetType() string {
 	return "gce"
+}
+
+type GCEResourceBuilderInterface interface {
+	GetResource() (Resource, error)
 }
 
 type GCEResourceBuilder struct {
@@ -99,6 +125,14 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 			return nil, err
 		}
 		singleAttributes[attrName] = attr
+	}
+	multiAttributes := map[gceAttribute][]string{}
+	for attrName, attrGetter := range	multiAttributeSpec {
+		attr, err := attrGetter(gd.provider)
+		if err != nil {
+			return nil, err
+		}
+		multiAttributes[attrName] = attr
 	}
 	nestedAttributes := map[gceAttribute]map[string]string{}
 	for attrName, attrGetter := range nestedAttributeSpec {
@@ -120,6 +154,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		InstanceName:  singleAttributes[instanceName],
 		Tags:          singleAttributes[tags],
 		MachineType:   singleAttributes[machineType],
+		DefaultScopes: multiAttributes[defaultScopes],
 		Metadata:      nestedAttributes[metadata],
 		Label:         nestedAttributes[label],
 		InterfaceIPv4: nestedAttributes[interfaceIPv4],

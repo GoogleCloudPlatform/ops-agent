@@ -44,7 +44,7 @@ When the setup steps are complete, you can run ops_agent_test from the
 [Makefile](tasks.mak):
 
 ```
-make integration_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
+make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
@@ -57,17 +57,18 @@ against a pre-built but unreleased agent, you can use add the
 AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/agent_packages \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/result \
 ```
 
 You can obtain such a URI by:
 
-1.  take a previous Kokoro run with a successful build and get the
-    "gsutil URI" to `+build_and_test.txt` from the Google Cloud Storage browser
-    page. For example:
-    `gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/presubmit_github/debian/166/20220215-095636/logs/+build_and_test.txt`
-2.  Replace `logs/+build_and_test.txt` at the end of the URI with
-    `agent_packages` and pass that as `AGENT_PACKAGES_IN_GCS`.
+1.  take a previous Kokoro run with a successful build and go to the
+    `Invocation Details` page. Get the value corresponding to the `GCS` key.
+    For example:
+    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259`
+2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
+    of the URL with `gs://` and put `/result` on the end and pass that as
+    `AGENT_PACKAGES_IN_GCS`.
 
 Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release scripts.
 
@@ -76,6 +77,19 @@ Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release 
 This test attempts to verify, for each application in `supported_applications.txt`,
 that the application can be installed on a real GCE VM and that a single
 representative metric is successfully uploaded to Google Cloud Monitoring.
+
+### Testing Command
+
+The make target `third_party_apps_test` similarly requires `PROJECT` and
+`TRANSFERS_BUCKET` to be specified in the environment or the command.
+
+```
+make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
+```
+
+As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
+
+### Testing Flow
 
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
@@ -200,17 +214,6 @@ go run ./cmd/generate_expected_metrics
 ```
 
 Existing `expected_metrics` files are updated with any new metrics that are retrieved. Any existing metrics within the file will be overwritten with newly retrieved ones, except that existing `labels` patterns are preserved.
-
-### Testing Command
-
-The make target `third_party_apps_test` similarly requires `PROJECT` and
-`TRANSFERS_BUCKET` to be specified in the environment or the command.
-
-```
-make third_party_apps_test
-```
-
-As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
 # Test Logs
 
