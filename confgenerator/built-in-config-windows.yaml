@@ -3,6 +3,7 @@ logging:
     windows_event_log:
       type: windows_event_log
       channels: [System, Application, Security]
+      render_as_xml: false
   service:
     pipelines:
       default_pipeline:

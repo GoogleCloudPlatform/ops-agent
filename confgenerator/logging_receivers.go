@@ -324,6 +324,7 @@ type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 
 	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
+	RenderAsXml string `yaml:"render_as_xml,omitempty,flow"`
 }
 
 func (r LoggingReceiverWindowsEventLog) Type() string {
@@ -331,15 +332,22 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 }
 
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+  if r.RenderAsXml == "True" || r.RenderAsXml == "true" {
+    r.RenderAsXml = "True"
+  } else {
+    r.RenderAsXml = "False"
+  }
+
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-			"Name":         "winlog",
+			"Name":         "winevtlog",
 			"Tag":          tag,
 			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
 			"DB":           DBPath(tag),
+			"Render_Event_As_XML": r.RenderAsXml,
 		},
 	}}
 
