@@ -41,6 +41,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -130,6 +131,17 @@ func diagnosticsProcessNamesForPlatform(platform string) []string {
 		return []string{"google-cloud-ops-agent-diagnostics"}
 	}
 	return []string{"google_cloud_ops_agent_diagnostics"}
+}
+
+func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, directory string) error {
+	var createFolderCmd string
+	if gce.IsWindows(vm.Platform) {
+		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
+	} else {
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
+	}
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
+	return err
 }
 
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
@@ -2464,15 +2476,8 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 	// Create the folder structure on the VM
 	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
 	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
-	var createFolderCmd string
-	if gce.IsWindows(vm.Platform) {
-		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", packageDir)
-	} else {
-		createFolderCmd = fmt.Sprintf("mkdir -p %s", packageDir)
-	}
-	out, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create folder with %s in VM: %s", createFolderCmd, out.Stderr)
+	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
+		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
 	}
 
 	// Upload the files
@@ -2489,14 +2494,13 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 	}
 
 	// Run the resource detector in the VM
-	goPath, err := InstallGolang(ctx, logger, vm)
-	if err != nil {
+	if err := installGolang(ctx, logger, vm); err != nil {
 		return nil, err
 	}
 	cmd := fmt.Sprintf(`
 		%s
 		cd %s
-		go run run_resource_detector.go`, goPath, workDir)
+		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
 	runnerOutput, err := gce.RunScriptRemotely(ctx, logger, vm, cmd, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run resource detector in VM: %s", runnerOutput.Stderr)
@@ -2520,9 +2524,9 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// InstallGolang downloads and setup go, and return the required command to set
+// installGolang downloads and setup go, and return the required command to set
 // the PATH before calling `go` as goPath
-func InstallGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (goPath string, err error) {
+func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
 	goVersion := "1.19"
 	var installCmd string
@@ -2532,17 +2536,120 @@ func InstallGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
 			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
 			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
-		goPath = `$env:Path="C:\Program Files\Go\bin;$env:Path"`
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -e
 			gsutil cp \
 				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
 				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
-		goPath = "export PATH=/usr/local/go/bin:$PATH"
 	}
-	_, err = gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
-	return goPath, err
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	return err
+}
+
+func goPathCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return `$env:Path="C:\Program Files\Go\bin;$env:Path"`
+	}
+	return "export PATH=/usr/local/go/bin:$PATH"
+}
+
+func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, content io.Reader) error {
+	workDir := path.Join(workDirForPlatform(vm.Platform), "gocode")
+	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
+		return err
+	}
+	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
+		return err
+	}
+	goInitAndRun := fmt.Sprintf(`
+		%s
+		cd %s
+		go mod init main
+		go get ./...
+		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, goInitAndRun, nil, nil)
+	return err
+}
+
+func TestOtlpMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp`
+		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func testOtlpTraces(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+traces:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp`
+		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate trace traffic with dummy app
+		traceFile, err := testdataDir.Open(path.Join("testdata", "otlp", "traces.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer traceFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.WaitForTrace(ctx, logger.ToMainLog(), vm, time.Hour); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
