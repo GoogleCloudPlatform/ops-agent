@@ -218,7 +218,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 
 // validatePrometheus checks the receiver configuration is valid.
 func validatePrometheus(promConfig promconfig.Config) (string, error) {
-	if !IsExperimentalReceiverEnabled("prometheus") {
+	if !IsExperimentalFeatureEnabled("prometheus_receiver") {
 		return "prometheus", fmt.Errorf("this receiver is not available for the current Ops Agent version")
 	}
 

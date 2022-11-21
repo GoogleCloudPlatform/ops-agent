@@ -293,6 +293,6 @@ func init() {
 	// Set up the test environment with mocked data.
 	confgenerator.MetadataResource = testResource
 
-	// Enable experimental receivers.
-	os.Setenv("EXPERIMENTAL_RECEIVERS", "prometheus")
+	// Enable experimental features.
+	os.Setenv("EXPERIMENTAL_FEATURES", "prometheus_receiver")
 }
