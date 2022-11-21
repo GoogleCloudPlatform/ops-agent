@@ -99,6 +99,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
 	case "endswith":
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
+	case "experimental":
+		return experimentalValidationErrorString(ve)
 	case "ip":
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
 	case "min":
@@ -255,6 +257,8 @@ func newValidator() *validator.Validate {
 		}
 		return t%tfactor == 0
 	})
+	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
+	registerExperimentalValidations(v)
 	return v
 }
 
