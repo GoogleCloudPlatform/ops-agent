@@ -2433,7 +2433,7 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 	})
 }
 
-// runResourceDetectorCli uploads the resource detector runner and setup up the
+// runResourceDetectorCli uploads the resource detector runner and sets up the
 // env in the VM. Then run the runner to print out the JSON formatted
 // GCEResource and finally unmarshal it back to an instance of GCEResource
 func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (*resourcedetector.GCEResource, error) {
@@ -2461,12 +2461,7 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 	// Create the folder structure on the VM
 	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
 	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
-	var createFolderCmd string
-	if gce.IsWindows(vm.Platform) {
-		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", strings.ReplaceAll(packageDir, "/", "\\"))
-	} else {
-		createFolderCmd = fmt.Sprintf("mkdir -p %s", packageDir)
-	}
+	createFolderCmd := fmt.Sprintf("mkdir -p %s", packageDir)
 	out, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create folder with %s in VM: %s", createFolderCmd, out.Stderr)
@@ -2478,13 +2473,7 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 		if err != nil {
 			return nil, err
 		}
-		var remotePath string
-		if gce.IsWindows(vm.Platform) {
-			remotePath = strings.ReplaceAll(path.Join(workDir, file.remote), "/", "\\")
-		} else {
-			remotePath = path.Join(workDir, file.remote)
-		}
-		err = gce.UploadContent(ctx, logger, vm, f, remotePath)
+		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
 		if err != nil {
 			return nil, err
 		}
