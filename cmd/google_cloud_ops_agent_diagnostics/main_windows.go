@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	// "github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
