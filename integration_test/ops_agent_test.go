@@ -1782,9 +1782,12 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
+	fmt.Printf("Foo: TestDefaultMetricsNoProxy")
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
+		fmt.Printf("Foo: TestDefaultMetricsNoProxy:RunForEachPlatform")
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
