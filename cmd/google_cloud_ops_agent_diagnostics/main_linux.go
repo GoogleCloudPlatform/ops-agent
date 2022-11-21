@@ -52,10 +52,14 @@ func run() error {
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
-	if err != nil {
-		return err
+	if err := health_checks.Health_Checks(&uc); err != nil {
+		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
 	}
+
+	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

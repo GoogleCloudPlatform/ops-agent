@@ -99,11 +99,15 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
-	if err != nil {
-		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
-		return false, ERROR_INVALID_DATA
+	if err := health_checks.Health_Checks(&uc); err != nil {
+		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
 	}
+
+	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	// if err != nil {
+	// 	s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
+	// 	return false, ERROR_INVALID_DATA
+	// }
 
 	return false, ERROR_SUCCESS
 }
