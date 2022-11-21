@@ -22,6 +22,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"log"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )

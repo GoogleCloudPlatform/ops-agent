@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -100,7 +101,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}()
 
 	if err := health_checks.Health_Checks(&uc); err != nil {
-		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
+		s.log.Error("Health_Checks failed. Detailed error: %s", err)
 	}
 
 	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
