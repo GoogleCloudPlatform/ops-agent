@@ -37,7 +37,7 @@ git submodule update --init --recursive
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
-gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
+sudo docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
 
 DOCKER_BUILDKIT=1 docker build . \
