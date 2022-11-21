@@ -166,26 +166,6 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 }
 
 func testGenerateConf(t *testing.T, platform platformConfig, testDir string) error {
-	testResource := resourcedetector.GCEResource{
-		Project:       "test-project",
-		Zone:          "test-zone",
-		Network:       "test-network",
-		Subnetwork:    "test-subnetwork",
-		PublicIP:      "test-public-ip",
-		PrivateIP:     "test-private-ip",
-		InstanceID:    "test-instance-id",
-		InstanceName:  "test-instance-name",
-		Tags:          "test-tag",
-		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value"},
-		Label:         map[string]string{"test-label-key": "test-label-value"},
-		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-	}
-
-	// Set up the test environment with mocked data.
-	confgenerator.MetadataResource = testResource
-	confgenerator.PrometheusFeatureGate = "enabled"
-
 	// Merge Config
 	_, confBytes, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
@@ -291,4 +271,28 @@ func TestMain(m *testing.M) {
 		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
 	os.Exit(m.Run())
+}
+
+func init() {
+	testResource := resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	}
+
+	// Set up the test environment with mocked data.
+	confgenerator.MetadataResource = testResource
+
+	// Enable experimental receivers.
+	os.Setenv("EXPERIMENTAL_RECEIVERS", "prometheus")
 }

@@ -3,6 +3,7 @@ package confgenerator
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -271,4 +272,14 @@ func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {
 	}
 
 	return features
+}
+
+func IsExperimentalReceiverEnabled(receiver string) bool {
+	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_RECEIVERS"), ",")
+	for _, e := range enabledList {
+		if e == receiver {
+			return true
+		}
+	}
+	return false
 }
