@@ -1902,7 +1902,7 @@ func TestPrometheusMetrics(t *testing.T) {
 `
 
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
@@ -2072,7 +2072,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
         receivers: [prom_app]
 `
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
