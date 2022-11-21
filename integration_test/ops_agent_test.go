@@ -1707,10 +1707,12 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 			t.Error(err)
 		}
 		logger.ToMainLog().Printf("checking metric: %s", m.Type)
+		fmt.Printf("checking metric: %s \n", m.Type)
 		if m.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
 			for k, v := range m.Labels {
 				match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", v), series.Metric.Labels[k])
 				logger.ToMainLog().Printf("xlp: %s | actual: %s | match: %v | matchErr %s", v, series.Metric.Labels[k], match, matchErr)
+				fmt.Printf("xlp: %s | actual: %s | match: %v | matchErr %s \n", v, series.Metric.Labels[k], match, matchErr)
 			}
 		}
 		err = metadata.AssertMetric(m, series)
