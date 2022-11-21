@@ -274,8 +274,8 @@ func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {
 	return features
 }
 
-func IsExperimentalReceiverEnabled(receiver string) bool {
-	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_RECEIVERS"), ",")
+func IsExperimentalFeatureEnabled(receiver string) bool {
+	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_FEATURES"), ",")
 	for _, e := range enabledList {
 		if e == receiver {
 			return true
