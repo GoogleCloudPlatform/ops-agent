@@ -101,7 +101,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	}()
 
 	if err := health_checks.Health_Checks(&uc); err != nil {
-		s.log.Error("Health_Checks failed. Detailed error: %s", err)
+		s.log.Error(eventID, fmt.Sprintf("Health_Checks failed. Detailed error: %s", err))
 	}
 
 	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
