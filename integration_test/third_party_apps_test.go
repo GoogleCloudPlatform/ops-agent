@@ -752,9 +752,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBPlatform = "rhel-7"
 	OracleDBApp = "oracledb"
-
 	AerospikeApp = "aerospike"
 )
 
@@ -803,12 +801,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
-		}
-    // TODO(martijnvans): Delete this special case when deleting the special Oracle DB Kokoro build.
-		isOracleDBPlatform := test.platform == OracleDBPlatform
-		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform && !isOracleDBApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
