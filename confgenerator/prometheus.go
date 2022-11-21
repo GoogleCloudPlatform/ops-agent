@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/experimental"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/go-playground/validator/v10"
@@ -218,7 +219,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 
 // validatePrometheus checks the receiver configuration is valid.
 func validatePrometheus(promConfig promconfig.Config) (string, error) {
-	if !IsExperimentalFeatureEnabled("prometheus_receiver") {
+	if experimental.PrometheusReceiver {
 		return "prometheus", fmt.Errorf("this receiver is not available for the current Ops Agent version")
 	}
 

@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/experimental"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -39,6 +40,10 @@ func main() {
 	}
 }
 func run() error {
+	if err := experimental.Load(); err != nil {
+		return err
+	}
+
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
