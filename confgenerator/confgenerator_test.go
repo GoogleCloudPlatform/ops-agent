@@ -284,5 +284,5 @@ func init() {
 	confgenerator.MetadataResource = testResource
 
 	// Enable experimental features.
-	os.Setenv("EXPERIMENTAL_FEATURES", "prometheus_receiver")
+	os.Setenv("EXPERIMENTAL_FEATURES", "prometheus_receiver,otlp_receiver")
 }

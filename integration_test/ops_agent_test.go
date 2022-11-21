@@ -2578,6 +2578,11 @@ func TestOtlpMetrics(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+
 		otlpConfig := `
 combined:
   receivers:
@@ -2617,6 +2622,11 @@ func testOtlpTraces(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
 
 		otlpConfig := `
 combined:

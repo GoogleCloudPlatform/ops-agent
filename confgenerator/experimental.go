@@ -10,6 +10,7 @@ import (
 
 var requiredFeatureForType = map[string]string{
 	"prometheus": "prometheus_receiver",
+	"otlp":       "otlp_receiver",
 }
 
 func IsExperimentalFeatureEnabled(receiver string) bool {
