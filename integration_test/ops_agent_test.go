@@ -1650,6 +1650,8 @@ func TestSystemLogByDefault(t *testing.T) {
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
+	logger.ToMainLog().Printf("Foo: testDefaultMetrics")
+	fmt.Printf("Foo: testDefaultMetrics")
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
@@ -1706,12 +1708,12 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 		if err != nil {
 			t.Error(err)
 		}
-		logger.ToMainLog().Printf("checking metric: %s", m.Type)
+		logger.ToMainLog().Printf("checking metric: %s \n", m.Type)
 		fmt.Printf("checking metric: %s \n", m.Type)
 		if m.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
 			for k, v := range m.Labels {
 				match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", v), series.Metric.Labels[k])
-				logger.ToMainLog().Printf("xlp: %s | actual: %s | match: %v | matchErr %s", v, series.Metric.Labels[k], match, matchErr)
+				logger.ToMainLog().Printf("xlp: %s | actual: %s | match: %v | matchErr %s \n", v, series.Metric.Labels[k], match, matchErr)
 				fmt.Printf("xlp: %s | actual: %s | match: %v | matchErr %s \n", v, series.Metric.Labels[k], match, matchErr)
 			}
 		}
@@ -1758,6 +1760,16 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 			if err != nil {
 				t.Error(err)
 				return
+			}
+
+			logger.ToMainLog().Printf("2 checking metric: %s \n", m.Type)
+			fmt.Printf("2 checking metric: %s \n", m.Type)
+			if m.Type == "agent.googleapis.com/agent/internal/ops/feature_tracking" {
+				for k, v := range m.Labels {
+					match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", v), series.Metric.Labels[k])
+					logger.ToMainLog().Printf("2 xlp: %s | actual: %s | match: %v | matchErr %s \n", v, series.Metric.Labels[k], match, matchErr)
+					fmt.Printf("2 xlp: %s | actual: %s | match: %v | matchErr %s \n", v, series.Metric.Labels[k], match, matchErr)
+				}
 			}
 
 			err = metadata.AssertMetric(m, series)
