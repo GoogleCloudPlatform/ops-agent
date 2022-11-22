@@ -186,6 +186,16 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    internal: true
+    labels:
+      module: metrics|logging
+      feature: receiver:active_directory_ds
+      key: \[\d+\].enabled
+      value: true
 minimum_supported_agent_version:
   metrics: 2.15.0
   logging: 2.15.0
