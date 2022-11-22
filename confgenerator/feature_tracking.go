@@ -31,6 +31,17 @@ type Feature struct {
 	Value string
 }
 
+type CustomFeature struct {
+	// Key: set of keys that will be joined together for feature tracking metrics
+	Key []string
+	// Value defined from fields of UnifiedConfig.
+	Value string
+}
+
+type CustomFeatures interface {
+	ExtractFeatures() ([]CustomFeature, error)
+}
+
 // ExtractFeatures fields that containing a tracking tag will be tracked.
 // Automatic collection of bool or int fields. Any value that exists on tracking
 // tag will be used instead of value from UnifiedConfig.
@@ -102,6 +113,24 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 }
 
 func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
+	if customFeatures, ok := c.Interface().(CustomFeatures); ok {
+		cfs, err := customFeatures.ExtractFeatures()
+		if err != nil {
+			return nil, err
+		}
+		var features []Feature
+		for _, cf := range cfs {
+			features = append(features, Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append(feature.Key, cf.Key...),
+				Value:  cf.Value,
+			})
+		}
+		return features, nil
+	}
+
 	if m.isExcluded {
 		return nil, nil
 	}

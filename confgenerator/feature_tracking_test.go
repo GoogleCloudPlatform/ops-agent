@@ -10,11 +10,16 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
+	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/model/relabel"
 	"gotest.tools/v3/golden"
 )
 
@@ -462,6 +467,158 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 	}
 }
 
+func TestPrometheusFeatureMetrics(t *testing.T) {
+	uc := emptyUc
+	receivers := make(map[string]confgenerator.MetricsReceiver)
+	receivers["prometheus"] = confgenerator.PrometheusMetrics{
+		confgenerator.ConfigComponent{
+			Type: "prometheus",
+		},
+		promconfig.Config{
+			GlobalConfig: promconfig.GlobalConfig{
+				ScrapeInterval:     model.Duration(10 * time.Second),
+				ScrapeTimeout:      model.Duration(10 * time.Second),
+				EvaluationInterval: model.Duration(10 * time.Second),
+			},
+			ScrapeConfigs: []*promconfig.ScrapeConfig{
+				{
+					JobName: "prometheus",
+					ServiceDiscoveryConfigs: discovery.Configs{
+						discovery.StaticConfig{
+							{
+								Targets: []model.LabelSet{
+									{model.AddressLabel: "localhost:8888"},
+								},
+							},
+						},
+					},
+					MetricsPath:           "/metrics",
+					Scheme:                "http",
+					HonorLabels:           false,
+					HonorTimestamps:       false,
+					ScrapeInterval:        model.Duration(10 * time.Second),
+					ScrapeTimeout:         model.Duration(10 * time.Second),
+					SampleLimit:           10,
+					TargetLimit:           10,
+					LabelLimit:            10,
+					LabelNameLengthLimit:  10,
+					LabelValueLengthLimit: 10,
+					BodySizeLimit:         10,
+					RelabelConfigs: []*relabel.Config{
+						{
+							SourceLabels: model.LabelNames{"__meta_kubernetes_pod_label_app"},
+							Action:       "keep",
+							Regex:        relabel.MustNewRegexp(".*"),
+						},
+					},
+					MetricRelabelConfigs: []*relabel.Config{
+						{SourceLabels: model.LabelNames{"__name__"},
+							Action: "keep",
+							Regex:  relabel.MustNewRegexp(".*"),
+						},
+					},
+				},
+			},
+		},
+	}
+	uc.Metrics = &confgenerator.Metrics{
+		Receivers: receivers,
+	}
+
+	features, err := confgenerator.ExtractFeatures(&uc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []confgenerator.Feature{
+		{
+			Module: "logging",
+			Kind:   "service",
+			Type:   "pipelines",
+			Key:    []string{"default_pipeline_overridden"},
+			Value:  "false",
+		},
+		{
+			Module: "metrics",
+			Kind:   "service",
+			Type:   "pipelines",
+			Key:    []string{"default_pipeline_overridden"},
+			Value:  "false",
+		},
+		{
+			Module: "metrics",
+			Kind:   "receivers",
+			Type:   "prometheus",
+			Key:    []string{"[0]", "enabled"},
+			Value:  "true",
+		},
+	}
+	type expectedFeatureTags struct {
+		keys []string
+		val  string
+	}
+	testCases := []expectedFeatureTags{
+		{
+			keys: []string{"scheme"},
+			val:  "http",
+		},
+		{
+			keys: []string{"scrape_interval"},
+			val:  "10s",
+		},
+		{
+			keys: []string{"scrape_timeout"},
+			val:  "10s",
+		},
+		{
+			keys: []string{"sample_limit"},
+			val:  "10",
+		},
+		{
+			keys: []string{"label_limit"},
+			val:  "10",
+		},
+		{
+			keys: []string{"label_name_length_limit"},
+			val:  "10",
+		},
+		{
+			keys: []string{"label_value_length_limit"},
+			val:  "10",
+		},
+		{
+			keys: []string{"body_size_limit"},
+			val:  "10",
+		},
+		{
+			keys: []string{"relabel_configs"},
+			val:  "1",
+		},
+		{
+			keys: []string{"metric_relabel_configs"},
+			val:  "1",
+		},
+		{
+			keys: []string{"static_configs"},
+			val:  "1",
+		},
+	}
+	for _, test := range testCases {
+		expected = append(expected, confgenerator.Feature{
+			Module: "metrics",
+			Kind:   "receivers",
+			Type:   "prometheus",
+			Key:    append([]string{"[0]", "config", "[0]", "scrape_configs"}, test.keys...),
+			Value:  test.val,
+		})
+	}
+
+	if !cmp.Equal(features, expected) {
+		t.Errorf("Expected %d features but got %d\n\n", len(expected), len(features))
+		t.Fatalf("Diff: %s", cmp.Diff(expected, features))
+	}
+}
+
 func TestGolden(t *testing.T) {
 	_ = apps.BuiltInConfStructs
 	components := confgenerator.LoggingReceiverTypes.GetComponentsFromRegistry()
@@ -512,6 +669,10 @@ func getFeaturesForComponent(i interface{}, parent []string) [][]string {
 	for j := 0; j < t.NumField(); j++ {
 		f := t.Field(j)
 		override, ok := f.Tag.Lookup("tracking")
+		if override == "-" {
+			// Skip fields with tracking tag "-".
+			continue
+		}
 		switch f.Type.Kind() {
 		case reflect.Struct:
 			p := appendFieldName(parent, f.Type.String())
