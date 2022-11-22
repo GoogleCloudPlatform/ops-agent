@@ -50,6 +50,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
@@ -1655,8 +1656,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", strings.Join([]string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
-			"sudo /usr/sbin/mkswap /swapfile",
-			"sudo /usr/sbin/swapon /swapfile",
+			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
+			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
 		}, " && "))
 		if err != nil {
 			t.Fatalf("Failed to enable swap file: %v", err)
@@ -1864,7 +1865,7 @@ func TestPrometheusMetrics(t *testing.T) {
 `
 
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
@@ -2034,7 +2035,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
         receivers: [prom_app]
 `
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -2381,6 +2382,144 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestResourceDetectorOnGCE(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		actual, err := runResourceDetectorCli(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if actual.InstanceName != vm.Name {
+			t.Errorf("detector attribute InstanceName has value %q; expected %q", actual.InstanceName, vm.Name)
+		}
+		if actual.Project != vm.Project {
+			t.Errorf("detector attribute Project has value %q; expected %q", actual.Project, vm.Project)
+		}
+		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+		if !expectedNetworkURL.MatchString(actual.Network) {
+			t.Errorf("detector attribute Network has value %q; expected %q", actual.Network, expectedNetworkURL.String())
+		}
+		if actual.Zone != vm.Zone {
+			t.Errorf("detector attribute Zone has value %q; expected %q", actual.Zone, vm.Zone)
+		}
+		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+		if !expectedMachineType.MatchString(actual.MachineType) {
+			t.Errorf("detector attribute MachineType has value %q; expected %q", actual.MachineType, expectedMachineType.String())
+		}
+		if actual.InstanceID != fmt.Sprint(vm.ID) {
+			t.Errorf("detector attribute InstanceID has value %q; expected %q", actual.InstanceID, fmt.Sprint(vm.ID))
+		}
+		if len(actual.InterfaceIPv4) == 0 {
+			t.Errorf("detector attribute InterfaceIPv4 should have at least one value")
+		}
+		// Depends on the setup of the integration test, vm.IPAddress can be either the public or the private IP
+		if actual.PrivateIP != vm.IPAddress && actual.PublicIP != vm.IPAddress {
+			t.Errorf("detector attribute PrivateIP has value %q and PublicIP has value %q; expected at least one to be %q", actual.PrivateIP, actual.PublicIP, vm.IPAddress)
+		}
+		// For the current integration tests we always attach the following metadata
+		if v, ok := actual.Metadata["serial-port-logging-enable"]; ok {
+			if v != "true" {
+				t.Errorf("detector attribute Metadata has values %v; expected to have %q as %q", actual.Metadata, "serial-port-logging-enable", "true")
+			}
+		} else {
+			t.Errorf("detector attribute Metadata has values %v; expected to have %q", actual.Metadata, "serial-port-logging-enable")
+		}
+	})
+}
+
+// runResourceDetectorCli uploads the cli and setup up the env in the VM.
+// Then run the cli to print out the JSON formatted GCEResource and finally
+// unmarshal it back to an instance of GCEResource
+func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (*resourcedetector.GCEResource, error) {
+	type fileToUpload struct {
+		local, remote string
+	}
+
+	// Update the resourcedetector package and the go.mod and go.sum
+	// So that the main function can resolve it from the work directory
+	filesToUpload := []fileToUpload{
+		{local: "./cmd/run_resource_detector/run_resource_detector.go",
+			remote: "run_resource_detector.go"},
+		{local: "../confgenerator/resourcedetector/detector.go",
+			remote: "confgenerator/resourcedetector/detector.go"},
+		{local: "../confgenerator/resourcedetector/gce_detector.go",
+			remote: "confgenerator/resourcedetector/gce_detector.go"},
+		{local: "../confgenerator/resourcedetector/gce_metadata_provider.go",
+			remote: "confgenerator/resourcedetector/gce_metadata_provider.go"},
+		{local: "../go.mod",
+			remote: "go.mod"},
+		{local: "../go.sum",
+			remote: "go.sum"},
+	}
+
+	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
+	for _, file := range filesToUpload {
+		f, err := os.Open(file.local)
+		if err != nil {
+			return nil, err
+		}
+		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := InstallGolang(ctx, logger.ToMainLog(), vm); err != nil {
+		return nil, err
+	}
+
+	cmd := fmt.Sprintf("cd %s && go run run_resource_detector.go", workDir)
+	test_out, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run resource detector in VM: %s", test_out.Stderr)
+	}
+
+	d, err := unmarshalResource(test_out.Stdout)
+	if err != nil {
+		return nil, fmt.Errorf("can't unmarshal a detector from JSON: %v", err)
+	}
+	return d, nil
+}
+
+// unmarshalResource Unmarshal the string to a GCEResource
+func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
+	r := regexp.MustCompile("{(\"(Project|Zone|Network|Subnetwork|PublicIP|PrivateIP|InstanceID|InstanceName|Tags|MachineType|Metadata|Label|InterfaceIPv4)\":.*)+}")
+	match := r.FindString(in)
+	in_byte := []byte(match)
+	var resource resourcedetector.GCEResource
+	err := json.Unmarshal(in_byte, &resource)
+	return &resource, err
+}
+
+// InstallGolang downloads the binary and create link to /usr/bin/go
+func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if gce.IsWindows(vm.Platform) {
+		return fmt.Errorf("Installing Golang on Windows is not implementated.")
+	}
+	logger.Printf("Installing go...")
+
+	err := agents.InstallPackages(ctx, logger, vm, []string{"wget"})
+	if err != nil {
+		return err
+	}
+	// TODO: use runtime.Version() to extract the go version
+	goVersion := "1.19"
+	installCmd := fmt.Sprintf(`gsutil cp \
+"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
+sudo tar --directory /usr/local -xzf /dev/stdin
+sudo ln -s /usr/local/go/bin/go /usr/bin/go 
+`, goVersion)
+	_, err = gce.RunRemotely(ctx, logger, vm, "", installCmd)
+	return err
 }
 
 func TestMain(m *testing.M) {

@@ -30,6 +30,7 @@ const (
 	metadata
 	label
 	interfaceIPv4
+	defaultScopes
 )
 
 func GetGCEResource() (Resource, error) {
@@ -52,6 +53,7 @@ type gceDataProvider interface {
 	getInstanceName() (string, error)
 	getTags() (string, error)
 	getMachineType() (string, error)
+	getDefaultScopes() ([]string, error)
 	getLabels() (map[string]string, error)
 	getMetadata() (map[string]string, error)
 	getInterfaceIPv4s() (map[string]string, error)
@@ -69,6 +71,11 @@ var singleAttributeSpec = map[gceAttribute]func(gceDataProvider) (string, error)
 	instanceName: gceDataProvider.getInstanceName,
 	tags:         gceDataProvider.getTags,
 	machineType:  gceDataProvider.getMachineType,
+}
+
+// List of multi-valued attributes (non-nested)
+var multiAttributeSpec = map[gceAttribute]func(gceDataProvider) ([]string, error){
+	defaultScopes: gceDataProvider.getDefaultScopes,
 }
 
 // List of nested attributes
@@ -90,6 +97,7 @@ type GCEResource struct {
 	InstanceName  string
 	Tags          string
 	MachineType   string
+	DefaultScopes []string
 	Metadata      map[string]string
 	Label         map[string]string
 	InterfaceIPv4 map[string]string
@@ -118,6 +126,14 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		}
 		singleAttributes[attrName] = attr
 	}
+	multiAttributes := map[gceAttribute][]string{}
+	for attrName, attrGetter := range	multiAttributeSpec {
+		attr, err := attrGetter(gd.provider)
+		if err != nil {
+			return nil, err
+		}
+		multiAttributes[attrName] = attr
+	}
 	nestedAttributes := map[gceAttribute]map[string]string{}
 	for attrName, attrGetter := range nestedAttributeSpec {
 		attr, err := attrGetter(gd.provider)
@@ -138,6 +154,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		InstanceName:  singleAttributes[instanceName],
 		Tags:          singleAttributes[tags],
 		MachineType:   singleAttributes[machineType],
+		DefaultScopes: multiAttributes[defaultScopes],
 		Metadata:      nestedAttributes[metadata],
 		Label:         nestedAttributes[label],
 		InterfaceIPv4: nestedAttributes[interfaceIPv4],

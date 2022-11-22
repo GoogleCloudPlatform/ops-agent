@@ -84,6 +84,10 @@ func (gmp *GCEMetadataProvider) getMachineType() (string, error) {
 	return gmp.client.Get("instance/machine-type")
 }
 
+func (gmp *GCEMetadataProvider) getDefaultScopes() ([]string, error) {
+	return gmp.client.Scopes("default")
+}
+
 func (gmp *GCEMetadataProvider) getMetadata() (map[string]string, error) {
 	keys, err := gmp.client.Get("instance/attributes")
 	if err != nil {
