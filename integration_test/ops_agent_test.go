@@ -1664,53 +1664,39 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	agentBytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	internalBytes, err := os.ReadFile(path.Join("agent_metrics", "internal.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	type expectedMetrics struct {
+	var agentMetrics struct {
 		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
 
-	var agentMetrics expectedMetrics
-	err = yaml.UnmarshalStrict(agentBytes, &agentMetrics)
+	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var internalMetrics expectedMetrics
-	err = yaml.UnmarshalStrict(internalBytes, &internalMetrics)
-	if err != nil {
-		t.Fatal(err)
-	}
+	expectedMetrics := agentMetrics.ExpectedMetrics
 
-	testExpectedMetrics(ctx, t, logger, vm, window, agentMetrics.ExpectedMetrics)
-	testExpectedMetrics(ctx, t, logger, vm, window, internalMetrics.ExpectedMetrics)
-}
-
-func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, expectedMetrics []*metadata.ExpectedMetric) {
 	// First make sure that the representative metric is being uploaded.
-	for _, m := range expectedMetrics {
-		if !m.Representative {
+	for _, metric := range expectedMetrics {
+		if !metric.Representative {
 			continue
 		}
 
 		var series *monitoring.TimeSeries
-		series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, m.Type, window, nil, false)
+		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
 		}
 
-		err = metadata.AssertMetric(m, series)
+		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Error(err)
 		}
+
 	}
 
 	if t.Failed() {
@@ -1726,32 +1712,33 @@ func testExpectedMetrics(ctx context.Context, t *testing.T, logger *logging.Dire
 	// quota (b/185363780).
 	platformKind := gce.PlatformKind(vm.Platform)
 	var metricsWaitGroup sync.WaitGroup
-	for _, m := range expectedMetrics {
-		m := m
+	for _, metric := range expectedMetrics {
+		metric := metric
 
 		// Already validated the representative metric
-		if m.Representative {
+		if metric.Representative {
 			continue
 		}
 
 		// Don't validate optional metrics
-		if m.Optional {
+		if metric.Optional {
 			continue
 		}
 
-		if m.Platform != "" && m.Platform != platformKind {
+		if metric.Platform != "" && metric.Platform != platformKind {
 			continue
 		}
 
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, m.Type, window, nil, false)
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			err = metadata.AssertMetric(m, series)
+
+			err = metadata.AssertMetric(metric, series)
 			if err != nil {
 				t.Error(err)
 			}
