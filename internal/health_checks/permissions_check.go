@@ -15,22 +15,10 @@
 package health_checks
 
 import (
-    // "io"
-    // "log"
     "fmt"
-    // "net"
-    // "net/http"
 
-    // "go.uber.org/multierr"
-    // "cloud.google.com/go/logging"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-    // "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-
-    // "context"
-
-    // metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    // metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
-    // monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 var (
@@ -58,11 +46,15 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
 
 type PermissionsCheck struct{}
 
-func (c PermissionsCheck) RunCheck() (string, error) {
+func (c PermissionsCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
 
     var project string
     var defaultScopes []string
     fmt.Println("Get MetadataResource : ")
+    MetadataResource, err := resourcedetector.GetResource()
+    if err != nil {
+        return "", fmt.Errorf("can't get resource metadata: %w", err)
+    }
     if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
         fmt.Println(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
         project = gceMetadata.Project

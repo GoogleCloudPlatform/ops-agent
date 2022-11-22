@@ -15,22 +15,10 @@
 package health_checks
 
 import (
-    //"io"
-    //"log"
     "fmt"
     "net"
-    //"net/http"
 
-    //"go.uber.org/multierr"
-    //"cloud.google.com/go/logging"
-    // "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-    //"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-
-    //"context"
-
-    // metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    // metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
-    // monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 func check_port(host string, port string) error {
@@ -49,7 +37,7 @@ func check_port(host string, port string) error {
 
 type PortsCheck struct{}
 
-func (c PortsCheck) RunCheck() (string, error) {
+func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
     fmt.Println("\n> PortsCheck \n \n")
 
     // Check prometheus exporter host port : 0.0.0.0 : 20202

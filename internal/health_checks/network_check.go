@@ -18,15 +18,7 @@ import (
     "io"
     "fmt"
     "net/http"
-
-    // "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-    // "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-
-    // "context"
-
-    // metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    // metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
-    // monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 var (
@@ -53,7 +45,7 @@ func runGetHTTPRequest(url string) (string, string, error) {
 
 type NetworkCheck struct{}
 
-func (c NetworkCheck) RunCheck() (string, error) {
+func (c NetworkCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
     fmt.Println("\n> NetworkCheck \n \n")
 
     // Request to logging API
@@ -67,7 +59,7 @@ func (c NetworkCheck) RunCheck() (string, error) {
         fmt.Println("==> Query to loggingAPIUrl was successful.")
     } else {
         fmt.Println("==> Query to loggingAPIUrl was not successful.")
-        return "", fmt.Errorf("Query to loggingAPIUrl was not successful.")
+        return "FAIL", fmt.Errorf("Query to loggingAPIUrl was not successful.")
     }
 
     // Request to monitoring API
@@ -81,7 +73,7 @@ func (c NetworkCheck) RunCheck() (string, error) {
         fmt.Println("==> Query to monitoringAPIUrl was successful.")
     } else {
         fmt.Println("==> Query to monitoringAPIUrl was not successful.")
-        return "", fmt.Errorf("Query to monitoringAPIUrl was not successful.")
+        return "FAIL", fmt.Errorf("Query to monitoringAPIUrl was not successful.")
     }
 
     response = response + ""

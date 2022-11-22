@@ -30,7 +30,7 @@ var (
 )
 
 type HealthCheck interface {
-    RunCheck() (string, error)
+    RunCheck(uc *confgenerator.UnifiedConfig) (string, error)
     // GetUserFeedback() string
     // GetResult() string
 }
@@ -51,16 +51,9 @@ var GCEHealthChecks = &healthCheckRegistry{
 
 func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
 
-    // MetadataResource, err := resourcedetector.GetResource()
-    // if err != nil {
-    //     log.Fatalf("can't get resource metadata: %w", err)
-    // }
-
-    // config := uc
-
     for key, value := range GCEHealthChecks.healthCheckMap {
         fmt.Printf("%s %s\n", key, value)
-        status, err := value.RunCheck()
+        status, err := value.RunCheck(uc)
         fmt.Println(fmt.Sprintf("%s %s", status, err))
         /* if err !=  nil {
             return err
