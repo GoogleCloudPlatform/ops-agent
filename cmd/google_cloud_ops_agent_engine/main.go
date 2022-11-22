@@ -62,7 +62,7 @@ func run() error {
 		return err
 	}
 
-	if err := health_checks.Health_Checks(&uc); err != nil {
+	if err := health_checks.RunAllHealthChecks(&uc); err != nil {
 		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
 	}
 

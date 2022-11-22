@@ -15,22 +15,10 @@
 package health_checks
 
 import (
-    "io"
-    "log"
     "fmt"
-    "net"
-    "net/http"
 
-    "go.uber.org/multierr"
-    "cloud.google.com/go/logging"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-
-    "context"
-
-    // metricsscope "cloud.google.com/go/monitoring/metricsscope/apiv1"
-    // metricsscopepb "cloud.google.com/go/monitoring/metricsscope/apiv1/metricsscopepb"
-    monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
 var (
@@ -38,211 +26,48 @@ var (
     // Note: This is a global variable so that it can be set in tests.
     MetadataResource resourcedetector.Resource
 
-    // Expected scopes
-    requiredLoggingScopes = []string{
-        "https://www.googleapis.com/auth/logging.write",
-        "https://www.googleapis.com/auth/logging.admin",
-    }
-    requiredMonitoringScopes = []string{
-        "https://www.googleapis.com/auth/monitoring.write",
-        "https://www.googleapis.com/auth/monitoring.admin",
-    }
-
-    // API urls
-    loggingAPIUrl = "https://logging.googleapis.com/$discovery/rest"
-    monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
+    config *confgenerator.UnifiedConfig
 )
 
-func Health_Checks(uc *confgenerator.UnifiedConfig) error {
-
-    MetadataResource, err := resourcedetector.GetResource()
-    if err != nil {
-        log.Fatalf("can't get resource metadata: %w", err)
-    }
-
-    var projectId string
-    var defaultScopes []string
-    fmt.Println("Get MetadataResource : ")
-    if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-        fmt.Println(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
-        projectId = gceMetadata.Project
-        defaultScopes = gceMetadata.DefaultScopes
-    } else {
-        // Not on GCE
-        projectId = "Not-on-GCE"
-    }
-    fmt.Println(fmt.Sprintf("==> projectId : %s \n \n", projectId))
-
-    var multiErr error
-    fmt.Println("Health_Checks \n \n")
-
-    if err := NetworkCheck(); err != nil {
-        fmt.Println(fmt.Sprintf("==> NetworkCheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
-    if err := PermissionsCheck(defaultScopes); err != nil {
-        fmt.Println(fmt.Sprintf("==> PermissionsCheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
-    if err := APICheck(projectId); err != nil {
-        fmt.Println(fmt.Sprintf("==> APICheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
-    if err := PortsCheck(uc); err != nil {
-        fmt.Println(fmt.Sprintf("==> PortsCheckErr : %s \n \n", err))
-    }
-    multiErr = multierr.Append(multiErr, err)
-
-	return multiErr
+type HealthCheck interface {
+    RunCheck() (string, error)
+    // GetUserFeedback() string
+    // GetResult() string
 }
 
-func runGetHTTPRequest(url string) (string, string, error) {
-    resp, err := http.Get(url)
-    if err != nil {
-        return "", "", err
-    }
-    defer resp.Body.Close()
-
-    status := resp.Status
-    b, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return "", "", err
-    }
-
-    return status, string(b), nil
+type healthCheckRegistry struct {
+    environment string
+    healthCheckMap map[string]HealthCheck
 }
 
-func NetworkCheck() error {
-    fmt.Println("\n> NetworkCheck \n \n")
-
-    // Request to logging API
-    status, response, err := runGetHTTPRequest(loggingAPIUrl)
-    fmt.Println("==>" + status)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    if status == "200 OK" {
-        fmt.Println("==> Query to loggingAPIUrl was successful.")
-    } else {
-        fmt.Println("==> Query to loggingAPIUrl was not successful.")
-        return fmt.Errorf("Query to loggingAPIUrl was not successful.")
-    }
-
-    // Request to monitoring API
-    status, response, err = runGetHTTPRequest(monitoringAPIUrl)
-    fmt.Println("==>" + status)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    if status == "200 OK" {
-        fmt.Println("==> Query to monitoringAPIUrl was successful.")
-    } else {
-        fmt.Println("==> Query to monitoringAPIUrl was not successful.")
-        return fmt.Errorf("Query to monitoringAPIUrl was not successful.")
-    }
-
-    response = response + ""
-    return nil
+func (r healthCheckRegistry) RegisterCheck(name string, c HealthCheck) {
+    r.healthCheckMap[name] = c
 }
 
-func APICheck(project string) error {
-    fmt.Println("\n> APICheck \n \n")
-	ctx := context.Background()
-
-    // New Logging Client
-    fmt.Println("==> New Logging Client \n")
-    logClient, err := logging.NewClient(ctx, project)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    if err := logClient.Ping(ctx); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    fmt.Println("==> Logging API Ping succeded")
-    logClient.Close()
-
-    // New Monitoring Client
-    fmt.Println("==> New Monitoring Client \n \n")
-    monClient, err := monitoring.NewMetricClient(ctx)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    fmt.Println("==> Monitoring Client successfully created")
-    monClient.Close()
-
-	return nil
+var GCEHealthChecks = &healthCheckRegistry{
+    environment: "GCE",
+    healthCheckMap: make(map[string]HealthCheck),
 }
 
-func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error) {
-    for _, query := range querySlice {
-        for _, searchElement := range searchSlice {
-            if query == searchElement {
-                return true, nil
-            }
-        }
-    }
-    return false, nil
-}
+func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
 
-func PermissionsCheck(defaultScopes []string) error {
-    fmt.Println("\n> PermissionsCheck \n \n")
-    
-    found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
-    if err != nil {
-        return err
-    } else if found {
-        fmt.Println("==> Logging Scopes are enough to run the Ops Agent.")
-    } else {
-        fmt.Println("==> Logging Scopes are not enough to run the Ops Agent.")
-        return fmt.Errorf("Logging Scopes are not enough to run the Ops Agent.")
-    }
+    // MetadataResource, err := resourcedetector.GetResource()
+    // if err != nil {
+    //     log.Fatalf("can't get resource metadata: %w", err)
+    // }
 
-    found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
-    if err != nil {
-        return err
-    } else if found {
-        fmt.Println("==> Monitoring Scopes are enough to run the Ops Agent.")
-    } else {
-        fmt.Println("==> Monitoring Scopes are not enough to run the Ops Agent.")
-        return fmt.Errorf("Monitoring Scopes are not enough to run the Ops Agent.")
-    }
+    // config := uc
 
-    fmt.Println("\n> PermissionsCheck PASSED \n \n")
-
-    return nil
-}
-
-func check_port(host string, port string) error {
-    lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-    if err != nil {
-        fmt.Println("==> Connection Error:", err)
-        return err
-    }
-    fmt.Println("==> Listening on:", lsnr.Addr())
-    if lsnr != nil {
-        defer lsnr.Close()
-        fmt.Println("==> Opened", net.JoinHostPort(host, port))    
-    }
-    return nil
-}
-
-func PortsCheck(uc *confgenerator.UnifiedConfig) error {
-    fmt.Println("\n> PortsCheck \n \n")
-
-    // Check prometheus exporter host port : 0.0.0.0 : 20202
-    host := "0.0.0.0"
-    port := "20202"
-    err := check_port(host, port)
-    if err != nil {
-        return err
+    for key, value := range GCEHealthChecks.healthCheckMap {
+        fmt.Printf("%s %s\n", key, value)
+        status, err := value.RunCheck()
+        fmt.Println(fmt.Sprintf("%s %s", status, err))
+        /* if err !=  nil {
+            return err
+        } */
+        // if err := NetworkCheck(); err != nil {
+        //    fmt.Println(fmt.Sprintf("==> NetworkCheckErr : %s \n \n", err))
+        //}      
     }
     return nil
 }
