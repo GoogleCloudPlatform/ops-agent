@@ -96,6 +96,16 @@ expected_metrics:
     labels:
       broker: .*
       destination: .*
+  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    internal: true
+    labels:
+      module: metrics
+      feature: receiver:activemq
+      key: \[[0-9]+\].enabled
+      value: true
 expected_logs:
   - log_name: syslog
     fields:
