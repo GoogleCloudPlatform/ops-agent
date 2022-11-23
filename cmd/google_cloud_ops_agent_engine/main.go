@@ -63,7 +63,7 @@ func run() error {
 	}
 
 	if err := health_checks.RunAllHealthChecks(&uc); err != nil {
-		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
+		log.Printf("Health_Checks failed. Detailed error: %s", err)
 	}
 
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
