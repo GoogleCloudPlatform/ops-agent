@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -57,6 +58,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(1, "generated configuration files")
+
+	result, err := health_checks.RunAllHealthChecks(&uc)
+	s.log.Info(1, result)
+	if err != nil {
+		s.log.Error(1, fmt.Sprintf("Health_Checks failed. Detailed error: %s", err))
+	}
+
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to start subagents: %v", err))

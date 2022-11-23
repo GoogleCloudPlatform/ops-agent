@@ -16,6 +16,7 @@ package health_checks
 
 import (
     "fmt"
+    "strings"
     "go.uber.org/multierr"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -104,24 +105,25 @@ func (b *BaseHealthCheck) GetResult() string {
     } 
 }
 
-func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
+func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
     var multiErr error
-    fmt.Println("========================================")
-    fmt.Println("Health Checks : ")
+    var result []string
+    result = append(result, "========================================")
+    result = append(result, "Health Checks : ")
     for name, c := range GCEHealthChecks.healthCheckMap {
 
         err := c.RunCheck(uc)
         if err !=  nil {
-            fmt.Println(fmt.Sprintf("%s", err))
+            // (fmt.Sprintf("%s", err))
             multierr.Append(multiErr, err)
         }    
 
-        fmt.Printf("Check: %s, Status: %s \n", name, c.GetResult())
-        fmt.Printf("Failure: %s \n", c.GetFailureMessage())
-        fmt.Printf("Solution: %s \n\n", c.GetSolutionMessage())
-        // fmt.Println("Log : " + c.GetLogMessage())
+        result = append(result, fmt.Sprintf("Check: %s, Status: %s", name, c.GetResult()))
+        result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
+        result = append(result, fmt.Sprintf("Solution: %s \n", c.GetSolutionMessage()))
+        // result = append(result, "Log : " + c.GetLogMessage())
     }
-    fmt.Println("========================================")
+    result = append(result, "===========================================================")
 
-    return multiErr
+    return strings.Join(result, "\n"), multiErr
 }

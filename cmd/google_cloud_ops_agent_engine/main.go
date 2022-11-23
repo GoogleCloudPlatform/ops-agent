@@ -61,8 +61,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	if err := health_checks.RunAllHealthChecks(&uc); err != nil {
+	result, err := health_checks.RunAllHealthChecks(&uc)
+	log.Printf(result)
+	if err != nil {
 		log.Printf("Health_Checks failed. Detailed error: %s", err)
 	}
 
