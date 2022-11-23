@@ -21,8 +21,6 @@ import (
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-
-
 type PortsCheck struct{
     HealthCheck
 }
@@ -46,6 +44,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 }
 
 func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+    // TODO : Get ports from UnifiedConfig
     // Check prometheus exporter host port : 0.0.0.0 : 20202
     host := "0.0.0.0"
     port := "20202"

@@ -107,7 +107,7 @@ func (b *BaseHealthCheck) GetResult() string {
 func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
     var multiErr error
     fmt.Println("========================================")
-    fmt.Println("Health Checks : \n")
+    fmt.Println("Health Checks : ")
     for name, c := range GCEHealthChecks.healthCheckMap {
 
         err := c.RunCheck(uc)
