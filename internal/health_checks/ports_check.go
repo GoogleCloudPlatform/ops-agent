@@ -21,35 +21,41 @@ import (
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func check_port(host string, port string) error {
+
+
+type PortsCheck struct{
+    HealthCheck
+}
+
+func (c PortsCheck) check_port(host string, port string) error {
     lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
     if err != nil {
-        fmt.Println("==> Connection Error:", err)
+        c.LogMessage(fmt.Sprintf("==> Connection Error: %s ", err))
         return err
     }
-    fmt.Println("==> Listening on:", lsnr.Addr())
+    c.LogMessage(fmt.Sprintf("==> Listening on: %s", lsnr.Addr()))
     if lsnr != nil {
         defer lsnr.Close()
-        fmt.Println("==> Opened", net.JoinHostPort(host, port))    
+        c.LogMessage(fmt.Sprintf("==> Opened %s",net.JoinHostPort(host, port)))    
+    } else {
+        return fmt.Errorf("Lister not opened.")
     }
     return nil
 }
 
-type PortsCheck struct{}
-
-func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
-    fmt.Println("\n> PortsCheck \n \n")
-
+func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
     // Check prometheus exporter host port : 0.0.0.0 : 20202
     host := "0.0.0.0"
     port := "20202"
-    err := check_port(host, port)
+    err := c.check_port(host, port)
     if err != nil {
-        return "", err
+        c.Fail("Listening to : " + net.JoinHostPort(host, port) + " was not successful.",
+            fmt.Sprintf("Check the port : %s is free", port))
+        // return err
     }
-    return "PASS", nil
+    return nil
 }
 
 func init() {
-    GCEHealthChecks.RegisterCheck("ports_check", &PortsCheck{})
+    GCEHealthChecks.RegisterCheck("Ports Check", &PortsCheck{HealthCheck: NewHealthCheck()})
 }

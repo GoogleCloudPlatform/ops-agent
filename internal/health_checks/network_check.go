@@ -43,43 +43,41 @@ func runGetHTTPRequest(url string) (string, string, error) {
     return status, string(b), nil
 }
 
-type NetworkCheck struct{}
+type NetworkCheck struct{
+    HealthCheck
+}
 
-func (c NetworkCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
-    fmt.Println("\n> NetworkCheck \n \n")
+func (c NetworkCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
 
     // Request to logging API
-    status, response, err := runGetHTTPRequest(loggingAPIUrl)
-    fmt.Println("==>" + status)
+    status, _, err := runGetHTTPRequest(loggingAPIUrl)
+    c.LogMessage("==>" + status)
     if err != nil {
         fmt.Println(err)
-        return "", err
+        return err
     }
     if status == "200 OK" {
-        fmt.Println("==> Query to loggingAPIUrl was successful.")
+        c.LogMessage("==> Query to loggingAPIUrl was successful.")
     } else {
-        fmt.Println("==> Query to loggingAPIUrl was not successful.")
-        return "FAIL", fmt.Errorf("Query to loggingAPIUrl was not successful.")
+        c.Fail("Query to loggingAPIUrl was not successful.", "Check your connection.")
     }
 
     // Request to monitoring API
-    status, response, err = runGetHTTPRequest(monitoringAPIUrl)
-    fmt.Println("==>" + status)
+    status, _, err = runGetHTTPRequest(monitoringAPIUrl)
+    c.LogMessage("==>" + status)
     if err != nil {
         fmt.Println(err)
-        return "", err
+        return err
     }
     if status == "200 OK" {
-        fmt.Println("==> Query to monitoringAPIUrl was successful.")
+        c.LogMessage("==> Query to monitoringAPIUrl was successful.")
     } else {
-        fmt.Println("==> Query to monitoringAPIUrl was not successful.")
-        return "FAIL", fmt.Errorf("Query to monitoringAPIUrl was not successful.")
+        c.Fail("Query to monitoringAPIUrl was not successful.", "Check your connection.")
     }
 
-    response = response + ""
-    return "PASS", nil
+    return nil
 }
 
 func init() {
-    GCEHealthChecks.RegisterCheck("network_check", NetworkCheck{})
+    GCEHealthChecks.RegisterCheck("Network Check", &NetworkCheck{HealthCheck: NewHealthCheck()})
 }

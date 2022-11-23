@@ -16,7 +16,7 @@ package health_checks
 
 import (
     "fmt"
-
+    "go.uber.org/multierr"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
     "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
@@ -30,9 +30,13 @@ var (
 )
 
 type HealthCheck interface {
-    RunCheck(uc *confgenerator.UnifiedConfig) (string, error)
-    // GetUserFeedback() string
-    // GetResult() string
+    RunCheck(uc *confgenerator.UnifiedConfig) error
+    Fail(failMsg string, solMsg string)
+    GetResult() string
+    LogMessage(message string)
+    GetLogMessage() string
+    GetFailureMessage() string
+    GetSolutionMessage() string
 }
 
 type healthCheckRegistry struct {
@@ -49,18 +53,75 @@ var GCEHealthChecks = &healthCheckRegistry{
     healthCheckMap: make(map[string]HealthCheck),
 }
 
-func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
+type BaseHealthCheck struct {
+    HealthCheck
+    failed bool
+    logMessage string
+    failureMessage string
+    solutionMessage string
+}
 
-    for key, value := range GCEHealthChecks.healthCheckMap {
-        fmt.Printf("%s %s\n", key, value)
-        status, err := value.RunCheck(uc)
-        fmt.Println(fmt.Sprintf("%s %s", status, err))
-        /* if err !=  nil {
-            return err
-        } */
-        // if err := NetworkCheck(); err != nil {
-        //    fmt.Println(fmt.Sprintf("==> NetworkCheckErr : %s \n \n", err))
-        //}      
+func NewHealthCheck() HealthCheck {
+    return &BaseHealthCheck{
+        failed: false,
+        logMessage: "",
+        failureMessage: "",
+        solutionMessage: "",
     }
+}
+
+func (b *BaseHealthCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
     return nil
+}
+
+func (b *BaseHealthCheck) Fail(failMsg string, solMsg string) {
+    b.failed = true
+    b.failureMessage = failMsg
+    b.solutionMessage = solMsg
+}
+
+func (b *BaseHealthCheck) LogMessage(message string) {
+    b.logMessage = b.logMessage + "\n" + message
+}
+
+func (b *BaseHealthCheck) GetLogMessage() string {
+    return b.logMessage
+}
+
+func (b *BaseHealthCheck) GetFailureMessage() string {
+    return b.failureMessage
+}
+
+func (b *BaseHealthCheck) GetSolutionMessage() string {
+    return b.solutionMessage
+}
+
+func (b *BaseHealthCheck) GetResult() string {
+    if b.failed {
+        return "FAIL"
+    } else {
+        return "PASS"
+    } 
+}
+
+func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) error {
+    var multiErr error
+    fmt.Println("========================================")
+    fmt.Println("Health Checks : \n")
+    for name, c := range GCEHealthChecks.healthCheckMap {
+
+        err := c.RunCheck(uc)
+        if err !=  nil {
+            fmt.Println(fmt.Sprintf("%s", err))
+            multierr.Append(multiErr, err)
+        }    
+
+        fmt.Printf("Check: %s, Status: %s \n", name, c.GetResult())
+        fmt.Printf("Failure: %s \n", c.GetFailureMessage())
+        fmt.Printf("Solution: %s \n\n", c.GetSolutionMessage())
+        // fmt.Println("Log : " + c.GetLogMessage())
+    }
+    fmt.Println("========================================")
+
+    return multiErr
 }

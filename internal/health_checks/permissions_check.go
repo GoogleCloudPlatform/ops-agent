@@ -44,55 +44,51 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
     return false, nil
 }
 
-type PermissionsCheck struct{}
+type PermissionsCheck struct{
+    HealthCheck
+}
 
-func (c PermissionsCheck) RunCheck(uc *confgenerator.UnifiedConfig) (string, error) {
+func (c PermissionsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
 
     var project string
     var defaultScopes []string
-    fmt.Println("Get MetadataResource : ")
+    c.LogMessage("Get MetadataResource : ")
     MetadataResource, err := resourcedetector.GetResource()
     if err != nil {
-        return "", fmt.Errorf("can't get resource metadata: %w", err)
+        return fmt.Errorf("can't get resource metadata: %w", err)
     }
     if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-        fmt.Println(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
+        c.LogMessage(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
         project = gceMetadata.Project
         defaultScopes = gceMetadata.DefaultScopes
     } else {
         // Not on GCE
         project = "Not-on-GCE"
     }
-    fmt.Println(fmt.Sprintf("==> project : %s \n \n", project))
-
-    fmt.Println("\n> PermissionsCheck \n \n")
+    c.LogMessage(fmt.Sprintf("==> project : %s \n \n", project))
     
     found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
     if err != nil {
-        return "", err
+        return err
     } else if found {
-        fmt.Println("==> Logging Scopes are enough to run the Ops Agent.")
+        c.LogMessage("==> Logging Scopes are enough to run the Ops Agent.")
     } else {
-        fmt.Println("==> Logging Scopes are not enough to run the Ops Agent.")
-        return "", fmt.Errorf("Logging Scopes are not enough to run the Ops Agent.")
+        c.Fail("Logging Scopes are not enough to run the Ops Agent.", "Add log.writer or log.admin role.")
     }
 
     found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
     if err != nil {
-        return "", err
+        return err
     } else if found {
-        fmt.Println("==> Monitoring Scopes are enough to run the Ops Agent.")
+        c.LogMessage("Monitoring Scopes are enough to run the Ops Agent.")
     } else {
-        fmt.Println("==> Monitoring Scopes are not enough to run the Ops Agent.")
-        return "", fmt.Errorf("Monitoring Scopes are not enough to run the Ops Agent.")
+        c.Fail("Monitoring Scopes are not enough to run the Ops Agent.", "Add monitoring.writer or monitoring.admin role.")
     }
 
-    fmt.Println("\n> PermissionsCheck PASSED \n \n")
-
-    return "PASS", nil
+    return nil
 }
 
 
 func init() {
-    GCEHealthChecks.RegisterCheck("permissions_check", PermissionsCheck{})
+    GCEHealthChecks.RegisterCheck("Permissions Check", &PermissionsCheck{HealthCheck: NewHealthCheck()})
 }
