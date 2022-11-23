@@ -192,7 +192,17 @@ expected_metrics:
     monitored_resource: gce_instance
     internal: true
     labels:
-      module: metrics|logging
+      module: metrics
+      feature: receiver:active_directory_ds
+      key: \[\d+\].enabled
+      value: true
+  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    internal: true
+    labels:
+      module: logging
       feature: receiver:active_directory_ds
       key: \[\d+\].enabled
       value: true
