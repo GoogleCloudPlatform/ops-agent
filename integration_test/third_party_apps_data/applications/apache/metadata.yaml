@@ -94,7 +94,7 @@ expected_metrics:
     labels:
       module: metrics
       feature: receiver:apache
-      key: \[[0-9]+\].enabled
+      key: \[\d+\].enabled
       value: true
   - type: agent.googleapis.com/agent/internal/ops/feature_tracking
     value_type: INT64
@@ -104,7 +104,7 @@ expected_metrics:
     labels:
       module: logging
       feature: receiver:apache_access
-      key: \[[0-9]+\].enabled
+      key: \[\d+\].enabled
       value: true
   - type: agent.googleapis.com/agent/internal/ops/feature_tracking
     value_type: INT64
@@ -114,7 +114,7 @@ expected_metrics:
     labels:
       module: logging
       feature: receiver:apache_error
-      key: \[[0-9]+\].enabled
+      key: \[\d+\].enabled
       value: true
 expected_logs:
   - log_name: apache_access

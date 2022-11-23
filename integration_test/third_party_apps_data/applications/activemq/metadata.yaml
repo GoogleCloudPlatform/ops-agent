@@ -104,7 +104,7 @@ expected_metrics:
     labels:
       module: metrics
       feature: receiver:activemq
-      key: \[[0-9]+\].enabled
+      key: \[\d+\].enabled
       value: true
 expected_logs:
   - log_name: syslog
