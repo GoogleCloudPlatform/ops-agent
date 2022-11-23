@@ -111,8 +111,12 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		t = t.Elem()
 	}
 
+	if c.IsZero() {
+		return nil, nil
+	}
+
 	v := reflect.Indirect(c)
-	if v.Kind() == reflect.Invalid || v.IsZero() {
+	if v.Kind() == reflect.Invalid {
 		return nil, nil
 	}
 

@@ -88,7 +88,7 @@ type ConfigurationOptions struct {
 }
 
 type ExpectedMetricsContainer struct {
-	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative"`
+	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 }
 
 type IntegrationMetadata struct {
