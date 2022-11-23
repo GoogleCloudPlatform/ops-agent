@@ -22,8 +22,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"log"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
@@ -54,14 +52,10 @@ func run() error {
 		}
 	}()
 
-	if err := health_checks.Health_Checks(&uc); err != nil {
-		log.Fatalf("Health_Checks failed. Detailed error: %s", err)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	if err != nil {
+		return err
 	}
-
-	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

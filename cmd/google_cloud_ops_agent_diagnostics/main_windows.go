@@ -22,8 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	// "github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -100,15 +99,11 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	if err := health_checks.Health_Checks(&uc); err != nil {
-		s.log.Error(eventID, fmt.Sprintf("Health_Checks failed. Detailed error: %s", err))
+	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	if err != nil {
+		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
+		return false, ERROR_INVALID_DATA
 	}
-
-	// err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
-	// if err != nil {
-	// 	s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
-	// 	return false, ERROR_INVALID_DATA
-	// }
 
 	return false, ERROR_SUCCESS
 }
