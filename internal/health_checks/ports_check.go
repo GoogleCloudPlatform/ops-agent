@@ -31,6 +31,7 @@ func (c PortsCheck) check_port(host string, port string) error {
     lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
     if err != nil {
         c.LogMessage(fmt.Sprintf("==> Connection Error: %s ", err))
+        c.Fail("Connection error.", fmt.Sprintf("Check your connection"))
         return err
     }
     c.LogMessage(fmt.Sprintf("==> Listening on: %s", lsnr.Addr()))
@@ -38,7 +39,8 @@ func (c PortsCheck) check_port(host string, port string) error {
         defer lsnr.Close()
         c.LogMessage(fmt.Sprintf("==> Opened %s",net.JoinHostPort(host, port)))    
     } else {
-        return fmt.Errorf("Lister not opened.")
+        c.Fail("Listening to : " + net.JoinHostPort(host, port) + " was not successful.",
+            fmt.Sprintf("Check the port : %s is free", port))
     }
     return nil
 }
@@ -49,9 +51,7 @@ func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
     port := "20202"
     err := c.check_port(host, port)
     if err != nil {
-        c.Fail("Listening to : " + net.JoinHostPort(host, port) + " was not successful.",
-            fmt.Sprintf("Check the port : %s is free", port))
-        // return err
+        return err
     }
     return nil
 }
