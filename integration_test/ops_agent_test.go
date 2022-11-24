@@ -1826,18 +1826,10 @@ func TestPrometheusMetrics(t *testing.T) {
             static_configs:
               - targets: ['localhost:20202']
             relabel_configs:
-              - source_labels: [__meta_gce_instance_name]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: instance_name
               - source_labels: [__meta_gce_instance_id]
                 regex: '(.+)'
                 replacement: '${1}'
                 target_label: instance_id
-              - source_labels: [__meta_gce_machine_type]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: machine_type
               - source_labels: [__meta_gce_project]
                 regex: '(.+)'
                 replacement: '${1}'
