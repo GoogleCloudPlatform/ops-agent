@@ -15,28 +15,21 @@
 package health_checks
 
 import (
+    "log"
 	"fmt"
 	"strings"
 
+    "go.uber.org/multierr"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"go.uber.org/multierr"
-)
-
-var (
-	// MetadataResource is the resource metadata for the instance we're running on.
-	// Note: This is a global variable so that it can be set in tests.
-	MetadataResource resourcedetector.Resource
-
-	config *confgenerator.UnifiedConfig
 )
 
 type HealthCheck interface {
-	RunCheck(uc *confgenerator.UnifiedConfig) error
+	RunCheck() error
 	Fail(failMsg string, solMsg string)
 	GetResult() string
-	LogMessage(message string)
-	GetLogMessage() string
+	Log(message string)
+	GetCheckLogMessage() string
 	GetFailureMessage() string
 	GetSolutionMessage() string
 }
@@ -58,7 +51,7 @@ var GCEHealthChecks = &healthCheckRegistry{
 type BaseHealthCheck struct {
 	HealthCheck
 	failed          bool
-	logMessage      string
+	checkLog        string
 	failureMessage  string
 	solutionMessage string
 }
@@ -66,13 +59,13 @@ type BaseHealthCheck struct {
 func NewHealthCheck() HealthCheck {
 	return &BaseHealthCheck{
 		failed:          false,
-		logMessage:      "",
+		checkLog:        "",
 		failureMessage:  "",
 		solutionMessage: "",
 	}
 }
 
-func (b *BaseHealthCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+func (b *BaseHealthCheck) RunCheck() error{
 	return nil
 }
 
@@ -82,12 +75,12 @@ func (b *BaseHealthCheck) Fail(failMsg string, solMsg string) {
 	b.solutionMessage = solMsg
 }
 
-func (b *BaseHealthCheck) LogMessage(message string) {
-	b.logMessage = b.logMessage + "\n" + message
+func (b *BaseHealthCheck) Log(message string) {
+	b.checkLog = b.checkLog + "\n" + message
 }
 
-func (b *BaseHealthCheck) GetLogMessage() string {
-	return b.logMessage
+func (b *BaseHealthCheck) GetCheckLog() string {
+	return b.checkLog
 }
 
 func (b *BaseHealthCheck) GetFailureMessage() string {
@@ -106,23 +99,32 @@ func (b *BaseHealthCheck) GetResult() string {
 	}
 }
 
-func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
+func getGCEMetadata() (resourcedetector.GCEResource, error) {
+    MetadataResource, err := resourcedetector.GetResource()
+    if err != nil {
+        return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
+    }
+    if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+        log.Printf("gceMetadata : %+v", gceMetadata)
+        return gceMetadata, nil
+    } else {
+        return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
+    }
+}
+
+func RunAllHealthChecks(uc *confgenerator.UnifiedConfig, logger func()) (string, error) {
 	var multiErr error
 	var result []string
 	result = append(result, "========================================")
 	result = append(result, "Health Checks : ")
 	for name, c := range GCEHealthChecks.healthCheckMap {
-
-		err := c.RunCheck(uc)
-		if err != nil {
-			// (fmt.Sprintf("%s", err))
-			multierr.Append(multiErr, err)
-		}
-
-		result = append(result, fmt.Sprintf("Check: %s, Status: %s", name, c.GetResult()))
+		err := c.RunCheck()
+        if err != nil {
+            multiErr = multierr.Append(multiErr, err)
+        }
+		result = append(result, fmt.Sprintf("Check: %s, Result: %s", name, c.GetResult()))
 		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
 		result = append(result, fmt.Sprintf("Solution: %s \n", c.GetSolutionMessage()))
-		// result = append(result, "Log : " + c.GetLogMessage())
 	}
 	result = append(result, "===========================================================")
 

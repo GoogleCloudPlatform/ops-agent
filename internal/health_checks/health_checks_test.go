@@ -15,9 +15,8 @@
 package health_checks_test
 
 import (
+	"fmt"
 	"testing"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"gotest.tools/v3/assert"
 )
@@ -26,7 +25,7 @@ type FailureCheck struct {
 	health_checks.HealthCheck
 }
 
-func (c FailureCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+func (c FailureCheck) RunCheck() error {
 	c.Fail("Test failure.", "Test message.")
 	return nil
 }
@@ -35,11 +34,10 @@ func TestCheckFailure(t *testing.T) {
 	wantResult := "FAIL"
 	wantFailure := "Test failure."
 	wantSolution := "Test message."
-
-	emptyConfig := &confgenerator.UnifiedConfig{}
 	testCheck := &FailureCheck{HealthCheck: health_checks.NewHealthCheck()}
 
-	err := testCheck.RunCheck(emptyConfig)
+	err := testCheck.RunCheck()
+
 	assert.NilError(t, err)
 	assert.Equal(t, wantResult, testCheck.GetResult())
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
@@ -50,7 +48,7 @@ type SuccessCheck struct {
 	health_checks.HealthCheck
 }
 
-func (c SuccessCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+func (c SuccessCheck) RunCheck() error {
 	return nil
 }
 
@@ -58,12 +56,35 @@ func TestCheckSuccess(t *testing.T) {
 	wantResult := "PASS"
 	wantFailure := ""
 	wantSolution := ""
-	emptyConfig := &confgenerator.UnifiedConfig{}
 	testCheck := &SuccessCheck{HealthCheck: health_checks.NewHealthCheck()}
 
-	err := testCheck.RunCheck(emptyConfig)
+	err := testCheck.RunCheck()
+
 	assert.NilError(t, err)
 	assert.Equal(t, wantResult, testCheck.GetResult())
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
 	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
 }
+
+type ErrorCheck struct {
+	health_checks.HealthCheck
+}
+
+func (c ErrorCheck) RunCheck() error {
+	c.Fail("Test error.", "")
+	return fmt.Errorf("Test error.")
+}
+
+func TestCheckError(t *testing.T) {
+	wantResult := "FAIL"
+	wantFailure := "Test error."
+	wantSolution := ""
+	testCheck := &ErrorCheck{HealthCheck: health_checks.NewHealthCheck()}
+
+	err := testCheck.RunCheck()
+	assert.ErrorContains(t, err, wantFailure)
+	assert.Equal(t, wantResult, testCheck.GetResult())
+	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
+	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
+}
+

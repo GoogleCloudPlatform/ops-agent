@@ -15,13 +15,10 @@
 package health_checks
 
 import (
-	"context"
 	"fmt"
+    "context"
 
 	"cloud.google.com/go/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
@@ -29,50 +26,41 @@ type APICheck struct {
 	HealthCheck
 }
 
-func (c APICheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
-	var project string
-	c.LogMessage("Get MetadataResource : ")
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		c.LogMessage(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
-		project = gceMetadata.Project
-	} else {
-		// Not on GCE
-		project = "Not-on-GCE"
-	}
-	c.LogMessage(fmt.Sprintf("==> project : %s \n \n", project))
-
-	c.LogMessage("\n> APICheck \n \n")
-	ctx := context.Background()
+func (c APICheck) RunCheck() error {
+    ctx := context.Background()
+	gceMetadata, err := getGCEMetadata()
+    if err != nil {
+        return fmt.Errorf("can't get GCE metadata: %w", err)
+    }
+    projectId := gceMetadata.Project
 
 	// New Logging Client
-	c.LogMessage("==> New Logging Client \n")
-	logClient, err := logging.NewClient(ctx, project)
+	logClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
-		c.Fail("Logging Client didn't create successfully.", "Check the Logging API is enabled.")
-		// c.LogMessage(err)
-		// return "", err
+        return err
 	}
+    if logClient != nil {
+        c.Log("logging client was created successfully.")
+    } else {
+        c.Fail("logging client didn't create successfully.", "check the logging api is enabled.")
+    }
 	if err := logClient.Ping(ctx); err != nil {
-		c.Fail("Logging Client didn't Ping successfully.", "Check the Logging API is enabled.")
-		// c.LogMessage(err)
-		// return err
+		c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
 	}
-	c.LogMessage("Logging API Ping succeded")
+	c.Log("logging api ping succeded")
 	logClient.Close()
 
 	// New Monitoring Client
-	c.LogMessage("==> New Monitoring Client \n \n")
+	c.Log("==> New monitoring Client \n \n")
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-		c.Fail("Monitoring Client didn't create successfully.", "Check the Monitoring API is enabled.")
-		// c.LogMessage(err)
-		// return err
+        return err
 	}
-	c.LogMessage("==> Monitoring Client successfully created")
+    if monClient != nil {
+        c.Log("monitoring client was created successfully.")
+    } else {
+        c.Fail("monitoring client didn't create successfully.", "check the monitoring api is enabled.")
+    }
 	monClient.Close()
 
 	return nil

@@ -16,9 +16,6 @@ package health_checks
 
 import (
 	"fmt"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 )
 
 var (
@@ -48,30 +45,18 @@ type PermissionsCheck struct {
 	HealthCheck
 }
 
-func (c PermissionsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
-
-	var project string
-	var defaultScopes []string
-	c.LogMessage("Get MetadataResource : ")
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		c.LogMessage(fmt.Sprintf("==> gceMetadata : %+v \n \n", gceMetadata))
-		project = gceMetadata.Project
-		defaultScopes = gceMetadata.DefaultScopes
-	} else {
-		// Not on GCE
-		project = "Not-on-GCE"
-	}
-	c.LogMessage(fmt.Sprintf("==> project : %s \n \n", project))
+func (c PermissionsCheck) RunCheck() error {
+	gceMetadata, err := getGCEMetadata()
+    if err != nil {
+        return fmt.Errorf("can't get GCE metadata: %w", err)
+    }
+    defaultScopes := gceMetadata.DefaultScopes
 
 	found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
 	if err != nil {
 		return err
 	} else if found {
-		c.LogMessage("==> Logging Scopes are enough to run the Ops Agent.")
+		c.Log("Logging Scopes are enough to run the Ops Agent.")
 	} else {
 		c.Fail("Logging Scopes are not enough to run the Ops Agent.", "Add log.writer or log.admin role.")
 	}
@@ -80,7 +65,7 @@ func (c PermissionsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
 	if err != nil {
 		return err
 	} else if found {
-		c.LogMessage("Monitoring Scopes are enough to run the Ops Agent.")
+		c.Log("Monitoring Scopes are enough to run the Ops Agent.")
 	} else {
 		c.Fail("Monitoring Scopes are not enough to run the Ops Agent.", "Add monitoring.writer or monitoring.admin role.")
 	}

@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 var (
@@ -48,32 +46,30 @@ type NetworkCheck struct {
 	HealthCheck
 }
 
-func (c NetworkCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+func (c NetworkCheck) RunCheck() error {
 
 	// Request to logging API
 	status, _, err := runGetHTTPRequest(loggingAPIUrl)
-	c.LogMessage("==>" + status)
+	c.Log(fmt.Sprintf("http request status : %s", status))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	if status == "200 OK" {
-		c.LogMessage("Query to loggingAPIUrl was successful.")
+		c.Log("Request to the Logging API was successful.")
 	} else {
-		c.Fail("Query to loggingAPIUrl was not successful.", "Check your connection.")
+		c.Fail("Request to the Logging API was not successful.", "Check your connection.")
 	}
 
 	// Request to monitoring API
 	status, _, err = runGetHTTPRequest(monitoringAPIUrl)
-	c.LogMessage("==>" + status)
+	c.Log(fmt.Sprintf("http request status : %s", status))
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	if status == "200 OK" {
-		c.LogMessage("Query to monitoringAPIUrl was successful.")
+		c.Log("Request to the Monitoring API was successful.")
 	} else {
-		c.Fail("Query to monitoringAPIUrl was not successful.", "Check your connection.")
+		c.Fail("Request to the Monitoring API was not successful.", "Check your connection.")
 	}
 
 	return nil
