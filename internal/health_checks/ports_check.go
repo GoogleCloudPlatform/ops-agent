@@ -26,7 +26,9 @@ type PortsCheck struct {
 func (c PortsCheck) check_port(host string, port string) error {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
 	if err != nil {
-		return fmt.Errorf("connection Error : %w", err)
+		compositeError := fmt.Errorf("connection Error : %w", err)
+    	c.Error(compositeError)
+        return compositeError 
 	}
 	if lsnr != nil {
 		defer lsnr.Close()
@@ -46,6 +48,7 @@ func (c PortsCheck) RunCheck() error {
 	port := "20202"
 	err := c.check_port(host, port)
 	if err != nil {
+		c.Error(err)
 		return err
 	}
 	return nil

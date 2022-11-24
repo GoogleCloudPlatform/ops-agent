@@ -27,6 +27,7 @@ import (
 type HealthCheck interface {
 	RunCheck() error
 	Fail(failMsg string, solMsg string)
+    Error(err error)
 	GetResult() string
 	Log(message string)
 	GetCheckLogMessage() string
@@ -73,6 +74,10 @@ func (b *BaseHealthCheck) Fail(failMsg string, solMsg string) {
 	b.failed = true
 	b.failureMessage = failMsg
 	b.solutionMessage = solMsg
+}
+
+func (b *BaseHealthCheck) Error(err error) {
+    b.Fail(fmt.Sprintf("%s", err), "")
 }
 
 func (b *BaseHealthCheck) Log(message string) {

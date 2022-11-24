@@ -30,13 +30,16 @@ func (c APICheck) RunCheck() error {
     ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
     if err != nil {
-        return fmt.Errorf("can't get GCE metadata: %w", err)
+        compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
+        c.Error(compositeError)
+        return compositeError
     }
     projectId := gceMetadata.Project
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
+        c.Error(err)
         return err
 	}
     if logClient != nil {
@@ -54,6 +57,7 @@ func (c APICheck) RunCheck() error {
 	c.Log("==> New monitoring Client \n \n")
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
+        c.Error(err)
         return err
 	}
     if monClient != nil {

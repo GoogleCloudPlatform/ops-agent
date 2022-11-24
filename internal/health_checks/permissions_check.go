@@ -48,12 +48,15 @@ type PermissionsCheck struct {
 func (c PermissionsCheck) RunCheck() error {
 	gceMetadata, err := getGCEMetadata()
     if err != nil {
-        return fmt.Errorf("can't get GCE metadata: %w", err)
+    	compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
+    	c.Error(compositeError)
+        return compositeError
     }
     defaultScopes := gceMetadata.DefaultScopes
 
 	found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
 	if err != nil {
+		c.Error(err)
 		return err
 	} else if found {
 		c.Log("Logging Scopes are enough to run the Ops Agent.")
@@ -63,6 +66,7 @@ func (c PermissionsCheck) RunCheck() error {
 
 	found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
 	if err != nil {
+		c.Error(err)
 		return err
 	} else if found {
 		c.Log("Monitoring Scopes are enough to run the Ops Agent.")
