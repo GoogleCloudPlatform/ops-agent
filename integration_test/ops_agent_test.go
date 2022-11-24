@@ -1753,6 +1753,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	logger.ToMainLog().Printf("Attempting to read features.yaml\n")
 	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
+		logger.ToMainLog().Printf("Could not find features.yaml\n")
 		return
 	}
 	var featureContainer struct {
