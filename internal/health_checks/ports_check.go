@@ -27,8 +27,8 @@ func (c PortsCheck) check_port(host string, port string) error {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
 	if err != nil {
 		compositeError := fmt.Errorf("connection Error : %w", err)
-    	c.Error(compositeError)
-        return compositeError 
+		c.Error(compositeError)
+		return compositeError
 	}
 	if lsnr != nil {
 		defer lsnr.Close()

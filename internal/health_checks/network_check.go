@@ -53,7 +53,7 @@ func (c NetworkCheck) RunCheck() error {
 	c.Log(fmt.Sprintf("http request status : %s", status))
 	if err != nil {
 		c.Error(err)
-        return err
+		return err
 	}
 	if status == "200 OK" {
 		c.Log("Request to the Logging API was successful.")
@@ -66,7 +66,7 @@ func (c NetworkCheck) RunCheck() error {
 	c.Log(fmt.Sprintf("http request status : %s", status))
 	if err != nil {
 		c.Error(err)
-        return err
+		return err
 	}
 	if status == "200 OK" {
 		c.Log("Request to the Monitoring API was successful.")

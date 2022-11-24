@@ -15,8 +15,8 @@
 package health_checks
 
 import (
+	"context"
 	"fmt"
-    "context"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
@@ -27,26 +27,26 @@ type APICheck struct {
 }
 
 func (c APICheck) RunCheck() error {
-    ctx := context.Background()
+	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
-    if err != nil {
-        compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
-        c.Error(compositeError)
-        return compositeError
-    }
-    projectId := gceMetadata.Project
+	if err != nil {
+		compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
+		c.Error(compositeError)
+		return compositeError
+	}
+	projectId := gceMetadata.Project
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
-        c.Error(err)
-        return err
+		c.Error(err)
+		return err
 	}
-    if logClient != nil {
-        c.Log("logging client was created successfully.")
-    } else {
-        c.Fail("logging client didn't create successfully.", "check the logging api is enabled.")
-    }
+	if logClient != nil {
+		c.Log("logging client was created successfully.")
+	} else {
+		c.Fail("logging client didn't create successfully.", "check the logging api is enabled.")
+	}
 	if err := logClient.Ping(ctx); err != nil {
 		c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
 	}
@@ -54,17 +54,16 @@ func (c APICheck) RunCheck() error {
 	logClient.Close()
 
 	// New Monitoring Client
-	c.Log("==> New monitoring Client \n \n")
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-        c.Error(err)
-        return err
+		c.Error(err)
+		return err
 	}
-    if monClient != nil {
-        c.Log("monitoring client was created successfully.")
-    } else {
-        c.Fail("monitoring client didn't create successfully.", "check the monitoring api is enabled.")
-    }
+	if monClient != nil {
+		c.Log("monitoring client was created successfully.")
+	} else {
+		c.Fail("monitoring client didn't create successfully.", "check the monitoring api is enabled.")
+	}
 	monClient.Close()
 
 	return nil

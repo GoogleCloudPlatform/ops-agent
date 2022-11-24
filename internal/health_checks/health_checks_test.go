@@ -17,6 +17,7 @@ package health_checks_test
 import (
 	"errors"
 	"testing"
+
 	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
 	"gotest.tools/v3/assert"
 )
@@ -73,7 +74,7 @@ type ErrorCheck struct {
 func (c ErrorCheck) RunCheck() error {
 	err := errors.New("Test error.")
 	c.Error(err)
-    return err
+	return err
 }
 
 func TestCheckError(t *testing.T) {
@@ -89,4 +90,3 @@ func TestCheckError(t *testing.T) {
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
 	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
 }
-
