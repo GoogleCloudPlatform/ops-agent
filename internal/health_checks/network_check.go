@@ -15,69 +15,70 @@
 package health_checks
 
 import (
-    "io"
-    "fmt"
-    "net/http"
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"fmt"
+	"io"
+	"net/http"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
 var (
-    // API urls
-    loggingAPIUrl = "https://logging.googleapis.com/$discovery/rest"
-    monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
+	// API urls
+	loggingAPIUrl    = "https://logging.googleapis.com/$discovery/rest"
+	monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
 )
 
 func runGetHTTPRequest(url string) (string, string, error) {
-    resp, err := http.Get(url)
-    if err != nil {
-        return "", "", err
-    }
-    defer resp.Body.Close()
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
 
-    status := resp.Status
-    b, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return "", "", err
-    }
+	status := resp.Status
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
 
-    return status, string(b), nil
+	return status, string(b), nil
 }
 
-type NetworkCheck struct{
-    HealthCheck
+type NetworkCheck struct {
+	HealthCheck
 }
 
 func (c NetworkCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
 
-    // Request to logging API
-    status, _, err := runGetHTTPRequest(loggingAPIUrl)
-    c.LogMessage("==>" + status)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    if status == "200 OK" {
-        c.LogMessage("==> Query to loggingAPIUrl was successful.")
-    } else {
-        c.Fail("Query to loggingAPIUrl was not successful.", "Check your connection.")
-    }
+	// Request to logging API
+	status, _, err := runGetHTTPRequest(loggingAPIUrl)
+	c.LogMessage("==>" + status)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	if status == "200 OK" {
+		c.LogMessage("Query to loggingAPIUrl was successful.")
+	} else {
+		c.Fail("Query to loggingAPIUrl was not successful.", "Check your connection.")
+	}
 
-    // Request to monitoring API
-    status, _, err = runGetHTTPRequest(monitoringAPIUrl)
-    c.LogMessage("==>" + status)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    if status == "200 OK" {
-        c.LogMessage("==> Query to monitoringAPIUrl was successful.")
-    } else {
-        c.Fail("Query to monitoringAPIUrl was not successful.", "Check your connection.")
-    }
+	// Request to monitoring API
+	status, _, err = runGetHTTPRequest(monitoringAPIUrl)
+	c.LogMessage("==>" + status)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	if status == "200 OK" {
+		c.LogMessage("Query to monitoringAPIUrl was successful.")
+	} else {
+		c.Fail("Query to monitoringAPIUrl was not successful.", "Check your connection.")
+	}
 
-    return nil
+	return nil
 }
 
 func init() {
-    GCEHealthChecks.RegisterCheck("Network Check", &NetworkCheck{HealthCheck: NewHealthCheck()})
+	GCEHealthChecks.RegisterCheck("Network Check", &NetworkCheck{HealthCheck: NewHealthCheck()})
 }

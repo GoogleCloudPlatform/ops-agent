@@ -16,28 +16,54 @@ package health_checks_test
 
 import (
 	"testing"
-	"regexp"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+	"gotest.tools/v3/assert"
 )
 
-
-type TestCheck struct{
-    health_checks.HealthCheck
+type FailureCheck struct {
+	health_checks.HealthCheck
 }
 
-func (c TestCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
-    c.Fail("Test failure.", "Test message")
-    return nil
+func (c FailureCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+	c.Fail("Test failure.", "Test message.")
+	return nil
 }
 
 func TestCheckFailure(t *testing.T) {
-    want := regexp.MustCompile(`\bFAIL\b`)
-    emptyConfig := &confgenerator.UnifiedConfig{}
-    testCheck := &TestCheck{HealthCheck: health_checks.NewHealthCheck()}
+	wantResult := "FAIL"
+	wantFailure := "Test failure."
+	wantSolution := "Test message."
 
-    err := testCheck.RunCheck(emptyConfig)
-    if !want.MatchString(testCheck.GetResult()) || err != nil {
-        t.Fatalf(`RunCheck() = %q, %v, want match for %#q, nil`, testCheck.GetResult(), err, want)
-    }
+	emptyConfig := &confgenerator.UnifiedConfig{}
+	testCheck := &FailureCheck{HealthCheck: health_checks.NewHealthCheck()}
+
+	err := testCheck.RunCheck(emptyConfig)
+	assert.NilError(t, err)
+	assert.Equal(t, wantResult, testCheck.GetResult())
+	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
+	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
+}
+
+type SuccessCheck struct {
+	health_checks.HealthCheck
+}
+
+func (c SuccessCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
+	return nil
+}
+
+func TestCheckSuccess(t *testing.T) {
+	wantResult := "PASS"
+	wantFailure := ""
+	wantSolution := ""
+	emptyConfig := &confgenerator.UnifiedConfig{}
+	testCheck := &SuccessCheck{HealthCheck: health_checks.NewHealthCheck()}
+
+	err := testCheck.RunCheck(emptyConfig)
+	assert.NilError(t, err)
+	assert.Equal(t, wantResult, testCheck.GetResult())
+	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
+	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
 }

@@ -15,46 +15,46 @@
 package health_checks
 
 import (
-    "fmt"
-    "net"
+	"fmt"
+	"net"
 
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-type PortsCheck struct{
-    HealthCheck
+type PortsCheck struct {
+	HealthCheck
 }
 
 func (c PortsCheck) check_port(host string, port string) error {
-    lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-    if err != nil {
-        c.LogMessage(fmt.Sprintf("==> Connection Error: %s ", err))
-        c.Fail("Connection error.", fmt.Sprintf("Check your connection"))
-        return err
-    }
-    c.LogMessage(fmt.Sprintf("==> Listening on: %s", lsnr.Addr()))
-    if lsnr != nil {
-        defer lsnr.Close()
-        c.LogMessage(fmt.Sprintf("==> Opened %s",net.JoinHostPort(host, port)))    
-    } else {
-        c.Fail("Listening to : " + net.JoinHostPort(host, port) + " was not successful.",
-            fmt.Sprintf("Check the port : %s is free", port))
-    }
-    return nil
+	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
+	if err != nil {
+		c.LogMessage(fmt.Sprintf("==> Connection Error: %s ", err))
+		c.Fail("Connection error.", fmt.Sprintf("Check your connection"))
+		return err
+	}
+	c.LogMessage(fmt.Sprintf("==> Listening on: %s", lsnr.Addr()))
+	if lsnr != nil {
+		defer lsnr.Close()
+		c.LogMessage(fmt.Sprintf("==> Opened %s", net.JoinHostPort(host, port)))
+	} else {
+		c.Fail("Listening to : "+net.JoinHostPort(host, port)+" was not successful.",
+			fmt.Sprintf("Check the port : %s is free", port))
+	}
+	return nil
 }
 
 func (c PortsCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
-    // TODO : Get ports from UnifiedConfig
-    // Check prometheus exporter host port : 0.0.0.0 : 20202
-    host := "0.0.0.0"
-    port := "20202"
-    err := c.check_port(host, port)
-    if err != nil {
-        return err
-    }
-    return nil
+	// TODO : Get ports from UnifiedConfig
+	// Check prometheus exporter host port : 0.0.0.0 : 20202
+	host := "0.0.0.0"
+	port := "20202"
+	err := c.check_port(host, port)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func init() {
-    GCEHealthChecks.RegisterCheck("Ports Check", &PortsCheck{HealthCheck: NewHealthCheck()})
+	GCEHealthChecks.RegisterCheck("Ports Check", &PortsCheck{HealthCheck: NewHealthCheck()})
 }

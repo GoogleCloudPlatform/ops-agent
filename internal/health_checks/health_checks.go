@@ -15,115 +15,116 @@
 package health_checks
 
 import (
-    "fmt"
-    "strings"
-    "go.uber.org/multierr"
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-    "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"fmt"
+	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"go.uber.org/multierr"
 )
 
 var (
-    // MetadataResource is the resource metadata for the instance we're running on.
-    // Note: This is a global variable so that it can be set in tests.
-    MetadataResource resourcedetector.Resource
+	// MetadataResource is the resource metadata for the instance we're running on.
+	// Note: This is a global variable so that it can be set in tests.
+	MetadataResource resourcedetector.Resource
 
-    config *confgenerator.UnifiedConfig
+	config *confgenerator.UnifiedConfig
 )
 
 type HealthCheck interface {
-    RunCheck(uc *confgenerator.UnifiedConfig) error
-    Fail(failMsg string, solMsg string)
-    GetResult() string
-    LogMessage(message string)
-    GetLogMessage() string
-    GetFailureMessage() string
-    GetSolutionMessage() string
+	RunCheck(uc *confgenerator.UnifiedConfig) error
+	Fail(failMsg string, solMsg string)
+	GetResult() string
+	LogMessage(message string)
+	GetLogMessage() string
+	GetFailureMessage() string
+	GetSolutionMessage() string
 }
 
 type healthCheckRegistry struct {
-    environment string
-    healthCheckMap map[string]HealthCheck
+	environment    string
+	healthCheckMap map[string]HealthCheck
 }
 
 func (r healthCheckRegistry) RegisterCheck(name string, c HealthCheck) {
-    r.healthCheckMap[name] = c
+	r.healthCheckMap[name] = c
 }
 
 var GCEHealthChecks = &healthCheckRegistry{
-    environment: "GCE",
-    healthCheckMap: make(map[string]HealthCheck),
+	environment:    "GCE",
+	healthCheckMap: make(map[string]HealthCheck),
 }
 
 type BaseHealthCheck struct {
-    HealthCheck
-    failed bool
-    logMessage string
-    failureMessage string
-    solutionMessage string
+	HealthCheck
+	failed          bool
+	logMessage      string
+	failureMessage  string
+	solutionMessage string
 }
 
 func NewHealthCheck() HealthCheck {
-    return &BaseHealthCheck{
-        failed: false,
-        logMessage: "",
-        failureMessage: "",
-        solutionMessage: "",
-    }
+	return &BaseHealthCheck{
+		failed:          false,
+		logMessage:      "",
+		failureMessage:  "",
+		solutionMessage: "",
+	}
 }
 
 func (b *BaseHealthCheck) RunCheck(uc *confgenerator.UnifiedConfig) error {
-    return nil
+	return nil
 }
 
 func (b *BaseHealthCheck) Fail(failMsg string, solMsg string) {
-    b.failed = true
-    b.failureMessage = failMsg
-    b.solutionMessage = solMsg
+	b.failed = true
+	b.failureMessage = failMsg
+	b.solutionMessage = solMsg
 }
 
 func (b *BaseHealthCheck) LogMessage(message string) {
-    b.logMessage = b.logMessage + "\n" + message
+	b.logMessage = b.logMessage + "\n" + message
 }
 
 func (b *BaseHealthCheck) GetLogMessage() string {
-    return b.logMessage
+	return b.logMessage
 }
 
 func (b *BaseHealthCheck) GetFailureMessage() string {
-    return b.failureMessage
+	return b.failureMessage
 }
 
 func (b *BaseHealthCheck) GetSolutionMessage() string {
-    return b.solutionMessage
+	return b.solutionMessage
 }
 
 func (b *BaseHealthCheck) GetResult() string {
-    if b.failed {
-        return "FAIL"
-    } else {
-        return "PASS"
-    } 
+	if b.failed {
+		return "FAIL"
+	} else {
+		return "PASS"
+	}
 }
 
 func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
-    var multiErr error
-    var result []string
-    result = append(result, "========================================")
-    result = append(result, "Health Checks : ")
-    for name, c := range GCEHealthChecks.healthCheckMap {
+	var multiErr error
+	var result []string
+	result = append(result, "========================================")
+	result = append(result, "Health Checks : ")
+	for name, c := range GCEHealthChecks.healthCheckMap {
 
-        err := c.RunCheck(uc)
-        if err !=  nil {
-            // (fmt.Sprintf("%s", err))
-            multierr.Append(multiErr, err)
-        }    
+		err := c.RunCheck(uc)
+		if err != nil {
+			// (fmt.Sprintf("%s", err))
+			multierr.Append(multiErr, err)
+		}
 
-        result = append(result, fmt.Sprintf("Check: %s, Status: %s", name, c.GetResult()))
-        result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
-        result = append(result, fmt.Sprintf("Solution: %s \n", c.GetSolutionMessage()))
-        // result = append(result, "Log : " + c.GetLogMessage())
-    }
-    result = append(result, "===========================================================")
+		result = append(result, fmt.Sprintf("Check: %s, Status: %s", name, c.GetResult()))
+		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
+		result = append(result, fmt.Sprintf("Solution: %s \n", c.GetSolutionMessage()))
+		// result = append(result, "Log : " + c.GetLogMessage())
+	}
+	result = append(result, "===========================================================")
 
-    return strings.Join(result, "\n"), multiErr
+	return strings.Join(result, "\n"), multiErr
 }
