@@ -666,6 +666,16 @@ func getFeaturesForComponent(i interface{}, parent []string) [][]string {
 	v := reflect.Indirect(reflect.ValueOf(i))
 	t := v.Type()
 
+	// Short circuit if the component defines its own feature extraction.
+	if customFeatures, ok := v.Interface().(confgenerator.CustomFeatures); ok {
+		features := customFeatures.ListAllFeatures()
+		fullFeatures := make([][]string, 0)
+		for _, feature := range features {
+			fullFeatures = append(fullFeatures, appendFieldName(parent, feature))
+		}
+		return fullFeatures
+	}
+
 	for j := 0; j < t.NumField(); j++ {
 		f := t.Field(j)
 		override, ok := f.Tag.Lookup("tracking")

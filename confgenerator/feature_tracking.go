@@ -38,8 +38,16 @@ type CustomFeature struct {
 	Value string
 }
 
+// CustomFeatures is the interface that components must implement to be able to
+// track features not captured by the `tracking` struct tag.
 type CustomFeatures interface {
+	// ExtractFeatures returns a list of features that will be tracked for this component.
 	ExtractFeatures() ([]CustomFeature, error)
+
+	// ListAllFeatures returns a list of all features that could be tracked for this component.
+	// This lists all the possible features that could be tracked for this component, but some of these
+	// features may not be tracked when not used by the component.
+	ListAllFeatures() []string
 }
 
 // ExtractFeatures fields that containing a tracking tag will be tracked.

@@ -90,43 +90,6 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 	}}
 }
 
-func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
-	customFeatures := make([]CustomFeature, 0)
-	customFeatures = append(customFeatures, CustomFeature{
-		Key:   []string{"enabled"},
-		Value: "true",
-	})
-
-	for i := range r.PromConfig.ScrapeConfigs {
-		scrapeConfig := r.PromConfig.ScrapeConfigs[i]
-		trackingMetrics := [][2]string{
-			{"scheme", scrapeConfig.Scheme},
-			{"scrape_interval", scrapeConfig.ScrapeInterval.String()},
-			{"scrape_timeout", scrapeConfig.ScrapeTimeout.String()},
-			{"sample_limit", fmt.Sprintf("%d", scrapeConfig.SampleLimit)},
-			{"label_limit", fmt.Sprintf("%d", scrapeConfig.LabelLimit)},
-			{"label_name_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelNameLengthLimit)},
-			{"label_value_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelValueLengthLimit)},
-			{"body_size_limit", fmt.Sprintf("%d", scrapeConfig.BodySizeLimit)},
-			{"relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.RelabelConfigs))},
-			{"metric_relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.MetricRelabelConfigs))},
-			{"static_configs", fmt.Sprintf("%d", len(scrapeConfig.ServiceDiscoveryConfigs))},
-		}
-
-		for _, metric := range trackingMetrics {
-			if metric[1] == "0" {
-				// Skip metrics with default values.
-				continue
-			}
-			customFeatures = append(customFeatures, CustomFeature{
-				Key:   []string{"config", fmt.Sprintf("[%d]", i), "scrape_configs", metric[0]},
-				Value: metric[1],
-			})
-		}
-	}
-	return customFeatures, nil
-}
-
 // Generate otel components for the prometheus config used. It is the same config except
 // we need to escape the $ characters in the regexes.
 //
@@ -326,4 +289,61 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 
 func init() {
 	MetricsReceiverTypes.RegisterType(func() MetricsReceiver { return &PrometheusMetrics{} })
+}
+
+// ExtractFeatures returns a list of features that are enabled in the receiver config.
+// Must always be a subset of ListAllFeatures().
+func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
+	customFeatures := make([]CustomFeature, 0)
+	customFeatures = append(customFeatures, CustomFeature{
+		Key:   []string{"enabled"},
+		Value: "true",
+	})
+
+	for i := range r.PromConfig.ScrapeConfigs {
+		scrapeConfig := r.PromConfig.ScrapeConfigs[i]
+		trackingMetrics := [][2]string{
+			{"scheme", scrapeConfig.Scheme},
+			{"scrape_interval", scrapeConfig.ScrapeInterval.String()},
+			{"scrape_timeout", scrapeConfig.ScrapeTimeout.String()},
+			{"sample_limit", fmt.Sprintf("%d", scrapeConfig.SampleLimit)},
+			{"label_limit", fmt.Sprintf("%d", scrapeConfig.LabelLimit)},
+			{"label_name_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelNameLengthLimit)},
+			{"label_value_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelValueLengthLimit)},
+			{"body_size_limit", fmt.Sprintf("%d", scrapeConfig.BodySizeLimit)},
+			{"relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.RelabelConfigs))},
+			{"metric_relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.MetricRelabelConfigs))},
+			{"static_configs", fmt.Sprintf("%d", len(scrapeConfig.ServiceDiscoveryConfigs))},
+		}
+
+		for _, metric := range trackingMetrics {
+			if metric[1] == "0" {
+				// Skip metrics with default values.
+				continue
+			}
+			customFeatures = append(customFeatures, CustomFeature{
+				Key:   []string{"config", fmt.Sprintf("[%d]", i), "scrape_configs", metric[0]},
+				Value: metric[1],
+			})
+		}
+	}
+	return customFeatures, nil
+}
+
+// ListAllFeatures returns a list of all features that the receiver supports that we track.
+func (r PrometheusMetrics) ListAllFeatures() []string {
+	return []string{
+		"confgenerator.ConfigComponent.Type",
+		"config.[].scrape_configs.scheme",
+		"config.[].scrape_configs.scrape_interval",
+		"config.[].scrape_configs.scrape_timeout",
+		"config.[].scrape_configs.sample_limit",
+		"config.[].scrape_configs.label_limit",
+		"config.[].scrape_configs.label_name_length_limit",
+		"config.[].scrape_configs.label_value_length_limit",
+		"config.[].scrape_configs.body_size_limit",
+		"config.[].scrape_configs.relabel_configs",
+		"config.[].scrape_configs.metric_relabel_configs",
+		"config.[].scrape_configs.static_configs",
+	}
 }

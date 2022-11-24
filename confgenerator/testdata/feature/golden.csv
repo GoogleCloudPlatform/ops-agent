@@ -246,4 +246,15 @@ App,Field,Override,
 *confgenerator.LoggingReceiverTCP,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingReceiverWindowsEventLog,confgenerator.ConfigComponent.Type,
 *confgenerator.ParseMultiline,confgenerator.ConfigComponent.Type,
-*confgenerator.PrometheusMetrics,confgenerator.ConfigComponent.Type,
+*confgenerator.PrometheusMetrics,confgenerator.ConfigComponent.Type
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.body_size_limit
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.label_limit
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.label_name_length_limit
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.label_value_length_limit
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.metric_relabel_configs
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.relabel_configs
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.sample_limit
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.scheme
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_interval
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_timeout
+*confgenerator.PrometheusMetrics,config.[].scrape_configs.static_configs
