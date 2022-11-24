@@ -1761,21 +1761,26 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		t.Fatal(err)
 	}
 
-	for k, _ := range featureContainer.Features.Logging {
-		metricsWaitGroup.Add(1)
-		go func() {
-			defer metricsWaitGroup.Done()
-			filters := []string{fmt.Sprintf(`metric.label = "%s"`, k)}
-			_, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			//if err != nil {
-			//t.Error(fmt.Errorf("for: %v\nsereies:\n %v", k, series.Metric))
-			//}
-		}()
+	for k, v := range featureContainer.Features.Logging {
+		for featureKey, featureValue := range v {
+			featureKey := featureKey
+			featureValue := featureValue
+			go func() {
+				metricsWaitGroup.Add(1)
+				defer metricsWaitGroup.Done()
+				filters := []string{
+					`metric.label."module" = "logging"`,
+					fmt.Sprintf(`metric.label."feature" = "%s"`, k),
+					fmt.Sprintf(`metric.label."key" = "%s"`, featureKey),
+					fmt.Sprintf(`metric.label."value" = "%s"`, featureValue),
+				}
+				_, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+			}()
+		}
 	}
 
 	metricsWaitGroup.Wait()
