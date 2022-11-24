@@ -117,7 +117,7 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
     }
 }
 
-func RunAllHealthChecks(uc *confgenerator.UnifiedConfig, logger func()) (string, error) {
+func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
 	var multiErr error
 	var result []string
 	result = append(result, "========================================")
