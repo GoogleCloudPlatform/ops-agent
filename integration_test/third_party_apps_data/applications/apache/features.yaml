@@ -1,0 +1,9 @@
+features:
+  logging:
+    "receiver:apache_access":
+      "[0].enabled": true
+    "receiver:apache_error":
+      "[0].enabled": true
+  metrics:
+    "receiver:apache":
+      "[0].enabled": true

@@ -1649,6 +1649,11 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
+type features struct {
+	Logging map[string]map[string]string `yaml:"logging"`
+	Metrics map[string]map[string]string `yaml:"metrics"`
+}
+
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1672,7 +1677,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	var agentMetrics struct {
 		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
-
 	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
@@ -1744,6 +1748,35 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			}
 		}()
 	}
+
+	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
+	if err != nil {
+		return
+	}
+	var featureContainer struct {
+		Features features `yaml:"features"`
+	}
+	err = yaml.UnmarshalStrict(featureBytes, &featureContainer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for k, _ := range featureContainer.Features.Logging {
+		metricsWaitGroup.Add(1)
+		go func() {
+			defer metricsWaitGroup.Done()
+			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			//if err != nil {
+			t.Error(fmt.Errorf("for: %v\nsereies:\n %v", k, series.Metric))
+			//}
+		}()
+	}
+
 	metricsWaitGroup.Wait()
 }
 

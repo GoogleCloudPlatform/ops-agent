@@ -1,0 +1,7 @@
+features:
+  logging:
+    "receiver:active_directory_ds":
+      "[0].enabled": true
+  metrics:
+    "receiver:active_directory_ds":
+      "[0].enabled": true

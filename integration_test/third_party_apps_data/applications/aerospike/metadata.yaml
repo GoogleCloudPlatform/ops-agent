@@ -92,16 +92,6 @@ expected_metrics:
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.node.memory.free
     value_type: INT64
-  - type: agent.googleapis.com/agent/internal/ops/feature_tracking
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    internal: true
-    labels:
-      module: logging
-      feature: receiver:aerospike
-      key: \[\d+\].enabled
-      value: true
 expected_logs:
   - log_name: syslog
     fields:
