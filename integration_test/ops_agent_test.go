@@ -1765,14 +1765,15 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		metricsWaitGroup.Add(1)
 		go func() {
 			defer metricsWaitGroup.Done()
-			series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false)
+			filters := []string{fmt.Sprintf(`metric.label = "%s"`, k)}
+			_, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 
 			//if err != nil {
-			t.Error(fmt.Errorf("for: %v\nsereies:\n %v", k, series.Metric))
+			//t.Error(fmt.Errorf("for: %v\nsereies:\n %v", k, series.Metric))
 			//}
 		}()
 	}
