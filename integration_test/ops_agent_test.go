@@ -1813,13 +1813,6 @@ func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsCentOS(platform) || gce.IsRHEL(platform) {
-			t.SkipNow()
-		}
-
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		promConfig := `metrics:
@@ -1950,10 +1943,8 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+		// TODO: Set up JSON exporter stuff on Windows
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
