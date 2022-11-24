@@ -1748,6 +1748,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			}
 		}()
 	}
+	metricsWaitGroup.Wait()
 
 	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
@@ -1765,8 +1766,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		for featureKey, featureValue := range v {
 			featureKey := featureKey
 			featureValue := featureValue
+			metricsWaitGroup.Add(1)
 			go func() {
-				metricsWaitGroup.Add(1)
 				defer metricsWaitGroup.Done()
 				filters := []string{
 					`metric.label."module" = "logging"`,
@@ -1774,11 +1775,13 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 					fmt.Sprintf(`metric.label."key" = "%s"`, featureKey),
 					fmt.Sprintf(`metric.label."value" = "%s"`, featureValue),
 				}
-				_, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
+				series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
 				if err != nil {
 					t.Error(err)
 					return
 				}
+
+				fmt.Printf("for: %s, %s\nseries:\n %v", featureKey, featureValue, series.Metric)
 			}()
 		}
 	}
