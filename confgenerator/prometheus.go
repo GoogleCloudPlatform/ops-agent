@@ -20,6 +20,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -51,7 +52,7 @@ type PrometheusMetrics struct {
 	// `$` characters in your prometheus configuration are interpreted as environment
 	// variables.  If you want to use $ characters in your prometheus configuration,
 	// you must escape them using `$$`.
-	PromConfig promconfig.Config `yaml:"config" tracking:"-"`
+	PromConfig promconfig.Config `yaml:"config"`
 }
 
 func (r PrometheusMetrics) Type() string {
@@ -301,23 +302,37 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 	})
 
 	for i := range r.PromConfig.ScrapeConfigs {
-		scrapeConfig := r.PromConfig.ScrapeConfigs[i]
+		sc := r.PromConfig.ScrapeConfigs[i]
+
+		// Since we only support static_configs, there is only over one service discovery config.
+		scTargetGroups := 0
+		for _, c := range sc.ServiceDiscoveryConfigs {
+			switch c := c.(type) {
+			case discovery.StaticConfig:
+				scTargetGroups += len(c)
+			default:
+			}
+		}
+
 		trackingMetrics := [][2]string{
-			{"scheme", scrapeConfig.Scheme},
-			{"scrape_interval", scrapeConfig.ScrapeInterval.String()},
-			{"scrape_timeout", scrapeConfig.ScrapeTimeout.String()},
-			{"sample_limit", fmt.Sprintf("%d", scrapeConfig.SampleLimit)},
-			{"label_limit", fmt.Sprintf("%d", scrapeConfig.LabelLimit)},
-			{"label_name_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelNameLengthLimit)},
-			{"label_value_length_limit", fmt.Sprintf("%d", scrapeConfig.LabelValueLengthLimit)},
-			{"body_size_limit", fmt.Sprintf("%d", scrapeConfig.BodySizeLimit)},
-			{"relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.RelabelConfigs))},
-			{"metric_relabel_configs", fmt.Sprintf("%d", len(scrapeConfig.MetricRelabelConfigs))},
-			{"static_configs", fmt.Sprintf("%d", len(scrapeConfig.ServiceDiscoveryConfigs))},
+			{"scheme", sc.Scheme},
+			// The Ops Agent doesn't support honor_labels, so we don't need to track it.
+			// {"honor_labels", strconv.FormatBool(sc.HonorLabels)},
+			{"honor_timestamps", strconv.FormatBool(sc.HonorTimestamps)},
+			{"scrape_interval", sc.ScrapeInterval.String()},
+			{"scrape_timeout", sc.ScrapeTimeout.String()},
+			{"sample_limit", fmt.Sprintf("%d", sc.SampleLimit)},
+			{"label_limit", fmt.Sprintf("%d", sc.LabelLimit)},
+			{"label_name_length_limit", fmt.Sprintf("%d", sc.LabelNameLengthLimit)},
+			{"label_value_length_limit", fmt.Sprintf("%d", sc.LabelValueLengthLimit)},
+			{"body_size_limit", fmt.Sprintf("%d", sc.BodySizeLimit)},
+			{"relabel_configs", fmt.Sprintf("%d", len(sc.RelabelConfigs))},
+			{"metric_relabel_configs", fmt.Sprintf("%d", len(sc.MetricRelabelConfigs))},
+			{"static_config_target_groups", fmt.Sprintf("%d", scTargetGroups)},
 		}
 
 		for _, metric := range trackingMetrics {
-			if metric[1] == "0" {
+			if metric[1] == "0" || metric[1] == "false" {
 				// Skip metrics with default values.
 				continue
 			}
@@ -335,6 +350,9 @@ func (r PrometheusMetrics) ListAllFeatures() []string {
 	return []string{
 		"confgenerator.ConfigComponent.Type",
 		"config.[].scrape_configs.scheme",
+		// The Ops Agent doesn't support honor_labels, so we don't need to track it.
+		// "config.[].scrape_configs.honor_labels",
+		"config.[].scrape_configs.honor_timestamps",
 		"config.[].scrape_configs.scrape_interval",
 		"config.[].scrape_configs.scrape_timeout",
 		"config.[].scrape_configs.sample_limit",
@@ -344,6 +362,6 @@ func (r PrometheusMetrics) ListAllFeatures() []string {
 		"config.[].scrape_configs.body_size_limit",
 		"config.[].scrape_configs.relabel_configs",
 		"config.[].scrape_configs.metric_relabel_configs",
-		"config.[].scrape_configs.static_configs",
+		"config.[].scrape_configs.static_config_target_groups",
 	}
 }

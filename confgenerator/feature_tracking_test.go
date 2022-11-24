@@ -488,6 +488,12 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 							{
 								Targets: []model.LabelSet{
 									{model.AddressLabel: "localhost:8888"},
+									{model.AddressLabel: "localhost:8889"},
+								},
+							},
+							{
+								Targets: []model.LabelSet{
+									{model.AddressLabel: "localhost:8890"},
 								},
 							},
 						},
@@ -495,7 +501,7 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 					MetricsPath:           "/metrics",
 					Scheme:                "http",
 					HonorLabels:           false,
-					HonorTimestamps:       false,
+					HonorTimestamps:       true,
 					ScrapeInterval:        model.Duration(10 * time.Second),
 					ScrapeTimeout:         model.Duration(10 * time.Second),
 					SampleLimit:           10,
@@ -530,29 +536,15 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := []confgenerator.Feature{
-		{
-			Module: "logging",
-			Kind:   "service",
-			Type:   "pipelines",
-			Key:    []string{"default_pipeline_overridden"},
-			Value:  "false",
-		},
-		{
-			Module: "metrics",
-			Kind:   "service",
-			Type:   "pipelines",
-			Key:    []string{"default_pipeline_overridden"},
-			Value:  "false",
-		},
-		{
-			Module: "metrics",
-			Kind:   "receivers",
-			Type:   "prometheus",
-			Key:    []string{"[0]", "enabled"},
-			Value:  "true",
-		},
-	}
+	expected := expectedFeatureBase
+	expected = append(expected, confgenerator.Feature{
+		Module: "metrics",
+		Kind:   "receivers",
+		Type:   "prometheus",
+		Key:    []string{"[0]", "enabled"},
+		Value:  "true",
+	})
+
 	type expectedFeatureTags struct {
 		keys []string
 		val  string
@@ -561,6 +553,10 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 		{
 			keys: []string{"scheme"},
 			val:  "http",
+		},
+		{
+			keys: []string{"honor_timestamps"},
+			val:  "true",
 		},
 		{
 			keys: []string{"scrape_interval"},
@@ -599,8 +595,8 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 			val:  "1",
 		},
 		{
-			keys: []string{"static_configs"},
-			val:  "1",
+			keys: []string{"static_config_target_groups"},
+			val:  "2",
 		},
 	}
 	for _, test := range testCases {
