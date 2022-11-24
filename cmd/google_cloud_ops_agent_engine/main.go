@@ -35,7 +35,6 @@ var (
 
 func main() {
 	flag.Parse()
-
 	if err := run(); err != nil {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
 	}

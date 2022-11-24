@@ -58,7 +58,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(1, "generated configuration files")
-
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to start subagents: %v", err))
