@@ -17,32 +17,69 @@ package self_metrics_test
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"gotest.tools/v3/assert"
 )
 
 var (
-	platforms               = []string{"linux", "windows"}
-	defaultEnabledReceivers = map[string]self_metrics.EnabledReceivers{
-		"linux": self_metrics.EnabledReceivers{
-			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
-			LogsReceiverCountsByType:    map[string]int{"files": 1},
+	tests = []struct {
+		name             string
+		config           *confgenerator.UnifiedConfig
+		enabledReceivers self_metrics.EnabledReceivers
+	}{
+		{
+			name:   "builtin_linux",
+			config: apps.BuiltInConfStructs["linux"],
+			enabledReceivers: self_metrics.EnabledReceivers{
+				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+				LogsReceiverCountsByType:    map[string]int{"files": 1},
+			},
 		},
-		"windows": self_metrics.EnabledReceivers{
-			MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
-			LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
+		{
+			name:   "builtin_windows",
+			config: apps.BuiltInConfStructs["windows"],
+			enabledReceivers: self_metrics.EnabledReceivers{
+				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
+				LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
+			},
+		},
+		{
+			name: "combined_receiver",
+			config: &confgenerator.UnifiedConfig{
+				Combined: &confgenerator.Combined{
+					Receivers: map[string]confgenerator.CombinedReceiver{
+						"otlp": apps.ReceiverOTLP{},
+					},
+				},
+				Logging: &confgenerator.Logging{
+					Service: &confgenerator.LoggingService{},
+				},
+				Metrics: &confgenerator.Metrics{
+					Service: &confgenerator.MetricsService{
+						Pipelines: map[string]*confgenerator.Pipeline{
+							"otlp": {
+								ReceiverIDs: []string{"otlp"},
+							},
+						},
+					},
+				},
+			},
+			enabledReceivers: self_metrics.EnabledReceivers{
+				MetricsReceiverCountsByType: map[string]int{"otlp": 1},
+				LogsReceiverCountsByType:    map[string]int{},
+			},
 		},
 	}
 )
 
 func TestEnabledReceiversDefaultConfig(t *testing.T) {
-	for _, p := range platforms {
-		t.Run(p, func(t *testing.T) {
-			uc := apps.BuiltInConfStructs[p]
-			eR, err := self_metrics.CountEnabledReceivers(uc)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			eR, err := self_metrics.CountEnabledReceivers(test.config)
 			assert.NilError(t, err)
-			assert.DeepEqual(t, eR, defaultEnabledReceivers[p])
+			assert.DeepEqual(t, eR, test.enabledReceivers)
 		})
 	}
 }
