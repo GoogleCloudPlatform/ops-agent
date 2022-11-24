@@ -1750,6 +1750,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 	metricsWaitGroup.Wait()
 
+	logger.ToMainLog().Printf("Attempting to read features.yaml\n")
 	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
 		return
@@ -1757,6 +1758,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	var featureContainer struct {
 		Features features `yaml:"features"`
 	}
+	logger.ToMainLog().Printf("Read features.yaml successful\n")
+
 	err = yaml.UnmarshalStrict(featureBytes, &featureContainer)
 	if err != nil {
 		t.Fatal(err)
@@ -1781,7 +1784,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 					return
 				}
 
-				fmt.Printf("for: %s, %s\nseries:\n %v", featureKey, featureValue, series.Metric)
+				logger.ToMainLog().Printf("for: %s, %s\nseries:\n %v", featureKey, featureValue, series.Metric)
 			}()
 		}
 	}
