@@ -2563,7 +2563,7 @@ func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM,
 	return err
 }
 
-func TestOtlpMetrics(t *testing.T) {
+func TestOTLPMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2608,7 +2608,7 @@ metrics:
 	})
 }
 
-func testOtlpTraces(t *testing.T) {
+func testOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
