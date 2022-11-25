@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric/global"
@@ -43,4 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 	counter.Add(ctx, 5)
+	// Windows is a bit flaky here, sometimes the metric isn't fully received by Ops Agent
+	// before we start tearing down, so add a delay.
+	time.Sleep(5 * time.Second)
 }
