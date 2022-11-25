@@ -2602,7 +2602,10 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test", time.Hour, nil, false); err != nil {
+		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.gauge", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
 			t.Error(err)
 		}
 	})
