@@ -13,10 +13,10 @@ var requiredFeatureForType = map[string]string{
 	"otlp":       "otlp_receiver",
 }
 
-func IsExperimentalFeatureEnabled(receiver string) bool {
+func IsExperimentalFeatureEnabled(feature string) bool {
 	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_FEATURES"), ",")
 	for _, e := range enabledList {
-		if e == receiver {
+		if e == feature {
 			return true
 		}
 	}
