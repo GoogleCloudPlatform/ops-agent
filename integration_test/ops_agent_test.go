@@ -83,9 +83,9 @@ func configPathForPlatform(platform string) string {
 
 func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return `C:\`
+		return `C:\work`
 	}
-	return "/tmp/"
+	return "/root/work"
 }
 
 func restartCommandForPlatform(platform string) string {
@@ -1844,13 +1844,6 @@ func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsCentOS(platform) || gce.IsRHEL(platform) {
-			t.SkipNow()
-		}
-
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		promConfig := `metrics:
@@ -1981,10 +1974,8 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+		// TODO: Set up JSON exporter stuff on Windows
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
@@ -2435,9 +2426,6 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		actual, err := runResourceDetectorCli(ctx, logger, vm)
@@ -2483,18 +2471,16 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 	})
 }
 
-// runResourceDetectorCli uploads the cli and setup up the env in the VM.
-// Then run the cli to print out the JSON formatted GCEResource and finally
-// unmarshal it back to an instance of GCEResource
+// runResourceDetectorCli uploads the resource detector runner and sets up the
+// env in the VM. Then run the runner to print out the JSON formatted
+// GCEResource and finally unmarshal it back to an instance of GCEResource
 func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (*resourcedetector.GCEResource, error) {
-	type fileToUpload struct {
-		local, remote string
-	}
-
 	// Update the resourcedetector package and the go.mod and go.sum
-	// So that the main function can resolve it from the work directory
-	filesToUpload := []fileToUpload{
-		{local: "./cmd/run_resource_detector/run_resource_detector.go",
+	// So that the main function can locate the package from the work directory
+	filesToUpload := []struct {
+		local, remote string
+	}{
+		{local: "cmd/run_resource_detector/run_resource_detector.go",
 			remote: "run_resource_detector.go"},
 		{local: "../confgenerator/resourcedetector/detector.go",
 			remote: "confgenerator/resourcedetector/detector.go"},
@@ -2508,29 +2494,49 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 			remote: "go.sum"},
 	}
 
+	// Create the folder structure on the VM
 	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
+	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
+	var createFolderCmd string
+	if gce.IsWindows(vm.Platform) {
+		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", packageDir)
+	} else {
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", packageDir)
+	}
+	out, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create folder with %s in VM: %s", createFolderCmd, out.Stderr)
+	}
+
+	// Upload the files
 	for _, file := range filesToUpload {
 		f, err := os.Open(file.local)
 		if err != nil {
 			return nil, err
 		}
+		defer f.Close()
 		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := InstallGolang(ctx, logger.ToMainLog(), vm); err != nil {
+	// Run the resource detector in the VM
+	goPath, err := InstallGolang(ctx, logger, vm)
+	if err != nil {
 		return nil, err
 	}
-
-	cmd := fmt.Sprintf("cd %s && go run run_resource_detector.go", workDir)
-	test_out, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd)
+	cmd := fmt.Sprintf(`
+		%s
+		cd %s
+		go run run_resource_detector.go`, goPath, workDir)
+	runnerOutput, err := gce.RunScriptRemotely(ctx, logger, vm, cmd, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run resource detector in VM: %s", test_out.Stderr)
+		return nil, fmt.Errorf("failed to run resource detector in VM: %s", runnerOutput.Stderr)
 	}
 
-	d, err := unmarshalResource(test_out.Stdout)
+	// Parse the output
+	d, err := unmarshalResource(runnerOutput.Stdout)
 	if err != nil {
 		return nil, fmt.Errorf("can't unmarshal a detector from JSON: %v", err)
 	}
@@ -2547,26 +2553,29 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// InstallGolang downloads the binary and create link to /usr/bin/go
-func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	if gce.IsWindows(vm.Platform) {
-		return fmt.Errorf("Installing Golang on Windows is not implementated.")
-	}
-	logger.Printf("Installing go...")
-
-	err := agents.InstallPackages(ctx, logger, vm, []string{"wget"})
-	if err != nil {
-		return err
-	}
+// InstallGolang downloads and setup go, and return the required command to set
+// the PATH before calling `go` as goPath
+func InstallGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (goPath string, err error) {
 	// TODO: use runtime.Version() to extract the go version
 	goVersion := "1.19"
-	installCmd := fmt.Sprintf(`gsutil cp \
-"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
-sudo tar --directory /usr/local -xzf /dev/stdin
-sudo ln -s /usr/local/go/bin/go /usr/bin/go 
-`, goVersion)
-	_, err = gce.RunRemotely(ctx, logger, vm, "", installCmd)
-	return err
+	var installCmd string
+	if gce.IsWindows(vm.Platform) {
+		// TODO: host go windows installer in the GCS if `golang.org` throttle
+		installCmd = fmt.Sprintf(`
+			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
+			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
+			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
+		goPath = `$env:Path="C:\Program Files\Go\bin;$env:Path"`
+	} else {
+		installCmd = fmt.Sprintf(`
+			set -e
+			gsutil cp \
+				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
+				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
+		goPath = "export PATH=/usr/local/go/bin:$PATH"
+	}
+	_, err = gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	return goPath, err
 }
 
 func TestMain(m *testing.M) {

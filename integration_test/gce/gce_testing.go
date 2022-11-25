@@ -862,12 +862,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		// TODO(b/255311117): change back to sysprep-specialize-script-cmd
-		if _, ok := metadataCopy["windows-startup-script-cmd"]; ok {
-			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
-		metadataCopy["windows-startup-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
@@ -1131,6 +1130,8 @@ func RemoveExternalIP(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // SetEnvironmentVariables sets the environment variables in the envVariables map on the given vm in a platform-dependent way.
+// On Windows platforms, variables set this way are visible to all processes.
+// On Linux platforms, variables set this way are visible to the Ops Agent services only.
 func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, envVariables map[string]string) error {
 	if IsWindows(vm.Platform) {
 		for key, value := range envVariables {
@@ -1142,16 +1143,25 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 		}
 		return nil
 	}
-	defaultEnvironment := "DefaultEnvironment="
+	// https://serverfault.com/a/413408
+	// Escaping newlines here because we'll be using `echo -e` later
+	override := `[Service]\n`
 	for key, value := range envVariables {
-		defaultEnvironment += fmt.Sprintf(`"%s=%s" `, key, value)
+		override += fmt.Sprintf(`Environment="%s=%s"\n`, key, value)
 	}
-	cmd := fmt.Sprintf("echo '%s' | sudo tee -a /etc/systemd/system.conf", defaultEnvironment)
-	logger.Println("edit system.conf command: " + cmd)
-	if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
-		return err
+	for _, service := range []string{
+		"google-cloud-ops-agent",
+		"google-cloud-ops-agent-diagnostics",
+		"google-cloud-ops-agent-fluent-bit",
+		"google-cloud-ops-agent-opentelemetry-collector",
+	} {
+		dir := fmt.Sprintf("/etc/systemd/system/%s.service.d", service)
+		cmd := fmt.Sprintf(`sudo mkdir -p %s && echo -e '%s' | sudo tee %s/override.conf`, dir, override, dir)
+		if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+			return err
+		}
 	}
-	// Reload the systemd daemon to pick up the new settings from system.conf edited in the previous command
+	// Reload the systemd daemon to pick up the new settings edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
 	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
 	return err
