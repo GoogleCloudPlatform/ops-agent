@@ -36,9 +36,9 @@ func componentValidator(sl validator.StructLevel) {
 	if !ok || IsExperimentalFeatureEnabled(feature) {
 		return
 	}
-	sl.ReportError(nil, "", "", "experimental", fmt.Sprintf("Component of type %q cannot be used with the current version of the Ops Agent", comp.Type))
+	sl.ReportError(comp, "type", "Type", "experimental", comp.Type)
 }
 
 func experimentalValidationErrorString(ve validationError) string {
-	return ve.Param()
+	return fmt.Sprintf("Component of type %q cannot be used with the current version of the Ops Agent", ve.Param())
 }
