@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -39,12 +39,14 @@ func main() {
 	}()
 
 	meter := global.MeterProvider().Meter("foo")
-	counter, err := meter.SyncFloat64().Counter("otlp.test")
+	gauge, err := meter.AsyncFloat64().Gauge("otlp.test")
 	if err != nil {
 		log.Fatal(err)
 	}
-	counter.Add(ctx, 5)
-	// Windows is a bit flaky here, sometimes the metric isn't fully received by Ops Agent
-	// before we start tearing down, so add a delay.
-	time.Sleep(5 * time.Second)
+	err = meter.RegisterCallback([]instrument.Asynchronous{gauge}, func(c context.Context) {
+		gauge.Observe(c, 5)
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
