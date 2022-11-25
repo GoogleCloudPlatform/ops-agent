@@ -359,9 +359,9 @@ func PlatformKind(platform string) string {
 	return "linux"
 }
 
-// isRetriableLookupMetricError returns whether the given error, returned from
-// lookupMetric() or WaitForMetric(), should be retried.
-func isRetriableLookupMetricError(err error) bool {
+// isRetriableLookupError returns whether the given error, returned from
+// lookup[Metric|Trace]() or WaitFor[Metric|Trace](), should be retried.
+func isRetriableLookupError(err error) bool {
 	myStatus, ok := status.FromError(err)
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
@@ -436,14 +436,19 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 	}
 }
 
-// firstTrace evaluates the given iterator, returning its first trace,
-// or nil if the iterator is empty.
-func firstTrace(it *trace.TraceIterator) *cloudtrace.Trace {
+// firstTrace evaluates the given iterator, returning its first trace.
+// An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
 	trace, err := it.Next()
 	if err == iterator.Done {
-		return nil
+		return nil, nil
 	}
-	return trace
+	if err != nil {
+		return nil, err
+	}
+	return trace, nil
 }
 
 // WaitForMetric looks for the given metric in the backend and returns it if it
@@ -458,7 +463,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 			// Success.
 			return series, nil
 		}
-		if err != nil && !isRetriableLookupMetricError(err) {
+		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
@@ -482,9 +487,12 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupTrace(ctx, logger, vm, window)
-		trace := firstTrace(it)
-		if trace != nil {
+		trace, err := firstTrace(it)
+		if trace != nil && err == nil {
 			return trace, nil
+		}
+		if err != nil && !isRetriableLookupError(err) {
+			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
 			attempt, QueryMaxAttempts)
@@ -517,7 +525,7 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 			// Success
 			return nil
 		}
-		if !isRetriableLookupMetricError(err) {
+		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
 		time.Sleep(queryBackoffDuration)
