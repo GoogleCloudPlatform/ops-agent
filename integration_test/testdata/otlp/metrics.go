@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric/global"
@@ -39,7 +40,9 @@ func main() {
 	}()
 
 	meter := global.MeterProvider().Meter("foo")
-	gauge, err := meter.AsyncFloat64().Gauge("otlp.test")
+
+	// Test gauge metrics
+	gauge, err := meter.AsyncFloat64().Gauge("otlp.test.gauge")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,4 +52,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Test cumulative metrics
+	counter, err := meter.SyncFloat64().Counter("otlp.test.cumulative")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Counters need two samples with a short delay in between
+	counter.Add(ctx, 5)
+	time.Sleep(1 * time.Second)
+	counter.Add(ctx, 10)
 }
