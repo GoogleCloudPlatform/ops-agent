@@ -538,11 +538,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			Key:     labels["key"],
 			Value:   labels["value"],
 		}
+		logger.ToMainLog().Printf("attempting to remove feature: %v \n", f)
 		expectedFeatures.Remove(&f)
 	}
 
 	if len(expectedFeatures) != 0 {
-		return fmt.Errorf("missing expected features")
+		return fmt.Errorf("missing expected features: \n %v\n", expectedFeatures)
 	}
 
 	logger.ToMainLog().Printf("Expected feautres found\n")
