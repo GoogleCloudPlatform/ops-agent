@@ -1,9 +1,9 @@
 features:
-  - feature: receivers:active_directory_ds
+  - feature: service:pipelines
     module: metrics
-    key: "[0].enabled"
-    value: true
-  - feature: receivers:active_directory_ds
+    key: default_pipeline_overridden
+    value: false
+  - feature: service:pipelines
     module: logging
-    key: "[0].enabled"
-    value: true
+    key: default_pipeline_overridden
+    value: false

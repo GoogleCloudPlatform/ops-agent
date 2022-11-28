@@ -49,8 +49,6 @@ type ExpectedMetric struct {
 	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional,excluded_with=Platform"`
 	// Exclusive metric to a particular kind of platform.
 	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
-	// Specifies the ExpectedMetric is an internal metric, will be omitted from documentation
-	Internal bool `yaml:"internal,omitempty" validate:"omitempty"`
 }
 
 type LogFields struct {
