@@ -58,6 +58,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"google.golang.org/genproto/googleapis/api/metric"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
 	cloudlogging "cloud.google.com/go/logging"
@@ -1689,7 +1690,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			continue
 		}
 
-		var series *monitoring.TimeSeries
+		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
@@ -1754,7 +1755,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	logger.ToMainLog().Printf("Attempting to read features.yaml\n")
 	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
-		logger.ToMainLog().Printf("Could not find features.yaml\n")
+		t.Fatalf("Could not find features.yaml\n")
 		return
 	}
 
@@ -1800,7 +1801,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	logger.ToMainLog().Printf("Expected feautres found\n")
-
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {

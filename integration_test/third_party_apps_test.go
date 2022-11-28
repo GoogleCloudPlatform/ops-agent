@@ -54,6 +54,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"go.uber.org/multierr"
@@ -460,7 +461,18 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
+type feature struct {
+	Module  string
+	Feature string
+	Key     string
+	Value   string
+}
+
+type featureContainer struct {
+	Features []*feature `yaml:"features"`
+}
+
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc featureContainer, skipFeatureTracking bool) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -505,6 +517,35 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
+
+	if skipFeatureTracking {
+		logger.ToMainLog().Printf("skipping feature tracking integration tests")
+		return err
+	}
+
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false)
+	if err != nil {
+		return err
+	}
+
+	expectedFeatures := set.FromSlice(fc.Features)
+
+	for _, s := range series {
+		labels := s.Metric.Labels
+		f := feature{
+			Module:  labels["module"],
+			Feature: labels["feature"],
+			Key:     labels["key"],
+			Value:   labels["value"],
+		}
+		expectedFeatures.Remove(&f)
+	}
+
+	if len(expectedFeatures) != 0 {
+		return fmt.Errorf("missing expected features")
+	}
+
+	logger.ToMainLog().Printf("Expected feautres found\n")
 	return err
 }
 
@@ -627,12 +668,36 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+
+		fc, err := getExpectedFeatures(app)
+		skipFeatureTracking := false
+		if err != nil {
+			skipFeatureTracking = true
+		}
+
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc, skipFeatureTracking); err != nil {
 			return nonRetryable, err
 		}
 	}
 
 	return nonRetryable, nil
+}
+
+func getExpectedFeatures(app string) (featureContainer, error) {
+	var fc featureContainer
+
+	featuresScript := path.Join("applications", app, "features.yaml")
+	featureBytes, err := readFileFromScriptsDir(featuresScript)
+	if err != nil {
+		return fc, err
+	}
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		return fc, err
+	}
+
+	return fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
@@ -673,7 +738,7 @@ func modifiedFiles(t *testing.T) []string {
 	stdout := string(out)
 	if err != nil {
 		stderr := ""
-        	if exitError := err.(*exec.ExitError); exitError != nil {
+		if exitError := err.(*exec.ExitError); exitError != nil {
 			stderr = string(exitError.Stderr)
 		}
 		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
@@ -752,7 +817,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBApp = "oracledb"
+	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
 )
 
@@ -771,10 +836,11 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * For all impacted apps, test on all platforms.
-//   * Always test all apps against the default platform.
-//   * Always test the default app (postgres/active_directory_ds for now)
+//   - For all impacted apps, test on all platforms.
+//   - Always test all apps against the default platform.
+//   - Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
+//
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
