@@ -53,6 +53,7 @@ type BaseHealthCheck struct {
 	HealthCheck
     errored         bool
 	failed          bool
+    err             error          
     failure         HealthCheckFailure
 	checkLog        string
 	failureMessage  string
@@ -62,6 +63,8 @@ type BaseHealthCheck struct {
 func NewHealthCheck() HealthCheck {
 	return &BaseHealthCheck{
 		failed:          false,
+        errored:         false,
+        err:             nil,
         failure:         HealthCheckFailure{},
 		checkLog:        "",
 		failureMessage:  "",
@@ -84,6 +87,7 @@ func (b *BaseHealthCheck) Fail(failureCode string) {
 
 func (b *BaseHealthCheck) Error(err error) {
     // TODO : What to do with error ?
+    b.err = err
     b.errored = true
 	b.Fail("health-check-error")
 }
