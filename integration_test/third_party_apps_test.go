@@ -551,7 +551,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return fmt.Errorf("missing expected features: \n %v\n", expectedFeatures)
 	}
 
-	logger.ToMainLog().Printf("Expected feautres found\n")
+	logger.ToMainLog().Printf("Expected features found\n")
 	return err
 }
 
