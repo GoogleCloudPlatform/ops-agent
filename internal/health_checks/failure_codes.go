@@ -22,56 +22,56 @@ type HealthCheckFailure struct {
     // code string
     message string
     action string
-    resourceLink string // Are strings the best for URLs
+    resourceLink string // TODO : Are strings the best for URLs ?
     isFatal bool
 }
 
 var healthCheckFailureMap = map[string]HealthCheckFailure{
     "port-unavailable" : {
         message: "Port is unavailable",
-        action: "Add the logging.writer role to the GCP service account.",
-        resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+        action: "Check the port is available.",
+        resourceLink : "",
         isFatal: true,
         // TODO : Add message with specific port
         // failMsg := fmt.Sprintf("listening to %s  was not successful.", net.JoinHostPort(host, port))
         // solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
     },
     "connection-to-logging-api-failed" : {
-        message: "Logging API Missing Permissions",
-        action: "Add the logging.writer role to the GCP service account.",
-        resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+        message: "Request to Monitoring API failed.",
+        action: "Check your internet connection.",
+        resourceLink : "",
         isFatal: true,
     },
     "connection-to-monitoring-api-failed" : {
-        message: "Monitoring API Missing Permissions",
-        action: "Add the monitoring.writer role to the GCP service account.",
-        resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+        message: "Request to Monitoring API failed.",
+        action: "Check your internet connection.",
+        resourceLink : "",
         isFatal: true,
     },
     "logging-api-missing-permission" : {
-        message: "Logging API Missing Permissions",
+        message: "Service account misssing permissions for the Logging API.",
         action: "Add the logging.writer role to the GCP service account.",
         resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
         isFatal: true,
     },
     "monitoring-api-missing-permission" : {
-        message: "Monitoring API Missing Permissions",
+        message: "Service account misssing permissions for the Monitoring API.",
         action: "Add the monitoring.writer role to the GCP service account.",
-        resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+        resourceLink : "",
         isFatal: true,
     },
     "logging-api-disabled" : {
         // TODO : Add message with specific failure (e.g. Ping to api failed)
         // c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
-        message: "Logging API disabled",
+        message: "The Logging API is disabled in the current GCP project.",
         action: "Check the Logging API is enabled",
         resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
         isFatal: true,
     },
     "monitoring-api-disabled" : {
-        message: "Monitoring API disabled",
-        action: "Check the Logging API is enabled",
-        resourceLink : "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+        message: "The Monitoring API disabled",
+        action: "Check the Monitoring API is disabled in the current GCP project.",
+        resourceLink : "",
         isFatal: true,
     },
     "health-check-failure" : {
