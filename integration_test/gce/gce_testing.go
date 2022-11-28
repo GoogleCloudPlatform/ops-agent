@@ -105,7 +105,7 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
-	"google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
+	cloudtrace "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
