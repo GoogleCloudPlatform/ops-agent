@@ -17,6 +17,7 @@ package health_checks
 import (
 	"fmt"
 	"log"
+    "time"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -86,14 +87,14 @@ func (b *BaseHealthCheck) Fail(failureCode string) {
 }
 
 func (b *BaseHealthCheck) Error(err error) {
-    // TODO : What to do with error ?
+    // TODO : What to do with error ?()
     b.err = err
     b.errored = true
 	b.Fail("health-check-error")
 }
 
 func (b *BaseHealthCheck) Log(message string) {
-	b.checkLog = b.checkLog + "\n" + message
+	b.checkLog = time.Now().Format("[2006-01-02 15:04:05]") + " " + message + "\n" + b.checkLog
 }
 
 func (b *BaseHealthCheck) GetCheckLog() string {
