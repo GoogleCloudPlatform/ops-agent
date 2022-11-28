@@ -19,8 +19,8 @@ metrics:
         config:
           scrape_configs:
           - job_name: prometheus
-            static_configs:
             honor_labels: true
+            static_configs:
             - targets:
               - localhost:1234
   service:
