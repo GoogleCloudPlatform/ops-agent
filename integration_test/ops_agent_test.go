@@ -56,8 +56,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 
 	cloudlogging "cloud.google.com/go/logging"
@@ -1649,11 +1649,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-type features struct {
-	Logging map[string]map[string]string `yaml:"logging"`
-	Metrics map[string]map[string]string `yaml:"metrics"`
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
@@ -1669,6 +1664,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
+	logger.ToMainLog().Println("Testing Logger: testDefaultMetrics")
+
 	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -1683,6 +1680,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	expectedMetrics := agentMetrics.ExpectedMetrics
+
+	logger.ToMainLog().Println("Testing Logger: finding representative metrics")
 
 	// First make sure that the representative metric is being uploaded.
 	for _, metric := range expectedMetrics {
@@ -1708,6 +1707,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		// of querying for metrics.
 		return
 	}
+
+	logger.ToMainLog().Println("Testing Logger: matching expected metrics")
 
 	// Now that we've established that the preceding metrics are being uploaded
 	// and have percolated through the monitoring backend, let's proceed to
@@ -1756,9 +1757,18 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		logger.ToMainLog().Printf("Could not find features.yaml\n")
 		return
 	}
-	var featureContainer struct {
-		Features features `yaml:"features"`
+
+	type feature struct {
+		Module  string
+		Feature string
+		Key     string
+		Value   string
 	}
+
+	var featureContainer struct {
+		Features []*feature `yaml:"features"`
+	}
+
 	logger.ToMainLog().Printf("Read features.yaml successful\n")
 
 	err = yaml.UnmarshalStrict(featureBytes, &featureContainer)
@@ -1766,31 +1776,31 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		t.Fatal(err)
 	}
 
-	for k, v := range featureContainer.Features.Logging {
-		for featureKey, featureValue := range v {
-			featureKey := featureKey
-			featureValue := featureValue
-			metricsWaitGroup.Add(1)
-			go func() {
-				defer metricsWaitGroup.Done()
-				filters := []string{
-					`metric.label."module" = "logging"`,
-					fmt.Sprintf(`metric.label."feature" = "%s"`, k),
-					fmt.Sprintf(`metric.label."key" = "%s"`, featureKey),
-					fmt.Sprintf(`metric.label."value" = "%s"`, featureValue),
-				}
-				series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, filters, false)
-				if err != nil {
-					t.Error(err)
-					return
-				}
-
-				logger.ToMainLog().Printf("for: %s, %s\nseries:\n %v", featureKey, featureValue, series.Metric)
-			}()
-		}
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false)
+	if err != nil {
+		t.Error(err)
+		return
 	}
 
-	metricsWaitGroup.Wait()
+	expectedFeatures := set.FromSlice(featureContainer.Features)
+
+	for _, s := range series {
+		labels := s.Metric.Labels
+		f := feature{
+			Module:  labels["module"],
+			Feature: labels["feature"],
+			Key:     labels["key"],
+			Value:   labels["value"],
+		}
+		expectedFeatures.Remove(&f)
+	}
+
+	if len(expectedFeatures) != 0 {
+		t.Fatalf("Missing expected features")
+	}
+
+	logger.ToMainLog().Printf("Expected feautres found\n")
+
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {

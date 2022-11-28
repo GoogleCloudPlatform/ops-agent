@@ -438,6 +438,30 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
 }
 
+func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) ([]*monitoringpb.TimeSeries, error) {
+	tsList := make([]*monitoringpb.TimeSeries, 0)
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
+		for {
+			series, err := it.Next()
+			if err == iterator.Done {
+				// Either there were no data series in the iterator or all of them were empty.
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			if len(series.Points) == 0 {
+				// Look at the next element(s) of the iterator.
+				continue
+			}
+			// Success, we found a time series with len(series.Points) > 0.
+			tsList = append(tsList, series)
+		}
+	}
+	return tsList, nil
+}
+
 // IsExhaustedRetriesMetricError returns true if the given error is an
 // "exhausted retries" error returned from WaitForMetric.
 func IsExhaustedRetriesMetricError(err error) bool {

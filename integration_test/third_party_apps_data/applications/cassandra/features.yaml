@@ -1,0 +1,29 @@
+features:
+  - feature: receivers:cassandra
+    module: metrics
+    key: \[0].enabled
+    value: true
+  - feature: receivers:cassandra_debug
+    module: logging
+    key: \[0].enabled
+    value: true
+  - feature: receivers:cassandra_debug
+    module: logging
+    key: \[2].enabled
+    value: true
+  - feature: receivers:cassandra_gc
+    module: logging
+    key: \[1].enabled
+    value: true
+  - feature: receivers:cassandra_gc
+    module: logging
+    key: \[3].enabled
+    value: true
+  - feature: receivers:cassandra_system
+    module: logging
+    key: \[4].enabled
+    value: true
+  - feature: receivers:cassandra_system
+    module: logging
+    key: \[5].enabled
+    value: true
