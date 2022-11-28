@@ -218,10 +218,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 
 // validatePrometheus checks the receiver configuration is valid.
 func validatePrometheus(promConfig promconfig.Config) (string, error) {
-	if !IsExperimentalFeatureEnabled("prometheus_receiver") {
-		return "prometheus", fmt.Errorf("this receiver is not available for the current Ops Agent version")
-	}
-
 	if len(promConfig.ScrapeConfigs) == 0 {
 		return "scrape_config", errors.New("no Prometheus scrape_configs")
 	}
@@ -292,5 +288,5 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 }
 
 func init() {
-	MetricsReceiverTypes.RegisterType(func() Component { return &PrometheusMetrics{} })
+	MetricsReceiverTypes.RegisterType(func() MetricsReceiver { return &PrometheusMetrics{} })
 }

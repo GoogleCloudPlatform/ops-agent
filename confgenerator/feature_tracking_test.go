@@ -464,10 +464,10 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 
 func TestGolden(t *testing.T) {
 	_ = apps.BuiltInConfStructs
-	components := confgenerator.GetComponentsFromRegistry(confgenerator.LoggingReceiverTypes)
-	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.LoggingProcessorTypes)...)
-	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.MetricsReceiverTypes)...)
-	components = append(components, confgenerator.GetComponentsFromRegistry(confgenerator.MetricsProcessorTypes)...)
+	components := confgenerator.LoggingReceiverTypes.GetComponentsFromRegistry()
+	components = append(components, confgenerator.LoggingProcessorTypes.GetComponentsFromRegistry()...)
+	components = append(components, confgenerator.MetricsReceiverTypes.GetComponentsFromRegistry()...)
+	components = append(components, confgenerator.MetricsProcessorTypes.GetComponentsFromRegistry()...)
 
 	features := getFeatures(components)
 
