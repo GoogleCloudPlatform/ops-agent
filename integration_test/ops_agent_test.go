@@ -64,6 +64,7 @@ import (
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v2"
 )
 
 func logPathForPlatform(platform string) string {
@@ -1781,13 +1782,12 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	expectedFeatures := set.FromSlice(featureContainer.Features)
-	expectedFeaturesString := make([]string, 0)
+	expectedFeaturesSlice := make([]feature, 0)
 
 	for _, f := range featureContainer.Features {
-		expectedFeaturesString = append(expectedFeaturesString, fmt.Sprintf("%v", *f))
+		expectedFeaturesSlice = append(expectedFeaturesSlice, *f)
 	}
-	expectedFeaturesMap := set.FromSlice(expectedFeaturesString)
+	expectedFeatures := set.FromSlice(expectedFeaturesSlice)
 
 	for _, s := range series {
 		labels := s.Metric.Labels
@@ -1797,11 +1797,11 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			Key:     labels["key"],
 			Value:   labels["value"],
 		}
-		expectedFeaturesMap.Remove(fmt.Sprintf("%v", f))
+		expectedFeatures.Remove(f)
 	}
 
 	if len(expectedFeatures) != 0 {
-		t.Fatalf("missing expected features, %v\n", expectedFeaturesMap)
+		t.Fatalf("missing expected features, %v\n", expectedFeatures)
 	}
 
 	logger.ToMainLog().Printf("Expected feautres found\n")

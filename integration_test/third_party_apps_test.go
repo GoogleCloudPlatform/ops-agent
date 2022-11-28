@@ -528,13 +528,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	expectedFeatures := set.FromSlice(fc.Features)
-	expectedFeaturesString := make([]string, 0)
+	expectedFeaturesSlice := make([]feature, 0)
 
 	for _, f := range fc.Features {
-		expectedFeaturesString = append(expectedFeaturesString, fmt.Sprintf("%v", *f))
+		expectedFeaturesSlice = append(expectedFeaturesSlice, *f)
 	}
-	expectedFeaturesMap := set.FromSlice(expectedFeaturesString)
+	expectedFeatures := set.FromSlice(expectedFeaturesSlice)
 
 	for _, s := range series {
 		labels := s.Metric.Labels
@@ -545,7 +544,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			Value:   labels["value"],
 		}
 		logger.ToMainLog().Printf("attempting to remove feature: %v \n", f)
-		expectedFeaturesMap.Remove(fmt.Sprintf("%v", f))
+		expectedFeatures.Remove(f)
 	}
 
 	if len(expectedFeatures) != 0 {
