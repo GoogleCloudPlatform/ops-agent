@@ -26,13 +26,13 @@ import (
 
 type HealthCheck interface {
 	RunCheck() error
-	Fail(failMsg string, solMsg string)
+	Fail(failureCode string)
 	Error(err error)
-	GetResult() string
 	Log(message string)
-	GetCheckLogMessage() string
+    GetResult() string
+	GetCheckLog() string
 	GetFailureMessage() string
-	GetSolutionMessage() string
+	GetActionMessage() string
 }
 
 type healthCheckRegistry struct {
@@ -52,6 +52,7 @@ var GCEHealthChecks = &healthCheckRegistry{
 type BaseHealthCheck struct {
 	HealthCheck
 	failed          bool
+    failure         HealthCheckFailure
 	checkLog        string
 	failureMessage  string
 	solutionMessage string
@@ -60,6 +61,7 @@ type BaseHealthCheck struct {
 func NewHealthCheck() HealthCheck {
 	return &BaseHealthCheck{
 		failed:          false,
+        failure:         HealthCheckFailure{},
 		checkLog:        "",
 		failureMessage:  "",
 		solutionMessage: "",
@@ -70,14 +72,18 @@ func (b *BaseHealthCheck) RunCheck() error {
 	return nil
 }
 
-func (b *BaseHealthCheck) Fail(failMsg string, solMsg string) {
+func (b *BaseHealthCheck) Fail(failureCode string) {
 	b.failed = true
-	b.failureMessage = failMsg
-	b.solutionMessage = solMsg
+    fail, err := GetFailure(failureCode)
+    if err != nil {
+        b.Error(err)
+    }
+    b.failure = fail
 }
 
 func (b *BaseHealthCheck) Error(err error) {
-	b.Fail(fmt.Sprintf("%s", err), "")
+    // TODO : What to do with error ?
+	b.Fail("health-check-error")
 }
 
 func (b *BaseHealthCheck) Log(message string) {
@@ -89,11 +95,11 @@ func (b *BaseHealthCheck) GetCheckLog() string {
 }
 
 func (b *BaseHealthCheck) GetFailureMessage() string {
-	return b.failureMessage
+	return b.failure.message
 }
 
-func (b *BaseHealthCheck) GetSolutionMessage() string {
-	return b.solutionMessage
+func (b *BaseHealthCheck) GetActionMessage() string {
+	return b.failure.action
 }
 
 func (b *BaseHealthCheck) GetResult() string {
@@ -129,7 +135,8 @@ func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
 		}
 		result = append(result, fmt.Sprintf("Check: %s, Result: %s", name, c.GetResult()))
 		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
-		result = append(result, fmt.Sprintf("Solution: %s \n", c.GetSolutionMessage()))
+		result = append(result, fmt.Sprintf("Solution: %s ", c.GetActionMessage()))
+        result = append(result, fmt.Sprintf("Log: %s \n", c.GetCheckLog()))
 	}
 	result = append(result, "===========================================================")
 

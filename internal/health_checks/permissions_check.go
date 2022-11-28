@@ -61,7 +61,7 @@ func (c PermissionsCheck) RunCheck() error {
 	} else if found {
 		c.Log("Logging Scopes are enough to run the Ops Agent.")
 	} else {
-		c.Fail("Logging Scopes are not enough to run the Ops Agent.", "Add log.writer or log.admin role.")
+		c.Fail("logging-api-missing-permission")
 	}
 
 	found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
@@ -71,7 +71,7 @@ func (c PermissionsCheck) RunCheck() error {
 	} else if found {
 		c.Log("Monitoring Scopes are enough to run the Ops Agent.")
 	} else {
-		c.Fail("Monitoring Scopes are not enough to run the Ops Agent.", "Add monitoring.writer or monitoring.admin role.")
+		c.Fail("monitoring-api-missing-permission")
 	}
 
 	return nil

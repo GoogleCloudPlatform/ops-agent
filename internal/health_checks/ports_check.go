@@ -34,9 +34,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 		defer lsnr.Close()
 		c.Log(fmt.Sprintf("opened %s", net.JoinHostPort(host, port)))
 	} else {
-		failMsg := fmt.Sprintf("listening to %s  was not successful.", net.JoinHostPort(host, port))
-		solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
-		c.Fail(failMsg, solMsg)
+		c.Fail("port-unavailable")
 	}
 	return nil
 }

@@ -45,12 +45,12 @@ func (c APICheck) RunCheck() error {
 	if logClient != nil {
 		c.Log("logging client was created successfully.")
 	} else {
-		c.Fail("logging client didn't create successfully.", "check the logging api is enabled.")
+		c.Fail("logging-api-disabled")
 	}
 	if err := logClient.Ping(ctx); err != nil {
-		c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
+		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
+		c.Fail("logging-api-disabled")
 	}
-	c.Log("logging api ping succeded")
 	logClient.Close()
 
 	// New Monitoring Client
@@ -60,9 +60,9 @@ func (c APICheck) RunCheck() error {
 		return err
 	}
 	if monClient != nil {
-		c.Log("monitoring client was created successfully.")
+		c.Log("monitoring-api-disabled")
 	} else {
-		c.Fail("monitoring client didn't create successfully.", "check the monitoring api is enabled.")
+		c.Fail("monitoring-api-disabled")
 	}
 	monClient.Close()
 

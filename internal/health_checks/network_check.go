@@ -58,7 +58,7 @@ func (c NetworkCheck) RunCheck() error {
 	if status == "200 OK" {
 		c.Log("Request to the Logging API was successful.")
 	} else {
-		c.Fail("Request to the Logging API was not successful.", "Check your connection.")
+		c.Fail("connection-to-logging-api-failed")
 	}
 
 	// Request to monitoring API
@@ -71,7 +71,7 @@ func (c NetworkCheck) RunCheck() error {
 	if status == "200 OK" {
 		c.Log("Request to the Monitoring API was successful.")
 	} else {
-		c.Fail("Request to the Monitoring API was not successful.", "Check your connection.")
+		c.Fail("connection-to-monitoring-api-failed")
 	}
 
 	return nil
