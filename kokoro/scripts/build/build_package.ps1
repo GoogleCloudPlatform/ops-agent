@@ -14,6 +14,8 @@ function Invoke-Program() {
   return $outpluserr
 }
 
+Get-Content 'C:\ProgramData\Docker\config\daemon.json'
+
 $tag = 'build'
 $name = 'build-result'
 
