@@ -100,11 +100,13 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/storage"
+	trace "cloud.google.com/go/trace/apiv1"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
+	cloudtrace "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -115,8 +117,9 @@ var (
 	storageClient   *storage.Client
 	transfersBucket string
 
-	monClient  *monitoring.MetricClient
-	logClients *logClientFactory
+	monClient   *monitoring.MetricClient
+	logClients  *logClientFactory
+	traceClient *trace.Client
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -181,6 +184,11 @@ func init() {
 	logClients = &logClientFactory{
 		clients: make(map[string]*logadmin.Client),
 	}
+	traceClient, err = trace.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
 	// Some useful options to pass to gcloud.
 	os.Setenv("CLOUDSDK_PYTHON", "/usr/bin/python3")
 	os.Setenv("CLOUDSDK_CORE_DISABLE_PROMPTS", "1")
@@ -352,9 +360,9 @@ func PlatformKind(platform string) string {
 	return "linux"
 }
 
-// isRetriableLookupMetricError returns whether the given error, returned from
-// lookupMetric() or WaitForMetric(), should be retried.
-func isRetriableLookupMetricError(err error) bool {
+// isRetriableLookupError returns whether the given error, returned from
+// lookup[Metric|Trace]() or WaitFor[Metric|Trace](), should be retried.
+func isRetriableLookupError(err error) bool {
 	myStatus, ok := status.FromError(err)
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
@@ -389,6 +397,21 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
+// lookupTrace does a single lookup of any trace from the given VM in the backend.
+func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+	now := time.Now()
+	start := timestamppb.New(now.Add(-window))
+	end := timestamppb.New(now)
+	filter := fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID)
+	req := &cloudtrace.ListTracesRequest{
+		ProjectId: vm.Project,
+		Filter:    filter,
+		StartTime: start,
+		EndTime:   end,
+	}
+	return traceClient.ListTraces(ctx, req)
+}
+
 // nonEmptySeries evaluates the given iterator, returning its first non-empty
 // time series. An error is returned if the evaluation fails.
 // A return value of (nil, nil) indicates that the evaluation succeeded
@@ -414,6 +437,21 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 	}
 }
 
+// firstTrace evaluates the given iterator, returning its first trace.
+// An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
+	trace, err := it.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return trace, nil
+}
+
 // WaitForMetric looks for the given metric in the backend and returns it if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
@@ -426,7 +464,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 			// Success.
 			return series, nil
 		}
-		if err != nil && !isRetriableLookupMetricError(err) {
+		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
@@ -437,6 +475,31 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 		time.Sleep(queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// WaitForTrace looks for any trace from the given VM in the backend and returns
+// it if it exists. An error is returned otherwise. This function will retry
+// "no data" errors a fixed number of times. This is useful because it takes
+// time for trace data to become visible after it has been uploaded.
+//
+// Only the ProjectId and TraceId fields are populated. To get other fields,
+// including spans, call traceClient.GetTrace with the TraceID returned from
+// this function.
+func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, logger, vm, window)
+		trace, err := firstTrace(it)
+		if trace != nil && err == nil {
+			return trace, nil
+		}
+		if err != nil && !isRetriableLookupError(err) {
+			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
+		}
+		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
+			attempt, QueryMaxAttempts)
+		time.Sleep(queryBackoffDuration)
+	}
+	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
 
 // IsExhaustedRetriesMetricError returns true if the given error is an
@@ -463,7 +526,7 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 			// Success
 			return nil
 		}
-		if !isRetriableLookupMetricError(err) {
+		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
 		time.Sleep(queryBackoffDuration)
@@ -928,12 +991,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		// TODO(b/255311117): change back to sysprep-specialize-script-cmd
-		if _, ok := metadataCopy["windows-startup-script-cmd"]; ok {
-			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
-		metadataCopy["windows-startup-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
@@ -1197,6 +1259,8 @@ func RemoveExternalIP(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // SetEnvironmentVariables sets the environment variables in the envVariables map on the given vm in a platform-dependent way.
+// On Windows platforms, variables set this way are visible to all processes.
+// On Linux platforms, variables set this way are visible to the Ops Agent services only.
 func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, envVariables map[string]string) error {
 	if IsWindows(vm.Platform) {
 		for key, value := range envVariables {
@@ -1208,16 +1272,25 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 		}
 		return nil
 	}
-	defaultEnvironment := "DefaultEnvironment="
+	// https://serverfault.com/a/413408
+	// Escaping newlines here because we'll be using `echo -e` later
+	override := `[Service]\n`
 	for key, value := range envVariables {
-		defaultEnvironment += fmt.Sprintf(`"%s=%s" `, key, value)
+		override += fmt.Sprintf(`Environment="%s=%s"\n`, key, value)
 	}
-	cmd := fmt.Sprintf("echo '%s' | sudo tee -a /etc/systemd/system.conf", defaultEnvironment)
-	logger.Println("edit system.conf command: " + cmd)
-	if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
-		return err
+	for _, service := range []string{
+		"google-cloud-ops-agent",
+		"google-cloud-ops-agent-diagnostics",
+		"google-cloud-ops-agent-fluent-bit",
+		"google-cloud-ops-agent-opentelemetry-collector",
+	} {
+		dir := fmt.Sprintf("/etc/systemd/system/%s.service.d", service)
+		cmd := fmt.Sprintf(`sudo mkdir -p %s && echo -e '%s' | sudo tee %s/override.conf`, dir, override, dir)
+		if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+			return err
+		}
 	}
-	// Reload the systemd daemon to pick up the new settings from system.conf edited in the previous command
+	// Reload the systemd daemon to pick up the new settings edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
 	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
 	return err

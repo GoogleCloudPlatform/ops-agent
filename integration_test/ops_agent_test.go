@@ -38,8 +38,10 @@ package integration_test
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -67,6 +69,9 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
+//go:embed testdata
+var testdataDir embed.FS
+
 func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\mylog`
@@ -83,9 +88,9 @@ func configPathForPlatform(platform string) string {
 
 func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return `C:\`
+		return `C:\work`
 	}
-	return "/tmp/"
+	return "/root/work"
 }
 
 func restartCommandForPlatform(platform string) string {
@@ -126,6 +131,17 @@ func diagnosticsProcessNamesForPlatform(platform string) []string {
 		return []string{"google-cloud-ops-agent-diagnostics"}
 	}
 	return []string{"google_cloud_ops_agent_diagnostics"}
+}
+
+func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, directory string) error {
+	var createFolderCmd string
+	if gce.IsWindows(vm.Platform) {
+		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
+	} else {
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
+	}
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
+	return err
 }
 
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
@@ -1797,13 +1813,6 @@ func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsCentOS(platform) || gce.IsRHEL(platform) {
-			t.SkipNow()
-		}
-
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		promConfig := `metrics:
@@ -1865,7 +1874,7 @@ func TestPrometheusMetrics(t *testing.T) {
 `
 
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
@@ -1934,10 +1943,8 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+		// TODO: Set up JSON exporter stuff on Windows
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
@@ -1947,19 +1954,20 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 
 		filesToUpload := []fileToUpload{
-			{local: "testdata/data.json",
+			{local: path.Join("testdata", "prometheus", "data.json"),
 				remote: "data.json"},
-			{local: "testdata/json_exporter_config.yaml",
+			{local: path.Join("testdata", "prometheus", "json_exporter_config.yaml"),
 				remote: "json_exporter_config.yaml"},
 		}
 
 		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
 
 		for _, file := range filesToUpload {
-			f, err := os.Open(file.local)
+			f, err := testdataDir.Open(file.local)
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer f.Close()
 			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
 			if err != nil {
 				t.Fatal(err)
@@ -1973,7 +1981,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 
 		// Run the setup script to run the Python http server and the JSON exporter
-		setupScript, err := os.ReadFile("testdata/setup_json_exporter.sh")
+		setupScript, err := testdataDir.ReadFile(path.Join("testdata", "prometheus", "setup_json_exporter.sh"))
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
@@ -2035,7 +2043,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
         receivers: [prom_app]
 `
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -2388,9 +2396,6 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		actual, err := runResourceDetectorCli(ctx, logger, vm)
@@ -2436,18 +2441,16 @@ func TestResourceDetectorOnGCE(t *testing.T) {
 	})
 }
 
-// runResourceDetectorCli uploads the cli and setup up the env in the VM.
-// Then run the cli to print out the JSON formatted GCEResource and finally
-// unmarshal it back to an instance of GCEResource
+// runResourceDetectorCli uploads the resource detector runner and sets up the
+// env in the VM. Then run the runner to print out the JSON formatted
+// GCEResource and finally unmarshal it back to an instance of GCEResource
 func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (*resourcedetector.GCEResource, error) {
-	type fileToUpload struct {
-		local, remote string
-	}
-
 	// Update the resourcedetector package and the go.mod and go.sum
-	// So that the main function can resolve it from the work directory
-	filesToUpload := []fileToUpload{
-		{local: "./cmd/run_resource_detector/run_resource_detector.go",
+	// So that the main function can locate the package from the work directory
+	filesToUpload := []struct {
+		local, remote string
+	}{
+		{local: "cmd/run_resource_detector/run_resource_detector.go",
 			remote: "run_resource_detector.go"},
 		{local: "../confgenerator/resourcedetector/detector.go",
 			remote: "confgenerator/resourcedetector/detector.go"},
@@ -2461,29 +2464,41 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 			remote: "go.sum"},
 	}
 
+	// Create the folder structure on the VM
 	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
+	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
+	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
+		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
+	}
+
+	// Upload the files
 	for _, file := range filesToUpload {
 		f, err := os.Open(file.local)
 		if err != nil {
 			return nil, err
 		}
+		defer f.Close()
 		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := InstallGolang(ctx, logger.ToMainLog(), vm); err != nil {
+	// Run the resource detector in the VM
+	if err := installGolang(ctx, logger, vm); err != nil {
 		return nil, err
 	}
-
-	cmd := fmt.Sprintf("cd %s && go run run_resource_detector.go", workDir)
-	test_out, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd)
+	cmd := fmt.Sprintf(`
+		%s
+		cd %s
+		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
+	runnerOutput, err := gce.RunScriptRemotely(ctx, logger, vm, cmd, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run resource detector in VM: %s", test_out.Stderr)
+		return nil, fmt.Errorf("failed to run resource detector in VM: %s", runnerOutput.Stderr)
 	}
 
-	d, err := unmarshalResource(test_out.Stdout)
+	// Parse the output
+	d, err := unmarshalResource(runnerOutput.Stdout)
 	if err != nil {
 		return nil, fmt.Errorf("can't unmarshal a detector from JSON: %v", err)
 	}
@@ -2500,26 +2515,145 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// InstallGolang downloads the binary and create link to /usr/bin/go
-func InstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	if gce.IsWindows(vm.Platform) {
-		return fmt.Errorf("Installing Golang on Windows is not implementated.")
-	}
-	logger.Printf("Installing go...")
-
-	err := agents.InstallPackages(ctx, logger, vm, []string{"wget"})
-	if err != nil {
-		return err
-	}
+// installGolang downloads and setup go, and return the required command to set
+// the PATH before calling `go` as goPath
+func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
 	goVersion := "1.19"
-	installCmd := fmt.Sprintf(`gsutil cp \
-"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
-sudo tar --directory /usr/local -xzf /dev/stdin
-sudo ln -s /usr/local/go/bin/go /usr/bin/go 
-`, goVersion)
-	_, err = gce.RunRemotely(ctx, logger, vm, "", installCmd)
+	var installCmd string
+	if gce.IsWindows(vm.Platform) {
+		// TODO: host go windows installer in the GCS if `golang.org` throttle
+		installCmd = fmt.Sprintf(`
+			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
+			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
+			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
+	} else {
+		installCmd = fmt.Sprintf(`
+			set -e
+			gsutil cp \
+				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
+				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
+	}
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
 	return err
+}
+
+func goPathCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return `$env:Path="C:\Program Files\Go\bin;$env:Path"`
+	}
+	return "export PATH=/usr/local/go/bin:$PATH"
+}
+
+func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, content io.Reader) error {
+	workDir := path.Join(workDirForPlatform(vm.Platform), "gocode")
+	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
+		return err
+	}
+	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
+		return err
+	}
+	goInitAndRun := fmt.Sprintf(`
+		%s
+		cd %s
+		go mod init main
+		go get ./...
+		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, goInitAndRun, nil, nil)
+	return err
+}
+
+func TestOTLPMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp`
+		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.gauge", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func testOTLPTraces(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+traces:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp`
+		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate trace traffic with dummy app
+		traceFile, err := testdataDir.Open(path.Join("testdata", "otlp", "traces.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer traceFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.WaitForTrace(ctx, logger.ToMainLog(), vm, time.Hour); err != nil {
+			t.Error(err)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
