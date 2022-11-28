@@ -51,6 +51,7 @@ var GCEHealthChecks = &healthCheckRegistry{
 
 type BaseHealthCheck struct {
 	HealthCheck
+    errored         bool
 	failed          bool
     failure         HealthCheckFailure
 	checkLog        string
@@ -83,6 +84,7 @@ func (b *BaseHealthCheck) Fail(failureCode string) {
 
 func (b *BaseHealthCheck) Error(err error) {
     // TODO : What to do with error ?
+    b.errored = true
 	b.Fail("health-check-error")
 }
 
@@ -103,7 +105,10 @@ func (b *BaseHealthCheck) GetActionMessage() string {
 }
 
 func (b *BaseHealthCheck) GetResult() string {
-	if b.failed {
+	if b.errored {
+        return "ERROR"
+    }
+    if b.failed {
 		return "FAIL"
 	} else {
 		return "PASS"

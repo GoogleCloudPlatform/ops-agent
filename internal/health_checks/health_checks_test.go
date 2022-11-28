@@ -78,7 +78,7 @@ func (c ErrorCheck) RunCheck() error {
 }
 
 func TestCheckError(t *testing.T) {
-	wantResult := "FAIL"
+	wantResult := "ERROR"
 	wantError := "Test error."
 	wantFailure := "The Health Check ran into an error."
 	wantAction := ""
