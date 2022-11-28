@@ -169,7 +169,11 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	// Set the location, namespace and cluster labels.
 	metaLabels["location"] = gceMetadata.Zone
 	metaLabels["namespace"] = gceMetadata.InstanceID
-	metaLabels["cluster"] = "gce"
+	metaLabels["cluster"] = "__gce__"
+
+	// Set some curated labels.
+	metaLabels["instance_name"] = gceMetadata.InstanceName
+	metaLabels["machine_type"] = gceMetadata.MachineType
 
 	return metaLabels
 }
