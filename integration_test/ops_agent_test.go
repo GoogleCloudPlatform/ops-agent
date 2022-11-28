@@ -49,6 +49,7 @@ import (
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -57,13 +58,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
-	"google.golang.org/genproto/googleapis/api/metric"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
-	"gopkg.in/yaml.v2"
-
-	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
+	"google.golang.org/genproto/googleapis/api/metric"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -1784,6 +1782,12 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 
 	expectedFeatures := set.FromSlice(featureContainer.Features)
+	expectedFeaturesString := make([]string, 0)
+
+	for _, f := range featureContainer.Features {
+		expectedFeaturesString = append(expectedFeaturesString, fmt.Sprintf("%v", *f))
+	}
+	expectedFeaturesMap := set.FromSlice(expectedFeaturesString)
 
 	for _, s := range series {
 		labels := s.Metric.Labels
@@ -1793,11 +1797,11 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			Key:     labels["key"],
 			Value:   labels["value"],
 		}
-		expectedFeatures.Remove(&f)
+		expectedFeaturesMap.Remove(fmt.Sprintf("%v", f))
 	}
 
 	if len(expectedFeatures) != 0 {
-		t.Fatalf("Missing expected features")
+		t.Fatalf("missing expected features, %v\n", expectedFeaturesMap)
 	}
 
 	logger.ToMainLog().Printf("Expected feautres found\n")
