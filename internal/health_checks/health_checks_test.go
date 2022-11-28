@@ -27,14 +27,14 @@ type FailureCheck struct {
 }
 
 func (c FailureCheck) RunCheck() error {
-	c.Fail("Test failure.", "Test message.")
+	c.Fail("health-check-failure")
 	return nil
 }
 
 func TestCheckFailure(t *testing.T) {
 	wantResult := "FAIL"
-	wantFailure := "Test failure."
-	wantSolution := "Test message."
+	wantFailure := "The Health Check failed."
+	wantAction := ""
 	testCheck := &FailureCheck{HealthCheck: health_checks.NewHealthCheck()}
 
 	err := testCheck.RunCheck()
@@ -42,7 +42,7 @@ func TestCheckFailure(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, wantResult, testCheck.GetResult())
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
+	assert.Equal(t, wantAction, testCheck.GetActionMessage())
 }
 
 type SuccessCheck struct {
@@ -56,7 +56,7 @@ func (c SuccessCheck) RunCheck() error {
 func TestCheckSuccess(t *testing.T) {
 	wantResult := "PASS"
 	wantFailure := ""
-	wantSolution := ""
+	wantAction := ""
 	testCheck := &SuccessCheck{HealthCheck: health_checks.NewHealthCheck()}
 
 	err := testCheck.RunCheck()
@@ -64,7 +64,7 @@ func TestCheckSuccess(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, wantResult, testCheck.GetResult())
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
+	assert.Equal(t, wantAction, testCheck.GetActionMessage())
 }
 
 type ErrorCheck struct {
@@ -79,14 +79,15 @@ func (c ErrorCheck) RunCheck() error {
 
 func TestCheckError(t *testing.T) {
 	wantResult := "FAIL"
-	wantFailure := "Test error."
-	wantSolution := ""
+	wantError := "Test error."
+	wantFailure := "The Health Check ran into an error."
+	wantAction := ""
 	testCheck := &ErrorCheck{HealthCheck: health_checks.NewHealthCheck()}
 
 	err := testCheck.RunCheck()
 
-	assert.ErrorContains(t, err, wantFailure)
+	assert.ErrorContains(t, err, wantError)
 	assert.Equal(t, wantResult, testCheck.GetResult())
 	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantSolution, testCheck.GetSolutionMessage())
+	assert.Equal(t, wantAction, testCheck.GetActionMessage())
 }
