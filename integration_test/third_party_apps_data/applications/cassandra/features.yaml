@@ -1,11 +1,11 @@
 features:
   - feature: receivers:cassandra
     module: metrics
-    key: \[0].enabled
+    key: "[0].enabled"
     value: true
   - feature: receivers:cassandra_debug
     module: logging
-    key: \[0].enabled
+    key: "[0].enabled"
     value: true
   - feature: receivers:cassandra_debug
     module: logging
