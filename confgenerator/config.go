@@ -28,10 +28,12 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
+	"golang.org/x/exp/constraints"
 )
 
 // Ops Agent config.
@@ -806,58 +808,37 @@ var (
 	}
 )
 
-// mapKeys returns keys from a map[string]Any as a map[string]bool.
-func mapKeys[V any, M ~map[string]V](m M) map[string]bool {
-	keys := map[string]bool{}
+// sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
+func sortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
+	keys := []K{}
 	for k := range m {
-		keys[k] = true
+		keys = append(keys, k)
 	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 	return keys
 }
 
-// sortedKeys returns keys from a map[string]Any as a sorted string slice.
-func sortedKeys[V any, M ~map[string]V](m M) []string {
-	var r []string
-	for k := range mapKeys(m) {
-		r = append(r, k)
-	}
-	sort.Strings(r)
-	return r
-}
-
-// findInvalid returns all strings from a slice that are not in allowed.
-func findInvalid(actual []string, allowed map[string]bool) []string {
-	var invalid []string
-	for _, v := range actual {
-		if !allowed[v] {
-			invalid = append(invalid, v)
+func validateComponentKeys[V any](components map[string]V, refs []string, subagent string, kind string, pipeline string) error {
+	componentSet := set.FromMapKeys(components)
+	for _, componentRef := range refs {
+		if !componentSet.Contains(componentRef) {
+			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
 		}
-	}
-	return invalid
-}
-
-func validateComponentKeys[V any, M ~map[string]V](components M, refs []string, subagent string, kind string, pipeline string) error {
-	invalid := findInvalid(refs, mapKeys(components))
-	if len(invalid) > 0 {
-		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid[0], pipeline)
 	}
 	return nil
 }
 
-func validateComponentTypeCounts[V any, M ~map[string]V](components M, refs []string, subagent string, kind string) (map[string]int, error) {
+func validateComponentTypeCounts[C Component](components map[string]C, refs []string, subagent string, kind string) (map[string]int, error) {
 	r := map[string]int{}
-	cm := reflect.ValueOf(components)
 	for _, id := range refs {
-		v := cm.MapIndex(reflect.ValueOf(id))
-		if !v.IsValid() {
+		c, ok := components[id]
+		if !ok {
 			continue // Some reserved ids don't map to components.
 		}
-		t := v.Interface().(Component).Type()
-		if _, ok := r[t]; ok {
-			r[t] += 1
-		} else {
-			r[t] = 1
-		}
+		t := c.Type()
+		r[t] += 1
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
 				return nil, fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
