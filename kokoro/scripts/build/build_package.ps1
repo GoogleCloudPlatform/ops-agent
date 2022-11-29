@@ -14,7 +14,14 @@ function Invoke-Program() {
   return $outpluserr
 }
 
-Get-Content 'C:\ProgramData\Docker\config\daemon.json'
+# due to b/259976341
+@"
+{
+    "data-root": "t:\\docker"
+}
+"@ | Out-File -FilePath 'C:\ProgramData\Docker\config\daemon.json'
+net stop docker
+net start docker
 
 $tag = 'build'
 $name = 'build-result'
