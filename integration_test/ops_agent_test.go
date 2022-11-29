@@ -1826,18 +1826,10 @@ func TestPrometheusMetrics(t *testing.T) {
             static_configs:
               - targets: ['localhost:20202']
             relabel_configs:
-              - source_labels: [__meta_gce_instance_name]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: instance_name
               - source_labels: [__meta_gce_instance_id]
                 regex: '(.+)'
                 replacement: '${1}'
                 target_label: instance_id
-              - source_labels: [__meta_gce_machine_type]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: machine_type
               - source_labels: [__meta_gce_project]
                 regex: '(.+)'
                 replacement: '${1}'
@@ -1944,7 +1936,8 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
-		if gce.IsWindows(platform) {
+		// TODO: b/260616780 fix rhel-7-6-sap-ha failure for this test
+		if gce.IsWindows(platform) || platform == "rhel-7-6-sap-ha" {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)

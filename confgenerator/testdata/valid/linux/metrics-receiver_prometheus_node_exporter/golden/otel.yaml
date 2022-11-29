@@ -480,8 +480,10 @@ receivers:
             __meta_gce_public_ip: test-public-ip
             __meta_gce_tags: test-tag
             __meta_gce_zone: test-zone
-            cluster: gce
+            cluster: __gce__
+            instance_name: test-instance-name
             location: test-zone
+            machine_type: test-machine-type
             namespace: test-instance-id
 service:
   pipelines:
