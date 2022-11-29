@@ -102,8 +102,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1 h1:gcHr5iIamTMH+TOqvcIrkZ9zpDOKVkc2du/VYGJkYfM=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1/go.mod h1:8jbDwk101z1YJ201wir2t/3O5Sxn55M37IDVwnQA1rg=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.1 h1:kbfuKQkOFb2XuuEcMTYbWtlVPiNKhLTyDjQcKx1pFqQ=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.1/go.mod h1:pGSEvxQ2PGMKdz6oiiTjzfM8pWtoWHSymSyUHMsZkUA=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.2-0.20221117021920-585d7618b93c h1:nwvEiCWqpj+akVNEpXB4odRIv0DN5LNBhgK1pIYe/qs=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.2-0.20221117021920-585d7618b93c/go.mod h1:HBvFa1ocN+ikbPrK0cgl3v3tpqrwk+7S7VgV+A37x7k=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.34.1 h1:2G1eO4RSvcTNncDivyGTd3Zh9tozmMeA2JpF07QEYlc=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1 h1:2zV0DiJaSJ+zoaYwMuWAkqMQyLggPfStnrwrFNv+ty4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1/go.mod h1:oBeOrlgeIZVX6bRZ+TDJiEuL1bsDdgAWKa4iETycZf8=
