@@ -9,21 +9,21 @@ features:
     value: true
   - feature: receivers:cassandra_debug
     module: logging
-    key: \[2].enabled
+    key: "[2].enabled"
     value: true
   - feature: receivers:cassandra_gc
     module: logging
-    key: \[1].enabled
+    key: "[1].enabled"
     value: true
   - feature: receivers:cassandra_gc
     module: logging
-    key: \[3].enabled
+    key: "[3].enabled"
     value: true
   - feature: receivers:cassandra_system
     module: logging
-    key: \[4].enabled
+    key: "[4].enabled"
     value: true
   - feature: receivers:cassandra_system
     module: logging
-    key: \[5].enabled
+    key: "[5].enabled"
     value: true
