@@ -47,7 +47,7 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverActiveDirectoryDS{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverActiveDirectoryDS{} }, "windows")
 }
 
 type LoggingReceiverActiveDirectoryDS struct {
@@ -74,5 +74,5 @@ func (r LoggingReceiverActiveDirectoryDS) Components(tag string) []fluentbit.Com
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverActiveDirectoryDS{} }, "windows")
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverActiveDirectoryDS{} }, "windows")
 }

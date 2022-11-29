@@ -301,7 +301,7 @@ func (r MetricsReceiverVault) getMetricTransforms() (queries []otel.TransformQue
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverVault{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVault{} })
 }
 
 type LoggingProcessorVaultJson struct {
@@ -362,5 +362,5 @@ func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Compon
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVaultAuditJson{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson{} })
 }

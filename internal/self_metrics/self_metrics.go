@@ -47,6 +47,10 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, e
 		MetricsReceiverCountsByType: make(map[string]int),
 		LogsReceiverCountsByType:    make(map[string]int),
 	}
+	metricsReceivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return eR, err
+	}
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
@@ -58,7 +62,7 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, e
 
 	// Metrics Pipelines
 	for _, p := range uc.Metrics.Service.Pipelines {
-		err := countReceivers(eR.MetricsReceiverCountsByType, p, uc.Metrics.Receivers)
+		err := countReceivers(eR.MetricsReceiverCountsByType, p, metricsReceivers)
 		if err != nil {
 			return eR, err
 		}
