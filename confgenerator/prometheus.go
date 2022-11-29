@@ -254,18 +254,21 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 	}
 
 	for _, sc := range promConfig.ScrapeConfigs {
+		if sc.HonorLabels {
+			return "honor_labels", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "honor_labels is not supported")
+		}
 		for _, rc := range sc.RelabelConfigs {
 			if rc.TargetLabel == "location" || rc.TargetLabel == "namespace" || rc.TargetLabel == "cluster" {
-				return "relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "relabel_configs cannot rename location, namespace or cluster")
+				return "relabel_config", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "relabel_configs cannot rename location, namespace or cluster")
 			}
 		}
 		for _, rc := range sc.MetricRelabelConfigs {
 			if rc.TargetLabel == "__name__" {
 				// TODO(#2297): Remove validation after renaming is fixed
-				return "metric_relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename __name__")
+				return "metric_relabel_config", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename __name__")
 			}
 			if rc.TargetLabel == "location" || rc.TargetLabel == "namespace" || rc.TargetLabel == "cluster" {
-				return "metric_relabel_config", fmt.Errorf("error validating scrapeconfig for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename location, namespace or cluster")
+				return "metric_relabel_config", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "metric_relabel_configs cannot rename location, namespace or cluster")
 			}
 		}
 
