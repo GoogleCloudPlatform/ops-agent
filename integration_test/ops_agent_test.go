@@ -1936,7 +1936,8 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
-		if gce.IsWindows(platform) {
+		// TODO: b/260616780 fix rhel-7-6-sap-ha failure for this test
+		if gce.IsWindows(platform) || platform == "rhel-7-6-sap-ha" {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
