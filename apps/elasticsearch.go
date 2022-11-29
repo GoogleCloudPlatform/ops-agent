@@ -104,7 +104,7 @@ func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interfac
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverElasticsearch{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverElasticsearch{} })
 }
 
 type LoggingProcessorElasticsearchJson struct {
@@ -290,6 +290,6 @@ func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Compo
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverElasticsearchJson{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverElasticsearchGC{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchJson{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
 }

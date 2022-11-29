@@ -100,7 +100,7 @@ func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverRabbitmq{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRabbitmq{} })
 }
 
 type MetricsReceiverRabbitmq struct {
@@ -148,5 +148,5 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverRabbitmq{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverRabbitmq{} })
 }
