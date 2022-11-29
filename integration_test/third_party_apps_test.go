@@ -50,11 +50,11 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"go.uber.org/multierr"
@@ -468,11 +468,7 @@ type feature struct {
 	Value   string
 }
 
-type featureContainer struct {
-	Features []*feature `yaml:"features"`
-}
-
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc featureContainer, skipFeatureTracking bool) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc feature_tracking.FeatureTrackingContainer, skipFeatureTracking bool) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -528,30 +524,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	expectedFeaturesSlice := make([]feature, 0)
-
-	for _, f := range fc.Features {
-		expectedFeaturesSlice = append(expectedFeaturesSlice, *f)
-	}
-	expectedFeatures := set.FromSlice(expectedFeaturesSlice)
-
-	for _, s := range series {
-		labels := s.Metric.Labels
-		f := feature{
-			Module:  labels["module"],
-			Feature: labels["feature"],
-			Key:     labels["key"],
-			Value:   labels["value"],
-		}
-		logger.ToMainLog().Printf("attempting to remove feature: %v \n", f)
-		expectedFeatures.Remove(f)
-	}
-
-	if len(expectedFeatures) != 0 {
-		return fmt.Errorf("missing expected features: \n %v\n", expectedFeatures)
-	}
-
-	logger.ToMainLog().Printf("Expected features found\n")
+	err = feature_tracking.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
 
@@ -689,8 +662,8 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-func getExpectedFeatures(app string) (featureContainer, error) {
-	var fc featureContainer
+func getExpectedFeatures(app string) (feature_tracking.FeatureTrackingContainer, error) {
+	var fc feature_tracking.FeatureTrackingContainer
 
 	featuresScript := path.Join("applications", app, "features.yaml")
 	featureBytes, err := readFileFromScriptsDir(featuresScript)

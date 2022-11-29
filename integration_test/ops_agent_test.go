@@ -53,11 +53,11 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/api/metric"
@@ -1758,20 +1758,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	type feature struct {
-		Module  string
-		Feature string
-		Key     string
-		Value   string
-	}
-
-	var featureContainer struct {
-		Features []*feature `yaml:"features"`
-	}
-
+	var fc feature_tracking.FeatureTrackingContainer
 	logger.ToMainLog().Printf("Read features.yaml successful\n")
 
-	err = yaml.UnmarshalStrict(featureBytes, &featureContainer)
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1782,29 +1772,11 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	expectedFeaturesSlice := make([]feature, 0)
-
-	for _, f := range featureContainer.Features {
-		expectedFeaturesSlice = append(expectedFeaturesSlice, *f)
+	err = feature_tracking.AssertFeatureTrackingMetrics(series, fc.Features)
+	if err != nil {
+		t.Error(err)
+		return
 	}
-	expectedFeatures := set.FromSlice(expectedFeaturesSlice)
-
-	for _, s := range series {
-		labels := s.Metric.Labels
-		f := feature{
-			Module:  labels["module"],
-			Feature: labels["feature"],
-			Key:     labels["key"],
-			Value:   labels["value"],
-		}
-		expectedFeatures.Remove(f)
-	}
-
-	if len(expectedFeatures) != 0 {
-		t.Fatalf("missing expected features, %v\n", expectedFeatures)
-	}
-
-	logger.ToMainLog().Printf("Expected feautres found\n")
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
