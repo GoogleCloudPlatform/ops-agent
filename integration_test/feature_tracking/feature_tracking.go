@@ -2,12 +2,22 @@ package feature_tracking
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
-var ErrMissingFeatureTrackingMetrics = errors.New("missing feature tracking metrics")
+var errMissingFeatureTrackingMetrics = errors.New("missing feature tracking metrics")
+
+type MissingExpectedFeatureTrackingMetricsError struct {
+	Err                     error
+	MissingExpectedFeatures set.Set[FeatureTracking]
+}
+
+func (e *MissingExpectedFeatureTrackingMetricsError) Error() string {
+	return e.Err.Error() + ": " + fmt.Sprintf("%v", e.MissingExpectedFeatures)
+}
 
 type FeatureTracking struct {
 	Module  string
@@ -40,7 +50,7 @@ func AssertFeatureTrackingMetrics(series []*monitoringpb.TimeSeries, features []
 	}
 
 	if len(expectedFeatures) != 0 {
-		return ErrMissingFeatureTrackingMetrics
+		return &MissingExpectedFeatureTrackingMetricsError{MissingExpectedFeatures: expectedFeatures, Err: errMissingFeatureTrackingMetrics}
 	}
 
 	return nil
