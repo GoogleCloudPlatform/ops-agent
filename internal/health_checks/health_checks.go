@@ -87,7 +87,7 @@ func (b *BaseHealthCheck) Fail(failureCode string) {
 }
 
 func (b *BaseHealthCheck) Error(err error) {
-    // TODO : What to do with error ?()
+    // TODO : What to do with error ?
     b.err = err
     b.errored = true
 	b.Fail("health-check-error")
@@ -133,7 +133,32 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	}
 }
 
+func getConfigPorts(uc *confgenerator.UnifiedConfig) ([]string, error) {
+    var ports []string
+    // for _, p := range uc.Logging.Service.Pipelines {
+    //     for _, pipelineRID := range p.ReceiverIDs {
+    //         v := cm.MapIndex(reflect.ValueOf(pipelineRID)) // For receivers, ids always exist in the component/receiver lists
+    //         t := v.Interface().(Component).Type()
+    //         for _, limitType := range receiverPortLimits {
+    //             if t == limitType {
+    //                 // Since the type of this receiver is in the receiverPortLimits, then this receiver must be a LoggingNetworkReceiver
+    //                 port := v.Interface().(LoggingNetworkReceiver).GetListenPort()
+    //                 ports.append(port)
+    //             }
+    //         }
+    //     }
+    // }
+    return ports, nil
+}
+
 func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
+
+    ports, err := getConfigPorts(uc)
+    fmt.Println(ports)
+    if err != nil {
+        return "", err
+    }
+
 	var multiErr error
 	var result []string
 	result = append(result, "========================================")
