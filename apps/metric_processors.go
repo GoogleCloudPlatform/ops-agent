@@ -52,5 +52,5 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 }
 
 func init() {
-	confgenerator.MetricsProcessorTypes.RegisterType(func() confgenerator.Component { return &MetricsProcessorExcludeMetrics{} })
+	confgenerator.MetricsProcessorTypes.RegisterType(func() confgenerator.MetricsProcessor { return &MetricsProcessorExcludeMetrics{} })
 }
