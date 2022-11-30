@@ -55,23 +55,11 @@ yaml_lint:
 # Unit Tests
 ############
 
-test:
-	go test ./...
-
-test_confgenerator:
-	go test ./confgenerator
-
 test_confgenerator_update:
 	go test ./confgenerator -update
 
-test_metadata:
-	go test ./integration_test/metadata
-
 test_metadata_update:
-	go test ./integration_test/metadata -update_golden
-
-test_metadata_validate:
-	go test ./integration_test/validate_metadata_test.go
+	go test ./integration_test/metadata -update
 
 ############
 # Integration Tests

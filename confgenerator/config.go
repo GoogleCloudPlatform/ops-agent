@@ -28,16 +28,19 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
+	"golang.org/x/exp/constraints"
 )
 
 // Ops Agent config.
 type UnifiedConfig struct {
-	Logging *Logging `yaml:"logging"`
-	Metrics *Metrics `yaml:"metrics"`
+	Combined *Combined `yaml:"combined,omitempty"`
+	Logging  *Logging  `yaml:"logging"`
+	Metrics  *Metrics  `yaml:"metrics"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -59,6 +62,10 @@ func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
 	}
 
 	return fromYaml, nil
+}
+
+type Combined struct {
+	Receivers combinedReceiverMap `yaml:"receivers,omitempty" validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type validatorContext struct {
@@ -94,6 +101,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must be a duration of at least %s", ve.Field(), ve.Param())
 	case "endswith":
 		return fmt.Sprintf("%q must end with %q", ve.Field(), ve.Param())
+	case "experimental":
+		return experimentalValidationErrorString(ve)
 	case "ip":
 		return fmt.Sprintf("%q must be an IP address", ve.Field())
 	case "min":
@@ -250,6 +259,8 @@ func newValidator() *validator.Validate {
 		}
 		return t%tfactor == 0
 	})
+	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
+	registerExperimentalValidations(v)
 	return v
 }
 
@@ -288,15 +299,19 @@ type ConfigComponent struct {
 	Type string `yaml:"type" validate:"required" tracking:""`
 }
 
+type componentInterface interface {
+	Component
+}
+
 // componentFactory is the value type for the componentTypeRegistry map.
-type componentFactory struct {
+type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
-	constructor func() Component
+	constructor func() CI
 	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
 	platforms []string
 }
 
-func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
+func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
 	platform := ctx.Value(platformKey).(string)
 	for _, v := range ct.platforms {
 		if v == platform {
@@ -306,29 +321,29 @@ func (ct componentFactory) supportsPlatform(ctx context.Context) bool {
 	return len(ct.platforms) == 0
 }
 
-type componentTypeRegistry struct {
+type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	// Subagent is "logging" or "metric" (only used for error messages)
 	Subagent string
 	// Kind is "receiver" or "processor" (only used for error messages)
 	Kind string
 	// TypeMap contains a map of component "type" string as used in the configuration file to information about that component.
-	TypeMap map[string]*componentFactory
+	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry) RegisterType(constructor func() Component, platforms ...string) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...string) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
 	}
 	if r.TypeMap == nil {
-		r.TypeMap = make(map[string]*componentFactory)
+		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	r.TypeMap[name] = &componentFactory{constructor, platforms}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platforms}
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
-func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inner *interface{}, unmarshal func(interface{}) error) error {
+func (r *componentTypeRegistry[CI, M]) unmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
 	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	var o interface{}
@@ -347,19 +362,54 @@ func (r *componentTypeRegistry) unmarshalComponentYaml(ctx context.Context, inne
 			r.Subagent, r.Kind, c.Type,
 			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
-	*inner = o
+	*inner = o.(CI)
 	return unmarshal(*inner)
 }
 
 // GetComponentsFromRegistry returns all components that belong to the associated registry
-func GetComponentsFromRegistry(c *componentTypeRegistry) []Component {
-	components := make([]Component, len(c.TypeMap))
+func (r *componentTypeRegistry[CI, M]) GetComponentsFromRegistry() []Component {
+	components := make([]Component, len(r.TypeMap))
 	i := 0
-	for _, comp := range c.TypeMap {
+	for _, comp := range r.TypeMap {
 		components[i] = comp.constructor()
 		i++
 	}
 	return components
+}
+
+// unmarshalValue is a bogus unmarshalling destination that just captures the unmarshal() function pointer for later reuse.
+type unmarshalValue struct {
+	unmarshal func(interface{}) error
+}
+
+func (v *unmarshalValue) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	v.unmarshal = unmarshal
+	return nil
+}
+
+type unmarshalMap map[string]unmarshalValue
+
+// unmarshalToMap unmarshals a YAML structure to a config map.
+// It should be called from UnmarshalYAML() on a concrete type.
+// N.B. The map type itself can't be generic because it needs to point to a specific type registry, not just a type registry type (whew).
+func (r *componentTypeRegistry[CI, M]) unmarshalToMap(ctx context.Context, m *M, unmarshal func(interface{}) error) error {
+	if *m == nil {
+		*m = make(M)
+	}
+	// Step 1: Capture unmarshal functions for each component
+	um := unmarshalMap{}
+	if err := unmarshal(&um); err != nil {
+		return err
+	}
+	// Step 2: Unmarshal into the destination map
+	for k, u := range um {
+		var inner CI
+		if err := r.unmarshalComponentYaml(ctx, &inner, u.unmarshal); err != nil {
+			return err
+		}
+		(*m)[k] = inner
+	}
+	return nil
 }
 
 // Ops Agent logging config.
@@ -378,31 +428,12 @@ type LoggingReceiver interface {
 	Components(tag string) []fluentbit.Component
 }
 
-var LoggingReceiverTypes = &componentTypeRegistry{
+var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type loggingReceiverWrapper struct {
-	inner interface{}
-}
-
-func (l *loggingReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return LoggingReceiverTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *loggingReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]loggingReceiverWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = loggingReceiverMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(LoggingReceiver)
-	}
-	return nil
+func (m *loggingReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return LoggingReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 // Logging receivers that listen on a port of the host
@@ -418,31 +449,12 @@ type LoggingProcessor interface {
 	Components(tag string, uid string) []fluentbit.Component
 }
 
-var LoggingProcessorTypes = &componentTypeRegistry{
+var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
 	Subagent: "logging", Kind: "processor",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type loggingProcessorWrapper struct {
-	inner interface{}
-}
-
-func (l *loggingProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return LoggingProcessorTypes.unmarshalComponentYaml(ctx, &l.inner, unmarshal)
-}
-
-func (m *loggingProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]loggingProcessorWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = loggingProcessorMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(LoggingProcessor)
-	}
-	return nil
+func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return LoggingProcessorTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type LoggingService struct {
@@ -621,34 +633,27 @@ func (m MetricsReceiverSharedCluster) ShouldCollectClusterMetrics() bool {
 	return m.CollectClusterMetrics == nil || *m.CollectClusterMetrics
 }
 
-var MetricsReceiverTypes = &componentTypeRegistry{
+var MetricsReceiverTypes = &componentTypeRegistry[MetricsReceiver, metricsReceiverMap]{
 	Subagent: "metrics", Kind: "receiver",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type metricsReceiverWrapper struct {
-	inner interface{}
+func (m *metricsReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return MetricsReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
-func (m *metricsReceiverWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return MetricsReceiverTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
+type CombinedReceiver interface {
+	// TODO: Add more types of signals
+	MetricsReceiver
 }
 
-func (m *metricsReceiverMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]metricsReceiverWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = metricsReceiverMap{}
-	for k, r := range tm {
-		if r.inner == nil {
-			return fmt.Errorf("unknown type for receiver %q", k) // TODO: better error
-		}
-		(*m)[k] = r.inner.(MetricsReceiver)
-	}
-	return nil
+var CombinedReceiverTypes = &componentTypeRegistry[CombinedReceiver, combinedReceiverMap]{
+	Subagent: "generic", Kind: "receiver",
+}
+
+type combinedReceiverMap map[string]CombinedReceiver
+
+func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return CombinedReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsProcessor interface {
@@ -656,31 +661,12 @@ type MetricsProcessor interface {
 	Processors() []otel.Component
 }
 
-var MetricsProcessorTypes = &componentTypeRegistry{
+var MetricsProcessorTypes = &componentTypeRegistry[MetricsProcessor, metricsProcessorMap]{
 	Subagent: "metrics", Kind: "processor",
 }
 
-// Wrapper type to store the unmarshaled YAML value.
-type metricsProcessorWrapper struct {
-	inner interface{}
-}
-
-func (m *metricsProcessorWrapper) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
-	return MetricsProcessorTypes.unmarshalComponentYaml(ctx, &m.inner, unmarshal)
-}
-
-func (m *metricsProcessorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal into a temporary map to capture types.
-	tm := map[string]metricsProcessorWrapper{}
-	if err := unmarshal(&tm); err != nil {
-		return err
-	}
-	// Unwrap the structs.
-	*m = metricsProcessorMap{}
-	for k, r := range tm {
-		(*m)[k] = r.inner.(MetricsProcessor)
-	}
-	return nil
+func (m *metricsProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return MetricsProcessorTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
 type MetricsService struct {
@@ -695,7 +681,7 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.Metrics.Validate(platform); err != nil {
+		if err := uc.ValidateMetrics(platform); err != nil {
 			return err
 		}
 	}
@@ -743,7 +729,26 @@ func (l *Logging) Validate(platform string) error {
 	return nil
 }
 
-func (m *Metrics) Validate(platform string) error {
+func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
+	validReceivers := map[string]MetricsReceiver{}
+	for k, v := range uc.Metrics.Receivers {
+		validReceivers[k] = v
+	}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := uc.Metrics.Receivers[k]; ok {
+				return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+			}
+			if v, ok := v.(MetricsReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
+	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
@@ -751,22 +756,26 @@ func (m *Metrics) Validate(platform string) error {
 	if m.Service == nil {
 		return nil
 	}
+	receivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return err
+	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
-		if err := validateComponentKeys(m.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
 		}
 		if err := validateComponentKeys(m.Processors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
 		}
-		if receiverCounts, err := validateComponentTypeCounts(m.Receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+		if receiverCounts, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
 		} else {
 			if err := validateIncompatibleJVMReceivers(receiverCounts); err != nil {
 				return err
 			}
 
-			if err := validateSSLConfig(m.Receivers); err != nil {
+			if err := validateSSLConfig(receivers); err != nil {
 				return err
 			}
 		}
@@ -799,79 +808,37 @@ var (
 	}
 )
 
-// mapKeys returns keys from a map[string]Any as a map[string]bool.
-func mapKeys(m interface{}) map[string]bool {
-	keys := map[string]bool{}
-	switch m := m.(type) {
-	case loggingReceiverMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]LoggingProcessor:
-		for k := range m {
-			keys[k] = true
-		}
-	case map[string]*Pipeline:
-		for k := range m {
-			keys[k] = true
-		}
-	case metricsReceiverMap:
-		for k := range m {
-			keys[k] = true
-		}
-	case metricsProcessorMap:
-		for k := range m {
-			keys[k] = true
-		}
-	default:
-		panic(fmt.Sprintf("Unknown type: %T", m))
+// sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
+func sortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
+	keys := []K{}
+	for k := range m {
+		keys = append(keys, k)
 	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 	return keys
 }
 
-// sortedKeys returns keys from a map[string]Any as a sorted string slice.
-func sortedKeys(m interface{}) []string {
-	var r []string
-	for k := range mapKeys(m) {
-		r = append(r, k)
-	}
-	sort.Strings(r)
-	return r
-}
-
-// findInvalid returns all strings from a slice that are not in allowed.
-func findInvalid(actual []string, allowed map[string]bool) []string {
-	var invalid []string
-	for _, v := range actual {
-		if !allowed[v] {
-			invalid = append(invalid, v)
+func validateComponentKeys[V any](components map[string]V, refs []string, subagent string, kind string, pipeline string) error {
+	componentSet := set.FromMapKeys(components)
+	for _, componentRef := range refs {
+		if !componentSet.Contains(componentRef) {
+			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
 		}
-	}
-	return invalid
-}
-
-func validateComponentKeys(components interface{}, refs []string, subagent string, kind string, pipeline string) error {
-	invalid := findInvalid(refs, mapKeys(components))
-	if len(invalid) > 0 {
-		return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, invalid[0], pipeline)
 	}
 	return nil
 }
 
-func validateComponentTypeCounts(components interface{}, refs []string, subagent string, kind string) (map[string]int, error) {
+func validateComponentTypeCounts[C Component](components map[string]C, refs []string, subagent string, kind string) (map[string]int, error) {
 	r := map[string]int{}
-	cm := reflect.ValueOf(components)
 	for _, id := range refs {
-		v := cm.MapIndex(reflect.ValueOf(id))
-		if !v.IsValid() {
+		c, ok := components[id]
+		if !ok {
 			continue // Some reserved ids don't map to components.
 		}
-		t := v.Interface().(Component).Type()
-		if _, ok := r[t]; ok {
-			r[t] += 1
-		} else {
-			r[t] = 1
-		}
+		t := c.Type()
+		r[t] += 1
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
 				return nil, fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)

@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	metricapi "go.opentelemetry.io/otel/metric"
-	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
+	metricapi "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -43,6 +43,10 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, e
 		MetricsReceiverCountsByType: make(map[string]int),
 		LogsReceiverCountsByType:    make(map[string]int),
 	}
+	metricsReceivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return eR, err
+	}
 
 	// Logging Pipelines
 	for _, p := range uc.Logging.Service.Pipelines {
@@ -54,7 +58,7 @@ func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, e
 
 	// Metrics Pipelines
 	for _, p := range uc.Metrics.Service.Pipelines {
-		err := countReceivers(eR.MetricsReceiverCountsByType, p, uc.Metrics.Receivers)
+		err := countReceivers(eR.MetricsReceiverCountsByType, p, metricsReceivers)
 		if err != nil {
 			return eR, err
 		}

@@ -66,7 +66,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverFlink{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverFlink{} })
 }
 
 type LoggingProcessorFlink struct {
@@ -157,6 +157,6 @@ func (r LoggingReceiverFlink) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorFlink{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverFlink{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorFlink{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverFlink{} })
 }

@@ -54,7 +54,7 @@ func (r MetricsReceiverHadoop) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverHadoop{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverHadoop{} })
 }
 
 type LoggingProcessorHadoop struct {
@@ -136,5 +136,5 @@ func (r LoggingReceiverHadoop) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverHadoop{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverHadoop{} })
 }
