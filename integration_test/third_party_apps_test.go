@@ -730,6 +730,7 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 type test struct {
 	platform   string
 	app        string
+   gpu        string
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -819,9 +820,17 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+   gpus := []string{"A100", "V100", "P100", "T4", "P4"}
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+         if app != NvmlApp {
+			   tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
+         }
+         else {
+		      for _, gpu := range gpus {
+			      tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+            }
+         }
 		}
 	}
 
@@ -851,7 +860,22 @@ func TestThirdPartyApps(t *testing.T) {
 					ExtraCreateArguments: nil,
 				}
             if tc.app == NvmlApp {
-               options.MachineType = "a2-highgpu-1g"
+               switch tc.gpu {
+               case "A100":
+                  options.MachineType = "a2-highgpu-1g"
+               case "V100":
+                  options.MachineType = "n1-standard-2"
+					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-v100")
+               case "P100":
+                  options.MachineType = "n1-standard-2"
+					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-p100")
+               case "T4":
+                  options.MachineType = "n1-standard-2"
+					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-t4")
+               case "P4":
+                  options.MachineType = "n1-standard-2"
+					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-p4")
+               }
             }
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
