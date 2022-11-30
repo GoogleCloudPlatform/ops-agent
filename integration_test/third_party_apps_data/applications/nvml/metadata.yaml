@@ -30,7 +30,7 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       model: .*
-      gpu: "[0-9]*"
+      gpu_number: "[0-9]*"
     representative: true
   - type: workload.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
@@ -38,7 +38,7 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       model: .*
-      gpu: "[0-9]*"
+      gpu_number: "[0-9]*"
       memory_state: free|used
 configuration_options:
   metrics:
