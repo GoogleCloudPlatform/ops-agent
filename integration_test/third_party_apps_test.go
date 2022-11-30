@@ -864,13 +864,18 @@ func TestThirdPartyApps(t *testing.T) {
 					ExtraCreateArguments: nil,
 				}
             if tc.app == NvmlApp {
+               options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
                switch tc.gpu {
                case "a100":
                   options.MachineType = "a2-highgpu-1g"
-                  options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
-               case "v100", "p100", "t4", "p4":
+               case "v100", "t4":
                   options.MachineType = "n1-standard-2"
-                  options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+               case "p100":
+                  options.MachineType = "n1-standard-2"
+                  options.zone = "us-central1-f"
+               case "p4":
+                  options.MachineType = "n1-standard-2"
+                  options.zone = "us-central1-a"
                }
             }
 				if tc.platform == SAPHANAPlatform {
