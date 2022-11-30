@@ -1025,11 +1025,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
-   if vm.Accelerator != "" {
-      args = append(args, vm.Accelerator)
-      args = append(args, "--maintenance-policy=TERMINATE")
-      args = append(args, "--restart-on-failure")
-   }
+	if vm.Accelerator != "" {
+		args = append(args, vm.Accelerator)
+		args = append(args, "--maintenance-policy=TERMINATE")
+		args = append(args, "--restart-on-failure")
+	}
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.

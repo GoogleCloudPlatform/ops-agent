@@ -673,7 +673,7 @@ func modifiedFiles(t *testing.T) []string {
 	stdout := string(out)
 	if err != nil {
 		stderr := ""
-        	if exitError := err.(*exec.ExitError); exitError != nil {
+		if exitError := err.(*exec.ExitError); exitError != nil {
 			stderr = string(exitError.Stderr)
 		}
 		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
@@ -730,7 +730,7 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 type test struct {
 	platform   string
 	app        string
-   gpu        string
+	gpu        string
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -753,7 +753,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBApp = "oracledb"
+	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
 
 	NvmlApp = "nvml"
@@ -774,10 +774,11 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * For all impacted apps, test on all platforms.
-//   * Always test all apps against the default platform.
-//   * Always test the default app (postgres/active_directory_ds for now)
+//   - For all impacted apps, test on all platforms.
+//   - Always test all apps against the default platform.
+//   - Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
+//
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
@@ -820,16 +821,16 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
-   gpus := []string{"a100", "v100", "p100", "t4", "p4"}
+	gpus := []string{"a100", "v100", "p100", "t4", "p4"}
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-         if app != NvmlApp {
-			   tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: "WARNING! REMOVE ME"})
-         } else {
-		      for _, gpu := range gpus {
-			      tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
-            }
-         }
+			if app != NvmlApp {
+				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: "WARNING! REMOVE ME"})
+			} else {
+				for _, gpu := range gpus {
+					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+				}
+			}
 		}
 	}
 
@@ -839,10 +840,10 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-      testname := tc.platform+"/"+tc.app
-      if tc.gpu != "" {
-         testname = tc.platform+"/"+tc.app+"/"+tc.gpu
-      }
+		testname := tc.platform + "/" + tc.app
+		if tc.gpu != "" {
+			testname = tc.platform + "/" + tc.app + "/" + tc.gpu
+		}
 
 		t.Run(testname, func(t *testing.T) {
 			t.Parallel()
@@ -863,21 +864,21 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
-            if tc.app == NvmlApp {
-               options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
-               switch tc.gpu {
-               case "a100":
-                  options.MachineType = "a2-highgpu-1g"
-               case "v100", "t4":
-                  options.MachineType = "n1-standard-2"
-               case "p100":
-                  options.MachineType = "n1-standard-2"
-                  options.zone = "us-central1-f"
-               case "p4":
-                  options.MachineType = "n1-standard-2"
-                  options.zone = "us-central1-a"
-               }
-            }
+				if tc.app == NvmlApp {
+					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+					switch tc.gpu {
+					case "a100":
+						options.MachineType = "a2-highgpu-1g"
+					case "v100", "t4":
+						options.MachineType = "n1-standard-2"
+					case "p100":
+						options.MachineType = "n1-standard-2"
+						options.zone = "us-central1-f"
+					case "p4":
+						options.MachineType = "n1-standard-2"
+						options.zone = "us-central1-a"
+					}
+				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
