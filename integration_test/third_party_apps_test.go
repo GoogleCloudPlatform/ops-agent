@@ -820,7 +820,7 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
-   gpus := []string{"A100", "V100", "P100", "T4", "P4"}
+   gpus := []string{"a100", "v100", "p100", "t4", "p4"}
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
          if app != NvmlApp {
@@ -865,20 +865,12 @@ func TestThirdPartyApps(t *testing.T) {
 				}
             if tc.app == NvmlApp {
                switch tc.gpu {
-               case "A100":
+               case "a100":
                   options.MachineType = "a2-highgpu-1g"
-               case "V100":
+                  options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+               case "v100", "p100", "t4", "p4":
                   options.MachineType = "n1-standard-2"
-					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-v100")
-               case "P100":
-                  options.MachineType = "n1-standard-2"
-					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-p100")
-               case "T4":
-                  options.MachineType = "n1-standard-2"
-					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-t4")
-               case "P4":
-                  options.MachineType = "n1-standard-2"
-					   options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--accelerator=count=1,type=nvidia-tesla-p4")
+                  options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
                }
             }
 				if tc.platform == SAPHANAPlatform {
