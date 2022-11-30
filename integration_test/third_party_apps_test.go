@@ -834,11 +834,6 @@ func TestThirdPartyApps(t *testing.T) {
 		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
 			t.Parallel()
 
-         // WARNING: REMOVE THIS!
-         if tc.app != NvmlApp {
-				t.Skip("Only test NVML for PR")
-         }
-
 			if tc.skipReason != "" {
 				t.Skip(tc.skipReason)
 			}
