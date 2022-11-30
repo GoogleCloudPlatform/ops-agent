@@ -62,5 +62,13 @@ per_application_overrides:
     platforms_to_skip: [sles-12, sles-15]
   rabbitmq: # rabbitmq is not supported on sles-12
     platforms_to_skip: [sles-12]
-  nvml: # keep simple for now
-    platforms_to_skip: [sles-12, sles-15]
+  nvml: # need to test various GPUs rather than multiple platforms
+    platforms_to_skip:
+      - centos-7
+      - centos-8
+      - debian-10
+      - ubuntu-2004-lts 
+      - rocky-linux-8 
+      - sles-12
+      - sles-15
+ 
