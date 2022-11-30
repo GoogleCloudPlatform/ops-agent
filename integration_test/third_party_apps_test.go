@@ -824,9 +824,8 @@ func TestThirdPartyApps(t *testing.T) {
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
          if app != NvmlApp {
-			   tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
-         }
-         else {
+			   tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: "WARNING! REMOVE ME"})
+         } else {
 		      for _, gpu := range gpus {
 			      tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
             }
