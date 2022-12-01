@@ -1025,8 +1025,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
-	if vm.Accelerator != "" {
-		args = append(args, vm.Accelerator)
+	if options.Accelerator != "" {
+		args = append(args, options.Accelerator)
 		args = append(args, "--maintenance-policy=TERMINATE")
 		args = append(args, "--restart-on-failure")
 	}
