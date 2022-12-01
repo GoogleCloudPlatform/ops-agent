@@ -873,10 +873,10 @@ func TestThirdPartyApps(t *testing.T) {
 						options.MachineType = "n1-standard-2"
 					case "p100":
 						options.MachineType = "n1-standard-2"
-						options.zone = "us-central1-f"
+						options.Zone = "us-central1-f"
 					case "p4":
 						options.MachineType = "n1-standard-2"
-						options.zone = "us-central1-a"
+						options.Zone = "us-central1-a"
 					}
 				}
 				if tc.platform == SAPHANAPlatform {
