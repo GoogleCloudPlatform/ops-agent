@@ -1349,7 +1349,11 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		}
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
 
+		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
+		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
