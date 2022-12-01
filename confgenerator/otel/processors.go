@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strings"
 )
 
 // Helper functions to easily build up processor configs.
@@ -67,15 +68,33 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
-// AddPrefix returns a config snippet that adds a prefix to all metrics.
+// AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
+	return RegexpRename(
+		`^(.*)$`,
+		path.Join(prefix, `${1}`),
+		operations...,
+	)
+}
+
+// ChangePrefix returns a config snippet that updates a prefix on all metrics.
+func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
+	return RegexpRename(
+		fmt.Sprintf(`^%s(.*)$`, oldPrefix),
+		fmt.Sprintf("%s%s", newPrefix, `${1}`),
+	)
+}
+
+// RegexpRename returns a config snippet that renames metrics matching the given regexp.
+// The `rename` argument supports capture groups as `${1}`, `${2}`, and so on.
+func RegexpRename(regexp string, rename string, operations ...map[string]interface{}) map[string]interface{} {
 	// $ needs to be escaped because reasons.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
 	out := map[string]interface{}{
-		"include":    `^(.*)$$`,
+		"include":    strings.ReplaceAll(regexp, "$", "$$"),
 		"match_type": "regexp",
 		"action":     "update",
-		"new_name":   path.Join(prefix, `$${1}`),
+		"new_name":   strings.ReplaceAll(rename, "$", "$$"),
 	}
 
 	if len(operations) > 0 {
@@ -83,18 +102,6 @@ func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]i
 	}
 
 	return out
-}
-
-// ChangePrefix returns a config snippet that updates a prefix on all metrics.
-func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
-	// $ needs to be escaped because reasons.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-	return map[string]interface{}{
-		"include":    fmt.Sprintf(`^%s(.*)$$`, oldPrefix),
-		"match_type": "regexp",
-		"action":     "update",
-		"new_name":   fmt.Sprintf("%s%s", newPrefix, `$${1}`),
-	}
 }
 
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.

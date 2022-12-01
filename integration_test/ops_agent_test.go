@@ -2624,11 +2624,19 @@ traces:
 			t.Fatal(err)
 		}
 
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.gauge", time.Hour, nil, false); err != nil {
-			t.Error(err)
-		}
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
-			t.Error(err)
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, name := range []string{
+			"workload.googleapis.com/otlp.test.gauge",
+			"workload.googleapis.com/otlp.test.cumulative",
+			"workload.googleapis.com/otlp.test.prefix1",
+			"workload.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2",
+			"workload.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc",
+			"workload.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+			"workload.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5",
+		} {
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, false); err != nil {
+				t.Error(err)
+			}
 		}
 	})
 }
