@@ -473,6 +473,7 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		if err != nil {
 			return nil, err
 		}
+		logger.Printf("tsList size: %d", len(tsList))
 		if len(tsList) == expectedSize {
 			return tsList, nil
 		}
