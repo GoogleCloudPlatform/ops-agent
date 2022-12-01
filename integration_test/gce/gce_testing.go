@@ -422,8 +422,8 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) ([]*m
 		series, err := it.Next()
 		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
-			// Either there were no data series in the iterator or all of them were empty.
-			return nil, nil
+			// Success, we found a time series with len(series.Points) > 0.
+			return tsList, nil
 		}
 		if err != nil {
 			return nil, err
@@ -433,8 +433,6 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) ([]*m
 			continue
 		}
 		tsList = append(tsList, series)
-		// Success, we found a time series with len(series.Points) > 0.
-		return tsList, nil
 	}
 }
 
