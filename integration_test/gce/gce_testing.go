@@ -415,8 +415,9 @@ func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Du
 // time series. An error is returned if the evaluation fails.
 // A return value of (nil, nil) indicates that the evaluation succeeded
 // but returned no data.
-func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) ([]*monitoringpb.TimeSeries, error) {
 	// Loop through the iterator, looking for at least one non-empty time series.
+	tsList := make([]*monitoringpb.TimeSeries, 0)
 	for {
 		series, err := it.Next()
 		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
@@ -431,8 +432,9 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 			// Look at the next element(s) of the iterator.
 			continue
 		}
+		tsList = append(tsList, series)
 		// Success, we found a time series with len(series.Points) > 0.
-		return series, nil
+		return tsList, nil
 	}
 }
 
@@ -451,78 +453,36 @@ func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
 	return trace, nil
 }
 
-// WaitForMetric looks for the given metric in the backend and returns it if it
+// WaitForMetric uses WaitForMetricSeries to return a single metric or appropriate error
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
+	series, err := WaitForMetricSeries(ctx, logger, vm, metric, window, extraFilters, isPrometheus, 1)
+	if err != nil {
+		return nil, err
+	}
+	return series[0], nil
+}
+
+// WaitForMetricSeries looks for the given metrics in the backend and returns it if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
+func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool, expectedSize int) ([]*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
-		series, err := nonEmptySeries(logger, it)
-		if series != nil && err == nil {
-			// Success.
-			return series, nil
+		tsList, err := nonEmptySeries(logger, it)
+		if err != nil {
+			return nil, err
 		}
-		if err != nil && !isRetriableLookupError(err) {
-			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+		if len(tsList) == expectedSize {
+			return tsList, nil
 		}
-		// We can get here in two cases:
-		// 1. the lookup succeeded but found no data
-		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
-			metric, extraFilters, err, attempt, QueryMaxAttempts)
+		tsList = make([]*monitoringpb.TimeSeries, 0)
+		logger.Printf("Unable to find all expected metrics checking(metric=%q, extraFilters=%v): retrying (%d/%d)...",
+			metric, extraFilters, attempt, QueryMaxAttempts)
 		time.Sleep(queryBackoffDuration)
 	}
-	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
-}
 
-func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) ([]*monitoringpb.TimeSeries, error) {
-	tsList := make([]*monitoringpb.TimeSeries, 0)
-	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
-		for {
-			series, err := it.Next()
-			if err == iterator.Done {
-				// Either there were no data series in the iterator or all of them were empty.
-				break
-			}
-			if err != nil {
-				return nil, err
-			}
-			if len(series.Points) == 0 {
-				// Look at the next element(s) of the iterator.
-				continue
-			}
-			// Success, we found a time series with len(series.Points) > 0.
-			tsList = append(tsList, series)
-		}
-	}
-	return tsList, nil
-}
-
-// WaitForTrace looks for any trace from the given VM in the backend and returns
-// it if it exists. An error is returned otherwise. This function will retry
-// "no data" errors a fixed number of times. This is useful because it takes
-// time for trace data to become visible after it has been uploaded.
-//
-// Only the ProjectId and TraceId fields are populated. To get other fields,
-// including spans, call traceClient.GetTrace with the TraceID returned from
-// this function.
-func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
-		it := lookupTrace(ctx, logger, vm, window)
-		trace, err := firstTrace(it)
-		if trace != nil && err == nil {
-			return trace, nil
-		}
-		if err != nil && !isRetriableLookupError(err) {
-			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
-		}
-		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
-			attempt, QueryMaxAttempts)
-		time.Sleep(queryBackoffDuration)
-	}
-	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
+	return nil, fmt.Errorf("WaitForMetricSeries(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
 }
 
 // IsExhaustedRetriesMetricError returns true if the given error is an

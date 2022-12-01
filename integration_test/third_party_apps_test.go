@@ -468,7 +468,7 @@ type feature struct {
 	Value   string
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc feature_tracking.FeatureTrackingContainer, skipFeatureTracking bool) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -514,12 +514,13 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		err = multierr.Append(err, <-c)
 	}
 
-	if skipFeatureTracking {
+	if fc == nil {
 		logger.ToMainLog().Printf("skipping feature tracking integration tests")
 		return err
 	}
 
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false)
+	// We expect 2 more metrics from ops agent
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features)+2)
 	if err != nil {
 		return err
 	}
@@ -649,12 +650,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
 		fc, err := getExpectedFeatures(app)
-		skipFeatureTracking := false
-		if err != nil {
-			skipFeatureTracking = true
-		}
+		//if err ==
 
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc, skipFeatureTracking); err != nil {
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -662,21 +660,21 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-func getExpectedFeatures(app string) (feature_tracking.FeatureTrackingContainer, error) {
+func getExpectedFeatures(app string) (*feature_tracking.FeatureTrackingContainer, error) {
 	var fc feature_tracking.FeatureTrackingContainer
 
 	featuresScript := path.Join("applications", app, "features.yaml")
 	featureBytes, err := readFileFromScriptsDir(featuresScript)
 	if err != nil {
-		return fc, err
+		return nil, err
 	}
 
 	err = yaml.UnmarshalStrict(featureBytes, &fc)
 	if err != nil {
-		return fc, err
+		return nil, err
 	}
 
-	return fc, nil
+	return &fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.

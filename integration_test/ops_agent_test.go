@@ -1697,8 +1697,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 
 	expectedMetrics := agentMetrics.ExpectedMetrics
 
-	logger.ToMainLog().Println("Testing Logger: finding representative metrics")
-
 	// First make sure that the representative metric is being uploaded.
 	for _, metric := range expectedMetrics {
 		if !metric.Representative {
@@ -1767,22 +1765,21 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 	metricsWaitGroup.Wait()
 
-	logger.ToMainLog().Printf("Attempting to read features.yaml\n")
 	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
-		t.Fatalf("Could not find features.yaml\n")
+		t.Fatal("Could not find features.yaml")
 		return
 	}
 
 	var fc feature_tracking.FeatureTrackingContainer
-	logger.ToMainLog().Printf("Read features.yaml successful\n")
 
 	err = yaml.UnmarshalStrict(featureBytes, &fc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false)
+	// We expect 2 more metrics from ops agent
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features)+2)
 	if err != nil {
 		t.Error(err)
 		return

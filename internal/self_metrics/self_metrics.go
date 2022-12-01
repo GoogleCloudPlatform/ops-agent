@@ -150,7 +150,6 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 	// Resource for GCP and SDK detectors
 	ctx := context.Background()
 
-	//ENABLED RECEIVERS
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
