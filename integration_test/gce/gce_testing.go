@@ -485,6 +485,31 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 	return nil, fmt.Errorf("WaitForMetricSeries(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
 }
 
+// WaitForTrace looks for any trace from the given VM in the backend and returns
+// it if it exists. An error is returned otherwise. This function will retry
+// "no data" errors a fixed number of times. This is useful because it takes
+// time for trace data to become visible after it has been uploaded.
+//
+// Only the ProjectId and TraceId fields are populated. To get other fields,
+// including spans, call traceClient.GetTrace with the TraceID returned from
+// this function.
+func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, logger, vm, window)
+		trace, err := firstTrace(it)
+		if trace != nil && err == nil {
+			return trace, nil
+		}
+		if err != nil && !isRetriableLookupError(err) {
+			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
+		}
+		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
+			attempt, QueryMaxAttempts)
+		time.Sleep(queryBackoffDuration)
+	}
+	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
+}
+
 // IsExhaustedRetriesMetricError returns true if the given error is an
 // "exhausted retries" error returned from WaitForMetric.
 func IsExhaustedRetriesMetricError(err error) bool {
