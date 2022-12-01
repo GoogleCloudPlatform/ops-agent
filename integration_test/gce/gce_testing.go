@@ -469,8 +469,10 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		tsList, err := nonEmptySeries(logger, it)
 
-		if len(tsList) == expectedSize && err == nil {
+		logger.Printf("tsList size: %d", len(tsList))
+		if len(tsList) >= expectedSize && err == nil {
 			// Success.
+			logger.Printf("Successfully found series=%v", tsList)
 			return tsList, nil
 		}
 		if err != nil && !isRetriableLookupError(err) {
@@ -482,7 +484,6 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
 			metric, extraFilters, err, attempt, QueryMaxAttempts)
 
-		logger.Printf("tsList size: %d", len(tsList))
 		time.Sleep(queryBackoffDuration)
 	}
 
