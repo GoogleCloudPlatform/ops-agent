@@ -1,0 +1,9 @@
+features:
+- feature: receivers:jetty
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:jetty_access
+  module: logging
+  key: "[0].enabled"
+  value: true
