@@ -468,16 +468,21 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		tsList, err := nonEmptySeries(logger, it)
-		if err != nil {
-			return nil, err
-		}
-		logger.Printf("tsList size: %d", len(tsList))
-		if len(tsList) == expectedSize {
+
+		if len(tsList) == expectedSize && err == nil {
+			// Success.
 			return tsList, nil
 		}
-		tsList = make([]*monitoringpb.TimeSeries, 0)
-		logger.Printf("Unable to find all expected metrics checking(metric=%q, extraFilters=%v): retrying (%d/%d)...",
-			metric, extraFilters, attempt, QueryMaxAttempts)
+		if err != nil && !isRetriableLookupError(err) {
+			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
+		}
+		// We can get here in two cases:
+		// 1. the lookup succeeded but found no data
+		// 2. the lookup hit a retriable error. This case happens very rarely.
+		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+			metric, extraFilters, err, attempt, QueryMaxAttempts)
+
+		logger.Printf("tsList size: %d", len(tsList))
 		time.Sleep(queryBackoffDuration)
 	}
 
