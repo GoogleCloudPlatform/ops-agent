@@ -31,7 +31,6 @@ func getUnifiedConfigAndValidate(userConfPath, platform string) (userUc, mergedU
 	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
 		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
-
 	}
 
 	mergedUc, err = confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, platform)

@@ -1680,8 +1680,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	logger.ToMainLog().Println("Testing Logger: testDefaultMetrics")
-
 	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -1769,7 +1767,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	var fc feature_tracking.FeatureTrackingContainer
+	var fc feature_tracking_metadata.FeatureTrackingContainer
 
 	err = yaml.UnmarshalStrict(featureBytes, &fc)
 	if err != nil {
@@ -1782,7 +1780,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	err = feature_tracking.AssertFeatureTrackingMetrics(series, fc.Features)
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	if err != nil {
 		t.Error(err)
 		return

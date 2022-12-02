@@ -1,14 +1,11 @@
-package feature_tracking
+package feature_tracking_metadata
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
-
-var errMissingFeatureTrackingMetrics = errors.New("missing feature tracking metrics")
 
 type MissingExpectedFeatureTrackingMetricsError struct {
 	Err                     error
@@ -50,7 +47,7 @@ func AssertFeatureTrackingMetrics(series []*monitoringpb.TimeSeries, features []
 	}
 
 	if len(expectedFeatures) != 0 {
-		return &MissingExpectedFeatureTrackingMetricsError{MissingExpectedFeatures: expectedFeatures, Err: errMissingFeatureTrackingMetrics}
+		return &MissingExpectedFeatureTrackingMetricsError{MissingExpectedFeatures: expectedFeatures, Err: fmt.Errorf("missing feature tracking metrics")}
 	}
 
 	return nil
