@@ -436,7 +436,7 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 			if len(tsList) < minimumRequiredSeries {
 				return nil, ErrInvalidIteratorLength
 			}
-			// Success, we found a time series with len(series.Points) > 0.
+			// Success
 			return tsList, nil
 		}
 		if err != nil {
@@ -470,6 +470,9 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 	series, err := WaitForMetricSeries(ctx, logger, vm, metric, window, extraFilters, isPrometheus, 1)
 	if err != nil {
 		return nil, err
+	}
+	if series == nil || len(series) == 0 {
+		panic(fmt.Sprintf("WaitForMetric: problem with series: %v", series))
 	}
 	return series[0], nil
 }
