@@ -17,6 +17,9 @@ package health_checks
 import (
 	"fmt"
 	"net"
+	"strconv"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type PortsCheck struct {
@@ -41,10 +44,17 @@ func (c PortsCheck) check_port(host string, port string) error {
 
 func (c PortsCheck) RunCheck() error {
 	// TODO : Get ports from UnifiedConfig
-	// Check prometheus exporter host port : 0.0.0.0 : 20202
-	host := "0.0.0.0"
-	port := "20202"
-	err := c.check_port(host, port)
+	self_metrics_host := "0.0.0.0"
+
+	// Check for fluent-bit self metrics port
+	err := c.check_port(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
+	if err != nil {
+		c.Error(err)
+		return err
+	}
+
+	// Check for opentelemetry-collector self metrics port
+	err = c.check_port(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
 		c.Error(err)
 		return err
