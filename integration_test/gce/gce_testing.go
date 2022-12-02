@@ -475,7 +475,9 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 			logger.Printf("Successfully found series=%v", tsList)
 			return tsList, nil
 		}
-		logger.Printf("WaitForMetricSeries error got: %v", err.Error())
+		if err != nil {
+			logger.Printf("WaitForMetricSeries error got: %v", err.Error())
+		}
 		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
