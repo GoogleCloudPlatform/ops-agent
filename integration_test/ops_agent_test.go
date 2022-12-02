@@ -1722,8 +1722,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	logger.ToMainLog().Println("Testing Logger: matching expected metrics")
-
 	// Now that we've established that the preceding metrics are being uploaded
 	// and have percolated through the monitoring backend, let's proceed to
 	// query for the rest of the metrics. We used to query for all the metrics
