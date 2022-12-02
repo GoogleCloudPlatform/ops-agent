@@ -430,6 +430,9 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 		series, err := it.Next()
 		logger.Printf("nonEmptySeriesList() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
+			if len(tsList) == 0 {
+				return nil, fmt.Errorf("iterator is empty")
+			}
 			if len(tsList) < minimumRequiredSeries {
 				return nil, ErrInvalidIteratorLength
 			}
