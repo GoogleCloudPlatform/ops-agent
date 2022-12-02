@@ -1778,8 +1778,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		t.Fatal(err)
 	}
 
-	// We expect 2 more metrics from ops agent
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features)+2)
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
 	if err != nil {
 		t.Error(err)
 		return
