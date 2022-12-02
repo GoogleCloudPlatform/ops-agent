@@ -469,12 +469,13 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		tsList, err := nonEmptySeries(logger, it)
 
-		logger.Printf("tsList size: %d", len(tsList))
+		logger.Printf("tsList size: %d, expected: %v, condition: %v", len(tsList), expectedSize, len(tsList) >= expectedSize && err == nil)
 		if len(tsList) >= expectedSize && err == nil {
 			// Success.
 			logger.Printf("Successfully found series=%v", tsList)
 			return tsList, nil
 		}
+		logger.Printf("WaitForMetricSeries error got: %v", err.Error())
 		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
