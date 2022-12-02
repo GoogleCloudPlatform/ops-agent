@@ -531,11 +531,11 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
 		series, err := nonEmptySeries(logger, it)
-		found := series != nil
+		found := len(series) > 0
 		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
-		logger.Printf("AssertMetricMissing=%v", series)
+		logger.Printf("AssertMetricMissing=%v, len(series)", series, len(series))
 
 		if err == nil {
 			if found {
