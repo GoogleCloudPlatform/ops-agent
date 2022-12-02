@@ -519,8 +519,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	// We expect 2 more metrics from ops agent
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features)+2)
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
 	if err != nil {
 		return err
 	}
