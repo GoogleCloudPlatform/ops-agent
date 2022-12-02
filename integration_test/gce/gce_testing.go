@@ -535,6 +535,8 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
+		logger.Printf("AssertMetricMissing=%v", series)
+
 		if err == nil {
 			if found {
 				return fmt.Errorf("AssertMetricMissing(metric=%q): %v failed: unexpectedly found data for metric", metric, err)
