@@ -1707,8 +1707,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			t.Error(err)
 		}
 
-		logger.ToMainLog().Printf("metadata.AssertMetric(metric, series), metric=%v, series=%v", metric, series)
-
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Error(err)
