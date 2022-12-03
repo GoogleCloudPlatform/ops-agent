@@ -484,7 +484,7 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		tsList, err := nonEmptySeriesList(logger, it, minimumRequiredSeries)
 
-		if tsList == nil && err == nil {
+		if tsList != nil && err == nil {
 			// Success.
 			logger.Printf("Successfully found series=%v", tsList)
 			return tsList, nil
