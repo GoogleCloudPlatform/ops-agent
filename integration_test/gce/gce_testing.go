@@ -471,9 +471,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 	if err != nil {
 		return nil, err
 	}
-	if series == nil || len(series) == 0 {
-		panic(fmt.Sprintf("WaitForMetric: problem with series: %v", series))
-	}
+	logger.Printf("WaitForMetric metric=%v, series=%v", metric, series)
 	return series[0], nil
 }
 
