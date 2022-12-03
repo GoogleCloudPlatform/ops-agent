@@ -431,7 +431,7 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 		logger.Printf("nonEmptySeriesList() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
 			if len(tsList) == 0 {
-				return nil, fmt.Errorf("iterator is empty")
+				return nil, nil
 			}
 			if len(tsList) < minimumRequiredSeries {
 				return nil, ErrInvalidIteratorLength
@@ -484,7 +484,7 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
 		tsList, err := nonEmptySeriesList(logger, it, minimumRequiredSeries)
 
-		if err == nil {
+		if tsList == nil && err == nil {
 			// Success.
 			logger.Printf("Successfully found series=%v", tsList)
 			return tsList, nil
