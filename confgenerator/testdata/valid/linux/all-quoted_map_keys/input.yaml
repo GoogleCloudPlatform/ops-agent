@@ -1,0 +1,27 @@
+logging:
+  receivers:
+    journald:
+      type: systemd_journald
+
+  processors:
+    label_journald:
+      type: modify_fields
+      fields:
+        labels.facility:
+          copy_from: jsonPayload.SYSLOG_FACILITY
+          map_values:
+            '0': kernel
+            '1': user
+            '2': mail
+            '3': daemon
+            '4': auth
+            '5': syslog
+            '9': systemd-timesyncd
+            '10': auth
+            '15': cron
+
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [journald]
+        processors: [label_journald]
