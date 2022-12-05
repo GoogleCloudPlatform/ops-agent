@@ -66,8 +66,7 @@ per_application_overrides:
     platforms_to_skip:
       - centos-7
       - centos-8
-      - debian-11
-      - ubuntu-2004-lts 
+      - debian-10
       - rocky-linux-8 
       - sles-12
       - sles-15
