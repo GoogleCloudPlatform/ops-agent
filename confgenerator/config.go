@@ -442,6 +442,16 @@ type LoggingNetworkReceiver interface {
 	GetListenPort() uint16
 }
 
+func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
+	receiverPortMap := map[string]uint16{}
+	for rID, receiver := range *m {
+		if s, ok := receiver.(LoggingNetworkReceiver); ok {
+			receiverPortMap[rID] = s.GetListenPort()
+		}
+	}
+	return receiverPortMap
+}
+
 type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
@@ -719,7 +729,7 @@ func (l *Logging) Validate(platform string) error {
 			return err
 		}
 		// portTaken will be modified/updated by the validation function
-		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetReceiverListenPorts(), p.ReceiverIDs); err != nil {
+		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetListenPorts(), p.ReceiverIDs); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
@@ -847,16 +857,6 @@ func validateComponentTypeCounts[C Component](components map[string]C, refs []st
 		}
 	}
 	return r, nil
-}
-
-func (m *loggingReceiverMap) GetReceiverListenPorts() map[string]uint16 {
-	receiverPortMap := map[string]uint16{}
-	for rID, receiver := range *m {
-		if s, ok := receiver.(LoggingNetworkReceiver); ok {
-			receiverPortMap[rID] = s.GetListenPort()
-		}
-	}
-	return receiverPortMap
 }
 
 // Validate that no two receivers are using the same port; adding new port usage to the input map `taken`
