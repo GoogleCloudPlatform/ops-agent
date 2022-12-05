@@ -26,8 +26,12 @@ const MetricsPort = 20201
 
 // Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type Pipeline struct {
+	// Type is "metrics" or "traces".
+	Type       string
 	Receiver   Component
 	Processors []Component
+	// GMP indicates that the pipeline outputs Prometheus metrics.
+	GMP bool
 }
 
 // Component represents a single OT component (receiver, processor, exporter, etc.)
@@ -58,14 +62,13 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel                         string
-	Pipelines                        map[string]Pipeline
-	GoogleManagedPrometheusPipelines []string
+	LogLevel  string
+	Pipelines map[string]Pipeline
 
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
 	//
-	// Note: GlobalProcessors are not applied to GoogleManagedPrometheusPipelines.
+	// Note: GlobalProcessors are not applied to pipelines with GMP = true.
 	GlobalProcessors                []Component
 	GoogleCloudExporter             Component
 	GoogleManagedPrometheusExporter Component
@@ -110,11 +113,13 @@ func (c ModularConfig) Generate() (string, error) {
 
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
-	if len(c.GoogleManagedPrometheusPipelines) > 0 {
-		exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
+	for _, pipeline := range c.Pipelines {
+		if pipeline.GMP {
+			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
 
-		// Add the groupbyattrs processor so prometheus pipelines can use it.
-		processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+			// Add the groupbyattrs processor so prometheus pipelines can use it.
+			processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+		}
 	}
 
 	var globalProcessorNames []string
@@ -135,7 +140,7 @@ func (c ModularConfig) Generate() (string, error) {
 			processors[name] = processor.Config
 		}
 
-		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
+		if pipeline.GMP {
 			exporter = googleManagedPrometheusExporter
 			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {

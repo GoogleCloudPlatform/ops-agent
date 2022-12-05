@@ -91,16 +91,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
 
 	pipelines := make(map[string]otel.Pipeline)
-	var prometheusCustomMetricPipelines []string
 	var err error
 
 	if uc.Metrics != nil {
 		var err error
 		pipelines, err = uc.generateOtelPipelines()
-		if err != nil {
-			return "", err
-		}
-		prometheusCustomMetricPipelines, err = uc.getCustomPrometheusOTelPipelines()
 		if err != nil {
 			return "", err
 		}
@@ -120,49 +115,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:                         uc.Metrics.Service.LogLevel,
-		Pipelines:                        pipelines,
-		GoogleManagedPrometheusPipelines: prometheusCustomMetricPipelines,
-		GlobalProcessors:                 []otel.Component{gceResourceDetector()},
-		GoogleCloudExporter:              googleCloudExporter(userAgent),
-		GoogleManagedPrometheusExporter:  googleManagedPrometheusExporter(userAgent),
+		LogLevel:                        uc.Metrics.Service.LogLevel,
+		Pipelines:                       pipelines,
+		GlobalProcessors:                []otel.Component{gceResourceDetector()},
+		GoogleCloudExporter:             googleCloudExporter(userAgent),
+		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
 	}.Generate()
 	if err != nil {
 		return "", err
 	}
 	return otelConfig, nil
-}
-
-// getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
-func (uc *UnifiedConfig) getCustomPrometheusOTelPipelines() ([]string, error) {
-	out := []string{}
-	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, err
-	}
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
-			}
-
-			for i := range receiver.Pipelines() {
-				otelPipeline := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					otelPipeline = fmt.Sprintf("%s_%d", otelPipeline, i)
-				}
-
-				// Check the Ops Agent receiver type.
-				if receiver.Type() == "prometheus" {
-					out = append(out, otelPipeline)
-				}
-			}
-		}
-	}
-
-	return out, nil
 }
 
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
@@ -192,6 +154,7 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.Pipeline, erro
 					if len(p.ProcessorIDs) > 0 {
 						return nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 					}
+					receiverPipeline.GMP = true
 				}
 				for _, pID := range p.ProcessorIDs {
 					processor, ok := m.Processors[pID]
