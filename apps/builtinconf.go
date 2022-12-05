@@ -41,6 +41,10 @@ var (
 						ConfigComponent:       cg.ConfigComponent{Type: "hostmetrics"},
 						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
 					},
+					"nvml": &MetricsReceiverNvml{
+						ConfigComponent:       cg.ConfigComponent{Type: "nvml"},
+						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
+					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
 					"metrics_filter": &MetricsProcessorExcludeMetrics{
@@ -50,7 +54,7 @@ var (
 				Service: &cg.MetricsService{
 					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
-							ReceiverIDs:  []string{"hostmetrics"},
+							ReceiverIDs:  []string{"hostmetrics", "nvml"},
 							ProcessorIDs: []string{"metrics_filter"},
 						},
 					},

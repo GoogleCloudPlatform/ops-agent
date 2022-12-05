@@ -51,7 +51,7 @@ function build_otel() {
   # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
   # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive
   # environment and having a conflict between the LICENSE file and license/ directory, leading to a changed jar file
-  mkdir ./META-INF
+  mkdir -p ./META-INF
   unzip -j "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE" -d ./META-INF
   zip -d "$DESTDIR$subagentdir/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE"
   mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed

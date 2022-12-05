@@ -14,6 +14,9 @@ metrics:
     hostmetrics:
       type: hostmetrics
       collection_interval: 60s
+    nvml:
+      type: nvml
+      collection_interval: 60s
   processors:
     metrics_filter:
       type: exclude_metrics
@@ -21,5 +24,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics]
+        receivers: [hostmetrics, nvml]
         processors: [metrics_filter]
