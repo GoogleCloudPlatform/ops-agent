@@ -695,6 +695,11 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 			return err
 		}
 	}
+	if uc.Combined != nil {
+		if err := uc.ValidateCombined(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -739,6 +744,30 @@ func (l *Logging) Validate(platform string) error {
 	return nil
 }
 
+func (uc *UnifiedConfig) ValidateCombined() error {
+	m := uc.Metrics
+	t := uc.Traces
+	c := uc.Combined
+	if c == nil {
+		return nil
+	}
+	for k, _ := range c.Receivers {
+		for _, f := range []struct {
+			name    string
+			missing bool
+		}{
+			{"metrics", m == nil},
+			{"traces", t == nil},
+			// TODO: Add "logging" here?
+		} {
+			if f.missing {
+				return fmt.Errorf("combined receiver %q found with no %s section; did you forget to define a %s pipeline?", k, f.name, f.name)
+			}
+		}
+	}
+	return nil
+}
+
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
 	for k, v := range uc.Metrics.Receivers {
@@ -747,7 +776,7 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := uc.Metrics.Receivers[k]; ok {
-				return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+				return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
 			}
 			if v, ok := v.(MetricsReceiver); ok {
 				validReceivers[k] = v
