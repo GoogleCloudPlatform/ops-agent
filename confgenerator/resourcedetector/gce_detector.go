@@ -127,7 +127,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		singleAttributes[attrName] = attr
 	}
 	multiAttributes := map[gceAttribute][]string{}
-	for attrName, attrGetter := range	multiAttributeSpec {
+	for attrName, attrGetter := range multiAttributeSpec {
 		attr, err := attrGetter(gd.provider)
 		if err != nil {
 			return nil, err
