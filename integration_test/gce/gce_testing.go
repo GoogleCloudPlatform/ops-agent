@@ -488,8 +488,6 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
-// A return value of (nil, nil) indicates that the evaluation succeeded
-// but returned no data.
 func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)

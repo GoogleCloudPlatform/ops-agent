@@ -8,12 +8,11 @@ import (
 )
 
 type MissingExpectedFeatureTrackingMetricsError struct {
-	Err                     error
 	MissingExpectedFeatures set.Set[FeatureTracking]
 }
 
 func (e *MissingExpectedFeatureTrackingMetricsError) Error() string {
-	return e.Err.Error() + ": " + fmt.Sprintf("%v", e.MissingExpectedFeatures)
+	return fmt.Sprintf("missing feature tracking metrics: %v", e.MissingExpectedFeatures)
 }
 
 type FeatureTracking struct {
@@ -47,7 +46,7 @@ func AssertFeatureTrackingMetrics(series []*monitoringpb.TimeSeries, features []
 	}
 
 	if len(expectedFeatures) != 0 {
-		return &MissingExpectedFeatureTrackingMetricsError{MissingExpectedFeatures: expectedFeatures, Err: fmt.Errorf("missing feature tracking metrics")}
+		return &MissingExpectedFeatureTrackingMetricsError{MissingExpectedFeatures: expectedFeatures}
 	}
 
 	return nil
