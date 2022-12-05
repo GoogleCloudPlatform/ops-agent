@@ -41,6 +41,8 @@ type UnifiedConfig struct {
 	Combined *Combined `yaml:"combined,omitempty"`
 	Logging  *Logging  `yaml:"logging"`
 	Metrics  *Metrics  `yaml:"metrics"`
+	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
+	Traces *Traces `yaml:"traces,omitempty"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -672,6 +674,14 @@ func (m *metricsProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 type MetricsService struct {
 	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
 	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
+}
+
+type Traces struct {
+	Service *TracesService `yaml:"service"`
+}
+
+type TracesService struct {
+	Pipelines map[string]*Pipeline
 }
 
 func (uc *UnifiedConfig) Validate(platform string) error {
