@@ -416,10 +416,11 @@ func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Du
 	return traceClient.ListTraces(ctx, req)
 }
 
-// nonEmptySeriesList evaluates the given iterator, returning a non-empty array of
-// time series, the length of the array is guaranteed to be of size minimumRequiredSeries or greater.
+// nonEmptySeriesList evaluates the given iterator, returning a non-empty slice of
+// time series, the length of the slice is guaranteed to be of size minimumRequiredSeries or greater.
 // A panic is issued if minimumRequiredSeries is zero or negative.
-// An error is returned if the iterator provides an array less than minimumRequiredSeries.
+// An error is returned if the evaluation fails or produces a non-empty slice with length less than minimumRequiredSeries.
+// A return value of (nil, nil) indicates that the evaluation succeeded but returned no data.
 func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
 	if minimumRequiredSeries < 1 {
 		panic("minimumRequiredSeries cannot be negative or 0")
@@ -446,6 +447,9 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 			// Look at the next element(s) of the iterator.
 			continue
 		}
+		if len(tsList) >= minimumRequiredSeries {
+			return tsList, nil
+		}
 		tsList = append(tsList, series)
 	}
 }
@@ -465,7 +469,12 @@ func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
 	return trace, nil
 }
 
-// WaitForMetric uses WaitForMetricSeries to return a single metric or appropriate error
+// WaitForMetric looks for the given metrics in the backend and returns it if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
 func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
 	series, err := WaitForMetricSeries(ctx, logger, vm, metric, window, extraFilters, isPrometheus, 1)
 	if err != nil {
@@ -475,7 +484,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 	return series[0], nil
 }
 
-// WaitForMetricSeries looks for the given metrics in the backend and returns it if it
+// WaitForMetricSeries looks for the given metrics in the backend and returns a slice if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
