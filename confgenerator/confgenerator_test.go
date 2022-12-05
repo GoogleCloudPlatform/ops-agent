@@ -213,8 +213,9 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
 	// Find all files currently in this test directory
 	existingFiles := map[string]struct{}{}
+	goldenPath := filepath.Join("testdata", testDir, goldenDir)
 	err := filepath.Walk(
-		filepath.Join("testdata", testDir, goldenDir),
+		goldenPath,
 		func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -225,7 +226,11 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 			return nil
 		},
 	)
-	if err != nil {
+	if golden.FlagUpdate() && os.IsNotExist(err) {
+		if err := os.Mkdir(goldenPath, 0777); err != nil {
+			return err
+		}
+	} else if err != nil {
 		return err
 	}
 
