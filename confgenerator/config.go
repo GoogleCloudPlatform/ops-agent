@@ -719,7 +719,7 @@ func (l *Logging) Validate(platform string) error {
 			return err
 		}
 		// portTaken will be modified/updated by the validation function
-		if _, err := validateReceiverPorts(portTaken, l.Receivers, p.ReceiverIDs); err != nil {
+		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetReceiverListenPorts(), p.ReceiverIDs); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
@@ -849,28 +849,31 @@ func validateComponentTypeCounts[C Component](components map[string]C, refs []st
 	return r, nil
 }
 
+func (m *loggingReceiverMap) GetReceiverListenPorts() map[string]uint16 {
+	receiverPortMap := map[string]uint16{}
+	for rID, receiver := range *m {
+		if s, ok := receiver.(LoggingNetworkReceiver); ok {
+			receiverPortMap[rID] = s.GetListenPort()
+		}
+	}
+	return receiverPortMap
+}
+
 // Validate that no two receivers are using the same port; adding new port usage to the input map `taken`
-func validateReceiverPorts(taken map[uint16]string, components interface{}, pipelineRIDs []string) (map[uint16]string, error) {
-	cm := reflect.ValueOf(components)
+func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]uint16, pipelineRIDs []string) (map[uint16]string, error) {
 	for _, pipelineRID := range pipelineRIDs {
-		v := cm.MapIndex(reflect.ValueOf(pipelineRID)) // For receivers, ids always exist in the component/receiver lists
-		t := v.Interface().(Component).Type()
-		for _, limitType := range receiverPortLimits {
-			if t == limitType {
-				// Since the type of this receiver is in the receiverPortLimits, then this receiver must be a LoggingNetworkReceiver
-				port := v.Interface().(LoggingNetworkReceiver).GetListenPort()
-				if portRID, ok := taken[port]; ok {
-					if portRID == pipelineRID {
-						// One network receiver is used by two pipelines
-						return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
-					} else {
-						// Two network receivers are using the same port
-						return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
-					}
+		if port, ok := receiverPortMap[pipelineRID]; ok {
+			if portRID, ok := taken[port]; ok {
+				if portRID == pipelineRID {
+					// One network receiver is used by two pipelines
+					return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
 				} else {
-					// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
-					taken[port] = pipelineRID
+					// Two network receivers are using the same port
+					return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
 				}
+			} else {
+				// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
+				taken[port] = pipelineRID
 			}
 		}
 	}
