@@ -1,0 +1,1 @@
+combined receiver "otlp" found with no traces section; did you forget to define a traces pipeline?
