@@ -33,6 +33,7 @@ func (MetricsReceiverVarnish) Type() string {
 
 func (r MetricsReceiverVarnish) Pipelines() []otel.Pipeline {
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "varnish",
 			Config: map[string]interface{}{

@@ -31,6 +31,7 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 
 func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.Pipeline {
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
 			Config: map[string]interface{}{

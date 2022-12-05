@@ -37,6 +37,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultFlinkEndpoint
 	}
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{

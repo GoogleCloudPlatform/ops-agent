@@ -39,6 +39,7 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 		r.StubStatusURL = defaultStubStatusURL
 	}
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{

@@ -71,6 +71,7 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type:   r.Type(),
 			Config: config,

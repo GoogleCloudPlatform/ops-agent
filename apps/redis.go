@@ -51,6 +51,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{

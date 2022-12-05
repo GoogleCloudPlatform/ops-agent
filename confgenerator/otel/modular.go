@@ -148,7 +148,7 @@ func (c ModularConfig) Generate() (string, error) {
 		}
 
 		// For now, we always generate pipelines of type "metrics".
-		pipelines["metrics/"+prefix] = map[string]interface{}{
+		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
 			"exporters":  []string{exporter},

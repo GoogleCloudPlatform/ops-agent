@@ -134,6 +134,7 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type:   "rabbitmq",
 			Config: cfg,

@@ -34,6 +34,7 @@ func (MetricsReceiverMssql) Type() string {
 func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 	if m.ReceiverVersion == "2" {
 		return []otel.Pipeline{{
+			Type: "metrics",
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
@@ -57,6 +58,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{

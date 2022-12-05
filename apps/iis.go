@@ -36,6 +36,7 @@ func (r MetricsReceiverIis) Type() string {
 func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 	if r.ReceiverVersion == "2" {
 		return []otel.Pipeline{{
+			Type: "metrics",
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
@@ -71,6 +72,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 
 	// Return version 1 if version is anything other than 2
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{

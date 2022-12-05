@@ -39,6 +39,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "apache",
 			Config: map[string]interface{}{

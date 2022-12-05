@@ -44,6 +44,7 @@ func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "zookeeper",
 			Config: map[string]interface{}{

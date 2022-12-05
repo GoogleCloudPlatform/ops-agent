@@ -39,6 +39,7 @@ func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "memcached",
 			Config: map[string]interface{}{

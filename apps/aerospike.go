@@ -74,31 +74,30 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 		endpoint = r.Endpoint
 	}
 
-	return []otel.Pipeline{
-		{
-			Receiver: otel.Component{
-				Type: "aerospike",
-				Config: map[string]interface{}{
-					"collection_interval":     collectionInterval,
-					"endpoint":                endpoint,
-					"collect_cluster_metrics": collectClusterMetrics,
-					"username":                r.Username,
-					"password":                r.Password,
-					"timeout":                 timeout,
-				},
-			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				otel.TransformationMetrics(
-					otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
-					otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
-				),
+	return []otel.Pipeline{{
+		Type: "metrics",
+		Receiver: otel.Component{
+			Type: "aerospike",
+			Config: map[string]interface{}{
+				"collection_interval":     collectionInterval,
+				"endpoint":                endpoint,
+				"collect_cluster_metrics": collectClusterMetrics,
+				"username":                r.Username,
+				"password":                r.Password,
+				"timeout":                 timeout,
 			},
 		},
-	}
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
+				otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
+			),
+		},
+	}}
 }
 
 func init() {

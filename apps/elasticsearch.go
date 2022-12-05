@@ -64,6 +64,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type:   "elasticsearch",
 			Config: cfg,

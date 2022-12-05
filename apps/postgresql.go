@@ -67,6 +67,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,

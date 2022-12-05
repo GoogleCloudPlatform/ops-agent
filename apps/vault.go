@@ -125,6 +125,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries = append(queries, metricDetailTransforms...)
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{

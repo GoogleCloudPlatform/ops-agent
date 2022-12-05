@@ -38,6 +38,7 @@ func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
 		endpoint = defaultGRPCEndpoint
 	}
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{

@@ -54,6 +54,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "mysql",
 			Config: map[string]interface{}{

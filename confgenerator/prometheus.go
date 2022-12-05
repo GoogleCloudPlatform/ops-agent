@@ -87,7 +87,9 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 	}
 
 	return []otel.Pipeline{{
+		Type:     "metrics",
 		Receiver: prometheusToOtelComponent(r.PromConfig),
+		GMP:      true,
 	}}
 }
 

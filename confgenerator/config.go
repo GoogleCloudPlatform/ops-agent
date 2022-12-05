@@ -589,6 +589,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	}
 
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,

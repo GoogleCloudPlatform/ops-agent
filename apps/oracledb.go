@@ -92,30 +92,29 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 		"datasource":          datasource,
 		"queries":             r.queryConfig(),
 	}
-	return []otel.Pipeline{
-		{
-			Receiver: otel.Component{
-				Type:   "sqlquery",
-				Config: config,
-			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.AddPrefix("workload.googleapis.com",
-						// sql query receiver is not able to create these attributes with lowercase names
-						otel.RenameLabel("DATABASE_ID", "database_id"),
-						otel.RenameLabel("GLOBAL_NAME", "global_name"),
-						otel.RenameLabel("INSTANCE_ID", "instance_id"),
-						otel.RenameLabel("TABLESPACE_NAME", "tablespace_name"),
-						otel.RenameLabel("CONTENTS", "contents"),
-						otel.RenameLabel("STATUS", "status"),
-						otel.RenameLabel("PROGRAM", "program"),
-						otel.RenameLabel("WAIT_CLASS", "wait_class"),
-					),
-				),
-			},
+	return []otel.Pipeline{{
+		Type: "metrics",
+		Receiver: otel.Component{
+			Type:   "sqlquery",
+			Config: config,
 		},
-	}
+		Processors: []otel.Component{
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com",
+					// sql query receiver is not able to create these attributes with lowercase names
+					otel.RenameLabel("DATABASE_ID", "database_id"),
+					otel.RenameLabel("GLOBAL_NAME", "global_name"),
+					otel.RenameLabel("INSTANCE_ID", "instance_id"),
+					otel.RenameLabel("TABLESPACE_NAME", "tablespace_name"),
+					otel.RenameLabel("CONTENTS", "contents"),
+					otel.RenameLabel("STATUS", "status"),
+					otel.RenameLabel("PROGRAM", "program"),
+					otel.RenameLabel("WAIT_CLASS", "wait_class"),
+				),
+			),
+		},
+	}}
 }
 
 type oracleMetric struct {

@@ -31,6 +31,7 @@ func (r MetricsReceiverHostmetrics) Type() string {
 
 func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "hostmetrics",
 			Config: map[string]interface{}{

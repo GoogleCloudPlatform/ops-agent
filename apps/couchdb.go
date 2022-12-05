@@ -43,6 +43,7 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.Pipeline {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
 	return []otel.Pipeline{{
+		Type: "metrics",
 		Receiver: otel.Component{
 			Type: "couchdb",
 			Config: map[string]interface{}{
