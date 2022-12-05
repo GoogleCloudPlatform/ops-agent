@@ -17,6 +17,7 @@ package health_checks
 import (
 	"fmt"
 	"net"
+	"strings"
 	"strconv"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -28,6 +29,11 @@ type PortsCheck struct {
 
 func (c PortsCheck) check_port(host string, port string) error {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
+	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
+		c.Fail("port-unavailable")
+		c.Log(fmt.Sprintf("port unavaliable : %s", err))
+		return nil
+	}
 	if err != nil {
 		compositeError := fmt.Errorf("connection Error : %w", err)
 		c.Error(compositeError)
