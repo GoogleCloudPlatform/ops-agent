@@ -856,13 +856,13 @@ func TestCustomLogFormat(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265).
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
+		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
+		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
