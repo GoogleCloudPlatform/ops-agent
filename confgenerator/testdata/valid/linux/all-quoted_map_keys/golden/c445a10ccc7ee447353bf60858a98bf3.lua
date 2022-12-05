@@ -34,7 +34,7 @@ end
 record["logging.googleapis.com/labels"]["compute.googleapis.com/resource_name"] = value
 end)(v)
 local v = __field_2;
-if v == nil then v = "windows_event_log" end;
+if v == nil then v = "journald" end;
 (function(value)
 record["logging.googleapis.com/logName"] = value
 end)(v)

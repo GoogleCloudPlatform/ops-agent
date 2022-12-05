@@ -249,7 +249,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	if expectedField.ValueRegex != "" {
 		pattern = expectedField.ValueRegex
 	}
-	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	match, err := regexp.MatchString(pattern, actualField)
 	if err != nil {
 		return err
 	}

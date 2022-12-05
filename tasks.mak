@@ -96,9 +96,9 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate
+precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate go_vet
 
-precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate
+precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate go_vet
 
 ############
 # Convenience
@@ -116,3 +116,6 @@ sync_fork:
 
 update_go_modules:
 	go get -t -u ./...
+
+go_vet:
+	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
