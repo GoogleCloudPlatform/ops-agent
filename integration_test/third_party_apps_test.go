@@ -821,11 +821,11 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
-	gpus := []string{"a100", "v100", "p100", "t4", "p4"}
+	gpus := []string{"a100", "v100", /* "p100" todo: increase quota */ "t4", "p4"}
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
 			if app != NvmlApp {
-				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: "WARNING! Remove me!"})
+				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
 			} else {
 				for _, gpu := range gpus {
 					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
