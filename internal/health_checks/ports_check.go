@@ -17,8 +17,9 @@ package health_checks
 import (
 	"fmt"
 	"net"
-	"strings"
 	"strconv"
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )

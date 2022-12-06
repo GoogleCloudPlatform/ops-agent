@@ -17,8 +17,8 @@ package health_checks
 import (
 	"fmt"
 	"log"
-    "time"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
@@ -30,7 +30,7 @@ type HealthCheck interface {
 	Fail(failureCode string)
 	Error(err error)
 	Log(message string)
-    GetResult() string
+	GetResult() string
 	GetCheckLog() string
 	GetFailureMessage() string
 	GetActionMessage() string
@@ -52,10 +52,10 @@ var GCEHealthChecks = &healthCheckRegistry{
 
 type BaseHealthCheck struct {
 	HealthCheck
-    errored         bool
+	errored         bool
 	failed          bool
-    err             error          
-    failure         HealthCheckFailure
+	err             error
+	failure         HealthCheckFailure
 	checkLog        string
 	failureMessage  string
 	solutionMessage string
@@ -64,9 +64,9 @@ type BaseHealthCheck struct {
 func NewHealthCheck() HealthCheck {
 	return &BaseHealthCheck{
 		failed:          false,
-        errored:         false,
-        err:             nil,
-        failure:         HealthCheckFailure{},
+		errored:         false,
+		err:             nil,
+		failure:         HealthCheckFailure{},
 		checkLog:        "",
 		failureMessage:  "",
 		solutionMessage: "",
@@ -79,17 +79,17 @@ func (b *BaseHealthCheck) RunCheck() error {
 
 func (b *BaseHealthCheck) Fail(failureCode string) {
 	b.failed = true
-    fail, err := GetFailure(failureCode)
-    if err != nil {
-        b.Error(err)
-    }
-    b.failure = fail
+	fail, err := GetFailure(failureCode)
+	if err != nil {
+		b.Error(err)
+	}
+	b.failure = fail
 }
 
 func (b *BaseHealthCheck) Error(err error) {
-    // TODO : What to do with error ?
-    b.err = err
-    b.errored = true
+	// TODO : What to do with error ?
+	b.err = err
+	b.errored = true
 	b.Fail("health-check-error")
 }
 
@@ -111,9 +111,9 @@ func (b *BaseHealthCheck) GetActionMessage() string {
 
 func (b *BaseHealthCheck) GetResult() string {
 	if b.errored {
-        return "ERROR"
-    }
-    if b.failed {
+		return "ERROR"
+	}
+	if b.failed {
 		return "FAIL"
 	} else {
 		return "PASS"
@@ -146,7 +146,7 @@ func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
 		result = append(result, fmt.Sprintf("Check: %s, Result: %s", name, c.GetResult()))
 		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
 		result = append(result, fmt.Sprintf("Solution: %s ", c.GetActionMessage()))
-        result = append(result, fmt.Sprintf("Log: %s \n", c.GetCheckLog()))
+		result = append(result, fmt.Sprintf("Log: %s \n", c.GetCheckLog()))
 	}
 	result = append(result, "===========================================================")
 
