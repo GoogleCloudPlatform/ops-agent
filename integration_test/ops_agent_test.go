@@ -1680,8 +1680,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}
 	}
 
-	logger.ToMainLog().Println("Testing Logger: testDefaultMetrics")
-
 	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
@@ -1721,8 +1719,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		// of querying for metrics.
 		return
 	}
-
-	logger.ToMainLog().Println("Testing Logger: matching expected metrics")
 
 	// Now that we've established that the preceding metrics are being uploaded
 	// and have percolated through the monitoring backend, let's proceed to
@@ -1771,21 +1767,20 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		return
 	}
 
-	var fc feature_tracking.FeatureTrackingContainer
+	var fc feature_tracking_metadata.FeatureTrackingContainer
 
 	err = yaml.UnmarshalStrict(featureBytes, &fc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// We expect 2 more metrics from ops agent
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features)+2)
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = feature_tracking.AssertFeatureTrackingMetrics(series, fc.Features)
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	if err != nil {
 		t.Error(err)
 		return

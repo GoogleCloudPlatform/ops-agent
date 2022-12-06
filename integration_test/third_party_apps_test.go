@@ -249,7 +249,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	if expectedField.ValueRegex != "" {
 		pattern = expectedField.ValueRegex
 	}
-	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	match, err := regexp.MatchString(pattern, actualField)
 	if err != nil {
 		return err
 	}
@@ -461,14 +461,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-type feature struct {
-	Module  string
-	Feature string
-	Key     string
-	Value   string
-}
-
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking.FeatureTrackingContainer) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -519,13 +512,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	// We expect 2 more metrics from ops agent
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features)+2)
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
 	if err != nil {
 		return err
 	}
 
-	err = feature_tracking.AssertFeatureTrackingMetrics(series, fc.Features)
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
 
@@ -650,7 +642,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
 		fc, err := getExpectedFeatures(app)
-		//if err ==
 
 		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
@@ -660,8 +651,8 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return nonRetryable, nil
 }
 
-func getExpectedFeatures(app string) (*feature_tracking.FeatureTrackingContainer, error) {
-	var fc feature_tracking.FeatureTrackingContainer
+func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTrackingContainer, error) {
+	var fc feature_tracking_metadata.FeatureTrackingContainer
 
 	featuresScript := path.Join("applications", app, "features.yaml")
 	featureBytes, err := readFileFromScriptsDir(featuresScript)

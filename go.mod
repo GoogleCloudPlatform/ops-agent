@@ -12,7 +12,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/go-playground/validator/v10 v10.11.1
-	github.com/goccy/go-yaml v1.9.4
+	github.com/goccy/go-yaml v1.9.7
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.33.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/exp v0.0.0-20221114191408-850992195362
-	golang.org/x/sys v0.2.0
+	golang.org/x/sys v0.3.0
 	golang.org/x/text v0.4.0
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221117204609-8f9c96812029
