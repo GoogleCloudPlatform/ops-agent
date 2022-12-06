@@ -419,7 +419,7 @@ processors:
     - gce
   transform/postgresql_postgresql_1:
     metrics:
-      queries:
+      statements:
       - set(attributes["database"], resource.attributes["postgresql.database.name"])
       - set(attributes["table"], resource.attributes["postgresql.table.name"])
       - set(attributes["index"], resource.attributes["postgresql.index.name"])
