@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	eventID                 uint32 = 1
+	DiagnosticsEventID      uint32 = 2
 	ERROR_SUCCESS           uint32 = 0
 	ERROR_FILE_NOT_FOUND    uint32 = 2
 	ERROR_INVALID_DATA      uint32 = 13
@@ -55,13 +55,13 @@ func run() error {
 	}
 	defer elog.Close()
 
-	elog.Info(eventID, fmt.Sprintf("starting %s service", name))
+	elog.Info(DiagnosticsEventID, fmt.Sprintf("starting %s service", name))
 	err = svc.Run(name, &service{log: elog})
 	if err != nil {
-		elog.Error(eventID, fmt.Sprintf("%s service failed: %v", name, err))
+		elog.Error(DiagnosticsEventID, fmt.Sprintf("%s service failed: %v", name, err))
 		return err
 	}
-	elog.Info(eventID, fmt.Sprintf("%s service stopped", name))
+	elog.Info(DiagnosticsEventID, fmt.Sprintf("%s service stopped", name))
 	return nil
 }
 
@@ -69,16 +69,16 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
-		s.log.Error(eventID, fmt.Sprintf("failed to parse arguments: %v", err))
+		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		return false, ERROR_INVALID_PARAMETER
 	}
 
-	userUc, mergedUc, err := getUnifiedConfigAndValidate(s.userConf, "windows")
+	userUc, mergedUc, err := getUserAndMergedConfigs(s.userConf, "windows")
 	if err != nil {
-		s.log.Error(eventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
+		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND
 	}
-	s.log.Info(eventID, "obtained unified configuration")
+	s.log.Info(DiagnosticsEventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 	death := make(chan bool)
@@ -99,7 +99,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 					death <- true
 					return
 				default:
-					s.log.Error(eventID, fmt.Sprintf("unexpected control request #%d", c))
+					s.log.Error(DiagnosticsEventID, fmt.Sprintf("unexpected control request #%d", c))
 				}
 			}
 		}
@@ -110,7 +110,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {
-		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
+		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA
 	}
 
@@ -118,10 +118,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 }
 
 func (s *service) parseFlags(args []string) error {
-	s.log.Info(eventID, fmt.Sprintf("args: %#v", args))
+	s.log.Info(DiagnosticsEventID, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "config", "", "path to the user specified agent config")
-	s.log.Info(eventID, s.userConf)
+	s.log.Info(DiagnosticsEventID, s.userConf)
 
 	allArgs := append([]string{}, os.Args[1:]...)
 	allArgs = append(allArgs, args[1:]...)

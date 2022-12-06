@@ -16,31 +16,30 @@ package main
 
 import (
 	"log"
+
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-<<<<<<< HEAD
-// getUnifiedConfigAndValidate if successful will return both the users original
+// getUserAndMergedConfigs if successful will return both the users original
 // config and merged config respectively
-func getUnifiedConfigAndValidate(userConfPath, platform string) (userUc, mergedUc confgenerator.UnifiedConfig, err error) {
+func getUserAndMergedConfigs(userConfPath, platform string) (userUc, mergedUc *confgenerator.UnifiedConfig, err error) {
 	userUc, err = confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
+		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
 	}
-	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
-	if err != nil {
-		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
+	if userUc == nil {
+		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-	mergedUc, err = confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, platform)
+	mergedUc, err = confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, confgenerator.UnifiedConfig{}, err
+		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
 	}
 
 	return userUc, mergedUc, nil
 }
 
-=======
->>>>>>> 6da6d16a (Validate the merged config)
 func main() {
 	defer func() {
 		if r := recover(); r != nil {

@@ -15,11 +15,6 @@
 // Package confgenerator provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
-import (
-	"fmt"
-	"os"
-)
-
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
 func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
@@ -30,19 +25,14 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 		return nil, err
 	}
 
+	overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
+	if err != nil {
+		return nil, err
+	}
+
 	// Optionally merge the user config file.
-	if _, err = os.Stat(userConfPath); err != nil {
-		if os.IsNotExist(err) {
-			// Skip the merge if the user config file does not exist.
-		} else {
-			return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
-		}
-	} else {
-		overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
-		if err != nil {
-			return nil, err
-		}
-		mergeConfigs(&original, &overrides)
+	if overrides != nil {
+		mergeConfigs(&original, overrides)
 	}
 
 	if err := original.Validate(); err != nil {

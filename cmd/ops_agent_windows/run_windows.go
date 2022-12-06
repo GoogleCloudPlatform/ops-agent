@@ -28,6 +28,10 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
+const (
+	EngineEventID uint32 = 1
+)
+
 func containsString(all []string, s string) bool {
 	for _, t := range all {
 		if t == s {
@@ -47,22 +51,22 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to parse arguments: %v", err))
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
 	if err := s.generateConfigs(); err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to generate config files: %v", err))
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
-	s.log.Info(1, "generated configuration files")
+	s.log.Info(EngineEventID, "generated configuration files")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
-		s.log.Error(1, fmt.Sprintf("failed to start subagents: %v", err))
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to start subagents: %v", err))
 		// TODO: Ignore failures for partial startup?
 	}
-	s.log.Info(1, "started subagents")
+	s.log.Info(EngineEventID, "started subagents")
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
 	}()
@@ -75,7 +79,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 			case svc.Stop, svc.Shutdown:
 				return
 			default:
-				s.log.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+				s.log.Error(EngineEventID, fmt.Sprintf("unexpected control request #%d", c))
 			}
 		}
 	}
@@ -83,7 +87,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 }
 
 func (s *service) parseFlags(args []string) error {
-	s.log.Info(1, fmt.Sprintf("args: %#v", args))
+	s.log.Info(EngineEventID, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
@@ -130,8 +134,8 @@ func (s *service) generateConfigs() error {
 		return err
 	}
 
-	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
-	s.log.Info(1, fmt.Sprintf("Merged config:\n%s\n", uc))
+	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err
 	}
@@ -167,7 +171,7 @@ func (s *service) startSubagents() error {
 		defer handle.Close()
 		if err := handle.Start(); err != nil {
 			// TODO: Should we be ignoring failures for partial startup?
-			s.log.Error(1, fmt.Sprintf("failed to start %q: %v", svc.name, err))
+			s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
 		}
 	}
 	return nil
@@ -184,9 +188,9 @@ func run(name string) error {
 	elog.Info(1, fmt.Sprintf("starting %s service", name))
 	err = svc.Run(name, &service{log: elog})
 	if err != nil {
-		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
+		elog.Error(EngineEventID, fmt.Sprintf("%s service failed: %v", name, err))
 		return err
 	}
-	elog.Info(1, fmt.Sprintf("%s service stopped", name))
+	elog.Info(EngineEventID, fmt.Sprintf("%s service stopped", name))
 	return nil
 }
