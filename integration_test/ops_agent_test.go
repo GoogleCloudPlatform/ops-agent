@@ -43,6 +43,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -2087,6 +2088,100 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
+	})
+}
+
+func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    log_syslog:
+      type: files
+      include_paths:
+      - %s
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [log_syslog]
+        processors: []`, logPath)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+		var bufferDir string
+
+		if gce.IsWindows(vm.Platform) {
+			bufferDir = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run\\buffers\\tail.1\\"
+		} else {
+			bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+		}
+
+		generateLogsScript := fmt.Sprintf(`
+			x=1
+			while [ $x -le 1000000 ]
+			do
+			  counter=1
+			  while [ $counter -le 100000 ]
+			  do
+				echo "Hello world! $x" >> %s
+				((counter++))
+				((x++))
+			  done
+			  sleep 1
+			done`, logPath)
+
+		// Use the vm.Name as a tag during this test.
+		if _, err := gce.CreateFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+			t.Fatal(err)
+		}
+
+		t.Cleanup(func() {
+			if _, err := gce.DeleteFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.EnableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf(" du -c %s | cut -f 1 | tail -n 1", bufferDir))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		byteCount, err := strconv.Atoi(strings.TrimSuffix(output.Stdout, "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		threshold := 0
+		if byteCount > threshold {
+			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
+		}
+
+		if _, err := gce.DisableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+			t.Fatal(err)
+		}
+
 	})
 }
 
