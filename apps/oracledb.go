@@ -943,12 +943,12 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
+				Regex:     `^\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
+				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
 	}.Components(tag, uid)

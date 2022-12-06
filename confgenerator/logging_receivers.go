@@ -73,13 +73,17 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		"Name": "tail",
 		"Tag":  tag,
 		// TODO: Escaping?
-		"Path":           strings.Join(r.IncludePaths, ","),
-		"DB":             DBPath(tag),
+		"Path": strings.Join(r.IncludePaths, ","),
+		"DB":   DBPath(tag),
+		// DB.locking specifies that the database will be accessed only by Fluent Bit.
+		// Enabling this feature helps to increase performance when accessing the database
+		// but it restrict any external tool to query the content.
+		"DB.locking":     "true",
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
 		// Set the max size a bit larger to accommodate for long log lines.
-		"Buffer_Max_Size": "5M",
+		"Buffer_Max_Size": "2M",
 		// When a message is unstructured (no parser applied), append it under a key named "message".
 		"Key": "message",
 		// Increase this to 30 seconds so log rotations are handled more gracefully.

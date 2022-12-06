@@ -31,7 +31,7 @@ var (
 )
 
 func run() error {
-	uc, err := getUnifiedConfigAndValidate(*config, "linux")
+	userUc, mergedUc, err := getUnifiedConfigAndValidate(*config, "linux")
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func run() error {
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&uc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {
 		return err
 	}

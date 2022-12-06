@@ -82,7 +82,9 @@ func (m MetricsReceiverGoo) Pipelines() []otel.ReceiverPipeline {
 }
 
 type MetricsReceiverInlineFoo struct {
-	Foo string `yaml:"foo" tracking:""`
+	Foo  string `yaml:"foo" tracking:""`
+	Bool *bool  `yaml:"bool"`
+	Int  int    `yaml:"int"`
 }
 
 type MetricsReceiverInlineGoo struct {
@@ -95,13 +97,16 @@ type MetricsReceiverInlineBar struct {
 
 func TestValidInlineStruct(t *testing.T) {
 	uc := emptyUc
+	b := false
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["metricsReceiverFoo"] = MetricsReceiverFoo{
 		confgenerator.ConfigComponent{
 			Type: "MetricsReceiverFoo",
 		},
 		MetricsReceiverInlineFoo{
-			Foo: "foo",
+			Foo:  "foo",
+			Bool: &b,
+			Int:  0,
 		},
 		MetricsReceiverInlineGoo{
 			Goo: "goo",
@@ -143,6 +148,13 @@ func TestValidInlineStruct(t *testing.T) {
 		Type:   "metricsReceiverFoo",
 		Key:    []string{"[0]", "foo"},
 		Value:  "foo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFoo",
+		Key:    []string{"[0]", "bool"},
+		Value:  "false",
 	})
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
