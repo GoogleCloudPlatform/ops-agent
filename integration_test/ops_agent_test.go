@@ -51,22 +51,22 @@ import (
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
-	"gopkg.in/yaml.v2"
-
-	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
+	"google.golang.org/genproto/googleapis/api/metric"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v2"
 )
 
 //go:embed testdata
@@ -1688,7 +1688,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	var agentMetrics struct {
 		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
-
 	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
@@ -1702,7 +1701,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			continue
 		}
 
-		var series *monitoring.TimeSeries
+		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
 			t.Error(err)
@@ -1761,12 +1760,38 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}()
 	}
 	metricsWaitGroup.Wait()
+
+	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
+	if err != nil {
+		t.Fatal("Could not find features.yaml")
+		return
+	}
+
+	var fc feature_tracking_metadata.FeatureTrackingContainer
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
