@@ -51,7 +51,7 @@ func (r MetricsReceiverVarnish) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverVarnish{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVarnish{} })
 }
 
 type LoggingProcessorVarnish struct {
@@ -84,6 +84,6 @@ func (r LoggingReceiverVarnish) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorVarnish{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVarnish{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorVarnish{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVarnish{} })
 }

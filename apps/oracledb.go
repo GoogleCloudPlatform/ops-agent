@@ -806,7 +806,7 @@ var oracleQueries = []oracleQuery{
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverOracleDB{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverOracleDB{} })
 }
 
 type LoggingProcessorOracleDBAlert struct {
@@ -945,12 +945,12 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
+				Regex:     `^\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
+				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
 	}.Components(tag, uid)
@@ -989,8 +989,8 @@ func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Compon
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAlert{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAlert{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAudit{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAudit{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAlert{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAudit{} })
 }

@@ -46,5 +46,5 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJVM{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverJVM{} })
 }

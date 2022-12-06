@@ -55,23 +55,11 @@ yaml_lint:
 # Unit Tests
 ############
 
-test:
-	go test ./...
-
-test_confgenerator:
-	go test ./confgenerator
-
 test_confgenerator_update:
 	go test ./confgenerator -update
 
-test_metadata:
-	go test ./integration_test/metadata
-
 test_metadata_update:
-	go test ./integration_test/metadata -update_golden
-
-test_metadata_validate:
-	go test ./integration_test/validate_metadata_test.go
+	go test ./integration_test/metadata -update
 
 ############
 # Integration Tests
@@ -108,9 +96,9 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate
+precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate go_vet
 
-precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate
+precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate go_vet
 
 ############
 # Convenience
@@ -128,3 +116,6 @@ sync_fork:
 
 update_go_modules:
 	go get -t -u ./...
+
+go_vet:
+	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
