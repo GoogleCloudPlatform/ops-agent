@@ -43,6 +43,9 @@ type UnifiedConfig struct {
 	Metrics  *Metrics  `yaml:"metrics"`
 	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
 	Traces *Traces `yaml:"traces,omitempty"`
+	// platform as a private field, e.g. "windows", "linux" so that we can use it
+	// in validation.
+	platform string
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -69,7 +72,7 @@ func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
 func (uc *UnifiedConfig) String() string {
 	marshalledConfig, err := yaml.Marshal(uc)
 	if err != nil {
-		return fmt.Sprintf("failed to convert Unified config to yaml %v", err)
+		return fmt.Sprintf("failed to convert Unified config to yaml: %v", err)
 	}
 
 	return string(marshalledConfig)
@@ -285,6 +288,8 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
 		return UnifiedConfig{}, err
 	}
+
+	config.platform = platform
 	return config, nil
 }
 
@@ -702,19 +707,19 @@ type TracesService struct {
 	Pipelines map[string]*Pipeline
 }
 
-func (uc *UnifiedConfig) Validate(platform string) error {
+func (uc *UnifiedConfig) Validate() error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(platform); err != nil {
+		if err := uc.Logging.Validate(); err != nil {
 			return err
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.ValidateMetrics(platform); err != nil {
+		if err := uc.ValidateMetrics(); err != nil {
 			return err
 		}
 	}
 	if uc.Traces != nil {
-		if err := uc.ValidateTraces(platform); err != nil {
+		if err := uc.ValidateTraces(); err != nil {
 			return err
 		}
 	}
@@ -726,7 +731,7 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 	return nil
 }
 
-func (l *Logging) Validate(platform string) error {
+func (l *Logging) Validate() error {
 	subagent := "logging"
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
@@ -821,7 +826,7 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
+func (uc *UnifiedConfig) ValidateMetrics() error {
 	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
@@ -865,7 +870,7 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	return nil
 }
 
-func (uc *UnifiedConfig) ValidateTraces(platform string) error {
+func (uc *UnifiedConfig) ValidateTraces() error {
 	t := uc.Traces
 	subagent := "traces"
 	if t == nil || t.Service == nil {

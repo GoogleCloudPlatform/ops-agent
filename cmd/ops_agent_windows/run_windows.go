@@ -130,12 +130,8 @@ func (s *service) generateConfigs() error {
 		return err
 	}
 
-	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s", apps.BuiltInConfStructs["windows"]))
-	s.log.Info(1, fmt.Sprintf("Merged config:\n%s", uc))
-	err = uc.Validate("windows")
-	if err != nil {
-		return err
-	}
+	s.log.Info(1, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	s.log.Info(1, fmt.Sprintf("Merged config:\n%s\n", uc))
 	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err
 	}

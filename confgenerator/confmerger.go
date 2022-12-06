@@ -45,6 +45,15 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 		mergeConfigs(&original, &overrides)
 	}
 
+	if err := original.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Ensure the merged config struct fields are valid.
+	v := newValidator()
+	if err := v.Struct(original); err != nil {
+		panic(err)
+	}
 	return &original, nil
 }
 

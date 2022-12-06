@@ -16,11 +16,9 @@ package main
 
 import (
 	"log"
-
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
+<<<<<<< HEAD
 // getUnifiedConfigAndValidate if successful will return both the users original
 // config and merged config respectively
 func getUnifiedConfigAndValidate(userConfPath, platform string) (userUc, mergedUc confgenerator.UnifiedConfig, err error) {
@@ -41,6 +39,8 @@ func getUnifiedConfigAndValidate(userConfPath, platform string) (userUc, mergedU
 	return userUc, mergedUc, nil
 }
 
+=======
+>>>>>>> 6da6d16a (Validate the merged config)
 func main() {
 	defer func() {
 		if r := recover(); r != nil {

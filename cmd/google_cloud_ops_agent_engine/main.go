@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/shirou/gopsutil/host"
 )
 
 var (
@@ -48,16 +47,8 @@ func run() error {
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
-	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
-	log.Printf("Merged config:\n%s", uc)
+	log.Printf("Built-in config:\n%s\n", apps.BuiltInConfStructs["linux"])
+	log.Printf("Merged config:\n%s\n", uc)
 
-	hostInfo, err := host.Info()
-	if err != nil {
-		return err
-	}
-	err = uc.Validate(hostInfo.OS)
-	if err != nil {
-		return err
-	}
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }

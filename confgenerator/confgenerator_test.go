@@ -185,11 +185,6 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 	got[builtinConfigFileName] = apps.BuiltInConfStructs[platform.OS].String()
 
-	err = uc.Validate(platform.OS)
-	if err != nil {
-		return
-	}
-
 	// Fluent Bit configs
 	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
 		platform.defaultLogsDir,
