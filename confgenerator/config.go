@@ -442,6 +442,7 @@ type LoggingNetworkReceiver interface {
 	GetListenPort() uint16
 }
 
+// GetListenPorts returns a map of receiver IDs to ports for all LoggingNetworkReceivers
 func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 	receiverPortMap := map[string]uint16{}
 	for rID, receiver := range *m {
