@@ -813,10 +813,6 @@ var (
 		"iis":                     1,
 		"mssql":                   1,
 	}
-
-	receiverPortLimits = []string{
-		"syslog", "tcp", "fluent_forward",
-	}
 )
 
 // sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
