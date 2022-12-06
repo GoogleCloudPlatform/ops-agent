@@ -446,8 +446,8 @@ type LoggingNetworkReceiver interface {
 func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 	receiverPortMap := map[string]uint16{}
 	for rID, receiver := range *m {
-		if s, ok := receiver.(LoggingNetworkReceiver); ok {
-			receiverPortMap[rID] = s.GetListenPort()
+		if nr, ok := receiver.(LoggingNetworkReceiver); ok {
+			receiverPortMap[rID] = nr.GetListenPort()
 		}
 	}
 	return receiverPortMap
