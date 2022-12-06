@@ -28,9 +28,8 @@ type AgentSelfMetrics struct {
 	Port    int
 }
 
-func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
-		Type: "metrics",
+func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -91,9 +90,8 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 	}
 }
 
-func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
-		Type: "metrics",
+func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{

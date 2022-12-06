@@ -38,13 +38,12 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverZookeeper) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "zookeeper",
 			Config: map[string]interface{}{

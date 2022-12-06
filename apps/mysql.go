@@ -40,7 +40,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -53,8 +53,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		r.Username = "root"
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "mysql",
 			Config: map[string]interface{}{

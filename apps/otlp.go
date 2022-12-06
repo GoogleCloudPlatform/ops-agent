@@ -32,13 +32,12 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
+func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{

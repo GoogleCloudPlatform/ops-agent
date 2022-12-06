@@ -49,7 +49,7 @@ var (
 )
 
 // Pipelines is the OTEL pipelines created from MetricsReceiverAerospike
-func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverAerospike) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultAerospikeEndpoint
 	}
@@ -74,8 +74,7 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.Pipeline {
 		endpoint = r.Endpoint
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "aerospike",
 			Config: map[string]interface{}{

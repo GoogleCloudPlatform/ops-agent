@@ -32,12 +32,11 @@ func (MetricsReceiverFlink) Type() string {
 
 const defaultFlinkEndpoint = "http://localhost:8081"
 
-func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{

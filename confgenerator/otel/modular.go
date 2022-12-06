@@ -24,14 +24,20 @@ import (
 
 const MetricsPort = 20201
 
-// Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
-type Pipeline struct {
-	// Type is "metrics" or "traces".
-	Type       string
+// ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+type ReceiverPipeline struct {
 	Receiver   Component
 	Processors []Component
 	// GMP indicates that the pipeline outputs Prometheus metrics.
 	GMP bool
+}
+
+// Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
+type Pipeline struct {
+	// Type is "metrics" or "traces".
+	Type                 string
+	ReceiverPipelineName string
+	Processors           []Component
 }
 
 // Component represents a single OT component (receiver, processor, exporter, etc.)
@@ -62,8 +68,9 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel  string
-	Pipelines map[string]Pipeline
+	LogLevel          string
+	ReceiverPipelines map[string]ReceiverPipeline
+	Pipelines         map[string]Pipeline
 
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
@@ -113,8 +120,8 @@ func (c ModularConfig) Generate() (string, error) {
 
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
-	for _, pipeline := range c.Pipelines {
-		if pipeline.GMP {
+	for _, r := range c.ReceiverPipelines {
+		if r.GMP {
 			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
 
 			// Add the groupbyattrs processor so prometheus pipelines can use it.
@@ -130,24 +137,36 @@ func (c ModularConfig) Generate() (string, error) {
 	}
 
 	for prefix, pipeline := range c.Pipelines {
-		receiverName := pipeline.Receiver.name(prefix)
+		// Receiver pipelines need to be instantiated once, since they might have more than one type.
+		// We do this work more than once if it's in more than one pipeline, but it should just overwrite the same names.
+		receiverPipeline := c.ReceiverPipelines[pipeline.ReceiverPipelineName]
+		receiverName := receiverPipeline.Receiver.name(pipeline.ReceiverPipelineName)
+		var receiverProcessorNames []string
+		for i, processor := range receiverPipeline.Processors {
+			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
+			receiverProcessorNames = append(receiverProcessorNames, name)
+			processors[name] = processor.Config
+		}
+		receivers[receiverName] = receiverPipeline.Receiver.Config
+
+		// Everything else in the pipeline is specific to this Type.
 		exporter := googleCloudExporter
-		receivers[receiverName] = pipeline.Receiver.Config
 		var processorNames []string
+		processorNames = append(processorNames, receiverProcessorNames...)
 		for i, processor := range pipeline.Processors {
 			name := processor.name(fmt.Sprintf("%s_%d", prefix, i))
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
 
-		if pipeline.GMP {
+		// TODO: Should globalProcessorNames be appended for non-metrics receivers?
+		if receiverPipeline.GMP {
 			exporter = googleManagedPrometheusExporter
 			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {
 			processorNames = append(processorNames, globalProcessorNames...)
 		}
 
-		// For now, we always generate pipelines of type "metrics".
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,

@@ -34,12 +34,11 @@ func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverNginx) Pipelines() []otel.ReceiverPipeline {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{

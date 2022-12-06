@@ -484,7 +484,7 @@ type Metrics struct {
 
 type MetricsReceiver interface {
 	Component
-	Pipelines() []otel.Pipeline
+	Pipelines() []otel.ReceiverPipeline
 }
 
 type MetricsReceiverShared struct {
@@ -563,7 +563,7 @@ func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJar
 
 // ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
 // This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.Pipeline {
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.ReceiverPipeline {
 	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
@@ -588,8 +588,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = m.Password
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,

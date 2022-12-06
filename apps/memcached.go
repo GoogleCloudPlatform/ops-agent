@@ -33,13 +33,12 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMemcached) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "memcached",
 			Config: map[string]interface{}{

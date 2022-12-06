@@ -38,7 +38,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -50,8 +50,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 		transport = "tcp"
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{

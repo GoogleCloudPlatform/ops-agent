@@ -90,32 +90,42 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
 
+	receiverPipelines := make(map[string]otel.ReceiverPipeline)
 	pipelines := make(map[string]otel.Pipeline)
 	var err error
 
 	if uc.Metrics != nil {
 		var err error
-		pipelines, err = uc.generateOtelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
 		if err != nil {
 			return "", err
 		}
 	}
 
-	pipelines["otel"] = AgentSelfMetrics{
+	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
+	pipelines["otel"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "otel",
+	}
 
-	pipelines["fluentbit"] = AgentSelfMetrics{
+	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "fluentbit",
+	}
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:                        uc.Metrics.Service.LogLevel,
+		ReceiverPipelines:               receiverPipelines,
 		Pipelines:                       pipelines,
 		GlobalProcessors:                []otel.Component{gceResourceDetector()},
 		GoogleCloudExporter:             googleCloudExporter(userAgent),
@@ -128,45 +138,55 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 }
 
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
-func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.Pipeline, error) {
+func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	out := make(map[string]otel.Pipeline)
+	outR := make(map[string]otel.ReceiverPipeline)
+	outP := make(map[string]otel.Pipeline)
 	for pID, p := range m.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
+				return nil, nil, fmt.Errorf("receiver %q not found", rID)
 			}
 
 			for i, receiverPipeline := range receiver.Pipelines() {
-				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
+				receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 				if i > 0 {
-					prefix = fmt.Sprintf("%s_%d", prefix, i)
+					receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
+				}
+
+				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+
+				outR[receiverPipelineName] = receiverPipeline
+
+				pipeline := otel.Pipeline{
+					Type:                 "metrics",
+					ReceiverPipelineName: receiverPipelineName,
 				}
 
 				// Check the Ops Agent receiver type.
 				if receiverPipeline.GMP {
 					// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 					if len(p.ProcessorIDs) > 0 {
-						return nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+						return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 					}
 				}
 				for _, pID := range p.ProcessorIDs {
 					processor, ok := m.Processors[pID]
 					if !ok {
-						return nil, fmt.Errorf("processor %q not found", pID)
+						return nil, nil, fmt.Errorf("processor %q not found", pID)
 					}
-					receiverPipeline.Processors = append(receiverPipeline.Processors, processor.Processors()...)
+					pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
 				}
-				out[prefix] = receiverPipeline
+				outP[prefix] = pipeline
 			}
 		}
 	}
-	return out, nil
+	return outR, outP, nil
 }
 
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.

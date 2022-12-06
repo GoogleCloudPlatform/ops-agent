@@ -47,7 +47,7 @@ func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
 		endpoint = defaultOracleDBEndpoint
@@ -92,8 +92,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.Pipeline {
 		"datasource":          datasource,
 		"queries":             r.queryConfig(),
 	}
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "sqlquery",
 			Config: config,

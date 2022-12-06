@@ -43,7 +43,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -66,8 +66,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,

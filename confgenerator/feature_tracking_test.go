@@ -63,7 +63,7 @@ func (m MetricsReceiverFoo) Type() string {
 	return "metricsReceiverFoo"
 }
 
-func (m MetricsReceiverFoo) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverFoo) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (m MetricsReceiverGoo) Type() string {
 	return "metricsReceiverGoo"
 }
 
-func (m MetricsReceiverGoo) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverGoo) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -178,7 +178,7 @@ func (m MetricsReceiverFooMap) Type() string {
 	return "metricsReceiverFooMap"
 }
 
-func (m MetricsReceiverFooMap) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverFooMap) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -214,7 +214,7 @@ func (m MetricsReceiverInlineFooSlice) Type() string {
 	return "metricsReceiverInlineFooSlice"
 }
 
-func (m MetricsReceiverInlineFooSlice) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverInlineFooSlice) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -260,7 +260,7 @@ func (m MetricsReceiverInvalid) Type() string {
 	return "metricsReceiverFoo"
 }
 
-func (m MetricsReceiverInvalid) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverInvalid) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -293,7 +293,7 @@ func (m MetricsReceiverPrefix) Type() string {
 	return "metricsReceiverPrefix"
 }
 
-func (m MetricsReceiverPrefix) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverPrefix) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -345,7 +345,7 @@ func (m MetricsReceiverOverride) Type() string {
 	return "metricsReceiverOverride"
 }
 
-func (m MetricsReceiverOverride) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverOverride) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -390,7 +390,7 @@ func (m MetricsReceiverPointer) Type() string {
 	return "metricsReceiverPointer"
 }
 
-func (m MetricsReceiverPointer) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverPointer) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -729,7 +729,7 @@ func (m Example) Type() string {
 	return "example"
 }
 
-func (m Example) Pipelines() []otel.Pipeline {
+func (m Example) Pipelines() []otel.ReceiverPipeline {
 	return nil
 }
 

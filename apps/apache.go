@@ -34,12 +34,11 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "apache",
 			Config: map[string]interface{}{

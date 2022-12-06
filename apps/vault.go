@@ -73,7 +73,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -124,8 +124,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{

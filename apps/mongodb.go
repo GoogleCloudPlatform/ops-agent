@@ -44,7 +44,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMongoDB) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint
@@ -70,8 +70,7 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 		config["tls"] = r.TLSConfig(false)
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   r.Type(),
 			Config: config,

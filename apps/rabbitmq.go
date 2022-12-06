@@ -120,7 +120,7 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
@@ -133,8 +133,7 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.Pipeline {
 		"tls":                 r.TLSConfig(true),
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "rabbitmq",
 			Config: cfg,

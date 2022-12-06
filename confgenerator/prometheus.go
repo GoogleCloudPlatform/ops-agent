@@ -59,7 +59,7 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
+func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	// Get the resource metadata for the instance we're running on.
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
 		// Create a prometheus style mapping for the GCE metadata.
@@ -86,8 +86,7 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 		}
 	}
 
-	return []otel.Pipeline{{
-		Type:     "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r.PromConfig),
 		GMP:      true,
 	}}

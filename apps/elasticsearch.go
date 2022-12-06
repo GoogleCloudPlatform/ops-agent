@@ -43,7 +43,7 @@ func (r MetricsReceiverElasticsearch) Type() string {
 	return "elasticsearch"
 }
 
-func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
@@ -63,8 +63,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.Pipeline {
 		cfg["metrics"] = r.skipJVMMetricsConfig()
 	}
 
-	return []otel.Pipeline{{
-		Type: "metrics",
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "elasticsearch",
 			Config: cfg,
