@@ -18,16 +18,19 @@ import (
 	"fmt"
 )
 
-type HealthCheckFailure struct {
+type HealthCheckError struct {
 	// code string
 	message      string
 	action       string
 	resourceLink string // TODO : Are strings the best for URLs ?
 	isFatal      bool
+	Err          error
 }
 
-var healthCheckFailureMap = map[string]HealthCheckFailure{
-	"port-unavailable": {
+func (e *HealthCheckError) Error() string { return e.Err.Error() }
+
+var (
+	PORT_UNAVAILABLE_ERR = HealthCheckError{
 		message:      "Port is unavailable",
 		action:       "Check the port is available.",
 		resourceLink: "",
@@ -35,66 +38,49 @@ var healthCheckFailureMap = map[string]HealthCheckFailure{
 		// TODO : Add message with specific port
 		// failMsg := fmt.Sprintf("listening to %s  was not successful.", net.JoinHostPort(host, port))
 		// solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
-	},
-	"connection-to-logging-api-failed": {
+	}
+	LOGAPI_CONN_ERR = HealthCheckError{
 		message:      "Request to Monitoring API failed.",
 		action:       "Check your internet connection.",
 		resourceLink: "",
 		isFatal:      true,
-	},
-	"connection-to-monitoring-api-failed": {
+	}
+	MONAPI_CONN_ERR = HealthCheckError{
 		message:      "Request to Monitoring API failed.",
 		action:       "Check your internet connection.",
 		resourceLink: "",
 		isFatal:      true,
-	},
-	"logging-api-missing-permission": {
+	}
+	LOGAPI_PERMISSION_ERR = HealthCheckError{
 		message:      "Service account misssing permissions for the Logging API.",
 		action:       "Add the logging.writer role to the GCP service account.",
 		resourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		isFatal:      true,
-	},
-	"monitoring-api-missing-permission": {
+	}
+	MONAPI_PERMISSION_ERR = HealthCheckError{
 		message:      "Service account misssing permissions for the Monitoring API.",
 		action:       "Add the monitoring.writer role to the GCP service account.",
 		resourceLink: "",
 		isFatal:      true,
-	},
-	"logging-api-disabled": {
+	}
+	LOGAPI_DISABLED_ERR = HealthCheckError{
 		// TODO : Add message with specific failure (e.g. Ping to api failed)
 		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
 		message:      "The Logging API is disabled in the current GCP project.",
 		action:       "Check the Logging API is enabled",
 		resourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		isFatal:      true,
-	},
-	"monitoring-api-disabled": {
+	}
+	MOPNAPI_DISABLED_ERR = HealthCheckError{
 		message:      "The Monitoring API disabled",
 		action:       "Check the Monitoring API is disabled in the current GCP project.",
 		resourceLink: "",
 		isFatal:      true,
-	},
-	"health-check-failure": {
+	}
+	HC_FAILURE_ERR = HealthCheckError{
 		message:      "The Health Check failed.",
 		action:       "",
 		resourceLink: "",
 		isFatal:      false,
-	},
-	"health-check-error": {
-		message:      "The Health Check ran into an error.",
-		action:       "",
-		resourceLink: "",
-		isFatal:      true,
-		// TODO : Add message with specific error.
-		// failMsg := fmt.Sprintf("listening to %s  was not successful.", net.JoinHostPort(host, port))
-		// solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
-	},
-}
-
-func GetFailure(failureCode string) (HealthCheckFailure, error) {
-	if failure, ok := healthCheckFailureMap[failureCode]; ok {
-		return failure, nil
-	}
-
-	return HealthCheckFailure{}, fmt.Errorf("The provided error code %s doesn't exist.", failureCode)
-}
+	)
+)

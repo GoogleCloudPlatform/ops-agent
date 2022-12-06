@@ -23,7 +23,6 @@ import (
 )
 
 type FailureCheck struct {
-	health_checks.HealthCheck
 }
 
 func (c FailureCheck) RunCheck() error {

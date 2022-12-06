@@ -26,98 +26,42 @@ import (
 )
 
 type HealthCheck interface {
+	// Name() string
 	RunCheck() error
-	Fail(failureCode string)
-	Error(err error)
-	Log(message string)
-	GetResult() string
-	GetCheckLog() string
-	GetFailureMessage() string
-	GetActionMessage() string
+	// Log(message string)
+	// Fail(failureCode string)
+	// Error(err error)
+	// GetResult() string
+	// GetCheckLog() string
+	// GetFailureMessage() string
+	// GetActionMessage() string
 }
 
-type healthCheckRegistry struct {
-	environment    string
-	healthCheckMap map[string]HealthCheck
-}
+type HealthCheckRegistry []HealthCheck
 
-func (r healthCheckRegistry) RegisterCheck(name string, c HealthCheck) {
+func (r *HealthCheckRegistry) RegisterCheck(name string, c HealthCheck) {
 	r.healthCheckMap[name] = c
 }
 
-var GCEHealthChecks = &healthCheckRegistry{
-	environment:    "GCE",
-	healthCheckMap: make(map[string]HealthCheck),
-}
-
-type BaseHealthCheck struct {
-	HealthCheck
-	errored         bool
-	failed          bool
-	err             error
-	failure         HealthCheckFailure
-	checkLog        string
-	failureMessage  string
-	solutionMessage string
-}
-
-func NewHealthCheck() HealthCheck {
-	return &BaseHealthCheck{
-		failed:          false,
-		errored:         false,
-		err:             nil,
-		failure:         HealthCheckFailure{},
-		checkLog:        "",
-		failureMessage:  "",
-		solutionMessage: "",
+// func (r *HealthCheckRegistry) RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
+func (r *HealthCheckRegistry) RunAllHealthChecks() (string, error) {
+	var multiErr error
+	var result []string
+	result = append(result, "========================================")
+	result = append(result, "Health Checks : ")
+	for name, c := range r.healthCheckMap {
+		err := c.RunCheck()
+		if err != nil {
+			multiErr = multierr.Append(multiErr, err)
+		}
+		result = append(result, fmt.Sprintf("Check: %s, Result: %s", name, c.GetResult()))
+		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
+		result = append(result, fmt.Sprintf("Solution: %s ", c.GetActionMessage()))
+		result = append(result, fmt.Sprintf("Log: %s \n", c.GetCheckLog()))
 	}
-}
+	result = append(result, "===========================================================")
 
-func (b *BaseHealthCheck) RunCheck() error {
-	return nil
-}
-
-func (b *BaseHealthCheck) Fail(failureCode string) {
-	b.failed = true
-	fail, err := GetFailure(failureCode)
-	if err != nil {
-		b.Error(err)
-	}
-	b.failure = fail
-}
-
-func (b *BaseHealthCheck) Error(err error) {
-	// TODO : What to do with error ?
-	b.err = err
-	b.errored = true
-	b.Fail("health-check-error")
-}
-
-func (b *BaseHealthCheck) Log(message string) {
-	b.checkLog = time.Now().Format("[2006-01-02 15:04:05]") + " " + message + "\n" + b.checkLog
-}
-
-func (b *BaseHealthCheck) GetCheckLog() string {
-	return b.checkLog
-}
-
-func (b *BaseHealthCheck) GetFailureMessage() string {
-	return b.failure.message
-}
-
-func (b *BaseHealthCheck) GetActionMessage() string {
-	return b.failure.action
-}
-
-func (b *BaseHealthCheck) GetResult() string {
-	if b.errored {
-		return "ERROR"
-	}
-	if b.failed {
-		return "FAIL"
-	} else {
-		return "PASS"
-	}
+	return strings.Join(result, "\n"), multiErr
 }
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -133,22 +77,72 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	}
 }
 
-func RunAllHealthChecks(uc *confgenerator.UnifiedConfig) (string, error) {
-	var multiErr error
-	var result []string
-	result = append(result, "========================================")
-	result = append(result, "Health Checks : ")
-	for name, c := range GCEHealthChecks.healthCheckMap {
-		err := c.RunCheck()
-		if err != nil {
-			multiErr = multierr.Append(multiErr, err)
-		}
-		result = append(result, fmt.Sprintf("Check: %s, Result: %s", name, c.GetResult()))
-		result = append(result, fmt.Sprintf("Failure: %s", c.GetFailureMessage()))
-		result = append(result, fmt.Sprintf("Solution: %s ", c.GetActionMessage()))
-		result = append(result, fmt.Sprintf("Log: %s \n", c.GetCheckLog()))
-	}
-	result = append(result, "===========================================================")
+// type BaseHealthCheck struct {
+// 	HealthCheck
+// 	errored         bool
+// 	failed          bool
+// 	err             error
+// 	failure         HealthCheckFailure
+// 	checkLog        string
+// 	failureMessage  string
+// 	solutionMessage string
+// }
 
-	return strings.Join(result, "\n"), multiErr
-}
+// func NewHealthCheck() HealthCheck {
+// 	return &BaseHealthCheck{
+// 		failed:          false,
+// 		errored:         false,
+// 		err:             nil,
+// 		failure:         HealthCheckFailure{},
+// 		checkLog:        "",
+// 		failureMessage:  "",
+// 		solutionMessage: "",
+// 	}
+// }
+
+// func (b *BaseHealthCheck) RunCheck() error {
+// 	return nil
+// }
+
+// func (b *BaseHealthCheck) Fail(failureCode string) {
+// 	b.failed = true
+// 	fail, err := GetFailure(failureCode)
+// 	if err != nil {
+// 		b.Error(err)
+// 	}
+// 	b.failure = fail
+// }
+
+// func (b *BaseHealthCheck) Error(err error) {
+// 	// TODO : What to do with error ?
+// 	b.err = err
+// 	b.errored = true
+// 	b.Fail("health-check-error")
+// }
+
+// func (b *BaseHealthCheck) Log(message string) {
+// 	b.checkLog = time.Now().Format("[2006-01-02 15:04:05]") + " " + message + "\n" + b.checkLog
+// }
+
+// func (b *BaseHealthCheck) GetCheckLog() string {
+// 	return b.checkLog
+// }
+
+// func (b *BaseHealthCheck) GetFailureMessage() string {
+// 	return b.failure.message
+// }
+
+// func (b *BaseHealthCheck) GetActionMessage() string {
+// 	return b.failure.action
+// }
+
+// func (b *BaseHealthCheck) GetResult() string {
+// 	if b.errored {
+// 		return "ERROR"
+// 	}
+// 	if b.failed {
+// 		return "FAIL"
+// 	} else {
+// 		return "PASS"
+// 	}
+// }

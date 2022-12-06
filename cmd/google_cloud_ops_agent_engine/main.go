@@ -60,6 +60,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	GCEHealthChecks = HealthCheckRegistry{
+		PortsCheck
+	}
 	result, err := health_checks.RunAllHealthChecks(&uc)
 	log.Printf(result)
 	if err != nil {

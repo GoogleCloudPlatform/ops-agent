@@ -41,11 +41,9 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
 	return false, nil
 }
 
-type PermissionsCheck struct {
-	HealthCheck
-}
+type PermissionsCheck struct {}
 
-func (c PermissionsCheck) RunCheck() error {
+func (c *PermissionsCheck) RunCheck() error {
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
 		compositeError := fmt.Errorf("can't get GCE metadata: %w", err)

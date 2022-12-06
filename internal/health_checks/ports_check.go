@@ -20,15 +20,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type PortsCheck struct {
-	HealthCheck
+	uc confgenerator.UnifiedConfig
 }
 
-func (c PortsCheck) check_port(host string, port string) error {
+func (c *PortsCheck) check_port(host string, port string) error {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
 	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
 		c.Fail("port-unavailable")
@@ -49,7 +50,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 	return nil
 }
 
-func (c PortsCheck) RunCheck() error {
+func (c *PortsCheck) RunCheck() error {
 	// TODO : Get ports from UnifiedConfig
 	self_metrics_host := "0.0.0.0"
 

@@ -22,11 +22,9 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 )
 
-type APICheck struct {
-	HealthCheck
-}
+type APICheck struct {}
 
-func (c APICheck) RunCheck() error {
+func (c *APICheck) RunCheck() error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {

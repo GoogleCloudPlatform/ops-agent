@@ -42,11 +42,9 @@ func runGetHTTPRequest(url string) (string, string, error) {
 	return status, string(b), nil
 }
 
-type NetworkCheck struct {
-	HealthCheck
-}
+type NetworkCheck struct {}
 
-func (c NetworkCheck) RunCheck() error {
+func (c *NetworkCheck) RunCheck() error {
 
 	// Request to logging API
 	status, _, err := runGetHTTPRequest(loggingAPIUrl)
