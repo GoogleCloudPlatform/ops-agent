@@ -410,6 +410,10 @@ processors:
   metricstransform/postgresql_postgresql_2:
     transforms:
     - action: update
+      include: postgresql.bgwriter.duration
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
