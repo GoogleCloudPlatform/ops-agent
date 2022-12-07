@@ -54,7 +54,3 @@ func (s Set[T]) Keys() []T {
 	}
 	return result
 }
-
-func (s Set[T]) IsEmpty() bool {
-	return len(s) == 0
-}
