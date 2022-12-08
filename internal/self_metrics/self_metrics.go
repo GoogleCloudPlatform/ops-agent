@@ -212,8 +212,6 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 		}
 	}(provider, ctx, flushDeath, flushChan)
 
-waitForDeathSignal:
-
 	for {
 		select {
 		case err := <-flushChan:
@@ -222,18 +220,15 @@ waitForDeathSignal:
 			}
 		case <-death:
 			flushDeath <- true
-			break waitForDeathSignal
+			if err = provider.Shutdown(ctx); err != nil {
+				myStatus, ok := status.FromError(err)
+				if ok && myStatus.Code() == codes.FailedPrecondition {
+					log.Print(err)
+				} else {
+					return fmt.Errorf("failed to shutdown meter provider: %w", err)
+				}
+			}
+			return nil
 		}
 	}
-
-	if err = provider.Shutdown(ctx); err != nil {
-		myStatus, ok := status.FromError(err)
-		if ok && myStatus.Code() == codes.FailedPrecondition {
-			log.Print(err)
-		} else {
-			return fmt.Errorf("failed to shutdown meter provider: %w", err)
-		}
-	}
-
-	return nil
 }
