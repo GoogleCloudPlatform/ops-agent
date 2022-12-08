@@ -17,6 +17,7 @@ package self_metrics
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -31,6 +32,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
@@ -193,22 +196,44 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 		return err
 	}
 
-	err = provider.ForceFlush(ctx)
-	if err != nil {
-		return err
-	}
+	flushDeath := make(chan bool)
+	errChan := make(chan error)
+
+	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool, errChan chan error) {
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+				err := provider.ForceFlush(ctx)
+				errChan <- err
+				return
+			case <-death:
+				return
+			}
+		}
+	}(provider, ctx, flushDeath, errChan)
 
 waitForDeathSignal:
 
 	for {
 		select {
+		case err := <-errChan:
+			if err != nil {
+				log.Print(err)
+			}
 		case <-death:
+			flushDeath <- true
 			break waitForDeathSignal
 		}
 	}
 
 	if err = provider.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown meter provider: %w", err)
+		myStatus, ok := status.FromError(err)
+		if ok && myStatus.Code() == codes.FailedPrecondition {
+			log.Print(err)
+		} else {
+			return fmt.Errorf("failed to shutdown meter provider: %w", err)
+		}
 	}
+
 	return nil
 }
