@@ -197,26 +197,26 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 	}
 
 	flushDeath := make(chan bool)
-	errChan := make(chan error)
+	flushChan := make(chan error)
 
-	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool, errChan chan error) {
+	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool, flushChan chan error) {
 		for {
 			select {
 			case <-time.After(10 * time.Second):
 				err := provider.ForceFlush(ctx)
-				errChan <- err
+				flushChan <- err
 				return
 			case <-death:
 				return
 			}
 		}
-	}(provider, ctx, flushDeath, errChan)
+	}(provider, ctx, flushDeath, flushChan)
 
 waitForDeathSignal:
 
 	for {
 		select {
-		case err := <-errChan:
+		case err := <-flushChan:
 			if err != nil {
 				log.Print(err)
 			}
