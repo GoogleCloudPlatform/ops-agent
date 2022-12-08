@@ -1,20 +1,40 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
-- module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
+  value: "false"
+- module: logging
+  feature: receivers:apache_access
   key: "[0].enabled"
   value: "true"
 - module: logging
-  feature: receivers:files
+  feature: receivers:apache_error
+  key: "[1].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:apache_access
+  key: "[2].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:apache_error
+  key: "[3].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:syslog
+  key: "[4].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:syslog
+  key: "[5].enabled"
+  value: "true"
+- module: logging
+  feature: processors:apache_access
   key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:apache_error
+  key: "[1].enabled"
   value: "true"

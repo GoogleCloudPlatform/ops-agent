@@ -5,16 +5,16 @@
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
-- module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
+  value: "false"
+- module: logging
+  feature: receivers:syslog
   key: "[0].enabled"
   value: "true"
 - module: logging
-  feature: receivers:files
+  feature: receivers:syslog
+  key: "[1].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_regex
   key: "[0].enabled"
   value: "true"

@@ -1,20 +1,20 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
-- module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
+  value: "false"
 - module: logging
   feature: receivers:files
   key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[1].enabled"
   value: "true"

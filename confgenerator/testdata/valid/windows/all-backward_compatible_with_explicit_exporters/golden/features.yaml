@@ -18,10 +18,6 @@
   feature: receivers:mssql
   key: "[2].enabled"
   value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
 - module: logging
   feature: receivers:windows_event_log
   key: "[0].enabled"

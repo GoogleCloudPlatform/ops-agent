@@ -1,28 +1,12 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
-- module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: receivers:iis
-  key: "[1].enabled"
-  value: "true"
-- module: metrics
-  feature: receivers:mssql
-  key: "[2].enabled"
-  value: "true"
+  value: "false"
 - module: metrics
   feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
-- module: logging
-  feature: receivers:windows_event_log
   key: "[0].enabled"
   value: "true"

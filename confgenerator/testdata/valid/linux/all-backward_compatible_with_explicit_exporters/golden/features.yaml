@@ -10,10 +10,6 @@
   feature: receivers:hostmetrics
   key: "[0].enabled"
   value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
 - module: logging
   feature: receivers:files
   key: "[0].enabled"

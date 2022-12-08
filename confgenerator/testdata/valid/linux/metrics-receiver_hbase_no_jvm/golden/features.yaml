@@ -1,20 +1,16 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: receivers:hbase
+  key: "[0].enabled"
   value: "true"
 - module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
-- module: logging
-  feature: receivers:files
-  key: "[0].enabled"
-  value: "true"
+  feature: receivers:hbase
+  key: "[0].collect_jvm_metrics"
+  value: "false"

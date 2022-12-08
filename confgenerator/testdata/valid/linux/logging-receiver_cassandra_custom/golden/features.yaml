@@ -1,20 +1,56 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
-- module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
-  feature: processors:exclude_metrics
+  value: "false"
+- module: logging
+  feature: receivers:cassandra_debug
   key: "[0].enabled"
   value: "true"
 - module: logging
-  feature: receivers:files
+  feature: receivers:cassandra_gc
+  key: "[1].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:cassandra_system
+  key: "[2].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:cassandra_debug
+  key: "[3].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:cassandra_gc
+  key: "[4].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:cassandra_system
+  key: "[5].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:syslog
+  key: "[6].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:syslog
+  key: "[7].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:syslog
+  key: "[8].enabled"
+  value: "true"
+- module: logging
+  feature: processors:cassandra_debug
   key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:cassandra_gc
+  key: "[1].enabled"
+  value: "true"
+- module: logging
+  feature: processors:cassandra_system
+  key: "[2].enabled"
   value: "true"

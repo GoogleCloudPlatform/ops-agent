@@ -1,20 +1,36 @@
 - module: logging
   feature: service:pipelines
   key: default_pipeline_overridden
-  value: "true"
+  value: "false"
 - module: metrics
   feature: service:pipelines
   key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].enabled"
   value: "true"
 - module: metrics
-  feature: receivers:hostmetrics
-  key: "[0].enabled"
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.scheme"
+  value: http
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.honor_timestamps"
   value: "true"
 - module: metrics
-  feature: processors:exclude_metrics
-  key: "[0].enabled"
-  value: "true"
-- module: logging
-  feature: receivers:files
-  key: "[0].enabled"
-  value: "true"
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.scrape_interval"
+  value: 10s
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.scrape_timeout"
+  value: 10s
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.relabel_configs"
+  value: "1"
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].config.[0].scrape_configs.static_config_target_groups"
+  value: "1"
