@@ -197,38 +197,43 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 	}
 
 	flushDeath := make(chan bool)
-	flushChan := make(chan error)
+	//flushChan := make(chan error)
 
-	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool, flushChan chan error) {
+	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool /*, flushChan chan error*/) {
 		for {
 			select {
 			case <-time.After(10 * time.Second):
-				err := provider.ForceFlush(ctx)
-				flushChan <- err
+				/*err := */ provider.ForceFlush(ctx)
+				//flushChan <- err
 				return
 			case <-death:
 				return
 			}
 		}
-	}(provider, ctx, flushDeath, flushChan)
+	}(provider, ctx, flushDeath /*, flushChan*/)
+
+waitForDeathSignal:
 
 	for {
 		select {
-		case err := <-flushChan:
-			if err != nil {
-				log.Print(err)
-			}
+		/*		case err := <-flushChan:
+				if err != nil {
+					log.Print(err)
+				}*/
 		case <-death:
 			flushDeath <- true
-			if err = provider.Shutdown(ctx); err != nil {
-				myStatus, ok := status.FromError(err)
-				if ok && myStatus.Code() == codes.FailedPrecondition {
-					log.Print(err)
-				} else {
-					return fmt.Errorf("failed to shutdown meter provider: %w", err)
-				}
-			}
-			return nil
+			break waitForDeathSignal
 		}
 	}
+
+	if err = provider.Shutdown(ctx); err != nil {
+		myStatus, ok := status.FromError(err)
+		if ok && myStatus.Code() == codes.FailedPrecondition {
+			log.Print(err)
+		} else {
+			return fmt.Errorf("failed to shutdown meter provider: %w", err)
+		}
+	}
+
+	return nil
 }
