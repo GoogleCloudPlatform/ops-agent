@@ -210,7 +210,9 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 	got["otel.yaml"] = otelGeneratedConfig
 
-	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(builtInConfBytes, platform.OS)
+	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
+
+	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(inputBytes, platform.OS)
 	if err != nil {
 		return
 	}
