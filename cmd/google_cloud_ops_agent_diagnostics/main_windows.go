@@ -37,10 +37,6 @@ const (
 	ERROR_INVALID_PARAMETER uint32 = 87
 )
 
-func errorHandler(err error) {
-	s.log.Error(eventID, fmt.Sprintf("metric collection error : %v", err))
-}
-
 type service struct {
 	log      debug.Log
 	userConf string
