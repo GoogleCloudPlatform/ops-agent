@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -43,6 +44,10 @@ func errorHandler(err error) {
 type service struct {
 	log      debug.Log
 	userConf string
+}
+
+func (s *service) Handle(err error) {
+	s.log.Error(eventID, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
 func run() error {
@@ -104,7 +109,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, errorHandler, death)
+	// Set otel error handler
+	otel.SetErrorHandler(s)
+
+	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {
 		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA

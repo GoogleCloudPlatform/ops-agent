@@ -31,16 +31,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel"
 )
-
-type SelfMetricsErrorHandler struct {
-	platformHandler func(error)
-}
-
-func (s *SelfMetricsErrorHandler) Handle(err error) {
-	s.platformHandler(err)
-}
 
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
 	return fmt.Sprintf("agent.googleapis.com/%s", d.Name)
@@ -155,14 +146,9 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 	return nil
 }
 
-func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, errorHandler func(error), death chan bool) error {
+func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, death chan bool) error {
 	// Resource for GCP and SDK detectors
 	ctx := context.Background()
-
-	// Set otel error handler
-	handler := &SelfMetricsErrorHandler{}
-	handler.platformHandler = errorHandler
-	otel.SetErrorHandler(handler)
 
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
