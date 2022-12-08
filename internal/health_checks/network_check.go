@@ -15,6 +15,7 @@
 package health_checks
 
 import (
+	"log"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,37 +45,35 @@ func runGetHTTPRequest(url string) (string, string, error) {
 
 type NetworkCheck struct {}
 
-func (c *NetworkCheck) RunCheck() error {
+func (c NetworkCheck) Name() string {
+	return "Network Check"
+}
+
+func (c NetworkCheck) RunCheck() error {
 
 	// Request to logging API
 	status, _, err := runGetHTTPRequest(loggingAPIUrl)
-	c.Log(fmt.Sprintf("http request status : %s", status))
+	log.Printf("http request status : %s", status)
 	if err != nil {
-		c.Error(err)
 		return err
 	}
 	if status == "200 OK" {
-		c.Log("Request to the Logging API was successful.")
+		log.Printf("Request to the Logging API was successful.")
 	} else {
-		c.Fail("connection-to-logging-api-failed")
+		return LOG_API_CONN_ERR
 	}
 
 	// Request to monitoring API
 	status, _, err = runGetHTTPRequest(monitoringAPIUrl)
-	c.Log(fmt.Sprintf("http request status : %s", status))
+	log.Printf(fmt.Sprintf("http request status : %s", status))
 	if err != nil {
-		c.Error(err)
 		return err
 	}
 	if status == "200 OK" {
-		c.Log("Request to the Monitoring API was successful.")
+		log.Printf("Request to the Monitoring API was successful.")
 	} else {
-		c.Fail("connection-to-monitoring-api-failed")
+		return MON_API_CONN_ERR
 	}
 
 	return nil
-}
-
-func init() {
-	GCEHealthChecks.RegisterCheck("Network Check", &NetworkCheck{HealthCheck: NewHealthCheck()})
 }

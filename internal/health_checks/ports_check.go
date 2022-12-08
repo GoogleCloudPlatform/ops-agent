@@ -15,61 +15,56 @@
 package health_checks
 
 import (
+	"log"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 type PortsCheck struct {
-	uc confgenerator.UnifiedConfig
+	Config confgenerator.UnifiedConfig
 }
 
-func (c *PortsCheck) check_port(host string, port string) error {
+func (c PortsCheck) Name() string {
+	return "Ports Check"
+}
+
+func (c PortsCheck) check_port(host string, port string) error {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
 	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
-		c.Fail("port-unavailable")
-		c.Log(fmt.Sprintf("port unavaliable : %s", err))
-		return nil
+		return PORT_UNAVAILABLE_ERR
 	}
 	if err != nil {
-		compositeError := fmt.Errorf("connection Error : %w", err)
-		c.Error(compositeError)
-		return compositeError
+		return fmt.Errorf("connection Error : %w", err)
 	}
 	if lsnr != nil {
 		defer lsnr.Close()
-		c.Log(fmt.Sprintf("opened %s", net.JoinHostPort(host, port)))
+		log.Printf("opened %s", net.JoinHostPort(host, port))
 	} else {
-		c.Fail("port-unavailable")
+		return PORT_UNAVAILABLE_ERR
 	}
 	return nil
 }
 
-func (c *PortsCheck) RunCheck() error {
+func (c PortsCheck) RunCheck() error {
 	// TODO : Get ports from UnifiedConfig
 	self_metrics_host := "0.0.0.0"
 
 	// Check for fluent-bit self metrics port
 	err := c.check_port(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
 	if err != nil {
-		c.Error(err)
 		return err
 	}
 
 	// Check for opentelemetry-collector self metrics port
 	err = c.check_port(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
-		c.Error(err)
 		return err
 	}
 	return nil
-}
-
-func init() {
-	GCEHealthChecks.RegisterCheck("Ports Check", &PortsCheck{HealthCheck: NewHealthCheck()})
 }

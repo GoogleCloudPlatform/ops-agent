@@ -61,10 +61,16 @@ func run() error {
 		return err
 	}
 
-	GCEHealthChecks = HealthCheckRegistry{
-		PortsCheck
+	GCEHealthChecks := health_checks.HealthCheckRegistry{
+		health_checks.PortsCheck{
+			Config: uc,
+		},
+		health_checks.PermissionsCheck{},
+		health_checks.NetworkCheck{},
+		health_checks.APICheck{},
 	}
-	result, err := health_checks.RunAllHealthChecks(&uc)
+
+	result, err := GCEHealthChecks.RunAllHealthChecks()
 	log.Printf(result)
 	if err != nil {
 		log.Printf("Health_Checks failed. Detailed error: %s", err)

@@ -155,7 +155,16 @@ func (s *service) generateConfigs() error {
 		}
 	}
 
-	result, err := health_checks.RunAllHealthChecks(&uc)
+	GCEHealthChecks := health_checks.HealthCheckRegistry{
+		health_checks.PortsCheck{
+			Config: uc,
+		},
+		health_checks.PermissionsCheck{},
+		health_checks.NetworkCheck{},
+		health_checks.APICheck{},
+	}
+
+	result, err := health_checks.RunAllHealthChecks()
 	s.log.Info(1, result)
 	if err != nil {
 		s.log.Error(1, fmt.Sprintf("Health_Checks failed. Detailed error: %s", err))

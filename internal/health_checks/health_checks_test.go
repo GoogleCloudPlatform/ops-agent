@@ -22,12 +22,11 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-type FailureCheck struct {
-}
+type FailureCheck struct {}
+
 
 func (c FailureCheck) RunCheck() error {
-	c.Fail("health-check-failure")
-	return nil
+	return HC_FAILURE_ERR
 }
 
 func TestCheckFailure(t *testing.T) {

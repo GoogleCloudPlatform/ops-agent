@@ -15,6 +15,7 @@
 package health_checks
 
 import (
+	"log"
 	"fmt"
 )
 
@@ -43,38 +44,34 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
 
 type PermissionsCheck struct {}
 
-func (c *PermissionsCheck) RunCheck() error {
+func (c PermissionsCheck) Name() string {
+	return "Permissions Check"
+}
+
+func (c PermissionsCheck) RunCheck() error {
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
-		c.Error(compositeError)
-		return compositeError
+		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
 	defaultScopes := gceMetadata.DefaultScopes
 
 	found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
 	if err != nil {
-		c.Error(err)
 		return err
 	} else if found {
-		c.Log("Logging Scopes are enough to run the Ops Agent.")
+		log.Printf("Logging Scopes are enough to run the Ops Agent.")
 	} else {
-		c.Fail("logging-api-missing-permission")
+		return LOG_API_PERMISSION_ERR
 	}
 
 	found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
 	if err != nil {
-		c.Error(err)
 		return err
 	} else if found {
-		c.Log("Monitoring Scopes are enough to run the Ops Agent.")
+		log.Printf("Monitoring Scopes are enough to run the Ops Agent.")
 	} else {
-		c.Fail("monitoring-api-missing-permission")
+		return MON_API_PERMISSION_ERR
 	}
 
 	return nil
-}
-
-func init() {
-	GCEHealthChecks.RegisterCheck("Permissions Check", &PermissionsCheck{HealthCheck: NewHealthCheck()})
 }

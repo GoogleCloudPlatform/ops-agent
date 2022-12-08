@@ -14,12 +14,7 @@
 
 package health_checks
 
-import (
-	"fmt"
-)
-
 type HealthCheckError struct {
-	// code string
 	message      string
 	action       string
 	resourceLink string // TODO : Are strings the best for URLs ?
@@ -27,7 +22,9 @@ type HealthCheckError struct {
 	Err          error
 }
 
-func (e *HealthCheckError) Error() string { return e.Err.Error() }
+func (e HealthCheckError) Error() string {
+	return e.Err.Error()
+}
 
 var (
 	PORT_UNAVAILABLE_ERR = HealthCheckError{
@@ -39,31 +36,31 @@ var (
 		// failMsg := fmt.Sprintf("listening to %s  was not successful.", net.JoinHostPort(host, port))
 		// solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
 	}
-	LOGAPI_CONN_ERR = HealthCheckError{
+	LOG_API_CONN_ERR = HealthCheckError{
 		message:      "Request to Monitoring API failed.",
 		action:       "Check your internet connection.",
 		resourceLink: "",
 		isFatal:      true,
 	}
-	MONAPI_CONN_ERR = HealthCheckError{
+	MON_API_CONN_ERR = HealthCheckError{
 		message:      "Request to Monitoring API failed.",
 		action:       "Check your internet connection.",
 		resourceLink: "",
 		isFatal:      true,
 	}
-	LOGAPI_PERMISSION_ERR = HealthCheckError{
+	LOG_API_PERMISSION_ERR = HealthCheckError{
 		message:      "Service account misssing permissions for the Logging API.",
 		action:       "Add the logging.writer role to the GCP service account.",
 		resourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		isFatal:      true,
 	}
-	MONAPI_PERMISSION_ERR = HealthCheckError{
+	MON_API_PERMISSION_ERR = HealthCheckError{
 		message:      "Service account misssing permissions for the Monitoring API.",
 		action:       "Add the monitoring.writer role to the GCP service account.",
 		resourceLink: "",
 		isFatal:      true,
 	}
-	LOGAPI_DISABLED_ERR = HealthCheckError{
+	LOG_API_DISABLED_ERR = HealthCheckError{
 		// TODO : Add message with specific failure (e.g. Ping to api failed)
 		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
 		message:      "The Logging API is disabled in the current GCP project.",
@@ -71,7 +68,7 @@ var (
 		resourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		isFatal:      true,
 	}
-	MOPNAPI_DISABLED_ERR = HealthCheckError{
+	MON_API_DISABLED_ERR = HealthCheckError{
 		message:      "The Monitoring API disabled",
 		action:       "Check the Monitoring API is disabled in the current GCP project.",
 		resourceLink: "",
@@ -82,5 +79,5 @@ var (
 		action:       "",
 		resourceLink: "",
 		isFatal:      false,
-	)
+	}
 )

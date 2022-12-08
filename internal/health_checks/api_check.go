@@ -15,6 +15,7 @@
 package health_checks
 
 import (
+	"log"
 	"context"
 	"fmt"
 
@@ -24,49 +25,44 @@ import (
 
 type APICheck struct {}
 
-func (c *APICheck) RunCheck() error {
+func (c APICheck) Name() string {
+	return "API Check"
+}
+
+func (c APICheck) RunCheck() error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		compositeError := fmt.Errorf("can't get GCE metadata: %w", err)
-		c.Error(compositeError)
-		return compositeError
+		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
 	projectId := gceMetadata.Project
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
-		c.Error(err)
 		return err
 	}
 	if logClient != nil {
-		c.Log("logging client was created successfully.")
+		log.Printf("logging client was created successfully.")
 	} else {
-		c.Fail("logging-api-disabled")
+		return LOG_API_DISABLED_ERR
 	}
 	if err := logClient.Ping(ctx); err != nil {
-		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
-		c.Fail("logging-api-disabled")
+		return LOG_API_DISABLED_ERR
 	}
 	logClient.Close()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-		c.Error(err)
-		return err
+		return MON_API_DISABLED_ERR
 	}
 	if monClient != nil {
-		c.Log("monitoring-api-disabled")
+		log.Printf("monitoring-api-disabled")
 	} else {
-		c.Fail("monitoring-api-disabled")
+		return MON_API_DISABLED_ERR
 	}
 	monClient.Close()
 
 	return nil
-}
-
-func init() {
-	GCEHealthChecks.RegisterCheck("API Check", &APICheck{HealthCheck: NewHealthCheck()})
 }
