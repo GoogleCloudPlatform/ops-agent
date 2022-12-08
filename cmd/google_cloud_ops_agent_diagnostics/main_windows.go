@@ -36,6 +36,10 @@ const (
 	ERROR_INVALID_PARAMETER uint32 = 87
 )
 
+func errorHandler(err error) {
+	s.log.Error(eventID, fmt.Sprintf("metric collection error : %v", err))
+}
+
 type service struct {
 	log      debug.Log
 	userConf string
@@ -100,7 +104,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, errorHandler, death)
 	if err != nil {
 		s.log.Error(eventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA

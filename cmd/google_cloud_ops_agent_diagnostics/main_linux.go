@@ -18,6 +18,7 @@
 package main
 
 import (
+	"log"
 	"flag"
 	"os"
 	"os/signal"
@@ -29,6 +30,10 @@ import (
 var (
 	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
+
+func errorHandler(err error) {
+	log.Printf("metric collection error : %v", err)
+}
 
 func run() error {
 	userUc, mergedUc, err := getUnifiedConfigAndValidate(*config, "linux")
@@ -52,7 +57,7 @@ func run() error {
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, errorHandler, death)
 	if err != nil {
 		return err
 	}
