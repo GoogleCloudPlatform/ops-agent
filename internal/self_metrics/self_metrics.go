@@ -196,35 +196,22 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 		return err
 	}
 
-	flushDeath := make(chan bool)
-	flushChan := make(chan error)
-
-	go func(provider *metricsdk.MeterProvider, ctx context.Context, death chan bool, flushChan chan error) {
-		for {
-			select {
-			case <-time.After(10 * time.Second):
-				err := provider.ForceFlush(ctx)
-				flushChan <- err
-				return
-			case <-death:
-				return
-			}
-		}
-	}(provider, ctx, flushDeath, flushChan)
-
+	timer := time.NewTimer(10 * time.Second)
 waitForDeathSignal:
 
 	for {
 		select {
-		case err := <-flushChan:
+		case <-timer.C:
+			err := provider.ForceFlush(ctx)
 			if err != nil {
 				log.Print(err)
 			}
 		case <-death:
-			flushDeath <- true
 			break waitForDeathSignal
 		}
 	}
+
+	close(death)
 
 	if err = provider.Shutdown(ctx); err != nil {
 		myStatus, ok := status.FromError(err)
@@ -234,6 +221,5 @@ waitForDeathSignal:
 			return fmt.Errorf("failed to shutdown meter provider: %w", err)
 		}
 	}
-
 	return nil
 }
