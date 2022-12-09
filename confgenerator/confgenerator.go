@@ -140,10 +140,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, nil, err
-	}
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
@@ -154,6 +150,10 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 			}
 
 			prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+			if pipelineType != "metrics" {
+				// Don't prepend for metrics pipelines to preserve old golden configs.
+				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
+			}
 
 			outR[receiverPipelineName] = receiverPipeline
 
@@ -181,14 +181,38 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 		}
 		return nil
 	}
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
+	if m != nil && m.Service != nil {
+		receivers, err := uc.MetricsReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range m.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
 			}
-			if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
-				return nil, nil, err
+		}
+	}
+	t := uc.Traces
+	if t != nil && t.Service != nil {
+		receivers, err := uc.TracesReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range t.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				if err := addReceiver("traces", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
 			}
 		}
 	}

@@ -498,6 +498,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - otlp/otlp
+    traces/traces_otlp_otlp:
+      exporters:
+      - googlecloud
+      processors:
+      - metricstransform/otlp_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlp/otlp
   telemetry:
     metrics:
       address: 0.0.0.0:20201
