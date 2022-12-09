@@ -146,43 +146,49 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 	}
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
+	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		for i, receiverPipeline := range receiver.Pipelines() {
+			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
+			if i > 0 {
+				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
+			}
+
+			prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+
+			outR[receiverPipelineName] = receiverPipeline
+
+			pipeline := otel.Pipeline{
+				Type:                 pipelineType,
+				ReceiverPipelineName: receiverPipelineName,
+			}
+
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.GMP {
+				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+				}
+			}
+			for _, pID := range processorIDs {
+				// TODO: Change when we support trace processors.
+				processor, ok := m.Processors[pID]
+				if !ok {
+					return fmt.Errorf("processor %q not found", pID)
+				}
+				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+			}
+			outP[prefix] = pipeline
+		}
+		return nil
+	}
 	for pID, p := range m.Service.Pipelines {
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
-				return nil, nil, fmt.Errorf("receiver %q not found", rID)
+				return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
 			}
-
-			for i, receiverPipeline := range receiver.Pipelines() {
-				receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
-				if i > 0 {
-					receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
-				}
-
-				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
-
-				outR[receiverPipelineName] = receiverPipeline
-
-				pipeline := otel.Pipeline{
-					Type:                 "metrics",
-					ReceiverPipelineName: receiverPipelineName,
-				}
-
-				// Check the Ops Agent receiver type.
-				if receiverPipeline.GMP {
-					// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-					if len(p.ProcessorIDs) > 0 {
-						return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-					}
-				}
-				for _, pID := range p.ProcessorIDs {
-					processor, ok := m.Processors[pID]
-					if !ok {
-						return nil, nil, fmt.Errorf("processor %q not found", pID)
-					}
-					pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
-				}
-				outP[prefix] = pipeline
+			if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
+				return nil, nil, err
 			}
 		}
 	}

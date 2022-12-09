@@ -482,15 +482,18 @@ type Metrics struct {
 	Service   *MetricsService        `yaml:"service"`
 }
 
-type MetricsReceiver interface {
+type OTelReceiver interface {
 	Component
 	Pipelines() []otel.ReceiverPipeline
 }
 
+type MetricsReceiver interface {
+	OTelReceiver
+}
+
 type TracesReceiver interface {
 	// TODO: Distinguish from metrics somehow?
-	Component
-	Pipelines() []otel.ReceiverPipeline
+	OTelReceiver
 }
 
 type MetricsReceiverShared struct {
