@@ -212,8 +212,9 @@ func TestValidInlineStructWithMapValue(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
+	var trackingErr *confgenerator.TrackingOverrideMapError
 	_, err := confgenerator.ExtractFeatures(&uc)
-	if !errors.Is(err, confgenerator.ErrMapAsField) {
+	if !errors.As(err, &trackingErr) {
 		t.Fatal(err)
 	}
 }
