@@ -10,6 +10,7 @@ features:
 - feature: receivers:couchbase_goxdcr
   module: logging
   key: "[1].enabled"
+  value: true
 - feature: receivers:couchbase_http_access
   module: logging
   key: "[2].enabled"

@@ -13,5 +13,5 @@ features:
   value: true
 - feature: receivers:mysql_slow
   module: logging
-  key: "[0].enabled"
+  key: "[2].enabled"
   value: true

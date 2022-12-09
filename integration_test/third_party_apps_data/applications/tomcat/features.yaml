@@ -9,5 +9,5 @@ features:
   value: true
 - feature: receivers:tomcat_system
   module: logging
-  key: "[0].enabled"
+  key: "[1].enabled"
   value: true
