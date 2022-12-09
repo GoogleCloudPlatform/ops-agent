@@ -487,6 +487,12 @@ type MetricsReceiver interface {
 	Pipelines() []otel.ReceiverPipeline
 }
 
+type TracesReceiver interface {
+	// TODO: Distinguish from metrics somehow?
+	Component
+	Pipelines() []otel.ReceiverPipeline
+}
+
 type MetricsReceiverShared struct {
 	CollectionInterval string `yaml:"collection_interval" validate:"duration=10s"` // time.Duration format
 }
@@ -695,6 +701,11 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 			return err
 		}
 	}
+	if uc.Traces != nil {
+		if err := uc.ValidateTraces(platform); err != nil {
+			return err
+		}
+	}
 	if uc.Combined != nil {
 		if err := uc.ValidateCombined(); err != nil {
 			return err
@@ -786,6 +797,18 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	return validReceivers, nil
 }
 
+func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
+	validReceivers := map[string]TracesReceiver{}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := v.(TracesReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	return validReceivers, nil
+}
+
 func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	m := uc.Metrics
 	subagent := "metrics"
@@ -825,6 +848,35 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+		}
+	}
+	return nil
+}
+
+func (uc *UnifiedConfig) ValidateTraces(platform string) error {
+	t := uc.Traces
+	subagent := "traces"
+	if t == nil || t.Service == nil {
+		return nil
+	}
+	receivers, err := uc.TracesReceivers()
+	if err != nil {
+		return err
+	}
+	for _, id := range sortedKeys(t.Service.Pipelines) {
+		p := t.Service.Pipelines[id]
+		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+			return err
+		}
+		if len(p.ProcessorIDs) > 0 {
+			return fmt.Errorf("Traces pipelines do not support processors.")
+		}
+		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		}
+
+		if len(p.ExporterIDs) > 0 {
+			log.Printf(`The "traces.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil
