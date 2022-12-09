@@ -211,8 +211,6 @@ waitForDeathSignal:
 		}
 	}
 
-	close(death)
-
 	if err = provider.Shutdown(ctx); err != nil {
 		myStatus, ok := status.FromError(err)
 		if !ok && myStatus.Code() == codes.Unknown {
