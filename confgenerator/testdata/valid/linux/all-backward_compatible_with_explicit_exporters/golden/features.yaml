@@ -1,0 +1,16 @@
+- module: logging
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "true"
+- module: metrics
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "true"
+- module: metrics
+  feature: receivers:hostmetrics
+  key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[0].enabled"
+  value: "true"
