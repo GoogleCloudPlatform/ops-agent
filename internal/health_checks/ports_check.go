@@ -40,7 +40,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 		return PORT_UNAVAILABLE_ERR
 	}
 	if err != nil {
-		return fmt.Errorf("connection Error : %w", err)
+		return fmt.Errorf("connection error : %w", err)
 	}
 	if lsnr != nil {
 		defer lsnr.Close()
@@ -52,7 +52,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 }
 
 func (c PortsCheck) RunCheck() error {
-	// TODO : Get ports from UnifiedConfig
+	// Check self metrics ports
 	self_metrics_host := "0.0.0.0"
 
 	// Check for fluent-bit self metrics port
@@ -65,6 +65,14 @@ func (c PortsCheck) RunCheck() error {
 	err = c.check_port(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
 		return err
+	}
+
+	// Check config ports
+	for rID, port := range Config.Logging.Receivers.GetListenPorts() {
+		err = c.check_port("localhost", strconv.Itoa(port))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
