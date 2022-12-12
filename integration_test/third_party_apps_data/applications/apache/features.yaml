@@ -1,0 +1,13 @@
+features:
+- feature: receivers:apache
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:apache_access
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:apache_error
+  module: logging
+  key: "[1].enabled"
+  value: true
