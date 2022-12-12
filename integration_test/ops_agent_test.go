@@ -2633,7 +2633,7 @@ traces:
 	})
 }
 
-func testOTLPTraces(t *testing.T) {
+func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
