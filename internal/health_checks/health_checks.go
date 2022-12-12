@@ -58,13 +58,10 @@ func (r HealthCheckRegistry) RunAllHealthChecks() (string, error) {
 			} else {
 				result = append(result, fmt.Sprintf("Check: %s, Result: ERROR", c.Name()))
 				result = append(result, fmt.Sprintf("Detail: %s \n", err.Error()))
+				multiErr = multierr.Append(multiErr, err)
 			}
 		} else {
 			result = append(result, fmt.Sprintf("Check: %s, Result: PASS \n", c.Name()))
-		}
-
-		if err != nil {
-			multiErr = multierr.Append(multiErr, err)
 		}
 	}
 	result = append(result, "===========================================================")
