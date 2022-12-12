@@ -68,8 +68,8 @@ func (c PortsCheck) RunCheck() error {
 	}
 
 	// Check config ports
-	for rID, port := range Config.Logging.Receivers.GetListenPorts() {
-		err = c.check_port("localhost", strconv.Itoa(port))
+	for _, port := range c.Config.Logging.Receivers.GetListenPorts() {
+		err = c.check_port("localhost", strconv.Itoa(int(port)))
 		if err != nil {
 			return err
 		}
