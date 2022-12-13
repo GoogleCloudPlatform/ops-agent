@@ -802,6 +802,10 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	return nil
 }
 
+type VersionedReceivers struct {
+	ReceiverVersion string `yaml:"receiver_version,omitempty" tracking:""`
+}
+
 var (
 	defaultProcessors = []string{
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
