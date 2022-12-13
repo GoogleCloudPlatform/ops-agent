@@ -15,15 +15,18 @@
 package health_checks
 
 import (
-	"log"
 	"context"
 	"fmt"
+	"log"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/googleapis/gax-go/v2/apierror"
+	"google.golang.org/api/iterator"
 )
 
-type APICheck struct {}
+type APICheck struct{}
 
 func (c APICheck) Name() string {
 	return "API Check"
@@ -42,25 +45,47 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	if logClient != nil {
-		log.Printf("logging client was created successfully.")
-	} else {
-		return LOG_API_DISABLED_ERR
-	}
+	log.Printf("logging client was created successfully.")
+
 	if err := logClient.Ping(ctx); err != nil {
-		return LOG_API_DISABLED_ERR
+		if apiErr, ok := err.(*apierror.APIError); ok {
+			switch apiErr.Reason() {
+			case "SERVICE_DISABLED":
+				return LOG_API_DISABLED_ERR
+			default:
+				return err
+			}
+		}
+		return err
 	}
 	logClient.Close()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-		return MON_API_DISABLED_ERR
+		return err
 	}
-	if monClient != nil {
-		log.Printf("monitoring-api-disabled")
-	} else {
-		return MON_API_DISABLED_ERR
+	req := &monitoringpb.ListMetricDescriptorsRequest{
+		Name: "projects/" + projectId,
+	}
+	it := monClient.ListMetricDescriptors(ctx, req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			if apiErr, ok := err.(*apierror.APIError); ok {
+				switch apiErr.Reason() {
+				case "SERVICE_DISABLED":
+					return MON_API_DISABLED_ERR
+				default:
+					return err
+				}
+			}
+			return err
+		}
+		_ = resp
 	}
 	monClient.Close()
 
