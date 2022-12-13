@@ -22,7 +22,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	yaml "github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
+	"go.uber.org/multierr"
 )
 
 var (
@@ -42,15 +44,7 @@ func main() {
 }
 func run() error {
 	if *detect {
-		logging, metrics, err := apps.ApacheDetectConfigs()
-		for _, l := range logging {
-			fmt.Printf("%+v\n", l)
-		}
-		for _, m := range metrics {
-			fmt.Printf("%+v\n", m)
-		}
-		fmt.Printf("%+v\n", err)
-
+		return detectAutoConfigs()
 	}
 
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
@@ -74,4 +68,72 @@ func run() error {
 		return err
 	}
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
+}
+
+func detectAutoConfigs() error {
+	var multiErr error
+	uc := confgenerator.UnifiedConfig{
+		Logging: &confgenerator.Logging{
+			Receivers:  map[string]confgenerator.LoggingReceiver{},
+			Processors: map[string]confgenerator.LoggingProcessor{},
+			Service: &confgenerator.LoggingService{
+				Pipelines: map[string]*confgenerator.Pipeline{},
+			},
+		},
+		Metrics: &confgenerator.Metrics{
+			Receivers:  map[string]confgenerator.MetricsReceiver{},
+			Processors: map[string]confgenerator.MetricsProcessor{},
+			Service: &confgenerator.MetricsService{
+				Pipelines: map[string]*confgenerator.Pipeline{},
+			},
+		},
+	}
+	for _, app := range []struct {
+		app    string
+		detect func() ([]confgenerator.LoggingReceiver, []confgenerator.MetricsReceiver, error)
+	}{
+		{
+			app:    "apache",
+			detect: apps.ApacheDetectConfigs,
+		},
+	} {
+		logging, metrics, err := app.detect()
+		if err != nil {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("%s: %v", app.app, err))
+			continue
+		}
+		appendComponents(app.app, logging, uc.Logging.Receivers)
+		appendComponents(app.app, metrics, uc.Metrics.Receivers)
+		generatePipelines(app.app, uc.Logging.Receivers, uc.Logging.Service.Pipelines)
+		generatePipelines(app.app, uc.Metrics.Receivers, uc.Metrics.Service.Pipelines)
+	}
+
+	if multiErr != nil {
+		return multiErr
+	}
+
+	yamlBytes, err := yaml.Marshal(uc)
+	if err != nil {
+		return err
+	}
+	log.Printf("Detected the following configuration automatically:\n\n%s", string(yamlBytes))
+	return nil
+}
+
+func appendComponents[C any](app string, comps []C, m map[string]C) {
+	for i, comp := range comps {
+		name := fmt.Sprintf("%s_%d", app, i+1)
+		m[name] = comp
+	}
+}
+
+func generatePipelines[C any](app string, m map[string]C, p map[string]*confgenerator.Pipeline) {
+	if len(m) > 0 {
+		p[app] = &confgenerator.Pipeline{
+			ReceiverIDs: make([]string, 0),
+		}
+		for k := range m {
+			p[app].ReceiverIDs = append(p[app].ReceiverIDs, k)
+		}
+	}
 }
