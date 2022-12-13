@@ -15,6 +15,13 @@
 package apps
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -184,4 +191,121 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheError{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheAccess{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheError{} })
+}
+
+// Check if this dir is the same across platforms
+const apacheRoot string = "/etc/apache2/"
+
+// ApacheDetectConfigs generates logging and metrics receivers based on Apache
+// configurations. Return empty lists if the app is not installed
+func ApacheDetectConfigs() ([]confgenerator.LoggingReceiver, []confgenerator.MetricsReceiver, error) {
+	// Go over the /etc/apache2/sites-enabled directory
+
+	sitesEnabledDir := filepath.Join(apacheRoot, "sites-enabled")
+	logging := make([]confgenerator.LoggingReceiver, 0)
+	metrics := make([]confgenerator.MetricsReceiver, 0)
+
+	if _, err := os.Stat(sitesEnabledDir); os.IsNotExist(err) {
+		// Apache not installed
+		return logging, metrics, nil
+	}
+	sites, err := os.ReadDir(sitesEnabledDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	apacheLogDir, err := getApacheLogDirEnv()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, site := range sites {
+		if site.IsDir() {
+			continue
+		}
+		file, err := os.Open(filepath.Join(sitesEnabledDir, site.Name()))
+		if err != nil {
+			return nil, nil, err
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			// Get the port of each VHost
+			virtualHostRegex := regexp.MustCompile("^\t*<VirtualHost .*:([0-9]+)>$")
+			matches := virtualHostRegex.FindAllStringSubmatch(scanner.Text(), -1)
+			if len(matches) > 1 {
+				return nil, nil, fmt.Errorf("regex found multiple VHost")
+			}
+
+			// Generate the metrics receiver for this VHost
+			if len(matches) == 1 {
+				metrics = append(metrics, &MetricsReceiverApache{
+					ServerStatusURL: fmt.Sprintf("http://localhost:%s/server-status?auto", matches[0][1]),
+				})
+			}
+
+			// Get the error log config
+			errorLogRegex := regexp.MustCompile("^\tErrorLog ([^ ]+).*$")
+			matches = errorLogRegex.FindAllStringSubmatch(scanner.Text(), -1)
+			if len(matches) > 1 {
+				return nil, nil, fmt.Errorf("regex found multiple Error log locations")
+			}
+
+			// Generate the logging receiver for this VHost
+			if len(matches) == 1 {
+				receiver := &LoggingReceiverApacheError{}
+				receiver.IncludePaths = []string{
+					fmt.Sprintf("%s", strings.ReplaceAll(matches[0][1], "${APACHE_LOG_DIR}", apacheLogDir)),
+				}
+				logging = append(logging, receiver)
+			}
+
+			// Get the access log config
+			accessLogRegex := regexp.MustCompile("^\tCustomLog ([^ ]+).*$")
+			matches = accessLogRegex.FindAllStringSubmatch(scanner.Text(), -1)
+			if len(matches) > 1 {
+				return nil, nil, fmt.Errorf("regex found multiple access log locations")
+			}
+
+			// Generate the logging receiver for this VHost
+			if len(matches) == 1 {
+				receiver := &LoggingReceiverApacheAccess{}
+				receiver.IncludePaths = []string{
+					fmt.Sprintf("%s", strings.ReplaceAll(matches[0][1], "${APACHE_LOG_DIR}", apacheLogDir)),
+				}
+				logging = append(logging, receiver)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return logging, metrics, nil
+
+}
+
+func getApacheLogDirEnv() (string, error) {
+	apacheLogDir := ""
+	envFile, err := os.Open(filepath.Join(apacheRoot, "envvars"))
+	if err != nil {
+		return "", err
+	}
+	defer envFile.Close()
+	// Get the APACHE_LOG_DIR
+	scanner := bufio.NewScanner(envFile)
+	for scanner.Scan() {
+		logDirRegex := regexp.MustCompile("^export APACHE_LOG_DIR=([^ ]+)$")
+		matches := logDirRegex.FindAllStringSubmatch(scanner.Text(), -1)
+		if len(matches) > 1 {
+			return "", fmt.Errorf("regex found multiple envvars")
+		}
+
+		// Generate the metrics receiver for this VHost
+		if len(matches) == 1 {
+			// TODO: handle multiple Apache install and $SUFFIX
+			apacheLogDir = strings.ReplaceAll(matches[0][1], "$SUFFIX", "")
+		}
+	}
+	return apacheLogDir, nil
 }

@@ -16,6 +16,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -30,6 +31,7 @@ var (
 	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	detect   = flag.Bool("detect", false, "Whether to automatically detect integrations and generate config")
 )
 
 func main() {
@@ -39,6 +41,18 @@ func main() {
 	}
 }
 func run() error {
+	if *detect {
+		logging, metrics, err := apps.ApacheDetectConfigs()
+		for _, l := range logging {
+			fmt.Printf("%+v\n", l)
+		}
+		for _, m := range metrics {
+			fmt.Printf("%+v\n", m)
+		}
+		fmt.Printf("%+v\n", err)
+
+	}
+
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
