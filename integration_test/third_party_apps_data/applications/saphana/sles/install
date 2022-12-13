@@ -1,9 +1,4 @@
 # SAP HANA is pre-installed on the images used for tests
-
-sudo su - opsadm -c '/usr/sap/OPS/HDB00/exe/hdbsql -u SYSTEM -p G00g3l21 -j "SELECT * from M_LICENSE"'
-
-hdbsql -u SYSTEM -p G00g3l21 -j "SELECT * from M_LICENSE"
-
 set -e
 
 # Check that the instance is up

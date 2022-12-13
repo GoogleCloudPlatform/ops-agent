@@ -585,11 +585,8 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	installCtx, cancel := context.WithTimeout(context.Background(), 30 * time.Minute)
-	defer cancel()
-
 	if _, err = runScriptFromScriptsDir(
-		installCtx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
+		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
@@ -877,7 +874,7 @@ func TestThirdPartyApps(t *testing.T) {
 			defer cancel()
 
 			var err error
-			for attempt := 1; attempt <= 1; attempt++ {
+			for attempt := 1; attempt <= 4; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
