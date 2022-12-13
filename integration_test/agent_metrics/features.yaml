@@ -1,0 +1,9 @@
+features:
+  - feature: service:pipelines
+    module: metrics
+    key: default_pipeline_overridden
+    value: false
+  - feature: service:pipelines
+    module: logging
+    key: default_pipeline_overridden
+    value: false

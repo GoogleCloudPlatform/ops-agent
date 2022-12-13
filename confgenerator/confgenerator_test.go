@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -226,7 +227,15 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 		},
 	)
 	if err != nil {
-		return err
+		var errNotExist *fs.PathError
+		if golden.FlagUpdate() && errors.As(err, &errNotExist) {
+			// If this is generating goldens for a new test, make the golden folder.
+			if strings.Contains(errNotExist.Path, goldenDir) {
+				os.Mkdir(filepath.Join("testdata", testDir, goldenDir), os.ModePerm)
+			}
+		} else {
+			return err
+		}
 	}
 
 	// Assert the goldens of all the generated files. Either the generated file

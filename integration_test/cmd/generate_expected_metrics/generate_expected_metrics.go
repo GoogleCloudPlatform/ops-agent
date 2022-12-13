@@ -60,7 +60,7 @@ var (
 	}
 )
 
-type expectedMetricsMap map[string]metadata.ExpectedMetric
+type expectedMetricsMap map[string]*metadata.ExpectedMetric
 
 func main() {
 	if err := run(); err != nil {
@@ -107,13 +107,13 @@ func initMonitoringClient() error {
 }
 
 // listMetrics calls projects.metricDescriptors.list with the given project ID and filter.
-func listMetrics(ctx context.Context, project string, filter string) ([]metric.MetricDescriptor, error) {
+func listMetrics(ctx context.Context, project string, filter string) ([]*metric.MetricDescriptor, error) {
 	req := &monitoringpb.ListMetricDescriptorsRequest{
 		Name:   "projects/" + project + "/metricDescriptors/",
 		Filter: filter,
 	}
 	it := monClient.ListMetricDescriptors(ctx, req)
-	metrics := make([]metric.MetricDescriptor, 0)
+	metrics := make([]*metric.MetricDescriptor, 0)
 	for {
 		m, err := it.Next()
 		if err == iterator.Done {
@@ -121,7 +121,7 @@ func listMetrics(ctx context.Context, project string, filter string) ([]metric.M
 		} else if err != nil {
 			return nil, err
 		}
-		metrics = append(metrics, *m)
+		metrics = append(metrics, m)
 	}
 	return metrics, nil
 }
@@ -177,12 +177,12 @@ func getAppName(metricType string) string {
 }
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
-func toExpectedMetric(metric metric.MetricDescriptor) metadata.ExpectedMetric {
+func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric {
 	labels := make(map[string]string)
 	for _, l := range metric.Labels {
 		labels[l.Key] = ".*"
 	}
-	return metadata.ExpectedMetric{
+	return &metadata.ExpectedMetric{
 		Type:              metric.Type,
 		Kind:              metric.MetricKind.String(),
 		ValueType:         metric.ValueType.String(),
@@ -219,7 +219,6 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 	metricsByType := make(expectedMetricsMap)
 	expectedMetrics := metadata.ExpectedMetrics
 	for _, m := range expectedMetrics {
-		m := *m
 		if _, ok := metricsByType[m.Type]; ok {
 			return nil, fmt.Errorf("duplicate expected_metrics type in %s/metadata.yaml: %s", app, m.Type)
 		}
@@ -239,7 +238,7 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 	expectedMetrics := make([]*metadata.ExpectedMetric, 0)
 	for _, m := range metrics {
 		metric := m
-		expectedMetrics = append(expectedMetrics, &metric)
+		expectedMetrics = append(expectedMetrics, metric)
 	}
 	sort.Slice(expectedMetrics, func(i, j int) bool { return expectedMetrics[i].Type < expectedMetrics[j].Type })
 	appMetadata.ExpectedMetrics = expectedMetrics
@@ -255,7 +254,7 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 // label patterns. All other values are copied from withValuesFrom. Existing label
 // keys not present in withValuesFrom.Labels are dropped.
 // If toUpdate.Type is empty, then withValuesFrom is returned.
-func updateMetric(toUpdate metadata.ExpectedMetric, withValuesFrom metadata.ExpectedMetric) metadata.ExpectedMetric {
+func updateMetric(toUpdate *metadata.ExpectedMetric, withValuesFrom *metadata.ExpectedMetric) *metadata.ExpectedMetric {
 	if toUpdate.Type == "" {
 		// Empty struct to update; just copy over the new one
 		return withValuesFrom
