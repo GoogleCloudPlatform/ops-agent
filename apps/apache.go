@@ -239,9 +239,11 @@ func ApacheDetectConfigs() ([]confgenerator.LoggingReceiver, []confgenerator.Met
 
 			// Generate the metrics receiver for this VHost
 			if len(matches) == 1 {
-				metrics = append(metrics, &MetricsReceiverApache{
+				receiver := MetricsReceiverApache{
 					ServerStatusURL: fmt.Sprintf("http://localhost:%s/server-status?auto", matches[0][1]),
-				})
+				}
+				receiver.ConfigComponent.Type = receiver.Type()
+				metrics = append(metrics, &receiver)
 			}
 
 			// Get the error log config
@@ -254,6 +256,7 @@ func ApacheDetectConfigs() ([]confgenerator.LoggingReceiver, []confgenerator.Met
 			// Generate the logging receiver for this VHost
 			if len(matches) == 1 {
 				receiver := &LoggingReceiverApacheError{}
+				receiver.ConfigComponent.Type = receiver.Type()
 				receiver.IncludePaths = []string{
 					fmt.Sprintf("%s", strings.ReplaceAll(matches[0][1], "${APACHE_LOG_DIR}", apacheLogDir)),
 				}
@@ -270,6 +273,7 @@ func ApacheDetectConfigs() ([]confgenerator.LoggingReceiver, []confgenerator.Met
 			// Generate the logging receiver for this VHost
 			if len(matches) == 1 {
 				receiver := &LoggingReceiverApacheAccess{}
+				receiver.ConfigComponent.Type = receiver.Type()
 				receiver.IncludePaths = []string{
 					fmt.Sprintf("%s", strings.ReplaceAll(matches[0][1], "${APACHE_LOG_DIR}", apacheLogDir)),
 				}
