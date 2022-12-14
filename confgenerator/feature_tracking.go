@@ -13,10 +13,17 @@ import (
 var (
 	ErrTrackingInlineStruct   = errors.New("cannot have tracking on inline struct")
 	ErrTrackingOverrideStruct = errors.New("struct that has tracking tag must not be empty")
-	ErrMapAsField             = errors.New("map type for a field is not supported")
 	ErrTrackingOverrideMap    = errors.New("map that has tracking tag must not be empty")
 	ErrInvalidType            = errors.New("object in path must be of type Component")
 )
+
+type TrackingOverrideMapError struct {
+	FieldName string
+}
+
+func (e *TrackingOverrideMapError) Error() string {
+	return fmt.Sprintf("map type for a field is not supported: %s", e.FieldName)
+}
 
 type Feature struct {
 	// Module defines the sub-agent: metrics or logging
@@ -210,7 +217,7 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 
 		// TODO(b/258211839): Add support for tracking maps using feature tracking
 		if feature.Type != "" {
-			return nil, ErrMapAsField
+			return nil, &TrackingOverrideMapError{FieldName: feature.Type}
 		}
 
 	default:
