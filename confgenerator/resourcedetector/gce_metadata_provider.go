@@ -84,6 +84,15 @@ func (gmp *GCEMetadataProvider) getMachineType() (string, error) {
 	return gmp.client.Get("instance/machine-type")
 }
 
+func (gmp *GCEMetadataProvider) getDefaultScopes() ([]string, error) {
+	scopes, err := gmp.client.Scopes("default")
+	// If default service account is not defined return empty scopes
+	if _, ok := err.(gcp_metadata.NotDefinedError); ok {
+		return []string{}, nil
+	}
+	return scopes, err
+}
+
 func (gmp *GCEMetadataProvider) getMetadata() (map[string]string, error) {
 	keys, err := gmp.client.Get("instance/attributes")
 	if err != nil {

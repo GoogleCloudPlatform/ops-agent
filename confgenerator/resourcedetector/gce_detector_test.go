@@ -35,6 +35,9 @@ func TestGettingResourceWithoutError(t *testing.T) {
 		if r.InterfaceIPv4["some_key"] != "some_value" {
 			t.Errorf("resource attribute InterfaceIPv4 has wrong value")
 		}
+		if r.DefaultScopes[0] != "some_value" {
+			t.Errorf("resource attribute DefaultScopes has wrong value")
+		}
 	} else {
 		t.Errorf("should have created GCEResource")
 	}
@@ -66,6 +69,13 @@ func (fp *FakeProvider) get() (string, error) {
 		return "", fp.err
 	}
 	return fp.value, nil
+}
+
+func (fp *FakeProvider) getSlice() ([]string, error) {
+	if fp.err != nil {
+		return []string{}, fp.err
+	}
+	return []string{fp.value}, nil
 }
 
 func (fp *FakeProvider) getMap() (map[string]string, error) {
@@ -113,6 +123,10 @@ func (fp *FakeProvider) getTags() (string, error) {
 
 func (fp *FakeProvider) getMachineType() (string, error) {
 	return fp.get()
+}
+
+func (fp *FakeProvider) getDefaultScopes() ([]string, error) {
+	return fp.getSlice()
 }
 
 func (fp *FakeProvider) getMetadata() (map[string]string, error) {

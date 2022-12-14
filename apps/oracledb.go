@@ -806,7 +806,7 @@ var oracleQueries = []oracleQuery{
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverOracleDB{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverOracleDB{} })
 }
 
 type LoggingProcessorOracleDBAlert struct {
@@ -829,7 +829,7 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 					Regex: `^(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z))\n(?<message>[\s\S]+)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%Z",
+						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 					},
 				},
 			},
@@ -929,7 +929,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'\n?`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "timestamp",
-						TimeFormat: "%a %b %d %H:%M:%S %Y %Z",
+						TimeFormat: "%a %b %d %H:%M:%S %Y %z",
 						Types: map[string]string{
 							"length":        "int",
 							"action_number": "int",
@@ -945,12 +945,12 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
+				Regex:     `^\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\w+ \w+ \d+ \d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
+				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
 	}.Components(tag, uid)
@@ -989,8 +989,8 @@ func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Compon
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAlert{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAlert{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverOracleDBAudit{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorOracleDBAudit{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAlert{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAudit{} })
 }

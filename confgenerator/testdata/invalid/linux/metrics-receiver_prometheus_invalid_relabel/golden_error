@@ -1,1 +1,0 @@
-Key: 'PrometheusMetrics.config.config' Error:Field validation for 'config' failed on the 'error validating scrapeconfig for job prometheus: relabel_configs cannot rename location, namespace or cluster' tag

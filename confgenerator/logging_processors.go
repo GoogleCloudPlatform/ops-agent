@@ -86,7 +86,7 @@ func (p ParseMultiline) Components(tag, uid string) []fluentbit.Component {
 }
 
 func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &ParseMultiline{} })
+	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &ParseMultiline{} })
 }
 
 // ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
@@ -126,7 +126,7 @@ func (p LoggingProcessorParseJson) Components(tag, uid string) []fluentbit.Compo
 }
 
 func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseJson{} })
+	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorParseJson{} })
 }
 
 // A LoggingProcessorParseRegex applies a regex to the specified field, storing the named capture groups as keys in the log record.
@@ -245,7 +245,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(tag, uid string) []fluen
 }
 
 func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorParseRegex{} })
+	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorParseRegex{} })
 }
 
 type LoggingProcessorNestWildcard struct {
@@ -359,5 +359,5 @@ end`, lua))...)
 }
 
 func init() {
-	LoggingProcessorTypes.RegisterType(func() Component { return &LoggingProcessorExcludeLogs{} })
+	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
 }

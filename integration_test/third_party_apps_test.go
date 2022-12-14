@@ -50,6 +50,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -248,7 +249,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	if expectedField.ValueRegex != "" {
 		pattern = expectedField.ValueRegex
 	}
-	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	match, err := regexp.MatchString(pattern, actualField)
 	if err != nil {
 		return err
 	}
@@ -460,7 +461,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -505,6 +506,18 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
+
+	if fc == nil {
+		logger.ToMainLog().Printf("skipping feature tracking integration tests")
+		return err
+	}
+
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if err != nil {
+		return err
+	}
+
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
 
@@ -627,12 +640,32 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+
+		fc, err := getExpectedFeatures(app)
+
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
 
 	return nonRetryable, nil
+}
+
+func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTrackingContainer, error) {
+	var fc feature_tracking_metadata.FeatureTrackingContainer
+
+	featuresScript := path.Join("applications", app, "features.yaml")
+	featureBytes, err := readFileFromScriptsDir(featuresScript)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
@@ -673,7 +706,7 @@ func modifiedFiles(t *testing.T) []string {
 	stdout := string(out)
 	if err != nil {
 		stderr := ""
-        	if exitError := err.(*exec.ExitError); exitError != nil {
+		if exitError := err.(*exec.ExitError); exitError != nil {
 			stderr = string(exitError.Stderr)
 		}
 		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
@@ -776,9 +809,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBPlatform = "rhel-7"
-	OracleDBApp = "oracledb"
-
+	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
 )
 
@@ -797,14 +828,14 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * For all impacted apps, test on all platforms.
-//   * Always test all apps against the default platform.
-//   * Always test the default app (postgres/active_directory_ds for now)
+//   - For all impacted apps, test on all platforms.
+//   - Always test all apps against the default platform.
+//   - Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
+//
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too. Same for `OracleDBPlatform` and
-// `OracleDBApp`.
+// app on all other platforms too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
 	for i, test := range tests {
 		if testing.Short() {
@@ -828,11 +859,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAPlatform != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
-		}
-		isOracleDBPlatform := test.platform == OracleDBPlatform
-		isOracleDBApp := test.app == OracleDBApp
-		if isOracleDBPlatform != isOracleDBApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, OracleDBApp, OracleDBPlatform)
 		}
 	}
 }
@@ -886,6 +912,7 @@ func TestThirdPartyApps(t *testing.T) {
 					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
+					options.MachineType = "e2-highmem-8"
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 

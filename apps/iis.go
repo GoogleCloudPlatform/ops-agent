@@ -135,7 +135,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, "windows")
 }
 
 type LoggingProcessorIisAccess struct {
@@ -257,6 +257,6 @@ func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIisAccess{} }, "windows")
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, "windows")
 }
