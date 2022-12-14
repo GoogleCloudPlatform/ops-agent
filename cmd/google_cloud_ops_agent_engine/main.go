@@ -102,10 +102,10 @@ func detectAutoConfigs() error {
 			multiErr = multierr.Append(multiErr, fmt.Errorf("%s: %v", app.app, err))
 			continue
 		}
-		appendComponents(app.app, logging, uc.Logging.Receivers)
-		appendComponents(app.app, metrics, uc.Metrics.Receivers)
-		generatePipelines(app.app, uc.Logging.Receivers, uc.Logging.Service.Pipelines)
-		generatePipelines(app.app, uc.Metrics.Receivers, uc.Metrics.Service.Pipelines)
+		loggingMap := appendComponents(app.app, logging, uc.Logging.Receivers)
+		metricsMap := appendComponents(app.app, metrics, uc.Metrics.Receivers)
+		generatePipelines(app.app, loggingMap, uc.Logging.Service.Pipelines)
+		generatePipelines(app.app, metricsMap, uc.Metrics.Service.Pipelines)
 	}
 
 	if multiErr != nil {
@@ -120,11 +120,16 @@ func detectAutoConfigs() error {
 	return nil
 }
 
-func appendComponents[C any](app string, comps []C, m map[string]C) {
+// appendComponents takes a slice of components, generates names for them, and appends them
+// to the given map. A partial map containing only the added elements is returned.
+func appendComponents[C any](app string, comps []C, m map[string]C) map[string]C {
+	result := map[string]C{}
 	for i, comp := range comps {
 		name := fmt.Sprintf("%s_%d", app, i+1)
 		m[name] = comp
+		result[name] = comp
 	}
+	return result
 }
 
 func generatePipelines[C any](app string, m map[string]C, p map[string]*confgenerator.Pipeline) {
