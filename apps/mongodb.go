@@ -75,12 +75,12 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.ReceiverPipeline {
 			Type:   r.Type(),
 			Config: config,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

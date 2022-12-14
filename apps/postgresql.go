@@ -71,7 +71,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 			Type:   "postgresql",
 			Config: cfg,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
@@ -81,7 +81,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

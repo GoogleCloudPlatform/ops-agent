@@ -40,7 +40,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 					"collection_interval": m.CollectionIntervalString(),
 				},
 			},
-			Processors: []otel.Component{
+			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
 					otel.RenameMetric(
 						"sqlserver.transaction_log.usage",
@@ -52,7 +52,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
 				),
 				otel.NormalizeSums(),
-			},
+			}},
 		}}
 	}
 
@@ -78,7 +78,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
 					`\SQLServer:General Statistics(_Total)\User Connections`,
@@ -94,7 +94,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

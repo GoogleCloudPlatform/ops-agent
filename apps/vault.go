@@ -135,7 +135,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.TransformationMetrics(queries...),
 			otel.MetricsFilter(
 				"include",
@@ -170,7 +170,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

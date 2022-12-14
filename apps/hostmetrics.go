@@ -50,7 +50,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			{
 				// perform custom transformations that aren't supported by the metricstransform processor
 				Type: "agentmetrics",
@@ -298,7 +298,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

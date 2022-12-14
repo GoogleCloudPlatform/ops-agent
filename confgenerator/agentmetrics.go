@@ -45,7 +45,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -86,7 +86,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 
@@ -108,7 +108,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -138,7 +138,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 

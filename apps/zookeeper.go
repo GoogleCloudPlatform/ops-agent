@@ -51,12 +51,12 @@ func (r MetricsReceiverZookeeper) Pipelines() []otel.ReceiverPipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

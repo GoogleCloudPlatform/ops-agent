@@ -494,7 +494,6 @@ service:
       exporters:
       - googlecloud
       processors:
-      - metricstransform/otlp_0
       - resourcedetection/_global_0
       receivers:
       - otlp/otlp

@@ -26,8 +26,10 @@ const MetricsPort = 20201
 
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type ReceiverPipeline struct {
-	Receiver   Component
-	Processors []Component
+	Receiver Component
+	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
+	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
+	Processors map[string][]Component
 	// GMP indicates that the pipeline outputs Prometheus metrics.
 	GMP bool
 }
@@ -142,7 +144,12 @@ func (c ModularConfig) Generate() (string, error) {
 		receiverPipeline := c.ReceiverPipelines[pipeline.ReceiverPipelineName]
 		receiverName := receiverPipeline.Receiver.name(pipeline.ReceiverPipelineName)
 		var receiverProcessorNames []string
-		for i, processor := range receiverPipeline.Processors {
+		p, ok := receiverPipeline.Processors[pipeline.Type]
+		if !ok {
+			// This receiver pipeline isn't for this data type.
+			continue
+		}
+		for i, processor := range p {
 			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
 			receiverProcessorNames = append(receiverProcessorNames, name)
 			processors[name] = processor.Config

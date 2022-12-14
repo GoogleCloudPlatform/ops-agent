@@ -167,7 +167,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
 				"tls":                 s.TLSConfig(true),
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -180,7 +180,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
 			),
-		},
+		}},
 	}}
 }
 

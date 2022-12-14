@@ -86,7 +86,7 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.ReceiverPipeline {
 				"timeout":                 timeout,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
@@ -95,7 +95,7 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.ReceiverPipeline {
 				otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
 				otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
 			),
-		},
+		}},
 	}}
 }
 

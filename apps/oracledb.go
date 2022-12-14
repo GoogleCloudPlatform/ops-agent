@@ -97,7 +97,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 			Type:   "sqlquery",
 			Config: config,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com",
@@ -112,7 +112,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 					otel.RenameLabel("WAIT_CLASS", "wait_class"),
 				),
 			),
-		},
+		}},
 	}}
 }
 

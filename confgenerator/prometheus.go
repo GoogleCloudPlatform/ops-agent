@@ -88,7 +88,11 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r.PromConfig),
-		GMP:      true,
+		Processors: map[string][]otel.Component{
+			// Expect metrics, without any additional processing.
+			"metrics": nil,
+		},
+		GMP: true,
 	}}
 }
 

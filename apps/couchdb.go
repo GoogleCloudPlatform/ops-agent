@@ -52,12 +52,12 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
 				"password":            r.Password,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

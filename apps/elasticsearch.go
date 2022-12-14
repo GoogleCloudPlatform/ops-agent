@@ -68,12 +68,12 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 			Type:   "elasticsearch",
 			Config: cfg,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

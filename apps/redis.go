@@ -61,7 +61,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 				"transport":           transport,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -72,7 +72,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

@@ -78,7 +78,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 			Type:   "prometheus",
 			Config: config,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			// remove prometheus scraping meta-metrics
 			otel.MetricsFilter("exclude", "strict",
@@ -159,7 +159,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 			),
 			// Using the transform processor for metrics
 			otel.TransformationMetrics(r.transformMetrics()...),
-		},
+		}},
 	}}
 }
 

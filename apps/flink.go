@@ -44,7 +44,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
@@ -61,7 +61,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
 			),
-		},
+		}},
 	}}
 }
 

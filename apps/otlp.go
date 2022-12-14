@@ -48,11 +48,14 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			// TODO: Set instrumentation_source labels, etc.
+		Processors: map[string][]otel.Component{
+			"metrics": {
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				// TODO: Set instrumentation_source labels, etc.
+			},
+			"traces": nil,
 		},
 	}}
 }

@@ -46,7 +46,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 				"endpoint":            r.ServerStatusURL,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -56,7 +56,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

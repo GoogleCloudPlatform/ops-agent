@@ -37,12 +37,12 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.ReceiverPipeline {
 				"collection_interval": r.CollectionIntervalString(),
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

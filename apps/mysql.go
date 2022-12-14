@@ -64,7 +64,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 				"transport":           transport,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				// The following changes are here to ensure maximum backwards compatibility after the fixes
@@ -82,7 +82,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

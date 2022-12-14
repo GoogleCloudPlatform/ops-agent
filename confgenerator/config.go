@@ -602,7 +602,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 			Type:   "jmx",
 			Config: config,
 		},
-		Processors: processors,
+		Processors: map[string][]otel.Component{"metrics": processors},
 	}}
 }
 
