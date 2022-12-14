@@ -138,9 +138,7 @@ func appendComponents[C any](app string, comps []C, m map[string]C) map[string]C
 
 func generatePipelines[C any](app string, m map[string]C, p map[string]*confgenerator.Pipeline) {
 	if len(m) > 0 {
-		p[app] = &confgenerator.Pipeline{
-			ReceiverIDs: make([]string, 0),
-		}
+		p[app] = &confgenerator.Pipeline{}
 		for k := range m {
 			p[app].ReceiverIDs = append(p[app].ReceiverIDs, k)
 		}
