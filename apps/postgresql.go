@@ -15,6 +15,9 @@
 package apps
 
 import (
+	"fmt"
+	"os/exec"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -189,4 +192,67 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorPostgresql{} })
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverPostgresql{} })
+}
+
+// PostgresqlDetectConfigs generates logging and metrics receivers based on postgresql
+// configurations. Return empty lists if the app is not installed
+func PostgresqlDetectConfigs() ([]confgenerator.LoggingReceiver, []confgenerator.MetricsReceiver, error) {
+	// postgresql service must be installed and running
+	isRunning, err := isPostgresqlInstalledAndRunning()
+	if err != nil {
+		return nil, nil, err
+	} else if !isRunning {
+		return nil, nil, nil
+	}
+
+	// First log_destination must be stderr
+	// TODO: accept more complicated configurations for log_destination
+	logDest, err := getPostgresqlFirstLogDestination()
+	if err != nil {
+		return nil, nil, err
+	} else if logDest != "stderr" {
+		return nil, nil, fmt.Errorf("log_destination must be stderr, got %s", logDest)
+	}
+
+	// Get log file (stderr is redirected to it)
+	logFile, err := getPostgresqlStderrDestination()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logging := &LoggingReceiverPostgresql{}
+	logging.ConfigComponent.Type = logging.Type()
+	logging.IncludePaths = []string{logFile}
+
+	// TODO: metrics receivers (need to handle password)
+	return []confgenerator.LoggingReceiver{logging}, nil, nil
+}
+
+func isPostgresqlInstalledAndRunning() (bool, error) {
+	cmd := exec.Command("bash", "-c", `sudo service --status-all | grep -E '\s*\[\s*\+\s*\]\s*postgresql'`)
+	err := cmd.Run()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		if exitError.ExitCode() > 1 {
+			return false, err
+		}
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func runCommandAndGetOutput(command string) (string, error) {
+	cmd := exec.Command("bash", "-c", command)
+	outputBytes, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(outputBytes)), nil
+}
+
+func getPostgresqlFirstLogDestination() (string, error) {
+	return runCommandAndGetOutput(`sudo su postgres -c "psql postgres -tc \"show log_destination;\"" | head -1`)
+}
+
+func getPostgresqlStderrDestination() (string, error) {
+	return runCommandAndGetOutput(`p=$(ps ax | grep -E 'postgres.*checkpointer' | grep -v grep | awk '{print $1}'); sudo ls -la /proc/$p/fd | sed -rn 's/.*2\s+->\s+(.*)/\1/p'`)
 }

@@ -96,6 +96,10 @@ func detectAutoConfigs() error {
 			app:    "apache",
 			detect: apps.ApacheDetectConfigs,
 		},
+		{
+			app:    "postgresql",
+			detect: apps.PostgresqlDetectConfigs,
+		},
 	} {
 		logging, metrics, err := app.detect()
 		if err != nil {
