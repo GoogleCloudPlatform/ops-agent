@@ -16,8 +16,6 @@ package health_checks
 
 import (
 	"log"
-	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -27,23 +25,23 @@ var (
 	monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
 )
 
-func runGetHTTPRequest(url string) (string, string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", "", err
-	}
-	defer resp.Body.Close()
+// func runGetHTTPRequest(url string) (string, string, error) {
+// 	resp, err := http.Get(url)
+// 	if err != nil {
+// 		return "", "", err
+// 	}
+// 	defer resp.Body.Close()
 
-	status := resp.Status
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", "", err
-	}
+// 	status := resp.Status
+// 	b, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return "", "", err
+// 	}
 
-	return status, string(b), nil
-}
+// 	return status, string(b), nil
+// }
 
-type NetworkCheck struct {}
+type NetworkCheck struct{}
 
 func (c NetworkCheck) Name() string {
 	return "Network Check"
@@ -52,27 +50,29 @@ func (c NetworkCheck) Name() string {
 func (c NetworkCheck) RunCheck() error {
 
 	// Request to logging API
-	status, _, err := runGetHTTPRequest(loggingAPIUrl)
-	log.Printf("http request status : %s", status)
+	response, err := http.Get(loggingAPIUrl)
+	log.Printf("http request status : %s", response.Status)
 	if err != nil {
 		return err
 	}
-	if status == "200 OK" {
+	switch response.StatusCode {
+	case http.StatusOK:
 		log.Printf("Request to the Logging API was successful.")
-	} else {
+	default:
 		return LOG_API_CONN_ERR
 	}
 
 	// Request to monitoring API
-	status, _, err = runGetHTTPRequest(monitoringAPIUrl)
-	log.Printf(fmt.Sprintf("http request status : %s", status))
+	response, err = http.Get(monitoringAPIUrl)
+	log.Printf("http request status : %s", response.Status)
 	if err != nil {
 		return err
 	}
-	if status == "200 OK" {
-		log.Printf("Request to the Monitoring API was successful.")
-	} else {
-		return MON_API_CONN_ERR
+	switch response.StatusCode {
+	case http.StatusOK:
+		log.Printf("Request to the Logging API was successful.")
+	default:
+		return LOG_API_CONN_ERR
 	}
 
 	return nil

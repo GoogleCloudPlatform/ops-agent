@@ -53,8 +53,8 @@ func (r HealthCheckRegistry) RunAllHealthChecks() (string, error) {
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
 				result = append(result, fmt.Sprintf("Check: %s, Result: FAIL", c.Name()))
-				result = append(result, fmt.Sprintf("Failure: %s", healthError.message))
-				result = append(result, fmt.Sprintf("Solution: %s \n", healthError.action))
+				result = append(result, fmt.Sprintf("Failure: %s", healthError.Message))
+				result = append(result, fmt.Sprintf("Solution: %s \n", healthError.Action))
 			} else {
 				result = append(result, fmt.Sprintf("Check: %s, Result: ERROR", c.Name()))
 				result = append(result, fmt.Sprintf("Detail: %s \n", err.Error()))

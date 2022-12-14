@@ -22,70 +22,51 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-type FailureCheck struct {}
-
+type FailureCheck struct{}
 
 func (c FailureCheck) RunCheck() error {
-	return HC_FAILURE_ERR
+	return health_checks.HC_FAILURE_ERR
 }
 
 func TestCheckFailure(t *testing.T) {
-	wantResult := "FAIL"
-	wantFailure := "The Health Check failed."
+	wantMessage := "The Health Check failed."
 	wantAction := ""
-	testCheck := &FailureCheck{HealthCheck: health_checks.NewHealthCheck()}
+	testCheck := FailureCheck{}
 
 	err := testCheck.RunCheck()
 
-	assert.NilError(t, err)
-	assert.Equal(t, wantResult, testCheck.GetResult())
-	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantAction, testCheck.GetActionMessage())
+	assert.ErrorType(t, err, health_checks.HealthCheckError{})
+	healthError, _ := err.(health_checks.HealthCheckError)
+	assert.Equal(t, wantMessage, healthError.Message)
+	assert.Equal(t, wantAction, healthError.Action)
 }
 
-type SuccessCheck struct {
-	health_checks.HealthCheck
-}
+type SuccessCheck struct{}
 
 func (c SuccessCheck) RunCheck() error {
 	return nil
 }
 
 func TestCheckSuccess(t *testing.T) {
-	wantResult := "PASS"
-	wantFailure := ""
-	wantAction := ""
-	testCheck := &SuccessCheck{HealthCheck: health_checks.NewHealthCheck()}
+	testCheck := SuccessCheck{}
 
 	err := testCheck.RunCheck()
 
 	assert.NilError(t, err)
-	assert.Equal(t, wantResult, testCheck.GetResult())
-	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantAction, testCheck.GetActionMessage())
 }
 
-type ErrorCheck struct {
-	health_checks.HealthCheck
-}
+type ErrorCheck struct{}
 
 func (c ErrorCheck) RunCheck() error {
 	err := errors.New("Test error.")
-	c.Error(err)
 	return err
 }
 
 func TestCheckError(t *testing.T) {
-	wantResult := "ERROR"
-	wantError := "Test error."
-	wantFailure := "The Health Check ran into an error."
-	wantAction := ""
-	testCheck := &ErrorCheck{HealthCheck: health_checks.NewHealthCheck()}
+	wantMessage := "Test error."
+	testCheck := ErrorCheck{}
 
 	err := testCheck.RunCheck()
 
-	assert.ErrorContains(t, err, wantError)
-	assert.Equal(t, wantResult, testCheck.GetResult())
-	assert.Equal(t, wantFailure, testCheck.GetFailureMessage())
-	assert.Equal(t, wantAction, testCheck.GetActionMessage())
+	assert.ErrorContains(t, err, wantMessage)
 }
