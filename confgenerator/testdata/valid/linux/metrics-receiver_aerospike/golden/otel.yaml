@@ -419,7 +419,7 @@ processors:
     - gce
   transform/aerospike_2:
     metrics:
-      queries:
+      statements:
       - set(attributes["node_name"], resource.attributes["aerospike.node.name"])
       - set(attributes["namespace_name"], resource.attributes["aerospike.namespace"])
 receivers:

@@ -466,7 +466,7 @@ processors:
     - gce
   transform/mssql_1:
     metrics:
-      queries:
+      statements:
       - set(attributes["database"], resource.attributes["sqlserver.database.name"])
 receivers:
   hostmetrics/hostmetrics:

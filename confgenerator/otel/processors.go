@@ -107,7 +107,7 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 		Type: "transform",
 		Config: map[string]map[string]interface{}{
 			"metrics": {
-				"queries": queryStrings,
+				"statements": queryStrings,
 			},
 		},
 	}

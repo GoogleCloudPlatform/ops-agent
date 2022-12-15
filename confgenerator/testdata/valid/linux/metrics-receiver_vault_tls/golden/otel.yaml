@@ -463,7 +463,7 @@ processors:
     - gce
   transform/vault_0:
     metrics:
-      queries:
+      statements:
       - convert_summary_count_val_to_sum("cumulative",  true) where metric.name == "vault_azure_delete"
       - convert_summary_sum_val_to_sum("cumulative",  true) where metric.name == "vault_azure_delete"
       - set(attributes["storage"], "azure") where metric.name == "vault_azure_delete_count"
