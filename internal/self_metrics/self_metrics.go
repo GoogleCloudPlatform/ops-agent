@@ -17,6 +17,7 @@ package self_metrics
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -31,6 +32,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
@@ -193,22 +196,28 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 		return err
 	}
 
-	err = provider.ForceFlush(ctx)
-	if err != nil {
-		return err
-	}
-
+	timer := time.NewTimer(10 * time.Second)
 waitForDeathSignal:
 
 	for {
 		select {
+		case <-timer.C:
+			err := provider.ForceFlush(ctx)
+			if err != nil {
+				log.Print(err)
+			}
 		case <-death:
 			break waitForDeathSignal
 		}
 	}
 
 	if err = provider.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown meter provider: %w", err)
+		myStatus, ok := status.FromError(err)
+		if !ok && myStatus.Code() == codes.Unknown {
+			log.Print(err)
+		} else {
+			return fmt.Errorf("failed to shutdown meter provider: %w", err)
+		}
 	}
 	return nil
 }
