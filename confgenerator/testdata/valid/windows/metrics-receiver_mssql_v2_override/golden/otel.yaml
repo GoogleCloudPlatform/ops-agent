@@ -476,11 +476,11 @@ processors:
     - gce
   transform/default__pipeline_mssql_1:
     metrics:
-      queries:
+      statements:
       - set(attributes["database"], resource.attributes["sqlserver.database.name"])
   transform/mssql_mssql_1:
     metrics:
-      queries:
+      statements:
       - set(attributes["database"], resource.attributes["sqlserver.database.name"])
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
