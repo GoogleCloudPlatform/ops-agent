@@ -494,7 +494,7 @@ processors:
   transform/iis__v2_1:
     metrics:
       statements:
-      - keep_keys(resource.attributes)
+      - keep_keys(resource.attributes, [])
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
