@@ -43,12 +43,17 @@ func main() {
 	}
 }
 func run() error {
+	var detected *confgenerator.UnifiedConfig
+	var err error
 	if *detect {
-		return detectAutoConfigs()
+		detected, err = detectAutoConfigs()
+		if err != nil {
+			return err
+		}
 	}
 
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs, detected)
 	if err != nil {
 		return err
 	}
@@ -70,7 +75,7 @@ func run() error {
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
 }
 
-func detectAutoConfigs() error {
+func detectAutoConfigs() (*confgenerator.UnifiedConfig, error) {
 	var multiErr error
 	uc := confgenerator.UnifiedConfig{
 		Logging: &confgenerator.Logging{
@@ -113,15 +118,15 @@ func detectAutoConfigs() error {
 	}
 
 	if multiErr != nil {
-		return multiErr
+		return &uc, multiErr
 	}
 
 	yamlBytes, err := yaml.Marshal(uc)
 	if err != nil {
-		return err
+		return &uc, err
 	}
 	log.Printf("Detected the following configuration automatically:\n\n%s", string(yamlBytes))
-	return nil
+	return &uc, nil
 }
 
 // appendComponents takes a slice of components, generates names for them, and appends them

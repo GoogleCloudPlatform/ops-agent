@@ -177,6 +177,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
 		apps.BuiltInConfStructs,
+		&confgenerator.UnifiedConfig{}
 	)
 	if err != nil {
 		return

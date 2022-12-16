@@ -24,8 +24,8 @@ import (
 
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
 // It returns the built-in config for the platform and the merged config.
-func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) ([]byte, []byte, error) {
-	mergedConf, err := mergeConfFiles(userConfPath, platform, builtInConfStructs)
+func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig, detected *UnifiedConfig) ([]byte, []byte, error) {
+	mergedConf, err := mergeConfFiles(userConfPath, platform, builtInConfStructs, detected)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -44,7 +44,7 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 	return builtInYaml, mergedConfigYaml, nil
 }
 
-func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
+func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig, detected *UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
 
 	// Read the built-in config file.
@@ -68,7 +68,7 @@ func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 		mergeConfigs(&original, &overrides)
 	}
 
-	return &original, nil
+	return CombineConfigs(&original, detected, "main", "detected", "linux")
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
@@ -143,4 +143,94 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 			}
 		}
 	}
+}
+
+// CombineConfigs takes two UnifiedConfigs and combine the receivers, processors
+// and service by adding mainSuffix and additionSuffix respectively
+func CombineConfigs(main, addition *UnifiedConfig, mainSuffix, additionSuffix, platform string) (*UnifiedConfig, error) {
+	combined, err := main.DeepCopy(platform)
+	if err != nil {
+		return &combined, err
+	}
+	if addition.Logging != nil {
+		// if addition has logging section
+		// First append the suffix to the existing components
+		if combined.Logging != nil {
+			addSuffixForLogging(mainSuffix, &combined)
+		}
+		// Then append the suffix to the new addition components
+		addSuffixForLogging(additionSuffix, addition)
+		// Add new components to the final combined config
+		for k, v := range addition.Logging.Receivers {
+			combined.Logging.Receivers[k] = v
+		}
+		for k, v := range addition.Logging.Processors {
+			combined.Logging.Processors[k] = v
+		}
+		if addition.Logging.Service != nil {
+			for k, v := range addition.Logging.Service.Pipelines {
+				combined.Logging.Service.Pipelines[k] = v
+			}
+		}
+	}
+	if addition.Metrics != nil {
+		if combined.Metrics != nil {
+			addSuffixForMetrics(mainSuffix, &combined)
+		}
+		addSuffixForMetrics(additionSuffix, addition)
+		for k, v := range addition.Metrics.Receivers {
+			combined.Metrics.Receivers[k] = v
+		}
+		for k, v := range addition.Metrics.Processors {
+			combined.Metrics.Processors[k] = v
+		}
+		if addition.Metrics.Service != nil {
+			for k, v := range addition.Metrics.Service.Pipelines {
+				combined.Metrics.Service.Pipelines[k] = v
+			}
+		}
+	}
+	return &combined, nil
+}
+
+// addSuffixForLogging add suffix to the name of receivers, processors
+// and pipelines, and update the receivers & processors name in the pipelines
+func addSuffixForLogging(suffix string, uc *UnifiedConfig) {
+	uc.Logging.Receivers = addSuffixForComponents(suffix, uc.Logging.Receivers)
+	uc.Logging.Processors = addSuffixForComponents(suffix, uc.Logging.Processors)
+	addSuffixForPipelines(suffix, uc.Logging.Service.Pipelines)
+	uc.Logging.Service.Pipelines = addSuffixForComponents(suffix, uc.Logging.Service.Pipelines)
+}
+
+// addSuffixForMetrics add suffix to the name of receivers, processors
+// and pipelines, and update the receivers & processors name in the pipelines
+func addSuffixForMetrics(suffix string, uc *UnifiedConfig) {
+	uc.Metrics.Receivers = addSuffixForComponents(suffix, uc.Metrics.Receivers)
+	uc.Metrics.Processors = addSuffixForComponents(suffix, uc.Metrics.Processors)
+	addSuffixForPipelines(suffix, uc.Metrics.Service.Pipelines)
+	uc.Metrics.Service.Pipelines = addSuffixForComponents(suffix, uc.Metrics.Service.Pipelines)
+}
+
+func addSuffixForComponents[C any](suffix string, comps map[string]C) map[string]C {
+	modified := map[string]C{}
+	for name, comp := range comps {
+		newName := addSuffix(name, suffix)
+		modified[newName] = comp
+	}
+	return modified
+}
+
+func addSuffixForPipelines(suffix string, ps map[string]*Pipeline) {
+	for _, p := range ps {
+		for i, rID := range p.ReceiverIDs {
+			p.ReceiverIDs[i] = addSuffix(rID, suffix)
+		}
+		for i, pID := range p.ProcessorIDs {
+			p.ProcessorIDs[i] = addSuffix(pID, suffix)
+		}
+	}
+}
+
+func addSuffix(original, suffix string) string {
+	return fmt.Sprintf("%s_%s", original, suffix)
 }
