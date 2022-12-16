@@ -477,7 +477,7 @@ processors:
   transform/default__pipeline_iis_1:
     metrics:
       statements:
-      - keep_keys(resource.attributes)
+      - keep_keys(resource.attributes, [])
   transform/iispipeline_iis_0:
     metrics:
       statements:
@@ -486,7 +486,7 @@ processors:
   transform/iispipeline_iis_1:
     metrics:
       statements:
-      - keep_keys(resource.attributes)
+      - keep_keys(resource.attributes, [])
 receivers:
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
