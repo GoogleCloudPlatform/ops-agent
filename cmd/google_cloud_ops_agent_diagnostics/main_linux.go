@@ -18,25 +18,17 @@
 package main
 
 import (
-	"log"
 	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
-	"go.opentelemetry.io/otel"
 )
 
 var (
 	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
-
-type SelfMetricsErrorHandler struct {}
-
-func (s SelfMetricsErrorHandler) Handle(err error) {
-	log.Printf("error collecting metrics: %v", err)
-}
 
 func run() error {
 	userUc, mergedUc, err := getUnifiedConfigAndValidate(*config, "linux")
@@ -59,10 +51,6 @@ func run() error {
 			}
 		}
 	}()
-
-	// Set otel error handler
-	handler := SelfMetricsErrorHandler{}
-	otel.SetErrorHandler(handler)
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {
