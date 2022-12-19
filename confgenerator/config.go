@@ -775,7 +775,7 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 			// TODO: Add "logging" here?
 		} {
 			if f.missing {
-				return fmt.Errorf("combined receiver %q found with no %s section; did you forget to define a %s pipeline?", k, f.name, f.name)
+				return fmt.Errorf("combined receiver %q found with no %s section; separate metrics and traces pipelines are required for this receiver, or an empty %s configuration if the data is being intentionally dropped", k, f.name, f.name)
 			}
 		}
 	}
