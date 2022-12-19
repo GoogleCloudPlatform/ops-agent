@@ -14,11 +14,11 @@
 
 metrics:
   receivers:
-    otlp:
+    myapache:
       type: apache
 traces:
   service:
     pipelines:
       otlp:
         receivers:
-          - otlp
+          - myapache

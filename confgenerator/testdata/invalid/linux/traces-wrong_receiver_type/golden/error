@@ -1,1 +1,1 @@
-traces receiver "otlp" from pipeline "otlp" is not defined.
+traces receiver "myapache" from pipeline "otlp" is not defined.
