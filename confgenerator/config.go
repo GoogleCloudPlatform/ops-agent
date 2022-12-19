@@ -872,7 +872,7 @@ func (uc *UnifiedConfig) ValidateTraces(platform string) error {
 			return err
 		}
 		if len(p.ProcessorIDs) > 0 {
-			return fmt.Errorf("Traces pipelines do not support processors.")
+			return fmt.Errorf("traces pipeline %q uses processors but traces pipelines do not support processors", id)
 		}
 		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
 			return err
