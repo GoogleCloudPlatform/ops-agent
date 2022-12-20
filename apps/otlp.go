@@ -32,12 +32,12 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
+func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{
@@ -48,11 +48,14 @@ func (r ReceiverOTLP) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			// TODO: Set instrumentation_source labels, etc.
+		Processors: map[string][]otel.Component{
+			"metrics": {
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				// TODO: Set instrumentation_source labels, etc.
+			},
+			"traces": nil,
 		},
 	}}
 }

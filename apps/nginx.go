@@ -34,11 +34,11 @@ func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverNginx) Pipelines() []otel.ReceiverPipeline {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{
@@ -46,12 +46,12 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 				"endpoint":            r.StubStatusURL,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

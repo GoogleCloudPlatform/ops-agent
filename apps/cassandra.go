@@ -34,7 +34,7 @@ func (r MetricsReceiverCassandra) Type() string {
 	return "cassandra"
 }
 
-func (r MetricsReceiverCassandra) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverCassandra) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "cassandra"
 
 	return r.MetricsReceiverSharedJVM.

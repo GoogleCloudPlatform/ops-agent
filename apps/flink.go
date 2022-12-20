@@ -32,11 +32,11 @@ func (MetricsReceiverFlink) Type() string {
 
 const defaultFlinkEndpoint = "http://localhost:8081"
 
-func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{
@@ -44,7 +44,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
@@ -61,7 +61,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
 			),
-		},
+		}},
 	}}
 }
 

@@ -41,6 +41,8 @@ type UnifiedConfig struct {
 	Combined *Combined `yaml:"combined,omitempty"`
 	Logging  *Logging  `yaml:"logging"`
 	Metrics  *Metrics  `yaml:"metrics"`
+	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
+	Traces *Traces `yaml:"traces,omitempty"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -491,9 +493,18 @@ type Metrics struct {
 	Service   *MetricsService        `yaml:"service"`
 }
 
-type MetricsReceiver interface {
+type OTelReceiver interface {
 	Component
-	Pipelines() []otel.Pipeline
+	Pipelines() []otel.ReceiverPipeline
+}
+
+type MetricsReceiver interface {
+	OTelReceiver
+}
+
+type TracesReceiver interface {
+	// TODO: Distinguish from metrics somehow?
+	OTelReceiver
 }
 
 type MetricsReceiverShared struct {
@@ -572,7 +583,7 @@ func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJar
 
 // ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
 // This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.Pipeline {
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.ReceiverPipeline {
 	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
@@ -597,12 +608,12 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = m.Password
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,
 		},
-		Processors: processors,
+		Processors: map[string][]otel.Component{"metrics": processors},
 	}}
 }
 
@@ -685,6 +696,14 @@ type MetricsService struct {
 	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
+type Traces struct {
+	Service *TracesService `yaml:"service"`
+}
+
+type TracesService struct {
+	Pipelines map[string]*Pipeline
+}
+
 func (uc *UnifiedConfig) Validate(platform string) error {
 	if uc.Logging != nil {
 		if err := uc.Logging.Validate(platform); err != nil {
@@ -693,6 +712,16 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 	}
 	if uc.Metrics != nil {
 		if err := uc.ValidateMetrics(platform); err != nil {
+			return err
+		}
+	}
+	if uc.Traces != nil {
+		if err := uc.ValidateTraces(platform); err != nil {
+			return err
+		}
+	}
+	if uc.Combined != nil {
+		if err := uc.ValidateCombined(); err != nil {
 			return err
 		}
 	}
@@ -740,6 +769,30 @@ func (l *Logging) Validate(platform string) error {
 	return nil
 }
 
+func (uc *UnifiedConfig) ValidateCombined() error {
+	m := uc.Metrics
+	t := uc.Traces
+	c := uc.Combined
+	if c == nil {
+		return nil
+	}
+	for k, _ := range c.Receivers {
+		for _, f := range []struct {
+			name    string
+			missing bool
+		}{
+			{"metrics", m == nil},
+			{"traces", t == nil},
+			// TODO: Add "logging" here?
+		} {
+			if f.missing {
+				return fmt.Errorf("combined receiver %q found with no %s section; separate metrics and traces pipelines are required for this receiver, or an empty %s configuration if the data is being intentionally dropped", k, f.name, f.name)
+			}
+		}
+	}
+	return nil
+}
+
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
 	for k, v := range uc.Metrics.Receivers {
@@ -748,9 +801,21 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := uc.Metrics.Receivers[k]; ok {
-				return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+				return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
 			}
 			if v, ok := v.(MetricsReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
+	validReceivers := map[string]TracesReceiver{}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := v.(TracesReceiver); ok {
 				validReceivers[k] = v
 			}
 		}
@@ -797,6 +862,35 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+		}
+	}
+	return nil
+}
+
+func (uc *UnifiedConfig) ValidateTraces(platform string) error {
+	t := uc.Traces
+	subagent := "traces"
+	if t == nil || t.Service == nil {
+		return nil
+	}
+	receivers, err := uc.TracesReceivers()
+	if err != nil {
+		return err
+	}
+	for _, id := range sortedKeys(t.Service.Pipelines) {
+		p := t.Service.Pipelines[id]
+		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+			return err
+		}
+		if len(p.ProcessorIDs) > 0 {
+			return fmt.Errorf("traces pipeline %q uses processors but traces pipelines do not support processors", id)
+		}
+		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		}
+
+		if len(p.ExporterIDs) > 0 {
+			log.Printf(`The "traces.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
 	}
 	return nil

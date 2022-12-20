@@ -55,7 +55,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
+	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -2602,7 +2602,11 @@ metrics:
     pipelines:
       otlp:
         receivers:
-        - otlp`
+        - otlp
+traces:
+  service:
+    pipelines:
+`
 		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -2629,7 +2633,7 @@ metrics:
 	})
 }
 
-func testOTLPTraces(t *testing.T) {
+func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
