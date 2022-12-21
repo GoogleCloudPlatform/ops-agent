@@ -60,15 +60,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"golang.org/x/exp/slices"
-	"google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
-	"gopkg.in/yaml.v2"
-
-	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
-	distribution "google.golang.org/genproto/googleapis/api/distribution"
+	"golang.org/x/exp/slices"
+	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
@@ -2125,77 +2120,58 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	})
 }
 
-// Test the Histogram and Summary metric types using static testing files
-// The files will contain metrics in the right format and
-// hosted by a simple Python HTTP server so that the agent can scrape the metrics
+// Test the Histogram metric type using static testing files. The files will
+// contain metrics in the right format and hosted by a simple HTTP server so
+// that the agent can scrape the metrics
 // The test will send two sets of metric points, to verify the cumulative metrics
 // are correctly received and processed
-func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
+func TestPrometheusHistogramMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		// TODO: Enable this test for all distros once the prometheus receiver is GA.
-		// For some reason, the featuregate, when set in the default systemd environment
-		// file, is not being picked up on centOS distros. This is a temporary workaround.
-		if gce.IsWindows(platform) || gce.IsCentOS(platform) || gce.IsRHEL(platform) {
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// 1. Upload the step one metric points
-		workDir := path.Join(workDirForPlatform(vm.Platform), "sample_data")
-		stepOneMetrics := "testdata/sample_histogram_summary_1.txt"
-		f, err := os.Open(stepOneMetrics)
+		prometheusTestdata := path.Join("testdata", "prometheus")
+		remoteWorkDir := path.Join("/opt", "go-http-server")
+		filesToUpload := map[string][]fileToUpload{
+			"step_one": {
+				{local: path.Join(prometheusTestdata, "sample_histogram_step_1"),
+					remote: path.Join(remoteWorkDir, "data")},
+				{local: path.Join(prometheusTestdata, "http_server.go"),
+					remote: path.Join(remoteWorkDir, "http_server.go")},
+				{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")}},
+			"step_two": {
+				{local: path.Join(prometheusTestdata, "sample_histogram_step_2"),
+					remote: path.Join(remoteWorkDir, "data")}},
+		}
+
+		// 1. Upload the step one files
+		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_one"])
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, "data.json"))
-		if err != nil {
+
+		// 2. Setup the golang and start the go http server
+		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-
-		// 2. Setup the Python env and start the http server
-		packages := []string{"python3"}
-		err = agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		setupScript := `sudo systemctl daemon-reload
+			sudo systemctl enable http-server-for-prometheus-test
+			sudo systemctl restart http-server-for-prometheus-test`
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
 		if err != nil {
-			t.Fatalf("failed to install %v with err: %s", packages, err)
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
-
-		// Run the setup script to start the Python http server
-		setupScript, err := os.ReadFile("testdata/setup_python_server.sh")
-		if err != nil {
-			t.Fatalf("failed to open setup script: %s", err)
+		// Wait until the http server is ready
+		time.Sleep(5 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
-
-		env := map[string]string{"WORKDIR": workDir}
-		maxAttampts := 5
-		for attempt := 0; attempt < maxAttampts; attempt++ {
-			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
-			// Since the script will start the processes in the background, the
-			// script should finish without error
-			if err != nil {
-				t.Fatalf("failed to run the http server in VM with err: %v, stderr: %s", err, setupOut.Stderr)
-			}
-			// Wait until the http server is ready
-			time.Sleep(30 * time.Second)
-			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data.json"`)
-			// We will retry when the Python HTTP server is not started:
-			// the stderr will have: "curl: (7) Failed to connect to localhost port 8000 after 1 ms: Connection refused"
-			// Otherwise - break the retrying loop
-			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") {
-				break
-			}
-
-			// Out of attempts
-			if attempt == maxAttampts-1 {
-				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
-				if liveCheckErr != nil {
-					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
-				}
-				t.Fatalf("failed to start the HTTP server - exhausted retries. %s", errString)
-			}
-		}
-
 		// 3. Config and start the agent
 		// Set the scrape interval to 10 second, so that metrics points can be
 		// received faster to shorten the duration of this test
@@ -2205,8 +2181,8 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
       type: prometheus
       config:
         scrape_configs:
-        - job_name: json
-          metrics_path: /data.json
+        - job_name: test
+          metrics_path: /data
           scrape_interval: 10s
           static_configs:
             - targets:
@@ -2217,7 +2193,7 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
         receivers: [prom_app]
 `
 		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"UNSUPPORTED_BETA_PROMETHEUS_RECEIVER": "enabled"}); err != nil {
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
 			t.Fatal(err)
 		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -2239,9 +2215,11 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
 		// Bounds (less than or equal) |0  |20     |40     |60     |80     |+inf
 		// Points                      |[0]|[10,20]|[30,40]|[50,60]|[70,80]|[90]
 		// Count                       |1  |2      |2      |2      |2      |1
-		// And histogram metrics are stored as cumulative type metrics, so for
-		// this initial step, Count/Mean/SumOfSquaredDeviation are all zeros,
-		// and the BucketCounts is nil
+		// And histogram metrics are stored as cumulative type metrics, and
+		// histogram metrics get normalized
+		// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+		// so for this initial step, Count/Mean/SumOfSquaredDeviation are all
+		// zeros, and the BucketCounts is nil
 		stepOneExpectedHistogram := &distribution.Distribution{
 			Count:                 0,
 			Mean:                  0,
@@ -2255,58 +2233,15 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
 			},
 		}
 		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpectedHistogram))
-		// For Summary: We use Objectives [0.5, 0.9, 0.99]
-		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-		// And get:
-		// Objectives |0.5            |0.9               |0.99
-		// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
-		// Quantile   |40             |80                |90
-		// And summary metrics' quantiles are stored as gauge type metrics, so
-		// for this initial step, quantiles have the actual values.
-		// But count and sum are stored as cumulative values, so those two are 0
-		stepOneExpectedSummary := prometheusSummaryMetric{
-			Quantiles: map[string]float64{
-				"0.5":  40,
-				"0.9":  80,
-				"0.99": 90,
-			},
-			Count: 0,
-			Sum:   0,
-		}
-		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpectedSummary))
 
 		// 5. Replace the text file with the step two metrics
-		stepTwoMetrics := "testdata/sample_histogram_summary_2.txt"
-		f, err = os.Open(stepTwoMetrics)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, "data.json"))
+		err = uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_two"])
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// 6. Wait until the new points have arrived
-		// Note: We could wait for 3 mins here again and assume the new points
-		// are available, but in most case it should need less than 3 mins; we
-		// also want to make sure the new points are indeed available before we
-		// check them against the step 2 expected values, otherwise the error
-		// message won't be useful
-		time.Sleep(1 * time.Minute)
-		// Since test_summary_count/summary is a cumulative type metric, as long
-		// as it is greater than 0, we know the step 2 points have arrived
-		testMetricName := "prometheus.googleapis.com/test_summary_count/summary"
-		var previousTotal float64 = 0
-		totalGreaterThanPreviousTotal := func(series *monitoring.TimeSeries) (bool, error) {
-			if series.ValueType == metric.MetricDescriptor_DOUBLE {
-				lastPoint := series.Points[len(series.Points)-1]
-				return lastPoint.Value.GetDoubleValue() > previousTotal, nil
-			}
-			return false, fmt.Errorf("wrong metric value type")
-		}
-		if _, err := gce.WaitForMetricWithCondition(ctx, logger.ToMainLog(), vm, testMetricName, window, nil, true, totalGreaterThanPreviousTotal); err != nil {
-			t.Fatal(err)
-		}
+		time.Sleep(3 * time.Minute)
 
 		// 7. Get the step 2 metrics and check against expected values
 		// For Histogram:
@@ -2342,7 +2277,135 @@ func TestPrometheusMetricsHistogramAndSummary(t *testing.T) {
 			},
 			BucketCounts: []int64{1, 2, 2, 2, 2, 1},
 		}
+
 		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpectedHistogram))
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+}
+
+// Test the Summary metric type using static testing files. The files will
+// contain metrics in the right format and hosted by a simple HTTP server so
+// that the agent can scrape the metrics
+// The test will send two sets of metric points, to verify the cumulative metrics
+// are correctly received and processed
+func TestPrometheusSummaryMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		prometheusTestdata := path.Join("testdata", "prometheus")
+		remoteWorkDir := path.Join("/opt", "go-http-server")
+		filesToUpload := map[string][]fileToUpload{
+			"step_one": {
+				{local: path.Join(prometheusTestdata, "sample_summary_step_1"),
+					remote: path.Join(remoteWorkDir, "data")},
+				{local: path.Join(prometheusTestdata, "http_server.go"),
+					remote: path.Join(remoteWorkDir, "http_server.go")},
+				{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")}},
+			"step_two": {
+				{local: path.Join(prometheusTestdata, "sample_summary_step_2"),
+					remote: path.Join(remoteWorkDir, "data")}},
+		}
+
+		// 1. Upload the step one files
+		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_one"])
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 2. Setup the golang and start the go http server
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		setupScript := `sudo systemctl daemon-reload
+			sudo systemctl enable http-server-for-prometheus-test
+			sudo systemctl restart http-server-for-prometheus-test`
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		if err != nil {
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
+		}
+		// Wait until the http server is ready
+		time.Sleep(5 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+		}
+		// 3. Config and start the agent
+		// Set the scrape interval to 10 second, so that metrics points can be
+		// received faster to shorten the duration of this test
+		config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+		// Turn on the prometheus feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+		var multiErr error
+
+		// 4. Wait for the initial set of metrics and check
+		// For Summary: We use Objectives [0.5, 0.9, 0.99]
+		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+		// And get:
+		// Objectives |0.5            |0.9               |0.99
+		// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
+		// Quantile   |40             |80                |90
+		// And summary metrics' quantiles are stored as gauge type metrics, so
+		// for this initial step, quantiles have the actual values.
+		// But count and sum are stored as cumulative values, and those two get
+		// normalized
+		// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+		// and they are 0s for the first step
+		stepOneExpectedSummary := prometheusSummaryMetric{
+			Quantiles: map[string]float64{
+				"0.5":  40,
+				"0.9":  80,
+				"0.99": 90,
+			},
+			Count: 0,
+			Sum:   0,
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpectedSummary))
+
+		// 5. Replace the text file with the step two metrics
+		err = uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_two"])
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 6. Wait until the new points have arrived
+		time.Sleep(3 * time.Minute)
+
+		// 7. Get the step 2 metrics and check against expected values
 		// For Summary:
 		// For step 2, we repeat and observe points
 		// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
@@ -2503,6 +2566,29 @@ func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger
 		}
 	}
 	return multiErr
+}
+
+type fileToUpload struct {
+	local, remote string
+}
+
+// uploadFiles upload files from fs embedded file system to vm
+func uploadFiles(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, fs embed.FS, files []fileToUpload) error {
+	for _, upload := range files {
+		err := func() error {
+			f, err := fs.Open(upload.local)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			err = gce.UploadContent(ctx, logger, vm, f, upload.remote)
+			return err
+		}()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TestExcludeMetrics(t *testing.T) {

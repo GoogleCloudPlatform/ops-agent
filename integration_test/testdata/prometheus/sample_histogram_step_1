@@ -8,10 +8,3 @@ test_histogram_bucket{le="80"} 9
 test_histogram_bucket{le="+Inf"} 10
 test_histogram_sum 450
 test_histogram_count 10
-# HELP test_summary Test Summary.
-# TYPE test_summary summary
-test_summary{quantile="0.5"} 40
-test_summary{quantile="0.9"} 80
-test_summary{quantile="0.99"} 90
-test_summary_sum 450
-test_summary_count 10
