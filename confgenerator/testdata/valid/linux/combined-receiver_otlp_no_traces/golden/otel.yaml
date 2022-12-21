@@ -412,7 +412,19 @@ processors:
     - action: update
       include: ^(.*)$$
       match_type: regexp
-      new_name: workload.googleapis.com/$${1}
+      new_name: A$${1}
+    - action: update
+      include: "^A((?:[a-z]+\\.)*(?:googleapis\\.com|kubernetes\\.io|istio\\.io|knative\\.dev)/.+)$$"
+      match_type: regexp
+      new_name: B$${1}
+    - action: update
+      include: ^A(.*)$$
+      match_type: regexp
+      new_name: Aworkload.googleapis.com/$${1}
+    - action: update
+      include: ^[AB](.*)$$
+      match_type: regexp
+      new_name: $${1}
   resourcedetection/_global_0:
     detectors:
     - gce
