@@ -24,7 +24,6 @@ type MetricsReceiverDcgm struct {
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty"`
-   ProfilingMetrics bool `yaml:"profiling_metrics"`
 }
 
 const defaultDcgmEndpoint = "localhost:5555"
@@ -38,82 +37,17 @@ func (r MetricsReceiverDcgm) Pipelines() []otel.Pipeline {
       r.Endpoint = defaultDcgmEndpoint
    }
 
-   metrics := map[string]interface{}{
-     "dcgm.gpu.utilization": map[string]bool {
-        "enabled": true,
-     },
-     "dcgm.gpu.memory.bytes_used": map[string]bool {
-        "enabled": true,
-     },
-   }
-
-   if r.ProfilingMetrics {
-      metrics = map[string]interface{}{
-         "dcgm.gpu.profiling.sm_utilization": map[string]bool {
-            "enabled": true,
-         },
-         "dcgm.gpu.profiling.sm_occupancy": map[string]bool {
-            "enabled": true,
-         },
-         "dcgm.gpu.profiling.pipe_utilization": map[string]bool {
-            "enabled": true,
-         },
-         "dcgm.gpu.profiling.dram_utilization": map[string]bool {
-            "enabled": true,
-         },
-         "dcgm.gpu.profiling.pcie_traffic_rate": map[string]bool {
-            "enabled": true,
-         },
-         "dcgm.gpu.profiling.nvlink_traffic_rate": map[string]bool {
-            "enabled": true,
-         },
-      }
-   }
-
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
             "endpoint": r.Endpoint,
-            "metrics": metrics,
 			},
 		},
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
-				otel.RenameMetric(
-					"dcgm.gpu.utilization",
-					"dcgm/gpu/utilization",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.memory.bytes_used",
-					"dcgm/gpu/memory/bytes_used",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.sm_utilization",
-					"dcgm/gpu/profiling/sm_utilization",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.sm_occupancy",
-					"dcgm/gpu/profiling/sm_occupancy",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.pipe_utilization",
-					"dcgm/gpu/profiling/pipe_utilization",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.dram_utilization",
-					"dcgm/gpu/profiling/dram_utilization",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.pcie_traffic_rate",
-					"dcgm/gpu/profiling/pcie_traffic_rate",
-				),
-				otel.RenameMetric(
-					"dcgm.gpu.profiling.nvlink_traffic_rate",
-					"dcgm/gpu/profiling/nvlink_traffic_rate",
-				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
