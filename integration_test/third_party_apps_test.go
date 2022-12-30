@@ -50,7 +50,6 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -461,7 +460,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -506,18 +505,6 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
-
-	if fc == nil {
-		logger.ToMainLog().Printf("skipping feature tracking integration tests")
-		return err
-	}
-
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
-	if err != nil {
-		return err
-	}
-
-	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
 
@@ -640,32 +627,12 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-
-		fc, err := getExpectedFeatures(app)
-
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
 			return nonRetryable, err
 		}
 	}
 
 	return nonRetryable, nil
-}
-
-func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTrackingContainer, error) {
-	var fc feature_tracking_metadata.FeatureTrackingContainer
-
-	featuresScript := path.Join("applications", app, "features.yaml")
-	featureBytes, err := readFileFromScriptsDir(featuresScript)
-	if err != nil {
-		return nil, err
-	}
-
-	err = yaml.UnmarshalStrict(featureBytes, &fc)
-	if err != nil {
-		return nil, err
-	}
-
-	return &fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
@@ -763,6 +730,7 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 type test struct {
 	platform   string
 	app        string
+	gpu        string
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -787,6 +755,8 @@ const (
 
 	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
+
+	NvmlApp = "nvml"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -851,9 +821,16 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	gpus := []string{"a100", "v100", /* "p100" todo: increase quota */ "t4", "p4"}
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			if app != NvmlApp {
+				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
+			} else {
+				for _, gpu := range gpus {
+					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+				}
+			}
 		}
 	}
 
@@ -863,7 +840,12 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
+		testname := tc.platform + "/" + tc.app
+		if tc.gpu != "" {
+			testname = tc.platform + "/" + tc.app + "/" + tc.gpu
+		}
+
+		t.Run(testname, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
@@ -881,6 +863,21 @@ func TestThirdPartyApps(t *testing.T) {
 					Platform:             tc.platform,
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
+				}
+				if tc.app == NvmlApp {
+					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+					switch tc.gpu {
+					case "a100":
+						options.MachineType = "a2-highgpu-1g"
+					case "v100", "t4":
+						options.MachineType = "n1-standard-2"
+					case "p100":
+						options.MachineType = "n1-standard-2"
+						options.Zone = "us-central1-f"
+					case "p4":
+						options.MachineType = "n1-standard-2"
+						options.Zone = "us-central1-a"
+					}
 				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.

@@ -21,9 +21,7 @@ import (
 
 type MetricsReceiverNvml struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
-
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
-   ProcessMetrics bool `default: "true" yaml:"process_metrics"`
 }
 
 func (r MetricsReceiverNvml) Type() string {
@@ -31,27 +29,11 @@ func (r MetricsReceiverNvml) Type() string {
 }
 
 func (r MetricsReceiverNvml) Pipelines() []otel.Pipeline {
-   metrics := map[string]interface{}{
-     "nvml.gpu.utilization": map[string]bool {
-        "enabled": true,
-     },
-     "nvml.gpu.memory.bytes_used": map[string]bool {
-        "enabled": true,
-     },
-     "nvml.processes.lifetime_gpu_utilization": map[string]bool {
-        "enabled": r.ProcessMetrics,
-     },
-     "nvml.processes.lifetime_gpu_max_bytes_used": map[string]bool {
-        "enabled": r.ProcessMetrics,
-     },
-   }
-
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "nvml",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
-            "metrics": metrics,
 			},
 		},
 		Processors: []otel.Component{
@@ -66,7 +48,7 @@ func (r MetricsReceiverNvml) Pipelines() []otel.Pipeline {
 					"gpu/memory/bytes_used",
 				),
 				otel.RenameMetric(
-					"nvml.gpu.processes.lifetime_gpu_utilization",
+					"nvml.gpu.processes.lifetime_utilization",
 					"gpu/processes/lifetime_utilization",
 				),
 				otel.RenameMetric(
