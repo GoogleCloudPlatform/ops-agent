@@ -67,6 +67,7 @@ per_application_overrides:
       - centos-7
       - centos-8
       - debian-10
+      - debian-11
       - rocky-linux-8 
       - sles-12
       - sles-15
@@ -75,6 +76,7 @@ per_application_overrides:
       - centos-7
       - centos-8
       - debian-10
+      - debian-11
       - rocky-linux-8 
       - sles-12
       - sles-15

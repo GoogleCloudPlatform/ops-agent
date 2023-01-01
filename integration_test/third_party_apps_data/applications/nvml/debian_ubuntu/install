@@ -2,8 +2,8 @@
 set -e
 
 sudo apt update
-kernel_version=`uname -r`
-sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
+# kernel_version=`uname -r`
+# sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
 
 # BASE_URL=https://us.download.nvidia.com/tesla
 # DRIVER_VERSION=515.65.07
@@ -13,7 +13,7 @@ sudo apt install -y linux-headers-${kernel_version} software-properties-common p
 
 sudo apt-get -y install wget
 
-wget https://developer.download.nvidia.com/compute/cuda/repos/debian11/x86_64/cuda-keyring_1.0-1_all.deb
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
 sudo dpkg -i cuda-keyring_1.0-1_all.deb
 
 sudo apt-get update
