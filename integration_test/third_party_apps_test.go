@@ -50,6 +50,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -460,7 +461,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -505,6 +506,18 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
+
+	if fc == nil {
+		logger.ToMainLog().Printf("skipping feature tracking integration tests")
+		return err
+	}
+
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if err != nil {
+		return err
+	}
+
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
 
@@ -627,12 +640,32 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+
+		fc, err := getExpectedFeatures(app)
+
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
 
 	return nonRetryable, nil
+}
+
+func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTrackingContainer, error) {
+	var fc feature_tracking_metadata.FeatureTrackingContainer
+
+	featuresScript := path.Join("applications", app, "features.yaml")
+	featureBytes, err := readFileFromScriptsDir(featuresScript)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
@@ -757,6 +790,7 @@ const (
 	AerospikeApp = "aerospike"
 
 	NvmlApp = "nvml"
+   DcgmApp = "dcgm"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -822,9 +856,10 @@ func TestThirdPartyApps(t *testing.T) {
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
 	gpus := []string{"a100", "v100", /* "p100" todo: increase quota */ "t4", "p4"}
+
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if app != NvmlApp {
+			if app != NvmlApp && app != DcgmApp {
 				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
 			} else {
 				for _, gpu := range gpus {
@@ -840,6 +875,7 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
+
 		testname := tc.platform + "/" + tc.app
 		if tc.gpu != "" {
 			testname = tc.platform + "/" + tc.app + "/" + tc.gpu
@@ -864,7 +900,7 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
-				if tc.app == NvmlApp {
+				if tc.gpu != "" {
 					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
 					switch tc.gpu {
 					case "a100":
