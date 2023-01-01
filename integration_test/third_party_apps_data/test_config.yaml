@@ -70,4 +70,12 @@ per_application_overrides:
       - rocky-linux-8 
       - sles-12
       - sles-15
+  dcgm: # need to test various GPUs rather than multiple platforms
+    platforms_to_skip:
+      - centos-7
+      - centos-8
+      - debian-10
+      - rocky-linux-8 
+      - sles-12
+      - sles-15
  
