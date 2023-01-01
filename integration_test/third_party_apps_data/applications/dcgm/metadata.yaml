@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-app_url: "https://developer.nvidia.com/nvidia-management-library-nvml"
-short_name: nvml
-long_name: nvml
+app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
+short_name: dcgm
+long_name: dcgm
 logo_path: /images/partners/todo.png # supplied by google technical writer
 description: |-
-  The NVIDIA Management Library (or NVML) integration collects GPU utilization
-  and GPU used memory metrics from NVIDIA GPUs.
+  The NVIDIA DataCenter GPU Manager (or DCGM) integration collects advanced GPU metrics,
+  including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
 configure_integration: |-
-  You must install the NVIDIA driver on a host with NVIDIA GPUs. 
+  You must install DCGM and run the DCGM daemon service. 
 supported_operating_systems: linux
-supported_app_version: ["515.65.01"]
+supported_app_version: ["3.1"]
 expected_metrics:
-  - type: workload.googleapis.com/gpu/utilization
+  - type: workload.googleapis.com/dcgm.gpu.utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -33,7 +33,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
     representative: true
-  - type: workload.googleapis.com/gpu/memory/bytes_used
+  - type: workload.googleapis.com/dcgm.gpu.memory.bytes_used
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
@@ -44,11 +44,11 @@ expected_metrics:
       memory_state: free|used
 configuration_options:
   metrics:
-    - type: nvml
+    - type: dcgm
       fields:
         - name: type
           default: null
-          description: This value must be nvml.
+          description: This value must be dcgm.
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.
