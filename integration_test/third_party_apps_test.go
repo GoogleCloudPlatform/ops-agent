@@ -790,7 +790,7 @@ const (
 	AerospikeApp = "aerospike"
 
 	NvmlApp = "nvml"
-   DcgmApp = "dcgm"
+	DcgmApp = "dcgm"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -855,7 +855,7 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
-	gpus := []string{"a100", "v100", /* "p100" todo: increase quota */ "t4", "p4"}
+	gpus := []string{"a100", "v100" /* "p100" todo: increase quota */, "t4", "p4"}
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
