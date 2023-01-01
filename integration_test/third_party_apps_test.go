@@ -902,7 +902,7 @@ func TestThirdPartyApps(t *testing.T) {
 				}
 				if tc.gpu != "" {
 					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
-					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=50GB")
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					switch tc.gpu {
 					case "a100":
 						options.MachineType = "a2-highgpu-1g"
