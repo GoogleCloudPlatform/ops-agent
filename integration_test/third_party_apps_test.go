@@ -862,6 +862,9 @@ func TestThirdPartyApps(t *testing.T) {
 			if app == NvmlApp || app == DcgmApp {
 				for _, gpu := range gpus {
 					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+               if app == DcgmApp && gpu == "p4" {
+                  skipReason = "NVIDIA P4 does not support DCGM profiling metrics"
+               }
 				}
 			} else {
 				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
