@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
   double beta = 0.0;
 
   for (int i = 0; i < 600; i++) {
+    printf("Submitting CUDA test kernel\n");
     cublasXtDgemm(xt_, CUBLAS_OP_N, CUBLAS_OP_N,
       m, n, k, &alpha, A, m, B, k, &beta, C, m
     );
