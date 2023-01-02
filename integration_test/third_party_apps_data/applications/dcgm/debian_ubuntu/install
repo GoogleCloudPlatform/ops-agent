@@ -1,4 +1,3 @@
-# Installs the application
 set -e
 
 sudo apt update
@@ -11,6 +10,7 @@ curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 
 sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent 
 
+# check NVIDIA driver installation succeeded
 nvidia-smi
 
 sudo apt-get -y install wget
@@ -22,4 +22,6 @@ sudo apt-get update
 sudo apt-get install -y datacenter-gpu-manager
 sudo service nvidia-dcgm start
 
+# check DCGM service running and load profiling module
 dcgmi discovery --list
+dcgmi profile --resume

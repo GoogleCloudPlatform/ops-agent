@@ -18,7 +18,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include "curand.h"
+#include "cuda_runtime_api.h"
+#include "cuda.h"
 #include "cublasXt.h"
 
 void FillMatrix(double* &x, long m, long n, double val) {
