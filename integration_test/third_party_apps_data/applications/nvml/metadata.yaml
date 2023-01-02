@@ -42,6 +42,32 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       memory_state: free|used
+  - type: workload.googleapis.com/gpu/processes/lifetime_utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+      pid: "[0-9]*"
+      process: .*
+      command: .*
+      command_line: .*
+      owner: .* 
+  - type: workload.googleapis.com/gpu/processes/max_bytes_used
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+      pid: "[0-9]*"
+      process: .*
+      command: .*
+      command_line: .*
+      owner: .* 
 configuration_options:
   metrics:
     - type: nvml

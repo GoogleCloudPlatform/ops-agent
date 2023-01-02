@@ -20,3 +20,10 @@ sudo apt-get update
 sudo apt-get -y install cuda
  
 nvidia-smi
+
+# build and run a test application that generates CUDA traffic
+echo "Working-dir: $pwd"
+pushd . && cd ./applications/nvml/testcudakernel
+make
+popd
+nohup ./applications/nvml/testcudakernel/loopcudakernel >/dev/null 2>&1 &

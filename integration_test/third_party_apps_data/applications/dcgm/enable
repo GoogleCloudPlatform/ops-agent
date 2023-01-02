@@ -10,6 +10,7 @@ metrics:
   receivers:
     dcgm:
       type: dcgm
+      collection_interval: 5s
   service:
     pipelines:
       dcgm:
@@ -18,4 +19,4 @@ metrics:
 EOF
 
 sudo service google-cloud-ops-agent restart
-sleep 60
+sleep 10
