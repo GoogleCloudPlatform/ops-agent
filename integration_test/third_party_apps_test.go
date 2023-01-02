@@ -859,12 +859,12 @@ func TestThirdPartyApps(t *testing.T) {
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if app != NvmlApp && app != DcgmApp {
-				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
-			} else {
+			if app == NvmlApp || app == DcgmApp {
 				for _, gpu := range gpus {
 					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
 				}
+			} else {
+				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
 			}
 		}
 	}
