@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include "cuda_runtime_api.h"
 #include "cuda.h"
+#include "cublas.h"
+#include "cublas_api.h"
 #include "cublasXt.h"
 
 void FillMatrix(double* &x, long m, long n, double val) {
@@ -39,11 +41,17 @@ void PrintMatrix(double* x, long m, long n) {
 
 int main(int argc, char **argv) {
   cublasXtHandle_t xt_;
-  cublasXtCreate(&xt_);
+  auto ec = cublasXtCreate(&xt_);
+  if (ec != CUBLAS_STATUS_SUCCESS) {
+    printf("Failed to create CUDA BLAS context (error code %d)\n", ec);
+    return 1;
+  }
+
+
   int devices[1] = { 0 }; 
-  auto ec = cublasXtDeviceSelect(xt_, 1, devices);
-  if(ec != CUBLAS_STATUS_SUCCESS) {
-    printf("Failed to select CUDA device (errorcode %d).\n", ec);
+  ec = cublasXtDeviceSelect(xt_, 1, devices);
+  if (ec != CUBLAS_STATUS_SUCCESS) {
+    printf("Failed to select CUDA device %d (error code %d)\n", devices[0], ec);
     return 1;
   }
 
