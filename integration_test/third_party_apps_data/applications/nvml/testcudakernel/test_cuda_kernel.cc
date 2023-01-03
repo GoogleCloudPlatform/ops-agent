@@ -41,8 +41,11 @@ int main(int argc, char **argv) {
   cublasXtHandle_t xt_;
   cublasXtCreate(&xt_);
   int devices[1] = { 0 }; 
-  if(cublasXtDeviceSelect(xt_, 1, devices) != CUBLAS_STATUS_SUCCESS)
+  auto ec = cublasXtDeviceSelect(xt_, 1, devices);
+  if(cublasXtDeviceSelect(xt_, 1, devices) != CUBLAS_STATUS_SUCCESS) {
+    printf("Failed to select CUDA device (errorcode %d).\n", );
     return 1;
+  }
 
   double *A, *B, *C;
   long m = 10, n = 10, k = 20;
