@@ -31,16 +31,16 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 	if m.ReceiverVersion == "2" {
-		return []otel.Pipeline{{
+		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
 					"collection_interval": m.CollectionIntervalString(),
 				},
 			},
-			Processors: []otel.Component{
+			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
 					otel.RenameMetric(
 						"sqlserver.transaction_log.usage",
@@ -52,11 +52,11 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
 				),
 				otel.NormalizeSums(),
-			},
+			}},
 		}}
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -78,7 +78,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
 					`\SQLServer:General Statistics(_Total)\User Connections`,
@@ -94,7 +94,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

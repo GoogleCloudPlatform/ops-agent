@@ -1,0 +1,1 @@
+combined receiver "otlp" found with no traces section; separate metrics and traces pipelines are required for this receiver, or an empty traces configuration if the data is being intentionally dropped

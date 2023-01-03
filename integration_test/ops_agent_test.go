@@ -55,7 +55,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
+	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -2602,7 +2602,11 @@ metrics:
     pipelines:
       otlp:
         receivers:
-        - otlp`
+        - otlp
+traces:
+  service:
+    pipelines:
+`
 		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -2620,16 +2624,24 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.gauge", time.Hour, nil, false); err != nil {
-			t.Error(err)
-		}
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
-			t.Error(err)
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, name := range []string{
+			"workload.googleapis.com/otlp.test.gauge",
+			"workload.googleapis.com/otlp.test.cumulative",
+			"workload.googleapis.com/otlp.test.prefix1",
+			"workload.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2",
+			"workload.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc",
+			"workload.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+			"workload.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5",
+		} {
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, false); err != nil {
+				t.Error(err)
+			}
 		}
 	})
 }
 
-func testOTLPTraces(t *testing.T) {
+func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()

@@ -22,3 +22,9 @@ metrics:
       otlp:
         receivers:
           - otlp
+traces:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+          - otlp
