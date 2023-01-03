@@ -21,7 +21,7 @@ nvidia-smi
 # build and run a test application that generates CUDA traffic
 wget https://raw.githubusercontent.com/suffiank/ops-agent/sufkha/nvml-and-dcgm/integration_test/third_party_apps_data/applications/nvml/testcudakernel/test_cuda_kernel.cc
 g++ -I/usr/local/cuda/include test_cuda_kernel.cc -L/usr/local/cuda/lib64 -lcublas -lcudart -o loopcudakernel
-./loopcudakernel &
+./loopcudakernel 
 echo "Submitted ./loopcudakernel as pid $!"
 
 sleep 5
