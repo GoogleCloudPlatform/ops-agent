@@ -5,29 +5,18 @@ sudo apt update
 kernel_version=`uname -r`
 sudo time apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
 
-# BASE_URL=https://us.download.nvidia.com/tesla
-# DRIVER_VERSION=515.65.07
-# curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
-# sudo time bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent 
-  
 sudo apt-get -y install wget
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
 sudo dpkg -i cuda-keyring_1.0-1_all.deb
 sudo apt-get update
-# sudo time apt-get -y install cuda-toolkit-12-0 libcublas-dev-12-0
-sudo time apt-get -y install cuda cuda-toolkit-12-0 libcublas-dev-12-0
+sudo time apt-get -y install cuda 
  
 nvidia-smi
 
 # build and run a test application that generates CUDA traffic
 wget https://raw.githubusercontent.com/suffiank/ops-agent/sufkha/nvml-and-dcgm/integration_test/third_party_apps_data/applications/nvml/testcudakernel/test_cuda_kernel.cc
 g++ -I/usr/local/cuda/include test_cuda_kernel.cc -L/usr/local/cuda/lib64 -lcublas -lcudart -o loopcudakernel
-ldd ./loopcudakernel 
-ls /usr/local/cuda/lib64/ 
-ls /usr/local/cuda/targets/x86_64-linux/lib/
-
-# ./loopcudakernel
-
+./loopcudakernel &
 echo "Submitted ./loopcudakernel as pid $!"
 
 sleep 5
