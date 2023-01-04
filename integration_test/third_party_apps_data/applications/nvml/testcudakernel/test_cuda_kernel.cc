@@ -20,8 +20,6 @@
 #include <unistd.h>
 #include "cuda_runtime_api.h"
 #include "cuda.h"
-#include "cublas.h"
-#include "cublas_api.h"
 #include "cublasXt.h"
 
 void FillMatrix(double* &x, long m, long n, double val) {
