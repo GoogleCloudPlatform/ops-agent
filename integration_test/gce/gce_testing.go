@@ -146,7 +146,7 @@ const (
 	// hangs, the test still will be cancelled eventually and all its VMs will be cleaned up.
 	// This amount needs to be less than 4 hours, which is the limit on how long a Kokoro build can
 	// take before it is forcibly killed.
-	SuggestedTimeout = 90 * time.Minutes
+	SuggestedTimeout = 60 * time.Minutes
 
 	// QueryMaxAttempts is the default number of retries when calling WaitForLog.
 	// Retries are spaced by 5 seconds, so 80 retries denotes 6 minutes 40 seconds total.
