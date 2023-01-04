@@ -861,9 +861,9 @@ func TestThirdPartyApps(t *testing.T) {
 		for app, metadata := range allApps {
 			if app == NvmlApp || app == DcgmApp {
 				for _, gpu := range gpus {
-               if app == DcgmApp && gpu == "p4" {
-                  continue; // p4 doesn't support DCGM metrics
-               }
+					if app == DcgmApp && gpu == "p4" {
+						continue // p4 doesn't support DCGM metrics
+					}
 					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
 				}
 			} else {
