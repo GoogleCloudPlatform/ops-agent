@@ -9,6 +9,12 @@ template config common = {
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
+      // Note: if we ever need to change regions, we will need to set up a new
+      // Cloud Router and Cloud NAT gateway for that region. This is because
+      // we use --no-address on Kokoro, because of b/169084857.
+      // The new Cloud NAT gateway must have "Minimum ports per VM instance"
+      // set to something >160 as per this article:
+      // https://www.suse.com/support/kb/doc/?id=000019662
       ZONE = 'us-central1-b'
 
       PLATFORMS = join(platforms, ',')
@@ -36,11 +42,12 @@ template config go_test = common {
     environment {
       TEST_SUITE_NAME = test_suite
 
-      // The firewall rules for our test project don't allow us to ssh/RDP
-      // from the Kokoro worker into the VM under test via the external IP
-      // address. Using the internal IP address gets around this issue though
-      // (but only because the Kokoro worker is in the same project as the VM
-      // under test).
+      // Use a codepath that conserves external IPv4 addresses for quota
+      // reasons. The VMs will not be assigned external IPv4 addresses.
+      // Outgoing connections will use Cloud NAT, and incoming connections
+      // use the VM's internal IP address, which only works because the
+      // Kokoro worker is running in the same network as the spawned VM.
+      // Using the internal IP address also avoids issues with the firewall.
       USE_INTERNAL_IP = 'true'
 
       // TRANSFERS_BUCKET and SERVICE_EMAIL are always modified as a pair.
@@ -52,8 +59,6 @@ template config go_test = common {
       TRANSFERS_BUCKET = 'stackdriver-test-143416-untrusted-file-transfers'
       SERVICE_EMAIL =
           'build-and-test-external@stackdriver-test-143416.iam.gserviceaccount.com'
-
-      WINRM_IN_GCS = 'gs://stackdriver-test-143416-winrm/winrm.par'
     }
 
     artifacts = super.artifacts + [

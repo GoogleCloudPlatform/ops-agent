@@ -1,0 +1,9 @@
+[29:19] "language" must be one of [java python go]
+  26 |       type: parse_multiline
+  27 |       match_any:
+  28 |       - type: language_exceptions
+> 29 |         language: japa
+                         ^
+  30 |   service:
+  31 |     pipelines:
+  32 |       p1:

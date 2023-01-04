@@ -23,8 +23,8 @@ To run a test based on this library, you can either:
 in README.md.
 
 NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
-a project whose firewall allows WinRM connections.
-[Kokoro can use stackdriver-test-143416, which does not allow WinRM
+a project whose firewall allows ssh connections.
+[Kokoro can use stackdriver-test-143416, which does not allow ssh
 connections, because our Kokoro workers are also running in that project.]
 
 NOTE: This command does not actually build the Ops Agent. To test the latest
@@ -45,8 +45,6 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
 ZONE: What GCP zone to run in.
-WINRM_PAR_PATH: (required for Windows) Path to winrm.par, used to connect to
-Windows VMs.
 
 The following variables are optional:
 
@@ -61,8 +59,10 @@ logs will be uploaded. If unset, this will point to
 ops-agents-public-buckets-test-logs, which should work for all tests
 triggered from GitHub.
 
-USE_INTERNAL_IP: Whether to try to connect to the VMs' internal IP addresses
-(if set to "true"), or external IP addresses (in all other cases).
+USE_INTERNAL_IP: If set to "true", pass --no-address to gcloud when creating
+VMs. This will not create an external IP address for that VM (because those are
+expensive), and instead the VM will use cloud NAT to get to the external
+internet. ssh-ing to the VM is done via its internal IP address.
 Only useful on Kokoro.
 
 SERVICE_EMAIL: If provided, which service account to use for spawned VMs. The
@@ -99,11 +99,13 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/storage"
+	trace "cloud.google.com/go/trace/apiv1"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
+	cloudtrace "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -114,8 +116,9 @@ var (
 	storageClient   *storage.Client
 	transfersBucket string
 
-	monClient  *monitoring.MetricClient
-	logClients *logClientFactory
+	monClient   *monitoring.MetricClient
+	logClients  *logClientFactory
+	traceClient *trace.Client
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -132,6 +135,8 @@ var (
 
 	// Local filesystem path to a directory to put log files into.
 	logRootDir string
+
+	ErrInvalidIteratorLength = errors.New("iterator length is less than the defined minimum length")
 )
 
 const (
@@ -153,6 +158,10 @@ const (
 	vmInitBackoffDuration             = 10 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
+	slesStartupDelay           = 60 * time.Second
+	slesStartupSudoDelay       = 5 * time.Second
+	slesStartupSudoMaxAttempts = 60
+
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
@@ -161,11 +170,6 @@ const (
 func init() {
 	ctx := context.Background()
 	var err error
-
-	if strings.Contains(os.Getenv("PLATFORMS"), "windows") && os.Getenv("WINRM_PAR_PATH") == "" {
-		log.Fatal("WINRM_PAR_PATH must be nonempty when testing Windows VMs")
-	}
-
 	storageClient, err = storage.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("storage.NewClient() failed: %v:", err)
@@ -181,6 +185,11 @@ func init() {
 	logClients = &logClientFactory{
 		clients: make(map[string]*logadmin.Client),
 	}
+	traceClient, err = trace.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
 	// Some useful options to pass to gcloud.
 	os.Setenv("CLOUDSDK_PYTHON", "/usr/bin/python3")
 	os.Setenv("CLOUDSDK_CORE_DISABLE_PROMPTS", "1")
@@ -256,13 +265,6 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	return logClient, nil
 }
 
-// WindowsCredentials is a low-security way to hold login credentials for
-// a Windows VM.
-type WindowsCredentials struct {
-	Username string
-	Password string
-}
-
 // VM represents an individual virtual machine.
 type VM struct {
 	Name        string
@@ -272,13 +274,11 @@ type VM struct {
 	Zone        string
 	MachineType string
 	ID          int64
-	// The IP address to ssh/WinRM to. This is the external IP address, unless
+	// The IP address to ssh to. This is the external IP address, unless
 	// USE_INTERNAL_IP is set to 'true'. See comment on extractIPAddress() for
 	// rationale.
-	IPAddress string
-	// WindowsCredentials is only populated for Windows VMs.
-	WindowsCredentials *WindowsCredentials
-	AlreadyDeleted     bool
+	IPAddress      string
+	AlreadyDeleted bool
 }
 
 // imageProject returns the image project providing the given image family.
@@ -348,12 +348,6 @@ func SetGcloudPath(path string) {
 	gcloudPath = path
 }
 
-// winRM() returns the path to the winrm.par binary to use to connect to
-// Windows VMs.
-func winRM() string {
-	return os.Getenv("WINRM_PAR_PATH")
-}
-
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
 func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
@@ -367,9 +361,12 @@ func PlatformKind(platform string) string {
 	return "linux"
 }
 
-// isRetriableLookupMetricError returns whether the given error, returned from
-// lookupMetric() or WaitForMetric(), should be retried.
-func isRetriableLookupMetricError(err error) bool {
+// isRetriableLookupError returns whether the given error, returned from
+// lookup[Metric|Trace]() or WaitFor[Metric|Trace](), should be retried.
+func isRetriableLookupError(err error) bool {
+	if errors.Is(err, ErrInvalidIteratorLength) {
+		return true
+	}
 	myStatus, ok := status.FromError(err)
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
@@ -378,13 +375,18 @@ func isRetriableLookupMetricError(err error) bool {
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
-func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) *monitoring.TimeSeriesIterator {
+func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) *monitoring.TimeSeriesIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
 	filters := []string{
 		fmt.Sprintf("metric.type = %q", metric),
-		fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID),
+	}
+
+	if isPrometheus {
+		filters = append(filters, fmt.Sprintf(`resource.labels.namespace = "%d"`, vm.ID))
+	} else {
+		filters = append(filters, fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID))
 	}
 
 	req := &monitoringpb.ListTimeSeriesRequest{
@@ -399,18 +401,44 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	return monClient.ListTimeSeries(ctx, req)
 }
 
-// nonEmptySeries evaluates the given iterator, returning its first non-empty
-// time series. An error is returned if the evaluation fails.
-// A return value of (nil, nil) indicates that the evaluation succeeded
-// but returned no data.
-func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+// lookupTrace does a single lookup of any trace from the given VM in the backend.
+func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+	now := time.Now()
+	start := timestamppb.New(now.Add(-window))
+	end := timestamppb.New(now)
+	filter := fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID)
+	req := &cloudtrace.ListTracesRequest{
+		ProjectId: vm.Project,
+		Filter:    filter,
+		StartTime: start,
+		EndTime:   end,
+	}
+	return traceClient.ListTraces(ctx, req)
+}
+
+// nonEmptySeriesList evaluates the given iterator, returning a non-empty slice of
+// time series, the length of the slice is guaranteed to be of size minimumRequiredSeries or greater.
+// A panic is issued if minimumRequiredSeries is zero or negative.
+// An error is returned if the evaluation fails or produces a non-empty slice with length less than minimumRequiredSeries.
+// A return value of (nil, nil) indicates that the evaluation succeeded but returned no data.
+func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
+	if minimumRequiredSeries < 1 {
+		panic("minimumRequiredSeries cannot be negative or 0")
+	}
 	// Loop through the iterator, looking for at least one non-empty time series.
+	tsList := make([]*monitoringpb.TimeSeries, 0)
 	for {
 		series, err := it.Next()
-		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeriesList() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
-			// Either there were no data series in the iterator or all of them were empty.
-			return nil, nil
+			if len(tsList) == 0 {
+				return nil, nil
+			}
+			if len(tsList) < minimumRequiredSeries {
+				return nil, ErrInvalidIteratorLength
+			}
+			// Success
+			return tsList, nil
 		}
 		if err != nil {
 			return nil, err
@@ -419,34 +447,93 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		// Success, we found a time series with len(series.Points) > 0.
-		return series, nil
+		if len(tsList) >= minimumRequiredSeries {
+			return tsList, nil
+		}
+		tsList = append(tsList, series)
 	}
 }
 
-// WaitForMetric looks for the given metric in the backend and returns it if it
+// firstTrace evaluates the given iterator, returning its first trace.
+// An error is returned if the evaluation fails.
+// A return value of (nil, nil) indicates that the evaluation succeeded
+// but returned no data.
+func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
+	trace, err := it.Next()
+	if err == iterator.Done {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return trace, nil
+}
+
+// WaitForMetric looks for the given metrics in the backend and returns it if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
-func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string) (*monitoringpb.TimeSeries, error) {
+func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
+	series, err := WaitForMetricSeries(ctx, logger, vm, metric, window, extraFilters, isPrometheus, 1)
+	if err != nil {
+		return nil, err
+	}
+	logger.Printf("WaitForMetric metric=%v, series=%v", metric, series)
+	return series[0], nil
+}
+
+// WaitForMetricSeries looks for the given metrics in the backend and returns a slice if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters)
-		series, err := nonEmptySeries(logger, it)
-		if series != nil && err == nil {
+		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
+		tsList, err := nonEmptySeriesList(logger, it, minimumRequiredSeries)
+
+		if tsList != nil && err == nil {
 			// Success.
-			return series, nil
+			logger.Printf("Successfully found series=%v", tsList)
+			return tsList, nil
 		}
-		if err != nil && !isRetriableLookupMetricError(err) {
+		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
 		}
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
 		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+		logger.Printf("nonEmptySeriesList check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
 			metric, extraFilters, err, attempt, QueryMaxAttempts)
+
 		time.Sleep(queryBackoffDuration)
 	}
-	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+
+	return nil, fmt.Errorf("WaitForMetricSeries(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+}
+
+// WaitForTrace looks for any trace from the given VM in the backend and returns
+// it if it exists. An error is returned otherwise. This function will retry
+// "no data" errors a fixed number of times. This is useful because it takes
+// time for trace data to become visible after it has been uploaded.
+//
+// Only the ProjectId and TraceId fields are populated. To get other fields,
+// including spans, call traceClient.GetTrace with the TraceID returned from
+// this function.
+func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
+	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, logger, vm, window)
+		trace, err := firstTrace(it)
+		if trace != nil && err == nil {
+			return trace, nil
+		}
+		if err != nil && !isRetriableLookupError(err) {
+			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
+		}
+		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
+			attempt, QueryMaxAttempts)
+		time.Sleep(queryBackoffDuration)
+	}
+	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
 
 // IsExhaustedRetriesMetricError returns true if the given error is an
@@ -460,10 +547,10 @@ func IsExhaustedRetriesMetricError(err error) bool {
 // the backend we make queryMaxAttemptsMetricMissing query attempts.
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, nil)
-		series, err := nonEmptySeries(logger, it)
-		found := series != nil
-		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
+		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
+		series, err := nonEmptySeriesList(logger, it, 1)
+		found := len(series) > 0
+		logger.Printf("nonEmptySeriesList check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
 		if err == nil {
@@ -473,7 +560,7 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 			// Success
 			return nil
 		}
-		if !isRetriableLookupMetricError(err) {
+		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
 		time.Sleep(queryBackoffDuration)
@@ -515,7 +602,9 @@ func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRege
 		}
 		logger.Printf("Found matching log entry: %v", entry)
 		found = true
-		first = entry
+		if first == nil {
+			first = entry
+		}
 	}
 	return found, first, nil
 }
@@ -576,12 +665,6 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
-	if !strings.HasSuffix(args[0], "winrm.par") {
-		// Print out the command we're running. Skip this for winrm.par commands
-		// because they are base64 encoded and the real command is already printed
-		// inside runRemotelyWindows() anyway.
-		logger.Printf("Running command: %v", args)
-	}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
@@ -627,29 +710,8 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 // Various pros/cons of shelling out to gcloud vs using the Compute API are discussed here:
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+	logger.Printf("Running command: gcloud %v", args)
 	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
-}
-
-// runRemotelyWindows runs the provided powershell command on the provided Windows VM.
-// The command is base64 encoded in transit because that is an effective way to run
-// complex commands, such as commands with nested quoting.
-func runRemotelyWindows(ctx context.Context, logger *log.Logger, vm *VM, command string) (CommandOutput, error) {
-	logger.Printf("Running command %q", command)
-
-	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
-	encoded, err := uni.NewEncoder().String(command)
-	if err != nil {
-		return CommandOutput{}, err
-	}
-	return runCommand(ctx, logger, "",
-		[]string{winRM(),
-			"--host=" + vm.IPAddress,
-			"--username=" + vm.WindowsCredentials.Username,
-			"--password=" + vm.WindowsCredentials.Password,
-			fmt.Sprintf("--command=powershell -NonInteractive -encodedcommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))),
-			"--stderrthreshold=fatal",
-			"--verbosity=-2",
-		})
 }
 
 var (
@@ -669,8 +731,21 @@ var (
 		// (even though UserKnownHostsFile is /dev/null).
 		// If you are debugging ssh problems, you'll probably want to remove this option.
 		"-oLogLevel=ERROR",
+		// Sometimes you can be prompted to auth with a password if OpenSSH isn't
+		// ready yet on Windows, which hangs the test. We only ever auth with keys so
+		// let's disable password auth.
+		"-oPreferredAuthentications=publickey",
 	}
 )
+
+func wrapPowershellCommand(command string) (string, error) {
+	uni := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	encoded, err := uni.NewEncoder().String(command)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+}
 
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
@@ -679,22 +754,21 @@ var (
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used and doesn't work
-// on Windows.
+// TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	logger.Printf("Running command remotely: %v", command)
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("Command failed: %v\n%v", command, err)
 		}
 	}()
+	wrappedCommand := command
 	if IsWindows(vm.Platform) {
-		if stdin != "" {
-			// TODO(martijnvs): Support stdin on Windows, if we see a need for it.
-			return CommandOutput{}, errors.New("RunRemotely() does not support stdin when run on Windows")
+		wrappedCommand, err = wrapPowershellCommand(command)
+		if err != nil {
+			return CommandOutput{}, err
 		}
-		return runRemotelyWindows(ctx, logger, vm, command)
 	}
-
 	// Raw ssh is used instead of "gcloud compute ssh" with OS Login because:
 	// 1. OS Login will generate new ssh keys for each kokoro run and they don't carry over.
 	//    This means that they pile up and need to be deleted periodically.
@@ -704,7 +778,7 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, sshUserName+"@"+vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
-	args = append(args, command)
+	args = append(args, wrappedCommand)
 	return runCommand(ctx, logger, stdin, args)
 }
 
@@ -828,7 +902,7 @@ const (
 func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest --force")
 		return err
 	}, backoffPolicy)
 	if err != nil {
@@ -852,7 +926,6 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImages = map[string]string{
-		"opensuse-leap-15-2": "opensuse-leap-15-2-v20200702",
 		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
 	}
@@ -869,36 +942,38 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 		metadataCopy[k] = v
 	}
 
+	if _, ok := metadataCopy["enable-oslogin"]; ok {
+		return nil, errors.New("the 'enable-oslogin' metadata key is reserved for framework use")
+	}
+	// We manage our own ssh keys, so we don't need OS Login. For a while, it
+	// worked to leave it enabled anyway, but one day that broke (b/181867249).
+	// Disabling OS Login fixed the issue.
+	metadataCopy["enable-oslogin"] = "false"
+
+	if _, ok := metadataCopy["ssh-keys"]; ok {
+		return nil, errors.New("the 'ssh-keys' metadata key is reserved for framework use")
+	}
+	publicKey, err := os.ReadFile(publicKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("could not read local public key file %v: %v", publicKeyFile, err)
+	}
+	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
+
 	if IsWindows(platform) {
-		if _, ok := metadataCopy["windows-startup-script-ps1"]; ok {
-			return nil, errors.New("you cannot pass a startup script for Windows instances because the startup script is used to detect that the instance is running. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
-		metadataCopy["windows-startup-script-ps1"] = `
-$port = new-Object System.IO.Ports.SerialPort 'COM3'
-$port.Open()
-$port.WriteLine("STARTUP_SCRIPT_DONE")
-$port.Close()
-`
+		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+
+		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
+			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
+		}
+		metadataCopy["enable-windows-ssh"] = "TRUE"
 	} else {
 		if _, ok := metadataCopy["startup-script"]; ok {
 			return nil, errors.New("the 'startup-script' metadata key is reserved for future use. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
-		if _, ok := metadataCopy["enable-oslogin"]; ok {
-			return nil, errors.New("the 'enable-oslogin' metadata key is reserved for framework use")
-		}
-		// We manage our own ssh keys, so we don't need OS Login. For a while, it
-		// worked to leave it enabled anyway, but one day that broke (b/181867249).
-		// Disabling OS Login fixed the issue.
-		metadataCopy["enable-oslogin"] = "false"
-
-		if _, ok := metadataCopy["ssh-keys"]; ok {
-			return nil, errors.New("the 'ssh-keys' metadata key is reserved for framework use")
-		}
-		publicKey, err := os.ReadFile(publicKeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("could not read local public key file %v: %v", publicKeyFile, err)
-		}
-		metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 	}
 	return metadataCopy, nil
 }
@@ -996,6 +1071,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
 		args = append(args, "--service-account="+email)
 	}
+	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
+		// Don't assign an external IP address. This is to avoid using up
+		// a very limited budget of external IPv4 addresses. The instances
+		// will talk to the external internet by routing through a Cloud NAT
+		// gateway that is configured in our testing project.
+		args = append(args, "--no-address")
+	}
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
@@ -1047,11 +1129,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if isSUSE(vm.Platform) {
+	if IsSUSE(vm.Platform) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf")
-		if err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
 		}
 	}
@@ -1062,11 +1143,27 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if IsSUSE(vm.Platform) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return nil, err
+		}
+	}
+
 	return vm, nil
 }
 
-func isSUSE(platform string) bool {
+func IsSUSE(platform string) bool {
 	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
+}
+
+func IsCentOS(platform string) bool {
+	return strings.HasPrefix(platform, "centos-")
+}
+
+func IsRHEL(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1090,10 +1187,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
-			// Windows instances sometimes fail to initialize WinRM: b/185923886.
-			strings.Contains(err.Error(), winRMDummyCommandMessage) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(isSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1133,6 +1228,8 @@ func RemoveExternalIP(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // SetEnvironmentVariables sets the environment variables in the envVariables map on the given vm in a platform-dependent way.
+// On Windows platforms, variables set this way are visible to all processes.
+// On Linux platforms, variables set this way are visible to the Ops Agent services only.
 func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, envVariables map[string]string) error {
 	if IsWindows(vm.Platform) {
 		for key, value := range envVariables {
@@ -1144,16 +1241,25 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 		}
 		return nil
 	}
-	defaultEnvironment := "DefaultEnvironment="
+	// https://serverfault.com/a/413408
+	// Escaping newlines here because we'll be using `echo -e` later
+	override := `[Service]\n`
 	for key, value := range envVariables {
-		defaultEnvironment += fmt.Sprintf(`"%s=%s" `, key, value)
+		override += fmt.Sprintf(`Environment="%s=%s"\n`, key, value)
 	}
-	cmd := fmt.Sprintf("echo '%s' | sudo tee -a /etc/systemd/system.conf", defaultEnvironment)
-	logger.Println("edit system.conf command: " + cmd)
-	if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
-		return err
+	for _, service := range []string{
+		"google-cloud-ops-agent",
+		"google-cloud-ops-agent-diagnostics",
+		"google-cloud-ops-agent-fluent-bit",
+		"google-cloud-ops-agent-opentelemetry-collector",
+	} {
+		dir := fmt.Sprintf("/etc/systemd/system/%s.service.d", service)
+		cmd := fmt.Sprintf(`sudo mkdir -p %s && echo -e '%s' | sudo tee %s/override.conf`, dir, override, dir)
+		if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+			return err
+		}
 	}
-	// Reload the systemd daemon to pick up the new settings from system.conf edited in the previous command
+	// Reload the systemd daemon to pick up the new settings edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
 	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
 	return err
@@ -1262,7 +1368,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if !isSUSE(vm.Platform) {
+	if !IsSUSE(vm.Platform) {
 		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
 	}
 
@@ -1278,7 +1384,11 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		}
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
 
+		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
+		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
@@ -1329,6 +1439,12 @@ type instance struct {
 		AccessConfigs []struct {
 			// This is the external IP address.
 			NatIP string
+		}
+	}
+	Metadata struct {
+		Items []struct {
+			Key   string
+			Value string
 		}
 	}
 }
@@ -1394,74 +1510,35 @@ func extractID(stdout string) (int64, error) {
 	return strconv.ParseInt(instance.ID, 10, 64)
 }
 
-func resetAndFetchWindowsCredentials(ctx context.Context, logger *log.Logger, vm *VM) (*WindowsCredentials, error) {
-	output, err := RunGcloud(ctx, logger, "",
-		[]string{"compute", "reset-windows-password", vm.Name,
-			// The username can be anything; it just has to comply with the requirements here:
-			// https://docs.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netuseradd
-			"--user=windows_user",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			"--format=json",
-		})
+// FetchMetadata retrieves the instance metadata for the given VM.
+func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]string, error) {
+	output, err := RunGcloud(ctx, logger, "", []string{
+		"compute", "instances", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json(metadata)",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to reset Windows password: %v", err)
+		return nil, fmt.Errorf("error fetching metadata for VM %v: %w", vm.Name, err)
 	}
-	var creds WindowsCredentials
-	if err := json.Unmarshal([]byte(output.Stdout), &creds); err != nil {
-		return nil, fmt.Errorf("could not parse JSON for %q: %v", output.Stdout, err)
+	var inst instance
+	if err := json.Unmarshal([]byte(output.Stdout), &inst); err != nil {
+		return nil, fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
 	}
-	if creds.Username == "" || creds.Password == "" {
-		return nil, fmt.Errorf("username or password was empty when parsing %q. Parsed result: %#v", output.Stdout, creds)
+	metadata := make(map[string]string)
+	for _, item := range inst.Metadata.Items {
+		metadata[item.Key] = item.Value
 	}
-	return &creds, nil
+	return metadata, nil
 }
 
 const (
-	// Retry errors that look like b/185923886.
-	winRMDummyCommandMessage = "waitForStartWindows() failed: dummy command could not run over WinRM"
-
 	// Retry errors that look like b/186426190.
 	startupFailedMessage = "waitForStartLinux() failed: waiting for startup timed out"
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
-	lookForReadyMessages := func() error {
-		output, err := RunGcloud(ctx, logger, "", []string{
-			"compute", "instances", "get-serial-port-output",
-			"--port=3",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			vm.Name})
-		if err != nil {
-			return fmt.Errorf("error getting COM3 serial port output: %v", err)
-		}
-		if strings.Contains(output.Stdout, "STARTUP_SCRIPT_DONE") {
-			// Success.
-			return nil
-		}
-		return fmt.Errorf("STARTUP_SCRIPT_DONE not found in serial port output: %v", output)
-	}
-	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
-	if err := backoff.Retry(lookForReadyMessages, backoffPolicy); err != nil {
-		return fmt.Errorf("ran out of attempts waiting for VM to initialize: %v", err)
-	}
-
-	resetCredentials := func() error {
-		creds, err := resetAndFetchWindowsCredentials(ctx, logger, vm)
-		if err != nil {
-			return fmt.Errorf("resetAndFetchWindowsCredentials() failed: %v", err)
-		}
-		vm.WindowsCredentials = creds
-		return nil
-	}
-
-	backoffPolicy = backoff.WithContext(backoff.NewConstantBackOff(vmWinPasswordResetBackoffDuration), ctx)
-	if err := backoff.Retry(resetCredentials, backoffPolicy); err != nil {
-		return fmt.Errorf("ran out of attempts resetting credentials: %v", err)
-	}
-
-	// Now, make sure the server is really ready to run remote commands by
+	// Make sure the server is really ready to run remote commands by
 	// sending it a dummy command repeatedly until it works.
 	attempt := 0
 	printFoo := func() error {
@@ -1472,11 +1549,9 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		return err
 	}
 
-	gracePeriod := 3 * time.Minute // I'm not sure what's a good value here.
-	maxAttempts := uint64(gracePeriod / vmInitBackoffDuration)
-	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(vmInitBackoffDuration), maxAttempts), ctx)
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("%v, even after %v of attempts. err=%v", winRMDummyCommandMessage, gracePeriod, err)
+		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
 	}
 	return nil
 }
@@ -1489,7 +1564,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if isSUSE(vm.Platform) {
+	if IsSUSE(vm.Platform) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
@@ -1502,9 +1577,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
-		// "sudo" is needed for debian-9, which doesn't have dbus, so systemctl
-		// needs to talk directly to systemd.
-		output, err := RunRemotely(ctx, logger, vm, "", "sudo systemctl is-system-running")
+		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
 		// https://www.freedesktop.org/software/systemd/man/systemctl.html#is-system-running
@@ -1530,6 +1603,22 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if err := backoff.Retry(isStartupDone, backoffPolicy); err != nil {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
+
+	if IsSUSE(vm.Platform) {
+		// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
+		// sensible/deterministic workarounds for each of the individual problems.
+		time.Sleep(slesStartupDelay)
+		// TODO(b/259122953): wait until sudo is ready
+		backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(slesStartupSudoDelay), slesStartupSudoMaxAttempts), ctx)
+		err := backoff.Retry(func() error {
+			_, err := RunRemotely(ctx, logger, vm, "", "sudo ls /root")
+			return err
+		}, backoffPolicy)
+		if err != nil {
+			return fmt.Errorf("exceeded retries trying to get sudo: %v", err)
+		}
+	}
+
 	return nil
 }
 

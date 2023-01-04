@@ -8,11 +8,11 @@ local template _distro {
   name = external
   // List of release images.
   release = external
-  // The representative image to be used in presubmit (defaults to none).
+  // The representative images to be used in presubmit (defaults to none).
   // Presubmits usually smoke test only the oldest and newest OS families from
   // a certain OS to speed up presubmit tests and reduce flakiness. The full
   // set will be tested by the nightly jobs.
-  presubmit = null
+  presubmit = []
 }
 
 local template _family {
@@ -20,26 +20,21 @@ local template _family {
   // Extract the release image lists for all distros in a given family.
   releases = sort_asc(flatten(map(lambda d_: d_.release, distros.values())))
   // Extract the presubmit images for all distros in a given family.
-  presubmits = sort_asc(
-    filter(is_string, map(lambda d_: d_.presubmit, distros.values())))
+  presubmits = sort_asc(flatten(map(lambda d_: d_.presubmit, distros.values())))
 }
 
 // DEB Linux distros.
 debian = _family {
   distros = {
-    stretch = _distro {
-      name = 'Debian 9'
-      release = ['debian-9']
-      presubmit = 'debian-9'
-    }
     buster = _distro {
       name = 'Debian 10'
       release = ['debian-10']
-      presubmit = 'debian-10'
+      presubmit = ['debian-10']
     }
     bullseye = _distro {
       name = 'Debian 11'
       release = ['debian-11']
+      presubmit = ['debian-11']
     }
   }
 }
@@ -51,7 +46,7 @@ ubuntu = _family {
         'ubuntu-1804-lts',
         'ubuntu-minimal-1804-lts',
       ]
-      presubmit = 'ubuntu-1804-lts'
+      presubmit = ['ubuntu-1804-lts']
     }
     focal = _distro {
       name = 'Ubuntu 20.04 Focal'
@@ -59,7 +54,7 @@ ubuntu = _family {
         'ubuntu-2004-lts',
         'ubuntu-minimal-2004-lts',
       ]
-      presubmit = 'ubuntu-minimal-2004-lts'
+      presubmit = ['ubuntu-minimal-2004-lts']
     }
     jammy = _distro {
       name = 'Ubuntu 22.04 Jammy'
@@ -85,7 +80,7 @@ centos = _family {
         'rhel-7-7-sap-ha',
         'rhel-7-9-sap-ha',
       ]
-      presubmit = 'centos-7'
+      presubmit = ['centos-7']
     }
     centos8 = _distro {
       name = 'CentOS 8'
@@ -100,7 +95,7 @@ centos = _family {
         // Rocky.
         'rocky-linux-8',
       ]
-      presubmit = 'rocky-linux-8'
+      presubmit = ['rocky-linux-8']
     }
     centos9 = _distro {
       name = 'CentOS 9'
@@ -123,7 +118,7 @@ sles = _family {
         'sles-12-sp4-sap',
         'sles-12-sp5-sap',
       ]
-      presubmit = 'sles-12'
+      presubmit = ['sles-12']
     }
     sles15 = _distro {
       name = 'SLES 15'
@@ -132,11 +127,10 @@ sles = _family {
         'sles-15-sp1-sap',
         'sles-15-sp2-sap',
         'opensuse-leap',
-        'opensuse-leap-15-2',
         'opensuse-leap-15-3',
         'opensuse-leap-15-4',
       ]
-      presubmit = 'sles-15'
+      presubmit = ['sles-15']
     }
   }
 }
@@ -154,7 +148,11 @@ windows = _family {
         'windows-2019',
         'windows-2019-core',
       ]
-      presubmit = 'windows-2016'
+      presubmit = [
+        'windows-2012-r2',
+        // TODO(martijnvs): Switch this to windows-20h2-core.
+        'windows-2019',
+      ]
     }
   }
 }

@@ -1,9 +1,0 @@
-[8:7] unknown field "channels"
-   5 |       include_paths:
-   6 |       - /var/log/messages
-   7 |       - /var/log/syslog
->  8 |       channels: value_1
-             ^
-   9 |   service:
-  10 |     pipelines:
-  11 |       default_pipeline:

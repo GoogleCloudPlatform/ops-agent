@@ -182,6 +182,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	for _, log := range []string{
 		gce.SyslogLocation(vm.Platform),
+		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
@@ -199,6 +200,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "", "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
 	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
@@ -232,7 +234,7 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 			}
 			_, err := gce.WaitForMetric(
 				ctx, logger, vm, "agent.googleapis.com/agent/uptime", TrailingQueryWindow,
-				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)})
+				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)}, false)
 			c <- err
 		}()
 	}
@@ -334,7 +336,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		strings.HasPrefix(vm.Platform, "rhel-") ||
 		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "sles-") {
+	} else if gce.IsSUSE(vm.Platform) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "debian-") ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
@@ -642,8 +644,9 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 // on a Windows VM.
 func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/logging/docs/agent/installation#joint-install
+	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/windows/StackdriverLogging-v1-16.exe", "${env:UserProfile}\StackdriverLogging-v1-16.exe")
-		& "${env:UserProfile}\StackdriverLogging-v1-16.exe" /S`
+		Start-Process -FilePath "${env:UserProfile}\StackdriverLogging-v1-16.exe" -ArgumentList "/S" -Wait -NoNewWindow`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }
@@ -652,8 +655,9 @@ func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logge
 // agent on a Windows VM.
 func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/monitoring/agent/installation#joint-install
+	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://repo.stackdriver.com/windows/StackdriverMonitoring-GCM-46.exe", "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe")
-		& "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" /S`
+		Start-Process -FilePath "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" -ArgumentList "/S" -Wait -NoNewWindow`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }

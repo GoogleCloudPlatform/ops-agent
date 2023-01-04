@@ -34,7 +34,7 @@ func (r MetricsReceiverTomcat) Type() string {
 	return "tomcat"
 }
 
-func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverTomcat) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "tomcat"
 
 	return r.MetricsReceiverSharedJVM.
@@ -51,7 +51,7 @@ func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverTomcat{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverTomcat{} })
 }
 
 type LoggingProcessorTomcatSystem struct {
@@ -170,8 +170,8 @@ func (r AccessSystemLoggingReceiverTomcat) Components(tag string) []fluentbit.Co
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorTomcatAccess{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorTomcatSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &AccessSystemLoggingReceiverTomcat{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &SystemLoggingReceiverTomcat{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatSystem{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &AccessSystemLoggingReceiverTomcat{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverTomcat{} })
 }

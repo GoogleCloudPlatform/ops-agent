@@ -27,9 +27,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -43,9 +43,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -67,9 +67,9 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -83,9 +83,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -99,15 +99,15 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/deb/build.sh
 
-FROM ubuntu:bionic AS bionic-build
+FROM ubuntu:bionic-20220801 AS bionic-build
 
 RUN set -x; apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
@@ -115,9 +115,9 @@ RUN set -x; apt-get update && \
     build-essential cmake bison flex file libsystemd-dev \
     devscripts cdbs pkg-config openjdk-11-jdk zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -136,9 +136,9 @@ RUN set -x; yum -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -154,9 +154,30 @@ RUN set -x; yum -y update && \
     gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
     expect rpm-sign zip
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+
+COPY . /work
+WORKDIR /work
+RUN ./pkg/rpm/build.sh
+
+FROM rockylinux:9 AS centos9-build
+
+RUN set -x; dnf -y update && \
+    dnf -y install 'dnf-command(config-manager)' && \
+    dnf config-manager --set-enabled crb && \
+    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    dnf -y install git systemd \
+    autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
+    gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+    expect rpm-sign zip
+
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
@@ -191,8 +212,8 @@ RUN set -x; \
     # Remove expired root certificate.
     mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
     update-ca-certificates && \
-    # Add home:Ledest:devel repo to install >3.4 bison
-    zypper addrepo https://download.opensuse.org/repositories/home:Ledest:devel/openSUSE_Leap_42.3/home:Ledest:devel.repo && \
+    # Add home:odassau repo to install >3.4 bison
+    zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     # zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
@@ -208,28 +229,34 @@ RUN set -xe; \
 
 ENV JAVA_HOME /usr/local/java-11-openjdk/
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work
 RUN ./pkg/rpm/build.sh
 
 FROM opensuse/leap:15.1 AS sles15-build
-
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip && \
-    # Add home:ptrommler:formal repo to install >3.4 bison
-    zypper addrepo https://download.opensuse.org/repositories/home:ptrommler:formal/openSUSE_Leap_15.1/home:ptrommler:formal.repo && \
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+# Add agent-vendor.repo to install >3.4 bison
+RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
+name=google-cloud-monitoring-sles15-x86_64-test \n\
+baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+enabled         = 1 \n\
+autorefresh     = 0 \n\
+repo_gpgcheck   = 0 \n\
+gpgcheck        = 0' > agent-vendor.repo
+RUN set -x; zypper addrepo agent-vendor.repo && \
     zypper -n --gpg-auto-import-keys refresh && \
     zypper -n update && \
     zypper -n install bison>3.4 && \
     # Allow fluent-bit to find systemd
     ln -fs /usr/lib/systemd /lib/systemd
 
-ADD https://golang.org/dl/go1.17.linux-amd64.tar.gz /tmp/go1.17.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.17.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
 
 COPY . /work
 WORKDIR /work

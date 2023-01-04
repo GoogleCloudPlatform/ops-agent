@@ -1,0 +1,9 @@
+[19:18] "match_any[0]": 1:21: error: expected one of "$", ws, andOp, orOp, dot, less_equals, less_than, greater_equals, greater_than, not_equals, equals, has, matches_regexp, or not_matches_regexp; got: "~"
+  16 |   processors:
+  17 |     p1:
+  18 |       type: exclude_logs
+> 19 |       match_any: ['jsonPayload.message!~foo']
+                        ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       default_pipeline:

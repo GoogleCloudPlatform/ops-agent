@@ -1,9 +1,0 @@
-[6:7] "metrics_pattern[0]" must end with "/*","metrics_pattern[1]" must start with "agent.googleapis.com/"
-   3 |     metrics_filter:
-   4 |       type: exclude_metrics
-   5 |       metrics_pattern:
->  6 |       - agent.googleapis.com/processes/not_end_with_forward_slash_with_star
-             ^
-   7 |       - not.agent.googleapis.com/processes/*
-   8 |   service:
-   9 |     pipelines:

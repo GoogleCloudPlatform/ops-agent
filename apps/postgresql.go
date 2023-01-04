@@ -43,7 +43,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -66,22 +66,27 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
+				otel.FlattenResourceAttribute("postgresql.table.name", "table"),
+				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
+			),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverPostgresql{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverPostgresql{} })
 }
 
 type LoggingProcessorPostgresql struct {
@@ -182,6 +187,6 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorPostgresql{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverPostgresql{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorPostgresql{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverPostgresql{} })
 }

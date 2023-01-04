@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strings"
 )
 
 // Helper functions to easily build up processor configs.
@@ -67,28 +68,40 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
-// AddPrefix returns a config snippet that adds a prefix to all metrics.
-func AddPrefix(prefix string) map[string]interface{} {
-	// $ needs to be escaped because reasons.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-	return map[string]interface{}{
-		"include":    `^(.*)$$`,
-		"match_type": "regexp",
-		"action":     "update",
-		"new_name":   path.Join(prefix, `$${1}`),
-	}
+// AddPrefix returns a config snippet that adds a domain prefix to all metrics.
+func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
+	return RegexpRename(
+		`^(.*)$`,
+		path.Join(prefix, `${1}`),
+		operations...,
+	)
 }
 
 // ChangePrefix returns a config snippet that updates a prefix on all metrics.
 func ChangePrefix(oldPrefix, newPrefix string) map[string]interface{} {
+	return RegexpRename(
+		fmt.Sprintf(`^%s(.*)$`, oldPrefix),
+		fmt.Sprintf("%s%s", newPrefix, `${1}`),
+	)
+}
+
+// RegexpRename returns a config snippet that renames metrics matching the given regexp.
+// The `rename` argument supports capture groups as `${1}`, `${2}`, and so on.
+func RegexpRename(regexp string, rename string, operations ...map[string]interface{}) map[string]interface{} {
 	// $ needs to be escaped because reasons.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-	return map[string]interface{}{
-		"include":    fmt.Sprintf(`^%s(.*)$$`, oldPrefix),
+	out := map[string]interface{}{
+		"include":    strings.ReplaceAll(regexp, "$", "$$"),
 		"match_type": "regexp",
 		"action":     "update",
-		"new_name":   fmt.Sprintf("%s%s", newPrefix, `$${1}`),
+		"new_name":   strings.ReplaceAll(rename, "$", "$$"),
 	}
+
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+
+	return out
 }
 
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.
@@ -151,6 +164,15 @@ func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) Tran
 	return TransformQuery(fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
 }
 
+// RetainResource retains the resource attributes provided, and drops all other attributes.
+func RetainResource(resourceAttributeKeys ...string) TransformQuery {
+	keyList := ""
+	for _, key := range resourceAttributeKeys {
+		keyList += fmt.Sprintf(`, "%s"`, key)
+	}
+	return TransformQuery(fmt.Sprintf(`keep_keys(resource.attributes%s)`, keyList))
+}
+
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
 func RenameMetric(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
@@ -169,6 +191,20 @@ func UpdateMetric(metric string, operations ...map[string]interface{}) map[strin
 	out := map[string]interface{}{
 		"include": metric,
 		"action":  "update",
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
+// UpdateMetricRegexp returns a config snippet that applies transformations to metrics matching
+// the input regex
+func UpdateMetricRegexp(metricRegex string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"include":    metricRegex,
+		"match_type": "regexp",
+		"action":     "update",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
@@ -278,5 +314,15 @@ func AggregateLabelValues(aggregationType string, label string, new string, old 
 		"label":             label,
 		"new_value":         new,
 		"aggregated_values": old,
+	}
+}
+
+// CondenseResourceMetrics merges multiple resource metrics on
+// a slice of metrics to a single resource metrics payload, if they have the same
+// resource.
+func CondenseResourceMetrics() Component {
+	return Component{
+		Type:   "groupbyattrs",
+		Config: map[string]any{},
 	}
 }

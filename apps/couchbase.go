@@ -1,3 +1,17 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package apps
 
 import (
@@ -27,7 +41,7 @@ func (r MetricsReceiverCouchbase) Type() string {
 }
 
 // Pipelines will construct the prometheus receiver configuration
-func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 	targets := []string{r.Endpoint}
 	if r.Endpoint == "" {
 		targets = []string{defaultCouchbaseEndpoint}
@@ -59,96 +73,94 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 			},
 		},
 	}
-	return []otel.Pipeline{
-		{
-			Receiver: otel.Component{
-				Type:   "prometheus",
-				Config: config,
-			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
-				// remove prometheus scraping meta-metrics
-				otel.MetricsFilter("exclude", "strict",
-					"scrape_samples_post_metric_relabeling",
-					"scrape_series_added",
-					"scrape_duration_seconds",
-					"scrape_samples_scraped",
-					"up",
-				),
-				otel.MetricsTransform(
-					// renaming from prometheus style to otel style, order is important before workload prefix
-					otel.RenameMetric(
-						"kv_ops",
-						"couchbase.bucket.operation.count",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_vb_curr_items",
-						"couchbase.bucket.item.count",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_num_vbuckets",
-						"couchbase.bucket.vbucket.count",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_total_memory_used_bytes",
-						"couchbase.bucket.memory.usage",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_num_value_ejects",
-						"couchbase.bucket.item.ejection.count",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_mem_high_wat",
-						"couchbase.bucket.memory.high_water_mark.limit",
-						otel.RenameLabel("bucket", "bucket_name")),
-					otel.RenameMetric(
-						"kv_ep_mem_low_wat",
-						"couchbase.bucket.memory.low_water_mark.limit",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_tmp_oom_errors",
-						"couchbase.bucket.error.oom.count.recoverable",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_oom_errors",
-						"couchbase.bucket.error.oom.count.unrecoverable",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-
-					// combine OOM metrics
-					otel.CombineMetrics(
-						`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
-						"couchbase.bucket.error.oom.count",
-					),
-
-					// group by bucket and op
-					otel.UpdateMetric(
-						`couchbase.bucket.operation.count`,
-						map[string]interface{}{
-							"action":           "aggregate_labels",
-							"label_set":        []string{"bucket_name", "op"},
-							"aggregation_type": "sum",
-						},
-					),
-
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				// Using the transform processor for metrics
-				otel.TransformationMetrics(r.transformMetrics()...),
-			},
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "prometheus",
+			Config: config,
 		},
-	}
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			// remove prometheus scraping meta-metrics
+			otel.MetricsFilter("exclude", "strict",
+				"scrape_samples_post_metric_relabeling",
+				"scrape_series_added",
+				"scrape_duration_seconds",
+				"scrape_samples_scraped",
+				"up",
+			),
+			otel.MetricsTransform(
+				// renaming from prometheus style to otel style, order is important before workload prefix
+				otel.RenameMetric(
+					"kv_ops",
+					"couchbase.bucket.operation.count",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_vb_curr_items",
+					"couchbase.bucket.item.count",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_num_vbuckets",
+					"couchbase.bucket.vbucket.count",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_total_memory_used_bytes",
+					"couchbase.bucket.memory.usage",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_num_value_ejects",
+					"couchbase.bucket.item.ejection.count",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_mem_high_wat",
+					"couchbase.bucket.memory.high_water_mark.limit",
+					otel.RenameLabel("bucket", "bucket_name")),
+				otel.RenameMetric(
+					"kv_ep_mem_low_wat",
+					"couchbase.bucket.memory.low_water_mark.limit",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_tmp_oom_errors",
+					"couchbase.bucket.error.oom.count.recoverable",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_oom_errors",
+					"couchbase.bucket.error.oom.count.unrecoverable",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+
+				// combine OOM metrics
+				otel.CombineMetrics(
+					`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
+					"couchbase.bucket.error.oom.count",
+				),
+
+				// group by bucket and op
+				otel.UpdateMetric(
+					`couchbase.bucket.operation.count`,
+					map[string]interface{}{
+						"action":           "aggregate_labels",
+						"label_set":        []string{"bucket_name", "op"},
+						"aggregation_type": "sum",
+					},
+				),
+
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			// Using the transform processor for metrics
+			otel.TransformationMetrics(r.transformMetrics()...),
+		}},
+	}}
 }
 
 type couchbaseMetric struct {
@@ -216,7 +228,7 @@ func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverCouchbase{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverCouchbase{} })
 }
 
 // LoggingReceiverCouchbase is a struct used for generating the fluentbit component for couchbase logs
@@ -417,7 +429,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverCouchbase{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorCouchbaseHTTPAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorCouchbaseGOXDCR{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchbase{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingProcessorCouchbaseHTTPAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingProcessorCouchbaseGOXDCR{} })
 }

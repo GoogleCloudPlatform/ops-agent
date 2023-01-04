@@ -15,15 +15,14 @@
 package metadata_test
 
 import (
-	"flag"
-	"fmt"
 	"os"
 	"path"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"gopkg.in/yaml.v2"
+	"github.com/goccy/go-yaml"
+	"gotest.tools/v3/golden"
 )
 
 const (
@@ -33,10 +32,6 @@ const (
 	goldenErrorName = "golden_error"
 )
 
-var (
-	updateGolden = flag.Bool("update_golden", false, "Whether to update the expected golden confs if they differ from the actual generated confs.")
-)
-
 func getTestFile(t *testing.T, dirName, fileName string) string {
 	filePath := path.Join(testdataDir, dirName, fileName)
 	contents, err := os.ReadFile(filePath)
@@ -44,15 +39,6 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 		t.Fatal("could not read dirName: " + filePath)
 	}
 	return strings.ReplaceAll(string(contents), "\r\n", "\n")
-}
-
-func UnmarshallAndValidate(t *testing.T, bytes []byte, i interface{}) error {
-	v := metadata.NewIntegrationMetadataValidator()
-	err := yaml.UnmarshalStrict(bytes, i)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return v.Struct(i)
 }
 
 func TestMetadataValidation(t *testing.T) {
@@ -67,48 +53,22 @@ func TestMetadataValidation(t *testing.T) {
 		t.Run(dirName, func(t *testing.T) {
 			// We want to parallelize the test cases, so we pass the test case into a
 			// separate function
-			if *updateGolden {
-				generateNewGolden(t, dirName)
-				return
-			}
-
 			testMetadataValidation(t, dirName)
 		})
 	}
 }
 
-func generateNewGolden(t *testing.T, dir string) {
-	t.Parallel()
-	goldenPath := path.Join(testdataDir, dir, goldenErrorName)
-	yamlStr := getTestFile(t, dir, inputYamlName)
-	err := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
-
-	errStr := ""
-	if err != nil {
-		errStr = err.Error()
-	}
-
-	if err = os.WriteFile(goldenPath, []byte(errStr), 0644); err != nil {
-		t.Fatalf("error updating golden file at %q : %s", goldenPath, err)
-	}
-}
-
 func testMetadataValidation(t *testing.T, dir string) {
 	t.Parallel()
-
 	yamlStr := getTestFile(t, dir, inputYamlName)
-	goldenErrStr := getTestFile(t, dir, goldenErrorName)
 
-	actualError := UnmarshallAndValidate(t, []byte(yamlStr), &metadata.IntegrationMetadata{})
+	var md metadata.IntegrationMetadata
+	actualError := metadata.UnmarshalAndValidate([]byte(yamlStr), &md)
 
-	if actualError == nil {
-		if goldenErrStr == "" {
-			return
-		}
-		t.Fatal("Expecting validation to fail for test: " + dir)
+	actualErrorStr := ""
+	if actualError != nil {
+		actualErrorStr = actualError.Error()
+		actualErrorStr = yaml.FormatError(actualError, false, false)
 	}
-
-	if actualError.Error() != goldenErrStr {
-		t.Fatal(fmt.Sprintf("Unexpected errors detected: \nExpected error: \n%s\nActual error:  \n%s\n", goldenErrStr, actualError.Error()))
-	}
+	golden.Assert(t, actualErrorStr, path.Join(dir, goldenErrorName))
 }

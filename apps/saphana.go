@@ -130,8 +130,8 @@ func (r LoggingReceiverSapHanaTrace) Components(tag string) []fluentbit.Componen
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorSapHanaTrace{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverSapHanaTrace{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSapHanaTrace{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSapHanaTrace{} })
 }
 
 type MetricsReceiverSapHana struct {
@@ -151,12 +151,12 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines() []otel.Pipeline {
+func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "saphana",
 			Config: map[string]interface{}{
@@ -167,7 +167,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.Pipeline {
 				"tls":                 s.TLSConfig(true),
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -180,10 +180,10 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.Pipeline {
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
 			),
-		},
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverSapHana{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverSapHana{} })
 }

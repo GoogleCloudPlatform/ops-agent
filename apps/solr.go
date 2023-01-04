@@ -32,7 +32,7 @@ func (r MetricsReceiverSolr) Type() string {
 	return "solr"
 }
 
-func (r MetricsReceiverSolr) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverSolr) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "solr"
 
 	return r.MetricsReceiverSharedJVM.
@@ -49,7 +49,7 @@ func (r MetricsReceiverSolr) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverSolr{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverSolr{} })
 }
 
 type LoggingProcessorSolrSystem struct {
@@ -128,6 +128,6 @@ func (r LoggingReceiverSolrSystem) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorSolrSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverSolrSystem{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSolrSystem{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSolrSystem{} })
 }

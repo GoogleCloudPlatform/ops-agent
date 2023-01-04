@@ -24,10 +24,22 @@ import (
 
 const MetricsPort = 20201
 
-// Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+// ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+type ReceiverPipeline struct {
+	Receiver Component
+	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
+	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
+	Processors map[string][]Component
+	// GMP indicates that the pipeline outputs Prometheus metrics.
+	GMP bool
+}
+
+// Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
 type Pipeline struct {
-	Receiver   Component
-	Processors []Component
+	// Type is "metrics" or "traces".
+	Type                 string
+	ReceiverPipelineName string
+	Processors           []Component
 }
 
 // Component represents a single OT component (receiver, processor, exporter, etc.)
@@ -58,25 +70,33 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel  string
-	Pipelines map[string]Pipeline
+	LogLevel          string
+	ReceiverPipelines map[string]ReceiverPipeline
+	Pipelines         map[string]Pipeline
+
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
-	GlobalProcessors []Component
-	Exporter         Component
+	//
+	// Note: GlobalProcessors are not applied to pipelines with GMP = true.
+	GlobalProcessors                []Component
+	GoogleCloudExporter             Component
+	GoogleManagedPrometheusExporter Component
 }
 
 // Generate an OT YAML config file for c.
 // Each pipeline gets generated as a receiver, per-pipeline processors, global processors, and then global exporter.
 // For example:
 // metrics/mypipe:
-//   receivers: [hostmetrics/mypipe]
-//   processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
-//   exporters: [googlecloud]
+//
+//	receivers: [hostmetrics/mypipe]
+//	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
+//	exporters: [googlecloud]
 func (c ModularConfig) Generate() (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
+	googleCloudExporter := c.GoogleCloudExporter.name("")
+	googleManagedPrometheusExporter := c.GoogleManagedPrometheusExporter.name("")
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
@@ -98,8 +118,18 @@ func (c ModularConfig) Generate() (string, error) {
 		"exporters":  exporters,
 		"service":    service,
 	}
-	exporterName := c.Exporter.name("")
-	exporters[exporterName] = c.Exporter.Config
+	exporters[googleCloudExporter] = c.GoogleCloudExporter.Config
+
+	// Check if there are any prometheus receivers in the pipelines.
+	// If so, add the googlemanagedprometheus exporter.
+	for _, r := range c.ReceiverPipelines {
+		if r.GMP {
+			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
+
+			// Add the groupbyattrs processor so prometheus pipelines can use it.
+			processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+		}
+	}
 
 	var globalProcessorNames []string
 	for i, processor := range c.GlobalProcessors {
@@ -109,20 +139,45 @@ func (c ModularConfig) Generate() (string, error) {
 	}
 
 	for prefix, pipeline := range c.Pipelines {
-		receiverName := pipeline.Receiver.name(prefix)
-		receivers[receiverName] = pipeline.Receiver.Config
+		// Receiver pipelines need to be instantiated once, since they might have more than one type.
+		// We do this work more than once if it's in more than one pipeline, but it should just overwrite the same names.
+		receiverPipeline := c.ReceiverPipelines[pipeline.ReceiverPipelineName]
+		receiverName := receiverPipeline.Receiver.name(pipeline.ReceiverPipelineName)
+		var receiverProcessorNames []string
+		p, ok := receiverPipeline.Processors[pipeline.Type]
+		if !ok {
+			// This receiver pipeline isn't for this data type.
+			continue
+		}
+		for i, processor := range p {
+			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
+			receiverProcessorNames = append(receiverProcessorNames, name)
+			processors[name] = processor.Config
+		}
+		receivers[receiverName] = receiverPipeline.Receiver.Config
+
+		// Everything else in the pipeline is specific to this Type.
+		exporter := googleCloudExporter
 		var processorNames []string
+		processorNames = append(processorNames, receiverProcessorNames...)
 		for i, processor := range pipeline.Processors {
 			name := processor.name(fmt.Sprintf("%s_%d", prefix, i))
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
-		processorNames = append(processorNames, globalProcessorNames...)
-		// For now, we always generate pipelines of type "metrics".
-		pipelines["metrics/"+prefix] = map[string]interface{}{
+
+		// TODO: Should globalProcessorNames be appended for non-metrics receivers?
+		if receiverPipeline.GMP {
+			exporter = googleManagedPrometheusExporter
+			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
+		} else {
+			processorNames = append(processorNames, globalProcessorNames...)
+		}
+
+		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporterName},
+			"exporters":  []string{exporter},
 		}
 	}
 
@@ -132,4 +187,23 @@ func (c ModularConfig) Generate() (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func gceGroupByAttrs() Component {
+	return Component{
+		Type: "groupbyattrs",
+		Config: map[string]interface{}{
+			"keys": []string{"namespace", "cluster", "location"},
+		},
+	}
 }

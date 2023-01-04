@@ -21,3 +21,6 @@
 - Minor version bump
   - [ ] This PR introduces no new features.
   - [ ] This PR introduces new features, and there is a separate PR to bump the [minor version](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/VERSION) since the last [release](https://github.com/GoogleCloudPlatform/ops-agent/releases) already.
+  - [ ] This PR bumps the version.
+
+<!--- To edit this template, go to https://github.com/GoogleCloudPlatform/ops-agent/edit/master/.github/PULL_REQUEST_TEMPLATE.md -->

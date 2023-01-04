@@ -38,7 +38,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -50,7 +50,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 		transport = "tcp"
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{
@@ -61,7 +61,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"transport":           transport,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -72,12 +72,12 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverRedis{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverRedis{} })
 }
 
 type LoggingProcessorRedis struct {
@@ -162,6 +162,6 @@ func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorRedis{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverRedis{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorRedis{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRedis{} })
 }

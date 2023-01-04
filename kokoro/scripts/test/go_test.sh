@@ -1,10 +1,23 @@
 #!/bin/bash
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 # This script needs the following environment variables to be defined:
 # 1. various KOKORO_* variables
 # 2. TEST_SUITE_NAME: name of the test file, minus the .go suffix. For example,
 #    ops_agent_test or third_party_apps_test.
-# 3. WINRM_PAR_BLAZE_PATH: path to a copy of winrm.par to use for testing.
 #
 # And also the following, documented at the top of gce_testing.go and
 # $TEST_SUITE_NAME.go:
@@ -37,25 +50,16 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
-# If a built agent was passed in from Kokoro directly, use that. The file will
-# always be in $KOKORO_GFILE_DIR/result or $KOKORO_GFILE_DIR/out.
-if [[ -d "${KOKORO_GFILE_DIR}" ]]; then
-  if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
-    RESULT_DIR="${KOKORO_GFILE_DIR}/result"
-  elif compgen -G "${KOKORO_GFILE_DIR}/out/google-cloud-ops-agent*" > /dev/null; then
-    RESULT_DIR="${KOKORO_GFILE_DIR}/out"
-  fi
+# If a built agent was passed in from Kokoro directly, use that.
+if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
+  # Upload the agent packages to GCS.
+  AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
+  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*" "${AGENT_PACKAGES_IN_GCS}/"
 
-  if [[ -n "${RESULT_DIR-}" ]]; then
-    # Upload the agent packages to GCS.
-    AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
-    gsutil cp -r "${RESULT_DIR}/*" "${AGENT_PACKAGES_IN_GCS}/"
-
-    # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
-    # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)
-    # to install and use this custom build of the agent instead.
-    export AGENT_PACKAGES_IN_GCS
-  fi
+  # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
+  # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)
+  # to install and use this custom build of the agent instead.
+  export AGENT_PACKAGES_IN_GCS
 fi
 
 LOGS_DIR="${KOKORO_ARTIFACTS_DIR}/logs"
@@ -67,8 +71,11 @@ sudo rm -rf /usr/local/go
 # GOPATH is semi-deprecated nowadays too.
 unset GOPATH
 
+GO_VERSION="1.19"
+
 # Download and install a newer version of go.
-wget --no-verbose --output-document=/dev/stdout https://golang.org/dl/go1.17.linux-amd64.tar.gz | \
+# Install from a GCS bucket to avoid being throttled by go.dev.
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin
@@ -87,7 +94,7 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   # Make a module containing the latest dependencies from GitHub.
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
-  go mod tidy -compat=1.17
+  go mod tidy -compat=${GO_VERSION}
 else
   cd integration_test
 fi
@@ -96,12 +103,6 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_LITE_BLAZE_PATH}"
   export GCLOUD_TO_TEST
 fi
-
-# Copy down winrm.par from GCS.
-WINRM_PAR_PATH="$(mktemp --directory)"/winrm.par
-gsutil cp "${WINRM_IN_GCS}" "${WINRM_PAR_PATH}"
-chmod u+x "${WINRM_PAR_PATH}"
-export WINRM_PAR_PATH
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {

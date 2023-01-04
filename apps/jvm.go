@@ -31,7 +31,7 @@ func (r MetricsReceiverJVM) Type() string {
 	return "jvm"
 }
 
-func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverJVM) Pipelines() []otel.ReceiverPipeline {
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultJVMEndpoint).
 		ConfigurePipelines(
@@ -46,5 +46,5 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJVM{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverJVM{} })
 }
