@@ -2120,177 +2120,158 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	})
 }
 
-// Test the Histogram metric type using static testing files. The files will
-// contain metrics in the right format and hosted by a simple HTTP server so
-// that the agent can scrape the metrics
-// The test will send two sets of metric points, to verify the cumulative metrics
-// are correctly received and processed
+// TestPrometheusHistogramMetrics tests the Histogram metric type using static
+// testing files.
 func TestPrometheusHistogramMetrics(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	filesToUpload := map[string]fileToUpload{
+		"step_one": {local: path.Join(prometheusTestdata, "sample_histogram_step_1"),
+			remote: path.Join(remoteWorkDir, "data")},
+		"step_two": {local: path.Join(prometheusTestdata, "sample_histogram_step_2"),
+			remote: path.Join(remoteWorkDir, "data")},
+	}
 
-		prometheusTestdata := path.Join("testdata", "prometheus")
-		remoteWorkDir := path.Join("/opt", "go-http-server")
-		filesToUpload := map[string][]fileToUpload{
-			"step_one": {
-				{local: path.Join(prometheusTestdata, "sample_histogram_step_1"),
-					remote: path.Join(remoteWorkDir, "data")},
-				{local: path.Join(prometheusTestdata, "http_server.go"),
-					remote: path.Join(remoteWorkDir, "http_server.go")},
-				{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")}},
-			"step_two": {
-				{local: path.Join(prometheusTestdata, "sample_histogram_step_2"),
-					remote: path.Join(remoteWorkDir, "data")}},
-		}
-
-		// 1. Upload the step one files
-		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_one"])
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// 2. Setup the golang and start the go http server
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-		setupScript := `sudo systemctl daemon-reload
-			sudo systemctl enable http-server-for-prometheus-test
-			sudo systemctl restart http-server-for-prometheus-test`
-		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
-		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
-		}
-		// Wait until the http server is ready
-		time.Sleep(5 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
-			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
-		}
-		// 3. Config and start the agent
-		// Set the scrape interval to 10 second, so that metrics points can be
-		// received faster to shorten the duration of this test
-		config := `metrics:
-  receivers:
-    prom_app:
-      type: prometheus
-      config:
-        scrape_configs:
-        - job_name: test
-          metrics_path: /data
-          scrape_interval: 10s
-          static_configs:
-            - targets:
-              - localhost:8000
-  service:
-    pipelines:
-      prom_pipeline:
-        receivers: [prom_app]
-`
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
-		window := time.Minute
-		var multiErr error
-
-		// 4. Wait for the initial set of metrics and check
-		// For Histogram: We use prometheus.LinearBuckets(0, 20, 5), to have
-		// buckets w/ le=[0, 20, 40, 60, 80] plus the +inf final bucket
-		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-		// And get:
-		// Bounds (less than or equal) |0  |20     |40     |60     |80     |+inf
-		// Points                      |[0]|[10,20]|[30,40]|[50,60]|[70,80]|[90]
-		// Count                       |1  |2      |2      |2      |2      |1
-		// And histogram metrics are stored as cumulative type metrics, and
-		// histogram metrics get normalized
-		// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
-		// so for this initial step, Count/Mean/SumOfSquaredDeviation are all
-		// zeros, and the BucketCounts is nil
-		stepOneExpectedHistogram := &distribution.Distribution{
-			Count:                 0,
-			Mean:                  0,
-			SumOfSquaredDeviation: 0,
-			BucketOptions: &distribution.Distribution_BucketOptions{
-				Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
-					ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
-						Bounds: []float64{0, 20, 40, 60, 80},
-					},
+	// For Histogram: We use prometheus.LinearBuckets(0, 20, 5), to have
+	// buckets w/ le=[0, 20, 40, 60, 80] plus the +inf final bucket
+	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Bounds (less than or equal) |0  |20     |40     |60     |80     |+inf
+	// Points                      |[0]|[10,20]|[30,40]|[50,60]|[70,80]|[90]
+	// Count                       |1  |2      |2      |2      |2      |1
+	// And histogram metrics are stored as cumulative type metrics, and
+	// histogram metrics get normalized
+	// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+	// so for this initial step, Count/Mean/SumOfSquaredDeviation are all
+	// zeros, and the BucketCounts is nil
+	stepOneExpected := &distribution.Distribution{
+		Count:                 0,
+		Mean:                  0,
+		SumOfSquaredDeviation: 0,
+		BucketOptions: &distribution.Distribution_BucketOptions{
+			Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+				ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+					Bounds: []float64{0, 20, 40, 60, 80},
 				},
 			},
-		}
-		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpectedHistogram))
+		},
+	}
 
-		// 5. Replace the text file with the step two metrics
-		err = uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_two"])
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// 6. Wait until the new points have arrived
-		time.Sleep(3 * time.Minute)
-
-		// 7. Get the step 2 metrics and check against expected values
-		// For Histogram:
-		// For step 2, we repeat and observe points
-		// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-		// And get:
-		// Bounds (less than or equal)  |0  |20     |40     |60     |80     |+inf
-		// Total Observed in step 1 & 2 |2  |4      |4      |4      |4      |2
-		// Delta                        |1  |2      |2      |2      |2      |1
-		// Again, histogram metrics are stored as cumulative type metrics, so
-		// for this second step, the BucketCounts is the delta value in the
-		// above table.
-		// Count is the # of new points 10.
-		// Mean is (delta of sum) / (# of new points) = (900 - 450) / 10 = 45
-		// SumOfSquaredDeviation is not part of the Prometheus histogram. The
-		// value is calculated by the googlemanagedprometheusexporter. since the
-		// exporter does not have the actual observed values, the calculation
-		// assumes all points are in the middle of the bucket, and for +inf
-		// the points are at the largest boundary. See:
-		// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/36f91511cfd7be17370e23c36ee839a70cdc914d/exporter/collector/metrics.go#L560
-		// So here SumOfSquaredDeviation = (x_i - mean)^2 for x_i in
-		// [0, 10, 10, 30, 30, 50, 50, 70, 70, 80] and mean 45
-		stepTwoExpectedHistogram := &distribution.Distribution{
-			Count:                 10,
-			Mean:                  45,
-			SumOfSquaredDeviation: 7450,
-			BucketOptions: &distribution.Distribution_BucketOptions{
-				Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
-					ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
-						Bounds: []float64{0, 20, 40, 60, 80},
-					},
+	// For step 2, we repeat and observe points
+	// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Bounds (less than or equal)  |0  |20     |40     |60     |80     |+inf
+	// Total Observed in step 1 & 2 |2  |4      |4      |4      |4      |2
+	// Delta                        |1  |2      |2      |2      |2      |1
+	// Again, histogram metrics are stored as cumulative type metrics, so
+	// for this second step, the BucketCounts is the delta value in the
+	// above table.
+	// Count is the # of new points 10.
+	// Mean is (delta of sum) / (# of new points) = (900 - 450) / 10 = 45
+	// SumOfSquaredDeviation is not part of the Prometheus histogram. The
+	// value is calculated by the googlemanagedprometheusexporter. since the
+	// exporter does not have the actual observed values, the calculation
+	// assumes all points are in the middle of the bucket, and for +inf
+	// the points are at the largest boundary. See:
+	// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/36f91511cfd7be17370e23c36ee839a70cdc914d/exporter/collector/metrics.go#L560
+	// So here SumOfSquaredDeviation = (x_i - mean)^2 for x_i in
+	// [0, 10, 10, 30, 30, 50, 50, 70, 70, 80] and mean 45
+	stepTwoExpected := &distribution.Distribution{
+		Count:                 10,
+		Mean:                  45,
+		SumOfSquaredDeviation: 7450,
+		BucketOptions: &distribution.Distribution_BucketOptions{
+			Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+				ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+					Bounds: []float64{0, 20, 40, 60, 80},
 				},
 			},
-			BucketCounts: []int64{1, 2, 2, 2, 2, 1},
-		}
+		},
+		BucketCounts: []int64{1, 2, 2, 2, 2, 1},
+	}
 
-		multiErr = multierr.Append(multiErr, assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpectedHistogram))
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
-	})
+	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
+		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpected)
+		},
+		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpected)
+		},
+	}
+	testPrometheusMetrics(t, filesToUpload, checks)
 }
 
-// Test the Summary metric type using static testing files. The files will
-// contain metrics in the right format and hosted by a simple HTTP server so
-// that the agent can scrape the metrics
-// The test will send two sets of metric points, to verify the cumulative metrics
-// are correctly received and processed
+// TestPrometheusSummaryMetrics tests the Summary metric type using static
+// testing files.
 func TestPrometheusSummaryMetrics(t *testing.T) {
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	filesToUpload := map[string]fileToUpload{
+		"step_one": {local: path.Join(prometheusTestdata, "sample_summary_step_1"),
+			remote: path.Join(remoteWorkDir, "data")},
+		"step_two": {local: path.Join(prometheusTestdata, "sample_summary_step_2"),
+			remote: path.Join(remoteWorkDir, "data")},
+	}
+
+	// For Summary: We use Objectives [0.5, 0.9, 0.99]
+	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Objectives |0.5            |0.9               |0.99
+	// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
+	// Quantile   |40             |80                |90
+	// And summary metrics' quantiles are stored as gauge type metrics, so
+	// for this initial step, quantiles have the actual values.
+	// But count and sum are stored as cumulative values, and those two get
+	// normalized
+	// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+	// and they are 0s for the first step
+	stepOneExpected := prometheusSummaryMetric{
+		Quantiles: map[string]float64{
+			"0.5":  40,
+			"0.9":  80,
+			"0.99": 90,
+		},
+		Count: 0,
+		Sum:   0,
+	}
+
+	// For step 2, we repeat and observe points
+	// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Objectives |0.5            |0.9               |0.99
+	// Quantile   |40             |80                |90
+	// And summary metrics' quantiles are stored as gauge type metrics, so
+	// for this second step, quantiles have the actual values.
+	// But count and sum are stored as cumulative values, thus:
+	// Count = (delta of count) = 20 - 10 = 10
+	// Sum = (delta of sum) = 900 - 450 = 450
+	stepTwoExpected := prometheusSummaryMetric{
+		Quantiles: map[string]float64{
+			"0.5":  40,
+			"0.9":  80,
+			"0.99": 90,
+		},
+		Count: 10,
+		Sum:   450,
+	}
+
+	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
+		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpected)
+		},
+		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepTwoExpected)
+		},
+	}
+	testPrometheusMetrics(t, filesToUpload, checks)
+}
+
+// testPrometheusMetrics tests different Prometheus metric types using static
+// testing files. The files will contain metrics in the right format and hosted
+// by a simple HTTP server so that the agent can scrape the metrics
+// The test will send two sets of metric points, to verify the metrics are
+// correctly received and processed
+func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, checks map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2301,21 +2282,15 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 
 		prometheusTestdata := path.Join("testdata", "prometheus")
 		remoteWorkDir := path.Join("/opt", "go-http-server")
-		filesToUpload := map[string][]fileToUpload{
-			"step_one": {
-				{local: path.Join(prometheusTestdata, "sample_summary_step_1"),
-					remote: path.Join(remoteWorkDir, "data")},
-				{local: path.Join(prometheusTestdata, "http_server.go"),
-					remote: path.Join(remoteWorkDir, "http_server.go")},
-				{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")}},
-			"step_two": {
-				{local: path.Join(prometheusTestdata, "sample_summary_step_2"),
-					remote: path.Join(remoteWorkDir, "data")}},
+		serviceFiles := []fileToUpload{
+			{local: path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join(remoteWorkDir, "http_server.go")},
+			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
 		}
 
-		// 1. Upload the step one files
-		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_one"])
+		// 1. Upload the step one files and files used to setup the http service
+		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, testFiles["step_one"]))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2371,62 +2346,17 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
 		var multiErr error
-
-		// 4. Wait for the initial set of metrics and check
-		// For Summary: We use Objectives [0.5, 0.9, 0.99]
-		// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-		// And get:
-		// Objectives |0.5            |0.9               |0.99
-		// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
-		// Quantile   |40             |80                |90
-		// And summary metrics' quantiles are stored as gauge type metrics, so
-		// for this initial step, quantiles have the actual values.
-		// But count and sum are stored as cumulative values, and those two get
-		// normalized
-		// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
-		// and they are 0s for the first step
-		stepOneExpectedSummary := prometheusSummaryMetric{
-			Quantiles: map[string]float64{
-				"0.5":  40,
-				"0.9":  80,
-				"0.99": 90,
-			},
-			Count: 0,
-			Sum:   0,
-		}
-		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpectedSummary))
+		multiErr = multierr.Append(multiErr, checks["step_one"](ctx, logger, vm, window))
 
 		// 5. Replace the text file with the step two metrics
-		err = uploadFiles(ctx, logger, vm, testdataDir, filesToUpload["step_two"])
+		err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{testFiles["step_two"]})
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// 6. Wait until the new points have arrived
 		time.Sleep(3 * time.Minute)
-
-		// 7. Get the step 2 metrics and check against expected values
-		// For Summary:
-		// For step 2, we repeat and observe points
-		// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-		// And get:
-		// Objectives |0.5            |0.9               |0.99
-		// Quantile   |40             |80                |90
-		// And summary metrics' quantiles are stored as gauge type metrics, so
-		// for this second step, quantiles have the actual values.
-		// But count and sum are stored as cumulative values, thus:
-		// Count = (delta of count) = 20 - 10 = 10
-		// Sum = (delta of sum) = 900 - 450 = 450
-		stepTwoExpectedSummary := prometheusSummaryMetric{
-			Quantiles: map[string]float64{
-				"0.5":  40,
-				"0.9":  80,
-				"0.99": 90,
-			},
-			Count: 10,
-			Sum:   450,
-		}
-		multiErr = multierr.Append(multiErr, assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepTwoExpectedSummary))
+		multiErr = multierr.Append(multiErr, checks["step_two"](ctx, logger, vm, window))
 
 		if multiErr != nil {
 			t.Error(multiErr)
