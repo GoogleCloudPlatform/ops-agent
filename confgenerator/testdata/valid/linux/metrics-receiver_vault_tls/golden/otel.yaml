@@ -355,8 +355,8 @@ processors:
       include: nvml.gpu.memory.bytes_used
       new_name: gpu/memory/bytes_used
     - action: update
-      include: nvml.gpu.processes.lifetime_utilization
-      new_name: gpu/processes/lifetime_utilization
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
     - action: update
       include: nvml.gpu.processes.max_bytes_used
       new_name: gpu/processes/max_bytes_used

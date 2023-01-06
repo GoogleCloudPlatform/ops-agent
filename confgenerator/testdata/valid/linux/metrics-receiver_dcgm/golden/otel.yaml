@@ -50,6 +50,16 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
+  metricstransform/dcgm_dcgm_1:
+    transforms:
+    - action: update
+      include: "^dcgm\\.gpu\\.profiling\\.(.*)$$"
+      match_type: regexp
+      new_name: dcgm.gpu.$${1}
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/default__pipeline_hostmetrics_2:
     transforms:
     - action: update
@@ -342,12 +352,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  metricstransform/elasticsearch_elasticsearch_1:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -436,22 +440,20 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/dcgm_dcgm_0: {}
   normalizesums/default__pipeline_nvml_0: {}
-  normalizesums/elasticsearch_elasticsearch_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
 receivers:
-  elasticsearch/elasticsearch_elasticsearch:
+  dcgm/dcgm_dcgm:
     collection_interval: 60s
-    endpoint: http://localhost:9200
-    nodes:
-    - _local
-    password: password
-    skip_cluster_metrics: false
-    tls:
-      insecure: true
-    username: user
+    endpoint: localhost:5555
+    metrics:
+      dcgm.gpu.memory.bytes_used:
+        enabled: false
+      dcgm.gpu.utilization:
+        enabled: false
   hostmetrics/default__pipeline_hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -486,6 +488,15 @@ receivers:
           - 0.0.0.0:20201
 service:
   pipelines:
+    metrics/dcgm_dcgm:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/dcgm_dcgm_0
+      - metricstransform/dcgm_dcgm_1
+      - resourcedetection/_global_0
+      receivers:
+      - dcgm/dcgm_dcgm
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
@@ -507,15 +518,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - nvml/default__pipeline_nvml
-    metrics/elasticsearch_elasticsearch:
-      exporters:
-      - googlecloud
-      processors:
-      - normalizesums/elasticsearch_elasticsearch_0
-      - metricstransform/elasticsearch_elasticsearch_1
-      - resourcedetection/_global_0
-      receivers:
-      - elasticsearch/elasticsearch_elasticsearch
     metrics/fluentbit:
       exporters:
       - googlecloud
