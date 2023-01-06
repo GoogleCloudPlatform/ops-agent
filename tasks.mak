@@ -55,6 +55,9 @@ yaml_lint:
 # Unit Tests
 ############
 
+test:
+	go test ./...
+
 test_confgenerator_update:
 	go test ./confgenerator -update
 
@@ -96,9 +99,9 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate go_vet
+precommit: addlicense_check test go_vet
 
-precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate go_vet
+precommit_update: addlicense test_confgenerator_update test_metadata_update test go_vet
 
 ############
 # Convenience
