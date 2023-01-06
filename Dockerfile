@@ -53,7 +53,7 @@ RUN ./pkg/deb/build.sh
 
 FROM debian:stretch AS stretch-build
 
-echo "deb http://ftp.debian.org/debian stretch-backports main" | sudo tee /etc/apt/sources.list.d/backports.list
+RUN echo "deb http://ftp.debian.org/debian stretch-backports main" | sudo tee /etc/apt/sources.list.d/backports.list
 
 RUN set -x; \
     apt-get update && \
