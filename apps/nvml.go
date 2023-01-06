@@ -20,7 +20,7 @@ import (
 )
 
 type MetricsReceiverNvml struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 }
 

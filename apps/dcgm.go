@@ -20,7 +20,7 @@ import (
 )
 
 type MetricsReceiverDcgm struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty"`
@@ -33,21 +33,30 @@ func (r MetricsReceiverDcgm) Type() string {
 }
 
 func (r MetricsReceiverDcgm) Pipelines() []otel.Pipeline {
-   if r.Endpoint == "" {
-      r.Endpoint = defaultDcgmEndpoint
-   }
+	if r.Endpoint == "" {
+		r.Endpoint = defaultDcgmEndpoint
+	}
 
 	return []otel.Pipeline{{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
-            "endpoint": r.Endpoint,
+				"endpoint":            r.Endpoint,
+				"metrics": map[string]interface{}{
+					"dcgm.gpu.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"dcgm.gpu.memory.bytes_used": map[string]bool{
+						"enabled": false,
+					},
+				},
 			},
 		},
 		Processors: []otel.Component{
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
+				otel.ChangePrefix("dcgm\\.gpu\\.profiling\\.", "dcgm.gpu."),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		},
@@ -57,5 +66,3 @@ func (r MetricsReceiverDcgm) Pipelines() []otel.Pipeline {
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverDcgm{} }, "linux")
 }
-
-

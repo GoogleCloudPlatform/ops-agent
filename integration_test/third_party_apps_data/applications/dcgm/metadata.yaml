@@ -24,7 +24,24 @@ configure_integration: |-
 supported_operating_systems: linux
 supported_app_version: ["3.1"]
 expected_metrics:
-  - type: workload.googleapis.com/dcgm.gpu.utilization
+# - type: workload.googleapis.com/dcgm.gpu.utilization
+#   value_type: DOUBLE
+#   kind: GAUGE
+#   monitored_resource: gce_instance
+#   labels:
+#     model: .*
+#     uuid: .*
+#     gpu_number: "[0-9]*"
+# - type: workload.googleapis.com/dcgm.gpu.memory.bytes_used
+#   value_type: INT64
+#   kind: GAUGE
+#   monitored_resource: gce_instance
+#   labels:
+#     model: .*
+#     uuid: .*
+#     gpu_number: "[0-9]*"
+#     memory_state: free|used
+  - type: workload.googleapis.com/dcgm.gpu.sm_utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -33,16 +50,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
     representative: true
-  - type: workload.googleapis.com/dcgm.gpu.memory.bytes_used
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      memory_state: free|used
-  - type: workload.googleapis.com/dcgm.gpu.profiling.sm_utilization
+  - type: workload.googleapis.com/dcgm.gpu.sm_occupancy
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -50,15 +58,7 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-  - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-  - type: workload.googleapis.com/dcgm.gpu.profiling.pipe_utilization
+  - type: workload.googleapis.com/dcgm.gpu.pipe_utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -67,7 +67,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       pipe: tensor|fp64|fp32|fp16
-  - type: workload.googleapis.com/dcgm.gpu.profiling.dram_utilization
+  - type: workload.googleapis.com/dcgm.gpu.dram_utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -75,7 +75,7 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-  - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
+  - type: workload.googleapis.com/dcgm.gpu.pcie_traffic_rate
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
@@ -84,7 +84,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       direction: tx|rx
-  - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
+  - type: workload.googleapis.com/dcgm.gpu.nvlink_traffic_rate
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
