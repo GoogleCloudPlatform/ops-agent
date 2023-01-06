@@ -383,6 +383,37 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
+	parser, _ := LoggingProcessorParseRegex{
+		Regex: `^\[[ ]*(?<severity>[a-z]+)\]`,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Component("logging-severity-parser", "aaaaaaaaaaaaaaaaa")
+
+	out = append(out, parser)
+
+	out = append(out, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":   "severity_parser",
+			"Parser": "logging-severity-parser",
+		},
+	})
+
+	out = append(out, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":      "modify",
+			"Condition": "Key_Value_Equals severity error",
+			"Remove":    "severity",
+			"Add":       "logging.googleapis.com/severity ERROR",
+		},
+	})
+
 	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
