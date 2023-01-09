@@ -422,7 +422,7 @@ processors:
   normalizesums/saphana_1: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/saphana_3:
     metrics:
       queries:

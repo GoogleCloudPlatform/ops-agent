@@ -416,7 +416,7 @@ processors:
   normalizesums/jetty__metrics_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
