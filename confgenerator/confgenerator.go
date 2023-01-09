@@ -80,7 +80,7 @@ func gceResourceDetector() otel.Component {
 	return otel.Component{
 		Type: "resourcedetection",
 		Config: map[string]interface{}{
-			"detectors": []string{"gce"},
+			"detectors": []string{"gcp"},
 		},
 	}
 }

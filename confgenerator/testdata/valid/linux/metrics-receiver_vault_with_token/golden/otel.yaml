@@ -460,7 +460,7 @@ processors:
   normalizesums/vault_3: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/vault_0:
     metrics:
       queries:

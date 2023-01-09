@@ -485,7 +485,7 @@ processors:
   normalizesums/iis__v2_4: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/iis__v2_0:
     metrics:
       queries:

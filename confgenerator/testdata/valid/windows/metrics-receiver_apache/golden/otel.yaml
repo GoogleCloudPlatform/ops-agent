@@ -481,7 +481,7 @@ processors:
   normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   apache/apache__metrics:
     collection_interval: 30s

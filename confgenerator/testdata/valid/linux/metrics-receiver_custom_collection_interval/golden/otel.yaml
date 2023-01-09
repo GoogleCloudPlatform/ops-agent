@@ -409,7 +409,7 @@ processors:
       new_name: agent.googleapis.com/$${1}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 30s
