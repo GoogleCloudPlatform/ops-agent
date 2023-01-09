@@ -32,6 +32,8 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
+const FluentBitSelfLogTag = "ops-agent-fluent-bit"
+
 func googleCloudExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -383,7 +385,17 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
-	parser, _ := LoggingProcessorParseRegex{
+	out = append(out, generateSeveritySelfLogsParser()...)
+
+	out = append(out, stackdriverOutputComponent(FluentBitSelfLogTag, userAgent))
+	out = append(out, fluentbit.MetricsOutputComponent())
+
+	return out, nil
+}
+
+func generateSeveritySelfLogsParser() []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+	parser := LoggingProcessorParseRegex{
 		Regex: `^\[[ ]*(?<severity>[a-z]+)\]`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
@@ -392,32 +404,28 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 				"severity": "string",
 			},
 		},
-	}.Component("logging-severity-parser", "aaaaaaaaaaaaaaaaa")
+	}.Components("logging-severity-parser", "self-logs-severity")
 
-	out = append(out, parser)
+	out = append(out, parser...)
 
 	out = append(out, fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
 			"Name":   "severity_parser",
 			"Parser": "logging-severity-parser",
+			"Match":  FluentBitSelfLogTag,
 		},
 	})
 
-	out = append(out, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Condition": "Key_Value_Equals severity error",
-			"Remove":    "severity",
-			"Add":       "logging.googleapis.com/severity ERROR",
-		},
-	})
-
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
-	out = append(out, fluentbit.MetricsOutputComponent())
-
-	return out, nil
+	out = append(out, fluentbit.TranslationComponents(FluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
