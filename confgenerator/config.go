@@ -56,14 +56,14 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
+func (uc *UnifiedConfig) DeepCopy(platform string) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
+		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
 	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
+		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
 
 	return fromYaml, nil
@@ -278,7 +278,7 @@ func newValidator() *validator.Validate {
 	return v
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
+func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (*UnifiedConfig, error) {
 	ctx := context.WithValue(context.TODO(), platformKey, platform)
 	config := UnifiedConfig{}
 	v := &validatorContext{
@@ -286,11 +286,11 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 		v:   newValidator(),
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, err
+		return nil, err
 	}
 
 	config.platform = platform
-	return config, nil
+	return &config, nil
 }
 
 type Component interface {
@@ -832,12 +832,12 @@ func (uc *UnifiedConfig) ValidateMetrics() error {
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
 	}
-	if m.Service == nil {
-		return nil
-	}
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return err
+	}
+	if m.Service == nil {
+		return nil
 	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]

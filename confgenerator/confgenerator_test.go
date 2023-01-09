@@ -213,7 +213,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 
 	// Feature Tracking
-	extractedFeatures, err := confgenerator.ExtractFeatures(&userConf)
+	extractedFeatures, err := confgenerator.ExtractFeatures(userConf)
 	if err != nil {
 		return
 	}

@@ -26,7 +26,7 @@ import (
 func getUserAndMergedConfigs(userConfPath, platform string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
 	userUc, err := confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
 	if err != nil {
-		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
+		return nil, nil, err
 	}
 	if userUc == nil {
 		userUc = &confgenerator.UnifiedConfig{}
@@ -34,7 +34,7 @@ func getUserAndMergedConfigs(userConfPath, platform string) (*confgenerator.Unif
 
 	mergedUc, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
-		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
+		return nil, nil, err
 	}
 
 	return userUc, mergedUc, nil

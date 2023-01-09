@@ -35,12 +35,11 @@ func ReadUnifiedConfigFromFile(path, platform string) (*UnifiedConfig, error) {
 		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
 	}
 
-	uc := &UnifiedConfig{}
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return uc, err
+		return nil, err
 	}
-	*uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
+	uc, err := UnmarshalYamlToUnifiedConfig(data, platform)
 	if err != nil {
 		return nil, err
 	}

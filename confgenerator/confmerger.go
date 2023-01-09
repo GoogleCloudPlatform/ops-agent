@@ -32,7 +32,7 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 
 	// Optionally merge the user config file.
 	if overrides != nil {
-		mergeConfigs(&original, overrides)
+		mergeConfigs(original, overrides)
 	}
 
 	if err := original.Validate(); err != nil {
@@ -44,7 +44,7 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 	if err := v.Struct(original); err != nil {
 		panic(err)
 	}
-	return &original, nil
+	return original, nil
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
