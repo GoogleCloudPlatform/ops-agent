@@ -2674,6 +2674,32 @@ traces:
 	})
 }
 
+func TestPassingHealthChecks(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		serialPortLogName := "projects/stackdriver-test-143416/logs/serialconsole.googleapis.com%2Fserial_port_1_output"
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, , time.Hour, `textPayload="Check: Network Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, , time.Hour, `textPayload="Check: API Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, , time.Hour, `textPayload="Check: Permissions Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, , time.Hour, `textPayload="Check: Ports Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
