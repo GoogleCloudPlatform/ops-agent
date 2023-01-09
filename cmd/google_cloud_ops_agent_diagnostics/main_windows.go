@@ -43,7 +43,7 @@ type service struct {
 }
 
 func (s *service) Handle(err error) {
-	s.log.Error(eventID, fmt.Sprintf("error collecting metrics: %v", err))
+	s.log.Error(DiagnosticsEventID, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
 func run() error {
@@ -108,7 +108,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	// Set otel error handler
 	otel.SetErrorHandler(s)
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(userUc, mergedUc, death)
 	if err != nil {
 		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA

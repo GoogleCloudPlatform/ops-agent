@@ -31,25 +31,24 @@ func ReadUnifiedConfigFromFile(path, platform string) (*UnifiedConfig, error) {
 		if os.IsNotExist(err) {
 			// If the user config file does not exist, we don't want any overrides.
 			return nil, nil
-		} else {
-			return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
 		}
+		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
 	}
 
-	uc := UnifiedConfig{}
+	uc := &UnifiedConfig{}
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return &uc, err
+		return uc, err
 	}
-	uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
+	*uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
 	if err != nil {
-		return &uc, err
+		return nil, err
 	}
 	if err := uc.Validate(); err != nil {
-		return &uc, err
+		return nil, err
 	}
 
-	return &uc, nil
+	return uc, nil
 }
 
 func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outDir string) error {

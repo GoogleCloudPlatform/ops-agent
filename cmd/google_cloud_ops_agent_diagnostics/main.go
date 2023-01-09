@@ -23,8 +23,8 @@ import (
 
 // getUserAndMergedConfigs if successful will return both the users original
 // config and merged config respectively
-func getUserAndMergedConfigs(userConfPath, platform string) (userUc, mergedUc *confgenerator.UnifiedConfig, err error) {
-	userUc, err = confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
+func getUserAndMergedConfigs(userConfPath, platform string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
 	if err != nil {
 		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
 	}
@@ -32,7 +32,7 @@ func getUserAndMergedConfigs(userConfPath, platform string) (userUc, mergedUc *c
 		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-	mergedUc, err = confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
+	mergedUc, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
 	if err != nil {
 		return &confgenerator.UnifiedConfig{}, &confgenerator.UnifiedConfig{}, err
 	}
