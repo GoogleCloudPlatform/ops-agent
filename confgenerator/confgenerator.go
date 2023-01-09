@@ -76,7 +76,7 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func gceResourceDetector() otel.Component {
+func gcpResourceDetector() otel.Component {
 	return otel.Component{
 		Type: "resourcedetection",
 		Config: map[string]interface{}{
@@ -127,7 +127,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		LogLevel:                        uc.Metrics.Service.LogLevel,
 		ReceiverPipelines:               receiverPipelines,
 		Pipelines:                       pipelines,
-		GlobalProcessors:                []otel.Component{gceResourceDetector()},
+		GlobalProcessors:                []otel.Component{gcpResourceDetector()},
 		GoogleCloudExporter:             googleCloudExporter(userAgent),
 		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
 	}.Generate()
