@@ -1,0 +1,17 @@
+features:
+- feature: receivers:couchbase
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:couchbase_general
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:couchbase_goxdcr
+  module: logging
+  key: "[1].enabled"
+  value: true
+- feature: receivers:couchbase_http_access
+  module: logging
+  key: "[2].enabled"
+  value: true

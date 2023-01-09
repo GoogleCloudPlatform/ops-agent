@@ -1,0 +1,9 @@
+features:
+- feature: receivers:wildfly
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:wildfly_system
+  module: logging
+  key: "[0].enabled"
+  value: true
