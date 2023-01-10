@@ -54,12 +54,13 @@ RUN ./pkg/deb/build.sh
 FROM debian:stretch AS stretch-build
 
 RUN echo "deb http://ftp.debian.org/debian stretch-backports main" | tee /etc/apt/sources.list.d/backports.list
+RUN echo "deb http://ftp.debian.org/debian stretch-backports-sloppy main" >> /etc/apt/sources.list.d/backports.list
 
 RUN set -x; \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
     autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-    build-essential cmake/stretch-backports bison flex file libsystemd-dev \
+    build-essential cmake/stretch-backports libuv1/stretch-backports libarchive13/stretch-backports-sloppy bison flex file libsystemd-dev \
     devscripts cdbs pkg-config zip
 
 ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
