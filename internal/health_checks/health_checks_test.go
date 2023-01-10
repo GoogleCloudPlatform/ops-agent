@@ -24,6 +24,10 @@ import (
 
 type FailureCheck struct{}
 
+func (c FailureCheck) Name() string {
+	return "Failure Check"
+}
+
 func (c FailureCheck) RunCheck() error {
 	return health_checks.HC_FAILURE_ERR
 }
@@ -43,6 +47,10 @@ func TestCheckFailure(t *testing.T) {
 
 type SuccessCheck struct{}
 
+func (c SuccessCheck) Name() string {
+	return "Success Check"
+}
+
 func (c SuccessCheck) RunCheck() error {
 	return nil
 }
@@ -57,6 +65,10 @@ func TestCheckSuccess(t *testing.T) {
 
 type ErrorCheck struct{}
 
+func (c ErrorCheck) Name() string {
+	return "Error Check"
+}
+
 func (c ErrorCheck) RunCheck() error {
 	err := errors.New("Test error.")
 	return err
@@ -69,4 +81,14 @@ func TestCheckError(t *testing.T) {
 	err := testCheck.RunCheck()
 
 	assert.ErrorContains(t, err, wantMessage)
+}
+
+func TestRunAllHealthChecks(t *testing.T) {
+	AllHealthChecks := health_checks.HealthCheckRegistry{
+		FailureCheck{},
+		SuccessCheck{},
+		ErrorCheck{},
+	}
+
+	_, _ = AllHealthChecks.RunAllHealthChecks()
 }
