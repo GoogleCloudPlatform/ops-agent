@@ -25,22 +25,6 @@ var (
 	monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
 )
 
-// func runGetHTTPRequest(url string) (string, string, error) {
-// 	resp, err := http.Get(url)
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-// 	defer resp.Body.Close()
-
-// 	status := resp.Status
-// 	b, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-
-// 	return status, string(b), nil
-// }
-
 type NetworkCheck struct{}
 
 func (c NetworkCheck) Name() string {
