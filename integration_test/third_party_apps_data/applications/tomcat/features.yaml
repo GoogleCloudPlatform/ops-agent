@@ -1,0 +1,13 @@
+features:
+- feature: receivers:tomcat
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:tomcat_access
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:tomcat_system
+  module: logging
+  key: "[1].enabled"
+  value: true

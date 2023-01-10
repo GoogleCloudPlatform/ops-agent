@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -39,6 +40,10 @@ const (
 type service struct {
 	log      debug.Log
 	userConf string
+}
+
+func (s *service) Handle(err error) {
+	s.log.Error(eventID, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
 func run() error {
@@ -99,6 +104,9 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 			}
 		}
 	}()
+
+	// Set otel error handler
+	otel.SetErrorHandler(s)
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(&userUc, &mergedUc, death)
 	if err != nil {

@@ -38,7 +38,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -50,7 +50,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 		transport = "tcp"
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{
@@ -61,7 +61,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 				"transport":           transport,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -72,7 +72,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

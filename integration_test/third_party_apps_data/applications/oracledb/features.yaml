@@ -1,0 +1,13 @@
+features:
+- feature: receivers:oracledb
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:oracledb_alert
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:oracledb_audit
+  module: logging
+  key: "[1].enabled"
+  value: true

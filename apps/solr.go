@@ -32,7 +32,7 @@ func (r MetricsReceiverSolr) Type() string {
 	return "solr"
 }
 
-func (r MetricsReceiverSolr) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverSolr) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "solr"
 
 	return r.MetricsReceiverSharedJVM.

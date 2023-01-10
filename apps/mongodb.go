@@ -44,7 +44,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMongoDB) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint
@@ -70,17 +70,17 @@ func (r MetricsReceiverMongoDB) Pipelines() []otel.Pipeline {
 		config["tls"] = r.TLSConfig(false)
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   r.Type(),
 			Config: config,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

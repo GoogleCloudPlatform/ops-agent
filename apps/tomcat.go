@@ -34,7 +34,7 @@ func (r MetricsReceiverTomcat) Type() string {
 	return "tomcat"
 }
 
-func (r MetricsReceiverTomcat) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverTomcat) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "tomcat"
 
 	return r.MetricsReceiverSharedJVM.

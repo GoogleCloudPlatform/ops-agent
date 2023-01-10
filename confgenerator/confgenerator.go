@@ -76,11 +76,11 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func gceResourceDetector() otel.Component {
+func gcpResourceDetector() otel.Component {
 	return otel.Component{
 		Type: "resourcedetection",
 		Config: map[string]interface{}{
-			"detectors": []string{"gce"},
+			"detectors": []string{"gcp"},
 		},
 	}
 }
@@ -90,42 +90,46 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
 
+	receiverPipelines := make(map[string]otel.ReceiverPipeline)
 	pipelines := make(map[string]otel.Pipeline)
-	var prometheusCustomMetricPipelines []string
 	var err error
 
 	if uc.Metrics != nil {
 		var err error
-		pipelines, err = uc.generateOtelPipelines()
-		if err != nil {
-			return "", err
-		}
-		prometheusCustomMetricPipelines, err = uc.getCustomPrometheusOTelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
 		if err != nil {
 			return "", err
 		}
 	}
 
-	pipelines["otel"] = AgentSelfMetrics{
+	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
+	pipelines["otel"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "otel",
+	}
 
-	pipelines["fluentbit"] = AgentSelfMetrics{
+	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "fluentbit",
+	}
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:                         uc.Metrics.Service.LogLevel,
-		Pipelines:                        pipelines,
-		GoogleManagedPrometheusPipelines: prometheusCustomMetricPipelines,
-		GlobalProcessors:                 []otel.Component{gceResourceDetector()},
-		GoogleCloudExporter:              googleCloudExporter(userAgent),
-		GoogleManagedPrometheusExporter:  googleManagedPrometheusExporter(userAgent),
+		LogLevel:                        uc.Metrics.Service.LogLevel,
+		ReceiverPipelines:               receiverPipelines,
+		Pipelines:                       pipelines,
+		GlobalProcessors:                []otel.Component{gcpResourceDetector()},
+		GoogleCloudExporter:             googleCloudExporter(userAgent),
+		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
 	}.Generate()
 	if err != nil {
 		return "", err
@@ -133,78 +137,86 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-// getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
-func (uc *UnifiedConfig) getCustomPrometheusOTelPipelines() ([]string, error) {
-	out := []string{}
-	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, err
-	}
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
-			}
-
-			for i := range receiver.Pipelines() {
-				otelPipeline := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					otelPipeline = fmt.Sprintf("%s_%d", otelPipeline, i)
-				}
-
-				// Check the Ops Agent receiver type.
-				if receiver.Type() == "prometheus" {
-					out = append(out, otelPipeline)
-				}
-			}
-		}
-	}
-
-	return out, nil
-}
-
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
-func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.Pipeline, error) {
+func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[string]otel.Pipeline)
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
+	outR := make(map[string]otel.ReceiverPipeline)
+	outP := make(map[string]otel.Pipeline)
+	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		for i, receiverPipeline := range receiver.Pipelines() {
+			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
+			if i > 0 {
+				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
 			}
 
-			for i, receiverPipeline := range receiver.Pipelines() {
-				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					prefix = fmt.Sprintf("%s_%d", prefix, i)
-				}
+			prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+			if pipelineType != "metrics" {
+				// Don't prepend for metrics pipelines to preserve old golden configs.
+				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
+			}
 
-				// Check the Ops Agent receiver type.
-				if receiver.Type() == "prometheus" {
-					// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-					if len(p.ProcessorIDs) > 0 {
-						return nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-					}
+			outR[receiverPipelineName] = receiverPipeline
+
+			pipeline := otel.Pipeline{
+				Type:                 pipelineType,
+				ReceiverPipelineName: receiverPipelineName,
+			}
+
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.GMP {
+				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 				}
-				for _, pID := range p.ProcessorIDs {
-					processor, ok := m.Processors[pID]
-					if !ok {
-						return nil, fmt.Errorf("processor %q not found", pID)
-					}
-					receiverPipeline.Processors = append(receiverPipeline.Processors, processor.Processors()...)
+			}
+			for _, pID := range processorIDs {
+				// TODO: Change when we support trace processors.
+				processor, ok := m.Processors[pID]
+				if !ok {
+					return fmt.Errorf("processor %q not found", pID)
 				}
-				out[prefix] = receiverPipeline
+				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+			}
+			outP[prefix] = pipeline
+		}
+		return nil
+	}
+	if m != nil && m.Service != nil {
+		receivers, err := uc.MetricsReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range m.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
 			}
 		}
 	}
-	return out, nil
+	t := uc.Traces
+	if t != nil && t.Service != nil {
+		receivers, err := uc.TracesReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range t.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				if err := addReceiver("traces", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+	}
+	return outR, outP, nil
 }
 
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.

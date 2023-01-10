@@ -16,6 +16,7 @@ package confgenerator_test
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -208,14 +210,48 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 	got["otel.yaml"] = otelGeneratedConfig
 
+	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
+
+	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(inputBytes, platform.OS)
+	if err != nil {
+		return
+	}
+
+	// Feature Tracking
+	extractedFeatures, err := confgenerator.ExtractFeatures(&userConf)
+	if err != nil {
+		return
+	}
+
+	type featureMetadata struct {
+		Module  string
+		Feature string
+		Key     string
+		Value   string
+	}
+
+	features := make([]*featureMetadata, 0)
+	for _, f := range extractedFeatures {
+		fm := featureMetadata{
+			Module:  f.Module,
+			Feature: fmt.Sprintf("%s:%s", f.Kind, f.Type),
+			Key:     strings.Join(f.Key, "."),
+			Value:   f.Value,
+		}
+		features = append(features, &fm)
+	}
+	featureBytes, err := yaml.Marshal(&features)
+
+	got["features.yaml"] = string(featureBytes)
 	return
 }
 
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
 	// Find all files currently in this test directory
 	existingFiles := map[string]struct{}{}
+	goldenPath := filepath.Join("testdata", testDir, goldenDir)
 	err := filepath.Walk(
-		filepath.Join("testdata", testDir, goldenDir),
+		goldenPath,
 		func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -226,16 +262,12 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 			return nil
 		},
 	)
-	if err != nil {
-		var errNotExist *fs.PathError
-		if golden.FlagUpdate() && errors.As(err, &errNotExist) {
-			// If this is generating goldens for a new test, make the golden folder.
-			if strings.Contains(errNotExist.Path, goldenDir) {
-				os.Mkdir(filepath.Join("testdata", testDir, goldenDir), os.ModePerm)
-			}
-		} else {
+	if golden.FlagUpdate() && os.IsNotExist(err) {
+		if err := os.Mkdir(goldenPath, 0777); err != nil {
 			return err
 		}
+	} else if err != nil {
+		return err
 	}
 
 	// Assert the goldens of all the generated files. Either the generated file
