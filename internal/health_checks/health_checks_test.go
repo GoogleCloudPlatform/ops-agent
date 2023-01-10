@@ -16,6 +16,7 @@ package health_checks_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
@@ -84,11 +85,16 @@ func TestCheckError(t *testing.T) {
 }
 
 func TestRunAllHealthChecks(t *testing.T) {
+	wantErrorMessage := "Test error."
 	AllHealthChecks := health_checks.HealthCheckRegistry{
 		FailureCheck{},
 		SuccessCheck{},
 		ErrorCheck{},
 	}
 
-	_, _ = AllHealthChecks.RunAllHealthChecks()
+	result, err := AllHealthChecks.RunAllHealthChecks()
+	assert.ErrorContains(t, err, wantErrorMessage)
+	for _, message := range result {
+		assert.Check(t, strings.Contains(message, "Check"))
+	}
 }
