@@ -3099,7 +3099,7 @@ func TestPassingHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		serialPortLogName := "projects/stackdriver-test-143416/logs/serialconsole.googleapis.com%2Fserial_port_1_output"
+		serialPortLogName := "serialconsole.googleapis.com/serial_port_1_output"
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
