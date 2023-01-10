@@ -1957,84 +1957,77 @@ func TestPrometheusMetrics(t *testing.T) {
 }
 
 // Test the Counter and Gauge metric types using a JSON Prometheus exporter
-// The JSON exporter will connect to a Python http server that serve static JSON files
+// The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
-		// TODO: b/260616780 fix rhel-7-6-sap-ha failure for this test
-		if gce.IsWindows(platform) || platform == "rhel-7-6-sap-ha" {
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		type fileToUpload struct {
-			local, remote string
-		}
-
+		prometheusTestdata := path.Join("testdata", "prometheus")
 		filesToUpload := []fileToUpload{
-			{local: path.Join("testdata", "prometheus", "data.json"),
-				remote: "data.json"},
-			{local: path.Join("testdata", "prometheus", "json_exporter_config.yaml"),
-				remote: "json_exporter_config.yaml"},
+			{local: path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join("/opt", "go-http-server", "http_server.go")},
+			{local: path.Join(prometheusTestdata, "data.json"),
+				remote: path.Join("/opt", "go-http-server", "data.json")},
+			{local: path.Join(prometheusTestdata, "json_exporter_config.yaml"),
+				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml")},
+			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
+			{local: path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service")},
 		}
 
-		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
-
-		for _, file := range filesToUpload {
-			f, err := testdataDir.Open(file.local)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer f.Close()
-			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
-			if err != nil {
-				t.Fatal(err)
-			}
-		}
-
-		packages := []string{"wget", "python3"}
-		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload)
 		if err != nil {
-			t.Fatalf("failed to install %v with err: %s", packages, err)
+			t.Fatal(err)
 		}
 
-		// Run the setup script to run the Python http server and the JSON exporter
-		setupScript, err := testdataDir.ReadFile(path.Join("testdata", "prometheus", "setup_json_exporter.sh"))
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		setupScript := `curl -L -o json_exporter.tar.gz \
+			https://github.com/prometheus-community/json_exporter/releases/download/v0.5.0/json_exporter-0.5.0.linux-amd64.tar.gz 
+			sudo mkdir -p /opt/json_exporter
+			sudo tar -xzf json_exporter.tar.gz -C /opt/json_exporter --strip-components 1
+			sudo systemctl daemon-reload
+			sudo systemctl enable http-server-for-prometheus-test
+			sudo systemctl restart http-server-for-prometheus-test
+			sudo systemctl enable json-exporter-for-prometheus-test
+			sudo systemctl restart json-exporter-for-prometheus-test`
+
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
 		if err != nil {
-			t.Fatalf("failed to open setup script: %s", err)
+			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
-
-		env := map[string]string{"WORKDIR": workDir}
-		maxAttampts := 5
-		for attempt := 0; attempt < maxAttampts; attempt++ {
-			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
-			// Since the script will start the processes in the background, the script should finish without error
-			if err != nil {
-				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
-			}
-			// Wait until both are ready
-			time.Sleep(30 * time.Second)
-			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-			// We will retry when:
-			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
-			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
-			// If neither cases - break the retrying loop
-			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-				break
-			}
-
-			// Out of attempts
-			if attempt == maxAttampts-1 {
-				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
-				if liveCheckErr != nil {
-					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
-				}
-				t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries. %s", errString)
-			}
+		// Wait until both are ready
+		time.Sleep(30 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		// We will abort when:
+		// 1. JSON exporter is not started: in this case the stderr will have:
+		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+		// 2. The HTTP server is not started: in this case the stdout will not
+		// have the expected Prometheus style metrics
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+			t.Fatal("Json Exporter failed to start")
 		}
-
+		// Initially, __address__ is the target[0] which is
+		// "http://localhost:8000/data.json";
+		// The first relabeling moves __address__ to __param_target, so we have
+		// "target=http://localhost:8000/data.json" of the final url;
+		// The params: module: [default] adds the module=default so we have
+		// "module=default&target=http://localhost:8000/data.json"
+		// The metric_path: /probe adds that to url:
+		// "probe?module=default&target=http://localhost:8000/data.json";
+		// And the last relabeling changes the __address__ to localhost:7979:
+		// "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"
+		// which is the URL needed to query metrics hosted by the JSON exporter
+		// This is the usual way of using the exporter as this allows us to
+		// specify multiple `targets` within one `scrape_configs`
 		config := `metrics:
   receivers:
     prom_app:
@@ -2076,44 +2069,22 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
 
-		type promMetricTest struct {
-			metricName         string
-			expectedMetricKind metric.MetricDescriptor_MetricKind
-			expectedValueType  metric.MetricDescriptor_ValueType
-			expectedValue      float64
-		}
-
-		testData := []promMetricTest{
-			{"prometheus.googleapis.com/test_gauge_value/gauge",
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789},
+		tests := []prometheusMetricTest{
+			{"prometheus.googleapis.com/test_gauge_value/gauge", nil,
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789.0},
 			// Since we are sending the same number at every time point,
 			// the cumulative counter metric will return 0 as no change in values
-			{"prometheus.googleapis.com/test_counter_value/counter",
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0},
+			{"prometheus.googleapis.com/test_counter_value/counter", nil,
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 			// Untyped type - GCM will have untyped metrics as gauge type
-			{"prometheus.googleapis.com/test_untyped_value/gauge",
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56},
+			{"prometheus.googleapis.com/test_untyped_value/gauge", nil,
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
 		}
 
 		var multiErr error
-		for _, test := range testData {
-			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, test.metricName, window, nil, true); err != nil {
-				multiErr = multierr.Append(multiErr, err)
-			} else {
-				if pts.MetricKind != test.expectedMetricKind {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.metricName, pts.MetricKind, test.expectedMetricKind))
-				}
-				if pts.ValueType != test.expectedValueType {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.metricName, pts.ValueType, test.expectedValueType))
-				}
-				if len(pts.Points) == 0 {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.metricName))
-				} else if pts.Points[0].Value.GetDoubleValue() != test.expectedValue {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.metricName, pts.Points[0].Value.GetDoubleValue(), test.expectedValue))
-				}
-			}
+		for _, test := range tests {
+			multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
 		}
-
 		if multiErr != nil {
 			t.Error(multiErr)
 		}
