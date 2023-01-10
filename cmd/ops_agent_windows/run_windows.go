@@ -164,8 +164,10 @@ func (s *service) generateConfigs() error {
 		health_checks.APICheck{},
 	}
 
-	result, err := GCEHealthChecks.RunAllHealthChecks()
-	s.log.Info(1, result)
+	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks()
+	for _, message := range healthCheckResults {
+		s.log.Info(1, message)
+	}
 	if err != nil {
 		s.log.Error(1, fmt.Sprintf("Health_Checks failed. Detailed error: %s", err))
 	}

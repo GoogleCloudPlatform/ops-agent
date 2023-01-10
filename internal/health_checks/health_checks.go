@@ -17,7 +17,6 @@ package health_checks
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"go.uber.org/multierr"
@@ -43,25 +42,22 @@ type HealthCheck interface {
 
 type HealthCheckRegistry []HealthCheck
 
-func (r HealthCheckRegistry) RunAllHealthChecks() (string, error) {
+func (r HealthCheckRegistry) RunAllHealthChecks() ([]string, error) {
 	var multiErr error
 	var result []string
-	result = append(result, "========================================")
-	result = append(result, "Health Checks : ")
 	for _, c := range r {
 		err := c.RunCheck()
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
-				result = append(result, fmt.Sprintf("Check: %s, Result: FAIL, Failure: %s, Solution: %s", c.Name(), healthError.Message, healthError.Action))
+				result = append(result, fmt.Sprintf("Health Check: %s, Result: FAIL, Failure: %s, Solution: %s", c.Name(), healthError.Message, healthError.Action))
 			} else {
-				result = append(result, fmt.Sprintf("Check: %s, Result: ERROR, Detail: %s", c.Name(), err.Error()))
+				result = append(result, fmt.Sprintf("Health Check: %s, Result: ERROR, Detail: %s", c.Name(), err.Error()))
 				multiErr = multierr.Append(multiErr, err)
 			}
 		} else {
-			result = append(result, fmt.Sprintf("Check: %s, Result: PASS", c.Name()))
+			result = append(result, fmt.Sprintf("Health Check: %s, Result: PASS", c.Name()))
 		}
 	}
-	result = append(result, "===========================================================")
 
-	return strings.Join(result, "\n"), multiErr
+	return result, multiErr
 }
