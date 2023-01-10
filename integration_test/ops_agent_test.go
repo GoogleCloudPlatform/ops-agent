@@ -1969,16 +1969,26 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		prometheusTestdata := path.Join("testdata", "prometheus")
 		filesToUpload := []fileToUpload{
-			{local: path.Join(prometheusTestdata, "http_server.go"),
-				remote: path.Join("/opt", "go-http-server", "http_server.go")},
-			{local: path.Join(prometheusTestdata, "data.json"),
-				remote: path.Join("/opt", "go-http-server", "data.json")},
-			{local: path.Join(prometheusTestdata, "json_exporter_config.yaml"),
-				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml")},
-			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
-			{local: path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service")},
+			{
+				local:  path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join("/opt", "go-http-server", "http_server.go"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "data.json"),
+				remote: path.Join("/opt", "go-http-server", "data.json"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
+				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
+			},
 		}
 
 		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload)
@@ -1990,16 +2000,11 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		setupScript := `curl -L -o json_exporter.tar.gz \
-			https://github.com/prometheus-community/json_exporter/releases/download/v0.5.0/json_exporter-0.5.0.linux-amd64.tar.gz 
-			sudo mkdir -p /opt/json_exporter
-			sudo tar -xzf json_exporter.tar.gz -C /opt/json_exporter --strip-components 1
-			sudo systemctl daemon-reload
-			sudo systemctl enable http-server-for-prometheus-test
-			sudo systemctl restart http-server-for-prometheus-test
-			sudo systemctl enable json-exporter-for-prometheus-test
-			sudo systemctl restart json-exporter-for-prometheus-test`
-
+		// Run the setup script to run the http server and the JSON exporter
+		setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
+		if err != nil {
+			t.Fatalf("failed to open setup script: %s", err)
+		}
 		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
 		if err != nil {
 			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
