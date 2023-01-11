@@ -2124,19 +2124,21 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
 		}
 
+		logsPerSecond := 100000
+		seconds := 10
 		generateLogsScript := fmt.Sprintf(`
 			x=1
-			while [ $x -le 1000000 ]
+			while [ $x -le %d ]
 			do
 			  counter=1
-			  while [ $counter -le 100000 ]
+			  while [ $counter -le %d ]
 			  do
 				echo "Hello world! $x" >> %s
 				((counter++))
 				((x++))
 			  done
 			  sleep 1
-			done`, logPath)
+			done`, logsPerSecond*seconds, logsPerSecond, logPath)
 
 		// Use the vm.Name as a tag during this test.
 		if _, err := gce.CreateFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
@@ -2163,7 +2165,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf(" du -c %s | cut -f 1 | tail -n 1", bufferDir))
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("du -c %s | cut -f 1 | tail -n 1", bufferDir))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2173,7 +2175,8 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		threshold := 0
+		// Threshhold of ~100MiB since du returns size in KB
+		threshold := 100000
 		if byteCount > threshold {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
 		}
