@@ -15,18 +15,26 @@
 package health_checks
 
 import (
-	"log"
+	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+
+	// "fmt"
+	"log"
+
+	"cloud.google.com/go/compute/metadata"
+	"golang.org/x/oauth2/google"
 )
 
 var (
 	// Expected scopes
 	requiredLoggingScopes = []string{
-		"https://www.googleapis.com/auth/logging.write",
+		"https://www.googleapis.com/auth/ging.write",
 		"https://www.googleapis.com/auth/logging.admin",
 	}
 	requiredMonitoringScopes = []string{
-		"https://www.googleapis.com/auth/monitoring.write",
+		"https://www.googleapis.com/auth/moning.write",
 		"https://www.googleapis.com/auth/monitoring.admin",
 	}
 )
@@ -42,35 +50,74 @@ func constainsAtLeastOne(searchSlice []string, querySlice []string) (bool, error
 	return false, nil
 }
 
-type PermissionsCheck struct {}
+type PermissionsCheck struct{}
 
 func (c PermissionsCheck) Name() string {
 	return "Permissions Check"
 }
 
+// PermissionsChecks searches for "Application Default Credentials".
+//
+// It looks for credentials in the following places,
+// preferring the first location found:
+//
+//  1. A JSON file whose path is specified by the
+//     GOOGLE_APPLICATION_CREDENTIALS environment variable.
+//     For workload identity federation, refer to
+//     https://cloud.google.com/iam/docs/how-to#using-workload-identity-federation on
+//     how to generate the JSON configuration file for on-prem/non-Google cloud
+//     platforms.
+//  2. On Google Compute Engine, Google App Engine standard second generation runtimes
+//     (>= Go 1.11), and Google App Engine flexible environment, it fetches
+//     credentials from the metadata server.
+
 func (c PermissionsCheck) RunCheck() error {
-	gceMetadata, err := getGCEMetadata()
-	if err != nil {
-		return fmt.Errorf("can't get GCE metadata: %w", err)
-	}
-	defaultScopes := gceMetadata.DefaultScopes
+	// First, try the environment variable.
+	const envVar = "GOOGLE_APPLICATION_CREDENTIALS"
+	if filename := os.Getenv(envVar); filename != "" {
+		b, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return fmt.Errorf("error reading credentials using %v environment variable: %v", envVar, err)
+		}
 
-	found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
-	if err != nil {
-		return err
-	} else if found {
-		log.Printf("Logging Scopes are enough to run the Ops Agent.")
-	} else {
-		return LOG_API_PERMISSION_ERR
+		ctx := context.Background()
+		params := google.CredentialsParams{
+			Scopes: []string{requiredLoggingScopes[0], requiredMonitoringScopes[0]},
+		}
+
+		_, err = google.CredentialsFromJSONWithParams(ctx, b, params)
+		if err != nil {
+			return fmt.Errorf("error getting credentials using %v environment variable: %v", envVar, err)
+		}
+
+		return CREDENTIALS_UNVERIFIABLE
 	}
 
-	found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
-	if err != nil {
-		return err
-	} else if found {
-		log.Printf("Monitoring Scopes are enough to run the Ops Agent.")
-	} else {
-		return MON_API_PERMISSION_ERR
+	// Second try metadata server
+	if metadata.OnGCE() {
+		gceMetadata, err := getGCEMetadata()
+		if err != nil {
+			return fmt.Errorf("can't get GCE metadata: %w", err)
+		}
+		defaultScopes := gceMetadata.DefaultScopes
+
+		found, err := constainsAtLeastOne(defaultScopes, requiredLoggingScopes)
+		if err != nil {
+			return err
+		} else if found {
+			log.Printf("Logging Scopes are enough to run the Ops Agent.")
+		} else {
+			return LOG_API_PERMISSION_ERR
+		}
+
+		found, err = constainsAtLeastOne(defaultScopes, requiredMonitoringScopes)
+		if err != nil {
+			return err
+		} else if found {
+			log.Printf("Monitoring Scopes are enough to run the Ops Agent.")
+		} else {
+			return MON_API_PERMISSION_ERR
+		}
 	}
 
 	return nil

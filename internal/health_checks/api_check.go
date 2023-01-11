@@ -52,6 +52,8 @@ func (c APICheck) RunCheck() error {
 			switch apiErr.Reason() {
 			case "SERVICE_DISABLED":
 				return LOG_API_DISABLED_ERR
+			case "IAM_PERMISSION_DENIED":
+				return LOG_API_PERMISSION_ERR
 			default:
 				return err
 			}
@@ -79,6 +81,8 @@ func (c APICheck) RunCheck() error {
 				switch apiErr.Reason() {
 				case "SERVICE_DISABLED":
 					return MON_API_DISABLED_ERR
+				case "IAM_PERMISSION_DENIED":
+					return MON_API_PERMISSION_ERR
 				default:
 					return err
 				}

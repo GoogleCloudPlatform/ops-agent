@@ -15,6 +15,7 @@
 package health_checks
 
 type HealthCheckError struct {
+	Code         string
 	Message      string
 	Action       string
 	ResourceLink string
@@ -28,6 +29,7 @@ func (e HealthCheckError) Error() string {
 
 var (
 	PORT_UNAVAILABLE_ERR = HealthCheckError{
+		Code:         "PORT_UNAVAILABLE_ERR",
 		Message:      "Port is unavailable",
 		Action:       "Check the port is available.",
 		ResourceLink: "",
@@ -37,24 +39,28 @@ var (
 		// solMsg := fmt.Sprintf("verify the host %s is available to be used.", net.JoinHostPort(host, port))
 	}
 	LOG_API_CONN_ERR = HealthCheckError{
+		Code:         "LOG_API_CONN_ERR",
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection.",
 		ResourceLink: "",
 		IsFatal:      true,
 	}
 	MON_API_CONN_ERR = HealthCheckError{
+		Code:         "MON_API_CONN_ERR",
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection.",
 		ResourceLink: "",
 		IsFatal:      true,
 	}
 	LOG_API_PERMISSION_ERR = HealthCheckError{
+		Code:         "LOG_API_PERMISSION_ERR",
 		Message:      "Service account misssing permissions for the Logging API.",
 		Action:       "Add the logging.writer role to the GCP service account.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		IsFatal:      true,
 	}
 	MON_API_PERMISSION_ERR = HealthCheckError{
+		Code:         "MON_API_PERMISSION_ERR",
 		Message:      "Service account misssing permissions for the Monitoring API.",
 		Action:       "Add the monitoring.writer role to the GCP service account.",
 		ResourceLink: "",
@@ -63,18 +69,28 @@ var (
 	LOG_API_DISABLED_ERR = HealthCheckError{
 		// TODO : Add Message with specific failure (e.g. Ping to api failed)
 		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
+		Code:         "LOG_API_DISABLED_ERR",
 		Message:      "The Logging API is disabled in the current GCP project.",
 		Action:       "Check the Logging API is enabled",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
 		IsFatal:      true,
 	}
 	MON_API_DISABLED_ERR = HealthCheckError{
+		Code:         "MON_API_DISABLED_ERR",
 		Message:      "The Monitoring API disabled",
 		Action:       "Check the Monitoring API is disabled in the current GCP project.",
 		ResourceLink: "",
 		IsFatal:      true,
 	}
+	CREDENTIALS_UNVERIFIABLE = HealthCheckError{
+		Code:         "CREDENTIALS_UNVERIFIABLE",
+		Message:      "The provided credentials are unverifiable.",
+		Action:       "Check the result of the API Check.",
+		ResourceLink: "",
+		IsFatal:      false,
+	}
 	HC_FAILURE_ERR = HealthCheckError{
+		Code:         "HC_FAILURE_ERR",
 		Message:      "The Health Check failed.",
 		Action:       "",
 		ResourceLink: "",
