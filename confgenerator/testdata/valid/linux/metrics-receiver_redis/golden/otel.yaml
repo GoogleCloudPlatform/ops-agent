@@ -423,7 +423,7 @@ processors:
   normalizesums/redis_1: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s

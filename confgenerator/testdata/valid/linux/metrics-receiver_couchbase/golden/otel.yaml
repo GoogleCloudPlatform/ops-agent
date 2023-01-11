@@ -506,7 +506,7 @@ processors:
   normalizesums/couchbase_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/couchbase_3:
     metrics:
       queries:
