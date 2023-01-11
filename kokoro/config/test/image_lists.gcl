@@ -105,7 +105,6 @@ sles = _family {
       name = 'SLES 12'
       release = [
         'sles-12',
-        'sles-12-sp4-sap',
         'sles-12-sp5-sap',
       ]
       presubmit = ['sles-12']

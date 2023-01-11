@@ -416,7 +416,7 @@ processors:
   normalizesums/couchdb_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   couchdb/couchdb:
     collection_interval: 60s

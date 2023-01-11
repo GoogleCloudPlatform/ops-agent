@@ -463,7 +463,7 @@ processors:
   normalizesums/mssql_2: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/mssql_1:
     metrics:
       queries:

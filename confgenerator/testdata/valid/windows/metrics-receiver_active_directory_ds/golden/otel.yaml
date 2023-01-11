@@ -475,7 +475,7 @@ processors:
   normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   active_directory_ds/active__directory__ds:
     collection_interval: 60s

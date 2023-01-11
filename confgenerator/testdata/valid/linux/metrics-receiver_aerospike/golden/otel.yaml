@@ -416,7 +416,7 @@ processors:
   normalizesums/aerospike_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/aerospike_2:
     metrics:
       queries:

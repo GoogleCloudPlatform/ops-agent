@@ -416,7 +416,7 @@ processors:
   normalizesums/postgresql_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/postgresql_1:
     metrics:
       queries:

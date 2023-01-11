@@ -1,0 +1,9 @@
+features:
+- feature: receivers:solr
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:solr_system
+  module: logging
+  key: "[0].enabled"
+  value: true
