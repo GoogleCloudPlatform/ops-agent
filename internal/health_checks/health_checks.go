@@ -71,5 +71,5 @@ func init() {
 		log.Fatal(err)
 	}
 
-	HealtChecksLogger = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	HealtChecksLogger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
 }
