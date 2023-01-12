@@ -97,6 +97,16 @@ centos = _family {
       ]
       presubmit = ['rocky-linux-8']
     }
+    rockylinux9 = _distro {
+      name = 'Rocky Linux 9'
+      release = [
+        // RHEL
+        'rhel-9',
+        // Rocky.
+        'rocky-linux-9',
+      ]
+      presubmit = 'rocky-linux-9'
+    }
   }
 }
 sles = _family {
