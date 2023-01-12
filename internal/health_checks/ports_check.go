@@ -33,21 +33,22 @@ func (c PortsCheck) Name() string {
 	return "Ports Check"
 }
 
-func (c PortsCheck) check_port(host string, port string) error {
+func (c PortsCheck) check_port_available(host string, port string) (bool, error) {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
+	// Fix this check
 	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
-		return PORT_UNAVAILABLE_ERR
+		return false, nil
 	}
 	if err != nil {
-		return fmt.Errorf("connection error : %w", err)
+		return false, fmt.Errorf("failed to connect: %s, detail: %w", net.JoinHostPort(host, port), err)
 	}
 	if lsnr != nil {
 		defer lsnr.Close()
 		HealtChecksLogger.Printf("opened %s", net.JoinHostPort(host, port))
 	} else {
-		return PORT_UNAVAILABLE_ERR
+		return false, nil
 	}
-	return nil
+	return true, nil
 }
 
 func (c PortsCheck) RunCheck() error {
@@ -55,25 +56,31 @@ func (c PortsCheck) RunCheck() error {
 	self_metrics_host := "0.0.0.0"
 
 	// Check for fluent-bit self metrics port
-	err := c.check_port(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
+	available, err := c.check_port_available(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
 	if err != nil {
-		HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
 		return err
+	}
+	if err == nil && !available {
+		return FB_METRICS_PORT_ERR
 	}
 
 	// Check for opentelemetry-collector self metrics port
-	err = c.check_port(self_metrics_host, strconv.Itoa(otel.MetricsPort))
+	available, err = c.check_port_available(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
-		HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))
 		return err
+	}
+	if err == nil && !available {
+		return OTEL_METRICS_PORT_ERR
 	}
 
 	// Check config ports
 	for _, port := range c.Config.Logging.Receivers.GetListenPorts() {
-		err = c.check_port("localhost", strconv.Itoa(int(port)))
+		available, err = c.check_port_available("localhost", strconv.Itoa(int(port)))
 		if err != nil {
-			HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort("localhost", strconv.Itoa(int(port))))
 			return err
+		}
+		if err == nil && !available {
+			return LOG_RECEIVER_PORT_ERR
 		}
 	}
 	return nil
