@@ -66,12 +66,14 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
+	HealtChecksLogger.Printf("monitoring client was created successfully.")
+
 	req := &monitoringpb.ListMetricDescriptorsRequest{
 		Name: "projects/" + projectId,
 	}
 	it := monClient.ListMetricDescriptors(ctx, req)
 	for {
-		resp, err := it.Next()
+		_, err := it.Next()
 		if err == iterator.Done {
 			break
 		}
@@ -88,7 +90,6 @@ func (c APICheck) RunCheck() error {
 			}
 			return err
 		}
-		_ = resp
 	}
 	monClient.Close()
 
