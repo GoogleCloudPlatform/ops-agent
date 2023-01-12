@@ -61,21 +61,20 @@ func run() error {
 		return err
 	}
 
-	GCEHealthChecks := health_checks.HealthCheckRegistry{
-		health_checks.PortsCheck{
-			Config: uc,
-		},
-		health_checks.PermissionsCheck{},
-		health_checks.NetworkCheck{},
-		health_checks.APICheck{},
-	}
+	if *service == "" {
+		GCEHealthChecks := health_checks.HealthCheckRegistry{
+			health_checks.PortsCheck{
+				Config: uc,
+			},
+			health_checks.PermissionsCheck{},
+			health_checks.NetworkCheck{},
+			health_checks.APICheck{},
+		}
 
-	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks()
-	for _, message := range healthCheckResults {
-		log.Printf(message)
-	}
-	if err != nil {
-		log.Printf("Health_Checks failed. Detailed error: %s", err)
+		healthCheckResults := GCEHealthChecks.RunAllHealthChecks()
+		for _, message := range healthCheckResults {
+			log.Printf(message)
+		}
 	}
 
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)

@@ -19,7 +19,6 @@ import (
 	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"go.uber.org/multierr"
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -42,8 +41,7 @@ type HealthCheck interface {
 
 type HealthCheckRegistry []HealthCheck
 
-func (r HealthCheckRegistry) RunAllHealthChecks() ([]string, error) {
-	var multiErr error
+func (r HealthCheckRegistry) RunAllHealthChecks() []string {
 	var result []string
 	for _, c := range r {
 		err := c.RunCheck()
@@ -52,12 +50,11 @@ func (r HealthCheckRegistry) RunAllHealthChecks() ([]string, error) {
 				result = append(result, fmt.Sprintf("Health Check: %s, Result: FAIL, Failure: %s, Solution: %s", c.Name(), healthError.Message, healthError.Action))
 			} else {
 				result = append(result, fmt.Sprintf("Health Check: %s, Result: ERROR, Detail: %s", c.Name(), err.Error()))
-				multiErr = multierr.Append(multiErr, err)
 			}
 		} else {
 			result = append(result, fmt.Sprintf("Health Check: %s, Result: PASS", c.Name()))
 		}
 	}
 
-	return result, multiErr
+	return result
 }

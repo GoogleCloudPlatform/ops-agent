@@ -85,15 +85,13 @@ func TestCheckError(t *testing.T) {
 }
 
 func TestRunAllHealthChecks(t *testing.T) {
-	wantErrorMessage := "Test error."
 	AllHealthChecks := health_checks.HealthCheckRegistry{
 		FailureCheck{},
 		SuccessCheck{},
 		ErrorCheck{},
 	}
 
-	result, err := AllHealthChecks.RunAllHealthChecks()
-	assert.ErrorContains(t, err, wantErrorMessage)
+	result := AllHealthChecks.RunAllHealthChecks()
 	for _, message := range result {
 		assert.Check(t, strings.Contains(message, "Check"))
 	}

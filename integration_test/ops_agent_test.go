@@ -3121,6 +3121,10 @@ func TestNetworkHealthCheck(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
 		// Use the vm.Name as a tag during this test.
 		if _, err := gce.CreateFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
 			t.Fatal(err)
@@ -3140,7 +3144,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 

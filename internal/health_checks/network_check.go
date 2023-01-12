@@ -35,10 +35,10 @@ func (c NetworkCheck) RunCheck() error {
 
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
-	log.Printf("http request status : %s", response.Status)
 	if err != nil {
 		return err
 	}
+	log.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
 		log.Printf("Request to the Logging API was successful.")
@@ -48,10 +48,10 @@ func (c NetworkCheck) RunCheck() error {
 
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
-	log.Printf("http request status : %s", response.Status)
 	if err != nil {
 		return err
 	}
+	log.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
 		log.Printf("Request to the Logging API was successful.")
