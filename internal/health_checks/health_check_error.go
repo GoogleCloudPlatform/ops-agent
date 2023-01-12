@@ -125,7 +125,7 @@ var (
 		Code:         "HC_FAILURE_ERR",
 		Class:        "GENERIC",
 		Message:      "The Health Check failed.",
-		Action:       "There is ",
+		Action:       "No suggested action.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
 		IsFatal:      false,
 	}

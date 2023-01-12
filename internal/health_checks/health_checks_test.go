@@ -35,7 +35,7 @@ func (c FailureCheck) RunCheck() error {
 
 func TestCheckFailure(t *testing.T) {
 	wantMessage := "The Health Check failed."
-	wantAction := ""
+	wantAction := "No suggested action."
 	testCheck := FailureCheck{}
 
 	err := testCheck.RunCheck()
