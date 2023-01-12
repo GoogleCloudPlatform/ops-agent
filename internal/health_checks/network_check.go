@@ -15,6 +15,7 @@
 package health_checks
 
 import (
+	"net"
 	"net/http"
 )
 
@@ -34,6 +35,9 @@ func (c NetworkCheck) RunCheck() error {
 
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
+	if err, ok := err.(net.Error); ok && err.Timeout() {
+		return LOG_API_CONN_ERR
+	}
 	if err != nil {
 		return err
 	}
@@ -47,9 +51,13 @@ func (c NetworkCheck) RunCheck() error {
 
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
+	if err, ok := err.(net.Error); ok && err.Timeout() {
+		return MON_API_CONN_ERR
+	}
 	if err != nil {
 		return err
 	}
+
 	HealtChecksLogger.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:

@@ -3100,16 +3100,16 @@ func TestPassingHealthChecks(t *testing.T) {
 		}
 
 		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -3144,21 +3144,24 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Wait 2 minutes
+		time.Sleep(2 * time.Minute)
+
 		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
 		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
 
@@ -3181,16 +3184,16 @@ func testAPIHealthCheck(t *testing.T) {
 		// Todo add netcat command that block port 0.0.0.0:20202
 
 		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
 
@@ -3213,16 +3216,16 @@ func testPortsHealthCheck(t *testing.T) {
 		// Todo add netcat command that block port 0.0.0.0:20202
 
 		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
 			t.Error(err)
 		}
 
