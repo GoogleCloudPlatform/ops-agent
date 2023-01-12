@@ -17,7 +17,6 @@ package health_checks
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
@@ -45,7 +44,7 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("logging client was created successfully.")
+	HealtChecksLogger.Printf("logging client was created successfully.")
 
 	if err := logClient.Ping(ctx); err != nil {
 		if apiErr, ok := err.(*apierror.APIError); ok {

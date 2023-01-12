@@ -15,7 +15,6 @@
 package health_checks
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -38,10 +37,10 @@ func (c NetworkCheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("http request status : %s", response.Status)
+	HealtChecksLogger.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
-		log.Printf("Request to the Logging API was successful.")
+		HealtChecksLogger.Printf("Request to the Logging API was successful.")
 	default:
 		return LOG_API_CONN_ERR
 	}
@@ -51,10 +50,10 @@ func (c NetworkCheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("http request status : %s", response.Status)
+	HealtChecksLogger.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
-		log.Printf("Request to the Logging API was successful.")
+		HealtChecksLogger.Printf("Request to the Logging API was successful.")
 	default:
 		return LOG_API_CONN_ERR
 	}

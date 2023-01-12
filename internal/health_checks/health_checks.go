@@ -17,9 +17,12 @@ package health_checks
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 )
+
+var HealtChecksLogger *log.Logger
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	MetadataResource, err := resourcedetector.GetResource()
@@ -27,7 +30,7 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
 	}
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		log.Printf("gceMetadata : %+v", gceMetadata)
+		HealtChecksLogger.Printf("gceMetadata : %+v", gceMetadata)
 		return gceMetadata, nil
 	} else {
 		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
@@ -43,18 +46,30 @@ type HealthCheckRegistry []HealthCheck
 
 func (r HealthCheckRegistry) RunAllHealthChecks() []string {
 	var result []string
+	var message string
 	for _, c := range r {
 		err := c.RunCheck()
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
-				result = append(result, fmt.Sprintf("Health Check: %s, Result: FAIL, Failure: %s, Solution: %s", c.Name(), healthError.Message, healthError.Action))
+				message = fmt.Sprintf("Health Check: %s, Result: FAIL, Failure: %s, Solution: %s", c.Name(), healthError.Message, healthError.Action)
 			} else {
-				result = append(result, fmt.Sprintf("Health Check: %s, Result: ERROR, Detail: %s", c.Name(), err.Error()))
+				message = fmt.Sprintf("Health Check: %s, Result: ERROR, Detail: %s", c.Name(), err.Error())
 			}
 		} else {
-			result = append(result, fmt.Sprintf("Health Check: %s, Result: PASS", c.Name()))
+			message = fmt.Sprintf("Health Check: %s, Result: PASS", c.Name())
 		}
+		HealtChecksLogger.Print(message)
+		result = append(result, message)
 	}
 
 	return result
+}
+
+func init() {
+	file, err := os.OpenFile("health_checks_log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	HealtChecksLogger = log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 }

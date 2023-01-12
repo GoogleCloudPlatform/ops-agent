@@ -20,9 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	// "fmt"
-	"log"
-
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2/google"
 )
@@ -105,7 +102,7 @@ func (c PermissionsCheck) RunCheck() error {
 		if err != nil {
 			return err
 		} else if found {
-			log.Printf("Logging Scopes are enough to run the Ops Agent.")
+			HealtChecksLogger.Printf("Logging Scopes are enough to run the Ops Agent.")
 		} else {
 			return LOG_API_PERMISSION_ERR
 		}
@@ -114,7 +111,7 @@ func (c PermissionsCheck) RunCheck() error {
 		if err != nil {
 			return err
 		} else if found {
-			log.Printf("Monitoring Scopes are enough to run the Ops Agent.")
+			HealtChecksLogger.Printf("Monitoring Scopes are enough to run the Ops Agent.")
 		} else {
 			return MON_API_PERMISSION_ERR
 		}

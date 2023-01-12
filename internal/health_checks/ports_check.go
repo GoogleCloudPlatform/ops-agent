@@ -16,7 +16,6 @@ package health_checks
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -44,7 +43,7 @@ func (c PortsCheck) check_port(host string, port string) error {
 	}
 	if lsnr != nil {
 		defer lsnr.Close()
-		log.Printf("opened %s", net.JoinHostPort(host, port))
+		HealtChecksLogger.Printf("opened %s", net.JoinHostPort(host, port))
 	} else {
 		return PORT_UNAVAILABLE_ERR
 	}
@@ -58,14 +57,14 @@ func (c PortsCheck) RunCheck() error {
 	// Check for fluent-bit self metrics port
 	err := c.check_port(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
 	if err != nil {
-		log.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
+		HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
 		return err
 	}
 
 	// Check for opentelemetry-collector self metrics port
 	err = c.check_port(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
-		log.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))
+		HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))
 		return err
 	}
 
@@ -73,7 +72,7 @@ func (c PortsCheck) RunCheck() error {
 	for _, port := range c.Config.Logging.Receivers.GetListenPorts() {
 		err = c.check_port("localhost", strconv.Itoa(int(port)))
 		if err != nil {
-			log.Printf("failed to connect: %s", net.JoinHostPort("localhost", strconv.Itoa(int(port))))
+			HealtChecksLogger.Printf("failed to connect: %s", net.JoinHostPort("localhost", strconv.Itoa(int(port))))
 			return err
 		}
 	}
