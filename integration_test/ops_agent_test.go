@@ -3168,6 +3168,38 @@ func TestNetworkHealthCheck(t *testing.T) {
 	})
 }
 
+func testAPIHealthCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Todo add netcat command that block port 0.0.0.0:20202
+
+		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, time.Hour, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
+			t.Error(err)
+		}
+
+		if _, err := gce.DisableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func testPortsHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
