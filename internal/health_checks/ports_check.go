@@ -35,19 +35,16 @@ func (c PortsCheck) Name() string {
 
 func (c PortsCheck) check_port_available(host string, port string) (bool, error) {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-	// Fix this check
 	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("failed to connect: %s, detail: %w", net.JoinHostPort(host, port), err)
+		return false, fmt.Errorf("error listening to: %s, detail: %w", net.JoinHostPort(host, port), err)
 	}
-	if lsnr != nil {
-		defer lsnr.Close()
-		HealtChecksLogger.Printf("opened %s", net.JoinHostPort(host, port))
-	} else {
-		return false, nil
-	}
+
+	// Listening correctly to host:port
+	HealtChecksLogger.Printf("listening to %s:", net.JoinHostPort(host, port))
+	lsnr.Close()
 	return true, nil
 }
 
