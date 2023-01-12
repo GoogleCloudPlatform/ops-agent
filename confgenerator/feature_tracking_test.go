@@ -3,6 +3,7 @@ package confgenerator_test
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -82,9 +83,11 @@ func (m MetricsReceiverGoo) Pipelines() []otel.ReceiverPipeline {
 }
 
 type MetricsReceiverInlineFoo struct {
-	Foo  string `yaml:"foo" tracking:""`
-	Bool *bool  `yaml:"bool"`
-	Int  int    `yaml:"int"`
+	Foo   string   `yaml:"foo" tracking:""`
+	Bool  *bool    `yaml:"bool"`
+	Int   int      `yaml:"int"`
+	Slice []string `yaml:"slice" tracking:""`
+	PII   string   `yaml:"pii"`
 }
 
 type MetricsReceiverInlineGoo struct {
@@ -104,9 +107,11 @@ func TestValidInlineStruct(t *testing.T) {
 			Type: "MetricsReceiverFoo",
 		},
 		MetricsReceiverInlineFoo{
-			Foo:  "foo",
-			Bool: &b,
-			Int:  0,
+			Foo:   "foo",
+			Bool:  &b,
+			Int:   0,
+			Slice: []string{"foo", "goo", "bar"},
+			PII:   "PII",
 		},
 		MetricsReceiverInlineGoo{
 			Goo: "goo",
@@ -160,6 +165,34 @@ func TestValidInlineStruct(t *testing.T) {
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
+		Key:    []string{"[0]", "slice", "__length"},
+		Value:  "3",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFoo",
+		Key:    []string{"[0]", "slice", "[0]"},
+		Value:  "foo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFoo",
+		Key:    []string{"[0]", "slice", "[1]"},
+		Value:  "goo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFoo",
+		Key:    []string{"[0]", "slice", "[2]"},
+		Value:  "bar",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFoo",
 		Key:    []string{"[0]", "bar"},
 		Value:  "baz",
 	})
@@ -177,9 +210,11 @@ func TestValidInlineStruct(t *testing.T) {
 		Key:    []string{"[1]", "bar"},
 		Value:  "baz",
 	})
+
 	if !cmp.Equal(features, expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, features)
 	}
+
 }
 
 type MetricsReceiverFooMap struct {
@@ -195,7 +230,16 @@ func (m MetricsReceiverFooMap) Pipelines() []otel.ReceiverPipeline {
 }
 
 type MetricsReceiverInlineFooMap struct {
-	Foo map[string]string `yaml:"fooMap" tracking:"fooMapOverride"`
+	ExampleString map[string]string                   `yaml:"exampleStringMap" tracking:""`
+	ExampleStruct map[string]MetricsReceiverMapStruct `yaml:"exampleStructMap" tracking:"overrideValue1"`
+	ExampleKeys   map[string]string                   `yaml:"exampleKeysMap" tracking:"overrideValue2,keys"`
+}
+
+type MetricsReceiverMapStruct struct {
+	Int            int    `yaml:"int"`
+	String         string `yaml:"string" tracking:""`
+	OverrideString string `yaml:"override" tracking:"overrideString"`
+	PII            string `yaml:"string"`
 }
 
 func TestValidInlineStructWithMapValue(t *testing.T) {
@@ -203,44 +247,28 @@ func TestValidInlineStructWithMapValue(t *testing.T) {
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["metricsReceiverFoo"] = MetricsReceiverFooMap{
 		MetricsReceiverInlineFooMap{
-			Foo: map[string]string{
+			ExampleString: map[string]string{
 				"foo": "goo",
 				"bar": "baz",
 			},
-		},
-	}
-	uc.Metrics = &confgenerator.Metrics{
-		Receivers: receivers,
-	}
-	var trackingErr *confgenerator.TrackingOverrideMapError
-	_, err := confgenerator.ExtractFeatures(&uc)
-	if !errors.As(err, &trackingErr) {
-		t.Fatal(err)
-	}
-}
-
-type MetricsReceiverFooSlice struct {
-	MetricsReceiverInlineFooSlice `yaml:",inline"`
-}
-
-func (m MetricsReceiverInlineFooSlice) Type() string {
-	return "metricsReceiverInlineFooSlice"
-}
-
-func (m MetricsReceiverInlineFooSlice) Pipelines() []otel.ReceiverPipeline {
-	return nil
-}
-
-type MetricsReceiverInlineFooSlice struct {
-	Foo []string `yaml:"foo" tracking:""`
-}
-
-func TestValidInlineStructWithSliceValue(t *testing.T) {
-	uc := emptyUc
-	receivers := make(map[string]confgenerator.MetricsReceiver)
-	receivers["metricsReceiverFoo"] = MetricsReceiverFooSlice{
-		MetricsReceiverInlineFooSlice{
-			Foo: []string{"foo", "goo", "bar", "baz"},
+			ExampleStruct: map[string]MetricsReceiverMapStruct{
+				"a": {
+					Int:            32,
+					String:         "abc",
+					PII:            "PII",
+					OverrideString: "string",
+				},
+				"b": {
+					Int:            64,
+					String:         "xyz",
+					PII:            "PII2",
+					OverrideString: "string",
+				},
+			},
+			ExampleKeys: map[string]string{
+				"foo": "goo",
+				"bar": "baz",
+			},
 		},
 	}
 	uc.Metrics = &confgenerator.Metrics{
@@ -255,11 +283,112 @@ func TestValidInlineStructWithSliceValue(t *testing.T) {
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
-		Type:   "metricsReceiverInlineFooSlice",
-		Key:    []string{"[0]", "foo"},
-		Value:  "[foo goo bar baz]",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStringMap", "__length"},
+		Value:  "2",
 	})
-	if !cmp.Equal(features, expected) {
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStringMap", "[0]"},
+		Value:  "goo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStringMap", "[1]"},
+		Value:  "baz",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "__length"},
+		Value:  "2",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[0]"},
+		Value:  "overrideValue1",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[0]", "int"},
+		Value:  "32",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[0]", "string"},
+		Value:  "abc",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[0]", "override"},
+		Value:  "overrideString",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[1]"},
+		Value:  "overrideValue1",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[1]", "int"},
+		Value:  "64",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[1]", "string"},
+		Value:  "xyz",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleStructMap", "[1]", "override"},
+		Value:  "overrideString",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleKeysMap", "__length"},
+		Value:  "2",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleKeysMap", "foo"},
+		Value:  "overrideValue2",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverFooMap",
+		Key:    []string{"[0]", "exampleKeysMap", "bar"},
+		Value:  "overrideValue2",
+	})
+
+	// Iterating through maps are not always in the same order
+	// `compareFeatures()` equates `features` and `expected` regardless of order
+	if !compareFeatures(features, expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, features)
 	}
 }
@@ -813,4 +942,204 @@ func TestNestedStructs(t *testing.T) {
 	if !cmp.Equal(features, expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, features)
 	}
+}
+
+type MetricsReceiverSlice struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+	MetricsReceiverSliceInline    `yaml:",inline"`
+}
+
+func (m MetricsReceiverSlice) Type() string {
+	return "metricsReceiverSlice"
+}
+
+func (m MetricsReceiverSlice) Pipelines() []otel.ReceiverPipeline {
+	return nil
+}
+
+type MetricsReceiverSliceInline struct {
+	SliceInt            []int                        `yaml:"sliceInt" tracking:""`
+	SliceStringOverride []string                     `yaml:"sliceString" tracking:"stringOverride"`
+	SliceStruct         []MetricsReceiverSliceStruct `yaml:"sliceStruct" tracking:"overrideValue"`
+}
+
+type MetricsReceiverSliceStruct struct {
+	Int    int    `yaml:"int"`
+	String string `yaml:"string" tracking:""`
+	PII    string `yaml:"string"`
+}
+
+func TestValidSliceStruct(t *testing.T) {
+	uc := emptyUc
+	receivers := make(map[string]confgenerator.MetricsReceiver)
+	receivers["metricsReceiverSlice"] = MetricsReceiverSlice{
+		confgenerator.ConfigComponent{
+			Type: "MetricsReceiverSlice",
+		},
+		MetricsReceiverSliceInline{
+			SliceInt:            []int{1, 2, 3},
+			SliceStringOverride: []string{"t1", "t2", "t3"},
+			SliceStruct: []MetricsReceiverSliceStruct{
+				{
+					Int:    32,
+					String: "foo",
+					PII:    "goo",
+				},
+				{
+					Int:    64,
+					String: "bar",
+					PII:    "baz",
+				},
+			},
+		},
+	}
+	uc.Metrics = &confgenerator.Metrics{
+		Receivers: receivers,
+	}
+	features, err := confgenerator.ExtractFeatures(&uc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := expectedFeatureBase
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "enabled"},
+		Value:  "true",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceInt", "__length"},
+		Value:  "3",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceInt", "[0]"},
+		Value:  "1",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceInt", "[1]"},
+		Value:  "2",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceInt", "[2]"},
+		Value:  "3",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceString", "__length"},
+		Value:  "3",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceString", "[0]"},
+		Value:  "stringOverride",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceString", "[1]"},
+		Value:  "stringOverride",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceString", "[2]"},
+		Value:  "stringOverride",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "__length"},
+		Value:  "2",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[0]"},
+		Value:  "overrideValue",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[0]", "int"},
+		Value:  "32",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[0]", "string"},
+		Value:  "foo",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[1]"},
+		Value:  "overrideValue",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[1]", "int"},
+		Value:  "64",
+	})
+	expected = append(expected, confgenerator.Feature{
+		Module: confgenerator.MetricsReceiverTypes.Subagent,
+		Kind:   "receivers",
+		Type:   "metricsReceiverSlice",
+		Key:    []string{"[0]", "sliceStruct", "[1]", "string"},
+		Value:  "bar",
+	})
+
+	a, _ := json.Marshal(features)
+	b, _ := json.Marshal(expected)
+	x := string(a)
+	y := string(b)
+	fmt.Println(x)
+	fmt.Println(y)
+	if !reflect.DeepEqual(features, expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, features)
+	}
+}
+
+func compareFeatures(features, expected []confgenerator.Feature) bool {
+	if len(features) != len(expected) {
+		return false
+	}
+	for _, i := range expected {
+		found := false
+		for _, j := range features {
+			if cmp.Equal(i, j) {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }

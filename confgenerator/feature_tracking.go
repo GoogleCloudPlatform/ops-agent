@@ -207,7 +207,15 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 				continue
 			}
 
-			tf, err := trackingFeatures(v.Field(i), getMetadata(field), feature)
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append([]string{}, feature.Key...),
+				Value:  feature.Value,
+			}
+
+			tf, err := trackingFeatures(v.Field(i), getMetadata(field), f)
 			if err != nil {
 				return nil, err
 			}
@@ -215,9 +223,97 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		}
 	case kind == reflect.Map:
 
-		// TODO(b/258211839): Add support for tracking maps using feature tracking
-		if feature.Type != "" {
-			return nil, &TrackingOverrideMapError{FieldName: feature.Type}
+		// Create map length metric
+		features = append(features, Feature{
+			Module: feature.Module,
+			Kind:   feature.Kind,
+			Type:   feature.Type,
+			Key:    append(feature.Key, m.yamlTag, "__length"),
+			Value:  fmt.Sprintf("%d", v.Len()),
+		})
+
+		if !m.hasTracking {
+			return nil, nil
+		}
+
+		for i, key := range v.MapKeys() {
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append(feature.Key, m.yamlTag),
+			}
+			v := v.MapIndex(key)
+			t := v.Type()
+			fs := make([]Feature, 0)
+
+			var k string
+			if m.keepKeys {
+				k = key.String()
+			} else {
+				k = fmt.Sprintf("[%d]", i)
+			}
+
+			m2 := m.deepCopy()
+
+			var err error
+			if t.Kind() == reflect.Struct {
+				f.Key = append(f.Key, k)
+				m2.yamlTag = ""
+				fs, err = trackingFeatures(v, m2, f)
+			} else {
+				m2.yamlTag = k
+				fs, err = trackingFeatures(v, m2, f)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+			features = append(features, fs...)
+		}
+
+	case kind == reflect.Slice || kind == reflect.Array:
+
+		// Create array length metric
+		features = append(features, Feature{
+			Module: feature.Module,
+			Kind:   feature.Kind,
+			Type:   feature.Type,
+			Key:    append(feature.Key, m.yamlTag, "__length"),
+			Value:  fmt.Sprintf("%d", v.Len()),
+		})
+
+		if !m.hasTracking {
+			return nil, nil
+		}
+
+		for i := 0; i < v.Len(); i++ {
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append(feature.Key, m.yamlTag),
+			}
+
+			v := v.Index(i)
+			t := v.Type()
+			fs := make([]Feature, 0)
+			m2 := m.deepCopy()
+
+			var err error
+			if t.Kind() == reflect.Struct {
+				f.Key = append(f.Key, fmt.Sprintf("[%d]", i))
+				m2.yamlTag = ""
+				fs, err = trackingFeatures(v, m2, f)
+			} else {
+				m2.yamlTag = fmt.Sprintf("[%d]", i)
+				fs, err = trackingFeatures(v, m2, f)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+			features = append(features, fs...)
 		}
 
 	default:
@@ -256,16 +352,37 @@ type metadata struct {
 	isInline       bool
 	hasTracking    bool
 	hasOverride    bool
+	keepKeys       bool
 	yamlTag        string
 	overrideValue  string
 	componentIndex int
 }
 
+func (m metadata) deepCopy() metadata {
+	return metadata{
+		isExcluded:     m.isExcluded,
+		isInline:       m.isInline,
+		hasTracking:    m.hasTracking,
+		hasOverride:    m.hasOverride,
+		keepKeys:       m.keepKeys,
+		yamlTag:        m.yamlTag,
+		overrideValue:  m.overrideValue,
+		componentIndex: m.componentIndex,
+	}
+}
+
 func getMetadata(field reflect.StructField) metadata {
 	trackingTag, hasTracking := field.Tag.Lookup("tracking")
 	hasOverride := false
-	if trackingTag != "" {
+	hasKeepKeys := false
+
+	trackingTags := strings.Split(trackingTag, ",")
+
+	if trackingTags[0] != "" {
 		hasOverride = true
+	}
+	if len(trackingTags) > 1 && trackingTags[1] == "keys" {
+		hasKeepKeys = true
 	}
 	isExcluded := trackingTag == "-"
 
@@ -284,9 +401,10 @@ func getMetadata(field reflect.StructField) metadata {
 	return metadata{
 		hasTracking:   hasTracking,
 		hasOverride:   hasOverride,
+		keepKeys:      hasKeepKeys,
 		isExcluded:    isExcluded,
 		isInline:      hasInline,
-		overrideValue: trackingTag,
+		overrideValue: trackingTags[0],
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
