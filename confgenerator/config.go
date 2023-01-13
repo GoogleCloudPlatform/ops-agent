@@ -43,6 +43,9 @@ type UnifiedConfig struct {
 	Metrics  *Metrics  `yaml:"metrics"`
 	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
 	Traces *Traces `yaml:"traces,omitempty"`
+	// platform as a private field, e.g. "windows", "linux" so that we can use it
+	// in validation.
+	platform string
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -53,17 +56,26 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
+func (uc *UnifiedConfig) DeepCopy(platform string) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
+		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
 	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
+		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
 
 	return fromYaml, nil
+}
+
+func (uc *UnifiedConfig) String() string {
+	marshalledConfig, err := yaml.Marshal(uc)
+	if err != nil {
+		return fmt.Sprintf("failed to convert Unified config to yaml: %v", err)
+	}
+
+	return string(marshalledConfig)
 }
 
 type Combined struct {
@@ -266,7 +278,7 @@ func newValidator() *validator.Validate {
 	return v
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
+func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (*UnifiedConfig, error) {
 	ctx := context.WithValue(context.TODO(), platformKey, platform)
 	config := UnifiedConfig{}
 	v := &validatorContext{
@@ -274,20 +286,11 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig,
 		v:   newValidator(),
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, err
+		return nil, err
 	}
-	return config, nil
-}
 
-func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig, error) {
-	config, err := UnmarshalYamlToUnifiedConfig(input, platform)
-	if err != nil {
-		return UnifiedConfig{}, err
-	}
-	if err = config.Validate(platform); err != nil {
-		return config, err
-	}
-	return config, nil
+	config.platform = platform
+	return &config, nil
 }
 
 type Component interface {
@@ -704,19 +707,19 @@ type TracesService struct {
 	Pipelines map[string]*Pipeline
 }
 
-func (uc *UnifiedConfig) Validate(platform string) error {
+func (uc *UnifiedConfig) Validate() error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(platform); err != nil {
+		if err := uc.Logging.Validate(); err != nil {
 			return err
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.ValidateMetrics(platform); err != nil {
+		if err := uc.ValidateMetrics(); err != nil {
 			return err
 		}
 	}
 	if uc.Traces != nil {
-		if err := uc.ValidateTraces(platform); err != nil {
+		if err := uc.ValidateTraces(); err != nil {
 			return err
 		}
 	}
@@ -728,7 +731,7 @@ func (uc *UnifiedConfig) Validate(platform string) error {
 	return nil
 }
 
-func (l *Logging) Validate(platform string) error {
+func (l *Logging) Validate() error {
 	subagent := "logging"
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
@@ -823,18 +826,18 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
+func (uc *UnifiedConfig) ValidateMetrics() error {
 	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
 	}
-	if m.Service == nil {
-		return nil
-	}
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return err
+	}
+	if m.Service == nil {
+		return nil
 	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
@@ -867,7 +870,7 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	return nil
 }
 
-func (uc *UnifiedConfig) ValidateTraces(platform string) error {
+func (uc *UnifiedConfig) ValidateTraces() error {
 	t := uc.Traces
 	subagent := "traces"
 	if t == nil || t.Service == nil {

@@ -3041,7 +3041,11 @@ traces:
     pipelines:
       otlp:
         receivers:
-        - otlp`
+        - otlp
+metrics:
+  service:
+    pipelines:
+`
 		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}

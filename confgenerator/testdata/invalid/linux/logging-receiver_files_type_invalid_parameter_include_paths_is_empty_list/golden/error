@@ -1,9 +1,9 @@
-[3:15] "include_paths" is a required field
-   1 | logging:
-   2 |   receivers:
->  3 |     receiver_1:
-                     ^
-   4 |       type: files
-   5 |     syslog:
-   6 |       type: files
-   7 |       
+[19:22] "include_paths" must be a minimum of 1
+  16 |   receivers:
+  17 |     receiver_1:
+  18 |       type: files
+> 19 |       include_paths: []
+                            ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       test_pipeline:

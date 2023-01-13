@@ -35,7 +35,7 @@ func DBPath(tag string) string {
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
 	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
-	IncludePaths            []string       `yaml:"include_paths,omitempty" validate:"required"`
+	IncludePaths            []string       `yaml:"include_paths" validate:"required,min=1"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
