@@ -29,10 +29,12 @@ var (
 	requiredLoggingScopes = []string{
 		"https://www.googleapis.com/auth/ging.write",
 		"https://www.googleapis.com/auth/logging.admin",
+		"https://www.googleapis.com/auth/cloud-platform",
 	}
 	requiredMonitoringScopes = []string{
 		"https://www.googleapis.com/auth/moning.write",
 		"https://www.googleapis.com/auth/monitoring.admin",
+		"https://www.googleapis.com/auth/cloud-platform",
 	}
 )
 
