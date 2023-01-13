@@ -10,7 +10,6 @@ metrics:
   receivers:
     dcgm:
       type: dcgm
-      collection_interval: 10s
   service:
     pipelines:
       dcgm:
