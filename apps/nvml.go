@@ -51,6 +51,7 @@ func (r MetricsReceiverNvml) Pipelines() []otel.Pipeline {
 				otel.RenameMetric(
 					"nvml.gpu.processes.utilization",
 					"gpu/processes/utilization",
+					otel.ScaleValue(100),
 				),
 				otel.RenameMetric(
 					"nvml.gpu.processes.max_bytes_used",
