@@ -23,7 +23,7 @@ type MetricsReceiverDcgm struct {
 	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty"`
+	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
 }
 
 const defaultDcgmEndpoint = "localhost:5555"
