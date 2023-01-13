@@ -329,12 +329,18 @@ processors:
     - action: update
       include: nvml.gpu.utilization
       new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
     - action: update
       include: nvml.gpu.memory.bytes_used
       new_name: gpu/memory/bytes_used
     - action: update
       include: nvml.gpu.processes.utilization
       new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
     - action: update
       include: nvml.gpu.processes.max_bytes_used
       new_name: gpu/processes/max_bytes_used

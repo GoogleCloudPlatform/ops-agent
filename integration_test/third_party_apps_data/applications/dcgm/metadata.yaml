@@ -88,4 +88,4 @@ configuration_options:
           description: A time.Duration value, such as 30s or 5m.
        - name: endpoint
           default: localhost:5555
-          description: ...
+          description: The DCGM service endpoint specified as 'hostname:port'
