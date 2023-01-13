@@ -86,3 +86,6 @@ configuration_options:
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.
+       - name: endpoint
+          default: localhost:5555
+          description: ...
