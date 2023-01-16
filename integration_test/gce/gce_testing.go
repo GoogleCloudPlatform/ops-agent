@@ -1731,3 +1731,37 @@ func RunForEachPlatform(t *testing.T, f func(t *testing.T, platform string)) {
 func ArbitraryPlatform() string {
 	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
 }
+
+func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+	args := []string{
+		"compute", "instances", "add-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + tag,
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		logger.Printf("Unable to tag vm: %v", err)
+		return output, err
+	}
+	return output, nil
+}
+
+func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+	args := []string{
+		"compute", "instances", "remove-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + tag,
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		logger.Printf("Unable to tag vm: %v", err)
+		return output, err
+	}
+	return output, nil
+}
