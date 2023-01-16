@@ -54,6 +54,23 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"default_pipeline_overridden"},
 		Value:  "false",
 	},
+}
+
+var expectedTestFeatureBase = []confgenerator.Feature{
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
@@ -101,7 +118,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -127,7 +144,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
-			Expected: expectedFeatureBase,
+			Expected: expectedTestFeatureBase,
 		},
 		{
 			Name: "TestBoolWithAutoTracking",
@@ -146,7 +163,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -173,7 +190,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -200,7 +217,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -232,7 +249,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -270,7 +287,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -315,7 +332,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -360,7 +377,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -405,7 +422,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -464,7 +481,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -509,7 +526,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -555,7 +572,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -609,7 +626,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -694,7 +711,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 			),
 		},
 		{
@@ -738,7 +755,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -790,7 +807,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -824,7 +841,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -851,7 +868,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -878,7 +895,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -926,7 +943,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -967,7 +984,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -1015,7 +1032,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -1059,7 +1076,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -1135,7 +1152,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
@@ -1197,7 +1214,7 @@ func TestBed(t *testing.T) {
 				},
 			},
 			Expected: append(
-				expectedFeatureBase,
+				expectedTestFeatureBase,
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
