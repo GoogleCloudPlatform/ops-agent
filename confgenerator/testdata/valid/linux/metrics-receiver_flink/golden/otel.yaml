@@ -440,7 +440,7 @@ processors:
   normalizesums/flink_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
   transform/flink_2:
     metrics:
       queries:

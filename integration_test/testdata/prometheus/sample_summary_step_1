@@ -1,0 +1,7 @@
+# HELP test_summary Test Summary.
+# TYPE test_summary summary
+test_summary{quantile="0.5"} 40
+test_summary{quantile="0.9"} 80
+test_summary{quantile="0.99"} 90
+test_summary_sum 450
+test_summary_count 10

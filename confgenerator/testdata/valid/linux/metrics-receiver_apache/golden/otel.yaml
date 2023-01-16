@@ -422,7 +422,7 @@ processors:
   normalizesums/apache_1: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
   apache/apache:
     collection_interval: 60s
