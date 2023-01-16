@@ -10,3 +10,7 @@
   feature: receivers:mssql
   key: "[0].enabled"
   value: "true"
+- module: metrics
+  feature: receivers:mssql
+  key: "[0].receiver_version"
+  value: "2"
