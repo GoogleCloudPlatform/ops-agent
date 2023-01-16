@@ -13,7 +13,6 @@ import (
 var (
 	ErrTrackingInlineStruct   = errors.New("cannot have tracking on inline struct")
 	ErrTrackingOverrideStruct = errors.New("struct that has tracking tag must not be empty")
-	ErrTrackingOverrideMap    = errors.New("map that has tracking tag must not be empty")
 	ErrInvalidType            = errors.New("object in path must be of type Component")
 )
 
@@ -99,6 +98,15 @@ func getSortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func reflectSortedKeys(m reflect.Value) []string {
+	keys := make([]string, 0)
+	for _, k := range m.MapKeys() {
+		keys = append(keys, k.String())
 	}
 	sort.Strings(keys)
 	return keys
@@ -236,20 +244,20 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			return nil, nil
 		}
 
-		for i, key := range v.MapKeys() {
+		for i, key := range reflectSortedKeys(v) {
 			f := Feature{
 				Module: feature.Module,
 				Kind:   feature.Kind,
 				Type:   feature.Type,
 				Key:    append(feature.Key, m.yamlTag),
 			}
-			v := v.MapIndex(key)
+			v := v.MapIndex(reflect.ValueOf(key))
 			t := v.Type()
 			fs := make([]Feature, 0)
 
 			var k string
 			if m.keepKeys {
-				k = key.String()
+				k = key
 			} else {
 				k = fmt.Sprintf("[%d]", i)
 			}
