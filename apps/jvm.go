@@ -31,7 +31,7 @@ func (r MetricsReceiverJVM) Type() string {
 	return "jvm"
 }
 
-func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverJVM) Pipelines() []otel.ReceiverPipeline {
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultJVMEndpoint).
 		ConfigurePipelines(

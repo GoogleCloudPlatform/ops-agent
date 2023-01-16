@@ -1,0 +1,9 @@
+features:
+- feature: receivers:zookeeper
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:zookeeper_general
+  module: logging
+  key: "[0].enabled"
+  value: true

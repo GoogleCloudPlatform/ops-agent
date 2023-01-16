@@ -38,11 +38,11 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "couchdb",
 			Config: map[string]interface{}{
@@ -52,12 +52,12 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.Pipeline {
 				"password":            r.Password,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

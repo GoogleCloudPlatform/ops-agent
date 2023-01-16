@@ -1,0 +1,5 @@
+features:
+- feature: receivers:iis
+  module: metrics
+  key: "[0].enabled"
+  value: true
