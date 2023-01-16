@@ -165,6 +165,8 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
+
+	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 )
 
 func init() {
@@ -1741,9 +1743,7 @@ func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (Co
 	}
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
-		logger.Printf("Unable to tag vm: %v", err)
+		logger.Printf("Unable to add tag to vm: %v", err)
 		return output, err
 	}
 	return output, nil
@@ -1758,9 +1758,7 @@ func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tag string
 	}
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
-		logger.Printf("Unable to tag vm: %v", err)
+		logger.Printf("Unable remove tag from vm: %v", err)
 		return output, err
 	}
 	return output, nil
