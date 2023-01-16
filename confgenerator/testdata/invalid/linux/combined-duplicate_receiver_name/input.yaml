@@ -16,6 +16,9 @@ metrics:
   receivers:
     apache:
       type: apache
+traces:
+  service:
+    pipelines:
 combined:
   receivers:
     apache:

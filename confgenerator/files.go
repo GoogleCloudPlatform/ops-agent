@@ -24,17 +24,29 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
-	uc := UnifiedConfig{}
+// ReadUnifiedConfigFromFile reads the user config file and returns a UnifiedConfig.
+// If the user config file does not exist, it returns nil.
+func ReadUnifiedConfigFromFile(path, platform string) (*UnifiedConfig, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			// If the user config file does not exist, we don't want any overrides.
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
+	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return uc, err
+		return nil, err
 	}
-	uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
+	uc, err := UnmarshalYamlToUnifiedConfig(data, platform)
 	if err != nil {
-		return uc, err
+		return nil, err
 	}
+	if err := uc.Validate(); err != nil {
+		return nil, err
+	}
+
 	return uc, nil
 }
 

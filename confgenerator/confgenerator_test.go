@@ -174,8 +174,8 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 			got["error"] = err.Error()
 		}
 	}()
-	// Merge Config
-	builtInConfBytes, confBytes, err := confgenerator.MergeConfFiles(
+
+	uc, err := confgenerator.MergeConfFiles(
 		filepath.Join("testdata", testDir, inputFileName),
 		platform.OS,
 		apps.BuiltInConfStructs,
@@ -183,12 +183,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	if err != nil {
 		return
 	}
-	got[builtinConfigFileName] = string(builtInConfBytes)
-
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(confBytes, platform.OS)
-	if err != nil {
-		return
-	}
+	got[builtinConfigFileName] = apps.BuiltInConfStructs[platform.OS].String()
 
 	// Fluent Bit configs
 	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
@@ -218,7 +213,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 
 	// Feature Tracking
-	extractedFeatures, err := confgenerator.ExtractFeatures(&userConf)
+	extractedFeatures, err := confgenerator.ExtractFeatures(userConf)
 	if err != nil {
 		return
 	}
