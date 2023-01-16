@@ -3089,6 +3089,25 @@ traces:
 	})
 }
 
+func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.VM, t *testing.T) {
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", "sudo systemctl status google-cloud-ops-agent")
+	if err != nil {
+		t.Error(err)
+	}
+	if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") {
+		t.Errorf("expected network check to pass")
+	}
+	if !strings.Contains(cmdOut.Stdout, "API Check - Result: PASS") {
+		t.Errorf("expected api check to pass")
+	}
+	if !strings.Contains(cmdOut.Stdout, "Permissions Check - Result: PASS") {
+		t.Errorf("expected permissions check to pass")
+	}
+	if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
+		t.Errorf("expected ports check to pass")
+	}
+}
+
 func TestPassingHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -3099,19 +3118,7 @@ func TestPassingHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
+		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 	})
 }
 
@@ -3151,23 +3158,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-
-		if _, err := gce.DisableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-			t.Fatal(err)
-		}
+		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 	})
 }
 
