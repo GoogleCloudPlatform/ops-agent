@@ -597,7 +597,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestMapStructWithTrackingAndOverride[untrackedString]",
+			Name: "TestMapStructWithTrackingAndOverride[struct]",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
