@@ -1107,6 +1107,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
+	if options.Accelerator != "" {
+		args = append(args, options.Accelerator)
+		args = append(args, "--maintenance-policy=TERMINATE")
+		args = append(args, "--restart-on-failure")
+	}
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
@@ -1766,6 +1771,8 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. Used to specify any required accelerators
+	Accelerator string
 	// Optional. If provided, these arguments are appended on to the end
 	// of the "gcloud compute instances create" command.
 	ExtraCreateArguments []string
