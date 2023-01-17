@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlemanagedprometheus:
     retry_on_failure:
       enabled: false
@@ -19,6 +29,11 @@ processors:
     blank_label_metrics:
     - system.cpu.utilization
   filter/default__pipeline_hostmetrics_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
+  filter/default__pipeline_nvml_0:
     metrics:
       exclude:
         match_type: regexp
@@ -384,6 +399,30 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/nvml_1:
+    transforms:
+    - action: update
+      include: nvml.gpu.utilization
+      new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.memory.bytes_used
+      new_name: gpu/memory/bytes_used
+    - action: update
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.processes.max_bytes_used
+      new_name: gpu/processes/max_bytes_used
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -430,6 +469,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/nvml_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -447,6 +487,8 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  nvml/nvml:
+    collection_interval: 60s
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -575,6 +617,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
+    metrics/default__pipeline_nvml:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - normalizesums/nvml_0
+      - metricstransform/nvml_1
+      - filter/default__pipeline_nvml_0
+      - resourcedetection/_global_0
+      receivers:
+      - nvml/nvml
     metrics/fluentbit:
       exporters:
       - googlecloud
