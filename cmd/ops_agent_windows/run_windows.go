@@ -162,7 +162,10 @@ func (s *service) generateConfigs() error {
 		health_checks.APICheck{},
 	}
 
-	healthCheckResults := GCEHealthChecks.RunAllHealthChecks(logDirectory)
+	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(logDirectory)
+	if err != nil {
+		return err
+	}
 	for _, message := range healthCheckResults {
 		s.log.Info(1, message)
 	}

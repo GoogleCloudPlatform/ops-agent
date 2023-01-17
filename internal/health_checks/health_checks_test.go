@@ -89,14 +89,15 @@ func TestCheckError(t *testing.T) {
 }
 
 func TestRunAllHealthChecks(t *testing.T) {
-	AllHealthChecks := health_checks.HealthCheckRegistry{
-		FailureCheck{},
-		SuccessCheck{},
-		ErrorCheck{},
-	}
+	fCheck := FailureCheck{}
+	sCheck := SuccessCheck{}
+	eCheck := ErrorCheck{}
+	AllHealthChecks := health_checks.HealthCheckRegistry{fCheck, sCheck, eCheck}
 
-	result := AllHealthChecks.RunAllHealthChecks("")
-	for _, message := range result {
-		assert.Check(t, strings.Contains(message, "Check"))
-	}
+	result, err := AllHealthChecks.RunAllHealthChecks("")
+
+	assert.NilError(t, err)
+	assert.Check(t, strings.Contains(result[fCheck.Name()], "Result: FAIL"))
+	assert.Check(t, strings.Contains(result[sCheck.Name()], "Result: PASS"))
+	assert.Check(t, strings.Contains(result[eCheck.Name()], "Result: ERROR"))
 }

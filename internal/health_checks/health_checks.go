@@ -44,16 +44,24 @@ type HealthCheckRegistry []HealthCheck
 
 var healthChecksLogFile = "health_checks_log.txt"
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) []string {
+func (r HealthCheckRegistry) createHealthChecksLogger(logDir string) (*log.Logger, error) {
 	file, err := os.OpenFile(filepath.Join(logDir, healthChecksLogFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	logger := log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), nil
+}
 
-	var result []string
+func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) (map[string]string, error) {
 	var message string
+	result := map[string]string{}
+
+	logger, err := r.createHealthChecksLogger(logDir)
+	if err != nil {
+		return result, err
+	}
+
 	for _, c := range r {
 		err := c.RunCheck(logger)
 		if err != nil {
@@ -67,8 +75,8 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) []string {
 			message = fmt.Sprintf("%s - Result: PASS", c.Name())
 		}
 		logger.Print(message)
-		result = append(result, message)
+		result[c.Name()] = message
 	}
 
-	return result
+	return result, nil
 }

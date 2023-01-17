@@ -68,7 +68,10 @@ func run() error {
 			health_checks.APICheck{},
 		}
 
-		healthCheckResults := GCEHealthChecks.RunAllHealthChecks(*logsDir)
+		healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(*logsDir)
+		if err != nil {
+			return err
+		}
 		for _, message := range healthCheckResults {
 			log.Printf(message)
 		}
