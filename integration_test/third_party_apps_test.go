@@ -723,11 +723,11 @@ func modifiedFiles(t *testing.T) []string {
 //	integration_test/third_party_apps_data/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
+func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
 
-	for _, f := range mf {
+	for _, f := range modifiedFiles {
 		// File names: submodules/fluent-bit
 		if strings.HasPrefix(f, "submodules/") {
 			for app, _ := range allApps {
@@ -737,15 +737,21 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 		}
 	}
 
-	for _, f := range mf {
+	for _, f := range modifiedFiles {
 		if strings.HasPrefix(f, "apps/") {
 
-			// File names: apps/<appname>.go
-			f := strings.TrimPrefix(f, "apps/")
-			f = strings.TrimSuffix(f, ".go")
+			// File names: apps/<fname>.go
+			fname := strings.TrimPrefix(fname, "apps/")
+			fname = strings.TrimSuffix(fname, ".go")
 
-			if _, ok := allApps[f]; ok {
-				impactedApps[f] = true
+			// To support testing multiple versions of an app, we consider all apps
+			// in allApps to be a match if they have <fname> as a prefix.
+			// For example, consider fname = "mongodb". Then all of
+			// {mongodb2.6, mongodb3.6, mongodb} are considered impacted.
+			for app, _ := range allApps {
+				if strings.HasPrefix(app, fname) {
+					impactedApps[app] = true
+				}
 			}
 		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
 			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
