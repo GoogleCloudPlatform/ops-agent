@@ -18,13 +18,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-)
-
-var (
-	healthChecksLogger  *log.Logger
-	healthChecksLogPath = "/var/log/google-cloud-ops-agent/health_checks_log.txt"
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -33,7 +29,6 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
 	}
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		healthChecksLogger.Printf("gceMetadata : %+v", gceMetadata)
 		return gceMetadata, nil
 	} else {
 		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
@@ -42,16 +37,25 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 
 type HealthCheck interface {
 	Name() string
-	RunCheck() error
+	RunCheck(logger *log.Logger) error
 }
 
 type HealthCheckRegistry []HealthCheck
 
-func (r HealthCheckRegistry) RunAllHealthChecks() []string {
+var healthChecksLogFile = "health_checks_log.txt"
+
+func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) []string {
+	file, err := os.OpenFile(filepath.Join(logDir, healthChecksLogFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logger := log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+
 	var result []string
 	var message string
 	for _, c := range r {
-		err := c.RunCheck()
+		err := c.RunCheck(logger)
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
 				message = fmt.Sprintf("%s - Result: FAIL, ERROR_CODE: %s, Failure: %s, Solution: %s",
@@ -62,18 +66,9 @@ func (r HealthCheckRegistry) RunAllHealthChecks() []string {
 		} else {
 			message = fmt.Sprintf("%s - Result: PASS", c.Name())
 		}
-		healthChecksLogger.Print(message)
+		logger.Print(message)
 		result = append(result, message)
 	}
 
 	return result
-}
-
-func init() {
-	file, err := os.OpenFile(healthChecksLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	healthChecksLogger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
 }

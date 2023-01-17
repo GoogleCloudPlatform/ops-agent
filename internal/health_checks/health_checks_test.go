@@ -16,6 +16,8 @@ package health_checks_test
 
 import (
 	"errors"
+	"io/ioutil"
+	"log"
 	"strings"
 	"testing"
 
@@ -23,13 +25,15 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+var testLogger *log.Logger = log.New(ioutil.Discard, "", 0)
+
 type FailureCheck struct{}
 
 func (c FailureCheck) Name() string {
 	return "Failure Check"
 }
 
-func (c FailureCheck) RunCheck() error {
+func (c FailureCheck) RunCheck(logger *log.Logger) error {
 	return health_checks.HC_FAILURE_ERR
 }
 
@@ -38,7 +42,7 @@ func TestCheckFailure(t *testing.T) {
 	wantAction := "No suggested action."
 	testCheck := FailureCheck{}
 
-	err := testCheck.RunCheck()
+	err := testCheck.RunCheck(testLogger)
 
 	assert.ErrorType(t, err, health_checks.HealthCheckError{})
 	healthError, _ := err.(health_checks.HealthCheckError)
@@ -52,14 +56,14 @@ func (c SuccessCheck) Name() string {
 	return "Success Check"
 }
 
-func (c SuccessCheck) RunCheck() error {
+func (c SuccessCheck) RunCheck(logger *log.Logger) error {
 	return nil
 }
 
 func TestCheckSuccess(t *testing.T) {
 	testCheck := SuccessCheck{}
 
-	err := testCheck.RunCheck()
+	err := testCheck.RunCheck(testLogger)
 
 	assert.NilError(t, err)
 }
@@ -70,7 +74,7 @@ func (c ErrorCheck) Name() string {
 	return "Error Check"
 }
 
-func (c ErrorCheck) RunCheck() error {
+func (c ErrorCheck) RunCheck(logger *log.Logger) error {
 	err := errors.New("Test error.")
 	return err
 }
@@ -79,7 +83,7 @@ func TestCheckError(t *testing.T) {
 	wantMessage := "Test error."
 	testCheck := ErrorCheck{}
 
-	err := testCheck.RunCheck()
+	err := testCheck.RunCheck(testLogger)
 
 	assert.ErrorContains(t, err, wantMessage)
 }
@@ -91,7 +95,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 		ErrorCheck{},
 	}
 
-	result := AllHealthChecks.RunAllHealthChecks()
+	result := AllHealthChecks.RunAllHealthChecks("")
 	for _, message := range result {
 		assert.Check(t, strings.Contains(message, "Check"))
 	}

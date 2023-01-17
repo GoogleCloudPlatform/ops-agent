@@ -16,6 +16,7 @@ package health_checks
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -41,14 +42,11 @@ func (c PortsCheck) check_port_available(host string, port string) (bool, error)
 	if err != nil {
 		return false, fmt.Errorf("error listening to: %s, detail: %w", net.JoinHostPort(host, port), err)
 	}
-
-	// Listening correctly to host:port
-	healthChecksLogger.Printf("listening to %s:", net.JoinHostPort(host, port))
 	lsnr.Close()
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck() error {
+func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	// Check self metrics ports
 	self_metrics_host := "0.0.0.0"
 
@@ -60,6 +58,7 @@ func (c PortsCheck) RunCheck() error {
 	if err == nil && !available {
 		return FB_METRICS_PORT_ERR
 	}
+	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
 
 	// Check for opentelemetry-collector self metrics port
 	available, err = c.check_port_available(self_metrics_host, strconv.Itoa(otel.MetricsPort))
@@ -69,6 +68,7 @@ func (c PortsCheck) RunCheck() error {
 	if err == nil && !available {
 		return OTEL_METRICS_PORT_ERR
 	}
+	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))
 
 	// Check config ports
 	for _, port := range c.Config.Logging.Receivers.GetListenPorts() {
@@ -79,6 +79,7 @@ func (c PortsCheck) RunCheck() error {
 		if err == nil && !available {
 			return LOG_RECEIVER_PORT_ERR
 		}
+		logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(int(port))))
 	}
 	return nil
 }
