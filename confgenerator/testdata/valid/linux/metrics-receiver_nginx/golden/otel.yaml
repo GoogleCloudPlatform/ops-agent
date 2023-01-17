@@ -18,6 +18,11 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
+  filter/default__pipeline_nvml_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -367,6 +372,30 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  metricstransform/nvml_1:
+    transforms:
+    - action: update
+      include: nvml.gpu.utilization
+      new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.memory.bytes_used
+      new_name: gpu/memory/bytes_used
+    - action: update
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.processes.max_bytes_used
+      new_name: gpu/processes/max_bytes_used
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -414,6 +443,7 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/nginx_0: {}
+  normalizesums/nvml_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -434,6 +464,8 @@ receivers:
   nginx/nginx:
     collection_interval: 60s
     endpoint: http://localhost/status
+  nvml/nvml:
+    collection_interval: 60s
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -464,6 +496,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
+    metrics/default__pipeline_nvml:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/nvml_0
+      - metricstransform/nvml_1
+      - filter/default__pipeline_nvml_0
+      - resourcedetection/_global_0
+      receivers:
+      - nvml/nvml
     metrics/fluentbit:
       exporters:
       - googlecloud

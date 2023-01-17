@@ -65,7 +65,7 @@ func TestThirdPartyPublicUrls(t *testing.T) {
 		integrationMetadata := &metadata.IntegrationMetadata{}
 		err := metadata.UnmarshalAndValidate(contents, integrationMetadata)
 		if integrationMetadata.PublicUrl == "" {
-			// The public doc isn't available yet. 
+			// The public doc isn't available yet.
 			return nil
 		}
 		if err != nil {

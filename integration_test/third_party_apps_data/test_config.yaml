@@ -62,6 +62,24 @@ per_application_overrides:
     platforms_to_skip: [sles-12, sles-15]
   rabbitmq: # rabbitmq is not supported on sles-12
     platforms_to_skip: [sles-12]
+  nvml: # targets Ubuntu 20.04 (test various GPUs rather than platforms)
+    platforms_to_skip:
+      - centos-7
+      - centos-8
+      - debian-10
+      - debian-11
+      - rocky-linux-8 
+      - sles-12
+      - sles-15
+  dcgm: # targets Ubuntu 20.04 (test various GPUs rather than platforms)
+    platforms_to_skip:
+      - centos-7
+      - centos-8
+      - debian-10
+      - debian-11
+      - rocky-linux-8 
+      - sles-12
+      - sles-15
   # This version of MongoDB hit end of life in 2021. We can work around that
   # for other distros, but not Rocky Linux 9.
   mongodb3.6:
