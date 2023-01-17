@@ -63,15 +63,12 @@ func run() error {
 
 	if *service == "" {
 		GCEHealthChecks := health_checks.HealthCheckRegistry{
-			health_checks.PortsCheck{
-				Config: uc,
-			},
-			health_checks.PermissionsCheck{},
+			health_checks.PortsCheck{Config: uc},
 			health_checks.NetworkCheck{},
 			health_checks.APICheck{},
 		}
 
-		healthCheckResults := GCEHealthChecks.RunAllHealthChecks()
+		healthCheckResults := GCEHealthChecks.RunAllHealthChecks(*logsDir)
 		for _, message := range healthCheckResults {
 			log.Printf(message)
 		}

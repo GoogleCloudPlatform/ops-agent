@@ -141,6 +141,7 @@ func (s *service) generateConfigs() error {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
+	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
@@ -148,7 +149,7 @@ func (s *service) generateConfigs() error {
 		if err := confgenerator.GenerateFilesFromConfig(
 			&uc,
 			subagent,
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
+			logDirectory,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
 			filepath.Join(s.outDirectory, subagent)); err != nil {
 			return err
@@ -156,15 +157,12 @@ func (s *service) generateConfigs() error {
 	}
 
 	GCEHealthChecks := health_checks.HealthCheckRegistry{
-		health_checks.PortsCheck{
-			Config: uc,
-		},
-		health_checks.PermissionsCheck{},
+		health_checks.PortsCheck{Config: uc},
 		health_checks.NetworkCheck{},
 		health_checks.APICheck{},
 	}
 
-	healthCheckResults := GCEHealthChecks.RunAllHealthChecks()
+	healthCheckResults := GCEHealthChecks.RunAllHealthChecks(logDirectory)
 	for _, message := range healthCheckResults {
 		s.log.Info(1, message)
 	}
