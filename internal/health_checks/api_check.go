@@ -17,12 +17,13 @@ package health_checks
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -30,8 +31,9 @@ import (
 
 func Ping(ctx context.Context, client monitoring.MetricClient,
 	projectId string, instanceId string, zone string) error {
-	now := &timestamp.Timestamp{
-		Seconds: time.Now().Unix(),
+	unixZeroTimestamp, err := ptypes.TimestampProto(time.Unix(0, 0))
+	if err != nil {
+		return err
 	}
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	value := &monitoringpb.TypedValue{
@@ -54,8 +56,8 @@ func Ping(ctx context.Context, client monitoring.MetricClient,
 			},
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
+					StartTime: unixZeroTimestamp,
+					EndTime:   unixZeroTimestamp,
 				},
 				Value: value,
 			}},
@@ -71,7 +73,7 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck() error {
+func (c APICheck) RunCheck(logger *log.Logger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -86,7 +88,7 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	healthChecksLogger.Printf("logging client was created successfully.")
+	logger.Printf("logging client was created successfully.")
 
 	if err := logClient.Ping(ctx); err != nil {
 		if apiErr, ok := err.(*apierror.APIError); ok {
@@ -108,7 +110,7 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	healthChecksLogger.Printf("monitoring client was created successfully.")
+	logger.Printf("monitoring client was created successfully.")
 
 	err = Ping(ctx, *monClient, projectId, instanceId, zone)
 	if err != nil {
