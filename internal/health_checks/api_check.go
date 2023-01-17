@@ -40,7 +40,7 @@ func Ping(ctx context.Context, client monitoring.MetricClient,
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "",
+		Name: projectId,
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			Metric: &metricpb.Metric{
 				Type: metricType,
