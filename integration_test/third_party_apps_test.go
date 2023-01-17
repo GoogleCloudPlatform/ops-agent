@@ -741,7 +741,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 		if strings.HasPrefix(f, "apps/") {
 
 			// File names: apps/<fname>.go
-			fname := strings.TrimPrefix(fname, "apps/")
+			fname := strings.TrimPrefix(f, "apps/")
 			fname = strings.TrimSuffix(fname, ".go")
 
 			// To support testing multiple versions of an app, we consider all apps
@@ -880,7 +880,8 @@ func TestThirdPartyApps(t *testing.T) {
 			defer cancel()
 
 			var err error
-			for attempt := 1; attempt <= 4; attempt++ {
+			// DO NOT SUBMIT changes to retries
+			for attempt := 1; attempt <= 1; attempt++ {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
