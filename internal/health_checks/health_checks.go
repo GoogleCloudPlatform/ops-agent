@@ -22,7 +22,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 )
 
-var HealtChecksLogger *log.Logger
+var (
+	healthChecksLogger  *log.Logger
+	healthChecksLogPath = "/var/log/google-cloud-ops-agent/health_checks_log.txt"
+)
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	MetadataResource, err := resourcedetector.GetResource()
@@ -30,7 +33,7 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
 	}
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		HealtChecksLogger.Printf("gceMetadata : %+v", gceMetadata)
+		healthChecksLogger.Printf("gceMetadata : %+v", gceMetadata)
 		return gceMetadata, nil
 	} else {
 		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
@@ -59,7 +62,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks() []string {
 		} else {
 			message = fmt.Sprintf("%s - Result: PASS", c.Name())
 		}
-		HealtChecksLogger.Print(message)
+		healthChecksLogger.Print(message)
 		result = append(result, message)
 	}
 
@@ -67,10 +70,10 @@ func (r HealthCheckRegistry) RunAllHealthChecks() []string {
 }
 
 func init() {
-	file, err := os.OpenFile("health_checks_log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile(healthChecksLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	HealtChecksLogger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+	healthChecksLogger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
 }

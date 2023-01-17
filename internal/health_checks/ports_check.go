@@ -43,7 +43,7 @@ func (c PortsCheck) check_port_available(host string, port string) (bool, error)
 	}
 
 	// Listening correctly to host:port
-	HealtChecksLogger.Printf("listening to %s:", net.JoinHostPort(host, port))
+	healthChecksLogger.Printf("listening to %s:", net.JoinHostPort(host, port))
 	lsnr.Close()
 	return true, nil
 }

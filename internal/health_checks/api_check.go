@@ -17,13 +17,53 @@ package health_checks
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/googleapis/gax-go/v2/apierror"
-	"google.golang.org/api/iterator"
+	metricpb "google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
+
+func Ping(ctx context.Context, client monitoring.MetricClient,
+	projectId string, instanceId string, zone string) error {
+	now := &timestamp.Timestamp{
+		Seconds: time.Now().Unix(),
+	}
+	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
+	value := &monitoringpb.TypedValue{
+		Value: &monitoringpb.TypedValue_Int64Value{
+			Int64Value: int64(0),
+		},
+	}
+	req := &monitoringpb.CreateTimeSeriesRequest{
+		Name: "",
+		TimeSeries: []*monitoringpb.TimeSeries{{
+			Metric: &metricpb.Metric{
+				Type: metricType,
+			},
+			Resource: &monitoredres.MonitoredResource{
+				Type: "gce_instance",
+				Labels: map[string]string{
+					"instance_id": instanceId,
+					"zone":        zone,
+				},
+			},
+			Points: []*monitoringpb.Point{{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: now,
+					EndTime:   now,
+				},
+				Value: value,
+			}},
+		}},
+	}
+
+	return client.CreateTimeSeries(ctx, req)
+}
 
 type APICheck struct{}
 
@@ -38,13 +78,15 @@ func (c APICheck) RunCheck() error {
 		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
 	projectId := gceMetadata.Project
+	instanceId := gceMetadata.InstanceID
+	zone := gceMetadata.Zone
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
 		return err
 	}
-	HealtChecksLogger.Printf("logging client was created successfully.")
+	healthChecksLogger.Printf("logging client was created successfully.")
 
 	if err := logClient.Ping(ctx); err != nil {
 		if apiErr, ok := err.(*apierror.APIError); ok {
@@ -66,31 +108,23 @@ func (c APICheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	HealtChecksLogger.Printf("monitoring client was created successfully.")
+	healthChecksLogger.Printf("monitoring client was created successfully.")
 
-	req := &monitoringpb.ListMetricDescriptorsRequest{
-		Name: "projects/" + projectId,
-	}
-	it := monClient.ListMetricDescriptors(ctx, req)
-	for {
-		_, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			if apiErr, ok := err.(*apierror.APIError); ok {
-				switch apiErr.Reason() {
-				case "SERVICE_DISABLED":
-					return MON_API_DISABLED_ERR
-				case "IAM_PERMISSION_DENIED":
-					return MON_API_PERMISSION_ERR
-				default:
-					return err
-				}
+	err = Ping(ctx, *monClient, projectId, instanceId, zone)
+	if err != nil {
+		if apiErr, ok := err.(*apierror.APIError); ok {
+			switch apiErr.Reason() {
+			case "SERVICE_DISABLED":
+				return MON_API_DISABLED_ERR
+			case "IAM_PERMISSION_DENIED":
+				return MON_API_PERMISSION_ERR
+			default:
+				return err
 			}
-			return err
 		}
+		return err
 	}
+
 	monClient.Close()
 
 	return nil

@@ -41,10 +41,10 @@ func (c NetworkCheck) RunCheck() error {
 	if err != nil {
 		return err
 	}
-	HealtChecksLogger.Printf("http request status : %s", response.Status)
+	healthChecksLogger.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
-		HealtChecksLogger.Printf("Request to the Logging API was successful.")
+		healthChecksLogger.Printf("Request to the Logging API was successful.")
 	default:
 		return LOG_API_CONN_ERR
 	}
@@ -58,10 +58,10 @@ func (c NetworkCheck) RunCheck() error {
 		return err
 	}
 
-	HealtChecksLogger.Printf("http request status : %s", response.Status)
+	healthChecksLogger.Printf("http request status : %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
-		HealtChecksLogger.Printf("Request to the Logging API was successful.")
+		healthChecksLogger.Printf("Request to the Logging API was successful.")
 	default:
 		return LOG_API_CONN_ERR
 	}

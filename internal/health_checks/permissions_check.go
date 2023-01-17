@@ -104,7 +104,7 @@ func (c PermissionsCheck) RunCheck() error {
 		if err != nil {
 			return err
 		} else if found {
-			HealtChecksLogger.Printf("Logging Scopes are enough to run the Ops Agent.")
+			healthChecksLogger.Printf("Logging Scopes are enough to run the Ops Agent.")
 		} else {
 			return LOG_API_PERMISSION_ERR
 		}
@@ -113,7 +113,7 @@ func (c PermissionsCheck) RunCheck() error {
 		if err != nil {
 			return err
 		} else if found {
-			HealtChecksLogger.Printf("Monitoring Scopes are enough to run the Ops Agent.")
+			healthChecksLogger.Printf("Monitoring Scopes are enough to run the Ops Agent.")
 		} else {
 			return MON_API_PERMISSION_ERR
 		}
