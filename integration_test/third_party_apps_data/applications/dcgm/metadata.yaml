@@ -1,0 +1,100 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
+short_name: dcgm
+long_name: dcgm
+logo_path: /images/partners/todo.png # supplied by google technical writer
+description: |-
+  The NVIDIA DataCenter GPU Manager (or DCGM) integration collects advanced GPU metrics,
+  including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
+configure_integration: |-
+  You must install DCGM and run the DCGM daemon service. 
+supported_operating_systems: linux
+supported_app_version: ["3.1"]
+platforms_to_skip:
+  - centos-7
+  - centos-8
+  - debian-10
+  - debian-11
+  - rocky-linux-8
+  - rocky-linux-9
+  - sles-12
+  - sles-15
+expected_metrics:
+  - type: workload.googleapis.com/dcgm.gpu.sm_utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+    representative: true
+  - type: workload.googleapis.com/dcgm.gpu.sm_occupancy
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+  - type: workload.googleapis.com/dcgm.gpu.pipe_utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+      pipe: tensor|fp64|fp32|fp16
+  - type: workload.googleapis.com/dcgm.gpu.dram_utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+  - type: workload.googleapis.com/dcgm.gpu.pcie_traffic_rate
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+      direction: tx|rx
+  - type: workload.googleapis.com/dcgm.gpu.nvlink_traffic_rate
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      model: .*
+      uuid: .*
+      gpu_number: "[0-9]*"
+      direction: tx|rx
+configuration_options:
+  metrics:
+    - type: dcgm
+      fields:
+        - name: type
+          default: null
+          description: This value must be dcgm.
+        - name: collection_interval
+          default: 60s
+          description: A time.Duration value, such as 30s or 5m.
+        - name: endpoint
+          default: localhost:5555
+          description: The DCGM service endpoint specified as 'hostname:port'
