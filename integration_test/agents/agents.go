@@ -182,7 +182,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	for _, log := range []string{
 		gce.SyslogLocation(vm.Platform),
-		"/health_checks_log.txt",
+		"/var/log/google-cloud-ops-agent/health_checks_log.txt",
 		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
