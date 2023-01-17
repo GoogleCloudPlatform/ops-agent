@@ -29,20 +29,20 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.Pipeline {
-	return []otel.Pipeline{{
+func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.ReceiverPipeline {
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

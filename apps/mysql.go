@@ -40,7 +40,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -53,7 +53,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		r.Username = "root"
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "mysql",
 			Config: map[string]interface{}{
@@ -64,7 +64,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				"transport":           transport,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				// The following changes are here to ensure maximum backwards compatibility after the fixes
@@ -82,7 +82,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

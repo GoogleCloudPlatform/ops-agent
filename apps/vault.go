@@ -73,7 +73,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -124,7 +124,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -135,7 +135,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.TransformationMetrics(queries...),
 			otel.MetricsFilter(
 				"include",
@@ -170,7 +170,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

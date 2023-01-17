@@ -10,20 +10,10 @@ exporters:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
-  agentmetrics/default__pipeline_hostmetrics_0:
+  agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  filter/default__pipeline_hostmetrics_1:
-    metrics:
-      exclude:
-        match_type: strict
-        metric_names:
-        - system.cpu.time
-        - system.network.dropped
-        - system.filesystem.inodes.usage
-        - system.paging.faults
-        - system.disk.operation_time
-  filter/default__pipeline_hostmetrics_3:
+  filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
         match_type: regexp
@@ -36,6 +26,16 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+  filter/hostmetrics_1:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+        - system.cpu.time
+        - system.network.dropped
+        - system.filesystem.inodes.usage
+        - system.paging.faults
+        - system.disk.operation_time
   filter/otel_0:
     metrics:
       include:
@@ -45,7 +45,49 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/default__pipeline_hostmetrics_2:
+  metricstransform/fluentbit_1:
+    transforms:
+    - action: update
+      include: fluentbit_uptime
+      new_name: agent/uptime
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: version
+        new_value: google-cloud-ops-agent-logging/latest-build_distro
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - version
+    - action: update
+      include: fluentbit_stackdriver_requests_total
+      new_name: agent/request_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_proc_records_total
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/hostmetrics_2:
     transforms:
     - action: update
       include: system.cpu.time
@@ -319,49 +361,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/fluentbit_1:
-    transforms:
-    - action: update
-      include: fluentbit_uptime
-      new_name: agent/uptime
-      operations:
-      - action: toggle_scalar_data_type
-      - action: add_label
-        new_label: version
-        new_value: google-cloud-ops-agent-logging/latest-build_distro
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - version
-    - action: update
-      include: fluentbit_stackdriver_requests_total
-      new_name: agent/request_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: fluentbit_stackdriver_proc_records_total
-      new_name: agent/log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/nginx_nginx_1:
+  metricstransform/nginx_1:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -413,12 +413,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/nginx_nginx_0: {}
+  normalizesums/nginx_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
-  hostmetrics/default__pipeline_hostmetrics:
+  hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
       cpu: {}
@@ -431,7 +431,7 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  nginx/nginx_nginx:
+  nginx/nginx:
     collection_interval: 30s
     endpoint: http://localhost/status
   prometheus/fluentbit:
@@ -457,13 +457,13 @@ service:
       exporters:
       - googlecloud
       processors:
-      - agentmetrics/default__pipeline_hostmetrics_0
-      - filter/default__pipeline_hostmetrics_1
-      - metricstransform/default__pipeline_hostmetrics_2
-      - filter/default__pipeline_hostmetrics_3
+      - agentmetrics/hostmetrics_0
+      - filter/hostmetrics_1
+      - metricstransform/hostmetrics_2
+      - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
-      - hostmetrics/default__pipeline_hostmetrics
+      - hostmetrics/hostmetrics
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -477,11 +477,11 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/nginx_nginx_0
-      - metricstransform/nginx_nginx_1
+      - normalizesums/nginx_0
+      - metricstransform/nginx_1
       - resourcedetection/_global_0
       receivers:
-      - nginx/nginx_nginx
+      - nginx/nginx
     metrics/otel:
       exporters:
       - googlecloud

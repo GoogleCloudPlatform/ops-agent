@@ -33,16 +33,16 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 	if r.ReceiverVersion == "2" {
-		return []otel.Pipeline{{
+		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
 					"collection_interval": r.CollectionIntervalString(),
 				},
 			},
-			Processors: []otel.Component{
+			Processors: map[string][]otel.Component{"metrics": {
 				otel.TransformationMetrics(
 					otel.FlattenResourceAttribute("iis.site", "site"),
 					otel.FlattenResourceAttribute("iis.application_pool", "app_pool"),
@@ -65,12 +65,12 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.NormalizeSums(),
-			},
+			}},
 		}}
 	}
 
 	// Return version 1 if version is anything other than 2
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -96,7 +96,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
 					`\Web Service(_Total)\Current Connections`,
@@ -130,7 +130,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				"agent.googleapis.com/iis/request_count",
 			),
 			otel.NormalizeSums(),
-		},
+		}},
 	}}
 }
 

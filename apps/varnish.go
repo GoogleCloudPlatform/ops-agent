@@ -31,8 +31,8 @@ func (MetricsReceiverVarnish) Type() string {
 	return "varnish"
 }
 
-func (r MetricsReceiverVarnish) Pipelines() []otel.Pipeline {
-	return []otel.Pipeline{{
+func (r MetricsReceiverVarnish) Pipelines() []otel.ReceiverPipeline {
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "varnish",
 			Config: map[string]interface{}{
@@ -41,12 +41,12 @@ func (r MetricsReceiverVarnish) Pipelines() []otel.Pipeline {
 				"exec_dir":            r.ExecDir,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

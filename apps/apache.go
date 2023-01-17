@@ -34,11 +34,11 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "apache",
 			Config: map[string]interface{}{
@@ -46,7 +46,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 				"endpoint":            r.ServerStatusURL,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -56,7 +56,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 
