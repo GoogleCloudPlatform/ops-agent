@@ -784,6 +784,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 type test struct {
 	platform   string
 	app        string
+	gpu        string
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -808,6 +809,9 @@ const (
 
 	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
+
+	NvmlApp = "nvml"
+	DcgmApp = "dcgm"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -868,9 +872,20 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	gpus := []string{"a100", "v100" /* "p100" todo: increase quota */, "t4", "p4"}
+
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			if app == NvmlApp || app == DcgmApp {
+				for _, gpu := range gpus {
+					if app == DcgmApp && gpu == "p4" {
+						continue // p4 doesn't support DCGM metrics
+					}
+					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+				}
+			} else {
+				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
+			}
 		}
 	}
 
@@ -880,7 +895,13 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
+
+		testname := tc.platform + "/" + tc.app
+		if tc.gpu != "" {
+			testname = tc.platform + "/" + tc.app + "/" + tc.gpu
+		}
+
+		t.Run(testname, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
@@ -898,6 +919,22 @@ func TestThirdPartyApps(t *testing.T) {
 					Platform:             tc.platform,
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
+				}
+				if tc.gpu != "" {
+					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
+					switch tc.gpu {
+					case "a100":
+						options.MachineType = "a2-highgpu-1g"
+					case "v100", "t4":
+						options.MachineType = "n1-standard-2"
+					case "p100":
+						options.MachineType = "n1-standard-2"
+						options.Zone = "us-central1-f"
+					case "p4":
+						options.MachineType = "n1-standard-2"
+						options.Zone = "us-central1-a"
+					}
 				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
