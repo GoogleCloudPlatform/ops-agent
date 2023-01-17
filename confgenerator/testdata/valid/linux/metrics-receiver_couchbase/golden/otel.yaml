@@ -38,6 +38,11 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
+  filter/default__pipeline_nvml_2:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -415,6 +420,30 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/default__pipeline_nvml_1:
+    transforms:
+    - action: update
+      include: nvml.gpu.utilization
+      new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.memory.bytes_used
+      new_name: gpu/memory/bytes_used
+    - action: update
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.processes.max_bytes_used
+      new_name: gpu/processes/max_bytes_used
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -504,6 +533,7 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/couchbase_couchbase_0: {}
+  normalizesums/default__pipeline_nvml_0: {}
   resourcedetection/_global_0:
     detectors:
     - gce
@@ -543,6 +573,8 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  nvml/default__pipeline_nvml:
+    collection_interval: 60s
   prometheus/couchbase_couchbase:
     config:
       scrape_configs:
@@ -600,6 +632,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/default__pipeline_hostmetrics
+    metrics/default__pipeline_nvml:
+      exporters:
+      - googlecloud
+      processors:
+      - normalizesums/default__pipeline_nvml_0
+      - metricstransform/default__pipeline_nvml_1
+      - filter/default__pipeline_nvml_2
+      - resourcedetection/_global_0
+      receivers:
+      - nvml/default__pipeline_nvml
     metrics/fluentbit:
       exporters:
       - googlecloud

@@ -33,7 +33,7 @@ var (
 			name:   "builtin_linux",
 			config: apps.BuiltInConfStructs["linux"],
 			enabledReceivers: self_metrics.EnabledReceivers{
-				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "nvml": 1},
 				LogsReceiverCountsByType:    map[string]int{"files": 1},
 			},
 		},
