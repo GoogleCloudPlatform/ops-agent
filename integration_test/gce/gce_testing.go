@@ -1734,31 +1734,51 @@ func ArbitraryPlatform() string {
 	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
 }
 
-func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+func areTagsValid(tags []string) (bool, error) {
+	for _, tag := range tags {
+		if string.Contains(tag, ",") {
+			return false, fmt.Sprintf("Tag %v cannot contain comma.", tag)
+		}
+	}
+	return true, nil
+}
+
+func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to add tag to VM: %v", err)
+		return output, err
+	}
 	args := []string{
 		"compute", "instances", "add-tags", vm.Name,
 		"--zone=" + vm.Zone,
 		"--project=" + vm.Project,
-		"--tags=" + tag,
+		"--tags=" + strings.Join(tags, ","),
 	}
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
-		logger.Printf("Unable to add tag to vm: %v", err)
+		logger.Printf("Unable to add tag to VM: %v", err)
 		return output, err
 	}
 	return output, nil
 }
 
-func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to remove tag from VM: %v", err)
+		return output, err
+	}
 	args := []string{
 		"compute", "instances", "remove-tags", vm.Name,
 		"--zone=" + vm.Zone,
 		"--project=" + vm.Project,
-		"--tags=" + tag,
+		"--tags=" + strings.Join(tags, ","),
 	}
+
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
-		logger.Printf("Unable remove tag from vm: %v", err)
+		logger.Printf("Unable remove tag from VM: %v", err)
 		return output, err
 	}
 	return output, nil
