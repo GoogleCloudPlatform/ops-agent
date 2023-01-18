@@ -11,10 +11,6 @@
   key: "[0].enabled"
   value: "true"
 - module: metrics
-  feature: receivers:iis_access
-  key: "[0].enabled"
-  value: "true"
-- module: metrics
   feature: receivers:iis
   key: "[0].receiver_version"
   value: "2"
