@@ -3105,11 +3105,12 @@ func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.V
 	}
 }
 
-func TestPortsHealthCheck(t *testing.T) {
+func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+		scopes := "https://www.googleapis.com/auth/monitoring.read,https://www.googleapis.com/auth/logging.read,https://www.googleapis.com/auth/devstorage.read_write"
+		ctx, logger, vm := agents.CommonSetupWithOptions(t, platform, []string{"--scopes", scopes})
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
@@ -3117,9 +3118,15 @@ func TestPortsHealthCheck(t *testing.T) {
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 
-		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop")
-		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nc -l 0.0.0.0 -p 20202")
-		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start")
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nohup nc -l 0.0.0.0 -p 20202"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start"); err != nil {
+			t.Fatal(err)
+		}
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 	})

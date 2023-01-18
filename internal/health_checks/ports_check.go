@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
-	"runtime"
 	"strconv"
 	"syscall"
 
@@ -37,28 +35,9 @@ func (c PortsCheck) Name() string {
 	return "Ports Check"
 }
 
-func isErrorAddressAlreadyInUse(err error) bool {
-	var eOsSyscall *os.SyscallError
-	if !errors.As(err, &eOsSyscall) {
-		return false
-	}
-	var errErrno syscall.Errno
-	if !errors.As(eOsSyscall, &errErrno) {
-		return false
-	}
-	if errErrno == syscall.EADDRINUSE {
-		return true
-	}
-	const WSAEADDRINUSE = 10048
-	if runtime.GOOS == "windows" && errErrno == WSAEADDRINUSE {
-		return true
-	}
-	return false
-}
-
 func checkPortAvailable(host string, port string) (bool, error) {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-	if err != nil && isErrorAddressAlreadyInUse(err) {
+	if errors.Is(err, syscall.EADDRINUSE) {
 		return false, nil
 	}
 	if err != nil {
@@ -77,7 +56,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
-	if err == nil && !available {
+	if !available {
 		return FB_METRICS_PORT_ERR
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
@@ -87,7 +66,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
-	if err == nil && !available {
+	if !available {
 		return OTEL_METRICS_PORT_ERR
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))

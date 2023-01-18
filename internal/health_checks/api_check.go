@@ -16,9 +16,9 @@ package health_checks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/logging"
@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
+	"google.golang.org/grpc/codes"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -104,17 +105,25 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 
 	if err := logClient.Ping(ctx); err != nil {
 		logger.Println(err)
-		if apiErr, ok := err.(*apierror.APIError); ok {
-			if apiErr.Reason() == "SERVICE_DISABLED" {
+		var apiErr *apierror.APIError
+		if errors.As(err, &apiErr) {
+			switch apiErr.Reason() {
+			case "SERVICE_DISABLED":
 				return LOG_API_DISABLED_ERR
-			}
-			if apiErr.Reason() == "ACCESS_TOKEN_SCOPE_INSUFFICIENT" {
+			case "ACCESS_TOKEN_SCOPE_INSUFFICIENT":
 				return LOG_API_SCOPE_ERR
-			}
-			if apiErr.Reason() == "IAM_PERMISSION_DENIED" || strings.Contains(apiErr.Error(), "PermissionDenied") {
+			case "IAM_PERMISSION_DENIED":
 				return LOG_API_PERMISSION_ERR
 			}
+
+			switch apiErr.GRPCStatus().Code() {
+			case codes.PermissionDenied:
+				return LOG_API_PERMISSION_ERR
+			case codes.Unauthenticated:
+				return LOG_API_SCOPE_ERR
+			}
 		}
+
 		return err
 	}
 	logClient.Close()
@@ -129,17 +138,23 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	err = monitoringPing(ctx, *monClient, gceMetadata)
 	if err != nil {
 		logger.Println(err)
-		if apiErr, ok := err.(*apierror.APIError); ok {
-			if apiErr.Reason() == "SERVICE_DISABLED" {
+		var apiErr *apierror.APIError
+		if errors.As(err, &apiErr) {
+			switch apiErr.Reason() {
+			case "SERVICE_DISABLED":
 				return MON_API_DISABLED_ERR
-			}
-			if apiErr.Reason() == "ACCESS_TOKEN_SCOPE_INSUFFICIENT" {
+			case "ACCESS_TOKEN_SCOPE_INSUFFICIENT":
 				return MON_API_SCOPE_ERR
-			}
-			if apiErr.Reason() == "IAM_PERMISSION_DENIED" || strings.Contains(apiErr.Error(), "PermissionDenied") {
+			case "IAM_PERMISSION_DENIED":
 				return MON_API_PERMISSION_ERR
 			}
-			return err
+
+			switch apiErr.GRPCStatus().Code() {
+			case codes.PermissionDenied:
+				return MON_API_PERMISSION_ERR
+			case codes.Unauthenticated:
+				return MON_API_SCOPE_ERR
+			}
 		}
 		return err
 	}
