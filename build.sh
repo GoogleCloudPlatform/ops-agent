@@ -130,6 +130,8 @@ function build_systemd() {
 # TODO: Build sample config file
 mkdir -p "$DESTDIR/$sysconfdir/google-cloud-ops-agent/"
 cp "confgenerator/default-config.yaml" "$DESTDIR/$sysconfdir/google-cloud-ops-agent/config.yaml"
+mkdir -p "$DESTDIR/$sysconfdir/logrotate.d"
+cp "etc/logrotate.d/google-cloud-ops-agent" "$DESTDIR/$sysconfdir/logrotate.d/google-cloud-ops-agent"
 
 # N.B. Don't include $DESTDIR itself in the tarball, since mktemp -d will create it mode 0700.
 (cd "$DESTDIR" && tar -czf /tmp/google-cloud-ops-agent.tgz *)

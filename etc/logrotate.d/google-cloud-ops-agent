@@ -1,0 +1,9 @@
+/var/log/google-cloud-ops-agent/subagents/logging-module.log
+{
+        rotate 4
+        weekly
+        missingok
+        notifempty
+        compress
+        delaycompress
+}
