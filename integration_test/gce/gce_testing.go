@@ -1736,8 +1736,8 @@ func ArbitraryPlatform() string {
 
 func areTagsValid(tags []string) (bool, error) {
 	for _, tag := range tags {
-		if string.Contains(tag, ",") {
-			return false, fmt.Sprintf("Tag %v cannot contain comma.", tag)
+		if strings.Contains(tag, ",") {
+			return false, fmt.Errorf("Tag %v cannot contain comma.", tag)
 		}
 	}
 	return true, nil
