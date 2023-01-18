@@ -16,24 +16,13 @@ package health_checks
 
 import (
 	"fmt"
+	// "io/fs"
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 )
 
-func getGCEMetadata() (resourcedetector.GCEResource, error) {
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		return gceMetadata, nil
-	} else {
-		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
-	}
-}
+var healthChecksLogFile = "health_checks_log.txt"
 
 type HealthCheck interface {
 	Name() string
@@ -42,10 +31,12 @@ type HealthCheck interface {
 
 type HealthCheckRegistry []HealthCheck
 
-var healthChecksLogFile = "health_checks_log.txt"
-
-func (r HealthCheckRegistry) createHealthChecksLogger(logDir string) (*log.Logger, error) {
-	file, err := os.OpenFile(filepath.Join(logDir, healthChecksLogFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+func createHealthChecksLogger(logDir string) (*log.Logger, error) {
+	// Make sure the directory exists before writing the file.
+	if err := os.MkdirAll(filepath.Dir(logDir), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create directory for %q: %w", logDir, err)
+	}
+	file, err := os.OpenFile(filepath.Join(logDir, healthChecksLogFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +48,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) (map[string]strin
 	var message string
 	result := map[string]string{}
 
-	logger, err := r.createHealthChecksLogger(logDir)
+	logger, err := createHealthChecksLogger(logDir)
 	if err != nil {
 		return result, err
 	}

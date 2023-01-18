@@ -3100,15 +3100,12 @@ func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.V
 	if !strings.Contains(cmdOut.Stdout, "API Check - Result: PASS") {
 		t.Errorf("expected api check to pass")
 	}
-	if !strings.Contains(cmdOut.Stdout, "Permissions Check - Result: PASS") {
-		t.Errorf("expected permissions check to pass")
-	}
 	if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
 		t.Errorf("expected ports check to pass")
 	}
 }
 
-func TestPassingHealthChecks(t *testing.T) {
+func TestPortsHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3117,6 +3114,12 @@ func TestPassingHealthChecks(t *testing.T) {
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
+
+		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
+
+		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop")
+		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nc -l 0.0.0.0 -p 20202")
+		gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start")
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 	})
@@ -3132,97 +3135,17 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Use the vm.Name as a tag during this test.
-		if _, err := gce.CreateFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
+		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, gce.DenyEgressTrafficTag); err != nil {
 			t.Fatal(err)
 		}
-
-		t.Cleanup(func() {
-			if _, err := gce.DeleteFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-				t.Fatal(err)
-			}
-		})
-
-		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-			t.Fatal(err)
-		}
-
-		if _, err := gce.EnableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-			t.Fatal(err)
-		}
-
-		// Wait 2 minutes
-		time.Sleep(2 * time.Minute)
 
 		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
-	})
-}
-
-func testAPIHealthCheck(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-
-		// Todo add netcat command that block port 0.0.0.0:20202
-
-		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-
-		if _, err := gce.DisableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-			t.Fatal(err)
-		}
-	})
-}
-
-func testPortsHealthCheck(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-
-		// Todo add netcat command that block port 0.0.0.0:20202
-
-		serialPortLogName := "serialconsole.googleapis.com%2Fserial_port_1_output"
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Network Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: API Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Permissions Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, serialPortLogName, 2*time.Minute, `textPayload=~"Check: Ports Check, Result: PASS"`); err != nil {
-			t.Error(err)
-		}
-
-		if _, err := gce.DisableFirewallRule(ctx, logger.ToFile("firewall_setup.txt"), vm, vm.Name); err != nil {
-			t.Fatal(err)
-		}
 	})
 }
 

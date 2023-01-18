@@ -165,6 +165,8 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
+
+	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 )
 
 func init() {
@@ -1730,4 +1732,34 @@ func RunForEachPlatform(t *testing.T, f func(t *testing.T, platform string)) {
 // ArbitraryPlatform picks an arbitrary element from PLATFORMS and returns it.
 func ArbitraryPlatform() string {
 	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
+}
+
+func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+	args := []string{
+		"compute", "instances", "add-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + tag,
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable to add tag to vm: %v", err)
+		return output, err
+	}
+	return output, nil
+}
+
+func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tag string) (CommandOutput, error) {
+	args := []string{
+		"compute", "instances", "remove-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + tag,
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable remove tag from vm: %v", err)
+		return output, err
+	}
+	return output, nil
 }

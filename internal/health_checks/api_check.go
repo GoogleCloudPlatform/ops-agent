@@ -23,11 +23,24 @@ import (
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
+
+func getGCEMetadata() (resourcedetector.GCEResource, error) {
+	MetadataResource, err := resourcedetector.GetResource()
+	if err != nil {
+		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
+	}
+	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+		return gceMetadata, nil
+	} else {
+		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
+	}
+}
 
 func Ping(ctx context.Context, client monitoring.MetricClient,
 	projectId string, instanceId string, zone string) error {
@@ -42,7 +55,7 @@ func Ping(ctx context.Context, client monitoring.MetricClient,
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: projectId,
+		Name: "projects/" + projectId,
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			Metric: &metricpb.Metric{
 				Type: metricType,
