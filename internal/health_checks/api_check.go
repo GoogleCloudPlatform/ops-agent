@@ -18,16 +18,17 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -42,11 +43,9 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	}
 }
 
-func Ping(ctx context.Context, client monitoring.MetricClient,
-	projectId string, instanceId string, zone string) error {
-	unixZeroTimestamp, err := ptypes.TimestampProto(time.Unix(0, 0))
-	if err != nil {
-		return err
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+	now := &timestamppb.Timestamp{
+		Seconds: time.Now().Unix(),
 	}
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	value := &monitoringpb.TypedValue{
@@ -55,22 +54,24 @@ func Ping(ctx context.Context, client monitoring.MetricClient,
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + projectId,
+		Name: "projects/" + gceMetadata.Project,
 		TimeSeries: []*monitoringpb.TimeSeries{{
+			MetricKind: metricpb.MetricDescriptor_GAUGE,
+			ValueType:  metricpb.MetricDescriptor_INT64,
 			Metric: &metricpb.Metric{
 				Type: metricType,
 			},
 			Resource: &monitoredres.MonitoredResource{
 				Type: "gce_instance",
 				Labels: map[string]string{
-					"instance_id": instanceId,
-					"zone":        zone,
+					"instance_id": gceMetadata.InstanceID,
+					"zone":        gceMetadata.Zone,
 				},
 			},
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
-					StartTime: unixZeroTimestamp,
-					EndTime:   unixZeroTimestamp,
+					StartTime: now,
+					EndTime:   now,
 				},
 				Value: value,
 			}},
@@ -92,26 +93,26 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
-	projectId := gceMetadata.Project
-	instanceId := gceMetadata.InstanceID
-	zone := gceMetadata.Zone
+	logger.Println(gceMetadata)
 
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, projectId)
+	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
 	if err != nil {
 		return err
 	}
 	logger.Printf("logging client was created successfully.")
 
 	if err := logClient.Ping(ctx); err != nil {
+		logger.Println(err)
 		if apiErr, ok := err.(*apierror.APIError); ok {
-			switch apiErr.Reason() {
-			case "SERVICE_DISABLED":
+			if apiErr.Reason() == "SERVICE_DISABLED" {
 				return LOG_API_DISABLED_ERR
-			case "IAM_PERMISSION_DENIED":
+			}
+			if apiErr.Reason() == "ACCESS_TOKEN_SCOPE_INSUFFICIENT" {
+				return LOG_API_SCOPE_ERR
+			}
+			if apiErr.Reason() == "IAM_PERMISSION_DENIED" || strings.Contains(apiErr.Error(), "PermissionDenied") {
 				return LOG_API_PERMISSION_ERR
-			default:
-				return err
 			}
 		}
 		return err
@@ -125,21 +126,23 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	}
 	logger.Printf("monitoring client was created successfully.")
 
-	err = Ping(ctx, *monClient, projectId, instanceId, zone)
+	err = monitoringPing(ctx, *monClient, gceMetadata)
 	if err != nil {
+		logger.Println(err)
 		if apiErr, ok := err.(*apierror.APIError); ok {
-			switch apiErr.Reason() {
-			case "SERVICE_DISABLED":
+			if apiErr.Reason() == "SERVICE_DISABLED" {
 				return MON_API_DISABLED_ERR
-			case "IAM_PERMISSION_DENIED":
-				return MON_API_PERMISSION_ERR
-			default:
-				return err
 			}
+			if apiErr.Reason() == "ACCESS_TOKEN_SCOPE_INSUFFICIENT" {
+				return MON_API_SCOPE_ERR
+			}
+			if apiErr.Reason() == "IAM_PERMISSION_DENIED" || strings.Contains(apiErr.Error(), "PermissionDenied") {
+				return MON_API_PERMISSION_ERR
+			}
+			return err
 		}
 		return err
 	}
-
 	monClient.Close()
 
 	return nil

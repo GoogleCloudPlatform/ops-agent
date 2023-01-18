@@ -15,11 +15,14 @@
 package health_checks
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"runtime"
 	"strconv"
-	"strings"
+	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -34,9 +37,28 @@ func (c PortsCheck) Name() string {
 	return "Ports Check"
 }
 
-func (c PortsCheck) check_port_available(host string, port string) (bool, error) {
+func isErrorAddressAlreadyInUse(err error) bool {
+	var eOsSyscall *os.SyscallError
+	if !errors.As(err, &eOsSyscall) {
+		return false
+	}
+	var errErrno syscall.Errno
+	if !errors.As(eOsSyscall, &errErrno) {
+		return false
+	}
+	if errErrno == syscall.EADDRINUSE {
+		return true
+	}
+	const WSAEADDRINUSE = 10048
+	if runtime.GOOS == "windows" && errErrno == WSAEADDRINUSE {
+		return true
+	}
+	return false
+}
+
+func checkPortAvailable(host string, port string) (bool, error) {
 	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-	if err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") {
+	if err != nil && isErrorAddressAlreadyInUse(err) {
 		return false, nil
 	}
 	if err != nil {
@@ -51,7 +73,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	self_metrics_host := "0.0.0.0"
 
 	// Check for fluent-bit self metrics port
-	available, err := c.check_port_available(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
+	available, err := checkPortAvailable(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort))
 	if err != nil {
 		return err
 	}
@@ -61,7 +83,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(fluentbit.MetricsPort)))
 
 	// Check for opentelemetry-collector self metrics port
-	available, err = c.check_port_available(self_metrics_host, strconv.Itoa(otel.MetricsPort))
+	available, err = checkPortAvailable(self_metrics_host, strconv.Itoa(otel.MetricsPort))
 	if err != nil {
 		return err
 	}
@@ -70,16 +92,5 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(otel.MetricsPort)))
 
-	// Check config ports
-	for _, port := range c.Config.Logging.Receivers.GetListenPorts() {
-		available, err = c.check_port_available("localhost", strconv.Itoa(int(port)))
-		if err != nil {
-			return err
-		}
-		if err == nil && !available {
-			return LOG_RECEIVER_PORT_ERR
-		}
-		logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host, strconv.Itoa(int(port))))
-	}
 	return nil
 }

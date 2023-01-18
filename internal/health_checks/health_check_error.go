@@ -45,24 +45,6 @@ var (
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
-	LOG_RECEIVER_PORT_ERR = HealthCheckError{
-		Code:         "LOG_RECEIVER_PORT_ERR",
-		Class:        "PORT",
-		Message:      "Port # used in logging receiver is unavailable.",
-		Action:       "Verify the # port is available.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-		// TODO : Add Message with specific port
-	}
-	MON_RECEIVER_PORT_ERR = HealthCheckError{
-		Code:         "MON_RECEIVER_PORT_ERR",
-		Class:        "PORT",
-		Message:      "Port # used in metrics receiver is unavailable.",
-		Action:       "Verify the # port is available.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      true,
-		// TODO : Add Message with specific port
-	}
 	LOG_API_CONN_ERR = HealthCheckError{
 		Code:         "LOG_API_CONN_ERR",
 		Class:        "CONNECTION",
@@ -76,6 +58,22 @@ var (
 		Class:        "CONNECTION",
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection.",
+		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
+		IsFatal:      true,
+	}
+	LOG_API_SCOPE_ERR = HealthCheckError{
+		Code:         "LOG_API_SCOPE_ERR",
+		Class:        "PERMISSION",
+		Message:      "VM has not enough access scopes for the Logging API.",
+		Action:       "Add the https://www.googleapis.com/auth/logging.write scope to the GCP VM.",
+		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting#logging-module-logs",
+		IsFatal:      true,
+	}
+	MON_API_SCOPE_ERR = HealthCheckError{
+		Code:         "MON_API_SCOPE_ERR",
+		Class:        "PERMISSION",
+		Message:      "VM has not enough access scopes for the Monitoring API.",
+		Action:       "Add the https://www.googleapis.com/auth/monitoring.write scope to the GCP VM.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
@@ -96,8 +94,6 @@ var (
 		IsFatal:      true,
 	}
 	LOG_API_DISABLED_ERR = HealthCheckError{
-		// TODO : Add Message with specific failure (e.g. Ping to api failed)
-		// c.Fail("logging client didn't Ping successfully.", "check the logging api is enabled.")
 		Code:         "LOG_API_DISABLED_ERR",
 		Class:        "API",
 		Message:      "The Logging API is disabled in the current GCP project.",
@@ -112,14 +108,6 @@ var (
 		Action:       "Enable Monitoring API in the current GCP project.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
-	}
-	CREDENTIALS_UNVERIFIABLE = HealthCheckError{
-		Code:         "CREDENTIALS_UNVERIFIABLE",
-		Class:        "PERMISSION",
-		Message:      "The provided credentials are unverifiable.",
-		Action:       "Check the result of the API Check.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
-		IsFatal:      false,
 	}
 	HC_FAILURE_ERR = HealthCheckError{
 		Code:         "HC_FAILURE_ERR",

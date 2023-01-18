@@ -3137,11 +3137,15 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop"); err != nil {
+			t.Fatal(err)
+		}
+
 		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, gce.DenyEgressTrafficTag); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start"); err != nil {
 			t.Fatal(err)
 		}
 
