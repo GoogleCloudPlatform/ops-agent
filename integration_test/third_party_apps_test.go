@@ -740,16 +740,16 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	for _, f := range modifiedFiles {
 		if strings.HasPrefix(f, "apps/") {
 
-			// File names: apps/<fname>.go
-			fname := strings.TrimPrefix(f, "apps/")
-			fname = strings.TrimSuffix(fname, ".go")
+			// File names: apps/<f>.go
+			f := strings.TrimPrefix(f, "apps/")
+			f = strings.TrimSuffix(f, ".go")
 
 			// To support testing multiple versions of an app, we consider all apps
-			// in allApps to be a match if they have <fname> as a prefix.
-			// For example, consider fname = "mongodb". Then all of
-			// {mongodb2.6, mongodb3.6, mongodb} are considered impacted.
+			// in allApps to be a match if they have <f> as a prefix.
+			// For example, consider f = "mongodb". Then all of
+			// {mongodb3.6, mongodb} are considered impacted.
 			for app, _ := range allApps {
-				if strings.HasPrefix(app, fname) {
+				if strings.HasPrefix(app, f) {
 					impactedApps[app] = true
 				}
 			}
