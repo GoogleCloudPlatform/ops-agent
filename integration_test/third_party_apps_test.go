@@ -517,6 +517,8 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
+	logger.ToMainLog().Printf("Features looking for: %+v\nFeatures found %+v", fc.Features, series)
+
 	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
 	return err
 }
