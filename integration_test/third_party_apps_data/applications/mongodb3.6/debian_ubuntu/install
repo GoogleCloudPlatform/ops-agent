@@ -9,13 +9,13 @@ osname="$(lsb_release -si)"
 
 case $osname in
   Ubuntu)
+    # The MongoDB repos only have 3.6 for bionic, nothing more recent like focal.
+    oscode="bionic"
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
     ;;
   Debian)
-    # Debian 11 is not officially supported, so use 'buster'.
-    if [ "$oscode" = "bullseye" ]; then
-      oscode="buster"
-    fi
+    # The mongoDB repos only have 3.6 for stretch, not buster/bullseye.
+    oscode="stretch"
     echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/3.6 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
     ;;
   *)
@@ -27,7 +27,6 @@ esac
 sudo apt-get update
 sudo apt-get install -y \
     mongodb-org=3.6.23 \
-    mongodb-org-database=3.6.23 \
     mongodb-org-server=3.6.23 \
     mongodb-org-shell=3.6.23 \
     mongodb-org-mongos=3.6.23 \

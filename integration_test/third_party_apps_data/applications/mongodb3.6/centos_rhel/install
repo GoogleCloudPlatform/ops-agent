@@ -15,7 +15,6 @@ sudo chmod 0644 /etc/yum.repos.d/mongodb-org-3.6.repo
 
 sudo yum install -y \
     mongodb-org-3.6.23 \
-    mongodb-org-database-3.6.23 \
     mongodb-org-server-3.6.23 \
     mongodb-org-shell-3.6.23 \
     mongodb-org-mongos-3.6.23 \

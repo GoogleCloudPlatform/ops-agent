@@ -156,6 +156,7 @@ expected_logs:
       - name: jsonPayload.id
         type: number
         description: Log ID
+        optional: true  # This is not optional in more recent versions of MongoDB.
       - name: jsonPayload.message
         type: string
         description: Log message
@@ -171,6 +172,10 @@ expected_logs:
       - name: jsonPayload.severity
         type: string
         description: Log entry level
+        optional: true
+      - name: jsonPayload.ms
+        type: string
+        description: ''
         optional: true
       - name: severity
         type: string
