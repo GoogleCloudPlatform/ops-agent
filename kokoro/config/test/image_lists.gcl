@@ -100,12 +100,12 @@ centos = _family {
     rockylinux9 = _distro {
       name = 'Rocky Linux 9'
       release = [
-        // RHEL
+        // RHEL.
         'rhel-9',
         // Rocky.
         'rocky-linux-9',
       ]
-      presubmit = 'rocky-linux-9'
+      presubmit = ['rocky-linux-9']
     }
   }
 }
