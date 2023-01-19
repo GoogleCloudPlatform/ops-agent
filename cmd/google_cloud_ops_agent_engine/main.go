@@ -84,6 +84,6 @@ func run() error {
 	if err := runStartupChecks(*service); err != nil {
 		return err
 	}
-  
+
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
