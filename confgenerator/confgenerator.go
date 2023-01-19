@@ -399,7 +399,7 @@ func generateSeveritySelfLogsParser() []fluentbit.Component {
 		Regex: `^\[[ ]*(?<severity>[a-z]+)\]`,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
-			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
 			Types: map[string]string{
 				"severity": "string",
 			},
