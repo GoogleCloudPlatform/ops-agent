@@ -3098,7 +3098,14 @@ func getRecentServiceOutputForPlatform(platform string) string {
 
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start()"
+		cmd := strings.Join([]string{
+			`echo '$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600' > script.ps1`,
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -file script.ps1'`,
+			`netstat -na | Select-String "20202"`,
+			`Get-WmiObject -List |where{$_.name -match '^Win32_Process$'}`,
+		}, ";")
+
+		return cmd
 	}
 	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
 }
@@ -3121,12 +3128,23 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 				t.Fatalf("failed to install %v with err: %s", packages, err)
 			}
 		}
+
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `netstat -na | Select-String "20202"`); err != nil {
+			t.Fatal(err)
+		}
 		time.Sleep(time.Minute)
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `netstat -na | Select-String "20202"`); err != nil {
+			t.Fatal(err)
+		}
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `netstat -na | Select-String "20202"`); err != nil {
 			t.Fatal(err)
 		}
 

@@ -30,6 +30,9 @@ func (c PortsCheck) Name() string {
 	return "Ports Check"
 }
 
+// checkPortAvailable listens in the provided socket in the local tcp4 network
+// and handles the errors if the port is already being used by another process.
+// fluent-bit listens on tcp4, but opentelemetry-collector in both tcp4 and tcp6.
 func checkPortAvailable(host string, port string) (bool, error) {
 	lsnr, err := net.Listen("tcp4", net.JoinHostPort(host, port))
 	if err != nil {
