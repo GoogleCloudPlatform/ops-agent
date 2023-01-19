@@ -3100,7 +3100,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
 		}
 
-		fmt.Sprintf(`
+		generateLogsScript := fmt.Sprintf(`
 			x=1	
 			while [ $x -le 1000000 ]
 			do
@@ -3114,15 +3114,15 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			  sleep 1
 			done`, logPath)
 
-		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, gce.DenyEgressTrafficTag); err != nil {
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 
-		// _, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
 
-		// if err != nil {
-		// 	t.Fatal(err)
-		// }
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		scripts := fmt.Sprintf(`
 		cat  /run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf 
@@ -3145,7 +3145,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
 		}
 
-		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, gce.DenyEgressTrafficTag); err != nil {
+		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 
