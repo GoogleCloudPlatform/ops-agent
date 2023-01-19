@@ -4,14 +4,13 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package confgenerator_test
 
 import (
@@ -27,7 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	confgenerator "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/common/model"
@@ -80,7 +79,7 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 	},
 }
 
-func TestEmptyStruct(t *testing.T) {
+func TestEmptyConfig(t *testing.T) {
 	features, err := confgenerator.ExtractFeatures(&emptyUc)
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +101,7 @@ func TestBed(t *testing.T) {
 
 	tests := []Test{
 		{
-			Name: "TestStringWithTrackingTag",
+			Name: "StringWithTracking",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -129,7 +128,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestStringWithoutTrackingTag",
+			Name: "StringWithoutTracking",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -147,7 +146,7 @@ func TestBed(t *testing.T) {
 			Expected: expectedTestFeatureBase,
 		},
 		{
-			Name: "TestBoolWithAutoTracking",
+			Name: "BoolWithAutoTracking",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -174,34 +173,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestIntWithAutoTracking",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFoo: MetricsReceiverInlineFoo{
-								Int: 32,
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "int"},
-					Value:  "32",
-				},
-			),
-		},
-		{
-			Name: "TestPointerBool",
+			Name: "PointerBool",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -228,7 +200,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestEmptyStruct",
+			Name: "EmptyStruct",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -246,7 +218,7 @@ func TestBed(t *testing.T) {
 			Expected: expectedTestFeatureBase,
 		},
 		{
-			Name: "TestStruct",
+			Name: "Struct",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -282,7 +254,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestMapLengthWithTracking",
+			Name: "MapLength",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -291,11 +263,11 @@ func TestBed(t *testing.T) {
 								Type: "MetricsReceiverFoo",
 							},
 							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {},
-									"b": {},
-									"c": {},
-									"d": {},
+								StringWithTracking: map[string]string{
+									"a": "",
+									"b": "",
+									"c": "",
+									"d": "",
 								},
 							},
 						},
@@ -308,13 +280,13 @@ func TestBed(t *testing.T) {
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
+					Key:    []string{"[0]", "stringMap", "__length"},
 					Value:  "4",
 				},
 			),
 		},
 		{
-			Name: "TestMapStringWithTrackingTag",
+			Name: "MapStringWithTracking",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -323,7 +295,7 @@ func TestBed(t *testing.T) {
 								Type: "MetricsReceiverFoo",
 							},
 							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStringWithTracking: map[string]string{
+								StringWithTracking: map[string]string{
 									"foo": "goo",
 									"bar": "baz",
 								},
@@ -338,27 +310,27 @@ func TestBed(t *testing.T) {
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStringMapWithTracking", "__length"},
+					Key:    []string{"[0]", "stringMap", "__length"},
 					Value:  "2",
 				},
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStringMapWithTracking", "[0]"},
+					Key:    []string{"[0]", "stringMap", "[0]"},
 					Value:  "baz",
 				},
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStringMapWithTracking", "[1]"},
+					Key:    []string{"[0]", "stringMap", "[1]"},
 					Value:  "goo",
 				},
 			),
 		},
 		{
-			Name: "TestMapStructWithTrackingAndOverride[bool]",
+			Name: "MapStringKeyGeneration",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -367,432 +339,7 @@ func TestBed(t *testing.T) {
 								Type: "MetricsReceiverFoo",
 							},
 							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Bool: true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "bool"},
-					Value:  "true",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[int]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Int: 32,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "int"},
-					Value:  "32",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[slice]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Slice: []string{"foo", "goo"},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "slice", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "slice", "[0]"},
-					Value:  "foo",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "slice", "[1]"},
-					Value:  "goo",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[ptr]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Ptr: &b,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "ptr"},
-					Value:  "true",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[string]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										String: "foo",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "string"},
-					Value:  "foo",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[untrackedString]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Int:             32,
-										UntrackedString: "foo",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "int"},
-					Value:  "32",
-				},
-			),
-		},
-		{
-			Name: "TestMapStructWithTrackingAndOverride[struct]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithTrackingAndOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										NestedMap: map[string]MetricsReceiverMapStruct{
-											"nested": {
-												Bool:            true,
-												Int:             32,
-												OverrideString:  "foo",
-												Ptr:             &b,
-												String:          "nestedString",
-												UntrackedString: "foo",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]"},
-					Value:  "overrideValue1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]"},
-					Value:  "overrideMap",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]", "bool"},
-					Value:  "true",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]", "int"},
-					Value:  "32",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]", "override"},
-					Value:  "overrideString",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]", "ptr"},
-					Value:  "true",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleStructMapWithTrackingAndOverride", "[0]", "nestedMap", "[0]", "string"},
-					Value:  "nestedString",
-				},
-			),
-		},
-		{
-			Name: "TestMapStringWithoutTracking",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStringWithoutTracking: map[string]string{
-									"a": "foo",
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-			),
-		},
-		{
-			Name: "TestMapStructWithoutOverride",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleStructWithoutOverride: map[string]MetricsReceiverMapStruct{
-									"a": {
-										Int: 32,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			ExpectedError: confgenerator.ErrTrackingOverrideStruct,
-		},
-		{
-			Name: "TestMapStringKeyGeneration",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInlineFooMap: MetricsReceiverInlineFooMap{
-								ExampleKeys: map[string]string{
+								MapKeys: map[string]string{
 									"a": "foo",
 								},
 							},
@@ -806,20 +353,27 @@ func TestBed(t *testing.T) {
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleKeysMap", "__length"},
+					Key:    []string{"[0]", "mapKeys", "__length"},
 					Value:  "1",
 				},
 				confgenerator.Feature{
 					Module: confgenerator.MetricsReceiverTypes.Subagent,
 					Kind:   "receivers",
 					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "exampleKeysMap", "a"},
+					Key:    []string{"[0]", "mapKeys", "[0]", "__key"},
+					Value:  "a",
+				},
+				confgenerator.Feature{
+					Module: confgenerator.MetricsReceiverTypes.Subagent,
+					Kind:   "receivers",
+					Type:   "metricsReceiverFoo",
+					Key:    []string{"[0]", "mapKeys", "[0]"},
 					Value:  "overrideValue2",
 				},
 			),
 		},
 		{
-			Name: "TestInlineStructWithTracking",
+			Name: "InvalidStruct",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -837,95 +391,7 @@ func TestBed(t *testing.T) {
 			ExpectedError: confgenerator.ErrTrackingInlineStruct,
 		},
 		{
-			Name: "TestStructWithOverride",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInnerPrefix: MetricsReceiverInnerPrefix{
-								Foo: "value",
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "metrics_receiver_prefix"},
-					Value:  "metrics_receiver_override",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "metrics_receiver_prefix", "foo"},
-					Value:  "value",
-				},
-			),
-		},
-		{
-			Name: "TestInlineStructStringWithOverride",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInnerOverride: MetricsReceiverInnerOverride{
-								Foo: "value",
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "foo"},
-					Value:  "goo",
-				},
-			),
-		},
-		{
-			Name: "TestInlineStructPointer",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverInnerPointer: MetricsReceiverInnerPointer{
-								Foo: &b,
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "foo"},
-					Value:  "true",
-				},
-			),
-		},
-		{
-			Name: "TestInlineSliceWithTracking[int]",
+			Name: "SliceInt",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -973,48 +439,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestInlineSliceWithTracking[bool]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								Bool: []bool{true, true},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "bool", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "bool", "[0]"},
-					Value:  "true",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "bool", "[1]"},
-					Value:  "true",
-				},
-			),
-		},
-		{
-			Name: "TestInlineSliceWithTracking[string]",
+			Name: "SliceString",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -1062,354 +487,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestInlineSliceWithTracking[overrideString]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								OverrideString: []string{"foo", "goo"},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "override", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "override", "[0]"},
-					Value:  "stringOverride",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "override", "[1]"},
-					Value:  "stringOverride",
-				},
-			),
-		},
-		{
-			Name: "TestInlineSliceWithTracking[slice]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								Slice: [][]string{
-									{"a", "b"},
-									{"y", "z"},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[0]", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[0]", "[0]"},
-					Value:  "a",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[0]", "[1]"},
-					Value:  "b",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[1]", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[1]", "[0]"},
-					Value:  "y",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "slice", "[1]", "[1]"},
-					Value:  "z",
-				},
-			),
-		},
-		{
-			Name: "TestInlineSliceWithTracking[map]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								Map: []map[string]string{
-									{
-										"a": "foo",
-									},
-									{
-										"b": "bar",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "map", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "map", "[0]", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "map", "[0]", "[0]"},
-					Value:  "foo",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "map", "[1]", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "map", "[1]", "[0]"},
-					Value:  "bar",
-				},
-			),
-		},
-		{
-			Name: "TestInlineSliceWithTracking[mapKeys]",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								MapKeys: []map[string]string{
-									{
-										"a": "foo",
-									},
-									{
-										"b": "bar",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "keys", "__length"},
-					Value:  "2",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "keys", "[0]", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "keys", "[0]", "a"},
-					Value:  "foo",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "keys", "[1]", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "keys", "[1]", "b"},
-					Value:  "bar",
-				},
-			),
-		},
-		{
-			Name: "TestEmptySliceStruct",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								SliceStruct: []MetricsReceiverSliceStruct{
-									{},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStruct", "__length"},
-					Value:  "1",
-				},
-			),
-		},
-		{
-			Name: "TestSliceStruct",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								SliceStruct: []MetricsReceiverSliceStruct{
-									{
-										Int: 32,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStruct", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStruct", "[0]"},
-					Value:  "overrideValue",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStruct", "[0]", "int"},
-					Value:  "32",
-				},
-			),
-		},
-		{
-			Name: "TestEmptySlicePtrToStruct",
-			Config: &confgenerator.UnifiedConfig{
-				Metrics: &confgenerator.Metrics{
-					Receivers: map[string]confgenerator.MetricsReceiver{
-						"metricsReceiverFoo": &MetricsReceiverFoo{
-							ConfigComponent: confgenerator.ConfigComponent{
-								Type: "MetricsReceiverFoo",
-							},
-							MetricsReceiverSliceInline: MetricsReceiverSliceInline{
-								SliceStructPtr: []*MetricsReceiverSliceStruct{
-									{},
-								},
-							},
-						},
-					},
-				},
-			},
-			Expected: append(
-				expectedTestFeatureBase,
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStructPtr", "__length"},
-					Value:  "1",
-				},
-				confgenerator.Feature{
-					Module: confgenerator.MetricsReceiverTypes.Subagent,
-					Kind:   "receivers",
-					Type:   "metricsReceiverFoo",
-					Key:    []string{"[0]", "sliceStructPtr", "[0]"},
-					Value:  "overrideValue",
-				},
-			),
-		},
-		{
-			Name: "TestEmptySlice",
+			Name: "SliceEmpty",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -1436,7 +514,7 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
-			Name: "TestEmptySlice",
+			Name: "SliceNil",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
@@ -1503,29 +581,12 @@ type MetricsReceiverInlineFoo struct {
 	StringWithoutTracking string                      `yaml:"stringWithoutTracking"`
 	Bool                  bool                        `yaml:"bool"`
 	Ptr                   *bool                       `yaml:"ptr"`
-	Int                   int                         `yaml:"int"`
-	Slice                 []string                    `yaml:"slice" tracking:""`
 	Struct                MetricsReceiverInnerPointer `yaml:"struct" tracking:"override"`
 }
 
 type MetricsReceiverInlineFooMap struct {
-	ExampleStringWithTracking            map[string]string                   `yaml:"exampleStringMapWithTracking" tracking:""`
-	ExampleStringWithoutTracking         map[string]string                   `yaml:"exampleStringMapWithoutTracking"`
-	ExampleStructWithTrackingAndOverride map[string]MetricsReceiverMapStruct `yaml:"exampleStructMapWithTrackingAndOverride" tracking:"overrideValue1"`
-	ExampleStructWithoutTracking         map[string]MetricsReceiverMapStruct `yaml:"exampleStructMapWithoutTracking"`
-	ExampleStructWithoutOverride         map[string]MetricsReceiverMapStruct `yaml:"exampleStructMapWithoutTracking" tracking:""`
-	ExampleKeys                          map[string]string                   `yaml:"exampleKeysMap" tracking:"overrideValue2,keys"`
-}
-
-type MetricsReceiverMapStruct struct {
-	Bool            bool                                `yaml:"bool"`
-	Int             int                                 `yaml:"int"`
-	OverrideString  string                              `yaml:"override" tracking:"overrideString"`
-	Ptr             *bool                               `yaml:"ptr"`
-	String          string                              `yaml:"string" tracking:""`
-	Slice           []string                            `yaml:"slice" tracking:""`
-	UntrackedString string                              `yaml:"untrackedString"`
-	NestedMap       map[string]MetricsReceiverMapStruct `yaml:"nestedMap" tracking:"overrideMap"`
+	StringWithTracking map[string]string `yaml:"stringMap" tracking:""`
+	MapKeys            map[string]string `yaml:"mapKeys" tracking:"overrideValue2,keys"`
 }
 
 type MetricsReceiverInlineInvalid struct {
@@ -1919,16 +980,9 @@ func TestNestedStructs(t *testing.T) {
 }
 
 type MetricsReceiverSliceInline struct {
-	Int            []int                         `yaml:"int" tracking:""`
-	Bool           []bool                        `yaml:"bool" tracking:""`
-	String         []string                      `yaml:"string" tracking:""`
-	OverrideString []string                      `yaml:"override" tracking:"stringOverride"`
-	Struct         []MetricsReceiverSliceStruct  `yaml:"struct" tracking:"overrideValue"`
-	SliceStruct    []MetricsReceiverSliceStruct  `yaml:"sliceStruct" tracking:"overrideValue"`
-	SliceStructPtr []*MetricsReceiverSliceStruct `yaml:"sliceStructPtr" tracking:"overrideValue"`
-	Slice          [][]string                    `yaml:"slice" tracking:""`
-	Map            []map[string]string           `yaml:"map" tracking:""`
-	MapKeys        []map[string]string           `yaml:"keys" tracking:",keys"`
+	Int         []int                        `yaml:"int" tracking:""`
+	String      []string                     `yaml:"string" tracking:""`
+	SliceStruct []MetricsReceiverSliceStruct `yaml:"sliceStruct" tracking:"overrideValue"`
 }
 
 type MetricsReceiverSliceStruct struct {

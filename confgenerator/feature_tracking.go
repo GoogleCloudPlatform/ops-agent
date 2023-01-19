@@ -22,12 +22,9 @@ import (
 	"strings"
 )
 
-// Errors returned by ExtractFeatures can be tested against these errors using
-// errors.Is
 var (
 	ErrTrackingInlineStruct   = errors.New("cannot have tracking on inline struct")
 	ErrTrackingOverrideStruct = errors.New("struct that has tracking tag must not be empty")
-	ErrInvalidType            = errors.New("object in path must be of type Component")
 )
 
 type TrackingOverrideMapError struct {
@@ -149,6 +146,7 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 	return features, nil
 }
 
+// TODO: add time.Duration to auto tracking
 func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
 	if customFeatures, ok := c.Interface().(CustomFeatures); ok {
 		cfs, err := customFeatures.ExtractFeatures()
@@ -254,10 +252,6 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			Value:  fmt.Sprintf("%d", v.Len()),
 		})
 
-		if !m.hasTracking {
-			return nil, nil
-		}
-
 		for i, key := range reflectSortedKeys(v) {
 			f := Feature{
 				Module: feature.Module,
@@ -269,11 +263,15 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			t := v.Type()
 			fs := make([]Feature, 0)
 
-			var k string
+			k := fmt.Sprintf("[%d]", i)
 			if m.keepKeys {
-				k = key
-			} else {
-				k = fmt.Sprintf("[%d]", i)
+				features = append(features, Feature{
+					Module: feature.Module,
+					Kind:   feature.Kind,
+					Type:   feature.Type,
+					Key:    append(feature.Key, m.yamlTag, k, "__key"),
+					Value:  key,
+				})
 			}
 
 			m2 := m.deepCopy()
@@ -304,10 +302,6 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 			Key:    append(feature.Key, m.yamlTag, "__length"),
 			Value:  fmt.Sprintf("%d", v.Len()),
 		})
-
-		if !m.hasTracking {
-			return nil, nil
-		}
 
 		for i := 0; i < v.Len(); i++ {
 			f := Feature{
