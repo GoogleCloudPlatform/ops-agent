@@ -33,6 +33,36 @@ var (
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
 
+func runStartupChecks(service string) error {
+	// Too run checks in each subagent service we could
+	// use a switch to define the checks as follows.
+	/* switch service {
+		case "":
+		case "fluentbit":
+		case "otel":
+	} */
+	var GCEHealthChecks health_checks.HealthCheckRegistry
+	switch service {
+	case "":
+		GCEHealthChecks = health_checks.HealthCheckRegistry{
+			health_checks.PortsCheck{},
+			health_checks.NetworkCheck{},
+			health_checks.APICheck{},
+		}
+		// case "fluentbit":
+		// case "otel":
+	}
+
+	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(*logsDir)
+	if err != nil {
+		return err
+	}
+	for _, message := range healthCheckResults {
+		log.Printf(message)
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
@@ -60,21 +90,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	if *service == "" {
-		GCEHealthChecks := health_checks.HealthCheckRegistry{
-			health_checks.PortsCheck{Config: uc},
-			health_checks.NetworkCheck{},
-			health_checks.APICheck{},
-		}
-
-		healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(*logsDir)
-		if err != nil {
-			return err
-		}
-		for _, message := range healthCheckResults {
-			log.Printf(message)
-		}
+	if err := runStartupChecks(*service); err != nil {
+		return err
 	}
 
 	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)

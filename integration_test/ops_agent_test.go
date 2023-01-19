@@ -3167,6 +3167,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(30 * time.Second)
+
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}

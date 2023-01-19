@@ -58,6 +58,12 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(1, "generated configuration files")
+	if err := s.runStartupChecks(); err != nil {
+		s.log.Error(1, fmt.Sprintf("failed while running startup checks: %v", err))
+		// 2 is "file not found"
+		return false, 2
+	}
+	s.log.Info(1, "startup checks finished")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
 		s.log.Error(1, fmt.Sprintf("failed to start subagents: %v", err))
@@ -124,6 +130,24 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
+func (s *service) runStartupChecks() error {
+	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	GCEHealthChecks := health_checks.HealthCheckRegistry{
+		health_checks.PortsCheck{},
+		health_checks.NetworkCheck{},
+		health_checks.APICheck{},
+	}
+
+	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(logDirectory)
+	if err != nil {
+		return err
+	}
+	for _, message := range healthCheckResults {
+		s.log.Info(1, message)
+	}
+	return nil
+}
+
 func (s *service) generateConfigs() error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
@@ -141,7 +165,6 @@ func (s *service) generateConfigs() error {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
-	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
@@ -149,26 +172,13 @@ func (s *service) generateConfigs() error {
 		if err := confgenerator.GenerateFilesFromConfig(
 			&uc,
 			subagent,
-			logDirectory,
+			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
 			filepath.Join(s.outDirectory, subagent)); err != nil {
 			return err
 		}
 	}
 
-	GCEHealthChecks := health_checks.HealthCheckRegistry{
-		health_checks.PortsCheck{Config: uc},
-		health_checks.NetworkCheck{},
-		health_checks.APICheck{},
-	}
-
-	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(logDirectory)
-	if err != nil {
-		return err
-	}
-	for _, message := range healthCheckResults {
-		s.log.Info(1, message)
-	}
 	return nil
 }
 

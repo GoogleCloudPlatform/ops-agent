@@ -20,14 +20,11 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
-type PortsCheck struct {
-	Config confgenerator.UnifiedConfig
-}
+type PortsCheck struct{}
 
 func (c PortsCheck) Name() string {
 	return "Ports Check"
