@@ -114,7 +114,7 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 		Type: "transform",
 		Config: map[string]map[string]interface{}{
 			"metrics": {
-				"queries": queryStrings,
+				"statements": queryStrings,
 			},
 		},
 	}
@@ -166,11 +166,7 @@ func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) Tran
 
 // RetainResource retains the resource attributes provided, and drops all other attributes.
 func RetainResource(resourceAttributeKeys ...string) TransformQuery {
-	keyList := ""
-	for _, key := range resourceAttributeKeys {
-		keyList += fmt.Sprintf(`, "%s"`, key)
-	}
-	return TransformQuery(fmt.Sprintf(`keep_keys(resource.attributes%s)`, keyList))
+	return TransformQuery(fmt.Sprintf(`keep_keys(resource.attributes, [%s])`, strings.Join(resourceAttributeKeys[:], ",")))
 }
 
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
