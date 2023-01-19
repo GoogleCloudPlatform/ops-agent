@@ -1,0 +1,22 @@
+2023/01/17 23:05:56 health_checks.go:69: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/17 23:05:56 health_checks.go:69: Success Check - Result: PASS
+2023/01/17 23:05:56 health_checks.go:69: Error Check - Result: ERROR, Detail: Test error.
+2023/01/17 23:05:56 health_checks.go:69: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/17 23:05:56 health_checks.go:69: Success Check - Result: PASS
+2023/01/17 23:05:56 health_checks.go:69: Error Check - Result: ERROR, Detail: Test error.
+2023/01/17 23:19:38 health_checks.go:69: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/17 23:31:34 health_checks.go:77: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/17 23:31:34 health_checks.go:77: Success Check - Result: PASS
+2023/01/17 23:31:34 health_checks.go:77: Error Check - Result: ERROR, Detail: Test error.
+2023/01/18 01:42:54 health_checks.go:68: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/18 01:42:54 health_checks.go:68: Success Check - Result: PASS
+2023/01/18 01:42:54 health_checks.go:68: Error Check - Result: ERROR, Detail: Test error.
+2023/01/18 16:24:07 health_checks.go:68: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/18 16:24:07 health_checks.go:68: Success Check - Result: PASS
+2023/01/18 16:24:07 health_checks.go:68: Error Check - Result: ERROR, Detail: Test error.
+2023/01/18 16:36:58 health_checks.go:68: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/18 16:36:58 health_checks.go:68: Success Check - Result: PASS
+2023/01/18 16:36:58 health_checks.go:68: Error Check - Result: ERROR, Detail: Test error.
+2023/01/18 23:21:23 health_checks.go:68: Failure Check - Result: FAIL, ERROR_CODE: HC_FAILURE_ERR, Failure: The Health Check failed., Solution: No suggested action.
+2023/01/18 23:21:23 health_checks.go:68: Success Check - Result: PASS
+2023/01/18 23:21:23 health_checks.go:68: Error Check - Result: ERROR, Detail: Test error.

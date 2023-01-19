@@ -15,12 +15,10 @@
 package health_checks
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
 	"strconv"
-	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -36,11 +34,11 @@ func (c PortsCheck) Name() string {
 }
 
 func checkPortAvailable(host string, port string) (bool, error) {
-	lsnr, err := net.Listen("tcp", net.JoinHostPort(host, port))
-	if errors.Is(err, syscall.EADDRINUSE) {
-		return false, nil
-	}
+	lsnr, err := net.Listen("tcp4", net.JoinHostPort(host, port))
 	if err != nil {
+		if isPortUnavailableError(err) {
+			return false, nil
+		}
 		return false, fmt.Errorf("error listening to: %s, detail: %w", net.JoinHostPort(host, port), err)
 	}
 	lsnr.Close()

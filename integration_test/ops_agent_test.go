@@ -3090,10 +3090,24 @@ traces:
 }
 
 func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.VM, t *testing.T) {
-	cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", "sudo systemctl status google-cloud-ops-agent")
-	if err != nil {
-		t.Error(err)
+	var cmdOut gce.CommandOutput
+	var err error
+	if gce.IsWindows(vm.Platform) {
+		cmd := strings.Join([]string{
+			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
+			"Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past }",
+		}, ";")
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", cmd)
+		if err != nil {
+			t.Error(err)
+		}
+	} else {
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", "sudo systemctl status google-cloud-ops-agent")
+		if err != nil {
+			t.Error(err)
+		}
 	}
+
 	if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") {
 		t.Errorf("expected network check to pass")
 	}
@@ -3105,12 +3119,39 @@ func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.V
 	}
 }
 
+func startCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Start-Service google-cloud-ops-agent"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func stopCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
+func listenToPortForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start()"
+	}
+	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+}
+
 func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		scopes := "https://www.googleapis.com/auth/monitoring.read,https://www.googleapis.com/auth/logging.read,https://www.googleapis.com/auth/devstorage.read_write"
-		ctx, logger, vm := agents.CommonSetupWithOptions(t, platform, []string{"--scopes", scopes})
+		onlyReadScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/devstorage.read_write",
+		}, ",")
+		ctx, logger, vm := agents.CommonSetupWithOptions(t, platform, []string{"--scopes", onlyReadScopes})
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
@@ -3118,13 +3159,15 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nohup nc -l 0.0.0.0 -p 20202"); err != nil {
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start"); err != nil {
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3144,15 +3187,17 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent stop"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
+
+		time.Sleep(30 * time.Second)
 
 		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, gce.DenyEgressTrafficTag); err != nil {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo service google-cloud-ops-agent start"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
