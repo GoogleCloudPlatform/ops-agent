@@ -201,7 +201,7 @@ COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agen
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for centos-9 
+# Build Ops Agent for rockylinux-9 
 # ======================================
 
 FROM rockylinux:9 AS rockylinux9-build-base
@@ -290,7 +290,7 @@ COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS rockylinux9
-COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-9.tgz
+COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 
 # ======================================

@@ -1,4 +1,4 @@
-set -x
+set -x -e
 DESTDIR=$1
 
 sysconfdir=/etc

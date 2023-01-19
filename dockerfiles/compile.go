@@ -91,7 +91,7 @@ var dockerfileArguments = []templateArguments{
 	
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
-		tar_distro_name:   "centos-9",
+		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
 	},
 	{

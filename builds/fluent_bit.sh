@@ -1,4 +1,4 @@
-set -x
+set -x -e
 DESTDIR=$1
 mkdir -p $DESTDIR
 fluent_bit_dir=/opt/google-cloud-ops-agent/subagents/fluent-bit
