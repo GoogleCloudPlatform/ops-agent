@@ -413,7 +413,7 @@ func generateSeveritySelfLogsParser() []fluentbit.Component {
 		Config: map[string]string{
 			"Key_Name": "message",
 			"Name":     "parser",
-			"Parser":   "logging-severity-parser",
+			"Parser":   "logging-severity-parser.self-logs-severity",
 			"Match":    FluentBitSelfLogTag,
 		},
 	})
