@@ -43,7 +43,7 @@ func checkPortAvailable(host string, port string) (bool, error) {
 }
 
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
-	// Check self metrics ports
+	// Check self metrics host
 	self_metrics_host := "0.0.0.0"
 
 	// Check for fluent-bit self metrics port

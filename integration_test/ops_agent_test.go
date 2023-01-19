@@ -95,6 +95,22 @@ func workDirForPlatform(platform string) string {
 	return "/root/work"
 }
 
+func startCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Start-Service google-cloud-ops-agent"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func stopCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return "Restart-Service google-cloud-ops-agent -Force"
@@ -3069,50 +3085,15 @@ metrics:
 	})
 }
 
-func checkAllHealthChecksPass(ctx context.Context, logger *log.Logger, vm *gce.VM, t *testing.T) {
-	var cmdOut gce.CommandOutput
-	var err error
-	if gce.IsWindows(vm.Platform) {
+func getRecentServiceOutputForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
 			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
 			"Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past }",
 		}, ";")
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", cmd)
-		if err != nil {
-			t.Error(err)
-		}
-	} else {
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", "sudo systemctl status google-cloud-ops-agent")
-		if err != nil {
-			t.Error(err)
-		}
+		return cmd
 	}
-
-	if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") {
-		t.Errorf("expected network check to pass")
-	}
-	if !strings.Contains(cmdOut.Stdout, "API Check - Result: PASS") {
-		t.Errorf("expected api check to pass")
-	}
-	if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
-		t.Errorf("expected ports check to pass")
-	}
-}
-
-func startCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
-		return "Start-Service google-cloud-ops-agent"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
-}
-
-func stopCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
-		return "Stop-Service google-cloud-ops-agent -Force"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+	return "sudo systemctl status google-cloud-ops-agent"
 }
 
 func listenToPortForPlatform(platform string) string {
@@ -3133,27 +3114,35 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}, ",")
 		ctx, logger, vm := agents.CommonSetupWithOptions(t, platform, []string{"--scopes", onlyReadScopes})
 
+		if !gce.IsWindows(vm.Platform) {
+			packages := []string{"netcat"}
+			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+			if err != nil {
+				t.Fatalf("failed to install %v with err: %s", packages, err)
+			}
+		}
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(time.Minute)
+
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
-		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
-
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
 			t.Fatal(err)
 		}
-
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
-			t.Fatal(err)
+		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") {
+			t.Errorf("expected network check to pass")
 		}
-
-		time.Sleep(30 * time.Second)
-
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
-			t.Fatal(err)
+		if !strings.Contains(cmdOut.Stdout, "API Check - Result: FAIL") {
+			t.Errorf("expected api check to fail")
 		}
-
-		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
+		if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: FAIL") {
+			t.Errorf("expected ports check to fail")
+		}
 	})
 }
 
@@ -3167,23 +3156,44 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") ||
+			!strings.Contains(cmdOut.Stdout, "API Check - Result: PASS") ||
+			!strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
+			t.Errorf("expected all health checks to pass")
+		}
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
-		time.Sleep(30 * time.Second)
-
+		// Setting deny egress firewall rule. Waiting to changes to propagate and service output is farther in past.
 		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, gce.DenyEgressTrafficTag); err != nil {
 			t.Fatal(err)
 		}
+		time.Sleep(3 * time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
-		checkAllHealthChecksPass(ctx, logger.ToMainLog(), vm, t)
+		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: FAIL") {
+			t.Errorf("expected network check to fail")
+		}
+		if !strings.Contains(cmdOut.Stdout, "API Check - Result: ERROR") {
+			t.Errorf("expected api check throw an error")
+		}
+		if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
+			t.Errorf("expected ports check to pass")
+		}
 	})
 }
 

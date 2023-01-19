@@ -44,11 +44,15 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	}
 }
 
+// monitoringPing reports whether the client's connection to the monitoring service and the
+// authentication configuration are valid. To accomplish this, monitoringPing writes a
+// time series point with empty values to an Ops Agent specific metric.
+// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
-	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	value := &monitoringpb.TypedValue{
 		Value: &monitoringpb.TypedValue_Int64Value{
 			Int64Value: int64(0),
@@ -135,8 +139,7 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	}
 	logger.Printf("monitoring client was created successfully.")
 
-	err = monitoringPing(ctx, *monClient, gceMetadata)
-	if err != nil {
+	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
 		logger.Println(err)
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {

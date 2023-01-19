@@ -64,7 +64,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	case http.StatusOK:
 		logger.Printf("Request to the Monitoring API was successful.")
 	default:
-		return LOG_API_CONN_ERR
+		return MON_API_CONN_ERR
 	}
 
 	return nil

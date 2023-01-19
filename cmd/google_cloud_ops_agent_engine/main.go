@@ -33,7 +33,7 @@ var (
 )
 
 func runStartupChecks(service string) error {
-	// Too run checks in each subagent service we could
+	// To run checks in each subagent service we could
 	// use a switch to define the checks as follows.
 	/* switch service {
 		case "":
