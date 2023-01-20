@@ -443,7 +443,7 @@ processors:
     - gcp
   transform/flink_2:
     metrics:
-      queries:
+      statements:
       - set(attributes["host_name"], resource.attributes["host.name"])
       - set(attributes["taskmanager_id"], resource.attributes["flink.taskmanager.id"])
       - set(attributes["job_name"], resource.attributes["flink.job.name"])
