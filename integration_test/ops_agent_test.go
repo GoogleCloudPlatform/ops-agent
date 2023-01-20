@@ -3166,7 +3166,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 
 		// Setting deny egress firewall rule. Waiting to changes to propagate and service output is farther in past.
-		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, gce.DenyEgressTrafficTag); err != nil {
+		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(3 * time.Minute)
