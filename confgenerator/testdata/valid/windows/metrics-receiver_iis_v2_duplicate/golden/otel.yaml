@@ -488,13 +488,13 @@ processors:
     - gcp
   transform/iis__v2_0:
     metrics:
-      queries:
+      statements:
       - set(attributes["site"], resource.attributes["iis.site"])
       - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
   transform/iis__v2_1:
     metrics:
-      queries:
-      - keep_keys(resource.attributes)
+      statements:
+      - keep_keys(resource.attributes, [])
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
