@@ -23,10 +23,7 @@ import (
 )
 
 func isPortUnavailableError(err error) bool {
-	if errors.Is(err, windows.WSAEADDRINUSE) {
-		return true
-	}
-	if errors.Is(err, windows.WSAEACCES) {
+	if errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES) {
 		return true
 	}
 	return false
