@@ -52,7 +52,7 @@ track_flakiness
 
 # Transitional measure: use ARTIFACT_REGISTRY_REGION as a switch to decide
 # whether to use ARTIFACT_REGISTRY_REPO_SUFFIX in place of REPO_SUFFIX.
-if [[ -n "${ARTIFACT_REGISTRY_REGION}" && -n "${ARTIFACT_REGISTRY_REPO_SUFFIX}" ]]; then
+if [[ -n "${ARTIFACT_REGISTRY_REGION-}" && -n "${ARTIFACT_REGISTRY_REPO_SUFFIX-}" ]]; then
   REPO_SUFFIX="${ARTIFACT_REGISTRY_REPO_SUFFIX}"
   export REPO_SUFFIX
 fi
