@@ -43,6 +43,7 @@ CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-ag
 DOCKER_BUILDKIT=1 docker build . \
   --cache-from="${CACHE_LOCATION}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
+  --progress=plain \
   --target "${DISTRO}-build" \
   -t build_image
 

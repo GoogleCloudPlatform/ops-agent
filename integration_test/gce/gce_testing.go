@@ -165,6 +165,8 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
+
+	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 )
 
 func init() {
@@ -1730,4 +1732,54 @@ func RunForEachPlatform(t *testing.T, f func(t *testing.T, platform string)) {
 // ArbitraryPlatform picks an arbitrary element from PLATFORMS and returns it.
 func ArbitraryPlatform() string {
 	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
+}
+
+func areTagsValid(tags []string) (bool, error) {
+	for _, tag := range tags {
+		if strings.Contains(tag, ",") {
+			return false, fmt.Errorf("Tag %v cannot contain comma.", tag)
+		}
+	}
+	return true, nil
+}
+
+func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to add tag to VM: %v", err)
+		return output, err
+	}
+	args := []string{
+		"compute", "instances", "add-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + strings.Join(tags, ","),
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable to add tag to VM: %v", err)
+		return output, err
+	}
+	return output, nil
+}
+
+func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to remove tag from VM: %v", err)
+		return output, err
+	}
+	args := []string{
+		"compute", "instances", "remove-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + strings.Join(tags, ","),
+	}
+
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable remove tag from VM: %v", err)
+		return output, err
+	}
+	return output, nil
 }

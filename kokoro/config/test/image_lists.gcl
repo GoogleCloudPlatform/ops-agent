@@ -76,7 +76,6 @@ centos = _family {
         'centos-7',
         // RHEL.
         'rhel-7',
-        'rhel-7-6-sap-ha',
         'rhel-7-7-sap-ha',
         'rhel-7-9-sap-ha',
       ]
@@ -92,6 +91,7 @@ centos = _family {
         'rhel-8-1-sap-ha',
         'rhel-8-2-sap-ha',
         'rhel-8-4-sap-ha',
+        'rhel-8-6-sap-ha',
         // Rocky.
         'rocky-linux-8',
       ]
