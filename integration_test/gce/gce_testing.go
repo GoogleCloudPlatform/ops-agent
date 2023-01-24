@@ -1669,7 +1669,7 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 		}
 	})
 	logger.ToMainLog().Printf("Starting test %s", name)
-	t.Logf("Test logs: %s", logLocation(logRootDir, name))
+	t.Logf("Test logs: %s ", logLocation(logRootDir, name))
 	return logger
 }
 
