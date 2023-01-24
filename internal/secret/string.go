@@ -28,12 +28,12 @@ type Secret[T any] interface {
 
 type String string
 
+// fmt.Stringer
 func (s String) String() string {
 	return "xxxxx"
 }
 
-// From github.com/goccy/go-yaml. See:
-// https://github.com/goccy/go-yaml/blob/master/yaml.go
+// yaml.BytesMarshaler
 func (s String) MarshalYAML() ([]byte, error) {
 	return []byte(s.String()), nil
 }
