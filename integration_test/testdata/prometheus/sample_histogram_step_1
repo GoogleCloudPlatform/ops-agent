@@ -1,0 +1,10 @@
+# HELP test_histogram Test Histogram.
+# TYPE test_histogram histogram
+test_histogram_bucket{le="0"} 1
+test_histogram_bucket{le="20"} 3
+test_histogram_bucket{le="40"} 5
+test_histogram_bucket{le="60"} 7
+test_histogram_bucket{le="80"} 9
+test_histogram_bucket{le="+Inf"} 10
+test_histogram_sum 450
+test_histogram_count 10

@@ -24,10 +24,22 @@ import (
 
 const MetricsPort = 20201
 
-// Pipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+// ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
+type ReceiverPipeline struct {
+	Receiver Component
+	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
+	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
+	Processors map[string][]Component
+	// GMP indicates that the pipeline outputs Prometheus metrics.
+	GMP bool
+}
+
+// Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
 type Pipeline struct {
-	Receiver   Component
-	Processors []Component
+	// Type is "metrics" or "traces".
+	Type                 string
+	ReceiverPipelineName string
+	Processors           []Component
 }
 
 // Component represents a single OT component (receiver, processor, exporter, etc.)
@@ -58,14 +70,14 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel                         string
-	Pipelines                        map[string]Pipeline
-	GoogleManagedPrometheusPipelines []string
+	LogLevel          string
+	ReceiverPipelines map[string]ReceiverPipeline
+	Pipelines         map[string]Pipeline
 
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
 	//
-	// Note: GlobalProcessors are not applied to GoogleManagedPrometheusPipelines.
+	// Note: GlobalProcessors are not applied to pipelines with GMP = true.
 	GlobalProcessors                []Component
 	GoogleCloudExporter             Component
 	GoogleManagedPrometheusExporter Component
@@ -110,11 +122,13 @@ func (c ModularConfig) Generate() (string, error) {
 
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
-	if len(c.GoogleManagedPrometheusPipelines) > 0 {
-		exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
+	for _, r := range c.ReceiverPipelines {
+		if r.GMP {
+			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
 
-		// Add the groupbyattrs processor so prometheus pipelines can use it.
-		processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+			// Add the groupbyattrs processor so prometheus pipelines can use it.
+			processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+		}
 	}
 
 	var globalProcessorNames []string
@@ -125,25 +139,42 @@ func (c ModularConfig) Generate() (string, error) {
 	}
 
 	for prefix, pipeline := range c.Pipelines {
-		receiverName := pipeline.Receiver.name(prefix)
+		// Receiver pipelines need to be instantiated once, since they might have more than one type.
+		// We do this work more than once if it's in more than one pipeline, but it should just overwrite the same names.
+		receiverPipeline := c.ReceiverPipelines[pipeline.ReceiverPipelineName]
+		receiverName := receiverPipeline.Receiver.name(pipeline.ReceiverPipelineName)
+		var receiverProcessorNames []string
+		p, ok := receiverPipeline.Processors[pipeline.Type]
+		if !ok {
+			// This receiver pipeline isn't for this data type.
+			continue
+		}
+		for i, processor := range p {
+			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
+			receiverProcessorNames = append(receiverProcessorNames, name)
+			processors[name] = processor.Config
+		}
+		receivers[receiverName] = receiverPipeline.Receiver.Config
+
+		// Everything else in the pipeline is specific to this Type.
 		exporter := googleCloudExporter
-		receivers[receiverName] = pipeline.Receiver.Config
 		var processorNames []string
+		processorNames = append(processorNames, receiverProcessorNames...)
 		for i, processor := range pipeline.Processors {
 			name := processor.name(fmt.Sprintf("%s_%d", prefix, i))
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
 
-		if contains(c.GoogleManagedPrometheusPipelines, prefix) {
+		// TODO: Should globalProcessorNames be appended for non-metrics receivers?
+		if receiverPipeline.GMP {
 			exporter = googleManagedPrometheusExporter
 			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {
 			processorNames = append(processorNames, globalProcessorNames...)
 		}
 
-		// For now, we always generate pipelines of type "metrics".
-		pipelines["metrics/"+prefix] = map[string]interface{}{
+		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
 			"exporters":  []string{exporter},

@@ -15,36 +15,8 @@
 // Package confgenerator provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
-import (
-	"fmt"
-	"os"
-
-	yaml "github.com/goccy/go-yaml"
-)
-
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-// It returns the built-in config for the platform and the merged config.
-func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) ([]byte, []byte, error) {
-	mergedConf, err := mergeConfFiles(userConfPath, platform, builtInConfStructs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	builtInStruct := builtInConfStructs[platform]
-	builtInYaml, err := yaml.Marshal(builtInStruct)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert the built-in config for %s to yaml: %w \n", platform, err)
-	}
-
-	mergedConfigYaml, err := yaml.Marshal(mergedConf)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert the merged config %+v to yaml: %w \n", mergedConf, err)
-	}
-
-	return builtInYaml, mergedConfigYaml, nil
-}
-
-func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
+func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
 
 	// Read the built-in config file.
@@ -53,26 +25,33 @@ func mergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 		return nil, err
 	}
 
-	// Optionally merge the user config file.
-	if _, err = os.Stat(userConfPath); err != nil {
-		if os.IsNotExist(err) {
-			// Skip the merge if the user config file does not exist.
-		} else {
-			return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", userConfPath, err)
-		}
-	} else {
-		overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
-		if err != nil {
-			return nil, err
-		}
-		mergeConfigs(&original, &overrides)
+	overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
+	if err != nil {
+		return nil, err
 	}
 
-	return &original, nil
+	// Optionally merge the user config file.
+	if overrides != nil {
+		mergeConfigs(original, overrides)
+	}
+
+	if err := original.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Ensure the merged config struct fields are valid.
+	v := newValidator()
+	if err := v.Struct(original); err != nil {
+		panic(err)
+	}
+	return original, nil
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
+	// built-in configs do not contain these sections.
 	original.Combined = overrides.Combined
+	original.Traces = overrides.Traces
+
 	// For "default_pipeline", we go one level deeper.
 	// this covers 2 cases:
 	// 1. if "<receivers / processors / exporters>: []" is specified explicitly in user config, the entity gets cleared.

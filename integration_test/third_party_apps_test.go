@@ -716,20 +716,44 @@ func modifiedFiles(t *testing.T) []string {
 	return strings.Split(stdout, "\n")
 }
 
-// Determine what apps are impacted by current code changes.
-// Extracts app names as follows:
+// isCriticalFile returns true if the given modified source file
+// means we should test all applications.
+func isCriticalFile(f string) bool {
+	if strings.HasPrefix(f, "submodules/") ||
+	   strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
+		return true
+	}
+	for _, criticalFile := range []string{
+		"go.mod",
+		"integration_test/agents/agents.go",
+		"integration_test/gce/gce_testing.go",
+		"integration_test/third_party_apps_test.go",
+		"integration_test/third_party_apps_data/test_config.yaml",
+	} {
+		if f == criticalFile {
+			return true
+		}
+	}
+	return false
+}
+
+// determineImpactedApps determines what apps are impacted by current code
+// changes. Some code changes are considered critical, like changing
+// submodules.
+// For critical code changes, all apps are considered impacted.
+// For non-critical code changes, extracts app names as follows:
 //
 //	apps/<appname>.go
 //	integration_test/third_party_apps_data/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
+func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
 
-	for _, f := range mf {
-		// File names: submodules/fluent-bit
-		if strings.HasPrefix(f, "submodules/") {
+	for _, f := range modifiedFiles {
+		if isCriticalFile(f) {
+			// Consider all apps as impacted.
 			for app, _ := range allApps {
 				impactedApps[app] = true
 			}
@@ -737,15 +761,21 @@ func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationM
 		}
 	}
 
-	for _, f := range mf {
+	for _, f := range modifiedFiles {
 		if strings.HasPrefix(f, "apps/") {
 
-			// File names: apps/<appname>.go
+			// File names: apps/<f>.go
 			f := strings.TrimPrefix(f, "apps/")
 			f = strings.TrimSuffix(f, ".go")
 
-			if _, ok := allApps[f]; ok {
-				impactedApps[f] = true
+			// To support testing multiple versions of an app, we consider all apps
+			// in allApps to be a match if they have <f> as a prefix.
+			// For example, consider f = "mongodb". Then all of
+			// {mongodb3.6, mongodb} are considered impacted.
+			for app, _ := range allApps {
+				if strings.HasPrefix(app, f) {
+					impactedApps[app] = true
+				}
 			}
 		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
 			// Folder names: integration_test/third_party_apps_data/applications/<app_name>

@@ -76,7 +76,6 @@ centos = _family {
         'centos-7',
         // RHEL.
         'rhel-7',
-        'rhel-7-6-sap-ha',
         'rhel-7-7-sap-ha',
         'rhel-7-9-sap-ha',
       ]
@@ -92,10 +91,21 @@ centos = _family {
         'rhel-8-1-sap-ha',
         'rhel-8-2-sap-ha',
         'rhel-8-4-sap-ha',
+        'rhel-8-6-sap-ha',
         // Rocky.
         'rocky-linux-8',
       ]
       presubmit = ['rocky-linux-8']
+    }
+    rockylinux9 = _distro {
+      name = 'Rocky Linux 9'
+      release = [
+        // RHEL.
+        'rhel-9',
+        // Rocky.
+        'rocky-linux-9',
+      ]
+      presubmit = ['rocky-linux-9']
     }
   }
 }
@@ -105,7 +115,6 @@ sles = _family {
       name = 'SLES 12'
       release = [
         'sles-12',
-        'sles-12-sp4-sap',
         'sles-12-sp5-sap',
       ]
       presubmit = ['sles-12']

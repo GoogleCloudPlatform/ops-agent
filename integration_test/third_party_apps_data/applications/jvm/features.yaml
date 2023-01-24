@@ -1,0 +1,5 @@
+features:
+- feature: receivers:jvm
+  module: metrics
+  key: "[0].enabled"
+  value: true

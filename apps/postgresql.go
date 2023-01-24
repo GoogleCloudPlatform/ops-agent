@@ -43,7 +43,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -66,12 +66,12 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
@@ -79,9 +79,12 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
 			),
 			otel.MetricsTransform(
+				otel.UpdateMetric("postgresql.bgwriter.duration",
+					otel.ToggleScalarDataType,
+				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

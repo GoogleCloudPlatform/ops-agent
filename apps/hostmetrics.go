@@ -29,8 +29,8 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
-	return []otel.Pipeline{{
+func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "hostmetrics",
 			Config: map[string]interface{}{
@@ -50,7 +50,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			{
 				// perform custom transformations that aren't supported by the metricstransform processor
 				Type: "agentmetrics",
@@ -298,7 +298,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 
