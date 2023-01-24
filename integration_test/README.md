@@ -71,6 +71,8 @@ You can obtain such a URI by:
     `AGENT_PACKAGES_IN_GCS`.
 
 Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release scripts.
+When doing so, you may need to supply `ARTIFACT_REGISTRY_REGION=us` as well if the
+`REPO_SUFFIX` starts with `gcm_` (because that's an Artifact Registry repo suffix.)
 
 ## Third Party Apps Test
 
