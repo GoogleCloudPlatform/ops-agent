@@ -105,6 +105,7 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
+	defer logClient.Close()
 	logger.Printf("logging client was created successfully.")
 
 	if err := logClient.Ping(ctx); err != nil {
@@ -130,13 +131,13 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 
 		return err
 	}
-	logClient.Close()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
 		return err
 	}
+	monClient.Close()
 	logger.Printf("monitoring client was created successfully.")
 
 	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
@@ -161,7 +162,6 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		}
 		return err
 	}
-	monClient.Close()
 
 	return nil
 }
