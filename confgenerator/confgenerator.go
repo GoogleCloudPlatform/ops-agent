@@ -396,7 +396,8 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 func generateSeveritySelfLogsParser() []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	parser := LoggingProcessorParseRegex{
-		Regex: `^\[[ ]*\d+\/\d+\/\d+ \d+:\d+:\d+] \[[ ]*(?<severity>[a-z]+)\]`,
+		Regex:       `^\[[ ]*\d+\/\d+\/\d+ \d+:\d+:\d+] \[[ ]*(?<severity>[a-z]+)\]`,
+		PreserveKey: true,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y/%m/%d %H:%M:%S",

@@ -135,6 +135,7 @@ type LoggingProcessorParseRegex struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
 	Field           string `yaml:"field,omitempty"`
+	PreserveKey     bool   `yaml:"preserve_key,omitempty"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
@@ -150,7 +151,7 @@ func (p LoggingProcessorParseRegex) Components(tag, uid string) []fluentbit.Comp
 
 	parserFilters := []fluentbit.Component{}
 	parserFilters = append(parserFilters, parser)
-	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
+	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, p.PreserveKey)...)
 	return parserFilters
 }
 
@@ -193,19 +194,20 @@ func (r MultilineRule) AsString() string {
 }
 
 // A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
-//     #
-//     # Regex rules for multiline parsing
-//     # ---------------------------------
-//     #
-//     # configuration hints:
-//     #
-//     #  - first state always has the name: start_state
-//     #  - every field in the rule must be inside double quotes
-//     #
-//     # rules |   state name  | regex pattern                  | next state
-//     # ------|---------------|--------------------------------------------
-//     rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
-//     rule      "cont"          "/^\s+at.*/"                     "cont"
+//
+//	#
+//	# Regex rules for multiline parsing
+//	# ---------------------------------
+//	#
+//	# configuration hints:
+//	#
+//	#  - first state always has the name: start_state
+//	#  - every field in the rule must be inside double quotes
+//	#
+//	# rules |   state name  | regex pattern                  | next state
+//	# ------|---------------|--------------------------------------------
+//	rule      "start_state"   "/(Dec \d+ \d+\:\d+\:\d+)(.*)/"  "cont"
+//	rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
 	LoggingProcessorParseRegexComplex
 	Rules []MultilineRule
