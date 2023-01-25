@@ -15,7 +15,7 @@
 //go:build !windows
 // +build !windows
 
-package health_checks
+package healthchecks
 
 import (
 	"errors"
