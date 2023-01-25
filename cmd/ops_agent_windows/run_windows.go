@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -138,10 +138,10 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 
 func (s *service) runStartupChecks() error {
 	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	GCEHealthChecks := health_checks.HealthCheckRegistry{
-		health_checks.PortsCheck{},
-		health_checks.NetworkCheck{},
-		health_checks.APICheck{},
+	GCEHealthChecks := healthchecks.HealthCheckRegistry{
+		healthchecks.PortsCheck{},
+		healthchecks.NetworkCheck{},
+		healthchecks.APICheck{},
 	}
 
 	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(logDirectory)

@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 )
 
 var (
@@ -40,13 +40,13 @@ func runStartupChecks(service string) error {
 		case "fluentbit":
 		case "otel":
 	} */
-	var GCEHealthChecks health_checks.HealthCheckRegistry
+	var GCEHealthChecks healthchecks.HealthCheckRegistry
 	switch service {
 	case "":
-		GCEHealthChecks = health_checks.HealthCheckRegistry{
-			health_checks.PortsCheck{},
-			health_checks.NetworkCheck{},
-			health_checks.APICheck{},
+		GCEHealthChecks = healthchecks.HealthCheckRegistry{
+			healthchecks.PortsCheck{},
+			healthchecks.NetworkCheck{},
+			healthchecks.APICheck{},
 		}
 		// case "fluentbit":
 		// case "otel":

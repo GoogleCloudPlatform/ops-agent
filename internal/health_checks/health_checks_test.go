@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/health_checks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"gotest.tools/v3/assert"
 )
 
@@ -34,7 +34,7 @@ func (c FailureCheck) Name() string {
 }
 
 func (c FailureCheck) RunCheck(logger *log.Logger) error {
-	return health_checks.HC_FAILURE_ERR
+	return healthchecks.HC_FAILURE_ERR
 }
 
 func TestCheckFailure(t *testing.T) {
@@ -44,8 +44,8 @@ func TestCheckFailure(t *testing.T) {
 
 	err := testCheck.RunCheck(testLogger)
 
-	assert.ErrorType(t, err, health_checks.HealthCheckError{})
-	healthError, _ := err.(health_checks.HealthCheckError)
+	assert.ErrorType(t, err, healthchecks.HealthCheckError{})
+	healthError, _ := err.(healthchecks.HealthCheckError)
 	assert.Equal(t, wantMessage, healthError.Message)
 	assert.Equal(t, wantAction, healthError.Action)
 }
@@ -92,7 +92,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	fCheck := FailureCheck{}
 	sCheck := SuccessCheck{}
 	eCheck := ErrorCheck{}
-	AllHealthChecks := health_checks.HealthCheckRegistry{fCheck, sCheck, eCheck}
+	AllHealthChecks := healthchecks.HealthCheckRegistry{fCheck, sCheck, eCheck}
 
 	result, err := AllHealthChecks.RunAllHealthChecks("")
 
