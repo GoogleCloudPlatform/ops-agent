@@ -1892,10 +1892,6 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -2060,10 +2056,6 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
@@ -2308,10 +2300,6 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
       prom_pipeline:
         receivers: [prom_app]
 `
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
