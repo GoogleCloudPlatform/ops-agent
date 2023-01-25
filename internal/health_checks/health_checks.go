@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 )
 
-var healthChecksLogFile = "health_checks_log.txt"
+var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
