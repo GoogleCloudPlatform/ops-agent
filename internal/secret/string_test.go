@@ -27,6 +27,22 @@ func TestSecretStringMarshalYAML(t *testing.T) {
 		t.Fatalf("expected marshal not to error, got: %s", result)
 	}
 	if string(result) != "s: xxxxx\n" {
-		t.Fatalf("expected secret field to be redacted, got: %s", string(result))
+		t.Fatalf("expected Marshal to redact secret field, got: %s", string(result))
+	}
+}
+
+func TestSecretStringUnmarshalYAML(t *testing.T) {
+	type x struct {
+		S secret.String `yaml:"s"`
+	}
+
+	yml := "s: My credit card number!"
+	var result x
+	err := yaml.Unmarshal([]byte(yml), &result)
+	if err != nil {
+		t.Fatalf("expected marshal not to error, got: %s", result)
+	}
+	if result.S != "My credit card number!" {
+		t.Fatalf("expected Unmarshal to retain secret field value, got: %s", result.S)
 	}
 }
