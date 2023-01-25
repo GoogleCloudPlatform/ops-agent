@@ -32,6 +32,12 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const (
+	SERVICE_DISABLED                = "SERVICE_DISABLED"
+	ACCESS_TOKEN_SCOPE_INSUFFICIENT = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
+	IAM_PERMISSION_DENIED           = "IAM_PERMISSION_DENIED"
+)
+
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	MetadataResource, err := resourcedetector.GetResource()
 	if err != nil {
@@ -39,9 +45,8 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	}
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
 		return gceMetadata, nil
-	} else {
-		return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
 	}
+	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
 }
 
 // monitoringPing reports whether the client's connection to the monitoring service and the
@@ -106,18 +111,18 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 	defer logClient.Close()
-	logger.Printf("logging client was created successfully.")
+	logger.Printf("logging client was created successfully")
 
 	if err := logClient.Ping(ctx); err != nil {
 		logger.Println(err)
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
-			case "SERVICE_DISABLED":
+			case SERVICE_DISABLED:
 				return LOG_API_DISABLED_ERR
-			case "ACCESS_TOKEN_SCOPE_INSUFFICIENT":
+			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
 				return LOG_API_SCOPE_ERR
-			case "IAM_PERMISSION_DENIED":
+			case IAM_PERMISSION_DENIED:
 				return LOG_API_PERMISSION_ERR
 			}
 
@@ -138,18 +143,18 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 	monClient.Close()
-	logger.Printf("monitoring client was created successfully.")
+	logger.Printf("monitoring client was created successfully")
 
 	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
 		logger.Println(err)
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
-			case "SERVICE_DISABLED":
+			case SERVICE_DISABLED:
 				return MON_API_DISABLED_ERR
-			case "ACCESS_TOKEN_SCOPE_INSUFFICIENT":
+			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
 				return MON_API_SCOPE_ERR
-			case "IAM_PERMISSION_DENIED":
+			case IAM_PERMISSION_DENIED:
 				return MON_API_PERMISSION_ERR
 			}
 
