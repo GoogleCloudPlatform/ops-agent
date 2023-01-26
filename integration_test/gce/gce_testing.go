@@ -1173,6 +1173,10 @@ func IsRHEL(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-")
 }
 
+func IsRHEL7(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-7")
+}
+
 // CreateInstance launches a new VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
