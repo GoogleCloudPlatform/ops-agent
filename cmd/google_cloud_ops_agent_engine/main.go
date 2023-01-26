@@ -33,32 +33,22 @@ var (
 )
 
 func runStartupChecks(service string) error {
-	// To run checks in each subagent service we could
-	// use a switch to define the checks as follows.
-	/* switch service {
-		case "":
-		case "fluentbit":
-		case "otel":
-	} */
-	var GCEHealthChecks healthchecks.HealthCheckRegistry
-	switch service {
-	case "":
-		GCEHealthChecks = healthchecks.HealthCheckRegistry{
+	// Run checks in main service
+	if service == "" {
+		gceHealthChecks := healthchecks.HealthCheckRegistry{
 			healthchecks.PortsCheck{},
 			healthchecks.NetworkCheck{},
 			healthchecks.APICheck{},
 		}
-		// case "fluentbit":
-		// case "otel":
+		healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(*logsDir)
+		if err != nil {
+			return err
+		}
+		for _, message := range healthCheckResults {
+			log.Printf(message)
+		}
 	}
 
-	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(*logsDir)
-	if err != nil {
-		return err
-	}
-	for _, message := range healthCheckResults {
-		log.Printf(message)
-	}
 	return nil
 }
 

@@ -138,18 +138,18 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 
 func (s *service) runStartupChecks() error {
 	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	GCEHealthChecks := healthchecks.HealthCheckRegistry{
+	gceHealthChecks := healthchecks.HealthCheckRegistry{
 		healthchecks.PortsCheck{},
 		healthchecks.NetworkCheck{},
 		healthchecks.APICheck{},
 	}
 
-	healthCheckResults, err := GCEHealthChecks.RunAllHealthChecks(logDirectory)
+	healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(logDirectory)
 	if err != nil {
 		return err
 	}
 	for _, message := range healthCheckResults {
-		s.log.Info(1, message)
+		s.log.Info(EngineEventID, message)
 	}
 	return nil
 }
@@ -180,7 +180,6 @@ func (s *service) generateConfigs() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
