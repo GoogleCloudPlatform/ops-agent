@@ -38,8 +38,8 @@ func (c FailureCheck) RunCheck(logger *log.Logger) error {
 }
 
 func TestCheckFailure(t *testing.T) {
-	wantMessage := "The Health Check failed."
-	wantAction := "No suggested action."
+	wantMessage := "The Health Check encountered an internal error."
+	wantAction := "Submit a support case from Google Cloud console."
 	testCheck := FailureCheck{}
 
 	err := testCheck.RunCheck(testLogger)
