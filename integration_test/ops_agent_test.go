@@ -3134,15 +3134,14 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) {
-			t.Errorf("expected network check to pass")
+		checkFunc := func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
 		}
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "FAIL")) {
-			t.Errorf("expected api check to fail")
-		}
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "FAIL")) {
-			t.Errorf("expected ports check to fail")
-		}
+		checkFunc("Network", "PASS")
+		checkFunc("API", "FAIL")
+		checkFunc("Ports", "FAIL")
 	})
 }
 
@@ -3161,11 +3160,14 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) ||
-			!strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "PASS")) ||
-			!strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "PASS")) {
-			t.Errorf("expected all health checks to pass")
+		checkFunc := func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
 		}
+		checkFunc("Network", "PASS")
+		checkFunc("API", "PASS")
+		checkFunc("Ports", "PASS")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3185,15 +3187,15 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) {
-			t.Errorf("expected network check to fail")
+
+		checkFunc = func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
 		}
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "ERROR")) {
-			t.Errorf("expected api check throw an error")
-		}
-		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "PASS")) {
-			t.Errorf("expected ports check to pass")
-		}
+		checkFunc("Network", "FAIL")
+		checkFunc("API", "ERROR")
+		checkFunc("Ports", "PASS")
 	})
 }
 
