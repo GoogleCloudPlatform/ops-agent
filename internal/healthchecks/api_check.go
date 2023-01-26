@@ -33,9 +33,9 @@ import (
 )
 
 const (
-	SERVICE_DISABLED                = "SERVICE_DISABLED"
-	ACCESS_TOKEN_SCOPE_INSUFFICIENT = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
-	IAM_PERMISSION_DENIED           = "IAM_PERMISSION_DENIED"
+	ServiceDisabled              = "SERVICE_DISABLED"
+	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
+	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -118,11 +118,11 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
-			case SERVICE_DISABLED:
+			case ServiceDisabled:
 				return LogApiDisabledErr
-			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
+			case AccessTokenScopeInsufficient:
 				return LogApiScopeErr
-			case IAM_PERMISSION_DENIED:
+			case IamPermissionDenied:
 				return LogApiPermissionErr
 			}
 
@@ -150,11 +150,11 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
-			case SERVICE_DISABLED:
+			case ServiceDisabled:
 				return MonApiDisabledErr
-			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
+			case AccessTokenScopeInsufficient:
 				return MonApiScopeErr
-			case IAM_PERMISSION_DENIED:
+			case IamPermissionDenied:
 				return MonApiPermissionErr
 			}
 

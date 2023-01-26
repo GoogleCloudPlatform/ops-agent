@@ -16,11 +16,11 @@ package healthchecks
 
 // Error classification
 const (
-	API        = "API"
-	CONNECTION = "CONNECTION"
-	GENERIC    = "GENERIC"
-	PORT       = "PORT"
-	PERMISSION = "PERMISSION"
+	Api        = "API"
+	Connection = "CONNECTION"
+	Generic    = "GENERIC"
+	Port       = "PORT"
+	Permission = "PERMISSION"
 )
 
 type HealthCheckError struct {
@@ -40,7 +40,7 @@ func (e HealthCheckError) Error() string {
 var (
 	FbMetricsPortErr = HealthCheckError{
 		Code:         "FbMetricsPortErr",
-		Class:        PORT,
+		Class:        Port,
 		Message:      "Port 20202 needed for fluent-bit self metrics is unavailable.",
 		Action:       "Verify that port 20202 is open.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
@@ -48,7 +48,7 @@ var (
 	}
 	OtelMetricsPortErr = HealthCheckError{
 		Code:         "OtelMetricsPortErr",
-		Class:        PORT,
+		Class:        Port,
 		Message:      "Port 20201 needed for OpenTelemetry self metrics is unavailable.",
 		Action:       "Verify that port 20201 is open.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
@@ -56,7 +56,7 @@ var (
 	}
 	LogApiConnErr = HealthCheckError{
 		Code:         "LogApiConnErr",
-		Class:        CONNECTION,
+		Class:        Connection,
 		Message:      "Request to Logging API failed.",
 		Action:       "Check your internet connection and firewall rules.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
@@ -64,7 +64,7 @@ var (
 	}
 	MonApiConnErr = HealthCheckError{
 		Code:         "MonApiConnErr",
-		Class:        CONNECTION,
+		Class:        Connection,
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection and firewall rules.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
@@ -72,7 +72,7 @@ var (
 	}
 	LogApiScopeErr = HealthCheckError{
 		Code:         "LogApiScopeErr",
-		Class:        PERMISSION,
+		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/logging.write scope.",
 		Action:       "Add the https://www.googleapis.com/auth/logging.write scope to the Google Compute Engine VM.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization",
@@ -80,7 +80,7 @@ var (
 	}
 	MonApiScopeErr = HealthCheckError{
 		Code:         "MonApiScopeErr",
-		Class:        PERMISSION,
+		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/monitoring.write scope.",
 		Action:       "Add the https://www.googleapis.com/auth/monitoring.write scope to the Google Compute Engine VM.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization",
@@ -88,7 +88,7 @@ var (
 	}
 	LogApiPermissionErr = HealthCheckError{
 		Code:         "LogApiPermissionErr",
-		Class:        PERMISSION,
+		Class:        Permission,
 		Message:      "Service account is missing the roles/logging.logWriter role.",
 		Action:       "Add the roles/logging.logWriter role to the Google Cloud service account.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization#create-service-account",
@@ -96,7 +96,7 @@ var (
 	}
 	MonApiPermissionErr = HealthCheckError{
 		Code:         "MonApiPermissionErr",
-		Class:        PERMISSION,
+		Class:        Permission,
 		Message:      "Service account is missing the roles/monitoring.metricWriter role.",
 		Action:       "Add the roles/monitoring.metricWriter role to the Google Cloud service account.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization#create-service-account",
@@ -104,7 +104,7 @@ var (
 	}
 	LogApiDisabledErr = HealthCheckError{
 		Code:         "LogApiDisabledErr",
-		Class:        API,
+		Class:        Api,
 		Message:      "The Logging API is disabled in the current Google Cloud project.",
 		Action:       "Enable Logging API in the current Google Cloud project.",
 		ResourceLink: "https://cloud.google.com/logging/docs/api/enable-api",
@@ -112,7 +112,7 @@ var (
 	}
 	MonApiDisabledErr = HealthCheckError{
 		Code:         "MonApiDisabledErr",
-		Class:        API,
+		Class:        Api,
 		Message:      "The Monitoring API is disabled in the current Google Cloud project.",
 		Action:       "Enable Monitoring API in the current Google Cloud project.",
 		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
@@ -120,7 +120,7 @@ var (
 	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
-		Class:        GENERIC,
+		Class:        Generic,
 		Message:      "The Health Check encountered an internal error.",
 		Action:       "Submit a support case from Google Cloud console.",
 		ResourceLink: "https://cloud.google.com/logging/docs/support",
