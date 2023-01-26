@@ -24,6 +24,7 @@ configure_integration: |-
   a user with sufficient permissions connected to the SAP HANA instance.
 
   <pre>
+  GRANT SELECT ON DUMMY TO OTEL_MONITORING
   --Create the user
   CREATE RESTRICTED USER otel_monitoring_user PASSWORD <password>;
   --Enable user login
