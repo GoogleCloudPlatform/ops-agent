@@ -142,7 +142,7 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
-	monClient.Close()
+	defer monClient.Close()
 	logger.Printf("monitoring client was created successfully")
 
 	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
