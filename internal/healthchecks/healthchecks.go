@@ -56,7 +56,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) (map[string]strin
 		err := c.RunCheck(logger)
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
-				message = fmt.Sprintf("%s - Result: FAIL, ERROR_CODE: %s, Failure: %s, Solution: %s",
+				message = fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s",
 					c.Name(), healthError.Code, healthError.Message, healthError.Action)
 			} else {
 				message = fmt.Sprintf("%s - Result: ERROR, Detail: %s", c.Name(), err.Error())
