@@ -79,6 +79,9 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
 			),
 			otel.MetricsTransform(
+				otel.UpdateMetric("postgresql.bgwriter.duration",
+					otel.ToggleScalarDataType,
+				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 		}},

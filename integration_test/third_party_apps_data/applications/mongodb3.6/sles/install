@@ -1,0 +1,17 @@
+set -e
+
+sudo rpm --import https://www.mongodb.org/static/pgp/server-3.6.asc
+
+# Use the SUSE 12 repo even on SUSE 15, since there is no official repo
+# for MongoDB 3.6 for SUSE 15.
+sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/12/mongodb-org/3.6/x86_64/" mongodb
+
+sudo zypper install -y \
+    mongodb-org-3.6.23 \
+    mongodb-org-server-3.6.23 \
+    mongodb-org-shell-3.6.23 \
+    mongodb-org-mongos-3.6.23 \
+    mongodb-org-tools-3.6.23
+
+sudo systemctl enable mongod
+sudo systemctl restart mongod

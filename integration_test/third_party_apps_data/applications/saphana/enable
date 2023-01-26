@@ -12,11 +12,11 @@ logging:
     saphana:
       type: saphana
       include_paths:
-      - /usr/sap/*/HDB*/saphanamon/trace/*.trc
+      - /usr/sap/*/HDB*/*/trace/*.trc
       exclude_paths:
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver_history*.trc
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*loads*.trc
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*executed_statements*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver_history*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver*loads*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver*executed_statements*.trc
   service:
     pipelines:
       saphana:
