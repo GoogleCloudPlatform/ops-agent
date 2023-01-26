@@ -3122,7 +3122,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
-		// Sleep to
+		// Wait for port to be in listen mode.
 		time.Sleep(30 * time.Second)
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
