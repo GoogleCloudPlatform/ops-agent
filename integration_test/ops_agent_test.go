@@ -3091,8 +3091,7 @@ func getRecentServiceOutputForPlatform(platform string) string {
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			`Write-Output '$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600' > C:\listenPortScript.ps1`,
-			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -file C:\listenPortScript.ps1'`,
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
