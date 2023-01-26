@@ -103,7 +103,7 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
-	logger.Println(gceMetadata)
+	logger.Printf("gce metadata: %+v", gceMetadata)
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
