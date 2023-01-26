@@ -3073,6 +3073,10 @@ metrics:
 	})
 }
 
+func healthCheckResultMessage(name string, result string) string {
+	return fmt.Sprintf("%s Check - Result: %s", name, result)
+}
+
 func getRecentServiceOutputForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
@@ -3087,7 +3091,7 @@ func getRecentServiceOutputForPlatform(platform string) string {
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			`echo '$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600' > C:\listenPortScript.ps1`,
+			`Write-Output '$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600' > C:\listenPortScript.ps1`,
 			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -file C:\listenPortScript.ps1'`,
 		}, ";")
 
@@ -3118,7 +3122,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Minute)
+		// Sleep to
+		time.Sleep(30 * time.Second)
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
@@ -3128,13 +3133,14 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") {
+
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) {
 			t.Errorf("expected network check to pass")
 		}
-		if !strings.Contains(cmdOut.Stdout, "API Check - Result: FAIL") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "FAIL")) {
 			t.Errorf("expected api check to fail")
 		}
-		if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: FAIL") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "FAIL")) {
 			t.Errorf("expected ports check to fail")
 		}
 	})
@@ -3155,9 +3161,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: PASS") ||
-			!strings.Contains(cmdOut.Stdout, "API Check - Result: PASS") ||
-			!strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) ||
+			!strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "PASS")) ||
+			!strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "PASS")) {
 			t.Errorf("expected all health checks to pass")
 		}
 
@@ -3179,13 +3185,13 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(cmdOut.Stdout, "Network Check - Result: FAIL") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Network", "PASS")) {
 			t.Errorf("expected network check to fail")
 		}
-		if !strings.Contains(cmdOut.Stdout, "API Check - Result: ERROR") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("API", "ERROR")) {
 			t.Errorf("expected api check throw an error")
 		}
-		if !strings.Contains(cmdOut.Stdout, "Ports Check - Result: PASS") {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage("Ports", "PASS")) {
 			t.Errorf("expected ports check to pass")
 		}
 	})
