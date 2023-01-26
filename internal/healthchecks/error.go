@@ -51,7 +51,7 @@ var (
 		Class:        Port,
 		Message:      "Port 20201 needed for OpenTelemetry self metrics is unavailable.",
 		Action:       "Verify that port 20201 is open.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
+		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
 	LogApiConnErr = HealthCheckError{
@@ -67,7 +67,7 @@ var (
 		Class:        Connection,
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
+		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
 	LogApiScopeErr = HealthCheckError{
@@ -75,7 +75,7 @@ var (
 		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/logging.write scope.",
 		Action:       "Add the https://www.googleapis.com/auth/logging.write scope to the Google Compute Engine VM.",
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
 	MonApiScopeErr = HealthCheckError{
@@ -83,7 +83,7 @@ var (
 		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/monitoring.write scope.",
 		Action:       "Add the https://www.googleapis.com/auth/monitoring.write scope to the Google Compute Engine VM.",
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
 	LogApiPermissionErr = HealthCheckError{
@@ -91,7 +91,7 @@ var (
 		Class:        Permission,
 		Message:      "Service account is missing the roles/logging.logWriter role.",
 		Action:       "Add the roles/logging.logWriter role to the Google Cloud service account.",
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization#create-service-account",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
 		IsFatal:      true,
 	}
 	MonApiPermissionErr = HealthCheckError{
@@ -99,7 +99,7 @@ var (
 		Class:        Permission,
 		Message:      "Service account is missing the roles/monitoring.metricWriter role.",
 		Action:       "Add the roles/monitoring.metricWriter role to the Google Cloud service account.",
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/authorization#create-service-account",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
 		IsFatal:      true,
 	}
 	LogApiDisabledErr = HealthCheckError{
