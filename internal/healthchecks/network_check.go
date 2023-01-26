@@ -33,7 +33,6 @@ func (c NetworkCheck) Name() string {
 }
 
 func (c NetworkCheck) RunCheck(logger *log.Logger) error {
-
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
@@ -42,7 +41,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
-	logger.Printf("http request status : %s", response.Status)
+	logger.Printf("Logging API response status: %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
 		logger.Printf("Request to the Logging API was successful.")
@@ -59,7 +58,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 
-	logger.Printf("http request status : %s", response.Status)
+	logger.Printf("Monitoring API response status: %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
 		logger.Printf("Request to the Monitoring API was successful.")
