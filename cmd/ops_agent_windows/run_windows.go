@@ -138,12 +138,7 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 
 func (s *service) runStartupChecks() error {
 	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	gceHealthChecks := healthchecks.HealthCheckRegistry{
-		healthchecks.PortsCheck{},
-		healthchecks.NetworkCheck{},
-		healthchecks.APICheck{},
-	}
-
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 	healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(logDirectory)
 	if err != nil {
 		return err

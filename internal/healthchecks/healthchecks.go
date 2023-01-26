@@ -30,6 +30,14 @@ type HealthCheck interface {
 
 type HealthCheckRegistry []HealthCheck
 
+func HealthCheckRegistryFactory() HealthCheckRegistry {
+	return HealthCheckRegistry{
+		PortsCheck{},
+		NetworkCheck{},
+		APICheck{},
+	}
+}
+
 func createHealthChecksLogger(logDir string) (*log.Logger, error) {
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(filepath.Dir(logDir), 0755); err != nil {

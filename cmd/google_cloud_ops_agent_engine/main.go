@@ -35,11 +35,7 @@ var (
 func runStartupChecks(service string) error {
 	// Run checks in main service
 	if service == "" {
-		gceHealthChecks := healthchecks.HealthCheckRegistry{
-			healthchecks.PortsCheck{},
-			healthchecks.NetworkCheck{},
-			healthchecks.APICheck{},
-		}
+		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 		healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(*logsDir)
 		if err != nil {
 			return err
