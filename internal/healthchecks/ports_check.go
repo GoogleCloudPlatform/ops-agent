@@ -30,9 +30,9 @@ func (c PortsCheck) Name() string {
 	return "Ports Check"
 }
 
-// checkPortAvailable listens in the provided socket and local provided network (tcp4, tcp6, ...)
+// checkIfPortAvailable listens in the provided socket and local provided network (tcp4, tcp6, ...)
 // and handles the errors if the port is already being used by another process.
-func checkPortAvailable(host string, port string, network string) (bool, error) {
+func checkIfPortAvailable(host string, port string, network string) (bool, error) {
 	lsnr, err := net.Listen(network, net.JoinHostPort(host, port))
 	if err != nil {
 		if isPortUnavailableError(err) {
@@ -46,37 +46,37 @@ func checkPortAvailable(host string, port string, network string) (bool, error) 
 
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
 	// fluent-bit listens on tcp4. opentelemetry-collector listens in both tcp4 and tcp6.
-	self_metrics_host_tcp4 := "0.0.0.0"
-	self_metrics_host_tcp6 := "::"
+	tcpHost := "0.0.0.0"
+	tcp6Host := "::"
 
 	// Check for fluent-bit self metrics port
-	available, err := checkPortAvailable(self_metrics_host_tcp4, strconv.Itoa(fluentbit.MetricsPort), "tcp4")
+	available, err := checkIfPortAvailable(tcpHost, strconv.Itoa(fluentbit.MetricsPort), "tcp4")
 	if err != nil {
 		return err
 	}
 	if !available {
 		return FbMetricsPortErr
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp4, strconv.Itoa(fluentbit.MetricsPort)))
+	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(fluentbit.MetricsPort)))
 
 	// Check for opentelemetry-collector self metrics port
-	available, err = checkPortAvailable(self_metrics_host_tcp4, strconv.Itoa(otel.MetricsPort), "tcp4")
+	available, err = checkIfPortAvailable(tcpHost, strconv.Itoa(otel.MetricsPort), "tcp4")
 	if err != nil {
 		return err
 	}
 	if !available {
 		return OtelMetricsPortErr
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp4, strconv.Itoa(otel.MetricsPort)))
+	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(otel.MetricsPort)))
 
-	available, err = checkPortAvailable(self_metrics_host_tcp6, strconv.Itoa(otel.MetricsPort), "tcp6")
+	available, err = checkIfPortAvailable(tcp6Host, strconv.Itoa(otel.MetricsPort), "tcp6")
 	if err != nil {
 		return err
 	}
 	if !available {
 		return OtelMetricsPortErr
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp6, strconv.Itoa(otel.MetricsPort)))
+	logger.Printf("listening to %s:", net.JoinHostPort(tcp6Host, strconv.Itoa(otel.MetricsPort)))
 
 	return nil
 }
