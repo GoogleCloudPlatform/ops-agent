@@ -24,7 +24,6 @@ configure_integration: |-
   a user with sufficient permissions connected to the SAP HANA instance.
 
   <pre>
-  GRANT SELECT ON DUMMY TO OTEL_MONITORING
   --Create the user
   CREATE RESTRICTED USER otel_monitoring_user PASSWORD <password>;
   --Enable user login
@@ -52,6 +51,7 @@ configure_integration: |-
   GRANT SELECT ON SYS.M_VOLUME_IO_TOTAL_STATISTICS TO OTEL_MONITORING;
   GRANT SELECT ON SYS.M_WORKLOAD TO OTEL_MONITORING;
   GRANT SELECT ON _SYS_STATISTICS.STATISTICS_CURRENT_ALERTS TO OTEL_MONITORING;
+  GRANT SELECT ON DUMMY TO OTEL_MONITORING;
   --Add the OTEL_MONITOR role to the monitoring user
   GRANT OTEL_MONITORING TO otel_monitoring_user;
   </pre>
