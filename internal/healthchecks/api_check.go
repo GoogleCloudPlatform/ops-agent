@@ -119,18 +119,18 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
 			case SERVICE_DISABLED:
-				return LOG_API_DISABLED_ERR
+				return LogApiDisabledErr
 			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
-				return LOG_API_SCOPE_ERR
+				return LogApiScopeErr
 			case IAM_PERMISSION_DENIED:
-				return LOG_API_PERMISSION_ERR
+				return LogApiPermissionErr
 			}
 
 			switch apiErr.GRPCStatus().Code() {
 			case codes.PermissionDenied:
-				return LOG_API_PERMISSION_ERR
+				return LogApiPermissionErr
 			case codes.Unauthenticated:
-				return LOG_API_SCOPE_ERR
+				return LogApiScopeErr
 			}
 		}
 
@@ -151,18 +151,18 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
 			case SERVICE_DISABLED:
-				return MON_API_DISABLED_ERR
+				return MonApiDisabledErr
 			case ACCESS_TOKEN_SCOPE_INSUFFICIENT:
-				return MON_API_SCOPE_ERR
+				return MonApiScopeErr
 			case IAM_PERMISSION_DENIED:
-				return MON_API_PERMISSION_ERR
+				return MonApiPermissionErr
 			}
 
 			switch apiErr.GRPCStatus().Code() {
 			case codes.PermissionDenied:
-				return MON_API_PERMISSION_ERR
+				return MonApiPermissionErr
 			case codes.Unauthenticated:
-				return MON_API_SCOPE_ERR
+				return MonApiScopeErr
 			}
 		}
 		return err

@@ -34,7 +34,7 @@ func (c FailureCheck) Name() string {
 }
 
 func (c FailureCheck) RunCheck(logger *log.Logger) error {
-	return healthchecks.HC_FAILURE_ERR
+	return healthchecks.HcFailureErr
 }
 
 func TestCheckFailure(t *testing.T) {

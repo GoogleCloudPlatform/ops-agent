@@ -55,7 +55,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 	if !available {
-		return FB_METRICS_PORT_ERR
+		return FbMetricsPortErr
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp4, strconv.Itoa(fluentbit.MetricsPort)))
 
@@ -65,7 +65,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 	if !available {
-		return OTEL_METRICS_PORT_ERR
+		return OtelMetricsPortErr
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp4, strconv.Itoa(otel.MetricsPort)))
 
@@ -74,7 +74,7 @@ func (c PortsCheck) RunCheck(logger *log.Logger) error {
 		return err
 	}
 	if !available {
-		return OTEL_METRICS_PORT_ERR
+		return OtelMetricsPortErr
 	}
 	logger.Printf("listening to %s:", net.JoinHostPort(self_metrics_host_tcp6, strconv.Itoa(otel.MetricsPort)))
 

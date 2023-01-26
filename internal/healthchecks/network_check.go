@@ -37,7 +37,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
-		return LOG_API_CONN_ERR
+		return LogApiConnErr
 	}
 	if err != nil {
 		return err
@@ -47,13 +47,13 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	case http.StatusOK:
 		logger.Printf("Request to the Logging API was successful.")
 	default:
-		return LOG_API_CONN_ERR
+		return LogApiConnErr
 	}
 
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
 	if err, ok := err.(net.Error); ok && err.Timeout() {
-		return MON_API_CONN_ERR
+		return MonApiConnErr
 	}
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	case http.StatusOK:
 		logger.Printf("Request to the Monitoring API was successful.")
 	default:
-		return MON_API_CONN_ERR
+		return MonApiConnErr
 	}
 
 	return nil
