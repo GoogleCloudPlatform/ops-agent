@@ -70,6 +70,7 @@ func run() error {
 	if err := runStartupChecks(*service); err != nil {
 		return err
 	}
+	log.Println("Startup checks finshed")
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
