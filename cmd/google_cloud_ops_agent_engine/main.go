@@ -47,6 +47,8 @@ func runStartupChecks(service string) error {
 			log.Printf(message)
 		}
 		log.Println("Startup checks finished")
+	// Adding sleep to reduce flakyness in Ports Checks
+	// when restarting ops agent service
 	case "fluentbit":
 		time.Sleep(2 * time.Second)
 	case "otel":
