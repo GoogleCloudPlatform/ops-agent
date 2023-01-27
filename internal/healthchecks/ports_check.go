@@ -19,7 +19,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -46,10 +45,6 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 }
 
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
-	// When restarting the Ops Agent the 20202 port is still being used by fluent-bit
-	// To avoid the Ports Check to fail wait for 5 seconds
-	time.Sleep(5 * time.Second)
-
 	// fluent-bit listens on tcp4. opentelemetry-collector listens in both tcp4 and tcp6.
 	tcpHost := "0.0.0.0"
 	tcp6Host := "::"
