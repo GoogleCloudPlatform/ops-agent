@@ -18,6 +18,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -34,7 +35,9 @@ var (
 
 func runStartupChecks(service string) error {
 	// Run checks in main service
-	if service == "" {
+	switch service {
+	case "":
+		time.Sleep(time.Second)
 		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 		healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(*logsDir)
 		if err != nil {
@@ -43,6 +46,11 @@ func runStartupChecks(service string) error {
 		for _, message := range healthCheckResults {
 			log.Printf(message)
 		}
+		log.Println("Startup checks finished")
+	case "fluentbit":
+		time.Sleep(2 * time.Second)
+	case "otel":
+		time.Sleep(2 * time.Second)
 	}
 
 	return nil
@@ -70,7 +78,6 @@ func run() error {
 	if err := runStartupChecks(*service); err != nil {
 		return err
 	}
-	log.Println("Startup checks finshed")
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
