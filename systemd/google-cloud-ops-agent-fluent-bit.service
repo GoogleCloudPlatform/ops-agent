@@ -16,7 +16,7 @@
 Description=Google Cloud Ops Agent - Logging Agent
 PartOf=google-cloud-ops-agent.service
 Requires=network-online.target
-After=network-online.target google-cloud-ops-agent.service
+After=network-online.target
 
 [Service]
 RuntimeDirectory=google-cloud-ops-agent-fluent-bit
