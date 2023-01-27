@@ -39,13 +39,14 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 }
 
 func createHealthChecksLogger(logDir string) (*log.Logger, error) {
+	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
-	if err := os.MkdirAll(filepath.Dir(logDir), 0755); err != nil {
-		return nil, fmt.Errorf("failed to create directory for %q: %w", logDir, err)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create directory for %q: %w", path, err)
 	}
-	file, err := os.OpenFile(filepath.Join(logDir, healthChecksLogFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open health checks log file %q: %w", path, err)
 	}
 
 	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), nil
