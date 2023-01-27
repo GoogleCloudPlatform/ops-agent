@@ -32,7 +32,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-const FluentBitSelfLogTag = "ops-agent-fluent-bit"
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
 
 func googleCloudExporter(userAgent string) otel.Component {
 	return otel.Component{
@@ -387,7 +387,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 
 	out = append(out, generateSeveritySelfLogsParser()...)
 
-	out = append(out, stackdriverOutputComponent(FluentBitSelfLogTag, userAgent))
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
@@ -415,11 +415,11 @@ func generateSeveritySelfLogsParser() []fluentbit.Component {
 			"Key_Name": "message",
 			"Name":     "parser",
 			"Parser":   "logging-severity-parser.self-logs-severity",
-			"Match":    FluentBitSelfLogTag,
+			"Match":    fluentBitSelfLogTag,
 		},
 	})
 
-	out = append(out, fluentbit.TranslationComponents(FluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
 		[]struct{ SrcVal, DestVal string }{
 			{"debug", "DEBUG"},
 			{"error", "ERROR"},

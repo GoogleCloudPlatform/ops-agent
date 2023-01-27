@@ -135,7 +135,7 @@ type LoggingProcessorParseRegex struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
 	Field           string `yaml:"field,omitempty"`
-	PreserveKey     bool   `yaml:"preserve_key,omitempty"`
+	PreserveKey     bool   `yaml:"-"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
 }
