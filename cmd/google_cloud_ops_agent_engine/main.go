@@ -33,16 +33,13 @@ var (
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
 
-func runStartupChecks(service string) error {
-	// Run checks in main service
+func runStartupChecks(service string) {
 	switch service {
+	// Run checks in main service
 	case "":
 		time.Sleep(time.Second)
 		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-		healthCheckResults, err := gceHealthChecks.RunAllHealthChecks(*logsDir)
-		if err != nil {
-			return err
-		}
+		healthCheckResults := gceHealthChecks.RunAllHealthChecks(*logsDir)
 		for _, message := range healthCheckResults {
 			log.Printf(message)
 		}
@@ -54,8 +51,6 @@ func runStartupChecks(service string) error {
 	case "otel":
 		time.Sleep(2 * time.Second)
 	}
-
-	return nil
 }
 
 func main() {
@@ -65,6 +60,8 @@ func main() {
 	}
 }
 func run() error {
+	runStartupChecks(*service)
+
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
@@ -76,10 +73,6 @@ func run() error {
 	// running.
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
-
-	if err := runStartupChecks(*service); err != nil {
-		return err
-	}
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
