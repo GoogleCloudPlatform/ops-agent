@@ -74,7 +74,7 @@ var (
 		Code:         "LogApiScopeErr",
 		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/logging.write scope.",
-		Action:       "Add the https://www.googleapis.com/auth/logging.write scope to the Google Compute Engine VM.",
+		Action:       "Add the https://www.googleapis.com/auth/logging.write scope to the Compute Engine VM.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
@@ -82,7 +82,7 @@ var (
 		Code:         "MonApiScopeErr",
 		Class:        Permission,
 		Message:      "VM is missing the https://www.googleapis.com/auth/monitoring.write scope.",
-		Action:       "Add the https://www.googleapis.com/auth/monitoring.write scope to the Google Compute Engine VM.",
+		Action:       "Add the https://www.googleapis.com/auth/monitoring.write scope to the Compute Engine VM.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
