@@ -222,13 +222,6 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 		}
 		return nil
 	}
-	// Removing flaky rhel-7 repositories due to b/265341502
-	if gce.IsRHEL7(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx,
-			logger.ToMainLog(), vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return fmt.Errorf("yum check-update failed : %v", err)
-		}
-	}
 
 	if _, err := gce.RunRemotely(ctx,
 		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
