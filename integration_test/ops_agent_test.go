@@ -3094,11 +3094,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		}
 		var bufferDir string
 
-		if gce.IsWindows(vm.Platform) {
-			bufferDir = "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\run\\buffers\\tail.1\\"
-		} else {
-			bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
-		}
+		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
 
 		generateLogsScript := fmt.Sprintf(`
 			x=1	
