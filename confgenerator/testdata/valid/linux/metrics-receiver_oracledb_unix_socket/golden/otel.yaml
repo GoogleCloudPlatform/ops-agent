@@ -438,6 +438,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/oracledb_2:
+    override_scope_name: agent.googleapis.com/oracledb
+    override_scope_version: "1.0"
   normalizesums/oracledb_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -1096,6 +1099,7 @@ service:
       processors:
       - normalizesums/oracledb_0
       - metricstransform/oracledb_1
+      - modifyscope/oracledb_2
       - resourcedetection/_global_0
       receivers:
       - sqlquery/oracledb

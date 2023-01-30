@@ -437,6 +437,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/flink_3:
+    override_scope_name: agent.googleapis.com/flink
+    override_scope_version: "1.0"
   normalizesums/flink_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -504,6 +507,7 @@ service:
       - normalizesums/flink_0
       - metricstransform/flink_1
       - transform/flink_2
+      - modifyscope/flink_3
       - resourcedetection/_global_0
       receivers:
       - flinkmetrics/flink

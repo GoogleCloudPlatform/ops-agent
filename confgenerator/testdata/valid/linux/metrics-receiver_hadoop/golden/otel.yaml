@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/hadoop_2:
+    override_scope_name: agent.googleapis.com/hadoop
+    override_scope_version: "1.0"
   normalizesums/hadoop_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -483,6 +486,7 @@ service:
       processors:
       - normalizesums/hadoop_0
       - metricstransform/hadoop_1
+      - modifyscope/hadoop_2
       - resourcedetection/_global_0
       receivers:
       - jmx/hadoop

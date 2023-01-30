@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/jetty__metrics_2:
+    override_scope_name: agent.googleapis.com/jetty
+    override_scope_version: "1.0"
   normalizesums/jetty__metrics_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -481,6 +484,7 @@ service:
       processors:
       - normalizesums/jetty__metrics_0
       - metricstransform/jetty__metrics_1
+      - modifyscope/jetty__metrics_2
       - resourcedetection/_global_0
       receivers:
       - jmx/jetty__metrics

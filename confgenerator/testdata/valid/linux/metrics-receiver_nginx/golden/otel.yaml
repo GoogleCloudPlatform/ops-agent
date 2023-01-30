@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/nginx_2:
+    override_scope_name: agent.googleapis.com/nginx
+    override_scope_version: "1.0"
   normalizesums/nginx_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -479,6 +482,7 @@ service:
       processors:
       - normalizesums/nginx_0
       - metricstransform/nginx_1
+      - modifyscope/nginx_2
       - resourcedetection/_global_0
       receivers:
       - nginx/nginx

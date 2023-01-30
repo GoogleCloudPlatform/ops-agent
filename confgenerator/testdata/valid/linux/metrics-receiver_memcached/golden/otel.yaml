@@ -419,6 +419,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/memcached_3:
+    override_scope_name: agent.googleapis.com/memcached
+    override_scope_version: "1.0"
   normalizesums/memcached_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -486,6 +489,7 @@ service:
       - filter/memcached_0
       - normalizesums/memcached_1
       - metricstransform/memcached_2
+      - modifyscope/memcached_3
       - resourcedetection/_global_0
       receivers:
       - memcached/memcached

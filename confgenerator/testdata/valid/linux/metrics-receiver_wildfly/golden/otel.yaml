@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/wildfly_2:
+    override_scope_name: agent.googleapis.com/wildfly
+    override_scope_version: "1.0"
   normalizesums/wildfly_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -494,6 +497,7 @@ service:
       processors:
       - normalizesums/wildfly_0
       - metricstransform/wildfly_1
+      - modifyscope/wildfly_2
       - resourcedetection/_global_0
       receivers:
       - jmx/wildfly

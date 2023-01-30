@@ -433,6 +433,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/mysql_2:
+    override_scope_name: agent.googleapis.com/mysql
+    override_scope_version: "1.0"
   normalizesums/mysql_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -502,6 +505,7 @@ service:
       processors:
       - normalizesums/mysql_0
       - metricstransform/mysql_1
+      - modifyscope/mysql_2
       - resourcedetection/_global_0
       receivers:
       - mysql/mysql

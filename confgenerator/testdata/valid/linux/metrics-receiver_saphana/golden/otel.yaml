@@ -419,6 +419,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/saphana_4:
+    override_scope_name: agent.googleapis.com/saphana
+    override_scope_version: "1.0"
   normalizesums/saphana_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -504,6 +507,7 @@ service:
       - normalizesums/saphana_1
       - metricstransform/saphana_2
       - transform/saphana_3
+      - modifyscope/saphana_4
       - resourcedetection/_global_0
       receivers:
       - saphana/saphana

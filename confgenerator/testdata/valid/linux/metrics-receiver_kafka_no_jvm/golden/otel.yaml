@@ -428,6 +428,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/kafka_3:
+    override_scope_name: agent.googleapis.com/kafka
+    override_scope_version: "1.0"
   normalizesums/kafka_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -499,6 +502,7 @@ service:
       - filter/kafka_0
       - normalizesums/kafka_1
       - metricstransform/kafka_2
+      - modifyscope/kafka_3
       - resourcedetection/_global_0
       receivers:
       - jmx/kafka

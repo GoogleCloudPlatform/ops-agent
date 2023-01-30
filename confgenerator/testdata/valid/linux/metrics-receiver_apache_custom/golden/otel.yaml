@@ -419,6 +419,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/apache_3:
+    override_scope_name: agent.googleapis.com/apache
+    override_scope_version: "1.0"
   normalizesums/apache_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -466,6 +469,7 @@ service:
       - filter/apache_0
       - normalizesums/apache_1
       - metricstransform/apache_2
+      - modifyscope/apache_3
       - resourcedetection/_global_0
       receivers:
       - apache/apache

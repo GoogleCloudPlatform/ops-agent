@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/elasticsearch_2:
+    override_scope_name: agent.googleapis.com/elasticsearch
+    override_scope_version: "1.0"
   normalizesums/elasticsearch_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -500,6 +503,7 @@ service:
       processors:
       - normalizesums/elasticsearch_0
       - metricstransform/elasticsearch_1
+      - modifyscope/elasticsearch_2
       - resourcedetection/_global_0
       receivers:
       - elasticsearch/elasticsearch

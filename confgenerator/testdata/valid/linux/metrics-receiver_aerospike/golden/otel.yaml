@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/aerospike_3:
+    override_scope_name: agent.googleapis.com/aerospike
+    override_scope_version: "1.0"
   normalizesums/aerospike_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -469,6 +472,7 @@ service:
       - normalizesums/aerospike_0
       - metricstransform/aerospike_1
       - transform/aerospike_2
+      - modifyscope/aerospike_3
       - resourcedetection/_global_0
       receivers:
       - aerospike/aerospike

@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/varnish_2:
+    override_scope_name: agent.googleapis.com/varnish
+    override_scope_version: "1.0"
   normalizesums/varnish_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -489,6 +492,7 @@ service:
       processors:
       - normalizesums/varnish_0
       - metricstransform/varnish_1
+      - modifyscope/varnish_2
       - resourcedetection/_global_0
       receivers:
       - varnish/varnish

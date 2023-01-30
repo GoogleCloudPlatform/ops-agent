@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/zookeeper_2:
+    override_scope_name: agent.googleapis.com/zookeeper
+    override_scope_version: "1.0"
   normalizesums/zookeeper_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -488,6 +491,7 @@ service:
       processors:
       - normalizesums/zookeeper_0
       - metricstransform/zookeeper_1
+      - modifyscope/zookeeper_2
       - resourcedetection/_global_0
       receivers:
       - zookeeper/zookeeper

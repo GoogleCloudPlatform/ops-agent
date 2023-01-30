@@ -417,6 +417,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/postgresql_3:
+    override_scope_name: agent.googleapis.com/postgresql
+    override_scope_version: "1.0"
   normalizesums/postgresql_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -504,6 +507,7 @@ service:
       - normalizesums/postgresql_0
       - transform/postgresql_1
       - metricstransform/postgresql_2
+      - modifyscope/postgresql_3
       - resourcedetection/_global_0
       receivers:
       - postgresql/postgresql

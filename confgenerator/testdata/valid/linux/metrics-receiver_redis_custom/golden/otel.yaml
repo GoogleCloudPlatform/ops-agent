@@ -420,6 +420,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/redis_3:
+    override_scope_name: agent.googleapis.com/redis
+    override_scope_version: "1.0"
   normalizesums/redis_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -500,6 +503,7 @@ service:
       - filter/redis_0
       - normalizesums/redis_1
       - metricstransform/redis_2
+      - modifyscope/redis_3
       - resourcedetection/_global_0
       receivers:
       - redis/redis

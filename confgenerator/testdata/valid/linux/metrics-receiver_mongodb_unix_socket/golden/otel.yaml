@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/mongodb_2:
+    override_scope_name: agent.googleapis.com/mongodb
+    override_scope_version: "1.0"
   normalizesums/mongodb_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -483,6 +486,7 @@ service:
       processors:
       - normalizesums/mongodb_0
       - metricstransform/mongodb_1
+      - modifyscope/mongodb_2
       - resourcedetection/_global_0
       receivers:
       - mongodb/mongodb

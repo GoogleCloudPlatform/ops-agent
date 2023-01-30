@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/activemq_2:
+    override_scope_name: agent.googleapis.com/activemq
+    override_scope_version: "1.0"
   normalizesums/activemq_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -461,6 +464,7 @@ service:
       processors:
       - normalizesums/activemq_0
       - metricstransform/activemq_1
+      - modifyscope/activemq_2
       - resourcedetection/_global_0
       receivers:
       - jmx/activemq

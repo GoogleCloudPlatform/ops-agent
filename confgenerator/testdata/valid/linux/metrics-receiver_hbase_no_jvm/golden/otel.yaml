@@ -420,6 +420,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/hbase__metrics_2:
+    override_scope_name: agent.googleapis.com/hbase
+    override_scope_version: "1.0"
   normalizesums/hbase__metrics_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -490,6 +493,7 @@ service:
       processors:
       - normalizesums/hbase__metrics_0
       - metricstransform/hbase__metrics_1
+      - modifyscope/hbase__metrics_2
       - resourcedetection/_global_0
       receivers:
       - jmx/hbase__metrics

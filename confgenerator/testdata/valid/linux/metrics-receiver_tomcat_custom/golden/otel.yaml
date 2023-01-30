@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/tomcat_2:
+    override_scope_name: agent.googleapis.com/tomcat
+    override_scope_version: "1.0"
   normalizesums/tomcat_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -492,6 +495,7 @@ service:
       processors:
       - normalizesums/tomcat_0
       - metricstransform/tomcat_1
+      - modifyscope/tomcat_2
       - resourcedetection/_global_0
       receivers:
       - jmx/tomcat

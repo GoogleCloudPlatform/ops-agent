@@ -503,6 +503,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/couchbase_4:
+    override_scope_name: agent.googleapis.com/couchbase
+    override_scope_version: "1.0"
   normalizesums/couchbase_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -586,6 +589,7 @@ service:
       - filter/couchbase_1
       - metricstransform/couchbase_2
       - transform/couchbase_3
+      - modifyscope/couchbase_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/couchbase

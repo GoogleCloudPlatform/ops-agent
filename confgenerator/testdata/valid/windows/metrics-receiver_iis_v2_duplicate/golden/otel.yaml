@@ -481,6 +481,15 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/iis__v2_5:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "2.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/iis__v2_4: {}
   resourcedetection/_global_0:
@@ -580,6 +589,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -589,6 +599,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -611,6 +622,7 @@ service:
       - groupbyattrs/iis__v2_2
       - metricstransform/iis__v2_3
       - normalizesums/iis__v2_4
+      - modifyscope/iis__v2_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis__v2

@@ -457,6 +457,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/vault_5:
+    override_scope_name: agent.googleapis.com/vault
+    override_scope_version: "1.0"
   normalizesums/vault_3: {}
   resourcedetection/_global_0:
     detectors:
@@ -1176,6 +1179,7 @@ service:
       - metricstransform/vault_2
       - normalizesums/vault_3
       - metricstransform/vault_4
+      - modifyscope/vault_5
       - resourcedetection/_global_0
       receivers:
       - prometheus/vault

@@ -413,6 +413,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/rabbitmq_2:
+    override_scope_name: agent.googleapis.com/rabbitmq
+    override_scope_version: "1.0"
   normalizesums/rabbitmq_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -492,6 +495,7 @@ service:
       processors:
       - normalizesums/rabbitmq_0
       - metricstransform/rabbitmq_1
+      - modifyscope/rabbitmq_2
       - resourcedetection/_global_0
       receivers:
       - rabbitmq/rabbitmq
