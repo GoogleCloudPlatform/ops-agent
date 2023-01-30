@@ -1,0 +1,14 @@
+features:
+- feature: receivers:mongodb
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:mongodb
+  module: metrics
+  key: "[0].insecure"
+  value: true
+- feature: receivers:mongodb
+  module: logging
+  key: "[0].enabled"
+  value: true
+
