@@ -56,7 +56,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
-	s.runStartupChecks()
 
 	if err := s.generateConfigs(); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
@@ -64,6 +63,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
+
+	s.runStartupChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -138,7 +139,7 @@ func (s *service) runStartupChecks() {
 	for _, message := range healthCheckResults {
 		s.log.Info(EngineEventID, message)
 	}
-	s.log.Info("Startup checks finished")
+	s.log.Info(EngineEventID, "Startup checks finished")
 }
 
 func (s *service) generateConfigs() error {
