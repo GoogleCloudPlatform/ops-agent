@@ -111,7 +111,7 @@ func ParserComponentBase(TimeFormat string, TimeKey string, TimeOffset string, T
 	if TimeKey != "" {
 		parser.Config["Time_Key"] = TimeKey
 	}
-	if TimeOffset != "" {
+	if TimeOffset != "" && TimeOffset != "+0000" && TimeOffset != "-0000" {
 		parser.Config["Time_Offset"] = TimeOffset
 	}
 	if len(Types) > 0 {
