@@ -61,6 +61,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }

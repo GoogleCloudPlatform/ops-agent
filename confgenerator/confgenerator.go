@@ -32,7 +32,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-func googleCloudExporter(userAgent string) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -52,7 +52,7 @@ func googleCloudExporter(userAgent string) otel.Component {
 				// descriptors to be created implicitly with new time series.
 				"skip_create_descriptor": true,
 				// Omit instrumentation labels, which break agent metrics.
-				"instrumentation_library_labels": false,
+				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
 				"service_resource_labels": false,
 				"resource_filters":        []map[string]interface{}{},
@@ -128,7 +128,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		ReceiverPipelines:               receiverPipelines,
 		Pipelines:                       pipelines,
 		GlobalProcessors:                []otel.Component{gcpResourceDetector()},
-		GoogleCloudExporter:             googleCloudExporter(userAgent),
+		GoogleCloudExporter:             googleCloudExporter(userAgent, false),
 		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
 	}.Generate()
 	if err != nil {

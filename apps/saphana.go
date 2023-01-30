@@ -180,6 +180,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
 			),
+			otel.ModifyInstrumentationScope(s.Type(), "1.0"),
 		}},
 	}}
 }

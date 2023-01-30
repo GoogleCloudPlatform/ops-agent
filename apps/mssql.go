@@ -52,6 +52,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
 				),
 				otel.NormalizeSums(),
+				otel.ModifyInstrumentationScope(m.Type(), "2.0"),
 			}},
 		}}
 	}
@@ -94,6 +95,7 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
+			otel.ModifyInstrumentationScope(m.Type(), "1.0"),
 		}},
 	}}
 }
