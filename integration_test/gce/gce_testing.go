@@ -1161,7 +1161,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// Removing flaky rhel-7 repositories due to b/265341502
 	if isRHEL7(vm.Platform) {
 		if _, err := RunRemotely(ctx,
-			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel-*-rpms install yum-utils && sudo yum-config-manager --disable "rhui-rhel-*-rpms"`); err != nil {
+			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
 		}
 	}
