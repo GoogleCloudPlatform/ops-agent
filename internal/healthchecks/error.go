@@ -41,7 +41,7 @@ var (
 	FbMetricsPortErr = HealthCheckError{
 		Code:         "FbMetricsPortErr",
 		Class:        Port,
-		Message:      "Port 20202 needed for fluent-bit self metrics is unavailable.",
+		Message:      "Port 20202 needed for Ops Agent self metrics is unavailable.",
 		Action:       "Verify that port 20202 is open.",
 		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
@@ -49,7 +49,7 @@ var (
 	OtelMetricsPortErr = HealthCheckError{
 		Code:         "OtelMetricsPortErr",
 		Class:        Port,
-		Message:      "Port 20201 needed for OpenTelemetry self metrics is unavailable.",
+		Message:      "Port 20201 needed for Ops Agent self metrics is unavailable.",
 		Action:       "Verify that port 20201 is open.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
