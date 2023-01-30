@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -53,7 +52,7 @@ func main() {
 	testGaugeMetric(meter, "WORKLOAD.googleapis.com/otlp.test.prefix5")
 
 	// Test cumulative metrics
-	counter, err := meter.SyncFloat64().Counter("otlp.test.cumulative")
+	counter, err := meter.Float64Counter("otlp.test.cumulative")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,13 +63,14 @@ func main() {
 }
 
 func testGaugeMetric(meter metric.Meter, name string) {
-	gauge, err := meter.AsyncFloat64().Gauge(name)
+	gauge, err := meter.Float64ObservableGauge(name)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = meter.RegisterCallback([]instrument.Asynchronous{gauge}, func(c context.Context) {
-		gauge.Observe(c, 5)
-	})
+	_, err = meter.RegisterCallback(func(c context.Context, observer metric.Observer) error {
+		observer.ObserveFloat64(gauge, 5)
+		return nil
+	}, gauge)
 	if err != nil {
 		log.Fatal(err)
 	}
