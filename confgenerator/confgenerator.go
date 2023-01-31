@@ -410,19 +410,9 @@ func generateSeveritySelfLogsParser() []fluentbit.Component {
 				"severity": "string",
 			},
 		},
-	}.Components("logging-severity-parser", "self-logs-severity")
+	}.Components(fluentBitSelfLogTag, "self-logs-severity")
 
 	out = append(out, parser...)
-
-	out = append(out, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Key_Name": "message",
-			"Name":     "parser",
-			"Parser":   "logging-severity-parser.self-logs-severity",
-			"Match":    fluentBitSelfLogTag,
-		},
-	})
 
 	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
 		[]struct{ SrcVal, DestVal string }{
