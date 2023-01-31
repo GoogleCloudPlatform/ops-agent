@@ -50,7 +50,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
+	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -641,6 +641,13 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
+		// All integrations are expected to set the instrumentation_source label.
+		for _, m := range metadata.ExpectedMetrics {
+			if _, ok := m.Labels["instrumentation_source"]; !ok {
+				m.Labels["instrumentation_source"] = fmt.Sprintf("agent.googleapis.com/%s", app)
+			}
+		}
+
 		fc, err := getExpectedFeatures(app)
 
 		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
@@ -720,7 +727,7 @@ func modifiedFiles(t *testing.T) []string {
 // means we should test all applications.
 func isCriticalFile(f string) bool {
 	if strings.HasPrefix(f, "submodules/") ||
-	   strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
+		strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
 		return true
 	}
 	for _, criticalFile := range []string{
