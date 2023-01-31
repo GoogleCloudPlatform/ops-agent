@@ -870,13 +870,13 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	if IsWindows(vm.Platform) {
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
-		scriptPath := "C:\\"+uuid.NewString()+".ps1"
+		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
 		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
-	scriptPath := uuid.NewString()+".sh"
+	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
 	// Use a UUID for the script name in case RunScriptRemotely is being called
@@ -1158,6 +1158,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.Platform) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+		}
+	}
+
 	return vm, nil
 }
 
@@ -1171,6 +1179,10 @@ func IsCentOS(platform string) bool {
 
 func IsRHEL(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-")
+}
+
+func isRHEL7SAPHA(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
