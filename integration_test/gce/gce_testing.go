@@ -1161,7 +1161,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// Removing flaky rhel-7 repositories due to b/265341502
 	if isRHEL7SAPHA(vm.Platform) {
 		if _, err := RunRemotely(ctx,
-			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-server-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-server-*"`); err != nil {
+			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
 		}
 	}
@@ -1182,7 +1182,7 @@ func IsRHEL(platform string) bool {
 }
 
 func isRHEL7SAPHA(platform string) bool {
-	return platform == "rhel-7-7-sap-ha" || platform == "rhel-7-9-sap-ha"
+	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
