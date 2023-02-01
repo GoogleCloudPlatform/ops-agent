@@ -44,7 +44,7 @@ func TestCheckFailure(t *testing.T) {
 
 	err := testCheck.RunCheck(testLogger)
 
-	assert.ErrorType(t, err, healthchecks.HealthCheckError{})
+	assert.ErrorIs(t, err, healthchecks.HcFailureErr)
 	healthError, _ := err.(healthchecks.HealthCheckError)
 	assert.Equal(t, wantMessage, healthError.Message)
 	assert.Equal(t, wantAction, healthError.Action)
