@@ -24,10 +24,7 @@ import (
 )
 
 func isPortUnavailableError(err error) bool {
-	if errors.Is(err, syscall.EADDRINUSE) {
-		return true
-	}
-	return false
+	return errors.Is(err, syscall.EADDRINUSE)
 }
 
 func isTimeoutError(err error) bool {
@@ -38,4 +35,8 @@ func isTimeoutError(err error) bool {
 		return true
 	}
 	return false
+}
+
+func isConnectionRefusedError(err error) bool {
+	return errors.Is(err, syscall.ECONNREFUSED)
 }

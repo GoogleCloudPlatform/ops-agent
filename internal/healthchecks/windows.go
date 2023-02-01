@@ -24,10 +24,7 @@ import (
 )
 
 func isPortUnavailableError(err error) bool {
-	if errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES) {
-		return true
-	}
-	return false
+	return errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES)
 }
 
 func isTimeoutError(err error) bool {
@@ -38,4 +35,8 @@ func isTimeoutError(err error) bool {
 		return true
 	}
 	return false
+}
+
+func isConnectionRefusedError(err error) bool {
+	return errors.Is(err, windows.WSAECONNREFUSED)
 }

@@ -35,8 +35,8 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
 	if err != nil {
-		if isTimeoutError(err) {
-			return MonApiConnErr
+		if isTimeoutError(err) || isConnectionRefusedError(err) {
+			return LogApiConnErr
 		}
 		return err
 	}
@@ -51,7 +51,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
 	if err != nil {
-		if isTimeoutError(err) {
+		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return MonApiConnErr
 		}
 		return err
