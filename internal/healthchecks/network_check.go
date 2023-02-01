@@ -16,7 +16,6 @@ package healthchecks
 
 import (
 	"log"
-	"net"
 	"net/http"
 )
 
@@ -35,7 +34,7 @@ func (c NetworkCheck) Name() string {
 func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
-	if err, ok := err.(net.Error); ok && err.Timeout() {
+	if isTimeoutError(err) {
 		return LogApiConnErr
 	}
 	if err != nil {
@@ -51,7 +50,7 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
-	if err, ok := err.(net.Error); ok && err.Timeout() {
+	if isTimeoutError(err) {
 		return MonApiConnErr
 	}
 	if err != nil {

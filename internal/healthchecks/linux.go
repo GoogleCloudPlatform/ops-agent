@@ -19,11 +19,22 @@ package healthchecks
 
 import (
 	"errors"
+	"net"
 	"syscall"
 )
 
 func isPortUnavailableError(err error) bool {
 	if errors.Is(err, syscall.EADDRINUSE) {
+		return true
+	}
+	return false
+}
+
+func isTimeoutError(err error) bool {
+	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		return true
+	}
+	if errors.Is(err, syscall.ETIMEDOUT) {
 		return true
 	}
 	return false

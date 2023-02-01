@@ -20,10 +20,21 @@ package healthchecks
 import (
 	"errors"
 	"golang.org/x/sys/windows"
+	"net"
 )
 
 func isPortUnavailableError(err error) bool {
 	if errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES) {
+		return true
+	}
+	return false
+}
+
+func isTimeoutError(err error) bool {
+	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		return true
+	}
+	if errors.Is(err, windows.WSAETIMEDOUT) {
 		return true
 	}
 	return false
