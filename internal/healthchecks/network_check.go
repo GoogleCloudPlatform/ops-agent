@@ -34,10 +34,10 @@ func (c NetworkCheck) Name() string {
 func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 	// Request to logging API
 	response, err := http.Get(loggingAPIUrl)
-	if isTimeoutError(err) {
-		return LogApiConnErr
-	}
 	if err != nil {
+		if isTimeoutError(err) {
+			return MonApiConnErr
+		}
 		return err
 	}
 	logger.Printf("Logging API response status: %s", response.Status)
@@ -50,13 +50,12 @@ func (c NetworkCheck) RunCheck(logger *log.Logger) error {
 
 	// Request to monitoring API
 	response, err = http.Get(monitoringAPIUrl)
-	if isTimeoutError(err) {
-		return MonApiConnErr
-	}
 	if err != nil {
+		if isTimeoutError(err) {
+			return MonApiConnErr
+		}
 		return err
 	}
-
 	logger.Printf("Monitoring API response status: %s", response.Status)
 	switch response.StatusCode {
 	case http.StatusOK:
