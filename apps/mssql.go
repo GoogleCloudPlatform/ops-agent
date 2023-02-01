@@ -24,7 +24,7 @@ type MetricsReceiverMssql struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	ReceiverVersion string `yaml:"receiver_version,omitempty"`
+	confgenerator.VersionedReceivers `yaml:",inline"`
 }
 
 func (MetricsReceiverMssql) Type() string {
