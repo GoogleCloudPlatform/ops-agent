@@ -3100,6 +3100,9 @@ func listenToPortForPlatform(platform string) string {
 
 		return cmd
 	}
+	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
+		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+	}
 	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
 }
 
