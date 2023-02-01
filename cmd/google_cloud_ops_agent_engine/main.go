@@ -39,9 +39,12 @@ func runStartupChecks(service string) {
 	case "":
 		time.Sleep(time.Second)
 		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-		healthCheckResults := gceHealthChecks.RunAllHealthChecks(*logsDir)
-		for _, message := range healthCheckResults {
-			log.Printf(message)
+		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
+		defer closer()
+
+		healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
+		for _, result := range healthCheckResults {
+			log.Printf(result.Message)
 		}
 		log.Println("Startup checks finished")
 	// Adding sleep to reduce flakyness in Ports Checks
