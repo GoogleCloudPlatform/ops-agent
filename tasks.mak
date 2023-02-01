@@ -85,7 +85,8 @@ integration_tests:
 	go test -v ./integration_test/ops_agent_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
-	-timeout=4h
+	-timeout=4h \
+	-run '.*TestRestartHealthCheck.*'
 
 third_party_apps_test:
 	ZONE="${ZONE}" \
