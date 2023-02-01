@@ -94,7 +94,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	eCheck := ErrorCheck{}
 	AllHealthChecks := healthchecks.HealthCheckRegistry{fCheck, sCheck, eCheck}
 
-	result := AllHealthChecks.RunAllHealthChecks("logs")
+	result := AllHealthChecks.RunAllHealthChecks("log")
 
 	assert.Check(t, strings.Contains(result[fCheck.Name()], "Result: FAIL"))
 	assert.Check(t, strings.Contains(result[sCheck.Name()], "Result: PASS"))
