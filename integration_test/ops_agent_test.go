@@ -3236,6 +3236,51 @@ func TestNetworkHealthCheck(t *testing.T) {
 	})
 }
 
+func checkFuncHealthChecksOuptut(t *testing.T, ctx context.Context, vm *gce.VM, logger *log.Logger) func(string, string) {
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return func(class string, expected string) {
+		if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+			t.Errorf("expected %s check to %s", class, expected)
+		}
+	}
+}
+
+func TestRestartHealthCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		checkFunc := checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+		checkFunc("Network", "PASS")
+		checkFunc("API", "PASS")
+		checkFunc("Ports", "PASS")
+
+		time.Sleep(30 * time.Second)
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		checkFunc = checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+		checkFunc("Network", "PASS")
+		checkFunc("API", "PASS")
+		checkFunc("Ports", "PASS")
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
