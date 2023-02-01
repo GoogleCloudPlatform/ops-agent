@@ -30,11 +30,10 @@ type HealthCheckError struct {
 	Action       string
 	ResourceLink string
 	IsFatal      bool
-	Err          error
 }
 
 func (e HealthCheckError) Error() string {
-	return e.Err.Error()
+	return e.Message
 }
 
 var (
