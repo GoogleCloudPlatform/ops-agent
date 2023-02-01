@@ -3253,31 +3253,35 @@ func TestRestartHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
+		for i := 0; i < 20; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
+
+				ctx, logger, vm := agents.CommonSetup(t, platform)
+
+				if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc := checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+
+				for j := 0; j < 10000; j += 1 {
+					writeToSystemLog(ctx, logger.ToMainLog(), vm, fmt.Sprintf("test %v", j))
+				}
+
+				if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc = checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+			})
 		}
-
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-
-		checkFunc := checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
-		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
-		checkFunc("Ports", "PASS")
-
-		time.Sleep(30 * time.Second)
-
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-			t.Fatal(err)
-		}
-
-		checkFunc = checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
-		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
-		checkFunc("Ports", "PASS")
 	})
 }
 
