@@ -133,11 +133,18 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 }
 
 func (s *service) runStartupChecks() {
-	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logDirectory)
-	for _, message := range healthCheckResults {
-		s.log.Info(EngineEventID, message)
+	logger, closer := healthchecks.CreateHealthChecksLogger(logsDir)
+	defer closer()
+
+	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
+	for _, result := range healthCheckResults {
+		if result.Err != nil {
+			s.log.Error(EngineEventID, result.Message)
+		} else {
+			s.log.Info(EngineEventID, result.Message)
+		}
 	}
 	s.log.Info(EngineEventID, "Startup checks finished")
 }
