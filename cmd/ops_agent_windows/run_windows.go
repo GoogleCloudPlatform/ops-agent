@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -55,12 +56,16 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
 	}
+
 	if err := s.generateConfigs(); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
+
+	s.runStartupChecks()
+
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to start subagents: %v", err))
@@ -125,6 +130,16 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 		return fmt.Errorf("conflicts with existing agents: %s", errors)
 	}
 	return nil
+}
+
+func (s *service) runStartupChecks() {
+	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logDirectory)
+	for _, message := range healthCheckResults {
+		s.log.Info(EngineEventID, message)
+	}
+	s.log.Info(EngineEventID, "Startup checks finished")
 }
 
 func (s *service) generateConfigs() error {
