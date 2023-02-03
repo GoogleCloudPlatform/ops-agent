@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -496,7 +506,7 @@ service:
       - prometheus/otel
     metrics/otlp_otlp:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - metricstransform/otlp_0
       - resourcedetection/_global_0
@@ -504,7 +514,7 @@ service:
       - otlp/otlp
     traces/traces_otlp_otlp:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - resourcedetection/_global_0
       receivers:

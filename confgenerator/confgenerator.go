@@ -124,12 +124,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:                        uc.Metrics.Service.LogLevel,
-		ReceiverPipelines:               receiverPipelines,
-		Pipelines:                       pipelines,
-		GlobalProcessors:                []otel.Component{gcpResourceDetector()},
-		GoogleCloudExporter:             googleCloudExporter(userAgent, false),
-		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
+		LogLevel:          uc.Metrics.Service.LogLevel,
+		ReceiverPipelines: receiverPipelines,
+		Pipelines:         pipelines,
+		GlobalProcessors:  []otel.Component{gcpResourceDetector()},
+		Exporters: map[otel.ExporterType]otel.Component{
+			otel.System: googleCloudExporter(userAgent, false),
+			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+		},
 	}.Generate()
 	if err != nil {
 		return "", err

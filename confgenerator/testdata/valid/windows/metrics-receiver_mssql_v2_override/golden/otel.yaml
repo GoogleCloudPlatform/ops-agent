@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -552,7 +562,7 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
@@ -573,7 +583,7 @@ service:
       - prometheus/fluentbit
     metrics/mssql_mssql:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
