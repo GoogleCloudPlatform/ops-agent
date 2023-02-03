@@ -643,6 +643,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		// All integrations are expected to set the instrumentation_source label.
 		for _, m := range metadata.ExpectedMetrics {
+			if m.Labels == nil {
+				m.Labels = map[string]string{}
+			}
 			if _, ok := m.Labels["instrumentation_source"]; !ok {
 				m.Labels["instrumentation_source"] = fmt.Sprintf("agent.googleapis.com/%s", app)
 			}
