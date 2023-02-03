@@ -24,14 +24,22 @@ import (
 
 const MetricsPort = 20201
 
+type ReceiverPipelineType int
+
+const (
+	OTel ReceiverPipelineType = iota
+	System
+	GMP
+)
+
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type ReceiverPipeline struct {
 	Receiver Component
 	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
-	// GMP indicates that the pipeline outputs Prometheus metrics.
-	GMP bool
+	// Type indicates if the pipeline outputs special metrics (either Prometheus or system metrics) that need to be handled with a special exporter.
+	Type ReceiverPipelineType
 }
 
 // Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
@@ -77,7 +85,7 @@ type ModularConfig struct {
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
 	//
-	// Note: GlobalProcessors are not applied to pipelines with GMP = true.
+	// Note: GlobalProcessors are not applied to pipelines with Type == GMP.
 	GlobalProcessors                []Component
 	GoogleCloudExporter             Component
 	GoogleManagedPrometheusExporter Component
@@ -123,7 +131,7 @@ func (c ModularConfig) Generate() (string, error) {
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
 	for _, r := range c.ReceiverPipelines {
-		if r.GMP {
+		if r.Type == GMP {
 			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
 
 			// Add the groupbyattrs processor so prometheus pipelines can use it.
@@ -167,7 +175,7 @@ func (c ModularConfig) Generate() (string, error) {
 		}
 
 		// TODO: Should globalProcessorNames be appended for non-metrics receivers?
-		if receiverPipeline.GMP {
+		if receiverPipeline.Type == GMP {
 			exporter = googleManagedPrometheusExporter
 			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {
