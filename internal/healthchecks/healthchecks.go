@@ -61,11 +61,10 @@ func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func())
 
 func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]HealthCheckResult {
 	var message string
-	var err error
 	result := map[string]HealthCheckResult{}
 
 	for _, c := range r {
-		err = c.RunCheck(logger)
+		err := c.RunCheck(logger)
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
 				message = fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
