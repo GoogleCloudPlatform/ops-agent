@@ -18,7 +18,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -35,7 +34,6 @@ var (
 
 func runStartupChecks(service string) {
 	if service == "" {
-		time.Sleep(time.Second)
 		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
 		defer closer()
