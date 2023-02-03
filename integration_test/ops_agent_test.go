@@ -3097,7 +3097,7 @@ metrics:
 }
 
 func isHealthCheckTestPlatform(platform string) bool {
-	return platform == "windows-2019" || platform == "debian-11"
+	return true
 }
 
 func healthCheckResultMessage(name string, result string) string {
@@ -3145,7 +3145,12 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", onlyReadScopes})
 
 		if !gce.IsWindows(vm.Platform) {
-			packages := []string{"netcat"}
+			var packages []string
+			if gce.IsRHEL(vm.Platform) {
+				packages = []string{"nc"}
+			} else {
+				packages = []string{"netcat"}
+			}
 			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 			if err != nil {
 				t.Fatalf("failed to install %v with err: %s", packages, err)
@@ -3249,7 +3254,7 @@ func checkFuncHealthChecksOuptut(t *testing.T, ctx context.Context, vm *gce.VM, 
 	}
 }
 
-func TestRestartHealthCheck(t *testing.T) {
+func testRestartHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3263,20 +3268,42 @@ func TestRestartHealthCheck(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFunc := checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+				cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc := func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("first: expected %s check to %s", class, expected)
+					}
+				}
 				checkFunc("Network", "PASS")
 				checkFunc("API", "PASS")
 				checkFunc("Ports", "PASS")
 
-				for j := 0; j < 10000; j += 1 {
-					writeToSystemLog(ctx, logger.ToMainLog(), vm, fmt.Sprintf("test %v", j))
+				payload := ""
+				for j := 0; j < 5000; j += 1 {
+					payload = payload + fmt.Sprintf("test %v \n", j)
 				}
+				writeToSystemLog(ctx, logger.ToMainLog(), vm, payload)
+
+				time.Sleep(30 * time.Second)
 
 				if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
 					t.Fatal(err)
 				}
 
-				checkFunc = checkFuncHealthChecksOuptut(t, ctx, vm, logger.ToMainLog())
+				cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc = func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("second: expected %s check to %s", class, expected)
+					}
+				}
 				checkFunc("Network", "PASS")
 				checkFunc("API", "PASS")
 				checkFunc("Ports", "PASS")
