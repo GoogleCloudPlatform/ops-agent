@@ -19,7 +19,7 @@ package confgenerator
 func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
 
-	// Read the built-in config file.
+	// Start with the built-in config.
 	template, err := builtInStruct.DeepCopy(platform)
 	if err != nil {
 		return nil, err
