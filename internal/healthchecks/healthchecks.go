@@ -19,7 +19,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 var healthChecksLogFile = "health-checks.log"
@@ -67,19 +66,6 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]H
 
 	for _, c := range r {
 		err = c.RunCheck(logger)
-		if c.Name() == "Ports Check" && err != nil {
-			logger.Printf("failed ports check. start retries : err %v", err)
-			for j := 0; j < 10; j++ {
-				time.Sleep(time.Second)
-				err = c.RunCheck(logger)
-				if err == nil {
-					logger.Printf("succesful retry %v : err %v", j, err)
-					break
-				}
-				logger.Printf("failed retry %v : err %v", j, err)
-			}
-		}
-
 		if err != nil {
 			if healthError, ok := err.(HealthCheckError); ok {
 				message = fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
