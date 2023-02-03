@@ -28,6 +28,11 @@ type HealthCheck interface {
 	RunCheck(logger *log.Logger) error
 }
 
+type HealthCheckResult struct {
+	Message string
+	Err     error
+}
+
 type HealthCheckRegistry []HealthCheck
 
 func HealthCheckRegistryFactory() HealthCheckRegistry {
@@ -38,31 +43,25 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func createHealthChecksLogger(logDir string) (*log.Logger, func(), error) {
+func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func()) {
 	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return nil, func() {}, fmt.Errorf("failed to create directory for %q: %w", path, err)
+		log.Printf("failed to create directory for %q: %v", path, err)
+		return log.Default(), func() {}
 	}
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return nil, func() {}, fmt.Errorf("failed to open health checks log file %q: %w", path, err)
+		log.Printf("failed to open health checks log file %q: %v", path, err)
+		return log.Default(), func() {}
 	}
 
-	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }, nil
+	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) map[string]string {
+func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]HealthCheckResult {
 	var message string
-	var logger *log.Logger
-	result := map[string]string{}
-
-	logger, closer, err := createHealthChecksLogger(logDir)
-	if err != nil {
-		log.Printf("failed to create health checks file logger: %v", err)
-		logger = log.Default()
-	}
-	defer closer()
+	result := map[string]HealthCheckResult{}
 
 	for _, c := range r {
 		err := c.RunCheck(logger)
@@ -77,7 +76,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logDir string) map[string]string
 			message = fmt.Sprintf("%s - Result: PASS", c.Name())
 		}
 		logger.Print(message)
-		result[c.Name()] = message
+		result[c.Name()] = HealthCheckResult{Message: message, Err: err}
 	}
 
 	return result
