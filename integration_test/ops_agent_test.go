@@ -3146,7 +3146,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 		if !gce.IsWindows(vm.Platform) {
 			var packages []string
-			if gce.IsRHEL(vm.Platform) {
+			if strings.HasPrefix(platform, "rocky-") {
 				packages = []string{"nc"}
 			} else {
 				packages = []string{"netcat"}
