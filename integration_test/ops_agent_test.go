@@ -2678,15 +2678,15 @@ func TestLoggingFluentbitSelfLogs(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-
 		cmd := `sudo timedatectl set-timezone America/Toronto`
 		if gce.IsWindows(platform) {
 			cmd = `Set-TimeZone -Name "Eastern Standard Time"`
 		}
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
