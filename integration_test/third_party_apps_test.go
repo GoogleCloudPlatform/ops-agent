@@ -647,7 +647,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 				m.Labels = map[string]string{}
 			}
 			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = fmt.Sprintf("agent.googleapis.com/%s", app)
+				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
+			}
+			if _, ok := m.Labels["instrumentation_version"]; !ok {
+				m.Labels["instrumentation_version"] = `.*`
 			}
 		}
 
