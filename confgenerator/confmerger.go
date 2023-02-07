@@ -19,8 +19,8 @@ package confgenerator
 func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
 	builtInStruct := builtInConfStructs[platform]
 
-	// Read the built-in config file.
-	original, err := builtInStruct.DeepCopy(platform)
+	// Start with the built-in config.
+	result, err := builtInStruct.DeepCopy(platform)
 	if err != nil {
 		return nil, err
 	}
@@ -32,19 +32,19 @@ func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string
 
 	// Optionally merge the user config file.
 	if overrides != nil {
-		mergeConfigs(original, overrides)
+		mergeConfigs(result, overrides)
 	}
 
-	if err := original.Validate(); err != nil {
+	if err := result.Validate(); err != nil {
 		return nil, err
 	}
 
 	// Ensure the merged config struct fields are valid.
 	v := newValidator()
-	if err := v.Struct(original); err != nil {
+	if err := v.Struct(result); err != nil {
 		panic(err)
 	}
-	return original, nil
+	return result, nil
 }
 
 func mergeConfigs(original, overrides *UnifiedConfig) {
