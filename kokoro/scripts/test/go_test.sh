@@ -71,7 +71,7 @@ sudo rm -rf /usr/local/go
 # GOPATH is semi-deprecated nowadays too.
 unset GOPATH
 
-GO_VERSION="1.19"
+GO_VERSION="1.20"
 
 # Download and install a newer version of go.
 # Install from a GCS bucket to avoid being throttled by go.dev.
