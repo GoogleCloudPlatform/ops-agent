@@ -1,0 +1,9 @@
+[21:7] "channels" contains the same value more than once: application
+  18 |       type: windows_event_log
+  19 |       receiver_version: 2
+  20 |       channels:
+> 21 |       - Application
+             ^
+  22 |       - System
+  23 |       - application
+  24 |   service:
