@@ -3213,6 +3213,88 @@ func TestNetworkHealthCheck(t *testing.T) {
 	})
 }
 
+func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    log_syslog:
+      type: files
+      include_paths:
+      - %s
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [log_syslog]
+        processors: []`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+		var bufferDir string
+
+		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+
+		generateLogsScript := fmt.Sprintf(`
+			x=1
+			while [ $x -le 1000000 ]
+			do
+			  counter=1
+			  while [ $counter -le 100000 ]
+			  do
+				echo "Hello world! $x" >> %s
+				((counter++))
+				((x++))
+			  done
+			  sleep 1
+			done`, logPath)
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		scripts := fmt.Sprintf(`
+		cat  /run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf 
+		`)
+		gce.RunScriptRemotely(ctx, logger, vm, scripts, nil, nil)
+
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("du -c %s | cut -f 1 | tail -n 1", bufferDir))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		byteCount, err := strconv.Atoi(strings.TrimSuffix(output.Stdout, "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Threshhold of ~100MiB since du returns size in KB
+		threshold := 100000
+		if byteCount > threshold {
+			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
+		}
+
+		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
