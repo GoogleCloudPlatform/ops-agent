@@ -34,6 +34,7 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 git submodule update --init --recursive
 
 # Debugging why we are not getting Docker cache hits for presubmits.
+git diff --name-only HEAD master
 ls -Al submodules/opentelemetry-operations-collector/go.*
 
 . VERSION
