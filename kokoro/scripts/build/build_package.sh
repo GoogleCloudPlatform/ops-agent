@@ -33,6 +33,11 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 # Submodules aren't cloned by kokoro for github repos.
 git submodule update --init --recursive
 
+ls -Al submodules/opentelemetry-operations-collector/go.mod
+ls -Al submodules/opentelemetry-operations-collector/go.sum
+
+exit 1
+
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
