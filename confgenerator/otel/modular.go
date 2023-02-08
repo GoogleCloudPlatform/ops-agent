@@ -37,7 +37,7 @@ const (
 
 func (t ExporterType) Name() string {
 	if t == System || t == GMP {
-		// OTel and GMP have different exporter types so can share the empty string.
+		// The collector's OTel and GMP exporters have different types so can share the empty string.
 		return ""
 	} else if t == OTel {
 		return "otel"
