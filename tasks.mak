@@ -86,7 +86,7 @@ integration_tests:
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h \
-	-run '.*TestRestartHealthCheck.*'
+	-run '.*TestRestartOpsAgent.*'
 
 third_party_apps_test:
 	ZONE="${ZONE}" \

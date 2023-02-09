@@ -3312,6 +3312,47 @@ func testRestartHealthCheck(t *testing.T) {
 	})
 }
 
+func TestRestartOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		for i := 0; i < 20; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
+
+				ctx, logger, vm := agents.CommonSetup(t, platform)
+				if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+					t.Fatal(err)
+				}
+
+				// Wait for the Ops Agent to be active. Make sure that it is working.
+				if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+					t.Fatal(err)
+				}
+
+				/* payload := ""
+				for j := 0; j < 1000; j += 1 {
+					payload = payload + fmt.Sprintf("test %v \n", j)
+				}
+				writeToSystemLog(ctx, logger.ToMainLog(), vm, payload)*/
+
+				time.Sleep(5 * time.Minute)
+
+				if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+					t.Fatal(err)
+				}
+
+				// Wait for the Ops Agent to be active. Make sure that it is working.
+				if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+					t.Fatal(err)
+				}
+
+				// testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+			})
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
