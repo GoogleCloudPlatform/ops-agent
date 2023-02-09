@@ -25,14 +25,13 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       response_code: \d+
-  #  TODO(b/170138116): Enable this metric once it is being collected.
-  #- type: agent.googleapis.com/agent/log_entry_retry_count
-  #  value_type: INT64
-  #  kind: CUMULATIVE
-  #  monitored_resource: gce_instance
-  #  labels:
-  #    response_code: .*
-  #  optional: true
+  - type: agent.googleapis.com/agent/log_entry_retry_count
+   value_type: INT64
+   kind: CUMULATIVE
+   monitored_resource: gce_instance
+   labels:
+     response_code: .*
+   optional: true
   - type: agent.googleapis.com/agent/memory_usage
     value_type: DOUBLE
     kind: GAUGE
