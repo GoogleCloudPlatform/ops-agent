@@ -44,7 +44,7 @@ func setLogNameComponents(tag, logName, receiverType string, hostName string) []
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(match, userAgent string, storage_limit_size string) fluentbit.Component {
+func stackdriverOutputComponent(match, userAgent string, storageLimitSize string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
@@ -70,8 +70,8 @@ func stackdriverOutputComponent(match, userAgent string, storage_limit_size stri
 		"net.connect_timeout_log_error": "False",
 	}
 
-	if storage_limit_size != "" {
-		config["storage.total_limit_size"] = storage_limit_size
+	if storageLimitSize != "" {
+		config["storage.total_limit_size"] = storageLimitSize
 	}
 
 	return fluentbit.Component{
