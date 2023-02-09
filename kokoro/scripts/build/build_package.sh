@@ -33,6 +33,10 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 # Submodules aren't cloned by kokoro for github repos.
 git submodule update --init --recursive
 
+# Debugging why we are not getting Docker cache hits for presubmits.
+git diff --name-only HEAD master
+ls -Al submodules/opentelemetry-operations-collector/go.*
+
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
