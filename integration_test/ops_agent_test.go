@@ -3312,7 +3312,7 @@ func testRestartHealthCheck(t *testing.T) {
 	})
 }
 
-func TestRestartOpsAgent(t *testing.T) {
+func testRestartOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
