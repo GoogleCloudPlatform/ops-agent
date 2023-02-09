@@ -29,10 +29,12 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
+	"go.uber.org/multierr"
 	"golang.org/x/exp/constraints"
 )
 
@@ -288,7 +290,7 @@ func newValidator() *validator.Validate {
 		if !ok {
 			panic(fmt.Sprintf("winlogchannels: could not convert %s's parent to LoggingReceiverWindowsEventLog", fl.Field().String()))
 		}
-		if receiver.ReceiverVersion == "" || receiver.ReceiverVersion == "1" {
+		if receiver.IsDefaultVersion() {
 			return true
 		}
 		return validateWinlogchannels(receiver.Channels) == nil
@@ -821,6 +823,12 @@ func (l *Logging) Validate() error {
 		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetListenPorts(), p.ReceiverIDs); err != nil {
 			return err
 		}
+		if err := validateWinlogV1Channels(l.Receivers, p.ReceiverIDs); err != nil {
+			// Only emit a soft failure (warning) here, because:
+			// 1) we want this to be backwards compatible, and
+			// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
+			log.Print(err)
+		}
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
@@ -1032,6 +1040,50 @@ func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]u
 		}
 	}
 	return taken, nil
+}
+
+// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
+// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
+// would be needed instead.
+// Caveat: there is little official documentation to support that this is a guaranteed
+// method of determining whether a channel is accessible via the "old API".
+func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string) error {
+	oldChannels, err := windows.GetOldWinlogChannels()
+	if err != nil {
+		return fmt.Errorf("validateWinlogV1Channels: GetOldWinlogChannels() returned err=%v", err)
+	}
+	for _, receiverID := range receiverIDs {
+		var ok bool
+		var receiver LoggingReceiver
+		var winlogReceiver *LoggingReceiverWindowsEventLog
+		if receiver, ok = receivers[receiverID]; !ok {
+			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
+		}
+		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok || !winlogReceiver.IsDefaultVersion() {
+			continue
+		}
+		for _, channel := range winlogReceiver.Channels {
+			if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
+				err = multierr.Append(err, fmt.Errorf(
+					`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
+					receiverID,
+					channel,
+				))
+			}
+		}
+	}
+	return err
+}
+
+// stringContainedInSliceCaseInsensitive returns whether or not the given string
+// is contained within the given slice when using a case-insensitive comparison.
+func stringContainedInSliceCaseInsensitive(str string, slice []string) bool {
+	for _, candidate := range slice {
+		if strings.EqualFold(str, candidate) {
+			return true
+		}
+	}
+	return false
 }
 
 func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {

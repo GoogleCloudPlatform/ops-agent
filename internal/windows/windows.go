@@ -36,3 +36,19 @@ func Is2012() bool {
 	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
 	return data == "9200" || data == "9600"
 }
+
+// GetOldWinlogChannels returns the set of event logs (channels) under
+// HKLM\SYSTEM\CurrentControlSet\Services\EventLog, which (supposedly) corresponds
+// to the available channels on the machine which are compatible with the "old API".
+func GetOldWinlogChannels() ([]string, error) {
+	parentKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Services\EventLog`, registry.READ)
+	if err != nil {
+		return nil, err
+	}
+	defer parentKey.Close()
+	subKeys, err := parentKey.ReadSubKeyNames(-1)
+	if err != nil {
+		return nil, err
+	}
+	return subKeys, nil
+}
