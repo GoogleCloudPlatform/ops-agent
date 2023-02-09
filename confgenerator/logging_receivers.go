@@ -354,6 +354,10 @@ func (r LoggingReceiverWindowsEventLog) Type() string {
 	return "windows_event_log"
 }
 
+func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
+	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
+}
+
 func commonEventLogComponents(useNewerApi bool, channels []string, tag string) []fluentbit.Component {
 	inputName := "winlog"
 	timeKey := "TimeGenerated"
@@ -418,7 +422,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 	if len(r.ReceiverVersion) == 0 {
 		r.ReceiverVersion = "1"
 	}
-	if r.ReceiverVersion == "2" {
+	if !r.IsDefaultVersion() {
 		return r.componentsForV2(tag)
 	}
 
