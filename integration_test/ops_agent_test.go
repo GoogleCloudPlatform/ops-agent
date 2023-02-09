@@ -2617,12 +2617,17 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	return nil
 }
 
-func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
+func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, processNames []string, otherProcessNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
 	if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 		t.Fatal(err)
 	}
 
 	pidOutputBefore, processName, err := fetchPIDAndProcessName(ctx, logger.ToMainLog(), vm, processNames)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	otherPidOutputBefore, otherProcessName, err := fetchPIDAndProcessName(ctx, logger.ToMainLog(), vm, otherProcessNames)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2645,8 +2650,17 @@ func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.Di
 		t.Fatal(err)
 	}
 
+	otherPidOutputAfter, err := fetchPID(ctx, logger.ToMainLog(), vm, otherProcessName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if pidOutputBefore == pidOutputAfter {
 		t.Errorf("PID did not change; we failed to crash %v.", processName)
+	}
+
+	if otherPidOutputBefore != otherPidOutputAfter {
+		t.Errorf("PID of the other process %v change ; it shouldn't update.", otherProcessName)
 	}
 }
 
@@ -2665,7 +2679,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), metricsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), []string{"fluent-bit"}, metricsLivenessChecker)
 	})
 }
 
@@ -2684,7 +2698,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, metricsAgentProcessNamesForPlatform(vm.Platform), loggingLivenessChecker)
 	})
 }
 
@@ -2703,7 +2717,7 @@ func TestDiagnosticsCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), metricsAgentProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
 	})
 }
 
