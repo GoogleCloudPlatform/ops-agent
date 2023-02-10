@@ -151,7 +151,7 @@ func initServices() error {
 			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
 			filepath.Join(base, fmt.Sprintf("%s-wrapper.exe", serviceName)),
 			append([]string{
-				"-log_filename", filepath.Join(logDirectory, "logging-module.log"),
+				"-log_path", filepath.Join(logDirectory, "logging-module.log"),
 				"-config_path", filepath.Join(base, "../config/config.yaml"),
 				fluentbitExe}, fluentbitArgs...),
 		},

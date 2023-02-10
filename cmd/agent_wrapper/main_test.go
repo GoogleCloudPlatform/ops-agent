@@ -17,8 +17,8 @@ const (
 )
 
 type testCase struct {
-	beforeLogSizes   []int64
-	expectedLogSizes []int64
+	beforeLogSizes   []int
+	expectedLogSizes []int
 	bytesWritten     int8
 	config           string
 }
@@ -58,21 +58,21 @@ func (tc *testCase) makeLogFileSizes(dir string) error {
 
 type logFileType struct {
 	time time.Time
-	size int64
+	size int
 }
 
-func logFilesToSizes(logFiles []logFileType) []int64 {
+func logFilesToSizes(logFiles []logFileType) []int {
 	sort.Slice(logFiles, func(i, j int) bool {
 		return logFiles[i].time.Unix() > logFiles[j].time.Unix()
 	})
-	sizes := []int64{}
+	sizes := []int{}
 	for _, f := range logFiles {
 		sizes = append(sizes, f.size)
 	}
 	return sizes
 }
 
-func getLogFileSizes(dir string) ([]int64, error) {
+func getLogFileSizes(dir string) ([]int, error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -95,19 +95,19 @@ func getLogFileSizes(dir string) ([]int64, error) {
 			}
 		}
 
-		logFiles = append(logFiles, logFileType{ts, info.Size()})
+		logFiles = append(logFiles, logFileType{ts, int(info.Size())})
 	}
 
 	return logFilesToSizes(logFiles), nil
 }
 
-func makeLogFile(path string, size int64) error {
+func makeLogFile(path string, size int) error {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	return file.Truncate(size)
+	return file.Truncate(int64(size))
 }
 
 func runTest(t *testing.T, tc testCase) {
@@ -144,54 +144,54 @@ func runTest(t *testing.T, tc testCase) {
 func TestAgentWrapper(t *testing.T) {
 	cases := []testCase{
 		{
-			beforeLogSizes:   []int64{},
-			expectedLogSizes: []int64{10},
+			beforeLogSizes:   []int{},
+			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
-			beforeLogSizes:   []int64{0},
-			expectedLogSizes: []int64{10},
+			beforeLogSizes:   []int{0},
+			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
-			beforeLogSizes:   []int64{1},
-			expectedLogSizes: []int64{11},
+			beforeLogSizes:   []int{1},
+			expectedLogSizes: []int{11},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
-			beforeLogSizes:   []int64{400 * megabyte},
-			expectedLogSizes: []int64{10, 400 * megabyte},
+			beforeLogSizes:   []int{400 * megabyte},
+			expectedLogSizes: []int{10, 400 * megabyte},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
-			beforeLogSizes:   []int64{399 * megabyte},
-			expectedLogSizes: []int64{399*megabyte + 10},
+			beforeLogSizes:   []int{399 * megabyte},
+			expectedLogSizes: []int{399*megabyte + 10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
-			beforeLogSizes:   []int64{megabyte},
-			expectedLogSizes: []int64{10, megabyte},
+			beforeLogSizes:   []int{megabyte},
+			expectedLogSizes: []int{10, megabyte},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
     max_file_size_megabytes: 1`,
 		},
 		{
-			beforeLogSizes:   []int64{megabyte, megabyte + 1},
-			expectedLogSizes: []int64{10, megabyte},
+			beforeLogSizes:   []int{megabyte, megabyte + 1},
+			expectedLogSizes: []int{10, megabyte},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
     max_file_size_megabytes: 1`,
 		},
 		{
-			beforeLogSizes:   []int64{megabyte, megabyte + 1},
-			expectedLogSizes: []int64{10, megabyte, megabyte + 1},
+			beforeLogSizes:   []int{megabyte, megabyte + 1},
+			expectedLogSizes: []int{10, megabyte, megabyte + 1},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
@@ -199,8 +199,8 @@ func TestAgentWrapper(t *testing.T) {
     backup_count: 2`,
 		},
 		{
-			beforeLogSizes:   []int64{megabyte},
-			expectedLogSizes: []int64{megabyte + 10},
+			beforeLogSizes:   []int{megabyte},
+			expectedLogSizes: []int{megabyte + 10},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
@@ -208,24 +208,24 @@ func TestAgentWrapper(t *testing.T) {
     max_file_size_megabytes: 1`,
 		},
 		{
-			beforeLogSizes:   []int64{},
-			expectedLogSizes: []int64{10},
+			beforeLogSizes:   []int{},
+			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
     enabled: false`,
 		},
 		{
-			beforeLogSizes:   []int64{0},
-			expectedLogSizes: []int64{10},
+			beforeLogSizes:   []int{0},
+			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:
     enabled: false`,
 		},
 		{
-			beforeLogSizes:   []int64{1},
-			expectedLogSizes: []int64{11},
+			beforeLogSizes:   []int{1},
+			expectedLogSizes: []int{11},
 			bytesWritten:     10,
 			config: `global:
   default_self_log_file_rotation:

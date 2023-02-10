@@ -32,8 +32,8 @@ func (c *LogFileRotation) GetEnabled() bool {
 	return *c.Enabled
 }
 
-// Get the maximum file size for logs. If not set or non-positive,
-// defaults to 400 MB.
+// Get the maximum file size for logs in megabytes. If not set
+// or non-positive, defaults to 400 MB.
 func (c *LogFileRotation) GetMaxFileSize() int {
 	if c.MaxFileSize == nil || *c.MaxFileSize <= 0 {
 		return 400
