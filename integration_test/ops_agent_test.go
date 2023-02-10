@@ -3252,58 +3252,58 @@ func simulateLogLoad(ctx context.Context, logger *log.Logger, vm *gce.VM) {
 func TestRestartHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		// t.Parallel()
-		// for i := 0; i < 20; i += 1 {
-		// 	t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
 		t.Parallel()
+		for i := 0; i < 20; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
 
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+				ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
+				if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+					t.Fatal(err)
+				}
+
+				cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc := func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("first: expected %s check to %s", class, expected)
+					}
+				}
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+
+				simulateLogLoad(ctx, logger.ToMainLog(), vm)
+
+				// time.Sleep(30 * time.Second)
+
+				if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+					t.Fatal(err)
+				}
+
+				cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc = func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("second: expected %s check to %s", class, expected)
+					}
+				}
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+			})
 		}
-
-		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		checkFunc := func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("first: expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
-		checkFunc("Ports", "PASS")
-
-		simulateLogLoad(ctx, logger.ToMainLog(), vm)
-
-		// time.Sleep(30 * time.Second)
-
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-			t.Fatal(err)
-		}
-
-		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		checkFunc = func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("second: expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
-		checkFunc("Ports", "PASS")
-		// 	})
-		// }
 	})
 }
 
-func TestRestartOpsAgent(t *testing.T) {
+func testRestartOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		// t.Parallel()
