@@ -25,12 +25,15 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"github.com/shirou/gopsutil/host"
 )
+
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
 
 func googleCloudExporter(userAgent string) otel.Component {
 	return otel.Component{
@@ -383,10 +386,44 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, generateSeveritySelfLogsParser()...)
+
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
+}
+
+func generateSeveritySelfLogsParser() []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+
+	// TODO(b/268046702) Time_Offset does not work for windows will be patched in Fluent-bit 2.x upgrade
+	timeOffset := time.Now().Format("-0700")
+
+	parser := LoggingProcessorParseRegex{
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		PreserveKey: true,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			TimeOffset: timeOffset,
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Components(fluentBitSelfLogTag, "self-logs-severity")
+
+	out = append(out, parser...)
+
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))

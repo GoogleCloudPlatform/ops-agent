@@ -2688,6 +2688,29 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
+func TestLoggingFluentbitSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if !gce.IsWindows(platform) {
+			cmd := `sudo timedatectl set-timezone America/Toronto`
+			if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	time.Sleep(3 * time.Minute)
 	// Query for a metric sent by the diagnostics service from the last
