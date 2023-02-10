@@ -192,12 +192,17 @@ type packageLocation struct {
 	// Package repository suffix to install from. Setting this to ""
 	// means to install the latest stable release.
 	repoSuffix string
+	// Region the packages live in in Artifact Registry. Setting this to ''
+	// means that the packages are not accessed directly from Artifact
+	// Registry.
+	artifactRegistryRegion string
 }
 
 func locationFromEnvVars() packageLocation {
 	return packageLocation{
-		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:    os.Getenv("REPO_SUFFIX"),
+		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
 
