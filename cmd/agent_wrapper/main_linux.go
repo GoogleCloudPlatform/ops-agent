@@ -28,11 +28,10 @@ func getMergedConfig(userConfPath string) (*confgenerator.UnifiedConfig, error) 
 	return getMergedConfigForPlatform(userConfPath, "linux")
 }
 
-func run_command(cmd *exec.Cmd) error {
+func runCommand(cmd *exec.Cmd) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
 	}
 
-	cmd.Run()
-	return nil
+	return cmd.Run()
 }

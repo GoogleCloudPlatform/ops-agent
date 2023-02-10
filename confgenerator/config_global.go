@@ -20,10 +20,11 @@ type Global struct {
 
 type LogFileRotation struct {
 	Enabled     *bool `yaml:"enabled"`
-	MaxFileSize *int  `yaml:"max_file_size_megabytes"`
-	BackupCount *int  `yaml:"backup_count"`
+	MaxFileSize *int  `yaml:"max_file_size_megabytes" validate:"omitempty,gte=1"`
+	BackupCount *int  `yaml:"backup_count" validate:"omitempty,gte=0"`
 }
 
+// Get whether log rotation should be enabled. Defaults to true if unset.
 func (c *LogFileRotation) GetEnabled() bool {
 	if c.Enabled == nil {
 		return true
@@ -31,6 +32,8 @@ func (c *LogFileRotation) GetEnabled() bool {
 	return *c.Enabled
 }
 
+// Get the maximum file size for logs. If not set or non-positive,
+// defaults to 400 MB.
 func (c *LogFileRotation) GetMaxFileSize() int {
 	if c.MaxFileSize == nil || *c.MaxFileSize <= 0 {
 		return 400
@@ -38,6 +41,9 @@ func (c *LogFileRotation) GetMaxFileSize() int {
 	return *c.MaxFileSize
 }
 
+// Get the maximum number of backups for logs. If not set or negative,
+// defaults to 1 backup (2 files including the file that is being logged
+// to).
 func (c *LogFileRotation) GetBackupCount() int {
 	if c.BackupCount == nil || *c.BackupCount < 0 {
 		return 1

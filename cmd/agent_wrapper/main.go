@@ -53,7 +53,7 @@ func run(logFilename, configurationPath string, command []string) error {
 	if logFilename != "" && config.GetEnabled() {
 		logger := lumberjack.Logger{
 			Filename:   logFilename,
-			MaxSize:    config.GetMaxFileSize(), // megabytes
+			MaxSize:    config.GetMaxFileSize(),
 			MaxBackups: config.GetBackupCount(),
 			Compress:   false,
 		}
@@ -69,13 +69,13 @@ func run(logFilename, configurationPath string, command []string) error {
 	} else {
 		cmd.Stdout = os.Stdout
 	}
-	if err := run_command(cmd); err != nil {
+	if err := runCommand(cmd); err != nil {
 		return err
 	}
 	return nil
 }
 
-var logFilenameFlag = flag.String("log_filename", "", "The name of the file to log to. If empty, doesn't log to a file")
+var logPathFlag = flag.String("log_path", "", "The name of the file to log to. If empty, logs to stdout")
 var configurationPathFlag = flag.String("config_path", "", "The path to the user specified agent config")
 
 func main() {
@@ -85,7 +85,7 @@ func main() {
 		flag.Usage()
 		log.Fatal("Command to run must be passed in as first argument")
 	}
-	if err := run(*logFilenameFlag, *configurationPathFlag, flag.Args()); err != nil {
+	if err := run(*logPathFlag, *configurationPathFlag, flag.Args()); err != nil {
 		log.Fatal(err)
 	}
 }

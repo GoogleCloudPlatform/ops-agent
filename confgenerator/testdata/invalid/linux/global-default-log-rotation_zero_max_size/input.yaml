@@ -1,0 +1,3 @@
+global:
+  default_self_log_file_rotation:
+    max_file_size_megabytes: 0
