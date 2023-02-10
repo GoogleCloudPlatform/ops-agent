@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -31,6 +32,7 @@ import (
 
 const (
 	EngineEventID uint32 = 1
+	StdoutEventID uint32 = 2
 )
 
 func containsString(all []string, s string) bool {
@@ -199,6 +201,19 @@ func (s *service) startSubagents() error {
 	return nil
 }
 
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func run(name string) error {
 	elog, err := eventlog.Open(name)
 	if err != nil {
@@ -206,6 +221,12 @@ func run(name string) error {
 		return err
 	}
 	defer elog.Close()
+
+	// Redirect stdout to the event log to capture internal messages
+	log.SetOutput(&eventLogWriter{
+		EventID:  StdoutEventID,
+		EventLog: elog,
+	})
 
 	elog.Info(1, fmt.Sprintf("starting %s service", name))
 	err = svc.Run(name, &service{log: elog})

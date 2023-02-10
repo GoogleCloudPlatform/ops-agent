@@ -1636,6 +1636,40 @@ func TestWindowsEventLog(t *testing.T) {
 	})
 }
 
+func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		log := "windows_event_log"
+		channel := "Microsoft-Windows-User Control Panel/Operational"
+		config := fmt.Sprintf(`logging:
+  receivers:
+    %s:
+      type: windows_event_log
+      channels:
+      - Application
+      - %s
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [%s]
+`, log, channel, log)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		expectedWarning := fmt.Sprintf(`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log`, log, channel)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {

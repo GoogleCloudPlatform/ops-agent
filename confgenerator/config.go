@@ -1048,20 +1048,21 @@ func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string
 	if err != nil {
 		return fmt.Errorf("validateWinlogV1Channels: GetOldWinlogChannels() returned err=%v", err)
 	}
+	log.Printf("oldChannels: %v", oldChannels)
 	for _, receiverID := range receiverIDs {
 		var ok bool
 		var receiver LoggingReceiver
-		var winlogReceiver LoggingReceiverWindowsEventLog
+		var winlogReceiver *LoggingReceiverWindowsEventLog
 		if receiver, ok = receivers[receiverID]; !ok {
 			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
 		}
-		if winlogReceiver, ok = receiver.(LoggingReceiverWindowsEventLog); !ok || !winlogReceiver.IsDefaultVersion() {
+		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok || !winlogReceiver.IsDefaultVersion() {
 			continue
 		}
 		for _, channel := range winlogReceiver.Channels {
 			if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
 				err = multierr.Append(err, fmt.Errorf(
-					`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver.`,
+					`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
 					receiverID,
 					channel,
 				))
