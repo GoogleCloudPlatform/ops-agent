@@ -58,7 +58,7 @@ func (r MetricsReceiverNvml) Pipelines() []otel.ReceiverPipeline {
 					"nvml.gpu.processes.max_bytes_used",
 					"gpu/processes/max_bytes_used",
 				),
-				otel.AddPrefix("workload.googleapis.com"),
+				otel.AddPrefix("agent.googleapis.com"),
 			),
 		}},
 	}}

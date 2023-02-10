@@ -33,7 +33,7 @@ platforms_to_skip:
   - sles-12
   - sles-15
 expected_metrics:
-  - type: workload.googleapis.com/gpu/utilization
+  - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -42,7 +42,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
     representative: true
-  - type: workload.googleapis.com/gpu/memory/bytes_used
+  - type: agent.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
@@ -51,7 +51,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       memory_state: free|used
-  - type: workload.googleapis.com/gpu/processes/utilization
+  - type: agent.googleapis.com/gpu/processes/utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resource: gce_instance
@@ -64,7 +64,7 @@ expected_metrics:
       command: .*
       command_line: .*
       owner: .* 
-  - type: workload.googleapis.com/gpu/processes/max_bytes_used
+  - type: agent.googleapis.com/gpu/processes/max_bytes_used
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
