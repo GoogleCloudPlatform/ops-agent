@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -398,15 +397,12 @@ func generateSeveritySelfLogsParser() []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
 	// TODO(b/268046702) Time_Offset does not work for windows will be patched in Fluent-bit 2.x upgrade
-	timeOffset := time.Now().Format("-0700")
-
 	parser := LoggingProcessorParseRegex{
 		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
 		PreserveKey: true,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y/%m/%d %H:%M:%S",
-			TimeOffset: timeOffset,
 			Types: map[string]string{
 				"severity": "string",
 			},
