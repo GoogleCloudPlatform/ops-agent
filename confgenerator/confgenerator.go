@@ -383,7 +383,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components(fluentBitSelfLogTag)...)
 
 	out = append(out, generateSeveritySelfLogsParser()...)
 
