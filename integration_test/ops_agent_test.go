@@ -3268,11 +3268,6 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		scripts := fmt.Sprintf(`
-		cat  /run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf 
-		`)
-		gce.RunScriptRemotely(ctx, logger, vm, scripts, nil, nil)
-
 		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("du -c %s | cut -f 1 | tail -n 1", bufferDir))
 		if err != nil {
 			t.Fatal(err)
