@@ -49,7 +49,6 @@ func run(logFilename, configurationPath string, command []string) error {
 	config := getLogFileRotation(ucConfig)
 
 	cmd := exec.Command(command[0], command[1:]...)
-	cmd.Stderr = os.Stderr
 	if logFilename != "" && config.GetEnabled() {
 		logger := lumberjack.Logger{
 			Filename:   logFilename,
@@ -69,6 +68,7 @@ func run(logFilename, configurationPath string, command []string) error {
 	} else {
 		cmd.Stdout = os.Stdout
 	}
+	cmd.Stderr = cmd.Stdout
 	if err := runCommand(cmd); err != nil {
 		return err
 	}
