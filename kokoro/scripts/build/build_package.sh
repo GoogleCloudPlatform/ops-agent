@@ -51,6 +51,8 @@ DOCKER_BUILDKIT=1 docker build . \
   --target "${DISTRO}-build" \
   -t build_image
 
+docker history --no-trunc .
+
 # Tell our continuous build to update the cache. Our other builds do not
 # write to any kind of cache, for example a per-PR cache, because the
 # push takes a few minutes and adds little value over just using the continuous
