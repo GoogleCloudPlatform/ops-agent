@@ -46,25 +46,26 @@ func configureJob() (*windows.Handle, error) {
 		uintptr(unsafe.Pointer(&info)),
 		uint32(unsafe.Sizeof(info)))
 	if err != nil {
+		windows.CloseHandle(jobHandle)
 		return nil, err
 	}
 
 	err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
 
 	if err != nil {
+		windows.CloseHandle(jobHandle)
 		return nil, err
 	}
 
 	return &jobHandle, nil
 }
 
-func run_command(cmd *exec.Cmd) error {
+func runCommand(cmd *exec.Cmd) error {
 	handle, err := configureJob()
 	if err != nil {
 		return err
 	}
 	defer windows.CloseHandle(*handle)
 
-	cmd.Run()
-	return nil
+	return cmd.Run()
 }

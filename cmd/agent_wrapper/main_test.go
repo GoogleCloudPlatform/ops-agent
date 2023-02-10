@@ -138,7 +138,6 @@ func runTest(t *testing.T, tc testCase) {
 	}
 	if !reflect.DeepEqual(tc.expectedLogSizes, gotLogSizes) {
 		t.Errorf("Test %v: Expected log sizes %v, got %v", tc, tc.expectedLogSizes, gotLogSizes)
-
 	}
 }
 
@@ -235,6 +234,5 @@ func TestAgentWrapper(t *testing.T) {
 	}
 	for _, tc := range cases {
 		runTest(t, tc)
-
 	}
 }
