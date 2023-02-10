@@ -45,6 +45,11 @@ addlicense:
 addlicense_check:
 	addlicense -check -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache . 
 
+# Originally I made the argument to this "PATH" but of course that messes with
+# the PATH environment variable. :D
+addlicense_to:
+	addlicense -c "Google LLC" -l apache $(P)
+
 yaml_format:
 	yamlfmt
 
