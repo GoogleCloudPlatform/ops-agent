@@ -399,7 +399,7 @@ processors:
     - action: update
       include: ^(.*)$$
       match_type: regexp
-      new_name: workload.googleapis.com/$${1}
+      new_name: agent.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
