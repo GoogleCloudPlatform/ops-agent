@@ -20,6 +20,8 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+var RedactedValue string = "__redacted__"
+
 type Secret[T any] interface {
 	fmt.Stringer
 	yaml.BytesMarshaler
@@ -30,7 +32,7 @@ type String string
 
 // fmt.Stringer
 func (s String) String() string {
-	return "xxxxx"
+	return RedactedValue
 }
 
 // yaml.BytesMarshaler

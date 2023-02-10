@@ -11,7 +11,7 @@ import (
 func TestSecretStringStringer(t *testing.T) {
 	var s secret.String = "My credit card number!"
 	result := s.String()
-	if !strings.Contains(result, "x") {
+	if !strings.Contains(result, secret.RedactedValue) {
 		t.Fatalf("expected result to be redacted, instead was \"%s\"", result)
 	}
 }
@@ -22,12 +22,13 @@ func TestSecretStringMarshalYAML(t *testing.T) {
 	}
 
 	testX := x{S: "My credit card number!"}
-	result, err := yaml.Marshal(testX)
+	resultBytes, err := yaml.Marshal(testX)
+	result := string(resultBytes)
 	if err != nil {
 		t.Fatalf("expected marshal not to error, got: %s", result)
 	}
-	if string(result) != "s: xxxxx\n" {
-		t.Fatalf("expected Marshal to redact secret field, got: %s", string(result))
+	if !strings.Contains(result, secret.RedactedValue) {
+		t.Fatalf("expected Marshal to redact secret field, got: %s", result)
 	}
 }
 
