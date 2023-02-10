@@ -396,7 +396,6 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 func generateSeveritySelfLogsParser() []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
-	// TODO(b/268046702) Time_Offset does not work for windows will be patched in Fluent-bit 2.x upgrade
 	parser := LoggingProcessorParseRegex{
 		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
 		PreserveKey: true,
