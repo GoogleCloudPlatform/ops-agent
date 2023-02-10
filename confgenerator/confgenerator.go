@@ -386,7 +386,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		BufferInMemory: true,
 	}.Components("ops-agent-fluent-bit")...)
 
-	out = append(out, generateSeveritySelfLogsParser(hostInfo)...)
+	out = append(out, generateSeveritySelfLogsParser()...)
 
 	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())
@@ -394,14 +394,11 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	return out, nil
 }
 
-func generateSeveritySelfLogsParser(hostInfo *host.InfoStat) []fluentbit.Component {
+func generateSeveritySelfLogsParser() []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
 	// TODO(b/268046702) Time_Offset does not work for windows will be patched in Fluent-bit 2.x upgrade
-	var timeOffset string
-	if hostInfo.OS != "windows" {
-		timeOffset = time.Now().Format("-0700")
-	}
+	timeOffset := time.Now().Format("-0700")
 
 	parser := LoggingProcessorParseRegex{
 		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
