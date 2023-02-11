@@ -96,7 +96,7 @@ func LuaFilterComponents(tag, function, src string) []Component {
 }
 
 // The parser component is incomplete and needs (at a minimum) the "Format" key to be set.
-func ParserComponentBase(TimeFormat string, TimeKey string, TimeOffset string, Types map[string]string, tag string, uid string) (Component, string) {
+func ParserComponentBase(TimeFormat string, TimeKey string, Types map[string]string, tag string, uid string) (Component, string) {
 	parserName := fmt.Sprintf("%s.%s", tag, uid)
 	parser := Component{
 		Kind: "PARSER",
@@ -110,9 +110,6 @@ func ParserComponentBase(TimeFormat string, TimeKey string, TimeOffset string, T
 	}
 	if TimeKey != "" {
 		parser.Config["Time_Key"] = TimeKey
-	}
-	if TimeOffset != "" && TimeOffset != "+0000" && TimeOffset != "-0000" {
-		parser.Config["Time_Offset"] = TimeOffset
 	}
 	if len(Types) > 0 {
 		var types []string
