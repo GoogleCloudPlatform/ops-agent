@@ -29,7 +29,9 @@ The following variables are optional:
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
     above REPO_SUFFIX is an artifact registry repo and specifies what region it
-	is in.
+	is in. If not provided, that means that the packages are accessed through
+	packages.cloud.google.com instead, which may point to Cloud Rapture or
+	Artifact Registry under the hood.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
     REPO_SUFFIX.
@@ -208,10 +210,7 @@ type packageLocation struct {
 	// Package repository suffix to install from. Setting this to ""
 	// means to install the latest stable release.
 	repoSuffix string
-	// Region the packages live in in Artifact Registry. Setting this to ''
-	// means that the packages are not accessed directly from Artifact
-	// Registry.
-	artifactRegistryRegion string
+	// Region the packages live in in Artifact Registry.
 }
 
 func locationFromEnvVars() packageLocation {
