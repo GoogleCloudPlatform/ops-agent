@@ -19,7 +19,7 @@ const (
 type testCase struct {
 	beforeLogSizes   []int
 	expectedLogSizes []int
-	bytesWritten     int8
+	bytesWritten     int
 	config           string
 }
 
