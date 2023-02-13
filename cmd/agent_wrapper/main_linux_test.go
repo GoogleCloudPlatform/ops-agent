@@ -19,6 +19,7 @@ package main
 
 import "strings"
 
+// Get a command that will write the given number of bytes
 func (tc *testCase) getCommand() []string {
 	return []string{"echo", strings.Repeat("a", int(tc.bytesWritten-1))}
 }
