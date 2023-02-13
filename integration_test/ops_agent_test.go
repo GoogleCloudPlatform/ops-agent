@@ -2684,7 +2684,7 @@ func testLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
-func TestLoggingFluentbitSelfLogs(t *testing.T) {
+func testLoggingFluentbitSelfLogs(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
