@@ -211,6 +211,7 @@ type packageLocation struct {
 	// means to install the latest stable release.
 	repoSuffix string
 	// Region the packages live in in Artifact Registry.
+	artifactRegistryRegion string
 }
 
 func locationFromEnvVars() packageLocation {
