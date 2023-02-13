@@ -32,6 +32,8 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+
 func googleCloudExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -381,12 +383,42 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components(fluentBitSelfLogTag)...)
 
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, generateSeveritySelfLogsParser()...)
+
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
+}
+
+func generateSeveritySelfLogsParser() []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+
+	parser := LoggingProcessorParseRegex{
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		PreserveKey: true,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Components(fluentBitSelfLogTag, "self-logs-severity")
+
+	out = append(out, parser...)
+
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
