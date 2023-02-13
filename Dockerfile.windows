@@ -167,17 +167,6 @@ RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_op
     Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
 
 ###############################################################################
-# Build agent wrapping tool
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
-    Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
-
-###############################################################################
 # Packaging
 ###############################################################################
 
