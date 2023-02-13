@@ -59,13 +59,6 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
-FROM {target_name}-build-golang-base AS {target_name}-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
 FROM {target_name}-build-golang-base AS {target_name}-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -83,7 +76,6 @@ COPY --from={target_name}-build-otel /work/cache /work/cache
 COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
 COPY --from={target_name}-build-diagnostics /work/cache /work/cache
-COPY --from={target_name}-build-wrapper /work/cache /work/cache
 {package_build}
 
 FROM scratch AS {target_name}
