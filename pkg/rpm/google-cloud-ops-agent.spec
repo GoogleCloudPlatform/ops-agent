@@ -48,6 +48,7 @@ CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./
 # platforms, but the build.sh script hard-codes libexec.
 %{_prefix}/libexec/google_cloud_ops_agent_engine
 %{_prefix}/libexec/google_cloud_ops_agent_diagnostics
+%{_prefix}/libexec/google_cloud_ops_agent_wrapper
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
 
