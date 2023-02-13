@@ -91,6 +91,22 @@ func workDirForPlatform(platform string) string {
 	return "/root/work"
 }
 
+func startCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Start-Service google-cloud-ops-agent"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func stopCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
 func restartCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return "Restart-Service google-cloud-ops-agent -Force"
@@ -1888,10 +1904,6 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -2056,10 +2068,6 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
@@ -2304,10 +2312,6 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
       prom_pipeline:
         receivers: [prom_app]
 `
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
@@ -2677,6 +2681,22 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+	})
+}
+
+func TestLoggingFluentbitSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
@@ -3062,6 +3082,146 @@ metrics:
 		if _, err := gce.WaitForTrace(ctx, logger.ToMainLog(), vm, time.Hour); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func isHealthCheckTestPlatform(platform string) bool {
+	return platform == "windows-2019" || platform == "debian-11"
+}
+
+func healthCheckResultMessage(name string, result string) string {
+	return fmt.Sprintf("%s Check - Result: %s", name, result)
+}
+
+func getRecentServiceOutputForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		cmd := strings.Join([]string{
+			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past } | select -ExpandProperty Message",
+		}, ";")
+		return cmd
+	}
+	return "sudo systemctl status google-cloud-ops-agent"
+}
+
+func listenToPortForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		cmd := strings.Join([]string{
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
+		}, ";")
+
+		return cmd
+	}
+	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
+		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+	}
+	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+}
+
+func TestPortsAndAPIHealthChecks(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		onlyReadScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/devstorage.read_write",
+		}, ",")
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", onlyReadScopes})
+
+		if !gce.IsWindows(vm.Platform) {
+			packages := []string{"netcat"}
+			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+			if err != nil {
+				t.Fatalf("failed to install %v with err: %s", packages, err)
+			}
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+		// Wait for port to be in listen mode.
+		time.Sleep(30 * time.Second)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkFunc := func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
+		}
+		checkFunc("Network", "PASS")
+		checkFunc("API", "FAIL")
+		checkFunc("Ports", "FAIL")
+	})
+}
+
+func TestNetworkHealthCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkFunc := func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
+		}
+		checkFunc("Network", "PASS")
+		checkFunc("API", "PASS")
+		checkFunc("Ports", "PASS")
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Setting deny egress firewall rule. Waiting to changes to propagate
+		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(30 * time.Second)
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkFunc = func(class string, expected string) {
+			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+				t.Errorf("expected %s check to %s", class, expected)
+			}
+		}
+		checkFunc("Network", "FAIL")
+		checkFunc("API", "ERROR")
+		checkFunc("Ports", "PASS")
 	})
 }
 

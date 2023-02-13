@@ -868,14 +868,20 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	flagsStr := strings.Join(quotedFlags, " ")
 
 	if IsWindows(vm.Platform) {
-		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), "C:\\temp.ps1"); err != nil {
+		// Use a UUID for the script name in case RunScriptRemotely is being
+		// called concurrently on the same VM.
+		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
+		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
-		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File C:\\temp.ps1 "+flagsStr)
+		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
-	// Write the script contents to script.sh, then tell bash to execute it with -x
+	scriptPath := uuid.NewString() + ".sh"
+	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > script.sh && sudo "+envVarMapToBashPrefix(env)+"bash -x script.sh "+flagsStr)
+	// Use a UUID for the script name in case RunScriptRemotely is being called
+	// concurrently on the same VM.
+	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -928,8 +934,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImages = map[string]string{
-		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
 	}
 )
 
@@ -1153,6 +1158,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.Platform) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+		}
+	}
+
 	return vm, nil
 }
 
@@ -1166,6 +1179,10 @@ func IsCentOS(platform string) bool {
 
 func IsRHEL(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-")
+}
+
+func isRHEL7SAPHA(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1669,7 +1686,7 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 		}
 	})
 	logger.ToMainLog().Printf("Starting test %s", name)
-	t.Logf("Test logs: %s", logLocation(logRootDir, name))
+	t.Logf("Test logs: %s ", logLocation(logRootDir, name))
 	return logger
 }
 
