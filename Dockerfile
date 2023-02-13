@@ -87,6 +87,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM centos7-build-golang-base AS centos7-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM centos7-build-golang-base AS centos7-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -104,6 +111,7 @@ COPY --from=centos7-build-otel /work/cache /work/cache
 COPY --from=centos7-build-fluent-bit /work/cache /work/cache
 COPY --from=centos7-build-systemd /work/cache /work/cache
 COPY --from=centos7-build-diagnostics /work/cache /work/cache
+COPY --from=centos7-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS centos7
@@ -177,6 +185,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM centos8-build-golang-base AS centos8-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -194,6 +209,7 @@ COPY --from=centos8-build-otel /work/cache /work/cache
 COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
 COPY --from=centos8-build-diagnostics /work/cache /work/cache
+COPY --from=centos8-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS centos8
@@ -270,6 +286,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM rockylinux9-build-golang-base AS rockylinux9-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -287,6 +310,7 @@ COPY --from=rockylinux9-build-otel /work/cache /work/cache
 COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
+COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS rockylinux9
@@ -358,6 +382,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM bullseye-build-golang-base AS bullseye-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM bullseye-build-golang-base AS bullseye-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -375,6 +406,7 @@ COPY --from=bullseye-build-otel /work/cache /work/cache
 COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 COPY --from=bullseye-build-diagnostics /work/cache /work/cache
+COPY --from=bullseye-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS bullseye
@@ -446,6 +478,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM buster-build-golang-base AS buster-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM buster-build-golang-base AS buster-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -463,6 +502,7 @@ COPY --from=buster-build-otel /work/cache /work/cache
 COPY --from=buster-build-fluent-bit /work/cache /work/cache
 COPY --from=buster-build-systemd /work/cache /work/cache
 COPY --from=buster-build-diagnostics /work/cache /work/cache
+COPY --from=buster-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS buster
@@ -539,6 +579,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM stretch-build-golang-base AS stretch-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM stretch-build-golang-base AS stretch-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -556,6 +603,7 @@ COPY --from=stretch-build-otel /work/cache /work/cache
 COPY --from=stretch-build-fluent-bit /work/cache /work/cache
 COPY --from=stretch-build-systemd /work/cache /work/cache
 COPY --from=stretch-build-diagnostics /work/cache /work/cache
+COPY --from=stretch-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS stretch
@@ -646,6 +694,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM sles12-build-golang-base AS sles12-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM sles12-build-golang-base AS sles12-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -663,6 +718,7 @@ COPY --from=sles12-build-otel /work/cache /work/cache
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
 COPY --from=sles12-build-diagnostics /work/cache /work/cache
+COPY --from=sles12-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS sles12
@@ -744,6 +800,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM sles15-build-golang-base AS sles15-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM sles15-build-golang-base AS sles15-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -761,6 +824,7 @@ COPY --from=sles15-build-otel /work/cache /work/cache
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
 COPY --from=sles15-build-diagnostics /work/cache /work/cache
+COPY --from=sles15-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS sles15
@@ -832,6 +896,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM bionic-build-golang-base AS bionic-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM bionic-build-golang-base AS bionic-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -849,6 +920,7 @@ COPY --from=bionic-build-otel /work/cache /work/cache
 COPY --from=bionic-build-fluent-bit /work/cache /work/cache
 COPY --from=bionic-build-systemd /work/cache /work/cache
 COPY --from=bionic-build-diagnostics /work/cache /work/cache
+COPY --from=bionic-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS bionic
@@ -920,6 +992,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM focal-build-golang-base AS focal-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM focal-build-golang-base AS focal-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -937,6 +1016,7 @@ COPY --from=focal-build-otel /work/cache /work/cache
 COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
 COPY --from=focal-build-diagnostics /work/cache /work/cache
+COPY --from=focal-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS focal
@@ -1008,6 +1088,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM jammy-build-golang-base AS jammy-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM jammy-build-golang-base AS jammy-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -1025,6 +1112,7 @@ COPY --from=jammy-build-otel /work/cache /work/cache
 COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
 COPY --from=jammy-build-diagnostics /work/cache /work/cache
+COPY --from=jammy-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS jammy

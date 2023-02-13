@@ -43,6 +43,7 @@ type UnifiedConfig struct {
 	Metrics  *Metrics  `yaml:"metrics"`
 	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
 	Traces *Traces `yaml:"traces,omitempty"`
+	Global *Global `yaml:"global,omitempty"`
 	// platform as a private field, e.g. "windows", "linux" so that we can use it
 	// in validation.
 	platform string
