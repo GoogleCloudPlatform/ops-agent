@@ -84,6 +84,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }

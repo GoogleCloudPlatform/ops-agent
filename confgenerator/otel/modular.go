@@ -24,14 +24,36 @@ import (
 
 const MetricsPort = 20201
 
+type ExporterType int
+
+const (
+	// N.B. Every ExporterType increases the QPS and thus quota
+	// consumption in consumer projects; think hard before adding
+	// another exporter type.
+	OTel ExporterType = iota
+	System
+	GMP
+)
+
+func (t ExporterType) Name() string {
+	if t == System || t == GMP {
+		// The collector's OTel and GMP exporters have different types so can share the empty string.
+		return ""
+	} else if t == OTel {
+		return "otel"
+	} else {
+		panic("unknown ExporterType")
+	}
+}
+
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type ReceiverPipeline struct {
 	Receiver Component
 	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
-	// GMP indicates that the pipeline outputs Prometheus metrics.
-	GMP bool
+	// Type indicates if the pipeline outputs special metrics (either Prometheus or system metrics) that need to be handled with a special exporter.
+	Type ExporterType
 }
 
 // Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
@@ -77,10 +99,10 @@ type ModularConfig struct {
 	// GlobalProcessors and Exporter are added at the end of every pipeline.
 	// Only one instance of each will be created regardless of how many pipelines are defined.
 	//
-	// Note: GlobalProcessors are not applied to pipelines with GMP = true.
-	GlobalProcessors                []Component
-	GoogleCloudExporter             Component
-	GoogleManagedPrometheusExporter Component
+	// Note: GlobalProcessors are not applied to pipelines with Type == GMP.
+	GlobalProcessors []Component
+
+	Exporters map[ExporterType]Component
 }
 
 // Generate an OT YAML config file for c.
@@ -95,8 +117,7 @@ func (c ModularConfig) Generate() (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
-	googleCloudExporter := c.GoogleCloudExporter.name("")
-	googleManagedPrometheusExporter := c.GoogleManagedPrometheusExporter.name("")
+	exporterNames := map[ExporterType]string{}
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
@@ -118,16 +139,19 @@ func (c ModularConfig) Generate() (string, error) {
 		"exporters":  exporters,
 		"service":    service,
 	}
-	exporters[googleCloudExporter] = c.GoogleCloudExporter.Config
 
 	// Check if there are any prometheus receivers in the pipelines.
 	// If so, add the googlemanagedprometheus exporter.
 	for _, r := range c.ReceiverPipelines {
-		if r.GMP {
-			exporters[googleManagedPrometheusExporter] = c.GoogleManagedPrometheusExporter.Config
-
-			// Add the groupbyattrs processor so prometheus pipelines can use it.
-			processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+		if _, ok := exporterNames[r.Type]; !ok {
+			exporter := c.Exporters[r.Type]
+			name := exporter.name(r.Type.Name())
+			exporterNames[r.Type] = name
+			exporters[name] = exporter.Config
+			if r.Type == GMP {
+				// Add the groupbyattrs processor so prometheus pipelines can use it.
+				processors["groupbyattrs/custom_prometheus"] = gceGroupByAttrs().Config
+			}
 		}
 	}
 
@@ -157,7 +181,6 @@ func (c ModularConfig) Generate() (string, error) {
 		receivers[receiverName] = receiverPipeline.Receiver.Config
 
 		// Everything else in the pipeline is specific to this Type.
-		exporter := googleCloudExporter
 		var processorNames []string
 		processorNames = append(processorNames, receiverProcessorNames...)
 		for i, processor := range pipeline.Processors {
@@ -167,8 +190,7 @@ func (c ModularConfig) Generate() (string, error) {
 		}
 
 		// TODO: Should globalProcessorNames be appended for non-metrics receivers?
-		if receiverPipeline.GMP {
-			exporter = googleManagedPrometheusExporter
+		if receiverPipeline.Type == GMP {
 			processorNames = append(processorNames, "groupbyattrs/custom_prometheus")
 		} else {
 			processorNames = append(processorNames, globalProcessorNames...)
@@ -177,7 +199,7 @@ func (c ModularConfig) Generate() (string, error) {
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporter},
+			"exporters":  []string{exporterNames[receiverPipeline.Type]},
 		}
 	}
 
