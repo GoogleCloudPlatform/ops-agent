@@ -57,6 +57,7 @@ func run(logFilename, configurationPath string, command []string) error {
 			Compress:   false,
 		}
 		defer logger.Close()
+		logger.Write([]byte{}) // Empty write to ensure file is open
 		cmd.Stdout = &logger
 	} else if logFilename != "" {
 		file, err := os.OpenFile(logFilename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
