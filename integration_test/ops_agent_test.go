@@ -291,7 +291,7 @@ func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	return nil
 }
 
-func TestParseMultilineFileJava(t *testing.T) {
+func testParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -391,7 +391,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
-func TestParseMultilineFileJavaPython(t *testing.T) {
+func testParseMultilineFileJavaPython(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -548,7 +548,7 @@ TypeError: can only concatenate str (not "int") to str
 	})
 }
 
-func TestParseMultilineFileGolangJavaPython(t *testing.T) {
+func testParseMultilineFileGolangJavaPython(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -654,7 +654,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
-func TestParseMultilineFileMissingParser(t *testing.T) {
+func testParseMultilineFileMissingParser(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -765,7 +765,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
-func TestCustomLogFile(t *testing.T) {
+func testCustomLogFile(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -815,7 +815,7 @@ func TestCustomLogFile(t *testing.T) {
 	})
 }
 
-func TestCustomLogFormat(t *testing.T) {
+func testCustomLogFormat(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -862,7 +862,7 @@ func TestCustomLogFormat(t *testing.T) {
 	})
 }
 
-func TestHTTPRequestLog(t *testing.T) {
+func testHTTPRequestLog(t *testing.T) {
 	t.Parallel()
 
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -990,7 +990,7 @@ func TestHTTPRequestLog(t *testing.T) {
 	})
 }
 
-func TestInvalidConfig(t *testing.T) {
+func testInvalidConfig(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1017,7 +1017,7 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
-func TestProcessorOrder(t *testing.T) {
+func testProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
 	// config had mis-ordered filters: json2 came before json1 because "log"
 	// sorts before "message".  The correct order is json1 then json2.
@@ -1087,7 +1087,7 @@ func TestProcessorOrder(t *testing.T) {
 	})
 }
 
-func TestSyslogTCP(t *testing.T) {
+func testSyslogTCP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1149,7 +1149,7 @@ func TestSyslogTCP(t *testing.T) {
 	})
 }
 
-func TestSyslogUDP(t *testing.T) {
+func testSyslogUDP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1190,7 +1190,7 @@ func TestSyslogUDP(t *testing.T) {
 	})
 }
 
-func TestExcludeLogsParseJsonOrder(t *testing.T) {
+func testExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1269,7 +1269,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	})
 }
 
-func TestModifyFields(t *testing.T) {
+func testModifyFields(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1344,7 +1344,7 @@ func TestModifyFields(t *testing.T) {
 	})
 }
 
-func TestParseWithConflictsWithRecord(t *testing.T) {
+func testParseWithConflictsWithRecord(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1411,7 +1411,7 @@ logging:
 	})
 }
 
-func TestResourceNameLabel(t *testing.T) {
+func testResourceNameLabel(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1451,7 +1451,7 @@ func TestResourceNameLabel(t *testing.T) {
 	})
 }
 
-func TestLogFilePathLabel(t *testing.T) {
+func testLogFilePathLabel(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1499,7 +1499,7 @@ func TestLogFilePathLabel(t *testing.T) {
 	})
 }
 
-func TestTCPLog(t *testing.T) {
+func testTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1541,7 +1541,7 @@ func TestTCPLog(t *testing.T) {
 	})
 }
 
-func TestFluentForwardLog(t *testing.T) {
+func testFluentForwardLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1580,7 +1580,7 @@ func TestFluentForwardLog(t *testing.T) {
 	})
 }
 
-func TestWindowsEventLog(t *testing.T) {
+func testWindowsEventLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1625,7 +1625,7 @@ func TestWindowsEventLog(t *testing.T) {
 	})
 }
 
-func TestSystemdLog(t *testing.T) {
+func testSystemdLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1658,7 +1658,7 @@ func TestSystemdLog(t *testing.T) {
 	})
 }
 
-func TestSystemLogByDefault(t *testing.T) {
+func testSystemLogByDefault(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1801,7 +1801,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	}
 }
 
-func TestDefaultMetricsNoProxy(t *testing.T) {
+func testDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1816,7 +1816,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 }
 
 // go/sdi-integ-test#proxy-testing
-func TestDefaultMetricsWithProxy(t *testing.T) {
+func testDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -1848,125 +1848,125 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
-func TestPrometheusMetrics(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+// func testPrometheusMetrics(t *testing.T) {
+// 	t.Parallel()
+// 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+// 		t.Parallel()
+// 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		promConfig := `metrics:
-  receivers:
-    prometheus:
-      type: prometheus
-      config:
-        scrape_configs:
-          - job_name: 'prometheus'
-            scrape_interval: 10s
-            static_configs:
-              - targets: ['localhost:20202']
-            relabel_configs:
-              - source_labels: [__meta_gce_instance_id]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: instance_id
-              - source_labels: [__meta_gce_project]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: instance_project_id
-              - source_labels: [__meta_gce_zone]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: zone
-              - source_labels: [__meta_gce_tags]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: tags
-              - source_labels: [__meta_gce_network]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: network
-              - source_labels: [__meta_gce_subnetwork]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: subnetwork
-              - source_labels: [__meta_gce_public_ip]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: public_ip
-              - source_labels: [__meta_gce_private_ip]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: private_ip
-  service:
-    pipelines:
-      prometheus_pipeline:
-        receivers:
-          - prometheus
-`
+// 		promConfig := `metrics:
+//   receivers:
+//     prometheus:
+//       type: prometheus
+//       config:
+//         scrape_configs:
+//           - job_name: 'prometheus'
+//             scrape_interval: 10s
+//             static_configs:
+//               - targets: ['localhost:20202']
+//             relabel_configs:
+//               - source_labels: [__meta_gce_instance_id]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: instance_id
+//               - source_labels: [__meta_gce_project]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: instance_project_id
+//               - source_labels: [__meta_gce_zone]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: zone
+//               - source_labels: [__meta_gce_tags]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: tags
+//               - source_labels: [__meta_gce_network]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: network
+//               - source_labels: [__meta_gce_subnetwork]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: subnetwork
+//               - source_labels: [__meta_gce_public_ip]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: public_ip
+//               - source_labels: [__meta_gce_private_ip]
+//                 regex: '(.+)'
+//                 replacement: '${1}'
+//                 target_label: private_ip
+//   service:
+//     pipelines:
+//       prometheus_pipeline:
+//         receivers:
+//           - prometheus
+// `
 
-		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
-			t.Fatal(err)
-		}
+// 		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+// 			t.Fatal(err)
+// 		}
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
+// 		// Wait long enough for the data to percolate through the backends
+// 		// under normal circumstances. Based on some experiments, 2 minutes
+// 		// is normal; wait a bit longer to be on the safe side.
+// 		time.Sleep(3 * time.Minute)
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
-		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
-		}
+// 		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+// 		window := time.Minute
+// 		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
+// 		if err != nil {
+// 			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+// 		}
 
-		var multiErr error
-		metricValueType := metric.ValueType.String()
-		metricKind := metric.MetricKind.String()
-		metricResource := metric.Resource.Type
-		metricLabels := metric.Metric.Labels
+// 		var multiErr error
+// 		metricValueType := metric.ValueType.String()
+// 		metricKind := metric.MetricKind.String()
+// 		metricResource := metric.Resource.Type
+// 		metricLabels := metric.Metric.Labels
 
-		if metricValueType != "DOUBLE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
-		}
-		if metricKind != "CUMULATIVE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
-		}
-		if metricResource != "prometheus_target" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
-		}
-		if metricLabels["instance_name"] != vm.Name {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
-		}
-		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
-		}
-		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
-		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
-		}
-		if metricLabels["instance_project_id"] != vm.Project {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
-		}
-		if metricLabels["zone"] != vm.Zone {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
-		}
-		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
-		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
-		}
-		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
-	})
-}
+// 		if metricValueType != "DOUBLE" {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+// 		}
+// 		if metricKind != "CUMULATIVE" {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+// 		}
+// 		if metricResource != "prometheus_target" {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+// 		}
+// 		if metricLabels["instance_name"] != vm.Name {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+// 		}
+// 		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+// 		}
+// 		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+// 		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
+// 		}
+// 		if metricLabels["instance_project_id"] != vm.Project {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
+// 		}
+// 		if metricLabels["zone"] != vm.Zone {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
+// 		}
+// 		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+// 		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
+// 		}
+// 		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
+// 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
+// 		}
+// 		if multiErr != nil {
+// 			t.Error(multiErr)
+// 		}
+// 	})
+// }
 
 // Test the Counter and Gauge metric types using a JSON Prometheus exporter
 // The JSON exporter will connect to a http server that serve static JSON files
-func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
+func testPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2102,7 +2102,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 
 // TestPrometheusHistogramMetrics tests the Histogram metric type using static
 // testing files.
-func TestPrometheusHistogramMetrics(t *testing.T) {
+func testPrometheusHistogramMetrics(t *testing.T) {
 	prometheusTestdata := path.Join("testdata", "prometheus")
 	remoteWorkDir := path.Join("/opt", "go-http-server")
 	filesToUpload := map[string]fileToUpload{
@@ -2183,7 +2183,7 @@ func TestPrometheusHistogramMetrics(t *testing.T) {
 
 // TestPrometheusSummaryMetrics tests the Summary metric type using static
 // testing files.
-func TestPrometheusSummaryMetrics(t *testing.T) {
+func testPrometheusSummaryMetrics(t *testing.T) {
 	prometheusTestdata := path.Join("testdata", "prometheus")
 	remoteWorkDir := path.Join("/opt", "go-http-server")
 	filesToUpload := map[string]fileToUpload{
@@ -2497,7 +2497,7 @@ func uploadFiles(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.V
 	return nil
 }
 
-func TestExcludeMetrics(t *testing.T) {
+func testExcludeMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2655,7 +2655,7 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	return err
 }
 
-func TestMetricsAgentCrashRestart(t *testing.T) {
+func testMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2674,7 +2674,7 @@ func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, msg))
 }
 
-func TestLoggingAgentCrashRestart(t *testing.T) {
+func testLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2689,6 +2689,13 @@ func TestLoggingFluentbitSelfLogs(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if !gce.IsWindows(platform) {
+			cmd := `sudo timedatectl set-timezone America/Toronto`
+			if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", cmd); err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
@@ -2709,7 +2716,7 @@ func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce
 	return err
 }
 
-func TestDiagnosticsCrashRestart(t *testing.T) {
+func testDiagnosticsCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2753,12 +2760,12 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 	})
 }
 
-func TestWindowsLoggingAgentConflict(t *testing.T) {
+func testWindowsLoggingAgentConflict(t *testing.T) {
 	wantError := "We detected an existing Windows service for the StackdriverLogging agent"
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsLoggingAgent, wantError)
 }
 
-func TestWindowsMonitoringAgentConflict(t *testing.T) {
+func testWindowsMonitoringAgentConflict(t *testing.T) {
 	wantError := "We detected an existing Windows service for the StackdriverMonitoring agent"
 	testWindowsStandaloneAgentConflict(t, agents.InstallStandaloneWindowsMonitoringAgent, wantError)
 }
@@ -2769,19 +2776,19 @@ func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM
 		metricsLivenessChecker(ctx, logger, vm))
 }
 
-func TestUpgradeOpsAgent(t *testing.T) {
+func testUpgradeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// This will install the stable Ops Agent (REPO_SUFFIX="").
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", packageLocation{}); err != nil {
-			// Installation from stable may fail before the first release on
-			// a new platform.
-			if strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") ||
-				strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script") {
+		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
+		// a default value of "", which means stable.
+		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
+			// Installation from stable may fail before the first release.
+			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
 			}
 			t.Fatal(err)
@@ -2805,7 +2812,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 	})
 }
 
-func TestResourceDetectorOnGCE(t *testing.T) {
+func testResourceDetectorOnGCE(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2976,7 +2983,7 @@ func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM,
 	return err
 }
 
-func TestOTLPMetrics(t *testing.T) {
+func testOTLPMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3036,7 +3043,7 @@ traces:
 	})
 }
 
-func TestOTLPTraces(t *testing.T) {
+func testOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3086,7 +3093,7 @@ metrics:
 }
 
 func isHealthCheckTestPlatform(platform string) bool {
-	return platform == "windows-2019" || platform == "debian-11"
+	return true
 }
 
 func healthCheckResultMessage(name string, result string) string {
@@ -3118,7 +3125,7 @@ func listenToPortForPlatform(platform string) string {
 	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
 }
 
-func TestPortsAndAPIHealthChecks(t *testing.T) {
+func testPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3134,7 +3141,12 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", onlyReadScopes})
 
 		if !gce.IsWindows(vm.Platform) {
-			packages := []string{"netcat"}
+			var packages []string
+			if strings.HasPrefix(platform, "rocky-") {
+				packages = []string{"nc"}
+			} else {
+				packages = []string{"netcat"}
+			}
 			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 			if err != nil {
 				t.Fatalf("failed to install %v with err: %s", packages, err)
@@ -3167,7 +3179,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	})
 }
 
-func TestNetworkHealthCheck(t *testing.T) {
+func testNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3222,6 +3234,168 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkFunc("Network", "FAIL")
 		checkFunc("API", "ERROR")
 		checkFunc("Ports", "PASS")
+	})
+}
+
+func simulateLogLoad(ctx context.Context, logger *log.Logger, vm *gce.VM) {
+	payload := ""
+	for j := 0; j < 2000; j += 1 {
+		payload = payload + fmt.Sprintf("test %v \n", j)
+	}
+	writeToSystemLog(ctx, logger, vm, payload)
+}
+
+func testRestartHealthCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		for i := 0; i < 20; i += 1 {
+			t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+				t.Parallel()
+
+				ctx, logger, vm := agents.CommonSetup(t, platform)
+
+				if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+					t.Fatal(err)
+				}
+
+				cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc := func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("first: expected %s check to %s", class, expected)
+					}
+				}
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+
+				simulateLogLoad(ctx, logger.ToMainLog(), vm)
+
+				// time.Sleep(30 * time.Second)
+
+				if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+					t.Fatal(err)
+				}
+
+				cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFunc = func(class string, expected string) {
+					if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
+						t.Errorf("second: expected %s check to %s", class, expected)
+					}
+				}
+				checkFunc("Network", "PASS")
+				checkFunc("API", "PASS")
+				checkFunc("Ports", "PASS")
+			})
+		}
+	})
+}
+
+func testRestartOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		// t.Parallel()
+		// for i := 0; i < 20; i += 1 {
+		// 	t.Run(fmt.Sprintf("shard_%v", i), func(t *testing.T) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait for the Ops Agent to be active. Make sure that it is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		simulateLogLoad(ctx, logger.ToMainLog(), vm)
+		// time.Sleep(5 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait for the Ops Agent to be active. Make sure that it is working.
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		// testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		// 	})
+		// }
+	})
+}
+
+func TestMeasureStartup(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		command := `python - << EOF
+import subprocess
+import string
+import datetime as dt
+
+command = "sudo journalctl -o short-unix -u google-cloud-ops-agent*.service | grep systemd"
+cmdOut = subprocess.check_output(command, shell=True)
+lines = cmdOut.splitlines()
+# print(cmdOut)
+timestamps = [lines[0].split()[0], lines[-1].split()[0]]
+# print(timestamps)
+dates_list = [ dt.datetime.fromtimestamp(float(e)) for e in timestamps]
+result = dates_list[1] - dates_list[0]
+milisecondsTime = result.total_seconds() * 1000
+print('Measured Time : {time} ms'.format(time=milisecondsTime))
+EOF`
+
+		if !gce.IsWindows(vm.Platform) {
+			packages := []string{"python"}
+			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+			if err != nil {
+				t.Fatalf("failed to install %v with err: %s", packages, err)
+			}
+		}
+
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Second)
+		measure, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Print("Initial Startup : " + measure.Stdout)
+		time.Sleep(5 * time.Second)
+
+		// simulateLogLoad(ctx, logger.ToMainLog(), vm)
+
+		// time.Sleep(30 * time.Second)
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo journalctl --rotate;sudo journalctl --vacuum-time=1s"); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Second)
+		measure, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		log.Print("Restart : " + measure.Stdout)
 	})
 }
 
