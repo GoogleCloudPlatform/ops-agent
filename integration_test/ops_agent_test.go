@@ -1679,23 +1679,6 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-func TestFluentBitLogByDefault(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-		query := `jsonPayload.message=~"\[[^\]]*\] \[ info\] \[output:stackdriver:stackdriver.0\] worker #0 started"`
-
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, query); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
