@@ -92,7 +92,7 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 			// Expect metrics, without any additional processing.
 			"metrics": nil,
 		},
-		GMP: true,
+		Type: otel.GMP,
 	}}
 }
 

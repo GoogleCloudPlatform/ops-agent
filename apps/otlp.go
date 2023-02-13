@@ -91,7 +91,7 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 					otel.RegexpRename(`^A(.*)$`, `Aworkload.googleapis.com/${1}`),
 					otel.RegexpRename(`^[AB](.*)$`, `${1}`),
 				),
-				// TODO: Set instrumentation_source labels, etc.
+				// N.B. We don't touch the instrumentation_scope fields here, so we can pass through the incoming strings.
 			},
 			"traces": nil,
 		},
