@@ -285,7 +285,7 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 	parseKey := "message"
-	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", "", map[string]string{
+	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
 		"message":   "string",
 		"id":        "integer",
 		"s":         "string",

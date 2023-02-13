@@ -93,7 +93,6 @@ func init() {
 type ParserShared struct {
 	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat"` // by default does not parse timestamp
 	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"` // must be provided if time_key is present
-	TimeOffset string `yaml:"-"`                                                      // timezone offset
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
 	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
@@ -102,7 +101,7 @@ type ParserShared struct {
 }
 
 func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
-	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.TimeOffset, p.Types, tag, uid)
+	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
 // A LoggingProcessorParseJson parses the specified field as JSON.

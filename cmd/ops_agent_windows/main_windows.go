@@ -106,7 +106,6 @@ func initServices() error {
 		"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
 		"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
 		"--storage_path", fluentbitStoragePath,
-		"--log_file", filepath.Join(logDirectory, "logging-module.log"),
 	}
 	// TODO(b/240564518): Workaround for fluent-bit lockups on Windows 2012
 	if isWindows2012() {
@@ -150,8 +149,11 @@ func initServices() error {
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
 			fmt.Sprintf("%s-fluent-bit", serviceName),
 			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
-			fluentbitExe,
-			fluentbitArgs,
+			filepath.Join(base, fmt.Sprintf("%s-wrapper.exe", serviceName)),
+			append([]string{
+				"-log_path", filepath.Join(logDirectory, "logging-module.log"),
+				"-config_path", filepath.Join(base, "../config/config.yaml"),
+				fluentbitExe}, fluentbitArgs...),
 		},
 		{
 			fmt.Sprintf("%s-diagnostics", serviceName),
