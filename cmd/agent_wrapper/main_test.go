@@ -125,7 +125,7 @@ func runTest(t *testing.T, tc testCase) {
 	}
 
 	// Run command to print specific amount of bytes
-	if err := run(tc.getLogFile(dir), tc.getConfigPath(dir), tc.getCommand()); err != nil {
+	if _, err := run(tc.getLogFile(dir), tc.getConfigPath(dir), tc.getCommand()); err != nil {
 		t.Error(err)
 		return
 	}
