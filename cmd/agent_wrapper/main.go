@@ -41,10 +41,10 @@ func getLogFileRotation(config *confgenerator.UnifiedConfig) confgenerator.LogFi
 	return *config.Global.DefaultLogFileRotation
 }
 
-func run(logFilename, configurationPath string, command []string) error {
+func run(logFilename, configurationPath string, command []string) (*exec.Cmd, error) {
 	ucConfig, err := getMergedConfig(configurationPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	config := getLogFileRotation(ucConfig)
 
@@ -59,13 +59,13 @@ func run(logFilename, configurationPath string, command []string) error {
 		defer logger.Close()
 		_, err = logger.Write([]byte{}) // Empty write to ensure file can be opened
 		if err != nil {
-			return err
+			return nil, err
 		}
 		cmd.Stdout = &logger
 	} else if logFilename != "" {
 		file, err := os.OpenFile(logFilename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer file.Close()
 		cmd.Stdout = file
@@ -74,9 +74,9 @@ func run(logFilename, configurationPath string, command []string) error {
 	}
 	cmd.Stderr = cmd.Stdout
 	if err := runCommand(cmd); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return cmd, nil
 }
 
 var logPathFlag = flag.String("log_path", "", "The name of the file to log to. If empty, logs to stdout")
@@ -89,7 +89,9 @@ func main() {
 		flag.Usage()
 		log.Fatal("Command to run must be passed in as first argument")
 	}
-	if err := run(*logPathFlag, *configurationPathFlag, flag.Args()); err != nil {
+	cmd, err := run(*logPathFlag, *configurationPathFlag, flag.Args())
+	if err != nil {
 		log.Fatal(err)
 	}
+	os.Exit(cmd.ProcessState.ExitCode())
 }
