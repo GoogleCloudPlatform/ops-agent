@@ -77,6 +77,7 @@ COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
 COPY --from={target_name}-build-diagnostics /work/cache /work/cache
 {package_build}
+RUN echo dummy change
 
 FROM scratch AS {target_name}
 COPY --from={target_name}-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-{tar_distro_name}.tgz
