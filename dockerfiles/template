@@ -18,7 +18,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM {target_name}-build-base AS {target_name}-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
