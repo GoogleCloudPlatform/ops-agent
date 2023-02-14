@@ -45,6 +45,7 @@ type UnifiedConfig struct {
 	Metrics  *Metrics  `yaml:"metrics"`
 	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
 	Traces *Traces `yaml:"traces,omitempty"`
+	Global *Global `yaml:"global,omitempty"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
