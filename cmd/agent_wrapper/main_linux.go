@@ -18,8 +18,12 @@
 package main
 
 import (
+	"log"
+	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
@@ -28,10 +32,23 @@ func getMergedConfig(userConfPath string) (*confgenerator.UnifiedConfig, error) 
 	return getMergedConfigForPlatform(userConfPath, "linux")
 }
 
+func handleSignals(cmd *exec.Cmd) {
+	sigs := make(chan os.Signal, 1)
+	for {
+		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGTERM)
+		sig := <-sigs
+		cmd.Process.Signal(sig)
+		if sig == syscall.SIGTERM {
+			time.Sleep(80 * time.Second)
+			log.Fatalf("Wrapped %v did not terminate in 80 seconds\n", cmd.Path)
+		}
+	}
+}
+
 func runCommand(cmd *exec.Cmd) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
 	}
-
+	go handleSignals(cmd)
 	return cmd.Run()
 }
