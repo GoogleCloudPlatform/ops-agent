@@ -16,7 +16,6 @@
 
 # Package build scripts can use this by setting $DESTDIR before launching the
 # script.
-# dummy change
 set -x -e
 prefix=/opt/google-cloud-ops-agent
 
