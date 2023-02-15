@@ -18,7 +18,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -34,10 +33,7 @@ var (
 )
 
 func runStartupChecks(service string) {
-	switch service {
-	// Run checks in main service
-	case "":
-		time.Sleep(time.Second)
+	if service == "" {
 		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
 		defer closer()
@@ -47,12 +43,6 @@ func runStartupChecks(service string) {
 			log.Printf(result.Message)
 		}
 		log.Println("Startup checks finished")
-	// Adding sleep to reduce flakyness in Ports Checks
-	// when restarting ops agent service
-	case "fluentbit":
-		time.Sleep(2 * time.Second)
-	case "otel":
-		time.Sleep(2 * time.Second)
 	}
 }
 

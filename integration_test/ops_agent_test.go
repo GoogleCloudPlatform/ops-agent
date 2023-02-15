@@ -29,10 +29,6 @@ The following variables are optional:
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 .deb/.rpm/.goo files to install on the testing VMs.
-
-REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-version of the Ops Agent to install first, before installing the version
-from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
 */
 package integration_test
 
@@ -2765,12 +2761,12 @@ func TestUpgradeOpsAgent(t *testing.T) {
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
-		// a default value of "", which means stable.
-		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
-			// Installation from stable may fail before the first release.
-			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+		// This will install the stable Ops Agent (REPO_SUFFIX="").
+		if err := setupOpsAgentFrom(ctx, logger, vm, "", packageLocation{}); err != nil {
+			// Installation from stable may fail before the first release on
+			// a new platform.
+			if strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") ||
+				strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script") {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
 			}
 			t.Fatal(err)
