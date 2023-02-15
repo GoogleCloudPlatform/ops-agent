@@ -127,3 +127,4 @@ update_go_modules:
 
 go_vet:
 	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
+	GOOS=windows go list ./... | grep -v "generated" | grep -v "/vendor/" | GOOS=windows xargs go vet
