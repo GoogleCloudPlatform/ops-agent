@@ -402,7 +402,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 
 	out = append(out, generateSeveritySelfLogsParser()...)
 
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, bufferLimitSize))
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, -1))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
