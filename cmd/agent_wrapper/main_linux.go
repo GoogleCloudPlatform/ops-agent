@@ -37,9 +37,19 @@ func handleSignals(cmd *exec.Cmd) {
 	for {
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGTERM)
 		sig := <-sigs
-		cmd.Process.Signal(sig)
+		start := time.Now()
+		for {
+			if cmd.Process != nil {
+				cmd.Process.Signal(sig)
+				break
+
+			} else if 80*time.Second+time.Until(start) <= 0 {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
 		if sig == syscall.SIGTERM {
-			time.Sleep(80 * time.Second)
+			time.Sleep(80*time.Second + time.Until(start))
 			log.Fatalf("Wrapped %v did not terminate in 80 seconds\n", cmd.Path)
 		}
 	}

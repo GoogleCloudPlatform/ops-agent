@@ -16,44 +16,70 @@ const (
 	megabyte    = 1024 * 1024
 )
 
-type testCase struct {
-	beforeLogSizes   []int
-	expectedLogSizes []int
-	bytesWritten     int
-	config           string
+type testSetUp struct {
+	beforeLogSizes []int
+	config         string
+	dir            string
 }
 
-func (tc *testCase) getLogFile(dir string) string {
-	return path.Join(dir, logFileName)
+func setUp(t *testing.T, beforeLogSizes []int, config string) (*testSetUp, error) {
+	setUp := testSetUp{
+		beforeLogSizes: beforeLogSizes,
+		config:         config,
+		dir:            t.TempDir(),
+	}
+	// Set up config
+	if err := setUp.makeConfig(); err != nil {
+		return nil, err
+	}
+
+	// Set up folder with pre-made log files
+	if err := setUp.makeLogFileSizes(); err != nil {
+		return nil, err
+	}
+	return &setUp, nil
 }
-func (tc *testCase) getConfigPath(dir string) string {
-	return path.Join(dir, "config.yaml")
+
+func (ts *testSetUp) getLogFile() string {
+	return path.Join(ts.dir, logFileName)
 }
-func (tc *testCase) makeConfig(dir string) error {
-	file, err := os.OpenFile(tc.getConfigPath(dir), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+func (ts *testSetUp) getConfigPath() string {
+	return path.Join(ts.dir, "config.yaml")
+}
+func (ts *testSetUp) makeConfig() error {
+	file, err := os.OpenFile(ts.getConfigPath(), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	_, err = file.WriteString(tc.config)
+	_, err = file.WriteString(ts.config)
 	return err
 }
 
-func (tc *testCase) makeLogFileSizes(dir string) error {
-	if len(tc.beforeLogSizes) == 0 {
+func (ts *testSetUp) makeLogFileSizes() error {
+	if len(ts.beforeLogSizes) == 0 {
 		return nil
 	}
-	if err := makeLogFile(path.Join(dir, logFileName), tc.beforeLogSizes[0]); err != nil {
+	if err := makeLogFile(ts.getLogFile(), ts.beforeLogSizes[0]); err != nil {
 		return err
 	}
-	for i, size := range tc.beforeLogSizes[1:] {
-		t := time.UnixMicro(int64(len(tc.beforeLogSizes)-i) * 1000 * 1000 * 60 * 60 * 24)
+	for i, size := range ts.beforeLogSizes[1:] {
+		t := time.UnixMicro(int64(len(ts.beforeLogSizes)-i) * 1000 * 1000 * 60 * 60 * 24)
 		name := logFileName + "-" + t.Format(timeFormat)
-		if err := makeLogFile(path.Join(dir, name), size); err != nil {
+		if err := makeLogFile(path.Join(ts.dir, name), size); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func makeLogFile(path string, size int) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return file.Truncate(int64(size))
 }
 
 type logFileType struct {
@@ -72,8 +98,8 @@ func logFilesToSizes(logFiles []logFileType) []int {
 	return sizes
 }
 
-func getLogFileSizes(dir string) ([]int, error) {
-	files, err := os.ReadDir(dir)
+func (ts *testSetUp) getLogFileSizes() ([]int, error) {
+	files, err := os.ReadDir(ts.dir)
 	if err != nil {
 		return nil, err
 	}
@@ -101,79 +127,59 @@ func getLogFileSizes(dir string) ([]int, error) {
 	return logFilesToSizes(logFiles), nil
 }
 
-func makeLogFile(path string, size int) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	return file.Truncate(int64(size))
-}
-
-func runTest(t *testing.T, tc testCase) {
-	dir := t.TempDir()
-	// Set up config
-	if err := tc.makeConfig(dir); err != nil {
-		t.Error(err)
-		return
-	}
-
-	// Set up folder with pre-made log files
-	if err := tc.makeLogFileSizes(dir); err != nil {
-		t.Error(err)
-		return
-	}
-
-	// Run command to print specific amount of bytes
-	if _, err := run(tc.getLogFile(dir), tc.getConfigPath(dir), tc.getCommand()); err != nil {
-		t.Error(err)
-		return
-	}
-
-	// Compare log files in directory sorted by rotation to expected sizes
-	gotLogSizes, err := getLogFileSizes(dir)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	if !reflect.DeepEqual(tc.expectedLogSizes, gotLogSizes) {
-		t.Errorf("Test %v: Expected log sizes %v, got %v", tc, tc.expectedLogSizes, gotLogSizes)
-	}
+type testCase struct {
+	beforeLogSizes   []int
+	expectedLogSizes []int
+	bytesWritten     int
+	config           string
 }
 
 func TestAgentWrapper(t *testing.T) {
-	cases := []testCase{
+	t.Parallel()
+	cases := []struct {
+		name             string
+		beforeLogSizes   []int
+		expectedLogSizes []int
+		bytesWritten     int
+		config           string
+	}{
 		{
+			name:             "write to empty dir",
 			beforeLogSizes:   []int{},
 			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
+			name:             "write to empty log file",
 			beforeLogSizes:   []int{0},
 			expectedLogSizes: []int{10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
+			name:             "write to non-empty log file",
 			beforeLogSizes:   []int{1},
 			expectedLogSizes: []int{11},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
+			name:             "write to full log file",
 			beforeLogSizes:   []int{400 * megabyte},
 			expectedLogSizes: []int{10, 400 * megabyte},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
+			name:             "write to almost full log file",
 			beforeLogSizes:   []int{399 * megabyte},
 			expectedLogSizes: []int{399*megabyte + 10},
 			bytesWritten:     10,
 			config:           "",
 		},
 		{
+			name:             "write to full log file w/ custom max_size",
 			beforeLogSizes:   []int{megabyte},
 			expectedLogSizes: []int{10, megabyte},
 			bytesWritten:     10,
@@ -182,6 +188,7 @@ func TestAgentWrapper(t *testing.T) {
     max_file_size_megabytes: 1`,
 		},
 		{
+			name:             "default backup count of 1 is respected",
 			beforeLogSizes:   []int{megabyte, megabyte + 1},
 			expectedLogSizes: []int{10, megabyte},
 			bytesWritten:     10,
@@ -190,6 +197,7 @@ func TestAgentWrapper(t *testing.T) {
     max_file_size_megabytes: 1`,
 		},
 		{
+			name:             "backup count of 2 is respected",
 			beforeLogSizes:   []int{megabyte, megabyte + 1},
 			expectedLogSizes: []int{10, megabyte, megabyte + 1},
 			bytesWritten:     10,
@@ -199,6 +207,7 @@ func TestAgentWrapper(t *testing.T) {
     backup_count: 2`,
 		},
 		{
+			name:             "rotation can be disabled",
 			beforeLogSizes:   []int{megabyte},
 			expectedLogSizes: []int{megabyte + 10},
 			bytesWritten:     10,
@@ -208,6 +217,7 @@ func TestAgentWrapper(t *testing.T) {
     max_file_size_megabytes: 1`,
 		},
 		{
+			name:             "write to empty dir w/o rotation",
 			beforeLogSizes:   []int{},
 			expectedLogSizes: []int{10},
 			bytesWritten:     10,
@@ -216,6 +226,7 @@ func TestAgentWrapper(t *testing.T) {
     enabled: false`,
 		},
 		{
+			name:             "write to empty log file w/o rotation",
 			beforeLogSizes:   []int{0},
 			expectedLogSizes: []int{10},
 			bytesWritten:     10,
@@ -224,6 +235,7 @@ func TestAgentWrapper(t *testing.T) {
     enabled: false`,
 		},
 		{
+			name:             "write to non-empty log file",
 			beforeLogSizes:   []int{1},
 			expectedLogSizes: []int{11},
 			bytesWritten:     10,
@@ -233,6 +245,27 @@ func TestAgentWrapper(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		runTest(t, tc)
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ts, err := setUp(t, tc.beforeLogSizes, tc.config)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Run command to print specific amount of bytes
+			if err := run(ts.getLogFile(), ts.getConfigPath(), getCommand(tc.bytesWritten)); err != nil {
+				t.Fatal(err)
+			}
+
+			// Compare log files in directory sorted by rotation to expected sizes
+			gotLogSizes, err := ts.getLogFileSizes()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(tc.expectedLogSizes, gotLogSizes) {
+				t.Fatalf("Test %v: Expected log sizes %v, got %v", tc, tc.expectedLogSizes, gotLogSizes)
+			}
+		})
 	}
 }
