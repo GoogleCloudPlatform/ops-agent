@@ -1,6 +1,11 @@
 set -e
 
-cat <<EOF > /etc/yum.repos.d/cassandra.repo
+# if os is rhel 9, support for legacy crypto is required to install gpg key
+case "$VERSION_ID" in
+    9*) sudo update-crypto-policies --set LEGACY;;
+esac
+
+sudo cat <<EOF > cassandra.repo
 [cassandra]
 name=Apache Cassandra
 baseurl=https://www.apache.org/dist/cassandra/redhat/40x/
@@ -9,7 +14,10 @@ repo_gpgcheck=1
 gpgkey=https://www.apache.org/dist/cassandra/KEYS
 EOF
 
-sudo yum update
+sudo mv cassandra.repo /etc/yum.repos.d/cassandra.repo
+
+sudo yum -y update
 
 sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra
+sudo systemctl daemon-reload
 sudo service cassandra start

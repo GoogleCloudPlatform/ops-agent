@@ -14,8 +14,8 @@
 
 per_application_overrides:
   aerospike:
-    # Unable to install Aerospike on SLES 12 SP5
-    platforms_to_skip: [sles-12]
+    # Unable to install Aerospike on SLES 12 SP5, or RHEL 9
+    platforms_to_skip: [sles-12, rocky-linux-9]
   apache:
     # Skip various failing platforms for now.
     # New applications should use platforms_to_skip sparingly
@@ -48,6 +48,7 @@ per_application_overrides:
       - ubuntu-2004-lts
       - sles-12
       - sles-15
+      - rocky-linux-9
   redis:
     platforms_to_skip: *common_skips
   # As wildfly does not have package installers & is installed from tar,
@@ -56,12 +57,18 @@ per_application_overrides:
     platforms_to_skip: *common_skips
   # Note: New applications are not supposed to add additional skips
   # here unless deemed absolutely necessary.
-  couchdb: # couchdb is not supported on sles
-    platforms_to_skip: [sles-12, sles-15]
+  couchdb: # couchdb is not supported on sles, rhel9
+    platforms_to_skip: [sles-12, sles-15, rocky-linux-9]
+  couchbase: # couchbase is not supported on rhel9
+    platforms_to_skip: [rocky-linux-9]
+  postgresql: # postgres is not supported on rhel9
+    platforms_to_skip: [rocky-linux-9]
   varnish: # varnish is not supported on sles
     platforms_to_skip: [sles-12, sles-15]
   rabbitmq: # rabbitmq is not supported on sles-12
     platforms_to_skip: [sles-12]
+  mongodb: # when we add support for mongo 6 in integration tests we can support RHEL 9
+    platforms_to_skip: [rocky-linux-9]
   # This version of MongoDB hit end of life in 2021. We can work around that
   # for other distros, but not Rocky Linux 9.
   mongodb3.6:
