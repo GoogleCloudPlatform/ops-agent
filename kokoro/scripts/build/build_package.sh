@@ -36,6 +36,7 @@ git submodule update --init --recursive
 # Debugging why we are not getting Docker cache hits for presubmits.
 ls -Al submodules/opentelemetry-operations-collector/go.* || echo ls failed
 stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
+sha256sum submodules/opentelemetry-operations-collector/go.* || echo sha256sum failed
 
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
