@@ -17,9 +17,12 @@
 
 package main
 
-import "strings"
+import (
+	"os/exec"
+	"strings"
+)
 
 // Get a command that will write the given number of bytes
-func (tc *testCase) getCommand() []string {
-	return []string{"cmd", "/C", "@echo", strings.Repeat("a", int(tc.bytesWritten-2))}
+func getCommand(writeBytes int) *exec.Cmd {
+	return exec.Command("cmd", "/C", "@echo", strings.Repeat("a", int(writeBytes-2)))
 }
