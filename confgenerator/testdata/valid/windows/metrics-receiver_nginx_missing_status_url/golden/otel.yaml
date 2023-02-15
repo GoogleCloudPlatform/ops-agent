@@ -511,7 +511,7 @@ receivers:
       processes: {}
   nginx/nginxmetrics:
     collection_interval: 30s
-    endpoint: http://localhost/status
+    endpoint: http://127.0.0.1/status
   prometheus/fluentbit:
     config:
       scrape_configs:
