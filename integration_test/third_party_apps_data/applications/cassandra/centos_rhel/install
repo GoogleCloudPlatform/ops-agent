@@ -1,5 +1,7 @@
 set -e
 
+source /etc/os-release
+
 # if os is rhel 9, support for legacy crypto is required to install gpg key
 case "$VERSION_ID" in
     9*) sudo update-crypto-policies --set LEGACY;;

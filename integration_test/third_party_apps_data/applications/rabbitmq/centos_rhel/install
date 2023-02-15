@@ -1,5 +1,7 @@
 set -e
 
+source /etc/os-release
+
 # if os is rhel 9, crb is required to access epel
 case "$VERSION_ID" in
     9*) sudo yum config-manager --set-enabled crb;;
