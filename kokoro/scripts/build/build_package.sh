@@ -34,7 +34,8 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 git submodule update --init --recursive
 
 # Debugging why we are not getting Docker cache hits for presubmits.
-ls -Al submodules/opentelemetry-operations-collector/go.*
+ls -Al submodules/opentelemetry-operations-collector/go.* || echo ls failed
+stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
 
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
