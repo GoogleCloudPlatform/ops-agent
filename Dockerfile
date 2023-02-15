@@ -46,7 +46,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM centos7-build-base AS centos7-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -136,7 +136,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM centos8-build-base AS centos8-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -229,7 +229,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM rockylinux9-build-base AS rockylinux9-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -317,7 +317,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM bullseye-build-base AS bullseye-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -405,7 +405,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM buster-build-base AS buster-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -498,7 +498,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM stretch-build-base AS stretch-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -605,7 +605,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM sles12-build-base AS sles12-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -703,7 +703,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM sles15-build-base AS sles15-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -791,7 +791,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM bionic-build-base AS bionic-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -879,7 +879,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM focal-build-base AS focal-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
@@ -967,7 +967,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 FROM jammy-build-base AS jammy-build-otel
 WORKDIR /work
 # Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.* submodules/opentelemetry-operations-collector/
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
 RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
