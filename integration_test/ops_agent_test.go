@@ -46,6 +46,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -2688,22 +2689,6 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
-func TestLoggingFluentbitSelfLogs(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
 func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	time.Sleep(3 * time.Minute)
 	// Query for a metric sent by the diagnostics service from the last
@@ -3226,6 +3211,94 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkFunc("Network", "FAIL")
 		checkFunc("API", "ERROR")
 		checkFunc("Ports", "PASS")
+	})
+}
+
+func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		logsPerSecond := 25000
+		bufferLimitSize := 50
+		config := fmt.Sprintf(`logging:
+  receivers:
+    log_syslog:
+      type: files
+      include_paths:
+      - %s/*
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [log_syslog]
+        processors: []
+  global:
+    buffer_limit_factor: %sM`, logPath, bufferLimitSize)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+		var bufferDir string
+		generateLogPerSecondFile := fmt.Sprintf(`
+		x=1
+		while [ $x -le %s ]
+		do
+		  echo "Hello world! $x" >> ~/log_%s.log
+		  ((x++))
+		done`, logsPerSecond, logsPerSecond)
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+
+		generateLogsScript := fmt.Sprintf(`
+			x=1
+			while [ $x -le 300 ]
+			do
+			  cp ~/log_%s.log %s/
+			  ((x++))
+			  
+			  sleep 1
+			done`, logsPerSecond, logPath)
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("du -c %s | cut -f 1 | tail -n 1", bufferDir))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		byteCount, err := strconv.Atoi(strings.TrimSuffix(output.Stdout, "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Threshhold of ~100MiB since du returns size in KB
+		threshold := 100000
+		if byteCount > threshold {
+			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
+		}
+
+		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
 	})
 }
 

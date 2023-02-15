@@ -34,6 +34,8 @@ import (
 
 const fluentBitSelfLogTag = "ops-agent-fluent-bit"
 
+const bufferLimitDefaultSizeMegabytes = 200
+
 func googleCloudExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -221,11 +223,20 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 	return outR, outP, nil
 }
 
+func (uc *UnifiedConfig) getBufferLimitSize() int {
+	if uc.Global == nil || uc.Global.BufferLimitFactor == nil {
+		return bufferLimitDefaultSizeMegabytes
+	}
+
+	return *uc.Global.BufferLimitFactor
+}
+
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (map[string]string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
+
+	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo, uc.getBufferLimitSize())
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +288,7 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
+func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat, bufferLimitSize int) ([]fluentbit.Component, error) {
 	var out []fluentbit.Component
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
@@ -375,7 +386,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, bufferLimitSize))
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
@@ -387,7 +398,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 
 	out = append(out, generateSeveritySelfLogsParser()...)
 
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent))
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, bufferLimitSize))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
