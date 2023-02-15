@@ -73,6 +73,7 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from={target_name}-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
 COPY --from={target_name}-build-diagnostics /work/cache /work/cache
