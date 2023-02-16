@@ -10,7 +10,7 @@ if [ ${VERSION_ID} == 8 ]; then
 fi
 sudo yum -y install mysql-community-server
 
-# default-authentication-plugin=mysql_native_password
+echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
 
 sudo service mysqld start
 
