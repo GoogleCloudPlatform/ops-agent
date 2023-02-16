@@ -3,7 +3,7 @@ set -e
 # Create a file that nginx can't read.
 if [ -d "/usr/share/nginx/html/" ] 
 then
-    # This directory is used by RHEL9
+    # This directory is used on some distros.
     sudo touch /usr/share/nginx/html/forbidden.html
     sudo chmod o-r /usr/share/nginx/html/forbidden.html
 else
