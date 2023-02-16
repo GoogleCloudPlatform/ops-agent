@@ -3,8 +3,8 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      DISTRO = 'rockylinux9'
-      PKGFORMAT = 'rpm'
+      DISTRO = 'bullseye'
+      PKGFORMAT = 'deb'
     }
   }
 }
