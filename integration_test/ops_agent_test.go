@@ -3033,6 +3033,40 @@ traces:
 				t.Error(err)
 			}
 		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
 	})
 }
 

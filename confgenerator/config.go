@@ -56,6 +56,10 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
+func (uc *UnifiedConfig) HasCombined() bool {
+	return uc.Combined != nil
+}
+
 func (uc *UnifiedConfig) DeepCopy(platform string) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
