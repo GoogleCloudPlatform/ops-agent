@@ -16,6 +16,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -72,6 +73,15 @@ func run(logFilename, configurationPath string, cmd *exec.Cmd) error {
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stderr = cmd.Stdout
+	if cmd.Stdout != os.Stdout {
+		pipeOut, pipeIn, err := os.Pipe()
+		if err != nil {
+			return err
+		}
+		os.Stdout = pipeIn
+		os.Stderr = pipeIn
+		go io.Copy(cmd.Stdout, pipeOut)
+	}
 	if err := runCommand(cmd); err != nil {
 		return err
 	}

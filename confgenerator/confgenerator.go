@@ -289,6 +289,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
+	out = append(out, fluentbit.StandardInputComponent())
 
 	if l != nil && l.Service != nil {
 		// Type for sorting.
