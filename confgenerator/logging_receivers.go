@@ -329,7 +329,7 @@ type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 
 	Channels        []string `yaml:"channels,omitempty,flow" validate:"required,winlogchannels"`
-	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2"`
+	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2" tracking:""`
 }
 
 const eventLogV2SeverityParserLua = `

@@ -1751,6 +1751,63 @@ func TestWindowsEventLogV2(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
 			t.Fatal(err)
 		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].receiver_version",
+				Value:   "2",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	})
 }
 
@@ -3195,7 +3252,6 @@ traces:
 			t.Error(err)
 			return
 		}
-
 	})
 }
 
