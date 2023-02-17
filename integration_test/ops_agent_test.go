@@ -2992,6 +2992,7 @@ combined:
   receivers:
     otlp:
       type: otlp
+			grpc_endpoint: 0.0.0.0:4317
 metrics:
   service:
     pipelines:
