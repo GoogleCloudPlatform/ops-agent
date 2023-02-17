@@ -5,8 +5,6 @@ config build = common.third_party_apps_test {
     platforms = [
       'windows-2012-r2',
       'sql-std-2019-win-2019',
-      'windows-2022',
-      'windows-2022-core',
     ]
   }
 }
