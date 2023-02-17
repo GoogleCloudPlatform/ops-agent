@@ -151,6 +151,7 @@ windows = _family {
         // TODO(martijnvs): Switch this to windows-20h2-core.
         'windows-2019',
         'windows-2022',
+        'windows-2022-core',
       ]
     }
   }
