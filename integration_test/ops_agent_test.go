@@ -1718,20 +1718,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-	}
-
-	if t.Failed() {
-		// Return early instead of waiting up to 7 minutes for the second round
-		// of querying for metrics.
-		return
 	}
 
 	// Now that we've established that the preceding metrics are being uploaded
