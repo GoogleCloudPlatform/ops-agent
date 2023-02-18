@@ -455,7 +455,8 @@ processors:
     detectors:
     - gcp
   transform/flink_2:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - set(attributes["host_name"], resource.attributes["host.name"])
       - set(attributes["taskmanager_id"], resource.attributes["flink.taskmanager.id"])

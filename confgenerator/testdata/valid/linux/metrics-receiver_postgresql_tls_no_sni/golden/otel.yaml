@@ -435,7 +435,8 @@ processors:
     detectors:
     - gcp
   transform/postgresql_1:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - set(attributes["database"], resource.attributes["postgresql.database.name"])
       - set(attributes["table"], resource.attributes["postgresql.table.name"])

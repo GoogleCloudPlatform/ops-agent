@@ -437,7 +437,8 @@ processors:
     detectors:
     - gcp
   transform/saphana_3:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - set(attributes["host"], resource.attributes["saphana.host"])
 receivers:

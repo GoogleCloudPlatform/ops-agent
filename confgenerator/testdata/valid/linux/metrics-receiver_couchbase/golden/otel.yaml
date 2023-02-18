@@ -521,7 +521,8 @@ processors:
     detectors:
     - gcp
   transform/couchbase_3:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - convert_gauge_to_sum("cumulative", true) where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
       - set(metric.description, "Number of out of memory errors.") where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"

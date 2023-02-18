@@ -506,12 +506,14 @@ processors:
     detectors:
     - gcp
   transform/iis__v2_0:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - set(attributes["site"], resource.attributes["iis.site"])
       - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
   transform/iis__v2_1:
-    metrics:
+    metric_statements:
+      context: metric
       statements:
       - keep_keys(resource.attributes, [])
 receivers:
