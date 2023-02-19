@@ -482,7 +482,7 @@ processors:
     - gcp
   transform/mssql_1:
     metric_statements:
-      context: metric
+      context: datapoint
       statements:
       - set(attributes["database"], resource.attributes["sqlserver.database.name"])
 receivers:

@@ -470,13 +470,13 @@ processors:
     - gcp
   transform/iis_0:
     metric_statements:
-      context: metric
+      context: datapoint
       statements:
       - set(attributes["site"], resource.attributes["iis.site"])
       - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
   transform/iis_1:
     metric_statements:
-      context: metric
+      context: datapoint
       statements:
       - keep_keys(resource.attributes, [])
 receivers:

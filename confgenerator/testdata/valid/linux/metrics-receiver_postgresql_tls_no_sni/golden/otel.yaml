@@ -436,7 +436,7 @@ processors:
     - gcp
   transform/postgresql_1:
     metric_statements:
-      context: metric
+      context: datapoint
       statements:
       - set(attributes["database"], resource.attributes["postgresql.database.name"])
       - set(attributes["table"], resource.attributes["postgresql.table.name"])

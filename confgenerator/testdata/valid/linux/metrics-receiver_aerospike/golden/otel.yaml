@@ -432,7 +432,7 @@ processors:
     - gcp
   transform/aerospike_2:
     metric_statements:
-      context: metric
+      context: datapoint
       statements:
       - set(attributes["node_name"], resource.attributes["aerospike.node.name"])
       - set(attributes["namespace_name"], resource.attributes["aerospike.namespace"])
