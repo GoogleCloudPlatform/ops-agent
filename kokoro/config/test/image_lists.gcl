@@ -84,8 +84,6 @@ centos = _family {
     centos8 = _distro {
       name = 'CentOS 8'
       release = [
-        // CentOS.
-        'centos-8',
         // RHEL.
         'rhel-8',
         'rhel-8-1-sap-ha',
