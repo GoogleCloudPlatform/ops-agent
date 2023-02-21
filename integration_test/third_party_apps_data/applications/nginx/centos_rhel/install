@@ -1,6 +1,6 @@
 set -e
 
-sudo /usr/bin/yum -y install nginx
+sudo yum -y install nginx
 
 sudo tee /etc/nginx/conf.d/status.conf > /dev/null << EOF
 server {
