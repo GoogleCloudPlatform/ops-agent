@@ -82,27 +82,21 @@ centos = _family {
       presubmit = ['centos-7']
     }
     centos8 = _distro {
-      name = 'CentOS 8'
       release = [
-        // CentOS.
-        'centos-8',
-        // RHEL.
+        'centos-8-stream',
         'rhel-8',
         'rhel-8-1-sap-ha',
         'rhel-8-2-sap-ha',
         'rhel-8-4-sap-ha',
         'rhel-8-6-sap-ha',
-        // Rocky.
         'rocky-linux-8',
       ]
-      presubmit = ['rocky-linux-8']
+      presubmit = ['centos-8-stream', 'rocky-linux-8']
     }
     rockylinux9 = _distro {
       name = 'Rocky Linux 9'
       release = [
-        // RHEL.
         'rhel-9',
-        // Rocky.
         'rocky-linux-9',
       ]
       presubmit = ['rocky-linux-9']
