@@ -158,7 +158,14 @@ func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return err
 }
 
+// writeToWindowsEventLog writes an event payload to the given channel (logName).
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
+	return writeToWindowsEventLogWithSeverity(ctx, logger, vm, logName, payload, "Information")
+}
+
+// writeToWindowsEventLogWithSeverity writes an event payload to the given channel (logName)
+// using the given severity (Error, Information, FailureAudit, SuccessAudit, Warning).
+func writeToWindowsEventLogWithSeverity(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string, severity string) error {
 	// If this is the first time we're trying to write to logName, we need to
 	// register a fake log source with New-EventLog.
 	// There's a problem:  there's no way (that I can find) to check whether a
@@ -168,12 +175,12 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// per logName.
 	source := logName + "__ops_agent_test"
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed to register new source %v: %v", logName, payload, severity, source, err)
 	}
 
 	// Use a Powershell here-string to avoid most quoting issues.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -Message @'\n%s\n'@", logName, source, payload)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed: %v", logName, payload, err)
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -EntryType '%s' -Message @'\n%s\n'@", logName, source, severity, payload)); err != nil {
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed: %v", logName, payload, severity, err)
 	}
 	return nil
 }
@@ -1625,6 +1632,185 @@ func TestWindowsEventLog(t *testing.T) {
 	})
 }
 
+func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		log := "windows_event_log"
+		channel := "Microsoft-Windows-User Control Panel/Operational"
+		config := fmt.Sprintf(`logging:
+  receivers:
+    %s:
+      type: windows_event_log
+      channels:
+      - Application
+      - %s
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [%s]
+`, log, channel, log)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Quote-and-escape the query string so that Cloud Logging accepts it
+		expectedWarning := fmt.Sprintf(`"\"logging.receivers.%s.channels\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, log, channel)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestWindowsEventLogV2(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// only_v2: covers a channel, with spaces, that is present on all supported Windows platforms
+		// default_pipeline: covers v1+v2 simultaneously
+		// There is a limitation on custom event log sources that requires their associated
+		// log names to have a unique eight-character prefix, so unfortunately we can only test
+		// at most one "Mirosoft-*" log.
+		config := `logging:
+  receivers:
+    r1:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Microsoft-Windows-User Control Panel/Operational
+    r2:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Application
+      - System
+  service:
+    pipelines:
+      only_v2:
+        receivers: [r1]
+      default_pipeline:
+        receivers: [windows_event_log, r2]
+`
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		payloads := map[string]map[string]string{
+			"r1": {
+				"Microsoft-Windows-User Control Panel/Operational": "control_panel_msg",
+			},
+			"r2": {
+				"Application": "application_msg",
+				"System":      "system_msg",
+			},
+		}
+		for r := range payloads {
+			for log, payload := range payloads[r] {
+				if err := writeToWindowsEventLog(ctx, logger.ToMainLog(), vm, log, payload); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		// Manually re-send a log as a Warning to test severity parsing
+		if err := writeToWindowsEventLogWithSeverity(ctx, logger.ToMainLog(), vm, "Application", "warning_msg", "Warning"); err != nil {
+			t.Fatal(err)
+		}
+
+		// For r1, we simply check that the logs were ingested
+		for _, payload := range payloads["r1"] {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r1", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		// For r2, we expect logs to show up *twice*: once for v1 and once for v2.
+		// They can be distinguished by the presence of v1-only and v2-only fields
+		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
+		for _, payload := range payloads["r2"] {
+			queryV1 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeGenerated:*"
+			queryV2 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeCreated:*"
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "windows_event_log", time.Hour, queryV1); err != nil {
+				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
+			}
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, queryV2); err != nil {
+				t.Fatalf("expected v2 log for %s but it wasn't found: err=%v", payload, err)
+			}
+		}
+
+		// Verify that the warning message has the correct severity
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
+			t.Fatal(err)
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].receiver_version",
+				Value:   "2",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -3066,7 +3252,6 @@ traces:
 			t.Error(err)
 			return
 		}
-
 	})
 }
 
