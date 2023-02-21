@@ -1,12 +1,5 @@
 set -e
 
-source /etc/os-release
-
-# if os is rhel 9, support for legacy crypto is required to install gpg key
-case "$VERSION_ID" in
-    9*) sudo update-crypto-policies --set LEGACY;;
-esac
-
 sudo yum install -y java-1.8.0-openjdk
 
 sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch

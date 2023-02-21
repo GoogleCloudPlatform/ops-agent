@@ -8,7 +8,7 @@ SELINUXTYPE=targeted
 EOF
 
 sudo yum install -y \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof chkconfig
+    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof
 
 curl -L -o \
     solr-8.11.1.tgz \

@@ -36,8 +36,8 @@ func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Componen
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
 		// https://docs.nginx.com/nginx/admin-guide/monitoring/logging/#setting-up-the-access-log
 		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
-		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0" "0.5"
-		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?(?: "(?<gzip_ratio>[^\"]*)")?$`,
+		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0"
+		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
@@ -57,7 +57,6 @@ func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Componen
 	for _, field := range []string{
 		"jsonPayload.host",
 		"jsonPayload.user",
-		"jsonPayload.gzip_ratio",
 	} {
 		mf.Fields[field] = &confgenerator.ModifyField{
 			OmitIf: fmt.Sprintf(`%s = "-"`, field),

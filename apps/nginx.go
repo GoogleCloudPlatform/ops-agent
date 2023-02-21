@@ -28,7 +28,7 @@ type MetricsReceiverNginx struct {
 	StubStatusURL string `yaml:"stub_status_url" validate:"omitempty,url"`
 }
 
-const defaultStubStatusURL = "http://127.0.0.1/status"
+const defaultStubStatusURL = "http://localhost/status"
 
 func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
