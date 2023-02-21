@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 	"github.com/kardianos/osext"
-	"golang.org/x/sys/windows/registry"
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -109,7 +109,7 @@ func initServices() error {
 		"--log_file", filepath.Join(logDirectory, "logging-module.log"),
 	}
 	// TODO(b/240564518): Workaround for fluent-bit lockups on Windows 2012
-	if isWindows2012() {
+	if windows.Is2012() {
 		fluentbitArgs = append([]string{
 			"/k",
 			"start",
@@ -162,18 +162,4 @@ func initServices() error {
 		},
 	}
 	return nil
-}
-
-func isWindows2012() bool {
-	key, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows NT\CurrentVersion`, registry.QUERY_VALUE)
-	if err != nil {
-		log.Fatalf("could not open CurrentVersion key: %v", err)
-	}
-	defer key.Close()
-	data, _, err := key.GetStringValue("CurrentBuildNumber")
-	if err != nil {
-		log.Fatalf("could not read CurrentBuildNumber: %v", err)
-	}
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	return data == "9200" || data == "9600"
 }

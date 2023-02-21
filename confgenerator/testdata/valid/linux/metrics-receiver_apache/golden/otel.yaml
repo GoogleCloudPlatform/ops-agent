@@ -439,7 +439,7 @@ processors:
 receivers:
   apache/apache:
     collection_interval: 60s
-    endpoint: http://localhost:80/server-status?auto
+    endpoint: http://127.0.0.1:80/server-status?auto
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:

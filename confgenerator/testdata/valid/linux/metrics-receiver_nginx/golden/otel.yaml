@@ -446,7 +446,7 @@ receivers:
       processes: {}
   nginx/nginx:
     collection_interval: 60s
-    endpoint: http://localhost/status
+    endpoint: http://127.0.0.1/status
   prometheus/fluentbit:
     config:
       scrape_configs:
