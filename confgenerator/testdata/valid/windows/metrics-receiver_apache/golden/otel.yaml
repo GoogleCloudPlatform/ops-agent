@@ -487,7 +487,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/apache__metrics_3:
+  modifyscope/apache__metrics_4:
     override_scope_name: agent.googleapis.com/apache
     override_scope_version: "1.0"
   modifyscope/iis_3:
@@ -501,6 +501,11 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/apache__metrics_3:
+    metric_statements:
+      context: datapoint
+      statements:
+      - set(attributes["server_name"], resource.attributes["apache.server.name"])
 receivers:
   apache/apache__metrics:
     collection_interval: 30s
@@ -576,7 +581,8 @@ service:
       - filter/apache__metrics_0
       - normalizesums/apache__metrics_1
       - metricstransform/apache__metrics_2
-      - modifyscope/apache__metrics_3
+      - transform/apache__metrics_3
+      - modifyscope/apache__metrics_4
       - resourcedetection/_global_0
       receivers:
       - apache/apache__metrics

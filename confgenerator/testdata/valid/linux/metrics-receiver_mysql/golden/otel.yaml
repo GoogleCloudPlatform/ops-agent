@@ -467,6 +467,27 @@ receivers:
   mysql/mysql:
     collection_interval: 30s
     endpoint: localhost:3306
+    metrics:
+      mysql.commands:
+        enabled: true
+      mysql.index.io.wait.count:
+        enabled: false
+      mysql.index.io.wait.time:
+        enabled: false
+      mysql.locked_connects:
+        enabled: false
+      mysql.mysqlx_connections:
+        enabled: false
+      mysql.opened_resources:
+        enabled: false
+      mysql.prepared_statements:
+        enabled: false
+      mysql.table.io.wait.count:
+        enabled: false
+      mysql.table.io.wait.time:
+        enabled: false
+      mysql.tmp_resources:
+        enabled: false
     password: pwd
     transport: tcp
     username: usr

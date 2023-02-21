@@ -429,13 +429,18 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/apache_3:
+  modifyscope/apache_4:
     override_scope_name: agent.googleapis.com/apache
     override_scope_version: "1.0"
   normalizesums/apache_1: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/apache_3:
+    metric_statements:
+      context: datapoint
+      statements:
+      - set(attributes["server_name"], resource.attributes["apache.server.name"])
 receivers:
   apache/apache:
     collection_interval: 60s
@@ -479,7 +484,8 @@ service:
       - filter/apache_0
       - normalizesums/apache_1
       - metricstransform/apache_2
-      - modifyscope/apache_3
+      - transform/apache_3
+      - modifyscope/apache_4
       - resourcedetection/_global_0
       receivers:
       - apache/apache
