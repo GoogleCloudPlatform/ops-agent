@@ -62,6 +62,38 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 				"username":            r.Username,
 				"password":            r.Password,
 				"transport":           transport,
+				"metrics": map[string]interface{}{
+					"mysql.commands": map[string]interface{}{
+						"enabled": true,
+					},
+					"mysql.index.io.wait.count": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.index.io.wait.time": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.locked_connects": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.mysqlx_connections": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.opened_resources": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.tmp_resources": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.prepared_statements": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.table.io.wait.count": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.table.io.wait.time": map[string]interface{}{
+						"enabled": false,
+					},
+				},
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {

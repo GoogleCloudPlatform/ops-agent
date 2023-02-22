@@ -34,12 +34,14 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       type: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.collection.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.connection.count
     value_type: INT64
     kind: GAUGE
@@ -47,28 +49,34 @@ expected_metrics:
     labels:
       database: .*
       type: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.data.size
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.global_lock.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.index.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.index.size
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.memory.usage
     value_type: INT64
     kind: GAUGE
@@ -76,6 +84,7 @@ expected_metrics:
     labels:
       database: .*
       type: .*
+      instrumentation_source: agent.googleapis.com/mongodb
     representative: true
   - type: workload.googleapis.com/mongodb.object.count
     value_type: INT64
@@ -83,22 +92,27 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.operation.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       operation: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.storage.size
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.database.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.index.access.count
     value_type: INT64
     monitored_resource: gce_instance
@@ -106,6 +120,7 @@ expected_metrics:
     labels:
       collection: .*
       database: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.document.operation.count
     value_type: INT64
     kind: GAUGE
@@ -113,36 +128,50 @@ expected_metrics:
     labels:
       database: .*
       operation: .*
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.network.io.receive
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.network.io.transmit
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.network.request.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.operation.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       operation: insert|query|update|delete|getmore|command
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.session.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.cursor.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.cursor.timeout.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      instrumentation_source: agent.googleapis.com/mongodb
 expected_logs:
   - log_name: mongodb
     fields:
