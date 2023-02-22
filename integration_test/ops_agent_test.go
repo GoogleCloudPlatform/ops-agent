@@ -3489,6 +3489,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		logPath := logPathForPlatform(vm.Platform)
+		logsPerSecond := 100000
 		config := fmt.Sprintf(`logging:
   receivers:
     log_syslog:
@@ -3507,34 +3508,38 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 		var bufferDir string
+		generateLogPerSecondFile := fmt.Sprintf(`
+        x=1
+        while [ $x -le %d ]
+        do
+          echo "Hello world! $x" >> ~/log_%d.log
+          ((x++))
+        done`, logsPerSecond, logsPerSecond)
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
 
 		generateLogsScript := fmt.Sprintf(`
+			mkdir -p %s
 			x=1
-			while [ $x -le 1000000 ]
+			while [ $x -le 360 ]
 			do
-			  counter=1
-			  while [ $counter -le 100000 ]
-			  do
-				echo "Hello world! $x" >> %s
-				((counter++))
-				((x++))
-			  done
+			  cp ~/log_%d.log %s/$x.log
+			  ((x++))
+
 			  sleep 1
-			done`, logPath)
+			done
+			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDir)
 
 		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 
-		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+		output, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
 
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("du -c %s | cut -f 1 | tail -n 1", bufferDir))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3545,7 +3550,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		}
 
 		// Threshhold of ~100MiB since du returns size in KB
-		threshold := 100000
+		threshold := 5000000
 		if byteCount > threshold {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
 		}

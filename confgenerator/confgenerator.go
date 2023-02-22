@@ -379,7 +379,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "20M"))
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "1500M"))
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
