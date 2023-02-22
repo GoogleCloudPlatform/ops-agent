@@ -56,6 +56,9 @@ func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("apache.server.name", "server_name"),
+			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
