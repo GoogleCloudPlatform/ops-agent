@@ -28,7 +28,7 @@ type MetricsReceiverNginx struct {
 	StubStatusURL string `yaml:"stub_status_url" validate:"omitempty,url"`
 }
 
-const defaultStubStatusURL = "http://localhost/status"
+const defaultStubStatusURL = "http://127.0.0.1/status"
 
 func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
@@ -51,6 +51,7 @@ func (r MetricsReceiverNginx) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }

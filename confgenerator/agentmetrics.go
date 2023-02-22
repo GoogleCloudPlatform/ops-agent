@@ -45,6 +45,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
+		Type: otel.System,
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
@@ -108,6 +109,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
+		Type: otel.System,
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",

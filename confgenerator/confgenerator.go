@@ -32,7 +32,9 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-func googleCloudExporter(userAgent string) otel.Component {
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+
+func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -52,8 +54,9 @@ func googleCloudExporter(userAgent string) otel.Component {
 				// descriptors to be created implicitly with new time series.
 				"skip_create_descriptor": true,
 				// Omit instrumentation labels, which break agent metrics.
-				"instrumentation_library_labels": false,
+				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
+				// TODO: Enable with instrumentationLabels when values are sane.
 				"service_resource_labels": false,
 				"resource_filters":        []map[string]interface{}{},
 			},
@@ -124,12 +127,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:                        uc.Metrics.Service.LogLevel,
-		ReceiverPipelines:               receiverPipelines,
-		Pipelines:                       pipelines,
-		GlobalProcessors:                []otel.Component{gcpResourceDetector()},
-		GoogleCloudExporter:             googleCloudExporter(userAgent),
-		GoogleManagedPrometheusExporter: googleManagedPrometheusExporter(userAgent),
+		LogLevel:          uc.Metrics.Service.LogLevel,
+		ReceiverPipelines: receiverPipelines,
+		Pipelines:         pipelines,
+		GlobalProcessors:  []otel.Component{gcpResourceDetector()},
+		Exporters: map[otel.ExporterType]otel.Component{
+			otel.System: googleCloudExporter(userAgent, false),
+			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+		},
 	}.Generate()
 	if err != nil {
 		return "", err
@@ -163,7 +169,7 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 			}
 
 			// Check the Ops Agent receiver type.
-			if receiverPipeline.GMP {
+			if receiverPipeline.Type == otel.GMP {
 				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 				if len(processorIDs) > 0 {
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
@@ -381,12 +387,42 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components(fluentBitSelfLogTag)...)
 
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent, ""))
+	out = append(out, generateSeveritySelfLogsParser()...)
+
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
+}
+
+func generateSeveritySelfLogsParser() []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+
+	parser := LoggingProcessorParseRegex{
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		PreserveKey: true,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Components(fluentBitSelfLogTag, "self-logs-severity")
+
+	out = append(out, parser...)
+
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))

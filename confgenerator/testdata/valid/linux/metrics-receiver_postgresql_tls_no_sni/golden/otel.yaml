@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -417,6 +427,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
+  modifyscope/postgresql_3:
+    override_scope_name: agent.googleapis.com/postgresql
+    override_scope_version: "1.0"
   normalizesums/postgresql_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -500,11 +513,12 @@ service:
       - prometheus/otel
     metrics/postgresql_postgresql:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - normalizesums/postgresql_0
       - transform/postgresql_1
       - metricstransform/postgresql_2
+      - modifyscope/postgresql_3
       - resourcedetection/_global_0
       receivers:
       - postgresql/postgresql

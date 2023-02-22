@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -419,6 +429,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/apache_3:
+    override_scope_name: agent.googleapis.com/apache
+    override_scope_version: "1.0"
   normalizesums/apache_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -426,7 +439,7 @@ processors:
 receivers:
   apache/apache:
     collection_interval: 60s
-    endpoint: http://localhost:80/server-status?auto
+    endpoint: http://127.0.0.1:80/server-status?auto
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -461,11 +474,12 @@ service:
   pipelines:
     metrics/apache_apache:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - filter/apache_0
       - normalizesums/apache_1
       - metricstransform/apache_2
+      - modifyscope/apache_3
       - resourcedetection/_global_0
       receivers:
       - apache/apache

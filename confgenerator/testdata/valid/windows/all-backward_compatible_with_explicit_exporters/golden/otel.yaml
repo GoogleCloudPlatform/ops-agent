@@ -450,6 +450,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
@@ -536,6 +542,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/iis
@@ -544,6 +551,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/mssql

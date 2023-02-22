@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 )
 
 // DBPath returns the database path for the given log tag
@@ -327,27 +328,65 @@ func init() {
 type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 
-	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
+	Channels        []string `yaml:"channels,omitempty,flow" validate:"required,winlogchannels"`
+	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2" tracking:""`
 }
+
+const eventLogV2SeverityParserLua = `
+function process(tag, timestamp, record)
+    severityKey = 'logging.googleapis.com/severity'
+    if record['Level'] == 1 then
+        record[severityKey] = 'CRITICAL'
+    elseif record['Level'] == 2 then
+        record[severityKey] = 'ERROR'
+    elseif record['Level'] == 3 then
+        record[severityKey] = 'WARNING'
+    elseif record['Level'] == 4 then
+        record[severityKey] = 'INFO'
+    elseif record['Level'] == 5 then
+        record[severityKey] = 'NOTICE'
+    end
+    return 2, timestamp, record
+end
+`
 
 func (r LoggingReceiverWindowsEventLog) Type() string {
 	return "windows_event_log"
 }
 
-func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
+	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
+}
+
+func commonEventLogComponents(useNewerApi bool, channels []string, tag string) []fluentbit.Component {
+	inputName := "winlog"
+	timeKey := "TimeGenerated"
+
+	if useNewerApi {
+		inputName = "winevtlog"
+		timeKey = "TimeCreated"
+	}
+
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-			"Name":         "winlog",
+			"Name":         inputName,
 			"Tag":          tag,
-			"Channels":     strings.Join(r.Channels, ","),
+			"Channels":     strings.Join(channels, ","),
 			"Interval_Sec": "1",
 			"DB":           DBPath(tag),
 		},
 	}}
 
-	// Parser for parsing TimeGenerated field as log record timestamp
+	// On Windows Server 2012, there is a known problem where most log fields end
+	// up blank. The Use_ANSI configuration is provided to work around this; however,
+	// this also strips Unicode characters away, so we only use it on affected
+	// platforms. This only affects the newer API.
+	if useNewerApi && windows.Is2012() {
+		input[0].Config["Use_ANSI"] = "True"
+	}
+
+	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp
 	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
 	timestampParser := fluentbit.Component{
 		Kind: "PARSER",
@@ -360,9 +399,35 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}
 
-	timestampParserFilters := fluentbit.ParserFilterComponents(tag, "TimeGenerated", []string{timestampParserName}, true)
+	timestampParserFilters := fluentbit.ParserFilterComponents(tag, timeKey, []string{timestampParserName}, true)
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
+
+	return input
+}
+
+func (r LoggingReceiverWindowsEventLog) componentsForV2(tag string) []fluentbit.Component {
+	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log-winevtlog
+	input := commonEventLogComponents(true, r.Channels, tag)
+
+	// Ordinarily we use fluentbit.TranslationComponents to populate severity,
+	// which uses 'modify' filters, except 'modify' filters only work on string
+	// values and Level is an int. So we need to use Lua.
+	filters := fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
+
+	return append(input, filters...)
+}
+
+func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+	if len(r.ReceiverVersion) == 0 {
+		r.ReceiverVersion = "1"
+	}
+	if !r.IsDefaultVersion() {
+		return r.componentsForV2(tag)
+	}
+
+	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
+	input := commonEventLogComponents(false, r.Channels, tag)
 
 	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
 		[]struct{ SrcVal, DestVal string }{

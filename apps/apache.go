@@ -28,7 +28,7 @@ type MetricsReceiverApache struct {
 	ServerStatusURL string `yaml:"server_status_url" validate:"omitempty,url"`
 }
 
-const defaultServerStatusURL = "http://localhost:80/server-status?auto"
+const defaultServerStatusURL = "http://127.0.0.1:80/server-status?auto"
 
 func (r MetricsReceiverApache) Type() string {
 	return "apache"
@@ -56,6 +56,7 @@ func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }
