@@ -512,9 +512,9 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	series, fc_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
-	if fc_err != nil {
-		return multierr.Append(err, fc_err)
+	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if ft_err != nil {
+		return multierr.Append(err, ft_err)
 	}
 
 	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
