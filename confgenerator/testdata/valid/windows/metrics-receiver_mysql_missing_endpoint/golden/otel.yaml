@@ -367,7 +367,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -375,7 +375,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -532,6 +532,27 @@ receivers:
   mysql/mysqlmetrics:
     collection_interval: 30s
     endpoint: /var/run/mysqld/mysqld.sock
+    metrics:
+      mysql.commands:
+        enabled: true
+      mysql.index.io.wait.count:
+        enabled: false
+      mysql.index.io.wait.time:
+        enabled: false
+      mysql.locked_connects:
+        enabled: false
+      mysql.mysqlx_connections:
+        enabled: false
+      mysql.opened_resources:
+        enabled: false
+      mysql.prepared_statements:
+        enabled: false
+      mysql.table.io.wait.count:
+        enabled: false
+      mysql.table.io.wait.time:
+        enabled: false
+      mysql.tmp_resources:
+        enabled: false
     password: pwd
     transport: unix
     username: usr
