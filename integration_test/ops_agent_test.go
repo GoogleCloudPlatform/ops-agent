@@ -1687,7 +1687,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       type: windows_event_log
       receiver_version: 2
       channels:
-      - Microsoft-Windows-User Control Panel/Operational
+      - Microsoft-Windows-User Profile Service/Operational
     r2:
       type: windows_event_log
       receiver_version: 2
@@ -1707,7 +1707,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		payloads := map[string]map[string]string{
 			"r1": {
-				"Microsoft-Windows-User Control Panel/Operational": "control_panel_msg",
+				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
 			},
 			"r2": {
 				"Application": "application_msg",
