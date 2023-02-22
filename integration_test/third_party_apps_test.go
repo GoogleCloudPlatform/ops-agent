@@ -642,6 +642,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		// All integrations are expected to set the instrumentation_source label.
 		for _, m := range metadata.ExpectedMetrics {
+			// The windows metrics that do not target workload.googleapis.com cannot set
+			// the instrumentation_ labels
+			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
+				continue
+			}
 			if m.Labels == nil {
 				m.Labels = map[string]string{}
 			}
