@@ -25,19 +25,25 @@ local __field_7 = (function()
 return record["http_request_userAgent"]
 end)();
 local __field_8 = (function()
-return record["host"]
+return record["gzip_ratio"]
 end)();
 local __field_9 = (function()
+return record["host"]
+end)();
+local __field_10 = (function()
 return record["user"]
 end)();
 local omit1 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["http_request_referer"]
 end)());
+local omit10 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
+return record["user"]
+end)());
 local omit8 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
-return record["host"]
+return record["gzip_ratio"]
 end)());
 local omit9 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
-return record["user"]
+return record["host"]
 end)());
 (function(value)
 record["http_request_protocol"] = value
@@ -131,14 +137,19 @@ end)(v)
 local v = __field_8;
 if omit8 then v = nil end;
 (function(value)
-record["host"] = value
+record["gzip_ratio"] = value
 end)(v)
 local v = __field_9;
 if omit9 then v = nil end;
 (function(value)
+record["host"] = value
+end)(v)
+local v = __field_10;
+if omit10 then v = nil end;
+(function(value)
 record["user"] = value
 end)(v)
-local v = "agent.googleapis.com/tomcat_access";
+local v = "agent.googleapis.com/apache_access";
 (function(value)
 if record["logging.googleapis.com/labels"] == nil
 then

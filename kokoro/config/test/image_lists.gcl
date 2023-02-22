@@ -84,8 +84,6 @@ centos = _family {
     centos8 = _distro {
       name = 'CentOS 8'
       release = [
-        // CentOS.
-        'centos-8',
         // RHEL.
         'rhel-8',
         'rhel-8-1-sap-ha',
@@ -145,6 +143,8 @@ windows = _family {
         'windows-2016-core',
         'windows-2019',
         'windows-2019-core',
+        'windows-2022',
+        'windows-2022-core',
       ]
       presubmit = [
         'windows-2012-r2',
