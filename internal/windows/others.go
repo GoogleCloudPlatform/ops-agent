@@ -23,6 +23,10 @@ func Is2012() bool {
 	return false
 }
 
+func Is2016() bool {
+	return false
+}
+
 func GetOldWinlogChannels() ([]string, error) {
 	return nil, fmt.Errorf("not a Windows platform")
 }
