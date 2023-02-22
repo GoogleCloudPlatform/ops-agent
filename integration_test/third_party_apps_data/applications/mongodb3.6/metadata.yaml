@@ -114,7 +114,6 @@ expected_metrics:
     labels:
       instrumentation_source: agent.googleapis.com/mongodb
   - type: workload.googleapis.com/mongodb.index.access.count
-    optional: true
     value_type: INT64
     monitored_resource: gce_instance
     kind: GAUGE
