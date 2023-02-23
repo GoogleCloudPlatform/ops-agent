@@ -448,7 +448,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -456,7 +456,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -521,7 +521,8 @@ processors:
     detectors:
     - gcp
   transform/couchbase_3:
-    metrics:
+    metric_statements:
+      context: datapoint
       statements:
       - convert_gauge_to_sum("cumulative", true) where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
       - set(metric.description, "Number of out of memory errors.") where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"

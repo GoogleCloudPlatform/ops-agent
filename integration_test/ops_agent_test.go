@@ -1688,7 +1688,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       type: windows_event_log
       receiver_version: 2
       channels:
-      - Microsoft-Windows-User Control Panel/Operational
+      - Microsoft-Windows-User Profile Service/Operational
     r2:
       type: windows_event_log
       receiver_version: 2
@@ -1708,7 +1708,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		payloads := map[string]map[string]string{
 			"r1": {
-				"Microsoft-Windows-User Control Panel/Operational": "control_panel_msg",
+				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
 			},
 			"r2": {
 				"Application": "application_msg",
@@ -1940,20 +1940,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-	}
-
-	if t.Failed() {
-		// Return early instead of waiting up to 7 minutes for the second round
-		// of querying for metrics.
-		return
 	}
 
 	// Now that we've established that the preceding metrics are being uploaded
@@ -3214,6 +3208,7 @@ combined:
   receivers:
     otlp:
       type: otlp
+      grpc_endpoint: 0.0.0.0:4317
 metrics:
   service:
     pipelines:
@@ -3274,6 +3269,12 @@ traces:
 				Feature: "receivers:otlp",
 				Key:     "[0].enabled",
 				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
 			},
 		}
 

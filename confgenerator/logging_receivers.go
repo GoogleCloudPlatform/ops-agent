@@ -378,11 +378,11 @@ func commonEventLogComponents(useNewerApi bool, channels []string, tag string) [
 		},
 	}}
 
-	// On Windows Server 2012, there is a known problem where most log fields end
+	// On Windows Server 2012/2016, there is a known problem where most log fields end
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
 	// this also strips Unicode characters away, so we only use it on affected
 	// platforms. This only affects the newer API.
-	if useNewerApi && windows.Is2012() {
+	if useNewerApi && (windows.Is2012() || windows.Is2016()) {
 		input[0].Config["Use_ANSI"] = "True"
 	}
 

@@ -255,7 +255,7 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 // keys not present in withValuesFrom.Labels are dropped.
 // If toUpdate.Type is empty, then withValuesFrom is returned.
 func updateMetric(toUpdate *metadata.ExpectedMetric, withValuesFrom *metadata.ExpectedMetric) *metadata.ExpectedMetric {
-	if toUpdate.Type == "" {
+	if toUpdate == nil || toUpdate.Type == "" {
 		// Empty struct to update; just copy over the new one
 		return withValuesFrom
 	}

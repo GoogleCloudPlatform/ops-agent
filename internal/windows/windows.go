@@ -23,18 +23,28 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-func Is2012() bool {
+func getWindowsBuildNumber() string {
 	key, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows NT\CurrentVersion`, registry.QUERY_VALUE)
 	if err != nil {
 		log.Fatalf("could not open CurrentVersion key: %v", err)
 	}
 	defer key.Close()
-	data, _, err := key.GetStringValue("CurrentBuildNumber")
+	build, _, err := key.GetStringValue("CurrentBuildNumber")
 	if err != nil {
 		log.Fatalf("could not read CurrentBuildNumber: %v", err)
 	}
+	return build
+}
+
+func Is2012() bool {
 	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	return data == "9200" || data == "9600"
+	build := getWindowsBuildNumber()
+	return build == "9200" || build == "9600"
+}
+
+func Is2016() bool {
+	build := getWindowsBuildNumber()
+	return build == "14393"
 }
 
 // GetOldWinlogChannels returns the set of event logs (channels) under
