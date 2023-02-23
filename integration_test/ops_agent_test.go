@@ -3207,6 +3207,7 @@ combined:
   receivers:
     otlp:
       type: otlp
+      grpc_endpoint: 0.0.0.0:4317
 metrics:
   service:
     pipelines:
@@ -3267,6 +3268,12 @@ traces:
 				Feature: "receivers:otlp",
 				Key:     "[0].enabled",
 				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
 			},
 		}
 
