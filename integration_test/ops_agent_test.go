@@ -3487,7 +3487,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--boot-disk-size", "100G"})
 		logPath := logPathForPlatform(vm.Platform)
 		logsPerSecond := 100000
 		config := fmt.Sprintf(`logging:
@@ -3525,7 +3525,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		generateLogsScript := fmt.Sprintf(`
 			mkdir -p %s
 			x=1
-			while [ $x -le 360 ]
+			while [ $x -le 420 ]
 			do
 			  cp ~/log_%d.log %s/$x.log
 			  ((x++))
@@ -3549,7 +3549,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Threshhold of ~100MiB since du returns size in KB
+		// Threshhold of ~5GiB since du returns size in KB
 		threshold := 5000000
 		if byteCount > threshold {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
