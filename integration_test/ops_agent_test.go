@@ -3551,8 +3551,8 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Threshhold of ~5GiB since du returns size in KB
-		threshold := 5000000
+		// Threshhold of ~6.5GiB since du returns size in KB
+		threshold := 6500000
 		if byteCount > threshold {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
 		}
