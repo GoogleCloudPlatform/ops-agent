@@ -312,6 +312,7 @@ func TestParseMultilineFileJava(t *testing.T) {
     files_1:
       type: files
       include_paths: [%s]
+      record_log_file_path: true
       wildcard_refresh_interval: 30s
   processors:
     multiline_parser_1:
