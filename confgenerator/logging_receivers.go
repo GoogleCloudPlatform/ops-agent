@@ -324,6 +324,7 @@ type LoggingReceiverWindowsEventLog struct {
 
 	Channels        []string `yaml:"channels,omitempty,flow" validate:"required,winlogchannels"`
 	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2" tracking:""`
+	RenderAsXML     bool     `yaml:"render_as_xml,omitempty" tracking:""`
 }
 
 const eventLogV2SeverityParserLua = `
@@ -352,21 +353,26 @@ func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
 	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
 }
 
-func commonEventLogComponents(useNewerApi bool, channels []string, tag string) []fluentbit.Component {
+func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+	if len(r.ReceiverVersion) == 0 {
+		r.ReceiverVersion = "1"
+	}
+
 	inputName := "winlog"
 	timeKey := "TimeGenerated"
 
-	if useNewerApi {
+	if !r.IsDefaultVersion() {
 		inputName = "winevtlog"
 		timeKey = "TimeCreated"
 	}
 
+	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			"Name":         inputName,
 			"Tag":          tag,
-			"Channels":     strings.Join(channels, ","),
+			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
 			"DB":           DBPath(tag),
 		},
@@ -376,8 +382,14 @@ func commonEventLogComponents(useNewerApi bool, channels []string, tag string) [
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
 	// this also strips Unicode characters away, so we only use it on affected
 	// platforms. This only affects the newer API.
-	if useNewerApi && (windows.Is2012() || windows.Is2016()) {
+	if !r.IsDefaultVersion() && (windows.Is2012() || windows.Is2016()) {
 		input[0].Config["Use_ANSI"] = "True"
+	}
+
+	if r.RenderAsXML {
+		input[0].Config["Render_Event_As_XML"] = "True"
+		// Use "raw_xml" because it's a more descriptive name than "System"
+		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
 	}
 
 	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp
@@ -397,40 +409,22 @@ func commonEventLogComponents(useNewerApi bool, channels []string, tag string) [
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
 
-	return input
-}
-
-func (r LoggingReceiverWindowsEventLog) componentsForV2(tag string) []fluentbit.Component {
-	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log-winevtlog
-	input := commonEventLogComponents(true, r.Channels, tag)
-
-	// Ordinarily we use fluentbit.TranslationComponents to populate severity,
-	// which uses 'modify' filters, except 'modify' filters only work on string
-	// values and Level is an int. So we need to use Lua.
-	filters := fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
-
-	return append(input, filters...)
-}
-
-func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
-	if len(r.ReceiverVersion) == 0 {
-		r.ReceiverVersion = "1"
+	var filters []fluentbit.Component
+	if r.IsDefaultVersion() {
+		filters = fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{"Error", "ERROR"},
+				{"Information", "INFO"},
+				{"Warning", "WARNING"},
+				{"SuccessAudit", "NOTICE"},
+				{"FailureAudit", "NOTICE"},
+			})
+	} else {
+		// Ordinarily we use fluentbit.TranslationComponents to populate severity,
+		// which uses 'modify' filters, except 'modify' filters only work on string
+		// values and Level is an int. So we need to use Lua.
+		filters = fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
 	}
-	if !r.IsDefaultVersion() {
-		return r.componentsForV2(tag)
-	}
-
-	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-	input := commonEventLogComponents(false, r.Channels, tag)
-
-	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
-		[]struct{ SrcVal, DestVal string }{
-			{"Error", "ERROR"},
-			{"Information", "INFO"},
-			{"Warning", "WARNING"},
-			{"SuccessAudit", "NOTICE"},
-			{"FailureAudit", "NOTICE"},
-		})
 
 	return append(input, filters...)
 }

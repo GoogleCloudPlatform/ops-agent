@@ -829,6 +829,9 @@ func (l *Logging) Validate() error {
 			// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
 			log.Print(err)
 		}
+		if err := validateWinlogRenderAsXML(l.Receivers, p.ReceiverIDs); err != nil {
+			return err
+		}
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
@@ -1070,6 +1073,30 @@ func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string
 					channel,
 				))
 			}
+		}
+	}
+	return err
+}
+
+// validateWinlogRenderAsXML validates that the correct receiver version is used when
+// render_as_xml is true
+func validateWinlogRenderAsXML(receivers loggingReceiverMap, receiverIDs []string) error {
+	var err error
+	for _, receiverID := range receiverIDs {
+		var ok bool
+		var receiver LoggingReceiver
+		var winlogReceiver *LoggingReceiverWindowsEventLog
+		if receiver, ok = receivers[receiverID]; !ok {
+			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
+		}
+		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok {
+			continue
+		}
+		if winlogReceiver.RenderAsXML && winlogReceiver.IsDefaultVersion() {
+			err = multierr.Append(err, fmt.Errorf(
+				`"logging.receivers.%s.render_as_xml" is not supported for the current receiver version. Please use "receiver_version: 2" or higher for this receiver`,
+				receiverID,
+			))
 		}
 	}
 	return err
