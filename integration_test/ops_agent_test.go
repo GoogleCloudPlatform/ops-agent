@@ -3224,6 +3224,8 @@ traces:
 			t.Fatal(err)
 		}
 
+		time.Sleep(10 * time.Second)
+
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
 		if err != nil {
