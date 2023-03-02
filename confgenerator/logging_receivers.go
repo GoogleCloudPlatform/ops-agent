@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 )
 
@@ -146,14 +147,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		config["multiline.parser"] = parserName
 
 		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  tag,
-				"Name":   "modify",
-				"Rename": "log message",
-			},
-		})
+		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
 	}
 
 	c = append(c, fluentbit.Component{
