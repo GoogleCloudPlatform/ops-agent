@@ -3224,6 +3224,7 @@ traces:
 			t.Fatal(err)
 		}
 
+		// Have to wait for feature tracking metrics to be sent
 		time.Sleep(10 * time.Second)
 
 		// Generate metric traffic with dummy app
