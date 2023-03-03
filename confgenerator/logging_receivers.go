@@ -388,11 +388,13 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 
 	if r.RenderAsXML {
 		input[0].Config["Render_Event_As_XML"] = "True"
-		// Use "raw_xml" because it's a more descriptive name than "System"
+		// By default, fluent-bit puts the rendered XML into a field named "System"
+		// (this is a constant field name and has no relation to the "System" channel).
+		// Rename it to "raw_xml" because it's a more descriptive name than "System".
 		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
 	}
 
-	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp
+	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
 	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
 	timestampParser := fluentbit.Component{
 		Kind: "PARSER",

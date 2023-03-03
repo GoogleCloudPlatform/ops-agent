@@ -1079,7 +1079,7 @@ func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string
 }
 
 // validateWinlogRenderAsXML validates that the correct receiver version is used when
-// render_as_xml is true
+// render_as_xml is true.
 func validateWinlogRenderAsXML(receivers loggingReceiverMap, receiverIDs []string) error {
 	var err error
 	for _, receiverID := range receiverIDs {

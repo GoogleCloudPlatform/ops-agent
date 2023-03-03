@@ -1686,7 +1686,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
-		// at most one "Mirosoft-*" log.
+		// at most one "Microsoft-*" log.
 		config := `logging:
   receivers:
     r1:
@@ -1740,12 +1740,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 				}
 			}
 		}
-		// Manually re-send a log as a Warning to test severity parsing
+		// Manually re-send a log as a Warning to test severity parsing.
 		if err := writeToWindowsEventLogWithSeverity(ctx, logger.ToMainLog(), vm, "Application", "warning_msg", "Warning"); err != nil {
 			t.Fatal(err)
 		}
 
-		// For r1, we simply check that the logs were ingested
+		// For r1, we simply check that the logs were ingested.
 		for _, payload := range payloads["r1"] {
 			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r1", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
 				t.Fatal(err)
@@ -1766,21 +1766,21 @@ func TestWindowsEventLogV2(t *testing.T) {
 			}
 		}
 
-		// Verify that the warning message has the correct severity
+		// Verify that the warning message has the correct severity.
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
 			t.Fatal(err)
 		}
 
 		// For r3 (the XML logs), verify the following:
-		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml)
-		// - that jsonPayload.raw_xml contains a valid XML document
-		// - that a few sample fields are present in that XML document
+		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml).
+		// - that jsonPayload.raw_xml contains a valid XML document.
+		// - that a few sample fields are present in that XML document.
 		for _, payload := range payloads["r3"] {
 			log, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "r3", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// We don't know (and don't care about) the runtime type graph of log.Payload, so normalize it into a simple map
+			// We don't know (and don't care about) the runtime type graph of log.Payload, so normalize it into a simple map.
 			rawJson, err := json.Marshal(log.Payload)
 			if err != nil {
 				t.Fatal(err)
