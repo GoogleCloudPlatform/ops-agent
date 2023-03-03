@@ -1679,56 +1679,53 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// Pipelines:
-		// - only_v2:          covers a channel, with spaces, that is present on all supported Windows platforms
-		// - default_pipeline: covers v1+v2 simultaneously
-		// - xml:              covers a receiver with XML rendering
-
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
 		config := `logging:
   receivers:
-    r1:
+    winlog2_space:
       type: windows_event_log
       receiver_version: 2
       channels:
       - Microsoft-Windows-User Profile Service/Operational
-    r2:
+    winlog2_default:
       type: windows_event_log
       receiver_version: 2
       channels:
       - Application
       - System
-    r3:
+    winlog2_xml:
       type: windows_event_log
       receiver_version: 2
+      channels:
+      - Application
+      - System
       render_as_xml: true
-      channels:
-      - Application
-      - System
   service:
     pipelines:
-      only_v2:
-        receivers: [r1]
       default_pipeline:
-        receivers: [windows_event_log, r2]
-      xml:
-        receivers: [r3]
+        receivers: []
+      pipeline_space:
+        receivers: [winlog2_space]
+      pipeline_v1_v2_simultaneously:
+        receivers: [windows_event_log, winlog2_default]
+      pipeline_xml:
+        receivers: [winlog2_xml]
 `
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		payloads := map[string]map[string]string{
-			"r1": {
+			"winlog2_space": {
 				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
 			},
-			"r2": {
+			"winlog2_default": {
 				"Application": "application_msg",
 				"System":      "system_msg",
 			},
-			"r3": {
+			"winlog2_xml": {
 				"Application": "application_xml_msg",
 				"System":      "system_xml_msg",
 			},
@@ -1745,38 +1742,38 @@ func TestWindowsEventLogV2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// For r1, we simply check that the logs were ingested.
-		for _, payload := range payloads["r1"] {
-			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r1", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+		// For winlog2_space, we simply check that the logs were ingested.
+		for _, payload := range payloads["winlog2_space"] {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_space", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
 				t.Fatal(err)
 			}
 		}
 
-		// For r2, we expect logs to show up *twice*: once for v1 and once for v2.
+		// For pipeline_v1_v2_simultaneously, we expect logs to show up *twice*: once for v1 and once for v2.
 		// They can be distinguished by the presence of v1-only and v2-only fields
 		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
-		for _, payload := range payloads["r2"] {
+		for _, payload := range payloads["winlog2_default"] {
 			queryV1 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeGenerated:*"
 			queryV2 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeCreated:*"
 			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "windows_event_log", time.Hour, queryV1); err != nil {
 				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
 			}
-			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, queryV2); err != nil {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, queryV2); err != nil {
 				t.Fatalf("expected v2 log for %s but it wasn't found: err=%v", payload, err)
 			}
 		}
 
 		// Verify that the warning message has the correct severity.
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "r2", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
 			t.Fatal(err)
 		}
 
-		// For r3 (the XML logs), verify the following:
+		// For winlog2_xml, verify the following:
 		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml).
 		// - that jsonPayload.raw_xml contains a valid XML document.
 		// - that a few sample fields are present in that XML document.
-		for _, payload := range payloads["r3"] {
-			log, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "r3", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
+		for _, payload := range payloads["winlog2_xml"] {
+			log, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "winlog2_xml", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
 			if err != nil {
 				t.Fatal(err)
 			}
