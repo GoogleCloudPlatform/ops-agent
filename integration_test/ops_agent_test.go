@@ -1808,7 +1808,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected raw_xml to contain a valid XML document: raw_xml=%s, err=%v", rawXml, err)
 			}
-			if len(xmlStruct.EventData.Data) == 0 || len(xmlStruct.System.TimeCreated.SystemTime) == 0 {
+			if xmlStruct.EventData.Data == "" || xmlStruct.System.TimeCreated.SystemTime == "" {
 				t.Fatalf("expected raw_xml to contain a few sample fields, but it didn't: raw_xml=%s", rawXml)
 			}
 		}
