@@ -17,10 +17,8 @@ logging:
     winlog2:
       type: windows_event_log
       receiver_version: 2
+      channels: [Application,System]
       render_as_xml: true
-      channels:
-      - Application
-      - System
   service:
     pipelines:
       winlog2:

@@ -1,1 +1,1 @@
-"logging.receivers.receiver_1.render_as_xml" is not supported for the current receiver version. Please use "receiver_version: 2" or higher for this receiver
+"logging.receivers.winlog1.render_as_xml" is not supported for the current receiver version. Please use "receiver_version: 2" or higher for this receiver

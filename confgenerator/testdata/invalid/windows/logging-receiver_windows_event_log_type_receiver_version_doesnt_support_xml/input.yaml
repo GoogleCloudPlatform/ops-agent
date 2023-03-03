@@ -14,11 +14,11 @@
 
 logging:
   receivers:
-    receiver_1:
+    winlog1:
       type: windows_event_log
       channels: [System,Application,Security]
       render_as_xml: true
   service:
     pipelines:
       default_pipeline:
-        receivers: [receiver_1]
+        receivers: [winlog1]
