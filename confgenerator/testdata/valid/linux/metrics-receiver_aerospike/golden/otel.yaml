@@ -358,7 +358,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -366,7 +366,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -431,7 +431,8 @@ processors:
     detectors:
     - gcp
   transform/aerospike_2:
-    metrics:
+    metric_statements:
+      context: datapoint
       statements:
       - set(attributes["node_name"], resource.attributes["aerospike.node.name"])
       - set(attributes["namespace_name"], resource.attributes["aerospike.namespace"])

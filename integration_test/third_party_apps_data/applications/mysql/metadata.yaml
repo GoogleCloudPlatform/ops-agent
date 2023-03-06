@@ -74,7 +74,7 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      command: .*
+      command: delete|insert|select|update
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
