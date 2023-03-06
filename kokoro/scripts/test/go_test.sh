@@ -65,6 +65,24 @@ fi
 LOGS_DIR="${KOKORO_ARTIFACTS_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
+# Uninstall Kokoro's old version of go.
+sudo rm -rf /usr/local/go
+# Kokoro's value of GOPATH does not work with modern versions of go.
+# GOPATH is semi-deprecated nowadays too.
+unset GOPATH
+
+GO_VERSION="1.19"
+
+# Download and install a newer version of go.
+# Install from a GCS bucket to avoid being throttled by go.dev.
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
+  sudo tar --directory /usr/local -xzf /dev/stdin
+
+PATH=$PATH:/usr/local/go/bin
+
+# Install a utility for producing XML test results.
+go install github.com/jstemmer/go-junit-report/v2@latest
+
 if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   if [[ -n "${SCRIPTS_DIR-}" ]]; then
     SCRIPTS_DIR="${KOKORO_PIPER_DIR}/${SCRIPTS_DIR}"
