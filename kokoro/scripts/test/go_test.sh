@@ -65,6 +65,8 @@ fi
 LOGS_DIR="${KOKORO_ARTIFACTS_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
+date +"%T foo start"
+
 # Uninstall Kokoro's old version of go.
 sudo rm -rf /usr/local/go
 # Kokoro's value of GOPATH does not work with modern versions of go.
@@ -82,6 +84,8 @@ PATH=$PATH:/usr/local/go/bin
 
 # Install a utility for producing XML test results.
 go install github.com/jstemmer/go-junit-report/v2@latest
+
+date +"%T foo stop"
 
 if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   if [[ -n "${SCRIPTS_DIR-}" ]]; then
