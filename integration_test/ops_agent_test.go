@@ -3581,12 +3581,12 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.SkipNow()
 		}
 
-		onlyReadScopes := strings.Join([]string{
-			"https://www.googleapis.com/auth/monitoring.read",
+		customScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.write",
 			"https://www.googleapis.com/auth/logging.read",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", onlyReadScopes})
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
 
 		if !gce.IsWindows(vm.Platform) {
 			packages := []string{"netcat"}
@@ -3617,8 +3617,9 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "PASS")
-		checkFunc("API", "FAIL")
 		checkFunc("Ports", "FAIL")
+		checkFunc("Logging API", "FAIL")
+		checkFunc("Monitoring API", "PASS")
 	})
 }
 
@@ -3647,8 +3648,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
 		checkFunc("Ports", "PASS")
+		checkFunc("Logging API", "PASS")
+		checkFunc("Monitoring API", "PASS")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3675,8 +3677,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "FAIL")
-		checkFunc("API", "ERROR")
 		checkFunc("Ports", "PASS")
+		checkFunc("Logging API", "FAIL")
+		checkFunc("Monitoring API", "FAIL")
 	})
 }
 
