@@ -141,6 +141,22 @@ var (
 		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
 		IsFatal:      true,
 	}
+	LogApiUnauthenticatedErr = HealthCheckError{
+		Code:         "LogApiUnauthenticatedErr",
+		Class:        Api,
+		Message:      "The current VM couldn't authenticate to the Logging API.",
+		Action:       "Verify that your credential files, scopes and permissions are setup correctly.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
+		IsFatal:      true,
+	}
+	MonApiUnauthenticatedErr = HealthCheckError{
+		Code:         "MonApiUnauthenticatedErr",
+		Class:        Api,
+		Message:      "The current VM couldn't authenticate to the Monitoring API.",
+		Action:       "Verify that your credential files, scopes and permissions are setup correctly.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
+		IsFatal:      true,
+	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
 		Class:        Generic,

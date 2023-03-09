@@ -130,7 +130,7 @@ func (c LoggingAPICheck) RunCheck(logger *log.Logger) error {
 			case codes.PermissionDenied:
 				return LogApiPermissionErr
 			case codes.Unauthenticated:
-				return LogApiScopeErr
+				return LogApiUnauthenticatedErr
 			}
 		}
 
@@ -179,7 +179,7 @@ func (c MonitoringAPICheck) RunCheck(logger *log.Logger) error {
 			case codes.PermissionDenied:
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
-				return MonApiScopeErr
+				return MonApiUnauthenticatedErr
 			}
 		}
 		return err
