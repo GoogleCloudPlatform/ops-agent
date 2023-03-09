@@ -131,9 +131,13 @@ func (c LoggingAPICheck) RunCheck(logger *log.Logger) error {
 				return LogApiPermissionErr
 			case codes.Unauthenticated:
 				return LogApiUnauthenticatedErr
+			case codes.DeadlineExceeded:
+				return LogApiConnErr
 			}
 		}
-
+		if errors.Is(err, context.DeadlineExceeded) {
+			return LogApiConnErr
+		}
 		return err
 	}
 
@@ -180,7 +184,12 @@ func (c MonitoringAPICheck) RunCheck(logger *log.Logger) error {
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
 				return MonApiUnauthenticatedErr
+			case codes.DeadlineExceeded:
+				return MonApiConnErr
 			}
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return MonApiConnErr
 		}
 		return err
 	}
