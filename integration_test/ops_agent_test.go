@@ -3589,7 +3589,12 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
 
 		if !gce.IsWindows(vm.Platform) {
-			packages := []string{"netcat"}
+			var packages []string
+			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) {
+				packages = []string{"nc"}
+			} else {
+				packages = []string{"netcat"}
+			}
 			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 			if err != nil {
 				t.Fatalf("failed to install %v with err: %s", packages, err)
@@ -3660,7 +3665,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
