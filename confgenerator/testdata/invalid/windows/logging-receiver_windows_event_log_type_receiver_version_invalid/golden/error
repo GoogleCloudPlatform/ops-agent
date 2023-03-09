@@ -1,0 +1,9 @@
+[20:25] "receiver_version" must be one of [1 2]
+  17 |     receiver_1:
+  18 |       type: windows_event_log
+  19 |       channels: [System,Application,Security]
+> 20 |       receiver_version: 3
+                               ^
+  21 |   service:
+  22 |     pipelines:
+  23 |       default_pipeline:

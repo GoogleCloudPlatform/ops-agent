@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 )
 
 var (
@@ -30,6 +31,20 @@ var (
 	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
 )
+
+func runStartupChecks(service string) {
+	if service == "" {
+		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
+		defer closer()
+
+		healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
+		for _, result := range healthCheckResults {
+			log.Printf(result.Message)
+		}
+		log.Println("Startup checks finished")
+	}
+}
 
 func main() {
 	flag.Parse()
@@ -49,6 +64,8 @@ func run() error {
 	// running.
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
+
+	runStartupChecks(*service)
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }

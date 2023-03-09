@@ -26,7 +26,8 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
-	ReceiverVersion                     string `yaml:"receiver_version,omitempty"`
+
+	confgenerator.VersionedReceivers `yaml:",inline"`
 }
 
 func (r MetricsReceiverIis) Type() string {
@@ -65,6 +66,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.NormalizeSums(),
+				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
 			}},
 		}}
 	}
@@ -96,6 +98,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
+		Type: otel.System,
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -130,6 +133,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 				"agent.googleapis.com/iis/request_count",
 			),
 			otel.NormalizeSums(),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }

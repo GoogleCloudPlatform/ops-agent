@@ -195,9 +195,9 @@ func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 	// Only expected labels must be present
 	var err error
-	for actualLabel := range series.Metric.Labels {
+	for actualLabel, actualValue := range series.Metric.Labels {
 		if _, ok := metric.Labels[actualLabel]; !ok {
-			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
+			err = multierr.Append(err, fmt.Errorf("got unexpected label %q with value %q", actualLabel, actualValue))
 		}
 	}
 	// All expected labels must be present and match the given pattern

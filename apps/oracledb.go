@@ -112,6 +112,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 					otel.RenameLabel("WAIT_CLASS", "wait_class"),
 				),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }

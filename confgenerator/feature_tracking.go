@@ -102,6 +102,14 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
+
+	if uc.HasCombined() {
+		tempTrackedFeatures, err = trackedMappedComponents("combined", "receivers", uc.Combined.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
 	return allFeatures, nil
 }
 
