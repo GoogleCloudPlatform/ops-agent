@@ -39,7 +39,8 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	return HealthCheckRegistry{
 		PortsCheck{},
 		NetworkCheck{},
-		APICheck{},
+		LoggingAPICheck{},
+		MonitoringAPICheck{},
 	}
 }
 
