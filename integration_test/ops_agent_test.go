@@ -1679,6 +1679,10 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
@@ -1716,10 +1720,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
-
-		// Have to wait for startup feature tracking metrics to be sent
-		// before we tear down the service.
-		time.Sleep(20 * time.Second)
 
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
