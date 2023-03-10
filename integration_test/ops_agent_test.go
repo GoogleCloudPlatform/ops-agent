@@ -1825,6 +1825,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Value:   "false",
 			},
 			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
 				Module:  "logging",
 				Feature: "service:pipelines",
 				Key:     "default_pipeline_overridden",
