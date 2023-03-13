@@ -1857,6 +1857,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 			{
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
+				Key:     "[0].channels.__length",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
 				Key:     "[1].enabled",
 				Value:   "true",
 			},
@@ -1864,6 +1870,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
 				Key:     "[1].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].channels.__length",
 				Value:   "2",
 			},
 			{
@@ -1883,6 +1895,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Feature: "receivers:windows_event_log",
 				Key:     "[2].render_as_xml",
 				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].channels.__length",
+				Value:   "2",
 			},
 		}
 
