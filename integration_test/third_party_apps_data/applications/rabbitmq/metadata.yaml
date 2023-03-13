@@ -32,12 +32,20 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      node_name: .*
+      queue_name: .*
+      vhost_name: .*
+    representative: true
   - type: workload.googleapis.com/rabbitmq.message.current
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       state: .*
+      node_name: .*
+      queue_name: .*
+      vhost_name: .*
     representative: true
 expected_logs:
   - log_name: rabbitmq
