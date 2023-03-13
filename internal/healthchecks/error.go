@@ -14,6 +14,8 @@
 
 package healthchecks
 
+import "fmt"
+
 // Error classification
 const (
 	Api        = "API"
@@ -34,6 +36,25 @@ type HealthCheckError struct {
 
 func (e HealthCheckError) Error() string {
 	return e.Message
+}
+
+func (e HealthCheckError) FullMessage(healthCheckName string) string {
+	return fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+		healthCheckName, e.Code, e.Message, e.Action, e.ResourceLink)
+}
+
+type HealthCheckMessage interface {
+	FullMessage(check string) string
+}
+
+type MutliHealthCheckError []HealthCheckError
+
+func (e MutliHealthCheckError) Error() {
+
+}
+
+func (e MutliHealthCheckError) FullMessage() {
+
 }
 
 var (
@@ -66,6 +87,33 @@ var (
 		Class:        Connection,
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		IsFatal:      true,
+	}
+	PacApiConnErr = HealthCheckError{
+		Code:    "PacApiConnErr",
+		Class:   Connection,
+		Message: "Request to Packages API failed.",
+		Action:  "Check your internet connection and firewall rules.",
+		// TODO: Don't know what to put for the resource link
+		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		IsFatal:      false,
+	}
+	DLApiConnErr = HealthCheckError{
+		Code:    "DLApiConnErr",
+		Class:   Connection,
+		Message: "Request to dl.google.com failed",
+		Action:  "Check your internet connection and firewall rules.",
+		// TODO: Don't know what to put for the resource link
+		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		IsFatal:      false,
+	}
+	MetaApiConnErr = HealthCheckError{
+		Code:    "MetaApiConnErr",
+		Class:   Connection,
+		Message: "Request to GCE Metadata server",
+		Action:  "Check your internet connection and firewall rules.",
+		// TODO: Don't know what to put for the resource link
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
