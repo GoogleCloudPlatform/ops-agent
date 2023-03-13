@@ -1,11 +1,9 @@
 // These are the shared lists of test images organized by distro family and
 // grouped by the most fine-grained build artifact (in this case, the
-// per-distro monitoring agent package).
+// per-distro Ops Agent package).
 
 // A representation of a test distro.
 local template _distro {
-  // Human-readable name.
-  name = external
   // List of release images.
   release = external
   // The representative images to be used in presubmit (defaults to none).
@@ -27,12 +25,10 @@ local template _family {
 debian = _family {
   distros = {
     buster = _distro {
-      name = 'Debian 10'
       release = ['debian-10']
       presubmit = ['debian-10']
     }
     bullseye = _distro {
-      name = 'Debian 11'
       release = ['debian-11']
       presubmit = ['debian-11']
     }
@@ -41,7 +37,6 @@ debian = _family {
 ubuntu = _family {
   distros = {
     bionic = _distro {
-      name = 'Ubuntu 18.04 Bionic'
       release = [
         'ubuntu-1804-lts',
         'ubuntu-minimal-1804-lts',
@@ -49,7 +44,6 @@ ubuntu = _family {
       presubmit = ['ubuntu-1804-lts']
     }
     focal = _distro {
-      name = 'Ubuntu 20.04 Focal'
       release = [
         'ubuntu-2004-lts',
         'ubuntu-minimal-2004-lts',
@@ -57,7 +51,6 @@ ubuntu = _family {
       presubmit = ['ubuntu-minimal-2004-lts']
     }
     jammy = _distro {
-      name = 'Ubuntu 22.04 Jammy'
       release = [
         'ubuntu-2204-lts',
         'ubuntu-minimal-2204-lts',
@@ -70,7 +63,6 @@ ubuntu = _family {
 centos = _family {
   distros = {
     centos7 = _distro {
-      name = 'CentOS 7'
       release = [
         // CentOS.
         'centos-7',
@@ -82,10 +74,7 @@ centos = _family {
       presubmit = ['centos-7']
     }
     centos8 = _distro {
-      name = 'CentOS 8'
       release = [
-        // CentOS.
-        'centos-8',
         // RHEL.
         'rhel-8',
         'rhel-8-1-sap-ha',
@@ -98,7 +87,6 @@ centos = _family {
       presubmit = ['rocky-linux-8']
     }
     rockylinux9 = _distro {
-      name = 'Rocky Linux 9'
       release = [
         // RHEL.
         'rhel-9',
@@ -112,7 +100,6 @@ centos = _family {
 sles = _family {
   distros = {
     sles12 = _distro {
-      name = 'SLES 12'
       release = [
         'sles-12',
         'sles-12-sp5-sap',
@@ -120,7 +107,6 @@ sles = _family {
       presubmit = ['sles-12']
     }
     sles15 = _distro {
-      name = 'SLES 15'
       release = [
         'sles-15',
         'sles-15-sp1-sap',
@@ -137,7 +123,6 @@ sles = _family {
 windows = _family {
   distros = {
     windows = _distro {
-      name = 'Windows'
       release = [
         'windows-2012-r2',
         'windows-2012-r2-core',
@@ -145,6 +130,8 @@ windows = _family {
         'windows-2016-core',
         'windows-2019',
         'windows-2019-core',
+        'windows-2022',
+        'windows-2022-core',
       ]
       presubmit = [
         'windows-2012-r2',

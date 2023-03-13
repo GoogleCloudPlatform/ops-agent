@@ -52,6 +52,7 @@ func (r MetricsReceiverHbase) Pipelines() []otel.ReceiverPipeline {
 						otel.AggregateLabels("max", "state"),
 					),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }

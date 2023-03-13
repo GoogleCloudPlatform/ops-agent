@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -357,7 +367,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -365,7 +375,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -471,6 +481,15 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/jvmmetrics_2:
+    override_scope_name: agent.googleapis.com/jvm
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/jvmmetrics_0: {}
   resourcedetection/_global_0:
@@ -564,6 +583,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -573,6 +593,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -588,10 +609,11 @@ service:
       - prometheus/fluentbit
     metrics/jvmpipeline_jvmmetrics:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - normalizesums/jvmmetrics_0
       - metricstransform/jvmmetrics_1
+      - modifyscope/jvmmetrics_2
       - resourcedetection/_global_0
       receivers:
       - jmx/jvmmetrics

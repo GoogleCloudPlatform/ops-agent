@@ -33,7 +33,7 @@ var knownDomains = []string{"googleapis.com", "kubernetes.io", "istio.io", "knat
 type ReceiverOTLP struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port"`
+	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port" tracking:"endpoint"`
 }
 
 func (r ReceiverOTLP) Type() string {
@@ -91,7 +91,7 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 					otel.RegexpRename(`^A(.*)$`, `Aworkload.googleapis.com/${1}`),
 					otel.RegexpRename(`^[AB](.*)$`, `${1}`),
 				),
-				// TODO: Set instrumentation_source labels, etc.
+				// N.B. We don't touch the instrumentation_scope fields here, so we can pass through the incoming strings.
 			},
 			"traces": nil,
 		},

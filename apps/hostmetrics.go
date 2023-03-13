@@ -50,6 +50,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
+		Type: otel.System,
 		Processors: map[string][]otel.Component{"metrics": {
 			{
 				// perform custom transformations that aren't supported by the metricstransform processor
@@ -283,14 +284,14 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 					otel.AddLabel("process", "all"),
 				),
 				otel.RenameMetric(
-					"process.memory.physical_usage",
+					"process.memory.usage",
 					"processes/rss_usage",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
 					otel.AddLabel("process", "all"),
 				),
 				otel.RenameMetric(
-					"process.memory.virtual_usage",
+					"process.memory.virtual",
 					"processes/vm_usage",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,

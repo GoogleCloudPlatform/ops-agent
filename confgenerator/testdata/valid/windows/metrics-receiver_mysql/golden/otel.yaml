@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -357,7 +367,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -365,7 +375,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -491,6 +501,15 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
+  modifyscope/mysqlmetrics_2:
+    override_scope_name: agent.googleapis.com/mysql
+    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/mysqlmetrics_0: {}
   resourcedetection/_global_0:
@@ -513,6 +532,27 @@ receivers:
   mysql/mysqlmetrics:
     collection_interval: 30s
     endpoint: localhost:3306
+    metrics:
+      mysql.commands:
+        enabled: true
+      mysql.index.io.wait.count:
+        enabled: false
+      mysql.index.io.wait.time:
+        enabled: false
+      mysql.locked_connects:
+        enabled: false
+      mysql.mysqlx_connections:
+        enabled: false
+      mysql.opened_resources:
+        enabled: false
+      mysql.prepared_statements:
+        enabled: false
+      mysql.table.io.wait.count:
+        enabled: false
+      mysql.table.io.wait.time:
+        enabled: false
+      mysql.tmp_resources:
+        enabled: false
     password: pwd
     transport: tcp
     username: usr
@@ -585,6 +625,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -594,6 +635,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -609,10 +651,11 @@ service:
       - prometheus/fluentbit
     metrics/mysqlpipeline_mysqlmetrics:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - normalizesums/mysqlmetrics_0
       - metricstransform/mysqlmetrics_1
+      - modifyscope/mysqlmetrics_2
       - resourcedetection/_global_0
       receivers:
       - mysql/mysqlmetrics

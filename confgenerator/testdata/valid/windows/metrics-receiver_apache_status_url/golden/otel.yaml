@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -369,7 +379,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -377,7 +387,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -477,15 +487,29 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/apache__metrics_4:
+    override_scope_name: agent.googleapis.com/apache
+    override_scope_version: "1.0"
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
   normalizesums/apache__metrics_1: {}
   normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/apache__metrics_3:
+    metric_statements:
+      context: datapoint
+      statements:
+      - set(attributes["server_name"], resource.attributes["apache.server.name"])
 receivers:
   apache/apache__metrics:
     collection_interval: 30s
-    endpoint: http://localhost:80/server-status?auto
+    endpoint: http://127.0.0.1:80/server-status?auto
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -552,11 +576,13 @@ service:
   pipelines:
     metrics/apache__pipeline_apache__metrics:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - filter/apache__metrics_0
       - normalizesums/apache__metrics_1
       - metricstransform/apache__metrics_2
+      - transform/apache__metrics_3
+      - modifyscope/apache__metrics_4
       - resourcedetection/_global_0
       receivers:
       - apache/apache__metrics
@@ -578,6 +604,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -587,6 +614,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:

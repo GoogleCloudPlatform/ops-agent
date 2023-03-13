@@ -113,7 +113,8 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 	return Component{
 		Type: "transform",
 		Config: map[string]map[string]interface{}{
-			"metrics": {
+			"metric_statements": {
+				"context":    "datapoint",
 				"statements": queryStrings,
 			},
 		},
@@ -320,5 +321,18 @@ func CondenseResourceMetrics() Component {
 	return Component{
 		Type:   "groupbyattrs",
 		Config: map[string]any{},
+	}
+}
+
+// ModifyInstrumentationScope sets the instrumentation scope name and version
+// fields which will later be exported to Cloud Monitoring metric labels.
+// The name will always be prefixed with "agent.googleapis.com/".
+func ModifyInstrumentationScope(name string, version string) Component {
+	return Component{
+		Type: "modifyscope",
+		Config: map[string]interface{}{
+			"override_scope_name":    "agent.googleapis.com/" + name,
+			"override_scope_version": version,
+		},
 	}
 }

@@ -9,6 +9,16 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -358,7 +368,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -366,7 +376,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -481,18 +491,29 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/iis__v2_5:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "2.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/iis__v2_4: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
   transform/iis__v2_0:
-    metrics:
+    metric_statements:
+      context: datapoint
       statements:
       - set(attributes["site"], resource.attributes["iis.site"])
       - set(attributes["app_pool"], resource.attributes["iis.application_pool"])
   transform/iis__v2_1:
-    metrics:
+    metric_statements:
+      context: datapoint
       statements:
       - keep_keys(resource.attributes, [])
 receivers:
@@ -580,6 +601,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
+      - modifyscope/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -589,6 +611,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
+      - modifyscope/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -604,13 +627,14 @@ service:
       - prometheus/fluentbit
     metrics/iispipeline_iis__v2:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
       - transform/iis__v2_0
       - transform/iis__v2_1
       - groupbyattrs/iis__v2_2
       - metricstransform/iis__v2_3
       - normalizesums/iis__v2_4
+      - modifyscope/iis__v2_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis__v2

@@ -11,6 +11,8 @@ metrics:
   receivers:
     mysql:
       type: mysql
+      username: root
+      password: Ss123%321
   service:
     pipelines:
       mysql:

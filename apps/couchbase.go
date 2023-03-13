@@ -159,6 +159,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 			),
 			// Using the transform processor for metrics
 			otel.TransformationMetrics(r.transformMetrics()...),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }
