@@ -1,9 +1,0 @@
-[3:19] "receivers[lib:receiver_1]" must not start with "lib:"
-   1 | logging:
-   2 |   receivers:
->  3 |     lib:receiver_1:
-                         ^
-   4 |       type: files
-   5 |       include_paths:
-   6 |       - /var/log/user-log
-   7 |   

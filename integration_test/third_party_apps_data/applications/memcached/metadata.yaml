@@ -1,3 +1,17 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/memcached"
 app_url: "http://www.memcached.org/"
 short_name: Memcached
@@ -14,80 +28,73 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 supported_app_version: ["1.6"]
 expected_metrics:
-- type: workload.googleapis.com/memcached.bytes
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-  representative: true
-- type: workload.googleapis.com/memcached.commands
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    command: .*
-- type: workload.googleapis.com/memcached.connections.current
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/memcached.connections.total
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/memcached.cpu.usage
-  value_type: DOUBLE
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    state: .*
-- type: workload.googleapis.com/memcached.current_items
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/memcached.evictions
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels: {}
-- type: workload.googleapis.com/memcached.network
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    direction: .*
-- type: workload.googleapis.com/memcached.operations
-  value_type: INT64
-  kind: CUMULATIVE
-  monitored_resource: gce_instance
-  labels:
-    operation: .*
-    type: .*
-- type: workload.googleapis.com/memcached.threads
-  value_type: INT64
-  kind: GAUGE
-  monitored_resource: gce_instance
-  labels: {}
+  - type: workload.googleapis.com/memcached.bytes
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    representative: true
+  - type: workload.googleapis.com/memcached.commands
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      command: .*
+  - type: workload.googleapis.com/memcached.connections.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/memcached.connections.total
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/memcached.cpu.usage
+    value_type: DOUBLE
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      state: .*
+  - type: workload.googleapis.com/memcached.current_items
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/memcached.evictions
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/memcached.network
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      direction: .*
+  - type: workload.googleapis.com/memcached.operations
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      operation: .*
+      type: .*
+  - type: workload.googleapis.com/memcached.threads
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
 expected_logs:
-- log_name: syslog
-  fields:
-  - name: jsonPayload.message
-    value_regex: '(systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'
-    type: string
-    description: null
+  - log_name: syslog
+    fields:
+      - name: jsonPayload.message
+        value_regex: ' (systemd-memcached-wrapper|memcached)(\[[0-9]+\])*:'
+        type: string
+        description: Memcached application logs written to Journald.
 configuration_options:
   metrics:
-  - type: memcached
-    fields:
-    - name: type
-      default: null
-      description: memcached.
-    - name: endpoint
-      default: localhost:3306
-      description: The URL, or Unix socket file path, for your Memcached server.
-    - name: collection_interval
-      default: 60s
-      description: A time.Duration value, such as 30s or 5m.
-
+    - type: memcached
+      fields:
+        - name: type
+          default: null
+          description: memcached.
+        - name: endpoint
+          default: localhost:3306
+          description: The URL, or Unix socket file path, for your Memcached server.
+        - name: collection_interval
+          default: 60s
+          description: A time.Duration value, such as 30s or 5m.

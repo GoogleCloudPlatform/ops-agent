@@ -28,8 +28,8 @@ type AgentSelfMetrics struct {
 	Port    int
 }
 
-func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
+func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -45,7 +45,8 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Type: otel.System,
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -86,12 +87,12 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 
-func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
+func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -108,7 +109,8 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Type: otel.System,
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -128,16 +130,17 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.RenameLabel("status", "response_code"),
-					otel.AggregateLabels("sum"),
+					otel.AggregateLabels("sum", "response_code"),
 				),
 				otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
-					otel.AggregateLabels("sum"),
+					otel.RenameLabel("status", "response_code"),
+					otel.AggregateLabels("sum", "response_code"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 

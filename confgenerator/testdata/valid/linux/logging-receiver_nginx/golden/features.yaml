@@ -1,0 +1,16 @@
+- module: logging
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: logging
+  feature: receivers:nginx_access
+  key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:nginx_error
+  key: "[1].enabled"
+  value: "true"

@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverVault struct {
@@ -27,10 +28,10 @@ type MetricsReceiverVault struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 
-	Token       string `yaml:"token"`
-	Endpoint    string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	MetricsPath string `yaml:"metrics_path" validate:"omitempty,startswith=/"`
-	Scheme      string `yaml:"scheme" validate:"omitempty"`
+	Token       secret.String `yaml:"token"`
+	Endpoint    string        `yaml:"endpoint" validate:"omitempty,hostname_port"`
+	MetricsPath string        `yaml:"metrics_path" validate:"omitempty,startswith=/"`
+	Scheme      string        `yaml:"scheme" validate:"omitempty"`
 }
 
 const (
@@ -73,7 +74,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -99,7 +100,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 
 	if r.Token != "" {
 		scrapeConfig["authorization"] = map[string]interface{}{
-			"credentials": r.Token,
+			"credentials": r.Token.SecretValue(),
 			"type":        "Bearer",
 		}
 	}
@@ -124,7 +125,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -135,7 +136,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.TransformationMetrics(queries...),
 			otel.MetricsFilter(
 				"include",
@@ -170,7 +171,8 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -301,7 +303,7 @@ func (r MetricsReceiverVault) getMetricTransforms() (queries []otel.TransformQue
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverVault{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVault{} })
 }
 
 type LoggingProcessorVaultJson struct {
@@ -362,5 +364,5 @@ func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Compon
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverVaultAuditJson{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson{} })
 }

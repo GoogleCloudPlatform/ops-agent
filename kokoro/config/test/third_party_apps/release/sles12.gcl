@@ -1,4 +1,4 @@
-import '../common.gcl' as common
+import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {

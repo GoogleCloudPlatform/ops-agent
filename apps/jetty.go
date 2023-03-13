@@ -34,7 +34,7 @@ func (r MetricsReceiverJetty) Type() string {
 	return "jetty"
 }
 
-func (r MetricsReceiverJetty) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverJetty) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "jetty"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -49,12 +49,13 @@ func (r MetricsReceiverJetty) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverJetty{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverJetty{} })
 }
 
 type LoggingProcessorJettyAccess struct {
@@ -86,6 +87,6 @@ func (r LoggingReceiverJettyAccess) Components(tag string) []fluentbit.Component
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorJettyAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverJettyAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorJettyAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverJettyAccess{} })
 }

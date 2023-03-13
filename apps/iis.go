@@ -26,33 +26,53 @@ type MetricsReceiverIis struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
-	ReceiverVersion                     string `yaml:"receiver_version,omitempty"`
+
+	confgenerator.VersionedReceivers `yaml:",inline"`
 }
 
 func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 	if r.ReceiverVersion == "2" {
-		return []otel.Pipeline{{
+		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
 					"collection_interval": r.CollectionIntervalString(),
 				},
 			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.TransformationMetrics(
+					otel.FlattenResourceAttribute("iis.site", "site"),
+					otel.FlattenResourceAttribute("iis.application_pool", "app_pool"),
+				),
+				// Drop all resource keys; Must be done in a separate transform,
+				// otherwise the above flatten resource attribute queries will only
+				// work for the first datapoint
+				otel.TransformationMetrics(
+					otel.RetainResource(),
+				),
+				otel.CondenseResourceMetrics(),
 				otel.MetricsTransform(
+					otel.UpdateMetricRegexp("^iis",
+						otel.AggregateLabels(
+							"sum",
+							"direction",
+							"request",
+						),
+					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-			},
+				otel.NormalizeSums(),
+				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
+			}},
 		}}
 	}
 
 	// Return version 1 if version is anything other than 2
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -78,7 +98,8 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Type: otel.System,
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
 					`\Web Service(_Total)\Current Connections`,
@@ -112,12 +133,13 @@ func (r MetricsReceiverIis) Pipelines() []otel.Pipeline {
 				"agent.googleapis.com/iis/request_count",
 			),
 			otel.NormalizeSums(),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverIis{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, "windows")
 }
 
 type LoggingProcessorIisAccess struct {
@@ -239,6 +261,6 @@ func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverIisAccess{} }, "windows")
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorIisAccess{} }, "windows")
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, "windows")
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, "windows")
 }

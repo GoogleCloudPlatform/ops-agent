@@ -1,0 +1,8 @@
+[17:19] Key: 'LoggingReceiverOracleDBAlert.include_paths' Error:Field validation for 'include_paths' failed on the 'required_without' tag,Key: 'LoggingReceiverOracleDBAlert.oracle_home' Error:Field validation for 'oracle_home' failed on the 'required_without' tag
+  15 | logging:
+  16 |   receivers:
+> 17 |     oracledb_alert:
+                         ^
+  18 |       type: oracledb_alert
+  19 |   service:
+  20 |     pipelines:

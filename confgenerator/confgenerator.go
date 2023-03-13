@@ -32,67 +32,109 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+
+func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
+	return otel.Component{
+		Type: "googlecloud",
+		Config: map[string]interface{}{
+			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+			// recommends disabling this.
+			"retry_on_failure": map[string]interface{}{
+				"enabled": false,
+			},
+			"user_agent": userAgent,
+			"metric": map[string]interface{}{
+				// Receivers are responsible for sending fully-qualified metric names.
+				// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
+				// TODO(b/197129428): Write a test to make sure this doesn't happen.
+				"prefix": "",
+				// OT calls CreateMetricDescriptor by default. Skip because we want
+				// descriptors to be created implicitly with new time series.
+				"skip_create_descriptor": true,
+				// Omit instrumentation labels, which break agent metrics.
+				"instrumentation_library_labels": instrumentationLabels,
+				// Omit service labels, which break agent metrics.
+				// TODO: Enable with instrumentationLabels when values are sane.
+				"service_resource_labels": false,
+				"resource_filters":        []map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func googleManagedPrometheusExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "googlemanagedprometheus",
+		Config: map[string]interface{}{
+			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
+			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
+			// recommends disabling this.
+			"retry_on_failure": map[string]interface{}{
+				"enabled": false,
+			},
+			"user_agent": userAgent,
+		},
+	}
+}
+
+func gcpResourceDetector() otel.Component {
+	return otel.Component{
+		Type: "resourcedetection",
+		Config: map[string]interface{}{
+			"detectors": []string{"gcp"},
+		},
+	}
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
 	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
 	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
 
+	receiverPipelines := make(map[string]otel.ReceiverPipeline)
 	pipelines := make(map[string]otel.Pipeline)
+	var err error
+
 	if uc.Metrics != nil {
 		var err error
-		pipelines, err = uc.Metrics.generateOtelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
 		if err != nil {
 			return "", err
 		}
 	}
 
-	pipelines["otel"] = AgentSelfMetrics{
+	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
+	pipelines["otel"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "otel",
+	}
 
-	pipelines["fluentbit"] = AgentSelfMetrics{
+	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "fluentbit",
+	}
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:  uc.Metrics.Service.LogLevel,
-		Pipelines: pipelines,
-		GlobalProcessors: []otel.Component{{
-			Type: "resourcedetection",
-			Config: map[string]interface{}{
-				"detectors": []string{"gce"},
-			},
-		}},
-		Exporter: otel.Component{
-			Type: "googlecloud",
-			Config: map[string]interface{}{
-				// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
-				// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
-				// recommends disabling this.
-				"retry_on_failure": map[string]interface{}{
-					"enabled": false,
-				},
-				"user_agent": userAgent,
-				"metric": map[string]interface{}{
-					// Receivers are responsible for sending fully-qualified metric names.
-					// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
-					// TODO(b/197129428): Write a test to make sure this doesn't happen.
-					"prefix": "",
-					// OT calls CreateMetricDescriptor by default. Skip because we want
-					// descriptors to be created implicitly with new time series.
-					"skip_create_descriptor": true,
-					// Omit instrumentation labels, which break agent metrics.
-					"instrumentation_library_labels": false,
-					// Omit service labels, which break agent metrics.
-					"service_resource_labels": false,
-					"resource_filters":        []map[string]interface{}{},
-				},
-			},
+		LogLevel:          uc.Metrics.Service.LogLevel,
+		ReceiverPipelines: receiverPipelines,
+		Pipelines:         pipelines,
+		GlobalProcessors:  []otel.Component{gcpResourceDetector()},
+		Exporters: map[otel.ExporterType]otel.Component{
+			otel.System: googleCloudExporter(userAgent, false),
+			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
 	}.Generate()
 	if err != nil {
@@ -101,31 +143,86 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-func (m *Metrics) generateOtelPipelines() (map[string]otel.Pipeline, error) {
-	out := make(map[string]otel.Pipeline)
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := m.Receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
+// generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
+func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
+	m := uc.Metrics
+	outR := make(map[string]otel.ReceiverPipeline)
+	outP := make(map[string]otel.Pipeline)
+	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		for i, receiverPipeline := range receiver.Pipelines() {
+			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
+			if i > 0 {
+				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
 			}
-			for i, receiverPipeline := range receiver.Pipelines() {
-				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					prefix = fmt.Sprintf("%s_%d", prefix, i)
+
+			prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+			if pipelineType != "metrics" {
+				// Don't prepend for metrics pipelines to preserve old golden configs.
+				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
+			}
+
+			outR[receiverPipelineName] = receiverPipeline
+
+			pipeline := otel.Pipeline{
+				Type:                 pipelineType,
+				ReceiverPipelineName: receiverPipelineName,
+			}
+
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.Type == otel.GMP {
+				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 				}
-				for _, pID := range p.ProcessorIDs {
-					processor, ok := m.Processors[pID]
-					if !ok {
-						return nil, fmt.Errorf("processor %q not found", pID)
-					}
-					receiverPipeline.Processors = append(receiverPipeline.Processors, processor.Processors()...)
+			}
+			for _, pID := range processorIDs {
+				// TODO: Change when we support trace processors.
+				processor, ok := m.Processors[pID]
+				if !ok {
+					return fmt.Errorf("processor %q not found", pID)
 				}
-				out[prefix] = receiverPipeline
+				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+			}
+			outP[prefix] = pipeline
+		}
+		return nil
+	}
+	if m != nil && m.Service != nil {
+		receivers, err := uc.MetricsReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range m.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
 			}
 		}
 	}
-	return out, nil
+	t := uc.Traces
+	if t != nil && t.Service != nil {
+		receivers, err := uc.TracesReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range t.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				if err := addReceiver("traces", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+	}
+	return outR, outP, nil
 }
 
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
@@ -282,7 +379,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
@@ -290,12 +387,42 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components(fluentBitSelfLogTag)...)
 
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, generateSeveritySelfLogsParser()...)
+
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
+}
+
+func generateSeveritySelfLogsParser() []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+
+	parser := LoggingProcessorParseRegex{
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		PreserveKey: true,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Components(fluentBitSelfLogTag, "self-logs-severity")
+
+	out = append(out, parser...)
+
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))

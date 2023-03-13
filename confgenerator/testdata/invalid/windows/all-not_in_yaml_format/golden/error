@@ -1,0 +1,6 @@
+[15:1] string was used where mapping is expected
+  12 | # See the License for the specific language governing permissions and
+  13 | # limitations under the License.
+  14 | 
+> 15 | sdfd
+       ^

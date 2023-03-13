@@ -1,9 +1,0 @@
-[3:15] "include_paths" is a required field
-   1 | logging:
-   2 |   receivers:
->  3 |     receiver_1:
-                     ^
-   4 |       type: files
-   5 |     syslog:
-   6 |       type: files
-   7 |       

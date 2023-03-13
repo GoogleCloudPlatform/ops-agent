@@ -1,4 +1,0 @@
-[1:1] unknown field "logs"
->  1 | logs:
-       ^
-   2 |   files: "b"c

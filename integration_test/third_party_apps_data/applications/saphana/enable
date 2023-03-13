@@ -2,17 +2,21 @@
 
 set -e
 
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Configure the Ops Agent.
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 logging:
   receivers:
     saphana:
       type: saphana
       include_paths:
-      - /usr/sap/*/HDB*/saphanamon/trace/*.trc
+      - /usr/sap/*/HDB*/*/trace/*.trc
       exclude_paths:
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver_history*.trc
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*loads*.trc
-      - /usr/sap/*/HDB*/saphanamon/trace/nameserver*executed_statements*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver_history*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver*loads*.trc
+      - /usr/sap/*/HDB*/*/trace/nameserver*executed_statements*.trc
   service:
     pipelines:
       saphana:

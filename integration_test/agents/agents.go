@@ -185,6 +185,8 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	for _, log := range []string{
 		gce.SyslogLocation(vm.Platform),
+		"/var/log/google-cloud-ops-agent/health-checks.log",
+		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
@@ -215,7 +217,10 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "", "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
+
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.log"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
@@ -260,7 +265,7 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 			}
 			_, err := gce.WaitForMetric(
 				ctx, logger, vm, "agent.googleapis.com/agent/uptime", TrailingQueryWindow,
-				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)})
+				[]string{fmt.Sprintf("metric.labels.version = starts_with(%q)", service.UptimeMetricName)}, false)
 			c <- err
 		}()
 	}
@@ -362,7 +367,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		strings.HasPrefix(vm.Platform, "rhel-") ||
 		strings.HasPrefix(vm.Platform, "rocky-linux-") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "sles-") {
+	} else if gce.IsSUSE(vm.Platform) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "debian-") ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
@@ -670,8 +675,9 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 // on a Windows VM.
 func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/logging/docs/agent/installation#joint-install
+	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/windows/StackdriverLogging-v1-16.exe", "${env:UserProfile}\StackdriverLogging-v1-16.exe")
-		& "${env:UserProfile}\StackdriverLogging-v1-16.exe" /S`
+		Start-Process -FilePath "${env:UserProfile}\StackdriverLogging-v1-16.exe" -ArgumentList "/S" -Wait -NoNewWindow`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }
@@ -680,8 +686,9 @@ func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logge
 // agent on a Windows VM.
 func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// https://cloud.google.com/monitoring/agent/installation#joint-install
+	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://repo.stackdriver.com/windows/StackdriverMonitoring-GCM-46.exe", "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe")
-		& "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" /S`
+		Start-Process -FilePath "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" -ArgumentList "/S" -Wait -NoNewWindow`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
 }
@@ -699,13 +706,18 @@ func RecommendedMachineType(platform string) string {
 
 // CommonSetup sets up the VM for testing.
 func CommonSetup(t *testing.T, platform string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+	return CommonSetupWithExtraCreateArguments(t, platform, []string{})
+}
+
+// CommonSetupWithExtraCreateArguments sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command.
+func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCreateArguments []string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform)})
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform), ExtraCreateArguments: extraCreateArguments})
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
@@ -713,54 +725,11 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 	return ctx, logger, vm
 }
 
-func globForAgentPackage(platform string) (string, error) {
-	if gce.IsWindows(platform) {
-		return "*.goo", nil
-	}
-
-	// Here is a real example of what package names look like once built:
-	// google-cloud-ops-agent-2.0.3-1.el7.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.el8.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles12.x86_64.rpm
-	// google-cloud-ops-agent-2.0.3-1.sles15.x86_64.rpm
-	// google-cloud-ops-agent_2.0.3~debian10_amd64.deb
-	// google-cloud-ops-agent_2.0.3~debian9.13_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu16.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu18.04_amd64.deb
-	// google-cloud-ops-agent_2.0.3~ubuntu20.04_amd64.deb
-	//
-	// The goal of this function is to convert what we have (vm.Platform, e.g.
-	// debian-10)	into a glob that will pick out the appropriate package file for
-	// that distro.
-
-	// I honestly can't think of a better way to do this.
-	switch {
-	case strings.HasPrefix(platform, "centos-7") || strings.HasPrefix(platform, "rhel-7"):
-		return "*.el7.*.rpm", nil
-	case strings.HasPrefix(platform, "centos-8") || strings.HasPrefix(platform, "rhel-8") || strings.HasPrefix(platform, "rocky-linux-8"):
-		return "*.el8.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-12"):
-		return "*.sles12.*.rpm", nil
-	case strings.HasPrefix(platform, "sles-15") || strings.HasPrefix(platform, "opensuse-leap"):
-		return "*.sles15.*.rpm", nil
-	case platform == "debian-9":
-		return "*~debian9*.deb", nil
-	case platform == "debian-10":
-		return "*~debian10*.deb", nil
-	case platform == "debian-11":
-		return "*~debian11*.deb", nil
-	case platform == "ubuntu-1804-lts" || platform == "ubuntu-minimal-1804-lts":
-		return "*~ubuntu18.04_*.deb", nil
-	case platform == "ubuntu-2004-lts" || platform == "ubuntu-minimal-2004-lts":
-		return "*~ubuntu20.04_*.deb", nil
-	default:
-		return "", fmt.Errorf("agents.go does not know how to convert platform %q into a glob that can pick the appropriate package out of a lineup", platform)
-	}
-}
-
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+// Packages with "dbgsym" in their name are skipped because customers don't
+// generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
@@ -768,17 +737,18 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
-	glob, err := globForAgentPackage(vm.Platform)
-	if err != nil {
-		return err
-	}
-
 	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("sudo gsutil cp -r %s/%s /tmp/agentUpload", gcsPath, glob)); err != nil {
-		logger.ToMainLog().Printf("picking agent package using glob %q", glob)
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
+	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+		return err
 	}
 	if IsRPMBased(vm.Platform) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {

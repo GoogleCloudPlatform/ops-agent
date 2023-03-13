@@ -33,7 +33,7 @@ func (r MetricsReceiverKafka) Type() string {
 	return "kafka"
 }
 
-func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverKafka) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "kafka"
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultKafkaEndpoint).
@@ -61,12 +61,13 @@ func (r MetricsReceiverKafka) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverKafka{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverKafka{} })
 }
 
 type LoggingProcessorKafka struct {
@@ -160,6 +161,6 @@ func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorKafka{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverKafka{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorKafka{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverKafka{} })
 }

@@ -1,0 +1,9 @@
+[19:28] "collection_interval" must be a duration of at least 10s
+  16 |   receivers:
+  17 |     receiver_1:
+  18 |       type: hostmetrics
+> 19 |       collection_interval: 2s
+                                  ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       default_pipeline:

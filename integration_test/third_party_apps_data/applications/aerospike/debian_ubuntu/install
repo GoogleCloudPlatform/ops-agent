@@ -24,13 +24,13 @@ case $ID in
 esac
 
 # download, extract, install, and start aerospike community edition
-wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.17/aerospike-server-community-5.7.0.17-$os_version.tgz"
+wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.23/aerospike-server-community-5.7.0.23-$os_version.tgz"
 tar -xvf aerospike.tgz
-(cd aerospike-server-community-5.7.0.17-*/ && sudo ./asinstall)
+(cd aerospike-server-community-5.7.0.23-*/ && sudo ./asinstall)
 
-wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.0.5/aerospike-tools-7.0.5-$os_version.tgz"
+wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.1.1/aerospike-tools-7.1.1-$os_version.tgz"
 tar -xzf aerospike-tools.tgz
-(cd aerospike-tools-7.0.5-*/ && sudo ./asinstall)
+(cd aerospike-tools-7.1.1-*/ && sudo ./asinstall)
 
 sudo systemctl enable aerospike
 sudo systemctl start aerospike

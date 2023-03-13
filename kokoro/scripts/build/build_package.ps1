@@ -7,10 +7,11 @@ $global:ProgressPreference = 'SilentlyContinue'
 # nonzero exit code.
 #   Example: Invoke-Program git submodule update --init
 function Invoke-Program() {
-  & $Args[0] $Args[1..$Args.Length]
+  $outpluserr = cmd /c $Args 2`>`&1
   if ( $LastExitCode -ne 0 ) {
-    throw "failed: $Args"
+    throw "failed: $Args, output: $outpluserr"
   }
+  return $outpluserr
 }
 
 $tag = 'build'
@@ -23,12 +24,13 @@ Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
 # Try to disable Windows Defender firewall for improved build speed.
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
 
-$gitDir = 'github'
-if (Test-Path env:KOKORO_GOB_COMMIT_URL_unified_agents) {
-  $gitDir = 'git'
+$gitOnBorgLocation = "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
+if (Test-Path -Path $gitOnBorgLocation) {
+  Set-Location $gitOnBorgLocation
 }
-
-Set-Location "$env:KOKORO_ARTIFACTS_DIR/$gitDir/unified_agents"
+else {
+  Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents"
+}
 
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
 # same commit that the agent was built from. This only applies to the
@@ -46,9 +48,24 @@ PACKAGE_VERSION,$env:PKG_VERSION
   Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/custom_sponge_config.csv" -Encoding ascii
 
 Invoke-Program git submodule update --init
-Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
+$artifact_registry='us-docker.pkg.dev'
+Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
+
+$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows"
+Invoke-Program docker pull $cache_location
+Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
+
+
+# Tell our continuous build to update the cache. Our other builds do not
+# write to any kind of cache, for example a per-PR cache, because the
+# push takes a few minutes and adds little value over just using the continuous
+# build's cache.
+if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
+  Invoke-Program docker image tag $tag $cache_location
+  Invoke-Program docker push $cache_location
+}
 
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'

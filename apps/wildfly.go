@@ -34,7 +34,7 @@ func (r MetricsReceiverWildfly) Type() string {
 	return "wildfly"
 }
 
-func (r MetricsReceiverWildfly) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverWildfly) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "wildfly"
 
 	if r.MetricsReceiverSharedJVM.Endpoint != "" && !strings.HasPrefix(r.MetricsReceiverSharedJVM.Endpoint, "service:jmx") {
@@ -51,12 +51,13 @@ func (r MetricsReceiverWildfly) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverWildfly{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverWildfly{} })
 }
 
 type LoggingProcessorWildflySystem struct {
@@ -146,6 +147,6 @@ func (r LoggingReceiverWildflySystem) Components(tag string) []fluentbit.Compone
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorWildflySystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverWildflySystem{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorWildflySystem{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverWildflySystem{} })
 }

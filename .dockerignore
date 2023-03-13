@@ -1,0 +1,7 @@
+**/.git
+Dockerfile
+Dockerfile.windows
+.dockerignore
+
+integration_test
+kokoro

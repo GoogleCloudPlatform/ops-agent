@@ -34,7 +34,7 @@ func (r MetricsReceiverHbase) Type() string {
 	return "hbase"
 }
 
-func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverHbase) Pipelines() []otel.ReceiverPipeline {
 	targetSystem := "hbase"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -52,12 +52,13 @@ func (r MetricsReceiverHbase) Pipelines() []otel.Pipeline {
 						otel.AggregateLabels("max", "state"),
 					),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverHbase{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverHbase{} })
 }
 
 type LoggingProcessorHbaseSystem struct {
@@ -141,6 +142,6 @@ func (r SystemLoggingReceiverHbase) Components(tag string) []fluentbit.Component
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorHbaseSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &SystemLoggingReceiverHbase{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorHbaseSystem{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverHbase{} })
 }

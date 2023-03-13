@@ -28,17 +28,17 @@ type MetricsReceiverNginx struct {
 	StubStatusURL string `yaml:"stub_status_url" validate:"omitempty,url"`
 }
 
-const defaultStubStatusURL = "http://localhost/status"
+const defaultStubStatusURL = "http://127.0.0.1/status"
 
 func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverNginx) Pipelines() []otel.ReceiverPipeline {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{
@@ -46,17 +46,18 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 				"endpoint":            r.StubStatusURL,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverNginx{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverNginx{} })
 }
 
 type LoggingProcessorNginxAccess struct {
@@ -151,8 +152,8 @@ func (r LoggingReceiverNginxError) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorNginxAccess{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorNginxError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverNginxAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverNginxError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxError{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxAccess{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxError{} })
 }

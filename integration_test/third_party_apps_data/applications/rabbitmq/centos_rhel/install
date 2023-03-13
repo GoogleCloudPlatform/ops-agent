@@ -1,17 +1,33 @@
 set -e
 
+source /etc/os-release
+
+# if os is rhel 9, crb is required to access epel
+case "$VERSION_ID" in
+    9*) sudo yum config-manager --set-enabled crb;;
+esac
+
 sudo yum install -y curl epel-release
 
-curl -s \
-    -o erlang.rpm \
-    https://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
-sudo rpm -Uvh erlang.rpm
+# until there is a rabbitmq-server package for rhel 9, use the el8 package
+case "$VERSION_ID" in
+    9*) 
+        curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh --output erlang.rpm.sh
+        chmod +x  erlang.rpm.sh
+        sudo os=el dist=8 ./erlang.rpm.sh
 
-sudo yum install -y erlang
+        curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh --output rabbitmq-server.rpm.sh
+        chmod +x  rabbitmq-server.rpm.sh
+        sudo os=el dist=8 ./rabbitmq-server.rpm.sh
+        ;;
+    *)
+        curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh | sudo bash
 
-curl -s \
-    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | \
-    sudo bash
+        curl -s \
+            https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | \
+            sudo bash
+        ;;
+esac
 
 sudo yum makecache -y \
     --disablerepo='*' --enablerepo='rabbitmq_rabbitmq-server'

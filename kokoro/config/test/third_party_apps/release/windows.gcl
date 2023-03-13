@@ -1,4 +1,4 @@
-import '../common.gcl' as common
+import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
@@ -6,6 +6,8 @@ config build = common.third_party_apps_test {
       'windows-2012-r2',
       'windows-2019',
       'sql-std-2019-win-2019',
+      'windows-2022', 
+      'sql-std-2022-win-2022',
     ]
   }
 }

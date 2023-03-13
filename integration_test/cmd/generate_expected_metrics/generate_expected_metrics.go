@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration_test
-
 /*
 PROJECT: The GCP project to use.
 GOOGLE_APPLICATION_CREDENTIALS: Path to a credentials file for interacting with
@@ -40,7 +38,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/common"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"go.uber.org/multierr"
@@ -62,7 +60,7 @@ var (
 	}
 )
 
-type expectedMetricsMap map[string]common.ExpectedMetric
+type expectedMetricsMap map[string]*metadata.ExpectedMetric
 
 func main() {
 	if err := run(); err != nil {
@@ -71,6 +69,10 @@ func main() {
 }
 
 func run() error {
+	if err := initMonitoringClient(); err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -96,14 +98,22 @@ func run() error {
 	return err
 }
 
+// Initialize the global monitoring client.
+func initMonitoringClient() error {
+	ctx := context.Background()
+	var err error
+	monClient, err = monitoring.NewMetricClient(ctx)
+	return err
+}
+
 // listMetrics calls projects.metricDescriptors.list with the given project ID and filter.
-func listMetrics(ctx context.Context, project string, filter string) ([]metric.MetricDescriptor, error) {
+func listMetrics(ctx context.Context, project string, filter string) ([]*metric.MetricDescriptor, error) {
 	req := &monitoringpb.ListMetricDescriptorsRequest{
 		Name:   "projects/" + project + "/metricDescriptors/",
 		Filter: filter,
 	}
 	it := monClient.ListMetricDescriptors(ctx, req)
-	metrics := make([]metric.MetricDescriptor, 0)
+	metrics := make([]*metric.MetricDescriptor, 0)
 	for {
 		m, err := it.Next()
 		if err == iterator.Done {
@@ -111,7 +121,7 @@ func listMetrics(ctx context.Context, project string, filter string) ([]metric.M
 		} else if err != nil {
 			return nil, err
 		}
-		metrics = append(metrics, *m)
+		metrics = append(metrics, m)
 	}
 	return metrics, nil
 }
@@ -151,8 +161,9 @@ func listAllMetricsByApp(ctx context.Context, project string) (map[string]expect
 }
 
 // getAppName parses out the app name from a metric type, for example:
-//   workload.googleapis.com/apache.xyz -> apache
-//   agent.googleapis.com/iis/xyz -> iis
+//
+//	workload.googleapis.com/apache.xyz -> apache
+//	agent.googleapis.com/iis/xyz -> iis
 func getAppName(metricType string) string {
 	matches := regexp.MustCompile(`.*\.googleapis.com\/([^/.]*)[/.].*`).FindStringSubmatch(metricType)
 	if len(matches) != 2 {
@@ -166,12 +177,12 @@ func getAppName(metricType string) string {
 }
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
-func toExpectedMetric(metric metric.MetricDescriptor) common.ExpectedMetric {
+func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric {
 	labels := make(map[string]string)
 	for _, l := range metric.Labels {
 		labels[l.Key] = ".*"
 	}
-	return common.ExpectedMetric{
+	return &metadata.ExpectedMetric{
 		Type:              metric.Type,
 		Kind:              metric.MetricKind.String(),
 		ValueType:         metric.ValueType.String(),
@@ -184,10 +195,10 @@ func metadataFilename(app string) string {
 	return path.Join(scriptsDir, "applications", app, "metadata.yaml")
 }
 
-func readMetadata(app string) (common.IntegrationMetadata, error) {
+func readMetadata(app string) (metadata.IntegrationMetadata, error) {
 	file := metadataFilename(app)
 	serialized, err := os.ReadFile(file)
-	var metadata common.IntegrationMetadata
+	var metadata metadata.IntegrationMetadata
 	if err != nil {
 		return metadata, err
 	}
@@ -208,7 +219,6 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 	metricsByType := make(expectedMetricsMap)
 	expectedMetrics := metadata.ExpectedMetrics
 	for _, m := range expectedMetrics {
-		m := *m
 		if _, ok := metricsByType[m.Type]; ok {
 			return nil, fmt.Errorf("duplicate expected_metrics type in %s/metadata.yaml: %s", app, m.Type)
 		}
@@ -221,17 +231,18 @@ func readExpectedMetrics(app string) (expectedMetricsMap, error) {
 // to the metadata.yaml associated with the given app. Metrics
 // are written in alphabetical order by type.
 func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
-	metadata, err := readMetadata(app)
+	appMetadata, err := readMetadata(app)
 	if err != nil {
 		return err
 	}
-	expectedMetrics := make([]*common.ExpectedMetric, 0)
+	expectedMetrics := make([]*metadata.ExpectedMetric, 0)
 	for _, m := range metrics {
-		expectedMetrics = append(expectedMetrics, &m)
+		metric := m
+		expectedMetrics = append(expectedMetrics, metric)
 	}
 	sort.Slice(expectedMetrics, func(i, j int) bool { return expectedMetrics[i].Type < expectedMetrics[j].Type })
-	metadata.ExpectedMetrics = expectedMetrics
-	serialized, err := yaml.Marshal(metadata)
+	appMetadata.ExpectedMetrics = expectedMetrics
+	serialized, err := yaml.Marshal(appMetadata)
 	if err != nil {
 		return err
 	}
@@ -243,8 +254,8 @@ func writeExpectedMetrics(app string, metrics expectedMetricsMap) error {
 // label patterns. All other values are copied from withValuesFrom. Existing label
 // keys not present in withValuesFrom.Labels are dropped.
 // If toUpdate.Type is empty, then withValuesFrom is returned.
-func updateMetric(toUpdate common.ExpectedMetric, withValuesFrom common.ExpectedMetric) common.ExpectedMetric {
-	if toUpdate.Type == "" {
+func updateMetric(toUpdate *metadata.ExpectedMetric, withValuesFrom *metadata.ExpectedMetric) *metadata.ExpectedMetric {
+	if toUpdate == nil || toUpdate.Type == "" {
 		// Empty struct to update; just copy over the new one
 		return withValuesFrom
 	}
@@ -272,13 +283,4 @@ func updateMetric(toUpdate common.ExpectedMetric, withValuesFrom common.Expected
 	}
 
 	return result
-}
-
-func init() {
-	ctx := context.Background()
-	var err error
-	monClient, err = monitoring.NewMetricClient(ctx)
-	if err != nil {
-		panic(fmt.Errorf("NewMetricClient() failed: %v", err))
-	}
 }

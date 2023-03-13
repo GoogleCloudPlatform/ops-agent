@@ -20,20 +20,30 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/shirou/gopsutil/host"
 )
 
-func ReadUnifiedConfigFromFile(path, platform string) (UnifiedConfig, error) {
-	uc := UnifiedConfig{}
+// ReadUnifiedConfigFromFile reads the user config file and returns a UnifiedConfig.
+// If the user config file does not exist, it returns nil.
+func ReadUnifiedConfigFromFile(path, platform string) (*UnifiedConfig, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			// If the user config file does not exist, we don't want any overrides.
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
+	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return uc, err
+		return nil, err
 	}
-	uc, err = UnmarshalYamlToUnifiedConfig(data, platform)
+	uc, err := UnmarshalYamlToUnifiedConfig(data, platform)
 	if err != nil {
-		return uc, err
+		return nil, err
 	}
+
 	return uc, nil
 }
 
@@ -53,6 +63,13 @@ func GenerateFilesFromConfig(uc *UnifiedConfig, service, logsDir, stateDir, outD
 			}
 		}
 	case "otel":
+		// Fetch resource information from the metadata server.
+		var err error
+		MetadataResource, err = resourcedetector.GetResource()
+		if err != nil {
+			return fmt.Errorf("can't get resource metadata: %w", err)
+		}
+
 		otelConfig, err := uc.GenerateOtelConfig(hostInfo)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)

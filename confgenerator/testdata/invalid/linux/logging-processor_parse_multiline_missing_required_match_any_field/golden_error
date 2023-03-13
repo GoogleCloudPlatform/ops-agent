@@ -1,9 +1,0 @@
-[10:23] "match_any" is a required field
-   7 |     systemd:
-   8 |       type: systemd_journald
-   9 |   processors:
-> 10 |     multiline_parser_1:
-                             ^
-  11 |       type: parse_multiline
-  12 |   service:
-  13 |     pipelines:

@@ -1,9 +1,0 @@
-[5:18] "match_any[0]": 1:19: error: field "invalid.path" not found
-   2 |   processors:
-   3 |     p1:
-   4 |       type: exclude_logs
->  5 |       match_any: ['invalid.path = foo']
-                        ^
-   6 |   service:
-   7 |     pipelines:
-   8 |       default_pipeline:

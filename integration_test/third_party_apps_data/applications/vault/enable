@@ -2,7 +2,12 @@
 
 set -e
 
-VAULT_TOKEN=$(grep 'Initial Root Token:' init.out | awk '{print $4}')
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Create a Vault token that has read capabilities to /sys/metrics policy.
+# For more information see: https://developer.hashicorp.com/vault/tutorials/monitoring/monitor-telemetry-grafana-prometheus?in=vault%2Fmonitoring#define-prometheus-acl-policy
+VAULT_TOKEN=$(cat prometheus-token)
 
 
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF

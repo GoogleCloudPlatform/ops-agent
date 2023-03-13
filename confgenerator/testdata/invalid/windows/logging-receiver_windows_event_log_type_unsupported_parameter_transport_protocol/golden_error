@@ -1,9 +1,0 @@
-[6:7] unknown field "transport_protocol"
-   3 |     receiver_1:
-   4 |       type: windows_event_log
-   5 |       channels: [System,Application,Security]
->  6 |       transport_protocol: tcp
-             ^
-   7 |   service:
-   8 |     pipelines:
-   9 |       default_pipeline:

@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 set -e
 set -x
@@ -47,7 +61,7 @@ function track_flakiness()
     export_to_sponge_config "ng3_job_type" "PERIODIC"
   fi
   export_to_sponge_config "ng3_project_id" "cloud-ops-agent"
-  export_to_sponge_config "ng3_commit" "${KOKORO_GIT_COMMIT_unified_agents}"
+  export_to_sponge_config "ng3_commit" "${KOKORO_GIT_COMMIT_unified_agents-${KOKORO_GIT_COMMIT}}"
   export_to_sponge_config "ng3_cl_target_branch" "master"
   export_to_sponge_config "ng3_test_type" "INTEGRATION"
   export_to_sponge_config "ng3_sponge_url" "https://fusion2.corp.google.com/invocations/${KOKORO_BUILD_ID}"

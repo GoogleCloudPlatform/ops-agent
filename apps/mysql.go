@@ -40,7 +40,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -53,7 +53,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		r.Username = "root"
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "mysql",
 			Config: map[string]interface{}{
@@ -62,9 +62,41 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				"username":            r.Username,
 				"password":            r.Password,
 				"transport":           transport,
+				"metrics": map[string]interface{}{
+					"mysql.commands": map[string]interface{}{
+						"enabled": true,
+					},
+					"mysql.index.io.wait.count": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.index.io.wait.time": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.locked_connects": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.mysqlx_connections": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.opened_resources": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.tmp_resources": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.prepared_statements": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.table.io.wait.count": map[string]interface{}{
+						"enabled": false,
+					},
+					"mysql.table.io.wait.time": map[string]interface{}{
+						"enabled": false,
+					},
+				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				// The following changes are here to ensure maximum backwards compatibility after the fixes
@@ -82,12 +114,13 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.Component { return &MetricsReceiverMySql{} })
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMySql{} })
 }
 
 type LoggingProcessorMysqlError struct {
@@ -383,10 +416,10 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlError{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlGeneral{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.Component { return &LoggingProcessorMysqlSlow{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlGeneral{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.Component { return &LoggingReceiverMysqlSlow{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlGeneral{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlSlow{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlError{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlGeneral{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlSlow{} })
 }

@@ -1,8 +1,0 @@
-[3:15] "channels" is a required field
-   1 | logging:
-   2 |   receivers:
->  3 |     receiver_1:
-                     ^
-   4 |       type: windows_event_log
-   5 |   service:
-   6 |     pipelines:
