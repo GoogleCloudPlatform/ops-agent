@@ -25,24 +25,22 @@ import (
 )
 
 var (
-	service  = flag.String("service", "", "service to generate config for")
-	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
-	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
-	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	service      = flag.String("service", "", "service to generate config for")
+	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
+	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
+	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
+	stateDir     = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	healthChecks = flag.Bool("healthchecks", false, "run health checks")
 )
 
-func runStartupChecks(service string) {
-	if service == "" {
-		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
-		defer closer()
+func runHealthChecks() {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+	logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
+	defer closer()
 
-		healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
-		for _, result := range healthCheckResults {
-			log.Printf(result.Message)
-		}
-		log.Println("Startup checks finished")
+	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
+	for _, result := range healthCheckResults {
+		log.Printf(result.Message)
 	}
 }
 
@@ -52,7 +50,14 @@ func main() {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
 	}
 }
+
 func run() error {
+	if *healthChecks {
+		runHealthChecks()
+		log.Println("Health checks finished")
+		return nil
+	}
+
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
@@ -65,7 +70,10 @@ func run() error {
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	runStartupChecks(*service)
+	if *service == "" {
+		runHealthChecks()
+		log.Println("Startup checks finished")
+	}
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
