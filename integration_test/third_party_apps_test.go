@@ -701,6 +701,7 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 func modifiedFiles(t *testing.T) []string {
 	// This command gets the files that have changed since the current branch
 	// diverged from official master. See https://stackoverflow.com/a/65166745.
+	cmd := exec.Command("git", "config", "--global", "--add", "safe.directory", "...")
 	cmd := exec.Command("git", "diff", "--name-only", "origin/master...")
 	out, err := cmd.Output()
 	stdout := string(out)
