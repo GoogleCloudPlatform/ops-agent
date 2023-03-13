@@ -25,6 +25,7 @@ const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
 func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
+	notFound := "NOT_FOUND"
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
@@ -32,6 +33,10 @@ func setLogNameComponents(tag, logName, receiverType string, hostName string) []
 			},
 			`labels."compute.googleapis.com/resource_name"`: {
 				DefaultValue: &hostName,
+			},
+			"jsonPayload.resource_name_backup": {
+				CopyFrom:     `labels."compute.googleapis.com/resource_name"`,
+				DefaultValue: &notFound,
 			},
 			`labels."agent.googleapis.com/log_file_path"`: {
 				MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
