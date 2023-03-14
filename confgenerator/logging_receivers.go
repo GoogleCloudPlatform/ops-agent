@@ -380,8 +380,9 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 
 	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
 function process(tag, timestamp, record)
-    io.write(tag, ": [0] message=", record["Message"], "\n");
-    return 0, timestamp, record
+    record["check0"] = record["Message"];
+    record["check0_tag"] = tag;
+    return 2, timestamp, record
 end`)...)
 
 	// On Windows Server 2012/2016, there is a known problem where most log fields end
@@ -404,8 +405,9 @@ end`)...)
 function process(tag, timestamp, record)
     local v = record["raw_xml"];
     if v == nil then v = "nil" end;
-    io.write(tag, ": [1] xml=", v, "\n");
-    return 0, timestamp, record
+    record["check1"] = v;
+    record["check1_tag"] = tag;
+    return 2, timestamp, record
 end`)...)
 
 	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
@@ -427,8 +429,9 @@ end`)...)
 
 	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
 function process(tag, timestamp, record)
-    io.write(tag, ": [2] check message=", record["Message"], "\n");
-    return 0, timestamp, record
+    record["check2"] = "true";
+    record["check2_tag"] = tag;
+    return 2, timestamp, record
 end`)...)
 
 	var filters []fluentbit.Component
@@ -450,8 +453,9 @@ end`)...)
 
 	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
 function process(tag, timestamp, record)
-    io.write(tag, ": [3] end message=", record["Message"], "\n");
-    return 0, timestamp, record
+	record["check3"] = "true";
+	record["check3_tag"] = tag;
+	return 2, timestamp, record
 end`)...)
 
 	return append(input, filters...)
