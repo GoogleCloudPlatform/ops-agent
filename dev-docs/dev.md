@@ -825,7 +825,7 @@ Buffer files - Fluent Bit                                                       
 Description                               | Link
 ----------------------------------------- | ----
 Config file - Ops Agent                   | `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
-Logs - Health Checks                      | `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\heath-checks.log`
+Logs - Health Checks                      | `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`
 Logs - Fluent Bit                         | `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`
 Logs - OT Metrics Agent                   | In the `Event Viewer` app, click `Windows Logs` then `Application`, filter by `Source` equal to `Google Cloud Ops Agent - Metrics Agent`. This agent does not write logs directly to disk today.
 Config file - Fluent Bit - Main config    | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`
