@@ -378,12 +378,18 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}}
 
+	input = append(input, modify.NewSetOptions("check0_before", "true").Component(tag))
+	input = append(input, modify.NewSetOptions("check0_before_all", "true").Component("*"))
+
 	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
 function process(tag, timestamp, record)
     record["check0"] = record["Message"];
     record["check0_tag"] = tag;
     return 2, timestamp, record
 end`)...)
+
+	input = append(input, modify.NewSetOptions("check0_after", "true").Component(tag))
+	input = append(input, modify.NewSetOptions("check0_after_all", "true").Component("*"))
 
 	// On Windows Server 2012/2016, there is a known problem where most log fields end
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
