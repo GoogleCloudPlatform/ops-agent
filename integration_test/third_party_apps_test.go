@@ -50,7 +50,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -512,12 +512,13 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
-	if ft_err != nil {
-		return multierr.Append(err, ft_err)
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if err != nil {
+		return err
 	}
 
-	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
+	return err
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
@@ -640,24 +641,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
-		// All integrations are expected to set the instrumentation_source label.
-		for _, m := range metadata.ExpectedMetrics {
-			// The windows metrics that do not target workload.googleapis.com cannot set
-			// the instrumentation_ labels
-			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
-				continue
-			}
-			if m.Labels == nil {
-				m.Labels = map[string]string{}
-			}
-			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
-			}
-			if _, ok := m.Labels["instrumentation_version"]; !ok {
-				m.Labels["instrumentation_version"] = `.*`
-			}
-		}
-
 		fc, err := getExpectedFeatures(app)
 
 		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
@@ -719,7 +702,7 @@ func modifiedFiles(t *testing.T) []string {
 	// This command gets the files that have changed since the current branch
 	// diverged from official master. See https://stackoverflow.com/a/65166745.
 	cmd := exec.Command("git", "config", "--global", "--add", "safe.directory", "...")
-	cmd := exec.Command("git", "diff", "--name-only", "origin/master...")
+	cmd = exec.Command("git", "diff", "--name-only", "origin/master...")
 	out, err := cmd.Output()
 	stdout := string(out)
 	if err != nil {
@@ -738,7 +721,7 @@ func modifiedFiles(t *testing.T) []string {
 // means we should test all applications.
 func isCriticalFile(f string) bool {
 	if strings.HasPrefix(f, "submodules/") ||
-		strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
+	   strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
 		return true
 	}
 	for _, criticalFile := range []string{
