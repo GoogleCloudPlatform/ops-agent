@@ -33,15 +33,24 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runHealthChecks() {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+func runHealthChecks(registry healthchecks.HealthCheckRegistry) {
 	logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
 	defer closer()
 
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
+	healthCheckResults := registry.RunAllHealthChecks(logger)
 	for _, result := range healthCheckResults {
 		log.Printf(result.Message)
 	}
+}
+
+func getHealthCheckRegistry() healthchecks.HealthCheckRegistry {
+	if *healthChecks {
+		return healthchecks.HealthCheckRegistry{
+			healthchecks.NetworkCheck{},
+			healthchecks.PortsCheck{},
+		}
+	}
+	return healthchecks.HealthCheckRegistryFactory()
 }
 
 func main() {
@@ -52,12 +61,6 @@ func main() {
 }
 
 func run() error {
-	if *healthChecks {
-		runHealthChecks()
-		log.Println("Health checks finished")
-		return nil
-	}
-
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
@@ -71,8 +74,11 @@ func run() error {
 	log.Printf("Merged config:\n%s", uc)
 
 	if *service == "" {
-		runHealthChecks()
+		runHealthChecks(getHealthCheckRegistry())
 		log.Println("Startup checks finished")
+		if *healthChecks {
+			return nil
+		}
 	}
 
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)

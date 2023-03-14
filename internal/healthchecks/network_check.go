@@ -47,7 +47,7 @@ var (
 		},
 		{
 			name:             "GCE Metadata Server",
-			url:              "http://metadata.google.internal/computeMetadata/v1",
+			url:              "http://metadata.google.internal",
 			successMessage:   "Request to the GCE Metadata server was successful.",
 			healthCheckError: MetaApiConnErr,
 		},
