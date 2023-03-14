@@ -378,6 +378,12 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}}
 
+	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
+function process(tag, timestamp, record)
+    io.write(tag, ": [0] message=", record["Message"], "\n");
+    return 0, timestamp, record
+end`)...)
+
 	// On Windows Server 2012/2016, there is a known problem where most log fields end
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
 	// this also strips Unicode characters away, so we only use it on affected
@@ -393,6 +399,14 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		// Rename it to "raw_xml" because it's a more descriptive name than "System".
 		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
 	}
+
+	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
+function process(tag, timestamp, record)
+    local v = record["raw_xml"];
+    if v == nil then v = "nil" end;
+    io.write(tag, ": [1] xml=", v, "\n");
+    return 0, timestamp, record
+end`)...)
 
 	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
 	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
@@ -411,6 +425,12 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
 
+	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
+function process(tag, timestamp, record)
+    io.write(tag, ": [2] check message=", record["Message"], "\n");
+    return 0, timestamp, record
+end`)...)
+
 	var filters []fluentbit.Component
 	if r.IsDefaultVersion() {
 		filters = fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
@@ -427,6 +447,12 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		// values and Level is an int. So we need to use Lua.
 		filters = fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
 	}
+
+	input = append(input, fluentbit.LuaFilterComponents(tag, "process", `
+function process(tag, timestamp, record)
+    io.write(tag, ": [3] end message=", record["Message"], "\n");
+    return 0, timestamp, record
+end`)...)
 
 	return append(input, filters...)
 }

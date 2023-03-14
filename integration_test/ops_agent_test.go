@@ -1703,6 +1703,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       - System
       render_as_xml: true
   service:
+    log_level: trace
     pipelines:
       default_pipeline:
         receivers: []
