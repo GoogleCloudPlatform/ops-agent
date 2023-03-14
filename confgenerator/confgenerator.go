@@ -382,7 +382,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
-	out = append(out, LoggingReceiverFilesMixin{
+	/*out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{"${logs_dir}/logging-module.log"},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
@@ -391,7 +391,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 
 	out = append(out, generateSeveritySelfLogsParser()...)
 
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))*/
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
