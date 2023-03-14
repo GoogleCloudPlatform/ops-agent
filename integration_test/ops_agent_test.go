@@ -1721,6 +1721,10 @@ func TestWindowsEventLogV2(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
 				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
@@ -1852,7 +1856,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
 				Key:     "[0].channels.__length",
-				Value:   "2",
+				Value:   "1",
 			},
 			{
 				Module:  "logging",
