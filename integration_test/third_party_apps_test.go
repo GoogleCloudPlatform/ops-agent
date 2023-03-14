@@ -723,7 +723,7 @@ func modifiedFiles(t *testing.T) []string {
 	out, err := cmd.Output()
 	if err == nil {
 		cmds = "diff"
-	    cmd = exec.Command("git", cmds, "--name-only", "origin/master...")
+		cmd = exec.Command("git", cmds, "--name-only", "origin/master...")
 		out, err = cmd.Output()
 		stdout := string(out)
 	}
