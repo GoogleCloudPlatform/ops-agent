@@ -91,30 +91,27 @@ var (
 		IsFatal:      true,
 	}
 	PacApiConnErr = HealthCheckError{
-		Code:    "PacApiConnErr",
-		Class:   Connection,
-		Message: "Request to Packages API failed.",
-		Action:  "Check your internet connection and firewall rules.",
-		// TODO: Don't know what to put for the resource link
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		Code:         "PacApiConnErr",
+		Class:        Connection,
+		Message:      "Request to packages.cloud.google.com failed.",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
 		IsFatal:      false,
 	}
 	DLApiConnErr = HealthCheckError{
-		Code:    "DLApiConnErr",
-		Class:   Connection,
-		Message: "Request to dl.google.com failed",
-		Action:  "Check your internet connection and firewall rules.",
-		// TODO: Don't know what to put for the resource link
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		Code:         "DLApiConnErr",
+		Class:        Connection,
+		Message:      "Request to dl.google.com failed",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
 		IsFatal:      false,
 	}
 	MetaApiConnErr = HealthCheckError{
-		Code:    "MetaApiConnErr",
-		Class:   Connection,
-		Message: "Request to GCE Metadata server",
-		Action:  "Check your internet connection and firewall rules.",
-		// TODO: Don't know what to put for the resource link
-		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		Code:         "MetaApiConnErr",
+		Class:        Connection,
+		Message:      "Request to GCE Metadata server",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
 		IsFatal:      true,
 	}
 	LogApiScopeErr = HealthCheckError{

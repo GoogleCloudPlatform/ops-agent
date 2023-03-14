@@ -35,8 +35,8 @@ var (
 		},
 		{
 			name:             "Packages API",
-			url:              "https://packages.googleapi.com/$discovery/rest",
-			successMessage:   "Request to the Packages API was successful.",
+			url:              "https://packages.cloud.google.com/",
+			successMessage:   "Request to packages.cloud.google.com was successful.",
 			healthCheckError: PacApiConnErr,
 		},
 		{

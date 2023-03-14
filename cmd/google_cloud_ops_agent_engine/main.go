@@ -30,7 +30,7 @@ var (
 	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
 	stateDir     = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
-	healthChecks = flag.Bool("healthchecks", false, "run health checks")
+	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
 func runHealthChecks() {
