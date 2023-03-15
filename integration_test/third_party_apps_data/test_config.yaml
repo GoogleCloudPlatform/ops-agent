@@ -35,11 +35,6 @@ per_application_overrides:
     platforms_to_skip:
       - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
       - sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
-  redis:
-    platforms_to_skip:
-      - centos-7 # QueryLog() failed: redis not found, exhausted retries
-      - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
-      - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   oracledb:
     # Oracle DB is difficult to install on these platforms.
     platforms_to_skip:
@@ -49,6 +44,11 @@ per_application_overrides:
       - sles-12
       - sles-15
       - rocky-linux-9
+  redis:
+    platforms_to_skip:
+      - centos-7 # QueryLog() failed: redis not found, exhausted retries
+      - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
+      - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   # As wildfly does not have package installers & is installed from tar,
   # we only want to test on one distribution to help reduce integration test size
   wildfly:
