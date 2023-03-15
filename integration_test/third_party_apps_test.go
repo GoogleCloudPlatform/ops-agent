@@ -744,8 +744,6 @@ func isCriticalFile(f string) bool {
 		"go.mod",
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
-		"integration_test/third_party_apps_test.go",
-		"integration_test/third_party_apps_data/test_config.yaml",
 	} {
 		if f == criticalFile {
 			return true
