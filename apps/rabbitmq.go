@@ -43,7 +43,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 			{
 				// Sample log line:
 				// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
-				Regex: `^(?<timestamp>\d+-\d+-\d+\s\d+:\d+:\d+.\d+)\s\[(?<severity>\w+)\]\s<(?<process_id>\d+\.\d+\.\d+)>\s(?<message>.+)$`,
+				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "timestamp",
 					TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
