@@ -107,6 +107,9 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
+# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
+git config --global --add safe.directory ...
+
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   go test -v "${TEST_SUITE_NAME}.go" \
   "${args[@]}" \
