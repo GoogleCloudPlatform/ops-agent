@@ -31,6 +31,10 @@ per_application_overrides:
       - sles-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
       - sles-15 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
       - ubuntu-2004-lts # GPG error [...] the public key is not available: NO_PUBKEY AA8E81B4331F7F50 NO_PUBKEY 112695A0E562B32A
+  mysql:
+    platforms_to_skip:
+      - sles-12 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
+      - sles-15 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
   nginx:
     platforms_to_skip:
       - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
