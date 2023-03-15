@@ -50,6 +50,9 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
+# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
+git config --global --add safe.directory ...
+
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.
@@ -106,9 +109,6 @@ args=(
 if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
-
-# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
-git config --global --add safe.directory ...
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   go test -v "${TEST_SUITE_NAME}.go" \
