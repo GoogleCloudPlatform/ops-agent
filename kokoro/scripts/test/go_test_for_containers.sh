@@ -51,7 +51,7 @@ source kokoro/scripts/utils/common.sh
 track_flakiness
 
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
-git config --global --add safe.directory ...
+git config --global --add safe.directory "$(pwd)"
 
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
