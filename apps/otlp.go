@@ -33,7 +33,7 @@ var knownDomains = []string{"googleapis.com", "kubernetes.io", "istio.io", "knat
 type ReceiverOTLP struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port"`
+	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port" tracking:"endpoint"`
 }
 
 func (r ReceiverOTLP) Type() string {

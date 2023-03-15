@@ -247,6 +247,8 @@ App,Field,Override,
 *confgenerator.LoggingReceiverSystemd,confgenerator.ConfigComponent.Type,
 *confgenerator.LoggingReceiverTCP,ListenPort,
 *confgenerator.LoggingReceiverTCP,confgenerator.ConfigComponent.Type,
+*confgenerator.LoggingReceiverWindowsEventLog,ReceiverVersion,
+*confgenerator.LoggingReceiverWindowsEventLog,RenderAsXML,
 *confgenerator.LoggingReceiverWindowsEventLog,confgenerator.ConfigComponent.Type,
 *confgenerator.ParseMultiline,confgenerator.ConfigComponent.Type,
 *confgenerator.PrometheusMetrics,confgenerator.ConfigComponent.Type

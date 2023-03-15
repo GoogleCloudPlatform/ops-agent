@@ -54,10 +54,14 @@ var dockerfileArguments = []templateArguments{
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
-		expect rpm-sign zip && \
+		expect rpm-sign zip wget && \
 		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
 		yum install -y cmake3 && \
-		ln -fs cmake3 /usr/bin/cmake
+		ln -fs cmake3 /usr/bin/cmake && \
+		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
+		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
+		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
+		bash cmake.sh --skip-license --prefix=/usr/local
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-7",
@@ -121,15 +125,19 @@ var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "debian:stretch",
 		target_name: "stretch",
-		install_packages: `RUN set -x; apt-get update && \
+		install_packages: `RUN set -x; \
+		(echo "deb http://ftp.debian.org/debian stretch-backports main" | tee /etc/apt/sources.list.d/backports.list) && \
+		(echo "deb http://ftp.debian.org/debian stretch-backports-sloppy main" >> /etc/apt/sources.list.d/backports.list) && \
+		apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
+		build-essential cmake/stretch-backports libuv1/stretch-backports \
+		libarchive13/stretch-backports-sloppy bison flex file libsystemd-dev \
 		devscripts cdbs pkg-config zip
 		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
 		RUN set -xe; \
-    		mkdir -p /usr/local/java-11-openjdk && \
-    		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+		mkdir -p /usr/local/java-11-openjdk && \
+		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		ENV JAVA_HOME /usr/local/java-11-openjdk/`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-stretch",
@@ -144,7 +152,7 @@ var dockerfileArguments = []templateArguments{
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip wget && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -156,7 +164,11 @@ var dockerfileArguments = []templateArguments{
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd
+		ln -fs /usr/lib/systemd /lib/systemd && \
+		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
+		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
+		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
+		bash cmake.sh --skip-license --prefix=/usr/local
 	
 		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
 		RUN set -xe; \
@@ -171,7 +183,7 @@ var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "opensuse/leap:15.1",
 		target_name: "sles15",
-		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip wget
 		# Add agent-vendor.repo to install >3.4 bison
 		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
 		name=google-cloud-monitoring-sles15-x86_64-test \n\
@@ -185,7 +197,11 @@ var dockerfileArguments = []templateArguments{
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd`,
+			ln -fs /usr/lib/systemd /lib/systemd && \
+			# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
+			wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
+			(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
+			bash cmake.sh --skip-license --prefix=/usr/local`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
@@ -196,8 +212,12 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		build-essential bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-11-jdk zip wget && \
+		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
+		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
+		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
+		bash cmake.sh --skip-license --prefix=/usr/local`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-bionic",
 		package_extension: "deb",
@@ -243,6 +263,7 @@ var dockerfileHeader = `# Copyright 2020 Google LLC
 # limitations under the License.
 
 # This file was generated by dockerfiles/compile.go
+# To re-generate, run from the repository root: go run ./dockerfiles
 
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster

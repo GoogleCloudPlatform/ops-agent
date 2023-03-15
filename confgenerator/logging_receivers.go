@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 )
 
 // DBPath returns the database path for the given log tag
@@ -145,14 +147,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		config["multiline.parser"] = parserName
 
 		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  tag,
-				"Name":   "modify",
-				"Rename": "log message",
-			},
-		})
+		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
 	}
 
 	c = append(c, fluentbit.Component{
@@ -327,19 +322,55 @@ func init() {
 type LoggingReceiverWindowsEventLog struct {
 	ConfigComponent `yaml:",inline"`
 
-	Channels []string `yaml:"channels,omitempty,flow" validate:"required"`
+	Channels        []string `yaml:"channels,omitempty,flow" validate:"required,winlogchannels"`
+	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2" tracking:""`
+	RenderAsXML     bool     `yaml:"render_as_xml,omitempty" tracking:""`
 }
+
+const eventLogV2SeverityParserLua = `
+function process(tag, timestamp, record)
+    severityKey = 'logging.googleapis.com/severity'
+    if record['Level'] == 1 then
+        record[severityKey] = 'CRITICAL'
+    elseif record['Level'] == 2 then
+        record[severityKey] = 'ERROR'
+    elseif record['Level'] == 3 then
+        record[severityKey] = 'WARNING'
+    elseif record['Level'] == 4 then
+        record[severityKey] = 'INFO'
+    elseif record['Level'] == 5 then
+        record[severityKey] = 'NOTICE'
+    end
+    return 2, timestamp, record
+end
+`
 
 func (r LoggingReceiverWindowsEventLog) Type() string {
 	return "windows_event_log"
 }
 
+func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
+	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
+}
+
 func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+	if len(r.ReceiverVersion) == 0 {
+		r.ReceiverVersion = "1"
+	}
+
+	inputName := "winlog"
+	timeKey := "TimeGenerated"
+
+	if !r.IsDefaultVersion() {
+		inputName = "winevtlog"
+		timeKey = "TimeCreated"
+	}
+
+	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-			"Name":         "winlog",
+			"Name":         inputName,
 			"Tag":          tag,
 			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
@@ -347,7 +378,23 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}}
 
-	// Parser for parsing TimeGenerated field as log record timestamp
+	// On Windows Server 2012/2016, there is a known problem where most log fields end
+	// up blank. The Use_ANSI configuration is provided to work around this; however,
+	// this also strips Unicode characters away, so we only use it on affected
+	// platforms. This only affects the newer API.
+	if !r.IsDefaultVersion() && (windows.Is2012() || windows.Is2016()) {
+		input[0].Config["Use_ANSI"] = "True"
+	}
+
+	if r.RenderAsXML {
+		input[0].Config["Render_Event_As_XML"] = "True"
+		// By default, fluent-bit puts the rendered XML into a field named "System"
+		// (this is a constant field name and has no relation to the "System" channel).
+		// Rename it to "raw_xml" because it's a more descriptive name than "System".
+		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
+	}
+
+	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
 	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
 	timestampParser := fluentbit.Component{
 		Kind: "PARSER",
@@ -360,18 +407,26 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 		},
 	}
 
-	timestampParserFilters := fluentbit.ParserFilterComponents(tag, "TimeGenerated", []string{timestampParserName}, true)
+	timestampParserFilters := fluentbit.ParserFilterComponents(tag, timeKey, []string{timestampParserName}, true)
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
 
-	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
-		[]struct{ SrcVal, DestVal string }{
-			{"Error", "ERROR"},
-			{"Information", "INFO"},
-			{"Warning", "WARNING"},
-			{"SuccessAudit", "NOTICE"},
-			{"FailureAudit", "NOTICE"},
-		})
+	var filters []fluentbit.Component
+	if r.IsDefaultVersion() {
+		filters = fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{"Error", "ERROR"},
+				{"Information", "INFO"},
+				{"Warning", "WARNING"},
+				{"SuccessAudit", "NOTICE"},
+				{"FailureAudit", "NOTICE"},
+			})
+	} else {
+		// Ordinarily we use fluentbit.TranslationComponents to populate severity,
+		// which uses 'modify' filters, except 'modify' filters only work on string
+		// values and Level is an int. So we need to use Lua.
+		filters = fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
+	}
 
 	return append(input, filters...)
 }

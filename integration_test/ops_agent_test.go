@@ -42,12 +42,14 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -164,7 +166,14 @@ func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return err
 }
 
+// writeToWindowsEventLog writes an event payload to the given channel (logName).
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
+	return writeToWindowsEventLogWithSeverity(ctx, logger, vm, logName, payload, "Information")
+}
+
+// writeToWindowsEventLogWithSeverity writes an event payload to the given channel (logName)
+// using the given severity (Error, Information, FailureAudit, SuccessAudit, Warning).
+func writeToWindowsEventLogWithSeverity(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string, severity string) error {
 	// If this is the first time we're trying to write to logName, we need to
 	// register a fake log source with New-EventLog.
 	// There's a problem:  there's no way (that I can find) to check whether a
@@ -174,12 +183,12 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// per logName.
 	source := logName + "__ops_agent_test"
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed to register new source %v: %v", logName, payload, severity, source, err)
 	}
 
 	// Use a Powershell here-string to avoid most quoting issues.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -Message @'\n%s\n'@", logName, source, payload)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed: %v", logName, payload, err)
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -EntryType '%s' -Message @'\n%s\n'@", logName, source, severity, payload)); err != nil {
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed: %v", logName, payload, severity, err)
 	}
 	return nil
 }
@@ -315,6 +324,7 @@ func TestParseMultilineFileJava(t *testing.T) {
     files_1:
       type: files
       include_paths: [%s]
+      record_log_file_path: true
       wildcard_refresh_interval: 30s
   processors:
     multiline_parser_1:
@@ -859,13 +869,13 @@ func TestCustomLogFormat(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265).
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
+		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
+		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
@@ -1635,6 +1645,305 @@ func TestWindowsEventLog(t *testing.T) {
 	})
 }
 
+func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		log := "windows_event_log"
+		channel := "Microsoft-Windows-User Control Panel/Operational"
+		config := fmt.Sprintf(`logging:
+  receivers:
+    %s:
+      type: windows_event_log
+      channels:
+      - Application
+      - %s
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [%s]
+`, log, channel, log)
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Quote-and-escape the query string so that Cloud Logging accepts it
+		expectedWarning := fmt.Sprintf(`"\"logging.receivers.%s.channels\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, log, channel)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestWindowsEventLogV2(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// There is a limitation on custom event log sources that requires their associated
+		// log names to have a unique eight-character prefix, so unfortunately we can only test
+		// at most one "Microsoft-*" log.
+		config := `logging:
+  receivers:
+    winlog2_space:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Microsoft-Windows-User Profile Service/Operational
+    winlog2_default:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Application
+      - System
+    winlog2_xml:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Application
+      - System
+      render_as_xml: true
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: []
+      pipeline_space:
+        receivers: [winlog2_space]
+      pipeline_v1_v2_simultaneously:
+        receivers: [windows_event_log, winlog2_default]
+      pipeline_xml:
+        receivers: [winlog2_xml]
+`
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		payloads := map[string]map[string]string{
+			"winlog2_space": {
+				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
+			},
+			"winlog2_default": {
+				"Application": "application_msg",
+				"System":      "system_msg",
+			},
+			"winlog2_xml": {
+				"Application": "application_xml_msg",
+				"System":      "system_xml_msg",
+			},
+		}
+		for r := range payloads {
+			for log, payload := range payloads[r] {
+				if err := writeToWindowsEventLog(ctx, logger.ToMainLog(), vm, log, payload); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		// Manually re-send a log as a Warning to test severity parsing.
+		if err := writeToWindowsEventLogWithSeverity(ctx, logger.ToMainLog(), vm, "Application", "warning_msg", "Warning"); err != nil {
+			t.Fatal(err)
+		}
+
+		// For winlog2_space, we simply check that the logs were ingested.
+		for _, payload := range payloads["winlog2_space"] {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_space", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		// For pipeline_v1_v2_simultaneously, we expect logs to show up *twice*: once for v1 and once for v2.
+		// They can be distinguished by the presence of v1-only and v2-only fields
+		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
+		for _, payload := range payloads["winlog2_default"] {
+			queryV1 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeGenerated:*"
+			queryV2 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeCreated:*"
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "windows_event_log", time.Hour, queryV1); err != nil {
+				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
+			}
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, queryV2); err != nil {
+				t.Fatalf("expected v2 log for %s but it wasn't found: err=%v", payload, err)
+			}
+		}
+
+		// Verify that the warning message has the correct severity.
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
+			t.Fatal(err)
+		}
+
+		// For winlog2_xml, verify the following:
+		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml).
+		// - that jsonPayload.raw_xml contains a valid XML document.
+		// - that a few sample fields are present in that XML document.
+		for _, payload := range payloads["winlog2_xml"] {
+			log, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "winlog2_xml", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// We don't know (and don't care about) the runtime type graph of log.Payload, so normalize it into a simple map.
+			rawJson, err := json.Marshal(log.Payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			jsonMap := map[string]any{}
+			err = json.Unmarshal(rawJson, &jsonMap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(jsonMap) != 3 ||
+				!hasKeyWithValueType[string](jsonMap, "Message") ||
+				!hasKeyWithValueType[[]any](jsonMap, "StringInserts") ||
+				!hasKeyWithValueType[string](jsonMap, "raw_xml") {
+				t.Fatalf("expected exactly 3 fields in jsonPayload (Message, StringInserts, raw_xml): jsonPayload=%+v", jsonMap)
+			}
+			rawXml := jsonMap["raw_xml"].(string)
+			xmlStruct := struct {
+				System struct {
+					TimeCreated struct {
+						SystemTime string `xml:",attr"`
+					}
+				}
+				EventData struct {
+					Data string
+				}
+			}{}
+			err = xml.Unmarshal([]byte(rawXml), &xmlStruct)
+			if err != nil {
+				t.Fatalf("expected raw_xml to contain a valid XML document: raw_xml=%s, err=%v", rawXml, err)
+			}
+			if xmlStruct.EventData.Data == "" || xmlStruct.System.TimeCreated.SystemTime == "" {
+				t.Fatalf("expected raw_xml to contain a few sample fields, but it didn't: raw_xml=%s", rawXml)
+			}
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].render_as_xml",
+				Value:   "true",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
+func hasKeyWithValueType[V any](m map[string]any, k string) bool {
+	v, okKey := m[k]
+	if !okKey {
+		return false
+	}
+	_, okValue := v.(V)
+	return okValue
+}
+
+func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
+			t.Fatal(err)
+		}
+		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Write an event and record its approximate time
+		testMessage := "TestWindowsEventLogWithNonDefaultTimeZone"
+		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, testMessage); err != nil {
+			t.Fatal(err)
+		}
+		eventTime := time.Now()
+
+		// Validate that the log written to Cloud Logging has a timestamp that's
+		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
+		logEntry, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "windows_event_log", 24*time.Hour, logMessageQueryForPlatform(platform, testMessage), gce.QueryMaxAttempts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		timeDiff := eventTime.Sub(logEntry.Timestamp).Abs()
+		if timeDiff.Minutes() > 5 {
+			t.Fatalf("timestamp differs by %v minutes", timeDiff.Minutes())
+		}
+	})
+}
+
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -1728,20 +2037,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-	}
-
-	if t.Failed() {
-		// Return early instead of waiting up to 7 minutes for the second round
-		// of querying for metrics.
-		return
 	}
 
 	// Now that we've established that the preceding metrics are being uploaded
@@ -3002,6 +3305,7 @@ combined:
   receivers:
     otlp:
       type: otlp
+      grpc_endpoint: 0.0.0.0:4317
 metrics:
   service:
     pipelines:
@@ -3015,6 +3319,10 @@ traces:
 		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
 
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
@@ -3042,6 +3350,45 @@ traces:
 			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, false); err != nil {
 				t.Error(err)
 			}
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
 		}
 	})
 }
@@ -3232,6 +3579,88 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkFunc("Network", "FAIL")
 		checkFunc("API", "ERROR")
 		checkFunc("Ports", "PASS")
+	})
+}
+
+func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--boot-disk-size", "100G"})
+		logPath := logPathForPlatform(vm.Platform)
+		logsPerSecond := 100000
+		config := fmt.Sprintf(`logging:
+  receivers:
+    log_syslog:
+      type: files
+      include_paths:
+      - %s
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [log_syslog]
+        processors: []`, logPath)
+
+		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+		var bufferDir string
+		generateLogPerSecondFile := fmt.Sprintf(`
+        x=1
+        while [ $x -le %d ]
+        do
+          echo "Hello world! $x" >> ~/log_%d.log
+          ((x++))
+        done`, logsPerSecond, logsPerSecond)
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+
+		generateLogsScript := fmt.Sprintf(`
+			mkdir -p %s
+			x=1
+			while [ $x -le 420 ]
+			do
+			  cp ~/log_%d.log %s/$x.log
+			  ((x++))
+
+			  sleep 1
+			done
+			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDir)
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		byteCount, err := strconv.Atoi(strings.TrimSuffix(output.Stdout, "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Threshhold of ~6.5GiB since du returns size in KB
+		threshold := 6500000
+		if byteCount > threshold {
+			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
+		}
+
+		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
 	})
 }
 

@@ -1,0 +1,9 @@
+[19:17] "channels" must contain at least one channel when "receiver_version" is 2 or higher
+  16 |   receivers:
+  17 |     receiver_1:
+  18 |       type: windows_event_log
+> 19 |       channels: []
+                       ^
+  20 |       receiver_version: 2
+  21 |   service:
+  22 |     pipelines:

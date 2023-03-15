@@ -514,13 +514,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
-	if err != nil {
-		return err
+	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if ft_err != nil {
+		return multierr.Append(err, ft_err)
 	}
 
-	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
-	return err
+	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
@@ -645,6 +644,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		// All integrations are expected to set the instrumentation_source label.
 		for _, m := range metadata.ExpectedMetrics {
+			// The windows metrics that do not target workload.googleapis.com cannot set
+			// the instrumentation_ labels
+			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
+				continue
+			}
 			if m.Labels == nil {
 				m.Labels = map[string]string{}
 			}
@@ -942,7 +946,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
 				}

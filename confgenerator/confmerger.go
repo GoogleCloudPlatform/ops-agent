@@ -51,7 +51,6 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 	// built-in configs do not contain these sections.
 	original.Combined = overrides.Combined
 	original.Traces = overrides.Traces
-	original.Global = overrides.Global
 
 	// For "default_pipeline", we go one level deeper.
 	// this covers 2 cases:

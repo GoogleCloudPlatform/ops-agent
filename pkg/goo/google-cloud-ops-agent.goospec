@@ -20,8 +20,7 @@
     "out\\bin\\opentelemetry-java-contrib-jmx-metrics.jar": "{{$INSTALL_DIR}}/bin/opentelemetry-java-contrib-jmx-metrics.jar",
     "out\\bin\\google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
     "out\\bin\\google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe",
-    "out\\bin\\google-cloud-ops-agent-diagnostics.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-diagnostics.exe",
-    "out\\bin\\google-cloud-ops-agent-wrapper.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-wrapper.exe"
+    "out\\bin\\google-cloud-ops-agent-diagnostics.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-diagnostics.exe"
   },
   "install": {
     "path": "pkg/goo/maint.ps1",
@@ -42,7 +41,6 @@
         "out/bin/opentelemetry-java-contrib-jmx-metrics.jar",
         "out/bin/google-cloud-ops-agent.exe",
         "out/bin/google-cloud-ops-agent-diagnostics.exe",
-        "out/bin/google-cloud-ops-agent-wrapper.exe",
         "confgenerator/default-config.yaml",
         "pkg/goo/maint.ps1"
       ]
