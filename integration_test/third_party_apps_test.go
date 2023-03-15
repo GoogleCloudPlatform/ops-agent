@@ -944,7 +944,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
 				}
