@@ -967,15 +967,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		// TODO(b/255311117#comment38): move `googet update` back to sysprep-specialize-script-cmd once the bug is fixed
-		_, ok1 := metadataCopy["sysprep-specialize-script-cmd"]
-		_, ok2 := metadataCopy["windows-startup-script-cmd"]
-		if ok1 || ok2 {
-			return nil, errors.New("you cannot pass a sysprep or startup script for Windows instances because they are needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
-		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because they are needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		}
 		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true install google-compute-engine-ssh"
-		metadataCopy["windows-startup-script-cmd"] = "googet -noconfirm=true update"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
