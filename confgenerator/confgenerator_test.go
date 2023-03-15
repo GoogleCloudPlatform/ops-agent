@@ -279,7 +279,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// to clean up the existing lua files left aren't being generated anymore.
 	for file := range existingFiles {
 		if golden.FlagUpdate() {
-			err := os.Remove(filepath.Join("testdata", testDir, file))
+			err := os.Remove(filepath.Join("testdata", testDir, goldenDir, file))
 			if err != nil {
 				return err
 			}
