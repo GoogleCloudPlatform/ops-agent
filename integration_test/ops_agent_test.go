@@ -1689,6 +1689,10 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
@@ -1726,6 +1730,10 @@ func TestWindowsEventLogV2(t *testing.T) {
 		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
 
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
@@ -1831,16 +1839,16 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Value:   "false",
 			},
 			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "true",
-			},
-			{
 				Module:  "metrics",
 				Feature: "service:pipelines",
 				Key:     "default_pipeline_overridden",
 				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "true",
 			},
 			{
 				Module:  "logging",
@@ -1857,6 +1865,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 			{
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
+				Key:     "[0].channels.__length",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
 				Key:     "[1].enabled",
 				Value:   "true",
 			},
@@ -1865,6 +1879,12 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Feature: "receivers:windows_event_log",
 				Key:     "[1].receiver_version",
 				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].channels.__length",
+				Value:   "1",
 			},
 			{
 				Module:  "logging",
@@ -1884,9 +1904,15 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Key:     "[2].render_as_xml",
 				Value:   "true",
 			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].channels.__length",
+				Value:   "2",
+			},
 		}
 
-		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
