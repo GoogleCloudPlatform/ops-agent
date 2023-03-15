@@ -27,8 +27,14 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
+ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
+    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in. If not provided, that means that the packages are accessed through
+	packages.cloud.google.com instead, which may point to Cloud Rapture or
+	Artifact Registry under the hood.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-.deb/.rpm/.goo files to install on the testing VMs.
+    .deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
+    REPO_SUFFIX.
 */
 package integration_test
 
@@ -213,12 +219,15 @@ type packageLocation struct {
 	// Package repository suffix to install from. Setting this to ""
 	// means to install the latest stable release.
 	repoSuffix string
+	// Region the packages live in in Artifact Registry.
+	artifactRegistryRegion string
 }
 
 func locationFromEnvVars() packageLocation {
 	return packageLocation{
-		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:    os.Getenv("REPO_SUFFIX"),
+		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
 
@@ -250,7 +259,8 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		envVars := "REPO_SUFFIX="+location.repoSuffix+" ARTIFACT_REGISTRY_REGION="+location.artifactRegistryRegion
+		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
