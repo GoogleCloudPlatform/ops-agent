@@ -437,13 +437,6 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 				return nil, nil
 			}
 			if len(tsList) < minimumRequiredSeries {
-				fmt.Printf("len(%d)", len(tsList))
-				fmt.Println("=====================")
-				for _, i := range tsList {
-					fmt.Printf("%v\n", i.Metric.Labels)
-				}
-				fmt.Println("=====================")
-
 				return nil, ErrInvalidIteratorLength
 			}
 			// Success

@@ -1856,7 +1856,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
 				Key:     "[0].channels.__length",
-				Value:   "1",
+				Value:   "2",
 			},
 			{
 				Module:  "logging",
@@ -1874,7 +1874,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Module:  "logging",
 				Feature: "receivers:windows_event_log",
 				Key:     "[1].channels.__length",
-				Value:   "2",
+				Value:   "1",
 			},
 			{
 				Module:  "logging",
