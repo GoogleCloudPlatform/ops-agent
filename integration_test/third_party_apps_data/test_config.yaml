@@ -22,16 +22,24 @@ per_application_overrides:
     # if at all.
     # TODO: reenable distros incrementally.
     platforms_to_skip:
-      - asdf
+      - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
+      - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
+      - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
   cassandra:
     platforms_to_skip:
-      - asdf
-  mysql:
-    platforms_to_skip:
-      - asdf
+      - centos-7 # see https://issues.apache.org/jira/browse/CASSANDRA-18059 for fix.
+      - sles-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
+      - sles-15 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
+      - ubuntu-2004-lts # GPG error [...] the public key is not available: NO_PUBKEY AA8E81B4331F7F50 NO_PUBKEY 112695A0E562B32A
   nginx:
     platforms_to_skip:
-      - asdf
+      - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+      - sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+  redis:
+    platforms_to_skip:
+      - centos-7 # QueryLog() failed: redis not found, exhausted retries
+      - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
+      - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   oracledb:
     # Oracle DB is difficult to install on these platforms.
     platforms_to_skip:
@@ -46,7 +54,6 @@ per_application_overrides:
   wildfly:
     platforms_to_skip:
       - centos-7
-      - centos-8
       - rocky-linux-8
       - sles-12
       - sles-15
