@@ -11,6 +11,10 @@
   key: "[0].enabled"
   value: "true"
 - module: logging
+  feature: receivers:kafka
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:syslog
   key: "[1].enabled"
   value: "true"

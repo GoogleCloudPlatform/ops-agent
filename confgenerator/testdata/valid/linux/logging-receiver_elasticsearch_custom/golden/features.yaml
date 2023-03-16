@@ -12,12 +12,20 @@
   value: "true"
 - module: logging
   feature: receivers:elasticsearch_gc
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:elasticsearch_gc
   key: "[1].enabled"
   value: "true"
 - module: logging
   feature: receivers:elasticsearch_json
   key: "[2].enabled"
   value: "true"
+- module: logging
+  feature: receivers:elasticsearch_json
+  key: "[2].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:elasticsearch_json
   key: "[3].enabled"
