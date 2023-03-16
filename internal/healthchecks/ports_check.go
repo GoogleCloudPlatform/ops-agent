@@ -45,6 +45,10 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 }
 
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
+	if isSubagentActive("google-cloud-ops-agent-fluent-bit") && isSubagentActive("google-cloud-ops-agent-opentelemetry-collector") {
+		return nil
+	}
+
 	// fluent-bit listens on tcp4. opentelemetry-collector listens in both tcp4 and tcp6.
 	tcpHost := "0.0.0.0"
 	tcp6Host := "::"

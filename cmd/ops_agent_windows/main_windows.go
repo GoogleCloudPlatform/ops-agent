@@ -32,6 +32,7 @@ const serviceDisplayName = "Google Cloud Ops Agent"
 var (
 	installServices   = flag.Bool("install", false, "whether to install the services")
 	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
+	healthChecks      = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
 func main() {
@@ -57,6 +58,16 @@ func main() {
 				log.Fatal(err)
 			}
 			infoLog.Printf("uninstalled services")
+		} else if *healthChecks {
+			healthCheckResults := getHealthCheckResults()
+			for _, result := range healthCheckResults {
+				if result.Err != nil {
+					log.Printf("Error: %s", result.Message)
+				} else {
+					log.Println(result.Message)
+				}
+			}
+			log.Println("Health checks finished")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
 			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")

@@ -14,8 +14,6 @@
 
 package healthchecks
 
-import "fmt"
-
 // Error classification
 const (
 	Api        = "API"
@@ -36,25 +34,6 @@ type HealthCheckError struct {
 
 func (e HealthCheckError) Error() string {
 	return e.Message
-}
-
-func (e HealthCheckError) FullMessage(healthCheckName string) string {
-	return fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
-		healthCheckName, e.Code, e.Message, e.Action, e.ResourceLink)
-}
-
-type HealthCheckMessage interface {
-	FullMessage(check string) string
-}
-
-type MutliHealthCheckError []HealthCheckError
-
-func (e MutliHealthCheckError) Error() {
-
-}
-
-func (e MutliHealthCheckError) FullMessage() {
-
 }
 
 var (
@@ -95,7 +74,7 @@ var (
 		Class:        Connection,
 		Message:      "Request to packages.cloud.google.com failed.",
 		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
 		IsFatal:      false,
 	}
 	DLApiConnErr = HealthCheckError{
@@ -103,15 +82,15 @@ var (
 		Class:        Connection,
 		Message:      "Request to dl.google.com failed",
 		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
 		IsFatal:      false,
 	}
 	MetaApiConnErr = HealthCheckError{
 		Code:         "MetaApiConnErr",
 		Class:        Connection,
-		Message:      "Request to GCE Metadata server",
+		Message:      "Request to GCE Metadata server failed",
 		Action:       "Check your internet connection and firewall rules.",
-		ResourceLink: "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
 		IsFatal:      true,
 	}
 	LogApiScopeErr = HealthCheckError{

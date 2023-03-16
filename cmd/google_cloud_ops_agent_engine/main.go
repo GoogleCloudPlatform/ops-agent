@@ -43,16 +43,6 @@ func runHealthChecks(registry healthchecks.HealthCheckRegistry) {
 	}
 }
 
-func getHealthCheckRegistry() healthchecks.HealthCheckRegistry {
-	if *healthChecks {
-		return healthchecks.HealthCheckRegistry{
-			healthchecks.NetworkCheck{},
-			healthchecks.PortsCheck{},
-		}
-	}
-	return healthchecks.HealthCheckRegistryFactory()
-}
-
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
@@ -74,7 +64,7 @@ func run() error {
 	log.Printf("Merged config:\n%s", uc)
 
 	if *service == "" {
-		runHealthChecks(getHealthCheckRegistry())
+		runHealthChecks(healthchecks.HealthCheckRegistryFactory())
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			return nil

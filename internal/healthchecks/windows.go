@@ -19,9 +19,29 @@ package healthchecks
 
 import (
 	"errors"
-	"golang.org/x/sys/windows"
 	"net"
+	"os/exec"
+	"strings"
+
+	"golang.org/x/sys/windows"
 )
+
+func isSubagentActive(subagent string) bool {
+	sc := exec.Command("sc", "query", subagent)
+	findStr := exec.Command("findstr", "\"STATE\"")
+	pipe, _ := ps.StdoutPipe()
+	defer pipe.Close()
+
+	findStr.Stdin = pipe
+	sc.Start()
+
+	res, err := findStr.Output()
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(string(res), "RUNNING")
+}
 
 func isPortUnavailableError(err error) bool {
 	return errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES)

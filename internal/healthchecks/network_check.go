@@ -20,7 +20,12 @@ import (
 )
 
 var (
-	requests = [...]networkCheckRequest{
+	requests = []struct {
+		name             string
+		url              string
+		successMessage   string
+		healthCheckError HealthCheckError
+	}{
 		{
 			name:             "Logging API",
 			url:              "https://logging.googleapis.com/$discovery/rest",
@@ -58,13 +63,6 @@ type NetworkCheck struct{}
 
 func (c NetworkCheck) Name() string {
 	return "Network Check"
-}
-
-type networkCheckRequest struct {
-	name             string
-	url              string
-	successMessage   string
-	healthCheckError HealthCheckError
 }
 
 func (c NetworkCheck) RunCheck(logger *log.Logger) error {
