@@ -1,0 +1,2 @@
+# Unable to install Aerospike on SLES 12 SP5, or RHEL 9
+platforms_to_skip: [sles-12, rocky-linux-9]

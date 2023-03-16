@@ -1,0 +1,6 @@
+# Skip various failing platforms for now.
+# TODO: Fix errors and reenable all distros.
+platforms_to_skip:
+  - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
+  - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
+  - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory

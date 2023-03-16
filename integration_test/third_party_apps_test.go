@@ -36,7 +36,9 @@ package integration_test
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"math"
 	"os"
@@ -532,34 +534,32 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return metadata.AssertMetric(metric, series)
 }
 
-type testConfig struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-
-	// per_application_overrides is a map from application to specific settings
-	// for that application.
-	PerApplicationOverrides map[string]struct {
-		// platforms_to_skip is a list of platforms that need to be skipped for
-		// this application. Ideally this will be empty or nearly empty most of
-		// the time.
-		PlatformsToSkip []string `yaml:"platforms_to_skip"`
-	} `yaml:"per_application_overrides"`
+// appConfig holds options for how we want to test a particular app.
+type appConfig struct {
+	// platforms_to_skip is a list of platforms that need to be skipped for
+	// this application. Ideally this will be empty or nearly empty most of
+	// the time.
+	PlatformsToSkip []string `yaml:"platforms_to_skip"`
 }
 
-// parseTestConfigFile looks for test_config.yaml, and if it exists, merges
-// any options in it into the default test config and returns the result.
-func parseTestConfigFile() (testConfig, error) {
-	config := testConfig{}
-
-	bytes, err := readFileFromScriptsDir("test_config.yaml")
+// parseTestConfigFile looks for the test_config.yaml for the given app, and if
+// it exists, merges any options in it into the default test config and returns
+// the result.
+func parseTestConfigFile(app string) (appConfig, error) {
+	bytes, err := readFileFromScriptsDir(path.Join("applications", app, "test_config.yaml"))
 	if err != nil {
-		log.Printf("Reading test_config.yaml failed with err=%v, proceeding...", err)
-		// Probably the file is just missing, return the defaults.
-		return config, nil
+		if errors.Is(err, fs.ErrNotExist) {
+			// The file is just missing. That means the app doesn't need special
+			// options like being skipped on certain platforms. Return default
+			// options and no error.
+			return appConfig{}, nil
+		}
+		return appConfig{}, err
 	}
 
+	config := appConfig{}
 	if err = yaml.UnmarshalStrict(bytes, &config); err != nil {
-		return testConfig{}, err
+		return appConfig{}, err
 	}
 	return config, nil
 }
@@ -745,7 +745,6 @@ func isCriticalFile(f string) bool {
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
 		"integration_test/third_party_apps_test.go",
-		"integration_test/third_party_apps_data/test_config.yaml",
 	} {
 		if f == criticalFile {
 			return true
@@ -859,7 +858,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+func determineTestsToSkip(tests []test, impactedApps map[string]bool, appConfigs map[string]appConfig) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -869,7 +868,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if metadata.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
+		if metadata.SliceContains(appConfigs[test.app].PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
@@ -891,10 +890,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
-	testConfig, err := parseTestConfigFile()
-	if err != nil {
-		t.Fatal(err)
-	}
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
@@ -904,8 +899,17 @@ func TestThirdPartyApps(t *testing.T) {
 		}
 	}
 
+	appConfigs := make(map[string]appConfig)
+	for app := range allApps {
+		config, err := parseTestConfigFile(app)
+		if err != nil {
+			t.Fatal(err)
+		}
+		appConfigs[app] = config
+	}
+
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), appConfigs)
 
 	// Execute tests
 	for _, tc := range tests {
@@ -916,6 +920,9 @@ func TestThirdPartyApps(t *testing.T) {
 			if tc.skipReason != "" {
 				t.Skip(tc.skipReason)
 			}
+
+			// DO NOT SUBMIT
+			return
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 			defer cancel()

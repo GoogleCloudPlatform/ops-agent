@@ -13,18 +13,6 @@
 # limitations under the License.
 
 per_application_overrides:
-  aerospike:
-    # Unable to install Aerospike on SLES 12 SP5, or RHEL 9
-    platforms_to_skip: [sles-12, rocky-linux-9]
-  apache:
-    # Skip various failing platforms for now.
-    # New applications should use platforms_to_skip sparingly
-    # if at all.
-    # TODO: reenable distros incrementally.
-    platforms_to_skip:
-      - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
-      - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
-      - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
   cassandra:
     platforms_to_skip:
       - centos-7 # see https://issues.apache.org/jira/browse/CASSANDRA-18059 for fix.
