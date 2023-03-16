@@ -27,8 +27,11 @@ minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0
 supported_operating_systems: linux
-# couchdb is not supported on sles, rhel9
-platforms_to_skip: [sles-12, sles-15, rocky-linux-9]
+platforms_to_skip:
+  # couchdb is not supported on sles, rhel9
+  - sles-12
+  - sles-15
+  - rocky-linux-9
 supported_app_version: ["2.3+", "3.1+"]
 expected_metrics:
   - type: workload.googleapis.com/couchdb.average_request_time
