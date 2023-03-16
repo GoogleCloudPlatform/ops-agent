@@ -10,3 +10,7 @@
   feature: processors:exclude_metrics
   key: "[0].enabled"
   value: "true"
+- module: metrics
+  feature: processors:exclude_metrics
+  key: "[0].metrics_pattern.__length"
+  value: "1"
