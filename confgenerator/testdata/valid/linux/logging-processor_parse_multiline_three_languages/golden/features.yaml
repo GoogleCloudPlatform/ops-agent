@@ -11,6 +11,26 @@
   key: "[0].enabled"
   value: "true"
 - module: logging
+  feature: receivers:files
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
   feature: processors:parse_multiline
   key: "[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[0].match_any.__length"
+  value: "3"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[0].match_any.[0].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[0].match_any.[1].enabled"
+  value: "true"
+- module: logging
+  feature: processors:parse_multiline
+  key: "[0].match_any.[2].enabled"
   value: "true"

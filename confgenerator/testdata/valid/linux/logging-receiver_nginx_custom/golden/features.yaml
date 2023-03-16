@@ -11,9 +11,17 @@
   key: "[0].enabled"
   value: "true"
 - module: logging
+  feature: receivers:nginx_access
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:nginx_error
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: receivers:nginx_error
+  key: "[1].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:nginx_access
   key: "[2].enabled"

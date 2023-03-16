@@ -15,6 +15,10 @@
   key: "[1].enabled"
   value: "true"
 - module: logging
+  feature: receivers:saphana
+  key: "[1].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:syslog
   key: "[2].enabled"
   value: "true"

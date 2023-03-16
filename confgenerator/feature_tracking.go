@@ -22,13 +22,9 @@ import (
 	"strings"
 )
 
-// Errors returned by ExtractFeatures can be tested against these errors using
-// errors.Is
 var (
 	ErrTrackingInlineStruct   = errors.New("cannot have tracking on inline struct")
 	ErrTrackingOverrideStruct = errors.New("struct that has tracking tag must not be empty")
-	ErrTrackingOverrideMap    = errors.New("map that has tracking tag must not be empty")
-	ErrInvalidType            = errors.New("object in path must be of type Component")
 )
 
 type TrackingOverrideMapError struct {
@@ -149,7 +145,8 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 	return features, nil
 }
 
-func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, error) {
+// TODO(b/272536539): add time.Duration to auto tracking
+func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature, error) {
 	if customFeatures, ok := c.Interface().(CustomFeatures); ok {
 		cfs, err := customFeatures.ExtractFeatures()
 		if err != nil {
@@ -168,7 +165,7 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		return features, nil
 	}
 
-	if m.isExcluded {
+	if md.isExcluded {
 		return nil, nil
 	}
 	t := c.Type()
@@ -191,24 +188,24 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 	switch kind := t.Kind(); {
 	case kind == reflect.Struct:
 		// If struct has tracking it must have a value
-		if m.hasTracking && !m.hasOverride {
+		if md.hasTracking && !md.hasOverride {
 			return nil, ErrTrackingOverrideStruct
 		}
 
-		if m.yamlTag != "" {
-			feature.Key = append(feature.Key, m.yamlTag)
+		if md.yamlTag != "" {
+			feature.Key = append(feature.Key, md.yamlTag)
 		}
 
-		if m.hasTracking {
+		if md.hasTracking {
 			// If struct is inline there is no associated name for key generation
 			// By default inline structs of a tracked field are also tracked
-			if m.isInline {
+			if md.isInline {
 				return nil, ErrTrackingInlineStruct
 			} else {
 				// For structs that are in a Component. An extra metric is added with
 				// the value being the override value from the yaml tag
 				ftr := feature
-				ftr.Value = m.overrideValue
+				ftr.Value = md.overrideValue
 				features = append(features, ftr)
 			}
 		}
@@ -229,7 +226,15 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 				continue
 			}
 
-			tf, err := trackingFeatures(v.Field(i), getMetadata(field), feature)
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append([]string{}, feature.Key...),
+				Value:  feature.Value,
+			}
+
+			tf, err := trackingFeatures(v.Field(i), getMetadata(field), f)
 			if err != nil {
 				return nil, err
 			}
@@ -237,18 +242,108 @@ func trackingFeatures(c reflect.Value, m metadata, feature Feature) ([]Feature, 
 		}
 	case kind == reflect.Map:
 
-		// TODO(b/258211839): Add support for tracking maps using feature tracking
-		if feature.Type != "" {
-			return nil, &TrackingOverrideMapError{FieldName: feature.Type}
+		// Create map length metric
+		features = append(features, Feature{
+			Module: feature.Module,
+			Kind:   feature.Kind,
+			Type:   feature.Type,
+			Key:    append(feature.Key, md.yamlTag, "__length"),
+			Value:  fmt.Sprintf("%d", v.Len()),
+		})
+
+		keys := make([]string, 0)
+		for _, k := range v.MapKeys() {
+			keys = append(keys, k.String())
+		}
+		sort.Strings(keys)
+
+		for i, key := range keys {
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append(feature.Key, md.yamlTag),
+			}
+			vAtKey := v.MapIndex(reflect.ValueOf(key))
+			t := vAtKey.Type()
+			fs := make([]Feature, 0)
+
+			k := fmt.Sprintf("[%d]", i)
+			if md.keepKeys {
+				features = append(features, Feature{
+					Module: feature.Module,
+					Kind:   feature.Kind,
+					Type:   feature.Type,
+					Key:    append(feature.Key, md.yamlTag, k, "__key"),
+					Value:  key,
+				})
+			}
+
+			mdCopy := md.deepCopy()
+
+			var err error
+			if t.Kind() == reflect.Struct {
+				f.Key = append(f.Key, k)
+				mdCopy.yamlTag = ""
+				fs, err = trackingFeatures(vAtKey, mdCopy, f)
+			} else {
+				mdCopy.yamlTag = k
+				fs, err = trackingFeatures(vAtKey, mdCopy, f)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+			features = append(features, fs...)
+		}
+
+	case kind == reflect.Slice || kind == reflect.Array:
+
+		// Create array length metric
+		features = append(features, Feature{
+			Module: feature.Module,
+			Kind:   feature.Kind,
+			Type:   feature.Type,
+			Key:    append(feature.Key, md.yamlTag, "__length"),
+			Value:  fmt.Sprintf("%d", v.Len()),
+		})
+
+		for i := 0; i < v.Len(); i++ {
+			f := Feature{
+				Module: feature.Module,
+				Kind:   feature.Kind,
+				Type:   feature.Type,
+				Key:    append(feature.Key, md.yamlTag),
+			}
+
+			v := v.Index(i)
+			t := v.Type()
+			fs := make([]Feature, 0)
+			m2 := md.deepCopy()
+
+			var err error
+			if t.Kind() == reflect.Struct {
+				f.Key = append(f.Key, fmt.Sprintf("[%d]", i))
+				m2.yamlTag = ""
+				fs, err = trackingFeatures(v, m2, f)
+			} else {
+				m2.yamlTag = fmt.Sprintf("[%d]", i)
+				fs, err = trackingFeatures(v, m2, f)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+			features = append(features, fs...)
 		}
 
 	default:
-		if skipField(v, m) {
+		if skipField(v, md) {
 			return nil, nil
 		}
-		feature.Key = append(feature.Key, m.yamlTag)
-		if m.hasOverride {
-			feature.Value = m.overrideValue
+		feature.Key = append(feature.Key, md.yamlTag)
+		if md.hasOverride {
+			feature.Value = md.overrideValue
 		} else {
 			feature.Value = fmt.Sprintf("%v", v.Interface())
 		}
@@ -278,16 +373,37 @@ type metadata struct {
 	isInline       bool
 	hasTracking    bool
 	hasOverride    bool
+	keepKeys       bool
 	yamlTag        string
 	overrideValue  string
 	componentIndex int
 }
 
+func (m metadata) deepCopy() metadata {
+	return metadata{
+		isExcluded:     m.isExcluded,
+		isInline:       m.isInline,
+		hasTracking:    m.hasTracking,
+		hasOverride:    m.hasOverride,
+		keepKeys:       m.keepKeys,
+		yamlTag:        m.yamlTag,
+		overrideValue:  m.overrideValue,
+		componentIndex: m.componentIndex,
+	}
+}
+
 func getMetadata(field reflect.StructField) metadata {
 	trackingTag, hasTracking := field.Tag.Lookup("tracking")
 	hasOverride := false
-	if trackingTag != "" {
+	hasKeepKeys := false
+
+	trackingTags := strings.Split(trackingTag, ",")
+
+	if trackingTags[0] != "" {
 		hasOverride = true
+	}
+	if len(trackingTags) > 1 && trackingTags[1] == "keys" {
+		hasKeepKeys = true
 	}
 	isExcluded := trackingTag == "-"
 
@@ -306,9 +422,10 @@ func getMetadata(field reflect.StructField) metadata {
 	return metadata{
 		hasTracking:   hasTracking,
 		hasOverride:   hasOverride,
+		keepKeys:      hasKeepKeys,
 		isExcluded:    isExcluded,
 		isInline:      hasInline,
-		overrideValue: trackingTag,
+		overrideValue: trackingTags[0],
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
