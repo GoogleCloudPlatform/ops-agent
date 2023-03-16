@@ -11,6 +11,10 @@
   key: "[0].enabled"
   value: "true"
 - module: logging
+  feature: receivers:files
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
   feature: processors:parse_json
   key: "[0].enabled"
   value: "true"

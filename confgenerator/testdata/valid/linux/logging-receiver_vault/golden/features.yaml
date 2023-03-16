@@ -10,3 +10,7 @@
   feature: receivers:vault_audit
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:vault_audit
+  key: "[0].include_paths.__length"
+  value: "1"

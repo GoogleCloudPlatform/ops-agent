@@ -29,6 +29,9 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
+ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
+    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in.
 */
 
 package integration_test
@@ -148,10 +151,9 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // Installs the agent according to the instructions in a script
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	environmentVariables := make(map[string]string)
-	suffix := os.Getenv("REPO_SUFFIX")
-	if suffix != "" {
-		environmentVariables["REPO_SUFFIX"] = suffix
+	environmentVariables := map[string]string{
+		"REPO_SUFFIX": os.Getenv("REPO_SUFFIX"),
+		"ARTIFACT_REGISTRY_REGION": os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
@@ -944,7 +946,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
 				}

@@ -12,5 +12,9 @@
   value: "true"
 - module: logging
   feature: receivers:windows_event_log
+  key: "[0].channels.__length"
+  value: "3"
+- module: logging
+  feature: receivers:windows_event_log
   key: "[0].receiver_version"
   value: "2"
