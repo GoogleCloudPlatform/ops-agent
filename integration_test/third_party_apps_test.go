@@ -36,9 +36,7 @@ package integration_test
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"math"
 	"os"
@@ -534,36 +532,6 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	return metadata.AssertMetric(metric, series)
 }
 
-// appConfig holds options for how we want to test a particular app.
-type appConfig struct {
-	// platforms_to_skip is a list of platforms that need to be skipped for
-	// this application. Ideally this will be empty or nearly empty most of
-	// the time.
-	PlatformsToSkip []string `yaml:"platforms_to_skip"`
-}
-
-// parseTestConfigFile looks for the test_config.yaml for the given app, and if
-// it exists, merges any options in it into the default test config and returns
-// the result.
-func parseTestConfigFile(app string) (appConfig, error) {
-	bytes, err := readFileFromScriptsDir(path.Join("applications", app, "test_config.yaml"))
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// The file is just missing. That means the app doesn't need special
-			// options like being skipped on certain platforms. Return default
-			// options and no error.
-			return appConfig{}, nil
-		}
-		return appConfig{}, err
-	}
-
-	config := appConfig{}
-	if err = yaml.UnmarshalStrict(bytes, &config); err != nil {
-		return appConfig{}, err
-	}
-	return config, nil
-}
-
 // runSingleTest starts with a fresh VM, installs the app and agent on it,
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
@@ -858,7 +826,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(tests []test, impactedApps map[string]bool, appConfigs map[string]appConfig) {
+func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -868,8 +836,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, appConfigs
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if metadata.SliceContains(appConfigs[test.app].PlatformsToSkip, test.platform) {
-			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
+			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
@@ -899,17 +867,8 @@ func TestThirdPartyApps(t *testing.T) {
 		}
 	}
 
-	appConfigs := make(map[string]appConfig)
-	for app := range allApps {
-		config, err := parseTestConfigFile(app)
-		if err != nil {
-			t.Fatal(err)
-		}
-		appConfigs[app] = config
-	}
-
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), appConfigs)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps))
 
 	// Execute tests
 	for _, tc := range tests {
@@ -920,9 +879,6 @@ func TestThirdPartyApps(t *testing.T) {
 			if tc.skipReason != "" {
 				t.Skip(tc.skipReason)
 			}
-
-			// DO NOT SUBMIT
-			return
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 			defer cancel()

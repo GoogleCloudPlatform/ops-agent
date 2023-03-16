@@ -29,6 +29,8 @@ minimum_supported_agent_version:
   metrics: 2.20.0
   logging: 2.9.0
 supported_operating_systems: linux
+# postgres is not supported on rhel9
+platforms_to_skip: [rocky-linux-9]
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE
