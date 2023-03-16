@@ -29,7 +29,7 @@ import (
 func isSubagentActive(subagent string) bool {
 	sc := exec.Command("sc", "query", subagent)
 	findStr := exec.Command("findstr", "\"STATE\"")
-	pipe, _ := ps.StdoutPipe()
+	pipe, _ := sc.StdoutPipe()
 	defer pipe.Close()
 
 	findStr.Stdin = pipe
