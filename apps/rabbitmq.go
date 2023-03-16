@@ -154,6 +154,11 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
+				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
+				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
+			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
