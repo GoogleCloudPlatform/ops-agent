@@ -24,9 +24,12 @@ import (
 	"syscall"
 )
 
-func isSubagentActive(subagent string) bool {
+func isSubagentActive(subagent string) (bool, error) {
 	_, err := exec.Command("systemctl", "is-active", "--quiet", subagent).Output()
-	return err == nil
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func isPortUnavailableError(err error) bool {

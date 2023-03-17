@@ -45,7 +45,15 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 }
 
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
-	if isSubagentActive("google-cloud-ops-agent-fluent-bit") && isSubagentActive("google-cloud-ops-agent-opentelemetry-collector") {
+	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
+	if err != nil {
+		return err
+	}
+	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
+	if err != nil {
+		return err
+	}
+	if fbActive && ocActive {
 		return nil
 	}
 

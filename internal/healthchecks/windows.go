@@ -26,21 +26,13 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func isSubagentActive(subagent string) bool {
-	sc := exec.Command("sc", "query", subagent)
-	findStr := exec.Command("findstr", "\"STATE\"")
-	pipe, _ := sc.StdoutPipe()
-	defer pipe.Close()
-
-	findStr.Stdin = pipe
-	sc.Start()
-
-	res, err := findStr.Output()
+func isSubagentActive(subagent string) (bool, err) {
+	cmd := exec.Command("powershell", "(Get-Service google-cloud-ops-agent-fluent-bit).Status")
+	output, err := cmd.Output()
 	if err != nil {
-		return false
+		panic(err)
 	}
-
-	return strings.Contains(string(res), "RUNNING")
+	return strings.TrimSpace(string(output)) == "Running", nil
 }
 
 func isPortUnavailableError(err error) bool {
