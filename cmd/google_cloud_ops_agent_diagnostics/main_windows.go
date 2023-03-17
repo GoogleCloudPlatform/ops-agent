@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -38,6 +39,7 @@ const (
 )
 
 type service struct {
+	ctx      context.Context
 	log      debug.Log
 	userConf string
 }
@@ -46,7 +48,7 @@ func (s *service) Handle(err error) {
 	s.log.Error(DiagnosticsEventID, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
-func run() error {
+func run(ctx context.Context) error {
 	name := "google-cloud-ops-agent-diagnostics"
 	elog, err := eventlog.Open(name)
 	if err != nil {
@@ -66,6 +68,9 @@ func run() error {
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+	ctx, cancel := context.WithCancel(s.ctx)
+	defer cancel()
+
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
@@ -81,8 +86,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	s.log.Info(DiagnosticsEventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
-	death := make(chan bool)
-
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
 	}()
@@ -96,7 +99,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 				case svc.Interrogate:
 					changes <- c.CurrentStatus
 				case svc.Stop, svc.Shutdown:
-					death <- true
+					cancel()
 					return
 				default:
 					s.log.Error(DiagnosticsEventID, fmt.Sprintf("unexpected control request #%d", c))
@@ -108,7 +111,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	// Set otel error handler
 	otel.SetErrorHandler(s)
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(userUc, mergedUc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 	if err != nil {
 		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
 		return false, ERROR_INVALID_DATA

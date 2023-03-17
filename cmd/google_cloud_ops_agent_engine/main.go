@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -53,8 +54,9 @@ func main() {
 	}
 }
 func run() error {
+	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
@@ -67,5 +69,5 @@ func run() error {
 
 	runStartupChecks(*service)
 
-	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
+	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
 }

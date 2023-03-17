@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -51,6 +52,8 @@ type service struct {
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
@@ -59,7 +62,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0x00000057
 	}
 
-	if err := s.generateConfigs(); err != nil {
+	if err := s.generateConfigs(ctx); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
@@ -150,9 +153,9 @@ func (s *service) runStartupChecks() {
 	s.log.Info(EngineEventID, "Startup checks finished")
 }
 
-func (s *service) generateConfigs() error {
+func (s *service) generateConfigs(ctx context.Context) error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
@@ -167,8 +170,8 @@ func (s *service) generateConfigs() error {
 		"otel",
 		"fluentbit",
 	} {
-		if err := confgenerator.GenerateFilesFromConfig(
-			uc,
+		if err := uc.GenerateFilesFromConfig(
+			ctx,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),

@@ -13,18 +13,13 @@
 // limitations under the License.
 
 //go:build !windows
-// +build !windows
 
-package windows
+package platform
 
 import "fmt"
 
-func Is2012() bool {
-	return false
-}
-
-func Is2016() bool {
-	return false
+func (p *Platform) detectPlatform() {
+	p.Type = Linux
 }
 
 func GetOldWinlogChannels() ([]string, error) {

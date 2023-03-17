@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path"
@@ -816,7 +817,7 @@ func (lr LoggingProcessorOracleDBAlert) Type() string {
 	return "oracledb_alert"
 }
 
-func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []fluentbit.Component {
+func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	components := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -845,7 +846,7 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	severityVal := "ALERT"
 	components = append(components,
@@ -854,7 +855,7 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, uid)...)
+		}.Components(ctx, tag, uid)...)
 	return components
 }
 
@@ -865,7 +866,7 @@ type LoggingReceiverOracleDBAlert struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
@@ -874,8 +875,8 @@ func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Compon
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(tag, lr.Type())...)
+	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
 	return c
 }
 
@@ -887,7 +888,7 @@ func (lr LoggingProcessorOracleDBAudit) Type() string {
 	return "oracledb_audit"
 }
 
-func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []fluentbit.Component {
+func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	components := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -952,7 +953,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	severityVal := "INFO"
 
@@ -962,7 +963,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, uid)...)
+		}.Components(ctx, tag, uid)...)
 	return components
 }
 
@@ -973,7 +974,7 @@ type LoggingReceiverOracleDBAudit struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/admin/*/adump/*.aud"),
@@ -982,8 +983,8 @@ func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Compon
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(tag, lr.Type())...)
+	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
 	return c
 }
 

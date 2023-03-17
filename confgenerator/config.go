@@ -28,8 +28,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
@@ -59,12 +59,12 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy(platform string) (*UnifiedConfig, error) {
+func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
-	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
+	fromYaml, err := UnmarshalYamlToUnifiedConfig(ctx, toYaml)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
@@ -171,30 +171,6 @@ func (v *validatorContext) Struct(s interface{}) error {
 		out = append(out, validationError{err})
 	}
 	return out
-}
-
-type PlatformType int
-
-const (
-	PlatformLinux PlatformType = 1 << iota
-	PlatformWindows
-	PlatformAll = PlatformLinux | PlatformWindows
-)
-
-type PlatformData struct {
-	Type PlatformType
-}
-
-type platformKeyType struct{}
-
-// platformKey is a singleton that is used as a Context key for retrieving the current platform from the context.Context.
-var platformKey = platformKeyType{}
-
-func PlatformFromContext(ctx context.Context) PlatformData {
-	if opt := context.Value(ctx, platformKey); opt != nil {
-		return opt.(PlatformData)
-	}
-	return PlatformData{Type: PlatformLinux}
 }
 
 func newValidator() *validator.Validate {
@@ -348,8 +324,7 @@ func getFirstNonUniqueString(slice []string) string {
 	return ""
 }
 
-func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte, platform string) (*UnifiedConfig, error) {
-	ctx := context.WithValue(ctx, platformKey, platform)
+func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte) (*UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	v := &validatorContext{
 		ctx: ctx,
@@ -381,12 +356,12 @@ type componentInterface interface {
 type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() CI
-	// platforms is a list of platforms on which the component is valid
-	platforms PlatformType
+	// platforms is a bitmask of platforms on which the component is valid
+	platforms platform.Type
 }
 
 func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
-	platformType := PlatformFromContext(ctx).Type
+	platformType := platform.FromContext(ctx).Type
 	return ct.platforms&platformType == platformType
 }
 
@@ -399,7 +374,7 @@ type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...PlatformType) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...platform.Type) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
@@ -407,12 +382,12 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	if r.TypeMap == nil {
 		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	var platformsValue PlatformType
+	var platformsValue platform.Type
 	for _, p := range platforms {
 		platformsValue = platformsValue | p
 	}
 	if platformsValue == 0 {
-		platformsValue = PlatformAll
+		platformsValue = platform.All
 	}
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
@@ -501,7 +476,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	Components(tag string) []fluentbit.Component
+	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
@@ -533,7 +508,7 @@ type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(tag string, uid string) []fluentbit.Component
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
@@ -1064,7 +1039,7 @@ func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]u
 // Caveat: there is little official documentation to support that this is a guaranteed
 // method of determining whether a channel is accessible via the "old API".
 func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string) error {
-	oldChannels, err := windows.GetOldWinlogChannels()
+	oldChannels, err := platform.GetOldWinlogChannels()
 	if err != nil {
 		return fmt.Errorf("validateWinlogV1Channels: GetOldWinlogChannels() returned err=%v", err)
 	}

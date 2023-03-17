@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -131,7 +133,7 @@ func (LoggingProcessorMysqlError) Type() string {
 	return "mysql_error"
 }
 
-func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
@@ -170,7 +172,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
@@ -191,7 +193,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -205,7 +207,7 @@ func (LoggingProcessorMysqlGeneral) Type() string {
 	return "mysql_general"
 }
 
-func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -236,14 +238,14 @@ func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluen
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -256,7 +258,7 @@ func (LoggingProcessorMysqlSlow) Type() string {
 	return "mysql_slow"
 }
 
-func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	// Fields are split into this array to improve readability of the regex
 	fields := strings.Join([]string{
 		// Always present slow query log fields
@@ -348,14 +350,14 @@ func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbi
 				Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -365,15 +367,15 @@ type LoggingReceiverMysqlGeneral struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlGeneral) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlGeneral.Components(tag, "mysql_general")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlGeneral.Components(ctx, tag, "mysql_general")...)
 	return c
 }
 
@@ -382,15 +384,15 @@ type LoggingReceiverMysqlSlow struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlSlow) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlSlow.Components(tag, "mysql_slow")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlSlow.Components(ctx, tag, "mysql_slow")...)
 	return c
 }
 
@@ -399,7 +401,7 @@ type LoggingReceiverMysqlError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL
@@ -410,8 +412,8 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 			"/var/log/mysql/error.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlError.Components(tag, "mysql_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlError.Components(ctx, tag, "mysql_error")...)
 	return c
 }
 

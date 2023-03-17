@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package windows
+package platform
 
 import (
 	"log"
@@ -36,15 +33,9 @@ func getWindowsBuildNumber() string {
 	return build
 }
 
-func Is2012() bool {
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	build := getWindowsBuildNumber()
-	return build == "9200" || build == "9600"
-}
-
-func Is2016() bool {
-	build := getWindowsBuildNumber()
-	return build == "14393"
+func (p *Platform) detectPlatform() {
+	p.Type = Windows
+	p.WindowsBuildNumber = getWindowsBuildNumber()
 }
 
 // GetOldWinlogChannels returns the set of event logs (channels) under

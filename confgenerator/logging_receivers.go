@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strconv"
@@ -23,7 +24,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // DBPath returns the database path for the given log tag
@@ -47,13 +48,13 @@ func (r LoggingReceiverFiles) Type() string {
 	return "files"
 }
 
-func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return LoggingReceiverFilesMixin{
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
-	}.Components(tag)
+	}.Components(ctx, tag)
 }
 
 type LoggingReceiverFilesMixin struct {
@@ -65,7 +66,7 @@ type LoggingReceiverFilesMixin struct {
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
-func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// No files -> no input.
 		return nil
@@ -179,7 +180,7 @@ func (r LoggingReceiverSyslog) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -236,7 +237,7 @@ func (r LoggingReceiverTCP) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverTCP) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -287,7 +288,7 @@ func (r LoggingReceiverFluentForward) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -353,7 +354,7 @@ func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
 	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
 }
 
-func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.ReceiverVersion) == 0 {
 		r.ReceiverVersion = "1"
 	}
@@ -382,7 +383,8 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
 	// this also strips Unicode characters away, so we only use it on affected
 	// platforms. This only affects the newer API.
-	if !r.IsDefaultVersion() && (windows.Is2012() || windows.Is2016()) {
+	p := platform.FromContext(ctx)
+	if !r.IsDefaultVersion() && (p.Is2012() || p.Is2016()) {
 		input[0].Config["Use_ANSI"] = "True"
 	}
 
@@ -432,7 +434,7 @@ func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Compo
 }
 
 func init() {
-	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverWindowsEventLog{} }, "windows")
+	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverWindowsEventLog{} }, platform.Windows)
 }
 
 // A LoggingReceiverSystemd represents the user configuration for a Systemd/journald receiver.
@@ -444,7 +446,7 @@ func (r LoggingReceiverSystemd) Type() string {
 	return "systemd_journald"
 }
 
-func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fluentbit.Component {
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -508,5 +510,5 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, "linux")
+	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
 }

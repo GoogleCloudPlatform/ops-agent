@@ -17,6 +17,7 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverMssql struct {
@@ -102,5 +103,5 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, platform.Windows)
 }

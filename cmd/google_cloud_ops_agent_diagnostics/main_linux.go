@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
@@ -30,13 +31,14 @@ var (
 	config = flag.String("config", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
 )
 
-func run() error {
-	userUc, mergedUc, err := getUserAndMergedConfigs(*config, "linux")
+func run(ctx context.Context) error {
+	userUc, mergedUc, err := getUserAndMergedConfigs(ctx, *config)
 	if err != nil {
 		return err
 	}
 
-	death := make(chan bool)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	go func() {
 		osSignal := make(chan os.Signal, 1)
@@ -46,13 +48,13 @@ func run() error {
 		for {
 			select {
 			case <-osSignal:
-				death <- true
+				cancel()
 				return
 			}
 		}
 	}()
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(userUc, mergedUc, death)
+	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 	if err != nil {
 		return err
 	}

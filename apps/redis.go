@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -89,7 +90,7 @@ func (LoggingProcessorRedis) Type() string {
 	return "redis"
 }
 
-func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorRedis) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://github.com/redis/redis/blob/6.2/src/server.c#L1122
 		// Sample line (Redis 3+): 534:M 28 Apr 2020 11:30:29.988 * DB loaded from disk: 0.002 seconds
@@ -102,7 +103,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 				"pid": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 	c = append(c,
@@ -131,7 +132,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -142,7 +143,7 @@ type LoggingReceiverRedis struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRedis) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
@@ -157,8 +158,8 @@ func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 			"/var/log/redis/redis_6379.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorRedis.Components(ctx, tag, "redis")...)
 	return c
 }
 
