@@ -22,24 +22,24 @@ per_application_overrides:
     # if at all.
     # TODO: reenable distros incrementally.
     platforms_to_skip:
-      - centos-7
-      - centos-8
-      - rocky-linux-8
-      - sles-12
-      - sles-15
+      - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
+      - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
+      - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
   cassandra:
-    # TODO: reenable application+distro pairs incrementally.
-    platforms_to_skip: &common_skips
-      - centos-7
-      - centos-8
-      - rocky-linux-8
-      - sles-12
-      - sles-15
-      - ubuntu-2004-lts
+    platforms_to_skip:
+      - centos-7 # see https://issues.apache.org/jira/browse/CASSANDRA-18059 for fix.
+      - sles-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
+      - sles-15 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
+      - ubuntu-2004-lts # GPG error [...] the public key is not available: NO_PUBKEY AA8E81B4331F7F50 NO_PUBKEY 112695A0E562B32A
   mysql:
-    platforms_to_skip: *common_skips
+    platforms_to_skip:
+      - sles-12 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
+      - sles-15 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
   nginx:
-    platforms_to_skip: *common_skips
+    platforms_to_skip:
+      - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+      - sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+      - ubuntu-2004-lts # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   oracledb:
     # Oracle DB is difficult to install on these platforms.
     platforms_to_skip:
@@ -50,11 +50,19 @@ per_application_overrides:
       - sles-15
       - rocky-linux-9
   redis:
-    platforms_to_skip: *common_skips
+    platforms_to_skip:
+      - centos-7 # QueryLog() failed: redis not found, exhausted retries
+      - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
+      - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   # As wildfly does not have package installers & is installed from tar,
   # we only want to test on one distribution to help reduce integration test size
   wildfly:
-    platforms_to_skip: *common_skips
+    platforms_to_skip:
+      - centos-7
+      - rocky-linux-8
+      - sles-12
+      - sles-15
+      - ubuntu-2004-lts
   # Note: New applications are not supposed to add additional skips
   # here unless deemed absolutely necessary.
   couchdb: # couchdb is not supported on sles, rhel9
