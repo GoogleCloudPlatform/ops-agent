@@ -51,6 +51,13 @@ type platformConfig struct {
 	platform        platform.Platform
 }
 
+var winlogv1channels = []string{
+	"Application",
+	"Security",
+	"Setup",
+	"System",
+}
+
 var (
 	testPlatforms = []platformConfig{
 		{
@@ -73,6 +80,7 @@ var (
 			platform: platform.Platform{
 				Type:               platform.Windows,
 				WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
+				WinlogV1Channels:   winlogv1channels,
 				HostInfo: &host.InfoStat{
 					OS:              "windows",
 					Platform:        "win_platform",
@@ -87,6 +95,7 @@ var (
 			platform: platform.Platform{
 				Type:               platform.Windows,
 				WindowsBuildNumber: "9200", // Windows Server 2012
+				WinlogV1Channels:   winlogv1channels,
 				HostInfo: &host.InfoStat{
 					OS:              "windows",
 					Platform:        "win_platform",

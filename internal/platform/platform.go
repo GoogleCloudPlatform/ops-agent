@@ -25,6 +25,7 @@ import (
 type Platform struct {
 	Type               Type
 	WindowsBuildNumber string
+	WinlogV1Channels   []string
 	HostInfo           *host.InfoStat
 }
 

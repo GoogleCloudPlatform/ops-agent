@@ -36,12 +36,18 @@ func getWindowsBuildNumber() string {
 func (p *Platform) detectPlatform() {
 	p.Type = Windows
 	p.WindowsBuildNumber = getWindowsBuildNumber()
+	var err error
+	p.WinlogV1Channels, err = getOldWinlogChannels()
+	if err != nil {
+		// Ignore the error, to preserve existing behavior.
+		log.Printf("could not find Windows Event Log V1 channels: %v", err)
+	}
 }
 
-// GetOldWinlogChannels returns the set of event logs (channels) under
+// getOldWinlogChannels returns the set of event logs (channels) under
 // HKLM\SYSTEM\CurrentControlSet\Services\EventLog, which (supposedly) corresponds
 // to the available channels on the machine which are compatible with the "old API".
-func GetOldWinlogChannels() ([]string, error) {
+func getOldWinlogChannels() ([]string, error) {
 	parentKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Services\EventLog`, registry.READ)
 	if err != nil {
 		return nil, err

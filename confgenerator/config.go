@@ -153,7 +153,7 @@ func (ve validationError) Error() string {
 	case "winlogchannels":
 		// Assume validation has already failed by this point, that is, receiver_version must already be > 1
 		channels := ve.Value().([]string)
-		return validateWinlogchannels(channels).Error()
+		return validateWinlogChannels(channels).Error()
 	}
 
 	return ve.FieldError.Error()
@@ -271,28 +271,34 @@ func newValidator() *validator.Validate {
 		}
 		return t%tfactor == 0
 	})
-	// winlogchannels wraps validateWinlogchannels when receiver_version > 1
-	// TODO: relax the "receiver_version > 1" constraint and replace validateWinlogchannels with built-in validator primitives
-	v.RegisterValidation("winlogchannels", func(fl validator.FieldLevel) bool {
+	// winlogchannels wraps validateWinlogChannels when receiver_version > 1 and validateWinlogV1Channels when receiver_version = 1
+	// TODO: relax the "receiver_version > 1" constraint and replace validateWinlogChannels with built-in validator primitives
+	v.RegisterValidationCtx("winlogchannels", func(ctx context.Context, fl validator.FieldLevel) bool {
 		receiver, ok := fl.Parent().Interface().(LoggingReceiverWindowsEventLog)
 		if !ok {
 			panic(fmt.Sprintf("winlogchannels: could not convert %s's parent to LoggingReceiverWindowsEventLog", fl.Field().String()))
 		}
 		if receiver.IsDefaultVersion() {
+			if err := validateWinlogV1Channels(ctx, receiver.Channels); err != nil {
+				// Only emit a soft failure (warning) here, because:
+				// 1) we want this to be backwards compatible, and
+				// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
+				log.Print(err)
+			}
 			return true
 		}
-		return validateWinlogchannels(receiver.Channels) == nil
+		return validateWinlogChannels(receiver.Channels) == nil
 	})
 	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
 	registerExperimentalValidations(v)
 	return v
 }
 
-// validateWinlogchannels validates a handful of things at once:
+// validateWinlogChannels validates a handful of things at once:
 // - that at least one channel is defined
 // - that channels do not contain commas
 // - that channels are unique (case-insensitive)
-func validateWinlogchannels(channels []string) error {
+func validateWinlogChannels(channels []string) error {
 	if len(channels) == 0 {
 		return fmt.Errorf(`"channels" must contain at least one channel when "receiver_version" is 2 or higher`)
 	}
@@ -306,6 +312,25 @@ func validateWinlogchannels(channels []string) error {
 		return fmt.Errorf(`"channels" contains the same value more than once: %s`, duplicate)
 	}
 	return nil
+}
+
+// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
+// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
+// would be needed instead.
+// Caveat: there is little official documentation to support that this is a guaranteed
+// method of determining whether a channel is accessible via the "old API".
+func validateWinlogV1Channels(ctx context.Context, channels []string) error {
+	oldChannels := platform.FromContext(ctx).WinlogV1Channels
+	var err error
+	for i, channel := range channels {
+		if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
+			err = multierr.Append(err, fmt.Errorf(
+				`"channels[%d]" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
+				i, channel,
+			))
+		}
+	}
+	return err
 }
 
 // getFirstNonUniqueString returns the first non-unique (duplicate) string
@@ -811,12 +836,6 @@ func (l *Logging) Validate() error {
 		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetListenPorts(), p.ReceiverIDs); err != nil {
 			return err
 		}
-		if err := validateWinlogV1Channels(l.Receivers, p.ReceiverIDs); err != nil {
-			// Only emit a soft failure (warning) here, because:
-			// 1) we want this to be backwards compatible, and
-			// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
-			log.Print(err)
-		}
 		if err := validateWinlogRenderAsXML(l.Receivers, p.ReceiverIDs); err != nil {
 			return err
 		}
@@ -1031,39 +1050,6 @@ func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]u
 		}
 	}
 	return taken, nil
-}
-
-// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
-// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
-// would be needed instead.
-// Caveat: there is little official documentation to support that this is a guaranteed
-// method of determining whether a channel is accessible via the "old API".
-func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string) error {
-	oldChannels, err := platform.GetOldWinlogChannels()
-	if err != nil {
-		return fmt.Errorf("validateWinlogV1Channels: GetOldWinlogChannels() returned err=%v", err)
-	}
-	for _, receiverID := range receiverIDs {
-		var ok bool
-		var receiver LoggingReceiver
-		var winlogReceiver *LoggingReceiverWindowsEventLog
-		if receiver, ok = receivers[receiverID]; !ok {
-			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
-		}
-		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok || !winlogReceiver.IsDefaultVersion() {
-			continue
-		}
-		for _, channel := range winlogReceiver.Channels {
-			if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
-				err = multierr.Append(err, fmt.Errorf(
-					`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
-					receiverID,
-					channel,
-				))
-			}
-		}
-	}
-	return err
 }
 
 // validateWinlogRenderAsXML validates that the correct receiver version is used when
