@@ -187,10 +187,6 @@ func newValidator() *validator.Validate {
 		}
 		return name
 	})
-	// platform validates that the current platform is equal to the parameter
-	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
-		return ctx.Value(platformKey) == fl.Param()
-	})
 	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
 		fieldStr := fl.Field().String()
