@@ -28,8 +28,7 @@ import (
 )
 
 func isSubagentActive(subagent string) (bool, err) {
-	cmdStr := fmt.Sprintf("(Get-Service %s).Status", subagent)
-	cmd := exec.Command("powershell", cmdStr)
+	cmd := exec.Command("powershell", fmt.Sprintf("(Get-Service %s).Status", subagent))
 	output, err := cmd.Output()
 	if err != nil {
 		panic(err)
