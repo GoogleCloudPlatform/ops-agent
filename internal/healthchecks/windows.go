@@ -19,6 +19,7 @@ package healthchecks
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os/exec"
 	"strings"
@@ -27,7 +28,8 @@ import (
 )
 
 func isSubagentActive(subagent string) (bool, err) {
-	cmd := exec.Command("powershell", "(Get-Service google-cloud-ops-agent-fluent-bit).Status")
+	cmdStr := fmt.Sprintf("(Get-Service %s).Status", subagent)
+	cmd := exec.Command("powershell", cmdStr)
 	output, err := cmd.Output()
 	if err != nil {
 		panic(err)
