@@ -173,10 +173,29 @@ func (v *validatorContext) Struct(s interface{}) error {
 	return out
 }
 
+type PlatformType int
+
+const (
+	PlatformLinux PlatformType = 1 << iota
+	PlatformWindows
+	PlatformAll = PlatformLinux | PlatformWindows
+)
+
+type PlatformData struct {
+	Type PlatformType
+}
+
 type platformKeyType struct{}
 
 // platformKey is a singleton that is used as a Context key for retrieving the current platform from the context.Context.
 var platformKey = platformKeyType{}
+
+func PlatformFromContext(ctx context.Context) PlatformData {
+	if opt := context.Value(ctx, platformKey); opt != nil {
+		return opt.(PlatformData)
+	}
+	return PlatformData{Type: PlatformLinux}
+}
 
 func newValidator() *validator.Validate {
 	v := validator.New()
@@ -329,8 +348,8 @@ func getFirstNonUniqueString(slice []string) string {
 	return ""
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (*UnifiedConfig, error) {
-	ctx := context.WithValue(context.TODO(), platformKey, platform)
+func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte, platform string) (*UnifiedConfig, error) {
+	ctx := context.WithValue(ctx, platformKey, platform)
 	config := UnifiedConfig{}
 	v := &validatorContext{
 		ctx: ctx,
@@ -362,18 +381,13 @@ type componentInterface interface {
 type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() CI
-	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
-	platforms []string
+	// platforms is a list of platforms on which the component is valid
+	platforms PlatformType
 }
 
 func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
-	platform := ctx.Value(platformKey).(string)
-	for _, v := range ct.platforms {
-		if v == platform {
-			return true
-		}
-	}
-	return len(ct.platforms) == 0
+	platformType := PlatformFromContext(ctx).Type
+	return ct.platforms&platformType == platformType
 }
 
 type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
@@ -385,7 +399,7 @@ type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...string) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...PlatformType) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
@@ -393,7 +407,14 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	if r.TypeMap == nil {
 		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	r.TypeMap[name] = &componentFactory[CI]{constructor, platforms}
+	var platformsValue PlatformType
+	for _, p := range platforms {
+		platformsValue = platformsValue | p
+	}
+	if platformsValue == 0 {
+		platformsValue = PlatformAll
+	}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
