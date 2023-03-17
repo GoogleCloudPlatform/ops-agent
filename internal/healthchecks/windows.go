@@ -27,11 +27,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func isSubagentActive(subagent string) (bool, err) {
+func isSubagentActive(subagent string) (bool, error) {
 	cmd := exec.Command("powershell", fmt.Sprintf("(Get-Service %s).Status", subagent))
 	output, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 	return strings.TrimSpace(string(output)) == "Running", nil
 }
