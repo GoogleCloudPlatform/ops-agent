@@ -80,6 +80,20 @@ var (
 				},
 			},
 		},
+		{
+			name:            "windows-2012",
+			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
+			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
+			platform: platform.Platform{
+				Type:               platform.Windows,
+				WindowsBuildNumber: "9200", // Windows Server 2012
+				HostInfo: &host.InfoStat{
+					OS:              "windows",
+					Platform:        "win_platform",
+					PlatformVersion: "win_platform_version",
+				},
+			},
+		},
 	}
 )
 
@@ -161,6 +175,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 
 	testdataDir := filepath.Join("testdata", testDir)
 	testDirEntries, err := os.ReadDir(testdataDir)
+	if os.IsNotExist(err) {
+		// No tests for this combination.
+		return nil
+	}
 	assert.NilError(t, err, "couldn't read directory %s: %v", testdataDir, err)
 	testNames := []string{}
 	for _, testDirEntry := range testDirEntries {
