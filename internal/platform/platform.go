@@ -55,14 +55,16 @@ func (p Platform) TestContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, platformKey, p)
 }
 
+var detectedPlatform Platform = detect()
+
 func FromContext(ctx context.Context) Platform {
 	if opt := ctx.Value(platformKey); opt != nil {
 		return opt.(Platform)
 	}
-	return Detect()
+	return detectedPlatform
 }
 
-func Detect() Platform {
+func detect() Platform {
 	info, err := host.Info()
 	if err != nil {
 		log.Fatalf("Failed to detect platform: %v", err)
