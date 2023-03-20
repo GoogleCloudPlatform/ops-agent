@@ -23,8 +23,6 @@ per_application_overrides:
     # TODO: reenable distros incrementally.
     platforms_to_skip:
       - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
-      - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
-      - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
   cassandra:
     platforms_to_skip:
       - centos-7 # see https://issues.apache.org/jira/browse/CASSANDRA-18059 for fix.
