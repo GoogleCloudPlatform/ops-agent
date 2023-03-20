@@ -78,7 +78,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, ERROR_INVALID_PARAMETER
 	}
 
-	userUc, mergedUc, err := getUserAndMergedConfigs(s.userConf, "windows")
+	userUc, mergedUc, err := getUserAndMergedConfigs(ctx, s.userConf)
 	if err != nil {
 		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND
