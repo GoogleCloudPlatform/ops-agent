@@ -161,6 +161,7 @@ expected_logs:
       - name: jsonPayload.tid
         type: string
         description: Thread ID
+        optional: true
       - name: severity
         type: string
         description: ''
