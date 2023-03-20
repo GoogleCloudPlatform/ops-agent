@@ -29,17 +29,28 @@ func (*LoggingProcessorRabbitmq) Type() string {
 }
 
 func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-	regexParser := confgenerator.LoggingProcessorParseRegex{
-		// Sample log line:
-		// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
-		Regex: `^(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+	c := confgenerator.LoggingProcessorParseRegexComplex{
+		Parsers: []confgenerator.RegexParser{
+			{
+				// Sample log line:
+				// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+				Parser: confgenerator.ParserShared{
+					TimeKey:    "timestamp",
+					TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+				},
+			},
+			{
+				// Sample log line:
+				// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
+				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+				Parser: confgenerator.ParserShared{
+					TimeKey:    "timestamp",
+					TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+				},
+			},
 		},
-	}
-	c = append(c, regexParser.Components(tag, uid)...)
+	}.Components(tag, uid)
 
 	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 	c = append(c,
@@ -142,6 +153,11 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
+				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
+				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},

@@ -12,12 +12,20 @@
   value: "true"
 - module: logging
   feature: receivers:files
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:files
   key: "[0].record_log_file_path"
   value: "false"
 - module: logging
   feature: receivers:files
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[1].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:files
   key: "[1].record_log_file_path"
@@ -28,12 +36,20 @@
   value: "true"
 - module: logging
   feature: receivers:files
+  key: "[2].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:files
   key: "[2].record_log_file_path"
   value: "true"
 - module: logging
   feature: receivers:files
   key: "[3].enabled"
   value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[3].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:files
   key: "[3].record_log_file_path"
