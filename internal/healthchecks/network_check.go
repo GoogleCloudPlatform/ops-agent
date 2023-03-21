@@ -40,7 +40,7 @@ var (
 		},
 		{
 			name:             "Packages API",
-			url:              "https://packages.cloud.google.com/",
+			url:              "https://packages.cloud.google.com",
 			successMessage:   "Request to packages.cloud.google.com was successful.",
 			healthCheckError: PacApiConnErr,
 		},
