@@ -67,6 +67,7 @@ func run() error {
 		runHealthChecks()
 		log.Println("Startup checks finished")
 		if *healthChecks {
+			// If healthchecks is set, stop here
 			return nil
 		}
 	}
