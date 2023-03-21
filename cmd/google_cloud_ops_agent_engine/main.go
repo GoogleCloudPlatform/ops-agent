@@ -51,14 +51,6 @@ func main() {
 }
 
 func run() error {
-	if *service == "" {
-		runHealthChecks()
-		log.Println("Startup checks finished")
-		if *healthChecks {
-			return nil
-		}
-	}
-
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
 	if err != nil {
@@ -71,5 +63,12 @@ func run() error {
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
+	if *service == "" {
+		runHealthChecks()
+		log.Println("Startup checks finished")
+		if *healthChecks {
+			return nil
+		}
+	}
 	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
 }
