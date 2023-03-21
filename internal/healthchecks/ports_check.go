@@ -44,16 +44,26 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck(logger *log.Logger) error {
+func isOpsAgentRunning() (bool, error) {
 	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
 	if err != nil {
-		return err
+		return false, err
 	}
 	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
 	if err != nil {
+		return false, err
+	}
+
+	return fbActive && ocActive, nil
+}
+
+func (c PortsCheck) RunCheck(logger *log.Logger) error {
+	isRunning, err := isOpsAgentRunning()
+	if err != nil {
 		return err
 	}
-	if fbActive && ocActive {
+
+	if isRunning {
 		return nil
 	}
 
