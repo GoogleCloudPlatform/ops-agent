@@ -24,6 +24,11 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
+const (
+	tcpHost  = "0.0.0.0"
+	tcp6Host = "::"
+)
+
 type PortsCheck struct{}
 
 func (c PortsCheck) Name() string {
@@ -44,61 +49,66 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func isOpsAgentRunning() (bool, error) {
-	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
-	if err != nil {
-		return false, err
-	}
-	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
-	if err != nil {
-		return false, err
-	}
-
-	return fbActive && ocActive, nil
-}
-
 func (c PortsCheck) RunCheck(logger *log.Logger) error {
-	isRunning, err := isOpsAgentRunning()
+	err := runFluentBitCheck(logger)
 	if err != nil {
 		return err
 	}
+	err = runOtelCollectorCheck(logger)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	if isRunning {
+func runFluentBitCheck(logger *log.Logger) error {
+	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
+	if err != nil {
+		return err
+	}
+	if fbActive {
 		return nil
 	}
 
-	// fluent-bit listens on tcp4. opentelemetry-collector listens in both tcp4 and tcp6.
-	tcpHost := "0.0.0.0"
-	tcp6Host := "::"
+	// Fluent-bit listens on tcp4. Check for fluent-bit self metrics port.
+	err = runPortCheck(logger, fluentbit.MetricsPort, tcpHost, "tcp4", FbMetricsPortErr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	// Check for fluent-bit self metrics port
-	available, err := checkIfPortAvailable(tcpHost, strconv.Itoa(fluentbit.MetricsPort), "tcp4")
+func runOtelCollectorCheck(logger *log.Logger) error {
+	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
+	if err != nil {
+		return err
+	}
+	if ocActive {
+		return nil
+	}
+
+	//Opentelemetry-collector listens in both tcp4 and tcp6. Check for opentelemetry-collector self metrics port.
+	err = runPortCheck(logger, otel.MetricsPort, tcpHost, "tcp4", OtelMetricsPortErr)
+	if err != nil {
+		return err
+	}
+
+	err = runPortCheck(logger, otel.MetricsPort, tcp6Host, "tcp6", OtelMetricsPortErr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runPortCheck(logger *log.Logger, port int, host, network string, healthCheckError error) error {
+	available, err := checkIfPortAvailable(host, strconv.Itoa(port), network)
 	if err != nil {
 		return err
 	}
 	if !available {
-		return FbMetricsPortErr
+		return healthCheckError
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(fluentbit.MetricsPort)))
-
-	// Check for opentelemetry-collector self metrics port
-	available, err = checkIfPortAvailable(tcpHost, strconv.Itoa(otel.MetricsPort), "tcp4")
-	if err != nil {
-		return err
-	}
-	if !available {
-		return OtelMetricsPortErr
-	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(otel.MetricsPort)))
-
-	available, err = checkIfPortAvailable(tcp6Host, strconv.Itoa(otel.MetricsPort), "tcp6")
-	if err != nil {
-		return err
-	}
-	if !available {
-		return OtelMetricsPortErr
-	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcp6Host, strconv.Itoa(otel.MetricsPort)))
+	logger.Printf("listening to %s:", net.JoinHostPort(host, strconv.Itoa(port)))
 
 	return nil
 }
