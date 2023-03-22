@@ -26,12 +26,12 @@ expected_metrics:
     labels:
       response_code: \d+
   - type: agent.googleapis.com/agent/log_entry_retry_count
-   value_type: INT64
-   kind: CUMULATIVE
-   monitored_resource: gce_instance
-   labels:
-     response_code: .*
-   optional: true
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+     response_code: \d+
+    optional: true
   - type: agent.googleapis.com/agent/memory_usage
     value_type: DOUBLE
     kind: GAUGE
