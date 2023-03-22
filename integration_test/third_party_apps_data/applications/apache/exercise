@@ -14,3 +14,6 @@ chmod o-r "${DOCUMENT_ROOT}"/forbidden.html
 # Then request that file through apache. This is meant to generate an entry in
 # the access log and the error log.
 curl http://localhost:80/forbidden.html
+
+# for debugging: DO NOT SUBMIT
+curl http://127.0.0.1:80/server-status?auto
