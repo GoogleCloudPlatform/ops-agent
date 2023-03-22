@@ -1,5 +1,5 @@
 include:
-- integration_test/**/*.yaml
+  - integration_test/**/*.yaml
 
 formatter:
   type: basic
