@@ -595,9 +595,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		if exerciseOut, err := runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
 		}
-		return nonRetryable, fmt.Errorf("fake error, done with exercise. Output: %v", exerciseOut)
 	}
-	return nonRetryable, fmt.Errorf("fake error, done with exercise %v", "1234")
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")

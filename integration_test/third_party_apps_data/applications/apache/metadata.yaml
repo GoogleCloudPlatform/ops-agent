@@ -59,7 +59,6 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       server_name: .*
-    representative: true
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
@@ -86,6 +85,7 @@ expected_metrics:
     labels:
       server_name: .*
       state: .*
+    representative: true
 expected_logs:
   - log_name: apache_access
     fields:
