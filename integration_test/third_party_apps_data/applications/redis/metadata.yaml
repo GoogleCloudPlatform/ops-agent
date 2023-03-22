@@ -27,6 +27,11 @@ minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.5.0
 supported_operating_systems: linux
+# TODO: Fix errors and enable tests on all platforms.
+platforms_to_skip:
+  - centos-7 # QueryLog() failed: redis not found, exhausted retries
+  - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
+  - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
 supported_app_version: ["6.2"]
 expected_metrics:
   - type: workload.googleapis.com/redis.clients.blocked
