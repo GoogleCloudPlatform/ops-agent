@@ -49,6 +49,9 @@ type ExpectedMetric struct {
 	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional,excluded_with=Platform"`
 	// Exclusive metric to a particular kind of platform.
 	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
+	// A list of platforms to skip. Examples: centos-7,debian-10.
+	// Not valid are linux,windows.
+	PlatformsToSkip []string `yaml:"platforms_to_skip,omitempty" validate:"excluded_with=Representative"`
 }
 
 type LogFields struct {

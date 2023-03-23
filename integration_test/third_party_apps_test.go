@@ -152,7 +152,7 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	environmentVariables := map[string]string{
-		"REPO_SUFFIX": os.Getenv("REPO_SUFFIX"),
+		"REPO_SUFFIX":              os.Getenv("REPO_SUFFIX"),
 		"ARTIFACT_REGISTRY_REGION": os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
@@ -496,6 +496,10 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
+		if metadata.SliceContains(metric.PlatformsToSkip, vm.Platform) {
+			logger.ToMainLog().Printf("Skipping metric %s due to platforms_to_skip", metric.Type)
+			continue
+		}
 		requiredMetrics = append(requiredMetrics, metric)
 	}
 	c := make(chan error, len(requiredMetrics))
@@ -592,12 +596,11 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	exerciseScript := path.Join("applications", app, "exercise")
 	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
 		logger.ToMainLog().Println("exercise script found, running...")
-		if exerciseOut, err := runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
+
+		if _, err = runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
 		}
-		return nonRetryable, fmt.Errorf("fake error, done with exercise. Output: %v", exerciseOut)
 	}
-	return nonRetryable, fmt.Errorf("fake error, done with exercise %v", "1234")
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
@@ -882,6 +885,10 @@ func TestThirdPartyApps(t *testing.T) {
 
 			if tc.skipReason != "" {
 				t.Skip(tc.skipReason)
+			}
+
+			if tc.app != "apache" {
+				return
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)

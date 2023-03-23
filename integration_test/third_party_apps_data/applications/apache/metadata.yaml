@@ -59,13 +59,18 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       server_name: .*
-    representative: true
+    platforms_to_skip:
+      # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
+      - centos-7
+      - sles-12
+      - sles-15
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       server_name: .*
+    representative: true
   - type: workload.googleapis.com/apache.scoreboard
     value_type: INT64
     kind: GAUGE
