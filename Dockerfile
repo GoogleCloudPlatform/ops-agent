@@ -42,9 +42,9 @@ RUN set -x; yum -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -132,9 +132,9 @@ RUN set -x; yum -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -225,9 +225,9 @@ RUN set -x; dnf -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -313,9 +313,9 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -401,9 +401,9 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -498,9 +498,9 @@ RUN set -x; \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -609,9 +609,9 @@ RUN set -x; \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -711,9 +711,9 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -803,9 +803,9 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -891,9 +891,9 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -979,9 +979,9 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
