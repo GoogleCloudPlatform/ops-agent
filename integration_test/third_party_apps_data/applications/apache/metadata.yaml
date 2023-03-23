@@ -91,6 +91,7 @@ expected_metrics:
     labels:
       server_name: .*
       state: .*
+    representative: true
 expected_logs:
   - log_name: apache_access
     fields:
