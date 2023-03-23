@@ -28,13 +28,16 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
-    above REPO_SUFFIX is an artifact registry repo and specifies what region it
-	is in. If not provided, that means that the packages are accessed through
-	packages.cloud.google.com instead, which may point to Cloud Rapture or
-	Artifact Registry under the hood.
+
+	    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+		is in. If not provided, that means that the packages are accessed through
+		packages.cloud.google.com instead, which may point to Cloud Rapture or
+		Artifact Registry under the hood.
+
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
-    REPO_SUFFIX.
+
+	.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
+	REPO_SUFFIX.
 */
 package integration_test
 
@@ -49,6 +52,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -259,7 +263,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX="+location.repoSuffix+" ARTIFACT_REGISTRY_REGION="+location.artifactRegistryRegion
+		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
 		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
@@ -3270,20 +3274,20 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // installGolang downloads and setup go, and return the required command to set
 // the PATH before calling `go` as goPath
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.19"
+	// Format: `go<version number>`
+	goVersion := runtime.Version()
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
 		// TODO: host go windows installer in the GCS if `golang.org` throttle
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
+			Invoke-WebRequest "https://go.dev/dl/%s.windows-amd64.msi" -OutFile golang.msi
 			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -e
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
+				"gs://stackdriver-test-143416-go-install/%s.linux-amd64.tar.gz" - | \
 				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
 	}
 	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
