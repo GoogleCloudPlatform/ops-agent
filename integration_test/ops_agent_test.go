@@ -28,14 +28,13 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
-above REPO_SUFFIX is an artifact registry repo and specifies what region it
-is in. If not provided, that means that the packages are accessed through
-packages.cloud.google.com instead, which may point to Cloud Rapture or
-Artifact Registry under the hood.
-
+    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in. If not provided, that means that the packages are accessed through
+	packages.cloud.google.com instead, which may point to Cloud Rapture or
+	Artifact Registry under the hood.
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
-REPO_SUFFIX.
+    .deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
+    REPO_SUFFIX.
 */
 package integration_test
 
@@ -260,7 +259,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
+		envVars := "REPO_SUFFIX="+location.repoSuffix+" ARTIFACT_REGISTRY_REGION="+location.artifactRegistryRegion
 		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
@@ -3272,7 +3271,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // the PATH before calling `go` as goPath
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.20"
+	goVersion := "1.19"
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
 		// TODO: host go windows installer in the GCS if `golang.org` throttle
