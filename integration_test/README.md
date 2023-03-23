@@ -95,11 +95,9 @@ As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-
 
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
-it reads `test_config.yaml` and uses that to set some testing options. See the
-"test_config.yaml" section below. Then it reads
-`agent/<platform>/supported_applications.txt` to determine
-which applications to test. Each application is tested in parallel. For each,
-the test will:
+it reads `metadata.yaml` and uses that to set some testing options, such as
+which platforms to skip, and whether the application supports windows or linux.
+Each application is tested in parallel. For each, the test will:
 
 1.  Bring up a GCE VM
 1.  Install the application on the VM by running

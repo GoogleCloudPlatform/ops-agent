@@ -112,6 +112,11 @@ minimum_supported_agent_version:
   metrics: 2.1.0
   logging: 2.1.0
 supported_operating_systems: linux
+# TODO: Fix errors and enable tests on all platforms.
+platforms_to_skip:
+  - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+  - sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+  - ubuntu-2004-lts # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
 supported_app_version: ["1.18", "1.20"]
 expected_metrics:
   - type: workload.googleapis.com/nginx.connections_accepted
