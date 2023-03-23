@@ -596,7 +596,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	exerciseScript := path.Join("applications", app, "exercise")
 	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
 		logger.ToMainLog().Println("exercise script found, running...")
-
 		if _, err = runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
 		}
@@ -885,10 +884,6 @@ func TestThirdPartyApps(t *testing.T) {
 
 			if tc.skipReason != "" {
 				t.Skip(tc.skipReason)
-			}
-
-			if tc.app != "apache" {
-				return
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
