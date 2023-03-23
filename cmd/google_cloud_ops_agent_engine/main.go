@@ -39,7 +39,7 @@ func runHealthChecks() {
 
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	for _, result := range healthCheckResults {
-		log.Printf(result.Message)
+		log.Printf("Error: %s", result.Message)
 	}
 }
 
