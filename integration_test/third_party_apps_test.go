@@ -233,7 +233,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		// Not expecting this field. It could however be populated with some default zero-values when we
 		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+			return fmt.Errorf("expected no value for field %s but got %v\n", fieldName, actualField)
 		}
 		return nil
 	}
@@ -428,6 +428,18 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	return nil
 }
 
+// stripUnavailableFields removes the fields that are listed as unavailable_on
+// the current platform.
+func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*metadata.LogFields {
+	var result []*metadata.LogFields
+	for _, field := fields {
+		if !metadata.SliceContains(field.UnavailableOn, platform) {
+			result = append(result, field)
+		}
+	}
+	return result
+}
+
 func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -437,7 +449,16 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, entry := range logs {
 		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
 		go func() {
-			// Construct query using non-optional fields.
+			// Strip out the fields that are not available on this platform.
+			// We do this here so that:
+			// 1. the field is never mentioned in the query we send, and
+			// 2. verifyLogField treats it as any other unexpected field, which
+			//    means it will fail the test ("expected no value for field").
+			//    This could result in annoying test failures if the app suddenly
+			//    begins reporting a log field on a certain platform.
+			entry.Fields = stripUnavailableFields(entry.Fields, vm.Platform)
+
+			// Construct query using remaining fields with a nonempty regex.
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
@@ -496,8 +517,8 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
-		if metadata.SliceContains(metric.PlatformsToSkip, vm.Platform) {
-			logger.ToMainLog().Printf("Skipping metric %s due to platforms_to_skip", metric.Type)
+		if metadata.SliceContains(metric.UnavailableOn, vm.Platform) {
+			logger.ToMainLog().Printf("Skipping metric %s due to unavailable_on", metric.Type)
 			continue
 		}
 		requiredMetrics = append(requiredMetrics, metric)
