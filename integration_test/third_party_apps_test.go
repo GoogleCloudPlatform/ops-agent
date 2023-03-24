@@ -152,7 +152,7 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
 	environmentVariables := map[string]string{
-		"REPO_SUFFIX": os.Getenv("REPO_SUFFIX"),
+		"REPO_SUFFIX":              os.Getenv("REPO_SUFFIX"),
 		"ARTIFACT_REGISTRY_REGION": os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
@@ -740,7 +740,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
 			// Consider all apps as impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				impactedApps[app] = true
 			}
 			return impactedApps
@@ -758,7 +758,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 			// in allApps to be a match if they have <f> as a prefix.
 			// For example, consider f = "mongodb". Then all of
 			// {mongodb3.6, mongodb} are considered impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				if strings.HasPrefix(app, f) {
 					impactedApps[app] = true
 				}
