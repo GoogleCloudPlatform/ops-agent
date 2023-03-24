@@ -58,7 +58,7 @@ func run(ctx context.Context) error {
 	defer elog.Close()
 
 	elog.Info(DiagnosticsEventID, fmt.Sprintf("starting %s service", name))
-	err = svc.Run(name, &service{log: elog})
+	err = svc.Run(name, &service{ctx: ctx, log: elog})
 	if err != nil {
 		elog.Error(DiagnosticsEventID, fmt.Sprintf("%s service failed: %v", name, err))
 		return err

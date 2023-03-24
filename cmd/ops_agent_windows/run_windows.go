@@ -91,6 +91,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 			default:
 				s.log.Error(EngineEventID, fmt.Sprintf("unexpected control request #%d", c))
 			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }
