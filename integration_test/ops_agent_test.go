@@ -2629,7 +2629,7 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
 			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
 		// Wait until the http server is ready
-		time.Sleep(10 * time.Second)
+		time.Sleep(20 * time.Second)
 		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
 		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
