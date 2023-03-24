@@ -20,6 +20,6 @@ zip -u "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.r
 cd ../opentelemetry-operations-collector
 # Using array assignment to drop the filename from the sha256sum output
 JAR_SHA_256=($(sha256sum "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"))
-go build -buildvcs=false -o "$DESTDIR/otelopscol" \
+go build -tags=gpu -buildvcs=false -o "$DESTDIR/otelopscol" \
 -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
 ./cmd/otelopscol

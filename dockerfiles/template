@@ -9,9 +9,9 @@ FROM {from_image} AS {target_name}-build-base
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 

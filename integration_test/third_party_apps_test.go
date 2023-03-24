@@ -765,7 +765,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
 			// Consider all apps as impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				impactedApps[app] = true
 			}
 			return impactedApps
@@ -783,7 +783,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 			// in allApps to be a match if they have <f> as a prefix.
 			// For example, consider f = "mongodb". Then all of
 			// {mongodb3.6, mongodb} are considered impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				if strings.HasPrefix(app, f) {
 					impactedApps[app] = true
 				}
