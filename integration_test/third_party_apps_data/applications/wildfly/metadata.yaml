@@ -43,6 +43,14 @@ minimum_supported_agent_version:
   metrics: 2.12.0
   logging: 2.11.0
 supported_operating_systems: linux
+# As wildfly does not have package installers & is installed from tar,
+# we only want to test on one distribution to help reduce integration test size
+platforms_to_skip:
+  - centos-7
+  - rocky-linux-8
+  - sles-12
+  - sles-15
+  - ubuntu-2004-lts
 supported_app_version: ["26.x", "25.x"]
 expected_metrics:
   - type: workload.googleapis.com/wildfly.session.count
