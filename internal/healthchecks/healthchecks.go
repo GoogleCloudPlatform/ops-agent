@@ -81,3 +81,13 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]H
 
 	return result
 }
+
+func LogHealthCheckResults(healthCheckResults map[string]HealthCheckResult, logger *log.Logger) {
+	for _, result := range healthCheckResults {
+		if result.Err != nil {
+			logger.Printf("Error: %s", result.Message)
+		} else {
+			logger.Println(result.Message)
+		}
+	}
+}

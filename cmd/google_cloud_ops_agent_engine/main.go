@@ -38,9 +38,7 @@ func runHealthChecks() {
 	defer closer()
 
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
-	for _, result := range healthCheckResults {
-		log.Printf("Error: %s", result.Message)
-	}
+	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 }
 
 func main() {
