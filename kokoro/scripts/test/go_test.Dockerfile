@@ -1,4 +1,4 @@
-# To edit this file, follow the instructions at: go/sdi-integ-test#updating-the-test-runner-container.
+# To edit this file, follow these instructions: go/sdi-integ-test#updating-the-test-runner-container.
 
 FROM golang:1.20.1-bullseye
 

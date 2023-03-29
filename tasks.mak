@@ -56,6 +56,9 @@ yaml_format:
 yaml_lint:
 	yamlfmt -lint
 
+compile_dockerfile:
+	go run ./dockerfiles
+
 ############
 # Unit Tests
 ############
