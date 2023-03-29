@@ -87,7 +87,7 @@ func runOtelCollectorCheck(logger *log.Logger) error {
 		return nil
 	}
 
-	//Opentelemetry-collector listens in both tcp4 and tcp6. Check for opentelemetry-collector self metrics port.
+	// Opentelemetry-collector listens in both tcp4 and tcp6. Check for opentelemetry-collector self metrics port.
 	err = runPortCheck(logger, otel.MetricsPort, tcpHost, "tcp4", OtelMetricsPortErr)
 	if err != nil {
 		return err
