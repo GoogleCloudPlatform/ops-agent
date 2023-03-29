@@ -156,6 +156,7 @@ const (
 
 	vmInitTimeout                     = 20 * time.Minute
 	vmInitBackoffDuration             = 10 * time.Second
+	vmInitPokeSSHTimeout              = 30 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	slesStartupDelay           = 60 * time.Second
@@ -1562,6 +1563,8 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	attempt := 0
 	printFoo := func() error {
 		attempt++
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
@@ -1596,6 +1599,8 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
