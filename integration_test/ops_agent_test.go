@@ -259,7 +259,7 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 	}
 
 	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX="+location.repoSuffix+" ARTIFACT_REGISTRY_REGION="+location.artifactRegistryRegion
+		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
 		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
@@ -1673,7 +1673,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 		}
 
 		// Quote-and-escape the query string so that Cloud Logging accepts it
-		expectedWarning := fmt.Sprintf(`"\"logging.receivers.%s.channels\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, log, channel)
+		expectedWarning := fmt.Sprintf(`"\"channels[1]\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, channel)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
 			t.Fatal(err)
 		}

@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -74,7 +75,7 @@ func (LoggingProcessorCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -105,7 +106,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	fields := map[string]*confgenerator.ModifyField{
 		"severity": {
@@ -146,7 +147,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: fields,
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -156,7 +157,7 @@ type LoggingReceiverCouchdb struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file
@@ -176,8 +177,8 @@ func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCouchdb.Components(tag, "couchdb")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorCouchdb.Components(ctx, tag, "couchdb")...)
 	return c
 }
 

@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -78,7 +80,7 @@ func (LoggingProcessorKafka) Type() string {
 	return "kafka"
 }
 
-func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorKafka) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -114,7 +116,7 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 				Regex:     `^(?!\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\])`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels are just log4j log levels
 	// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
@@ -135,7 +137,7 @@ func (p LoggingProcessorKafka) Components(tag string, uid string) []fluentbit.Co
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -146,7 +148,7 @@ type LoggingReceiverKafka struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverKafka) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// No default package installers, these are common log paths from installs online
@@ -155,8 +157,8 @@ func (r LoggingReceiverKafka) Components(tag string) []fluentbit.Component {
 			"/opt/kafka/logs/controller.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorKafka.Components(tag, "kafka")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorKafka.Components(ctx, tag, "kafka")...)
 	return c
 }
 
