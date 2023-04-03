@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -28,7 +30,7 @@ func (*LoggingProcessorRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
@@ -50,7 +52,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 	c = append(c,
@@ -69,7 +71,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -80,7 +82,7 @@ type LoggingReceiverRabbitmq struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
@@ -105,8 +107,8 @@ func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
 			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRabbitmq.Components(tag, "rabbitmq")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorRabbitmq.Components(ctx, tag, "rabbitmq")...)
 	return c
 }
 

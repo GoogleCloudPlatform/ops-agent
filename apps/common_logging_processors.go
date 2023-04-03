@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -30,7 +31,7 @@ func instrumentationSourceValue(processorType string) *confgenerator.ModifyField
 	}
 }
 
-func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Component {
+func genericAccessLogParser(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -47,7 +48,7 @@ func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Componen
 				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
@@ -84,6 +85,6 @@ func genericAccessLogParser(processorType, tag, uid string) []fluentbit.Componen
 		}
 	}
 
-	c = append(c, mf.Components(tag, uid)...)
+	c = append(c, mf.Components(ctx, tag, uid)...)
 	return c
 }

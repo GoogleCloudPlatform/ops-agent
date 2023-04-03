@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package windows
+package platform
 
 import (
 	"log"
@@ -36,21 +33,21 @@ func getWindowsBuildNumber() string {
 	return build
 }
 
-func Is2012() bool {
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	build := getWindowsBuildNumber()
-	return build == "9200" || build == "9600"
+func (p *Platform) detectPlatform() {
+	p.Type = Windows
+	p.WindowsBuildNumber = getWindowsBuildNumber()
+	var err error
+	p.WinlogV1Channels, err = getOldWinlogChannels()
+	if err != nil {
+		// Ignore the error, to preserve existing behavior.
+		log.Printf("could not find Windows Event Log V1 channels: %v", err)
+	}
 }
 
-func Is2016() bool {
-	build := getWindowsBuildNumber()
-	return build == "14393"
-}
-
-// GetOldWinlogChannels returns the set of event logs (channels) under
+// getOldWinlogChannels returns the set of event logs (channels) under
 // HKLM\SYSTEM\CurrentControlSet\Services\EventLog, which (supposedly) corresponds
 // to the available channels on the machine which are compatible with the "old API".
-func GetOldWinlogChannels() ([]string, error) {
+func getOldWinlogChannels() ([]string, error) {
 	parentKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Services\EventLog`, registry.READ)
 	if err != nil {
 		return nil, err

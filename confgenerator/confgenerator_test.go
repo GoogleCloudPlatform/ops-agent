@@ -15,6 +15,7 @@
 package confgenerator_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -26,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
@@ -43,29 +45,62 @@ const (
 )
 
 type platformConfig struct {
+	name            string
 	defaultLogsDir  string
 	defaultStateDir string
-	*host.InfoStat
+	platform        platform.Platform
+}
+
+var winlogv1channels = []string{
+	"Application",
+	"Security",
+	"Setup",
+	"System",
 }
 
 var (
-	platforms = []platformConfig{
+	testPlatforms = []platformConfig{
 		{
+			name:            "linux",
 			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
 			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-			InfoStat: &host.InfoStat{
-				OS:              "linux",
-				Platform:        "linux_platform",
-				PlatformVersion: "linux_platform_version",
+			platform: platform.Platform{
+				Type: platform.Linux,
+				HostInfo: &host.InfoStat{
+					OS:              "linux",
+					Platform:        "linux_platform",
+					PlatformVersion: "linux_platform_version",
+				},
 			},
 		},
 		{
+			name:            "windows",
 			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-			InfoStat: &host.InfoStat{
-				OS:              "windows",
-				Platform:        "win_platform",
-				PlatformVersion: "win_platform_version",
+			platform: platform.Platform{
+				Type:               platform.Windows,
+				WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
+				WinlogV1Channels:   winlogv1channels,
+				HostInfo: &host.InfoStat{
+					OS:              "windows",
+					Platform:        "win_platform",
+					PlatformVersion: "win_platform_version",
+				},
+			},
+		},
+		{
+			name:            "windows-2012",
+			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
+			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
+			platform: platform.Platform{
+				Type:               platform.Windows,
+				WindowsBuildNumber: "9200", // Windows Server 2012
+				WinlogV1Channels:   winlogv1channels,
+				HostInfo: &host.InfoStat{
+					OS:              "windows",
+					Platform:        "win_platform",
+					PlatformVersion: "win_platform_version",
+				},
 			},
 		},
 	}
@@ -102,13 +137,13 @@ func TestGoldens(t *testing.T) {
 		test := test
 		t.Run(test.dirName, func(t *testing.T) {
 			t.Parallel()
-			for _, platform := range platforms {
-				platform := platform
-				t.Run(platform.OS, func(t *testing.T) {
+			for _, pc := range testPlatforms {
+				pc := pc
+				t.Run(pc.name, func(t *testing.T) {
 					t.Parallel()
 					runTestsInDir(
 						t,
-						platform,
+						pc,
 						test.dirName,
 						test.errAssertion,
 					)
@@ -120,11 +155,11 @@ func TestGoldens(t *testing.T) {
 
 func runTestsInDir(
 	t *testing.T,
-	platform platformConfig,
+	pc platformConfig,
 	testTypeDir string,
 	errAssertion func(*testing.T, error, map[string]string),
 ) {
-	platformTestDir := filepath.Join(testTypeDir, platform.OS)
+	platformTestDir := filepath.Join(testTypeDir, pc.name)
 	testNames := getTestsInDir(t, platformTestDir)
 
 	for _, testName := range testNames {
@@ -133,7 +168,7 @@ func runTestsInDir(
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			testDir := filepath.Join(platformTestDir, testName)
-			got, err := generateConfigs(platform, testDir)
+			got, err := generateConfigs(pc, testDir)
 			if errAssertion != nil {
 				errAssertion(t, err, got)
 			}
@@ -149,6 +184,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 
 	testdataDir := filepath.Join("testdata", testDir)
 	testDirEntries, err := os.ReadDir(testdataDir)
+	if os.IsNotExist(err) {
+		// No tests for this combination.
+		return nil
+	}
 	assert.NilError(t, err, "couldn't read directory %s: %v", testdataDir, err)
 	testNames := []string{}
 	for _, testDirEntry := range testDirEntries {
@@ -167,7 +206,9 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 	return testNames
 }
 
-func generateConfigs(platform platformConfig, testDir string) (got map[string]string, err error) {
+func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
+	ctx := pc.platform.TestContext(context.Background())
+
 	got = make(map[string]string)
 	defer func() {
 		if err != nil {
@@ -176,20 +217,19 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}()
 
 	uc, err := confgenerator.MergeConfFiles(
+		ctx,
 		filepath.Join("testdata", testDir, inputFileName),
-		platform.OS,
 		apps.BuiltInConfStructs,
 	)
 	if err != nil {
 		return
 	}
-	got[builtinConfigFileName] = apps.BuiltInConfStructs[platform.OS].String()
+	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
 
 	// Fluent Bit configs
-	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
-		platform.defaultLogsDir,
-		platform.defaultStateDir,
-		platform.InfoStat,
+	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(ctx,
+		pc.defaultLogsDir,
+		pc.defaultStateDir,
 	)
 	for k, v := range flbGeneratedConfigs {
 		got[k] = v
@@ -199,7 +239,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx)
 	if err != nil {
 		return
 	}
@@ -207,7 +247,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
-	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(inputBytes, platform.OS)
+	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
 	if err != nil {
 		return
 	}

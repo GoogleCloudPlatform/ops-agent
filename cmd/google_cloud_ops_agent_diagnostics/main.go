@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -23,8 +24,8 @@ import (
 
 // getUserAndMergedConfigs if successful will return both the users original
 // config and merged config respectively
-func getUserAndMergedConfigs(userConfPath, platform string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
-	userUc, err := confgenerator.ReadUnifiedConfigFromFile(userConfPath, platform)
+func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -32,7 +33,7 @@ func getUserAndMergedConfigs(userConfPath, platform string) (*confgenerator.Unif
 		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-	mergedUc, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -46,7 +47,7 @@ func main() {
 			log.Fatal("Recovered in run", r)
 		}
 	}()
-	if err := run(); err != nil {
+	if err := run(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 }
