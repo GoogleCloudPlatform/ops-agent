@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -63,8 +65,8 @@ func (LoggingProcessorCassandraSystem) Type() string {
 	return "cassandra_system"
 }
 
-func (p LoggingProcessorCassandraSystem) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(p.Type(), tag, uid)
+func (p LoggingProcessorCassandraSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	return javaLogParsingComponents(ctx, p.Type(), tag, uid)
 }
 
 type LoggingProcessorCassandraDebug struct {
@@ -75,11 +77,11 @@ func (LoggingProcessorCassandraDebug) Type() string {
 	return "cassandra_debug"
 }
 
-func (p LoggingProcessorCassandraDebug) Components(tag string, uid string) []fluentbit.Component {
-	return javaLogParsingComponents(p.Type(), tag, uid)
+func (p LoggingProcessorCassandraDebug) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	return javaLogParsingComponents(ctx, p.Type(), tag, uid)
 }
 
-func javaLogParsingComponents(processorType, tag, uid string) []fluentbit.Component {
+func javaLogParsingComponents(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -115,7 +117,7 @@ func javaLogParsingComponents(processorType, tag, uid string) []fluentbit.Compon
 				Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Best documentation found for log levels:
 	// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
@@ -135,7 +137,7 @@ func javaLogParsingComponents(processorType, tag, uid string) []fluentbit.Compon
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -149,7 +151,7 @@ func (LoggingProcessorCassandraGC) Type() string {
 	return "cassandra_gc"
 }
 
-func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorCassandraGC) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -184,13 +186,13 @@ func (p LoggingProcessorCassandraGC) Components(tag string, uid string) []fluent
 				Regex:     `^(?!\d{4}-\d{2}-\d{2})`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c, confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
-	}.Components(tag, uid)...)
+	}.Components(ctx, tag, uid)...)
 
 	return c
 }
@@ -200,7 +202,7 @@ type LoggingReceiverCassandraSystem struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraSystem) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
@@ -208,8 +210,8 @@ func (r LoggingReceiverCassandraSystem) Components(tag string) []fluentbit.Compo
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCassandraSystem.Components(tag, "cassandra_system")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorCassandraSystem.Components(ctx, tag, "cassandra_system")...)
 	return c
 }
 
@@ -218,7 +220,7 @@ type LoggingReceiverCassandraDebug struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraDebug) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
@@ -226,8 +228,8 @@ func (r LoggingReceiverCassandraDebug) Components(tag string) []fluentbit.Compon
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCassandraDebug.Components(tag, "cassandra_debug")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorCassandraDebug.Components(ctx, tag, "cassandra_debug")...)
 	return c
 }
 
@@ -236,7 +238,7 @@ type LoggingReceiverCassandraGC struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraGC) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
@@ -244,8 +246,8 @@ func (r LoggingReceiverCassandraGC) Components(tag string) []fluentbit.Component
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCassandraGC.Components(tag, "cassandra_gc")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorCassandraGC.Components(ctx, tag, "cassandra_gc")...)
 	return c
 }
 

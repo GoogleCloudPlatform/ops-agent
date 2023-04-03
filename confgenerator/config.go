@@ -28,8 +28,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
@@ -63,12 +63,12 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy(platform string) (*UnifiedConfig, error) {
+func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
-	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
+	fromYaml, err := UnmarshalYamlToUnifiedConfig(ctx, toYaml)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
@@ -157,7 +157,7 @@ func (ve validationError) Error() string {
 	case "winlogchannels":
 		// Assume validation has already failed by this point, that is, receiver_version must already be > 1
 		channels := ve.Value().([]string)
-		return validateWinlogchannels(channels).Error()
+		return validateWinlogChannels(channels).Error()
 	}
 
 	return ve.FieldError.Error()
@@ -177,11 +177,6 @@ func (v *validatorContext) Struct(s interface{}) error {
 	return out
 }
 
-type platformKeyType struct{}
-
-// platformKey is a singleton that is used as a Context key for retrieving the current platform from the context.Context.
-var platformKey = platformKeyType{}
-
 func newValidator() *validator.Validate {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -190,10 +185,6 @@ func newValidator() *validator.Validate {
 			return ""
 		}
 		return name
-	})
-	// platform validates that the current platform is equal to the parameter
-	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
-		return ctx.Value(platformKey) == fl.Param()
 	})
 	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
@@ -284,28 +275,34 @@ func newValidator() *validator.Validate {
 		}
 		return t%tfactor == 0
 	})
-	// winlogchannels wraps validateWinlogchannels when receiver_version > 1
-	// TODO: relax the "receiver_version > 1" constraint and replace validateWinlogchannels with built-in validator primitives
-	v.RegisterValidation("winlogchannels", func(fl validator.FieldLevel) bool {
+	// winlogchannels wraps validateWinlogChannels when receiver_version > 1 and validateWinlogV1Channels when receiver_version = 1
+	// TODO: relax the "receiver_version > 1" constraint and replace validateWinlogChannels with built-in validator primitives
+	v.RegisterValidationCtx("winlogchannels", func(ctx context.Context, fl validator.FieldLevel) bool {
 		receiver, ok := fl.Parent().Interface().(LoggingReceiverWindowsEventLog)
 		if !ok {
 			panic(fmt.Sprintf("winlogchannels: could not convert %s's parent to LoggingReceiverWindowsEventLog", fl.Field().String()))
 		}
 		if receiver.IsDefaultVersion() {
+			if err := validateWinlogV1Channels(ctx, receiver.Channels); err != nil {
+				// Only emit a soft failure (warning) here, because:
+				// 1) we want this to be backwards compatible, and
+				// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
+				log.Print(err)
+			}
 			return true
 		}
-		return validateWinlogchannels(receiver.Channels) == nil
+		return validateWinlogChannels(receiver.Channels) == nil
 	})
 	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
 	registerExperimentalValidations(v)
 	return v
 }
 
-// validateWinlogchannels validates a handful of things at once:
+// validateWinlogChannels validates a handful of things at once:
 // - that at least one channel is defined
 // - that channels do not contain commas
 // - that channels are unique (case-insensitive)
-func validateWinlogchannels(channels []string) error {
+func validateWinlogChannels(channels []string) error {
 	if len(channels) == 0 {
 		return fmt.Errorf(`"channels" must contain at least one channel when "receiver_version" is 2 or higher`)
 	}
@@ -319,6 +316,25 @@ func validateWinlogchannels(channels []string) error {
 		return fmt.Errorf(`"channels" contains the same value more than once: %s`, duplicate)
 	}
 	return nil
+}
+
+// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
+// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
+// would be needed instead.
+// Caveat: there is little official documentation to support that this is a guaranteed
+// method of determining whether a channel is accessible via the "old API".
+func validateWinlogV1Channels(ctx context.Context, channels []string) error {
+	oldChannels := platform.FromContext(ctx).WinlogV1Channels
+	var err error
+	for i, channel := range channels {
+		if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
+			err = multierr.Append(err, fmt.Errorf(
+				`"channels[%d]" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
+				i, channel,
+			))
+		}
+	}
+	return err
 }
 
 // getFirstNonUniqueString returns the first non-unique (duplicate) string
@@ -337,8 +353,7 @@ func getFirstNonUniqueString(slice []string) string {
 	return ""
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (*UnifiedConfig, error) {
-	ctx := context.WithValue(context.TODO(), platformKey, platform)
+func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte) (*UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	v := &validatorContext{
 		ctx: ctx,
@@ -348,7 +363,6 @@ func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (*UnifiedConfig
 		return nil, err
 	}
 
-	config.platform = platform
 	return &config, nil
 }
 
@@ -371,18 +385,13 @@ type componentInterface interface {
 type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() CI
-	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
-	platforms []string
+	// platforms is a bitmask of platforms on which the component is valid
+	platforms platform.Type
 }
 
 func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
-	platform := ctx.Value(platformKey).(string)
-	for _, v := range ct.platforms {
-		if v == platform {
-			return true
-		}
-	}
-	return len(ct.platforms) == 0
+	platformType := platform.FromContext(ctx).Type
+	return ct.platforms&platformType == platformType
 }
 
 type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
@@ -394,7 +403,7 @@ type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...string) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...platform.Type) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
@@ -402,7 +411,14 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	if r.TypeMap == nil {
 		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	r.TypeMap[name] = &componentFactory[CI]{constructor, platforms}
+	var platformsValue platform.Type
+	for _, p := range platforms {
+		platformsValue = platformsValue | p
+	}
+	if platformsValue == 0 {
+		platformsValue = platform.All
+	}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
@@ -489,7 +505,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	Components(tag string) []fluentbit.Component
+	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
@@ -521,7 +537,7 @@ type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(tag string, uid string) []fluentbit.Component
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
@@ -824,12 +840,6 @@ func (l *Logging) Validate() error {
 		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetListenPorts(), p.ReceiverIDs); err != nil {
 			return err
 		}
-		if err := validateWinlogV1Channels(l.Receivers, p.ReceiverIDs); err != nil {
-			// Only emit a soft failure (warning) here, because:
-			// 1) we want this to be backwards compatible, and
-			// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
-			log.Print(err)
-		}
 		if err := validateWinlogRenderAsXML(l.Receivers, p.ReceiverIDs); err != nil {
 			return err
 		}
@@ -1044,39 +1054,6 @@ func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]u
 		}
 	}
 	return taken, nil
-}
-
-// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
-// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
-// would be needed instead.
-// Caveat: there is little official documentation to support that this is a guaranteed
-// method of determining whether a channel is accessible via the "old API".
-func validateWinlogV1Channels(receivers loggingReceiverMap, receiverIDs []string) error {
-	oldChannels, err := windows.GetOldWinlogChannels()
-	if err != nil {
-		return fmt.Errorf("validateWinlogV1Channels: GetOldWinlogChannels() returned err=%v", err)
-	}
-	for _, receiverID := range receiverIDs {
-		var ok bool
-		var receiver LoggingReceiver
-		var winlogReceiver *LoggingReceiverWindowsEventLog
-		if receiver, ok = receivers[receiverID]; !ok {
-			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
-		}
-		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok || !winlogReceiver.IsDefaultVersion() {
-			continue
-		}
-		for _, channel := range winlogReceiver.Channels {
-			if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
-				err = multierr.Append(err, fmt.Errorf(
-					`"logging.receivers.%s.channels" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
-					receiverID,
-					channel,
-				))
-			}
-		}
-	}
-	return err
 }
 
 // validateWinlogRenderAsXML validates that the correct receiver version is used when

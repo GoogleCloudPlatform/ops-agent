@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -116,7 +117,7 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	// sample log line:
@@ -132,14 +133,14 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
-	c = append(c, jsonParser.Components(tag, uid)...)
-	c = append(c, p.severityParser(tag, uid)...)
-	c = append(c, p.nestingProcessors(tag, uid)...)
+	c = append(c, jsonParser.Components(ctx, tag, uid)...)
+	c = append(c, p.severityParser(ctx, tag, uid)...)
+	c = append(c, p.nestingProcessors(ctx, tag, uid)...)
 
 	return c
 }
 
-func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) severityParser(ctx context.Context, tag, uid string) []fluentbit.Component {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
@@ -158,10 +159,10 @@ func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []flu
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 }
 
-func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) nestingProcessors(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -189,7 +190,7 @@ func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []
 			NestUnder:    prefix,
 			RemovePrefix: fmt.Sprintf("%s.", prefix),
 		}
-		c = append(c, nestProcessor.Components(tag, uid)...)
+		c = append(c, nestProcessor.Components(ctx, tag, uid)...)
 	}
 
 	return c
@@ -203,7 +204,7 @@ func (LoggingProcessorElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
-func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	regexParser := confgenerator.LoggingProcessorParseRegex{
@@ -219,13 +220,13 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 		},
 	}
 
-	c = append(c, regexParser.Components(tag, uid)...)
+	c = append(c, regexParser.Components(ctx, tag, uid)...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -235,7 +236,7 @@ type LoggingReceiverElasticsearchJson struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
 		r.IncludePaths = []string{
@@ -269,8 +270,8 @@ func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Com
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchJson.Components(tag, "elasticsearch_json")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorElasticsearchJson.Components(ctx, tag, "elasticsearch_json")...)
 }
 
 type LoggingReceiverElasticsearchGC struct {
@@ -278,7 +279,7 @@ type LoggingReceiverElasticsearchGC struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default GC log for Elasticsearch
 		r.IncludePaths = []string{
@@ -286,8 +287,8 @@ func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Compo
 		}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(tag, "elasticsearch_gc")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
 }
 
 func init() {
