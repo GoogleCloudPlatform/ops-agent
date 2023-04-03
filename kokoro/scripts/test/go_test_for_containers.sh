@@ -67,6 +67,9 @@ PATH=$PATH:/usr/local/go/bin
 
 go version
 
+# Install a utility for producing XML test results.
+go install github.com/jstemmer/go-junit-report/v2@latest
+
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
 
@@ -108,7 +111,7 @@ fi
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
-  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" -parser gojson > "${LOGS_DIR}/sponge_log.xml"
+  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${LOGS_DIR}/sponge_log.xml"
 }
 # Always run produce_xml on exit, whether the test passes or fails.
 trap produce_xml EXIT
@@ -118,7 +121,6 @@ ulimit -n 1000000
 
 # Set up some command line flags for "go test".
 args=(
-  -json
   -test.parallel=1000
   -tags=integration_test
   -timeout=3h
