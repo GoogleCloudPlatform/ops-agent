@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -26,8 +27,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func getMergedConfigForPlatform(userConfPath, platform string) (*confgenerator.UnifiedConfig, error) {
-	mergedUc, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
+func getMergedConfigForPlatform(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, error) {
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +44,8 @@ func getLogFileRotation(config *confgenerator.UnifiedConfig) confgenerator.LogFi
 }
 
 func run(logFilename, configurationPath string, cmd *exec.Cmd) error {
-	ucConfig, err := getMergedConfig(configurationPath)
+	ctx := context.Background()
+	ucConfig, err := getMergedConfigForPlatform(ctx, configurationPath)
 	if err != nil {
 		return err
 	}
