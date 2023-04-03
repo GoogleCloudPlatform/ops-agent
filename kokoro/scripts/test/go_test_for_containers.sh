@@ -65,6 +65,8 @@ gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.t
 
 PATH=$PATH:/usr/local/go/bin
 
+go version
+
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
 
