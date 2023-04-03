@@ -148,13 +148,7 @@ func getHealthCheckResults() map[string]healthchecks.HealthCheckResult {
 
 func (s *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			s.log.Error(EngineEventID, result.Message)
-		} else {
-			s.log.Info(EngineEventID, result.Message)
-		}
-	}
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { s.Log.Info(EngineEventID, s) }, func(s string) { s.Log.Error(EngineEventID, s) })
 	s.log.Info(EngineEventID, "Startup checks finished")
 }
 

@@ -39,7 +39,7 @@ func runHealthChecks() {
 	defer closer()
 
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
-	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { log.Println(s) }, func(s string) { log.Println(s) })
 }
 
 func main() {
@@ -71,5 +71,5 @@ func run() error {
 			return nil
 		}
 	}
-	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
+	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
 }
