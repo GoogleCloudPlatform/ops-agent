@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"unsafe"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
