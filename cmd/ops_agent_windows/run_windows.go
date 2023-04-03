@@ -148,7 +148,7 @@ func getHealthCheckResults() map[string]healthchecks.HealthCheckResult {
 
 func (s *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { s.Log.Info(EngineEventID, s) }, func(s string) { s.Log.Error(EngineEventID, s) })
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { s.log.Info(EngineEventID, s) }, func(s string) { s.log.Error(EngineEventID, s) })
 	s.log.Info(EngineEventID, "Startup checks finished")
 }
 
