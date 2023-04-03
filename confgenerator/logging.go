@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -24,7 +25,7 @@ const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentati
 const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
+func setLogNameComponents(ctx context.Context, tag, logName, receiverType string, hostName string) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
@@ -40,7 +41,7 @@ func setLogNameComponents(tag, logName, receiverType string, hostName string) []
 			// 	StaticValue: &receiverType,
 			// },
 		},
-	}.Components(tag, "setlogname")
+	}.Components(ctx, tag, "setlogname")
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.

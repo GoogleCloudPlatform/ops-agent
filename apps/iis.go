@@ -15,11 +15,13 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverIis struct {
@@ -139,7 +141,7 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, platform.Windows)
 }
 
 type LoggingProcessorIisAccess struct {
@@ -180,7 +182,7 @@ const (
 	`
 )
 
-func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
@@ -195,7 +197,7 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 				"http_request_status": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
@@ -239,7 +241,7 @@ func (p *LoggingProcessorIisAccess) Components(tag, uid string) []fluentbit.Comp
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: fields,
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -249,18 +251,18 @@ type LoggingReceiverIisAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverIisAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(tag, "iis_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
 	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, "windows")
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, "windows")
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, platform.Windows)
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
 }

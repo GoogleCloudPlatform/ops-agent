@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -76,7 +78,7 @@ func (LoggingProcessorApacheError) Type() string {
 	return "apache_error"
 }
 
-func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorApacheError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
 		// Sample line 2.4: [Fri Sep 09 10:42:29.902022 2011] [core:error] [pid 35708:tid 4328636416] (13)Permission denied [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
@@ -93,7 +95,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 				"tid": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 	c = append(c,
@@ -123,7 +125,7 @@ func (p LoggingProcessorApacheError) Components(tag string, uid string) []fluent
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -133,8 +135,8 @@ type LoggingProcessorApacheAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (p LoggingProcessorApacheAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(p.Type(), tag, uid)
+func (p LoggingProcessorApacheAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
 
 func (LoggingProcessorApacheAccess) Type() string {
@@ -146,7 +148,7 @@ type LoggingReceiverApacheAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -157,8 +159,8 @@ func (r LoggingReceiverApacheAccess) Components(tag string) []fluentbit.Componen
 			"/var/log/httpd/access_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorApacheAccess.Components(tag, "apache_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorApacheAccess.Components(ctx, tag, "apache_access")...)
 	return c
 }
 
@@ -167,7 +169,7 @@ type LoggingReceiverApacheError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -178,8 +180,8 @@ func (r LoggingReceiverApacheError) Components(tag string) []fluentbit.Component
 			"/var/log/httpd/error_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorApacheError.Components(tag, "apache_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorApacheError.Components(ctx, tag, "apache_error")...)
 	return c
 }
 
