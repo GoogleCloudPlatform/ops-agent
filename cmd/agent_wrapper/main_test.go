@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path"
 	"reflect"
@@ -254,7 +255,7 @@ func TestAgentWrapper(t *testing.T) {
 			}
 
 			// Run command to print specific amount of bytes
-			if err := run(ts.getLogFile(), ts.getConfigPath(), getCommand(tc.bytesWritten)); err != nil {
+			if err := run(context.Background(), ts.getLogFile(), ts.getConfigPath(), getCommand(tc.bytesWritten)); err != nil {
 				t.Fatal(err)
 			}
 

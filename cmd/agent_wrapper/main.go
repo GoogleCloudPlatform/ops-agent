@@ -43,8 +43,7 @@ func getLogFileRotation(config *confgenerator.UnifiedConfig) confgenerator.LogFi
 	return *config.Global.DefaultLogFileRotation
 }
 
-func run(logFilename, configurationPath string, cmd *exec.Cmd) error {
-	ctx := context.Background()
+func run(ctx context.Context, logFilename, configurationPath string, cmd *exec.Cmd) error {
 	ucConfig, err := getMergedConfigForPlatform(ctx, configurationPath)
 	if err != nil {
 		return err
@@ -101,7 +100,7 @@ func main() {
 		log.Fatal("Command to run must be passed in as first argument")
 	}
 	cmd := exec.Command(flag.Args()[0], flag.Args()[1:]...)
-	err := run(*logPathFlag, *configurationPathFlag, cmd)
+	err := run(context.Background(), *logPathFlag, *configurationPathFlag, cmd)
 	if err != nil {
 		log.Print(err)
 	}

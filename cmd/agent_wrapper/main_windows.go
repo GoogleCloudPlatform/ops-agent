@@ -29,10 +29,6 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
-func getMergedConfig(userConfPath string) (*confgenerator.UnifiedConfig, error) {
-	return getMergedConfigForPlatform(userConfPath, "windows")
-}
-
 func configureJob() (*windows.Handle, error) {
 	jobHandle, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
