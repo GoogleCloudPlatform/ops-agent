@@ -146,10 +146,10 @@ func getHealthCheckResults() map[string]healthchecks.HealthCheckResult {
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
-func (s *service) runHealthChecks() {
+func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { s.log.Info(EngineEventID, s) }, func(s string) { s.log.Error(EngineEventID, s) })
-	s.log.Info(EngineEventID, "Startup checks finished")
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { srv.log.Info(EngineEventID, s) }, func(s string) { srv.log.Error(EngineEventID, s) })
+	srv.log.Info(EngineEventID, "Startup checks finished")
 }
 
 func (s *service) generateConfigs(ctx context.Context) error {
