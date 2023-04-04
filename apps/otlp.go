@@ -34,10 +34,30 @@ type ReceiverOTLP struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port" tracking:"endpoint"`
+	MetricsMode  string `yaml:"metrics_mode" validate:"omitempty,oneof=googlecloudmonitoring googlemanagedprometheus"`
 }
 
 func (r ReceiverOTLP) Type() string {
 	return "otlp"
+}
+
+func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, []otel.Component) {
+	if r.MetricsMode == "googlecloudmonitoring" {
+		return otel.GMP, nil
+	}
+	var knownDomainsRegexEscaped []string
+	for _, knownDomain := range knownDomains {
+		knownDomainsRegexEscaped = append(knownDomainsRegexEscaped, regexp.QuoteMeta(knownDomain))
+	}
+	return otel.OTel, []otel.Component{
+		otel.MetricsTransform(
+			otel.RegexpRename(`^(.*)$`, `A${1}`),
+			otel.RegexpRename(fmt.Sprintf(`^A((?:[a-z]+\.)*(?:%s)/.+)$`, strings.Join(knownDomainsRegexEscaped, "|")), `B${1}`),
+			otel.RegexpRename(`^A(.*)$`, `Aworkload.googleapis.com/${1}`),
+			otel.RegexpRename(`^[AB](.*)$`, `${1}`),
+		),
+		// N.B. We don't touch the instrumentation_scope fields here, so we can pass through the incoming strings.
+	}
 }
 
 func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
@@ -45,11 +65,11 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
-	var knownDomainsRegexEscaped []string
-	for _, knownDomain := range knownDomains {
-		knownDomainsRegexEscaped = append(knownDomainsRegexEscaped, regexp.QuoteMeta(knownDomain))
-	}
+
+	receiverPipelineType, metricsProcessors := r.metricsProcessors()
+
 	return []otel.ReceiverPipeline{{
+		Type: receiverPipelineType,
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{
@@ -84,16 +104,8 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 			// a processor and replace all of this stuff with that processor.
 			//
 			// [1] https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
-			"metrics": {
-				otel.MetricsTransform(
-					otel.RegexpRename(`^(.*)$`, `A${1}`),
-					otel.RegexpRename(fmt.Sprintf(`^A((?:[a-z]+\.)*(?:%s)/.+)$`, strings.Join(knownDomainsRegexEscaped, "|")), `B${1}`),
-					otel.RegexpRename(`^A(.*)$`, `Aworkload.googleapis.com/${1}`),
-					otel.RegexpRename(`^[AB](.*)$`, `${1}`),
-				),
-				// N.B. We don't touch the instrumentation_scope fields here, so we can pass through the incoming strings.
-			},
-			"traces": nil,
+			"metrics": metricsProcessors,
+			"traces":  nil,
 		},
 	}}
 }
