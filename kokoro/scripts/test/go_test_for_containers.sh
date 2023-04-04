@@ -50,9 +50,6 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
-# Install a utility for producing XML test results.
-go install github.com/jstemmer/go-junit-report/v2@latest
-
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
 
