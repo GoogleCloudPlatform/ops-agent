@@ -206,7 +206,7 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	// Pass the content in on stdin and run "cat -" to tell cat to copy from stdin.
 	// This is to avoid having to quote the content correctly for the shell.
 	// "tee -a" will append to the file.
-	if _, err := gce.RunRemotely(ctx, logger, vm, line, fmt.Sprintf("cat - | sabcee -a '%s' > /dev/null", location)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, line, fmt.Sprintf("cat - | sudo tee -a '%s' > /dev/null", location)); err != nil {
 		return fmt.Errorf("writeToSystemLog() failed to write %q to %s: %v", line, location, err)
 	}
 	return nil
