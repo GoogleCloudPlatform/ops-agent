@@ -19,9 +19,22 @@ package healthchecks
 
 import (
 	"errors"
-	"golang.org/x/sys/windows"
+	"fmt"
 	"net"
+	"os/exec"
+	"strings"
+
+	"golang.org/x/sys/windows"
 )
+
+func isSubagentActive(subagent string) (bool, error) {
+	cmd := exec.Command("powershell", fmt.Sprintf("(Get-Service %s).Status", subagent))
+	output, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == "Running", nil
+}
 
 func isPortUnavailableError(err error) bool {
 	return errors.Is(err, windows.WSAEADDRINUSE) || errors.Is(err, windows.WSAEACCES)
