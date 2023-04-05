@@ -29,8 +29,19 @@ type HealthCheck interface {
 }
 
 type HealthCheckResult struct {
-	Message string
-	Err     error
+	Name string
+	Err  error
+}
+
+func (r HealthCheckResult) String() string {
+	if r.Err != nil {
+		if healthError, ok := r.Err.(HealthCheckError); ok {
+			return fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+				r.Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+		}
+		return fmt.Sprintf("%s - Result: ERROR, Detail: %s", r.Name, r.Err.Error())
+	}
+	return fmt.Sprintf("%s - Result: PASS", r.Name)
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -60,35 +71,26 @@ func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func())
 	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]HealthCheckResult {
-	var message string
-	result := map[string]HealthCheckResult{}
+func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthCheckResult {
+	result := []HealthCheckResult{}
 
 	for _, c := range r {
 		err := c.RunCheck(logger)
-		if err != nil {
-			if healthError, ok := err.(HealthCheckError); ok {
-				message = fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
-					c.Name(), healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
-			} else {
-				message = fmt.Sprintf("%s - Result: ERROR, Detail: %s", c.Name(), err.Error())
-			}
-		} else {
-			message = fmt.Sprintf("%s - Result: PASS", c.Name())
-		}
-		logger.Print(message)
-		result[c.Name()] = HealthCheckResult{Message: message, Err: err}
+
+		r := HealthCheckResult{Name: c.Name(), Err: err}
+		logger.Println(r)
+		result = append(result, r)
 	}
 
 	return result
 }
 
-func LogHealthCheckResults(healthCheckResults map[string]HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
+func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
 	for _, result := range healthCheckResults {
 		if result.Err != nil {
-			errorLogger(result.Message)
+			errorLogger(result.String())
 		} else {
-			infoLogger(result.Message)
+			infoLogger(result.String())
 		}
 	}
 }
