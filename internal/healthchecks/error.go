@@ -36,14 +36,8 @@ func (e HealthCheckError) Error() string {
 	return e.Message
 }
 
-type MultiHealthCheckError []HealthCheckError
-
-func (m MultiHealthCheckError) Error() string {
-	var message string
-	for _, e := range(m) {
-		message = message + " " + e.Error()
-	}
-	return message
+type MultiWrappedError interface {
+	Unwrap() []error
 }
 
 var (

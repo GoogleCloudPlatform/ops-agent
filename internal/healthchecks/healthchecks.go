@@ -33,15 +33,27 @@ type HealthCheckResult struct {
 	Err  error
 }
 
-func (r HealthCheckResult) String() string {
-	if r.Err != nil {
-		if healthError, ok := r.Err.(HealthCheckError); ok {
+func singleErrorResultMessage(e error, Name string) string {
+	if e != nil {
+		if healthError, ok := e.(HealthCheckError); ok {
 			return fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
-				r.Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+				Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
 		}
-		return fmt.Sprintf("%s - Result: ERROR, Detail: %s", r.Name, r.Err.Error())
+		return fmt.Sprintf("%s - Result: ERROR, Detail: %s", Name, e.Error())
 	}
-	return fmt.Sprintf("%s - Result: PASS", r.Name)
+	return fmt.Sprintf("%s - Result: PASS", Name)
+}
+
+func (r HealthCheckResult) String() string {
+	var message string
+	if mwErr, ok := r.Err.(MultiWrappedError); ok {
+		for _, e := range mwErr.Unwrap() {
+			message = message + "\n" + singleErrorResultMessage(e, r.Name)
+		}
+	} else {
+		message = singleErrorResultMessage(r.Err, r.Name)
+	}
+	return message
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -50,8 +62,7 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	return HealthCheckRegistry{
 		PortsCheck{},
 		NetworkCheck{},
-		LoggingAPICheck{},
-		MonitoringAPICheck{},
+		APICheck{},
 	}
 }
 
