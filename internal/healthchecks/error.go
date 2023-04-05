@@ -69,6 +69,30 @@ var (
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
 		IsFatal:      true,
 	}
+	PacApiConnErr = HealthCheckError{
+		Code:         "PacApiConnErr",
+		Class:        Connection,
+		Message:      "Request to packages.cloud.google.com failed.",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      false,
+	}
+	DLApiConnErr = HealthCheckError{
+		Code:         "DLApiConnErr",
+		Class:        Connection,
+		Message:      "Request to dl.google.com failed",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      false,
+	}
+	MetaApiConnErr = HealthCheckError{
+		Code:         "MetaApiConnErr",
+		Class:        Connection,
+		Message:      "Request to GCE Metadata server failed",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      true,
+	}
 	LogApiScopeErr = HealthCheckError{
 		Code:         "LogApiScopeErr",
 		Class:        Permission,

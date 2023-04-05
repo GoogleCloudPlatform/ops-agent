@@ -20,8 +20,22 @@ package healthchecks
 import (
 	"errors"
 	"net"
+	"os/exec"
 	"syscall"
 )
+
+func isSubagentActive(subagent string) (bool, error) {
+	_, err := exec.Command("systemctl", "is-active", "--quiet", subagent).Output()
+	if err != nil {
+		// if the unit is not active return false with no error
+		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == 3 {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
 
 func isPortUnavailableError(err error) bool {
 	return errors.Is(err, syscall.EADDRINUSE)
