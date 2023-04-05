@@ -48,7 +48,7 @@ func (r HealthCheckResult) String() string {
 	var message string
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
 		for _, e := range mwErr.Unwrap() {
-			message = message + "\n" + singleErrorResultMessage(e, r.Name)
+			message = message + singleErrorResultMessage(e, r.Name) + "\n"
 		}
 	} else {
 		message = singleErrorResultMessage(r.Err, r.Name)

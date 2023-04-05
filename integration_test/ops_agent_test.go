@@ -3623,8 +3623,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}
 		checkFunc("Network", "PASS")
 		checkFunc("Ports", "FAIL")
-		checkFunc("Logging API", "FAIL")
-		checkFunc("Monitoring API", "PASS")
+		checkFunc("API", "FAIL")
 	})
 }
 
@@ -3654,8 +3653,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		checkFunc("Network", "PASS")
 		checkFunc("Ports", "PASS")
-		checkFunc("Logging API", "PASS")
-		checkFunc("Monitoring API", "PASS")
+		checkFunc("API", "FAIL")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3683,8 +3681,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		checkFunc("Network", "FAIL")
 		checkFunc("Ports", "PASS")
-		checkFunc("Logging API", "FAIL")
-		checkFunc("Monitoring API", "FAIL")
+		checkFunc("API", "FAIL")
 	})
 }
 
