@@ -43,6 +43,7 @@ func (r ReceiverOTLP) Type() string {
 
 func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, []otel.Component) {
 	if r.MetricsMode == "googlecloudmonitoring" {
+		// FIXME: Resource detection to match the Prometheus receiver.
 		return otel.GMP, nil
 	}
 	var knownDomainsRegexEscaped []string
