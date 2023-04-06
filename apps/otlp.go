@@ -78,7 +78,7 @@ func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
 }
 
 func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
-	if r.MetricsMode == "googlecloudmonitoring" {
+	if r.MetricsMode != "googlecloudmonitoring" {
 		return otel.GMP, otel.None, r.gmpResourceProcessors()
 	}
 	var knownDomainsRegexEscaped []string
