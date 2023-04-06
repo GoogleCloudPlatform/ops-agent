@@ -3315,7 +3315,7 @@ func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM,
 	return err
 }
 
-func TestOTLPMetrics(t *testing.T) {
+func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3332,6 +3332,7 @@ combined:
     otlp:
       type: otlp
       grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
 metrics:
   service:
     pipelines:
