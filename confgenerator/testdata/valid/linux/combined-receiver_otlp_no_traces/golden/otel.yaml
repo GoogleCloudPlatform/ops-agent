@@ -438,6 +438,10 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -509,7 +513,7 @@ service:
       - googlecloud/otel
       processors:
       - metricstransform/otlp_0
-      - resourcedetection/_global_0
+      - resourcedetection/_global_1
       receivers:
       - otlp/otlp
   telemetry:
