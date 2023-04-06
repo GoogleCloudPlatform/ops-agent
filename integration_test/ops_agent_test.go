@@ -3420,6 +3420,111 @@ traces:
 	})
 }
 
+func TestOTLPMetricsGMP(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, name := range []string{
+			"otlp.test.gauge",
+			"otlp.test.cumulative",
+			"workload.googleapis.com/otlp.test.prefix1",
+			".invalid.googleapis.com/otlp.test.prefix2",
+			"otlp.test.prefix3/workload.googleapis.com/abc",
+			"WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+			"WORKLOAD.googleapis.com/otlp.test.prefix5",
+		} {
+			gmpName := fmt.Sprintf("prometheus.googleapis.com/%s", name)
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, gmpName, time.Hour, nil, true); err != nil {
+				t.Error(err)
+			}
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
 func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
