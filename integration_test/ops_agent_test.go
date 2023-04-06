@@ -3653,7 +3653,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		checkFunc("Network", "PASS")
 		checkFunc("Ports", "PASS")
-		checkFunc("API", "FAIL")
+		checkFunc("API", "PASS")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
