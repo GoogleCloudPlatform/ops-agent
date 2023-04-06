@@ -90,9 +90,14 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 		Receiver: prometheusToOtelComponent(r.PromConfig),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
-			"metrics": nil,
+			"metrics": {
+				otel.GroupByGMPAttrs(),
+			},
 		},
 		Type: otel.GMP,
+		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
+			"metrics": otel.None,
+		},
 	}}
 }
 

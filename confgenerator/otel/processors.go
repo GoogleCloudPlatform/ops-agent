@@ -336,3 +336,31 @@ func ModifyInstrumentationScope(name string, version string) Component {
 		},
 	}
 }
+
+// GroupByGMPAttrs moves the "namespace", "cluster", and "location"
+// metric attributes to resource attributes. The
+// googlemanagedprometheus exporter will use these resource attributes
+// to populate metric labels.
+func GroupByGMPAttrs() Component {
+	return Component{
+		Type: "groupbyattrs",
+		Config: map[string]interface{}{
+			"keys": []string{"namespace", "cluster", "location"},
+		},
+	}
+}
+
+// GCPReosurceDetector returns a resourcedetection processor configured for only GCP.
+func GCPResourceDetector(override bool) Component {
+	config := map[string]interface{}{
+		"detectors": []string{"gcp"},
+	}
+	if override != true {
+		// override defaults to true; omit it in that case to prevent config diffs.
+		config["override"] = override
+	}
+	return Component{
+		Type:   "resourcedetection",
+		Config: config,
+	}
+}

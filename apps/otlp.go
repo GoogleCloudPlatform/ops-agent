@@ -41,16 +41,74 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, []otel.Component) {
+func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
+	// Keep in sync with logic in confgenerator/prometheus.go
+	stmt := func(target, source string) string {
+		// if cloud.provider == "gcp" && cloud.platform == "gcp_compute_engine"
+		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"`,
+			target, source, source)
+	}
+	return []otel.Component{
+		otel.GCPResourceDetector(false),
+		{
+			Type: "transform",
+			Config: map[string]interface{}{
+				"error_mode": "ignore",
+				"metric_statements": []map[string]interface{}{{
+					"context": "datapoint",
+					"statements": []string{
+						// location = cloud.availability_zone
+						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`),
+						// namespace = host.id
+						stmt(`attributes["namespace"]`, `resource.attributes["host.id"]`),
+						// cluster = "__gce__"
+						stmt(`attributes["cluster"]`, `"__gce__"`),
+						// instance_name = host.name
+						stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`),
+						// machine_type = host.type
+						stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`),
+						// job and instance should be automatically set from service labels
+					},
+				}},
+			},
+		},
+		// TODO: Can we just set resource.attributes instead of setting metric attributes and then grouping?
+		otel.GroupByGMPAttrs(),
+	}
+}
+
+func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode == "googlecloudmonitoring" {
-		// FIXME: Resource detection to match the Prometheus receiver.
-		return otel.GMP, nil
+		return otel.GMP, otel.None, r.gmpResourceProcessors()
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {
 		knownDomainsRegexEscaped = append(knownDomainsRegexEscaped, regexp.QuoteMeta(knownDomain))
 	}
-	return otel.OTel, []otel.Component{
+	// The intent here is to add the workload.googleapis.com prefix to any metrics
+	// that do not match the list of known domains in the exporter [1].
+	//
+	// This would ordinarily be accomplished using a metricstransform processor
+	// with a negative-lookahead regexp, but Go regexp (the regexp engine used by
+	// metricstransform) does not support such a thing. Emulating a negative-lookahead
+	// pattern in Go regexp might be possible but I tried it and it melted my brain.
+	//
+	// The metricstransform processor does not support negative matching either.
+	//
+	// So instead we apply a sequence of transformations:
+	// 1) Prefix all metrics with 'A'.
+	// 2) Replace 'A' with 'B' if the metric name matches a known domain.
+	// 3) All metrics that still have 'A' are the ones that don't match any known domain.
+	//    For these, replace 'A' with 'Aworkload.googleapis.com/' (we keep the 'A').
+	// 4) All metrics have either 'A' or 'B' at the start; remove it.
+	//    At this point, we have prefixed all metrics with 'workload.googleapis.com/'
+	//    if they did not match any known domains.
+	//
+	// TODO: get OTEL to split the prefixing behaviour of the googlecloud exporter out as
+	// a processor and replace all of this stuff with that processor.
+	//
+	// [1] https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
+	return otel.OTel, otel.Upsert, []otel.Component{
 		otel.MetricsTransform(
 			otel.RegexpRename(`^(.*)$`, `A${1}`),
 			otel.RegexpRename(fmt.Sprintf(`^A((?:[a-z]+\.)*(?:%s)/.+)$`, strings.Join(knownDomainsRegexEscaped, "|")), `B${1}`),
@@ -67,7 +125,7 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 		endpoint = defaultGRPCEndpoint
 	}
 
-	receiverPipelineType, metricsProcessors := r.metricsProcessors()
+	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
 
 	return []otel.ReceiverPipeline{{
 		Type: receiverPipelineType,
@@ -82,31 +140,12 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 			},
 		},
 		Processors: map[string][]otel.Component{
-			// The intent here is to add the workload.googleapis.com prefix to any metrics
-			// that do not match the list of known domains in the exporter [1].
-			//
-			// This would ordinarily be accomplished using a metricstransform processor
-			// with a negative-lookahead regexp, but Go regexp (the regexp engine used by
-			// metricstransform) does not support such a thing. Emulating a negative-lookahead
-			// pattern in Go regexp might be possible but I tried it and it melted my brain.
-			//
-			// The metricstransform processor does not support negative matching either.
-			//
-			// So instead we apply a sequence of transformations:
-			// 1) Prefix all metrics with 'A'.
-			// 2) Replace 'A' with 'B' if the metric name matches a known domain.
-			// 3) All metrics that still have 'A' are the ones that don't match any known domain.
-			//    For these, replace 'A' with 'Aworkload.googleapis.com/' (we keep the 'A').
-			// 4) All metrics have either 'A' or 'B' at the start; remove it.
-			//    At this point, we have prefixed all metrics with 'workload.googleapis.com/'
-			//    if they did not match any known domains.
-			//
-			// TODO: get OTEL to split the prefixing behaviour of the googlecloud exporter out as
-			// a processor and replace all of this stuff with that processor.
-			//
-			// [1] https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
 			"metrics": metricsProcessors,
 			"traces":  nil,
+		},
+		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
+			"metrics": metricsRDM,
+			"traces":  otel.Upsert,
 		},
 	}}
 }
