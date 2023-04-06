@@ -205,7 +205,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
 	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
-	gce.RunRemotely(ctx, logger.ToFile("health-checks.log"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
