@@ -3,7 +3,7 @@ import '../common.gcl' as common
 template config third_party_apps_test = common.third_party_apps_test {
   params {
     // TODO(subbarker): Migrate this to use go_test_for_containers.sh. 
-    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
+    build_file = 'unified_agents/kokoro/scripts/test/go_test_for_containers.sh'
 
     environment {
       // Disable -test.short mode when testing nightly releases.
