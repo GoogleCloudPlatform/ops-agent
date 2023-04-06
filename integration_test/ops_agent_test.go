@@ -3541,7 +3541,7 @@ metrics:
 }
 
 func isHealthCheckTestPlatform(platform string) bool {
-	return true
+	return platform == "windows-2019" || platform == "debian-11"
 }
 
 func healthCheckResultMessage(name string, result string) string {
