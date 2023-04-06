@@ -3470,16 +3470,15 @@ traces:
 
 		// See testdata/otlp/metrics.go for the metrics we're sending
 		for _, name := range []string{
-			"otlp.test.gauge",
-			"otlp.test.cumulative",
-			"workload.googleapis.com/otlp.test.prefix1",
-			".invalid.googleapis.com/otlp.test.prefix2",
-			"otlp.test.prefix3/workload.googleapis.com/abc",
-			"WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
-			"WORKLOAD.googleapis.com/otlp.test.prefix5",
+			"prometheus.googleapis.com/otlp_test_gauge/gauge",
+			"prometheus.googleapis.com/otlp_test_cumulative/counter",
+			"prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
+			"prometheus.googleapis.com/_invalid_googleapis_com_otlp_test_prefix2/gauge",
+			"prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com/abc",
+			"prometheus.googleapis.com/WORKLOAD_GOOGLEAPIS_COM_otlp_test_prefix4/gauge",
+			"prometheus.googleapis.com/WORKLOAD_googleapis_com_otlp_test_prefix5/gauge",
 		} {
-			gmpName := fmt.Sprintf("prometheus.googleapis.com/%s", name)
-			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, gmpName, time.Hour, nil, true); err != nil {
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, true); err != nil {
 				t.Error(err)
 			}
 		}
