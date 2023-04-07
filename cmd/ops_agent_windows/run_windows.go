@@ -68,8 +68,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
-
-	s.runStartupChecks()
+	s.runHealthChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -138,21 +137,19 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func (s *service) runStartupChecks() {
+func getHealthCheckResults() map[string]healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 	logger, closer := healthchecks.CreateHealthChecksLogger(logsDir)
 	defer closer()
 
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
-	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			s.log.Error(EngineEventID, result.Message)
-		} else {
-			s.log.Info(EngineEventID, result.Message)
-		}
-	}
-	s.log.Info(EngineEventID, "Startup checks finished")
+	return gceHealthChecks.RunAllHealthChecks(logger)
+}
+
+func (srv *service) runHealthChecks() {
+	healthCheckResults := getHealthCheckResults()
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { srv.log.Info(EngineEventID, s) }, func(s string) { srv.log.Error(EngineEventID, s) })
+	srv.log.Info(EngineEventID, "Startup checks finished")
 }
 
 func (s *service) generateConfigs(ctx context.Context) error {
