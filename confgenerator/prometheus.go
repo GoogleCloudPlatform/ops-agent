@@ -94,7 +94,9 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 				otel.GroupByGMPAttrs(),
 			},
 		},
-		Type: otel.GMP,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.GMP,
+		},
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},

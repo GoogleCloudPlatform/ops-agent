@@ -59,7 +59,7 @@ type ReceiverPipeline struct {
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
 	// Type indicates if the pipeline outputs special metrics (either Prometheus or system metrics) that need to be handled with a special exporter.
-	Type ExporterType
+	ExporterTypes map[string]ExporterType
 	// ResourceDetectionModes indicates whether the resource should be forcibly set, set only if not already present, or never set.
 	// If a data type is not present, it will assume the zero value (Override).
 	ResourceDetectionModes map[string]ResourceDetectionMode
@@ -143,17 +143,6 @@ func (c ModularConfig) Generate() (string, error) {
 		"service":    service,
 	}
 
-	// Check if there are any prometheus receivers in the pipelines.
-	// If so, add the googlemanagedprometheus exporter.
-	for _, r := range c.ReceiverPipelines {
-		if _, ok := exporterNames[r.Type]; !ok {
-			exporter := c.Exporters[r.Type]
-			name := exporter.name(r.Type.Name())
-			exporterNames[r.Type] = name
-			exporters[name] = exporter.Config
-		}
-	}
-
 	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
 		Override: GCPResourceDetector(true),
 		Upsert:   GCPResourceDetector(false),
@@ -196,10 +185,18 @@ func (c ModularConfig) Generate() (string, error) {
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
 
+		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
+		if _, ok := exporterNames[exporterType]; !ok {
+			exporter := c.Exporters[exporterType]
+			name := exporter.name(exporterType.Name())
+			exporterNames[exporterType] = name
+			exporters[name] = exporter.Config
+		}
+
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
 			"receivers":  []string{receiverName},
 			"processors": processorNames,
-			"exporters":  []string{exporterNames[receiverPipeline.Type]},
+			"exporters":  []string{exporterNames[exporterType]},
 		}
 	}
 

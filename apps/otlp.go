@@ -128,7 +128,10 @@ func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
 	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
 
 	return []otel.ReceiverPipeline{{
-		Type: receiverPipelineType,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": receiverPipelineType,
+			"traces":  otel.OTel,
+		},
 		Receiver: otel.Component{
 			Type: "otlp",
 			Config: map[string]interface{}{

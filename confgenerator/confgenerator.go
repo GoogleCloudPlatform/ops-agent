@@ -159,7 +159,7 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 			}
 
 			// Check the Ops Agent receiver type.
-			if receiverPipeline.Type == otel.GMP {
+			if receiverPipeline.ExporterTypes[pipelineType] == otel.GMP {
 				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 				if len(processorIDs) > 0 {
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
