@@ -3545,7 +3545,7 @@ traces:
 			"prometheus.googleapis.com/otlp_test_gauge/gauge",
 			"prometheus.googleapis.com/otlp_test_cumulative/counter",
 			"prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
-			"prometheus.googleapis.com/_invalid_googleapis_com_otlp_test_prefix2/gauge",
+			"prometheus.googleapis.com/invalid_googleapis_com_otlp_test_prefix2/gauge",
 			"prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com_abc/gauge",
 			"prometheus.googleapis.com/WORKLOAD_GOOGLEAPIS_COM_otlp_test_prefix4/gauge",
 			"prometheus.googleapis.com/WORKLOAD_googleapis_com_otlp_test_prefix5/gauge",
