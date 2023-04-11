@@ -19,5 +19,6 @@ make DESTDIR="$DESTDIR" install
 
 # We don't want fluent-bit's service or configuration, but there are no cmake
 # flags to disable them. Prune after build.
-rm "${DESTDIR}/usr/lib/systemd/system/fluent-bit.service"
+rm "${DESTDIR}/lib/systemd/system/fluent-bit.service" || true
+rm "${DESTDIR}/usr/lib/systemd/system/fluent-bit.service" || true
 rm -r "${DESTDIR}${fluent_bit_dir}/etc"
