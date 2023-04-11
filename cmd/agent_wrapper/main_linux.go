@@ -23,13 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
-
-func getMergedConfig(userConfPath string) (*confgenerator.UnifiedConfig, error) {
-	return getMergedConfigForPlatform(userConfPath, "linux")
-}
 
 func handleSignals(cmd *exec.Cmd) {
 	sigs := make(chan os.Signal, 1)

@@ -21,13 +21,8 @@ import (
 	"os/exec"
 	"unsafe"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"golang.org/x/sys/windows"
 )
-
-func getMergedConfig(userConfPath string) (*confgenerator.UnifiedConfig, error) {
-	return getMergedConfigForPlatform(userConfPath, "windows")
-}
 
 func configureJob() (*windows.Handle, error) {
 	jobHandle, err := windows.CreateJobObject(nil, nil)
