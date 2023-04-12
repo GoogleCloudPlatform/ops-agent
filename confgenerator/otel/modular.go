@@ -58,7 +58,7 @@ type ReceiverPipeline struct {
 	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
-	// Type indicates if the pipeline outputs special metrics (either Prometheus or system metrics) that need to be handled with a special exporter.
+	// ExporterTypes indicates if the pipeline outputs special data (either Prometheus or system metrics) that need to be handled with a special exporter.
 	ExporterTypes map[string]ExporterType
 	// ResourceDetectionModes indicates whether the resource should be forcibly set, set only if not already present, or never set.
 	// If a data type is not present, it will assume the zero value (Override).

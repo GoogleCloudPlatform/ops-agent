@@ -350,7 +350,7 @@ func GroupByGMPAttrs() Component {
 	}
 }
 
-// GCPReosurceDetector returns a resourcedetection processor configured for only GCP.
+// GCPResourceDetector returns a resourcedetection processor configured for only GCP.
 func GCPResourceDetector(override bool) Component {
 	config := map[string]interface{}{
 		"detectors": []string{"gcp"},
