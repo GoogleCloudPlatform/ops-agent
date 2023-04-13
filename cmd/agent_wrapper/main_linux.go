@@ -28,14 +28,13 @@ import (
 func handleSignals(cmd *exec.Cmd) {
 	sigs := make(chan os.Signal, 1)
 	for {
-		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGTERM)
+		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		sig := <-sigs
 		start := time.Now()
 		for {
 			if cmd.Process != nil {
 				cmd.Process.Signal(sig)
 				break
-
 			} else if 80*time.Second+time.Until(start) <= 0 {
 				break
 			}
