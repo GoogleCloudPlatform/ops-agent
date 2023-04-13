@@ -1,0 +1,22 @@
+set -e
+
+sudo apt update
+sudo apt install -y wget
+
+wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
+sudo apt update
+
+source /etc/os-release
+
+sudo apt install -y mysql-server=5.7*
+
+if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
+  sudo apt install -y libmariadbclient18
+elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
+  sudo apt install -y libmysqlclient20
+elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
+  sudo apt install -y libmysqlclient21
+fi
+
+sudo service mysql start

@@ -560,6 +560,10 @@ receivers:
         enabled: false
       mysql.prepared_statements:
         enabled: false
+      mysql.replica.sql_delay:
+        enabled: true
+      mysql.replica.time_behind_source:
+        enabled: true
       mysql.table.io.wait.count:
         enabled: false
       mysql.table.io.wait.time:

@@ -21,6 +21,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
+	"github.com/go-sql-driver/mysql"
+
 	"fmt"
 	"strings"
 )
@@ -34,6 +36,8 @@ type MetricsReceiverMySql struct {
 
 	Password string `yaml:"password" validate:"omitempty"`
 	Username string `yaml:"username" validate:"omitempty"`
+
+	ApplicationVersion string `yaml:"application_version" validate:"omitempty"`
 }
 
 const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
@@ -43,6 +47,8 @@ func (r MetricsReceiverMySql) Type() string {
 }
 
 func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
+	pipelines := []otel.ReceiverPipeline{}
+
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -55,7 +61,36 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 		r.Username = "root"
 	}
 
-	return []otel.ReceiverPipeline{{
+	if r.ApplicationVersion == "5.7" {
+		// MySQL 5.7 replication metrics are implemented separate to the main metrics pipeline
+		driverConf := mysql.Config{
+			User:   r.Username,
+			Passwd: r.Password,
+			Net:    transport,
+			Addr:   r.Endpoint,
+		}
+
+		pipelines = append(pipelines, otel.ReceiverPipeline{
+			Receiver: otel.Component{
+				Type: "sqlquery",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"driver":              "mysql",
+					"datasource":          driverConf.FormatDSN(),
+					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
+				},
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			}},
+		})
+	}
+
+	pipelines = append(pipelines, otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "mysql",
 			Config: map[string]interface{}{
@@ -95,6 +130,12 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 					"mysql.table.io.wait.time": map[string]interface{}{
 						"enabled": false,
 					},
+					"mysql.replica.sql_delay": map[string]interface{}{
+						"enabled": true,
+					},
+					"mysql.replica.time_behind_source": map[string]interface{}{
+						"enabled": true,
+					},
 				},
 			},
 		},
@@ -118,7 +159,39 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	})
+
+	return pipelines
+}
+
+var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
+	{
+		query: `SHOW SLAVE STATUS`,
+		metrics: []sqlReceiverMetric{
+			{
+				metric_name:       "mysql.replica.sql_delay",
+				value_column:      "SQL_Delay",
+				unit:              "s",
+				description:       "The number of seconds that the replica must lag the source.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
+			},
+			{
+				metric_name:       "mysql.replica.time_behind_source",
+				value_column:      "Seconds_Behind_Master",
+				unit:              "s",
+				description:       "This field is an indication of how “late” the replica is.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
+			},
+		},
+	},
 }
 
 func init() {

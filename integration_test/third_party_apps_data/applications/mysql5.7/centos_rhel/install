@@ -1,0 +1,31 @@
+set -e
+
+source /etc/os-release
+VERSION_ID=${VERSION_ID%%.*}
+
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
+
+if [ ${VERSION_ID} == 8 ]; then
+  sudo yum -y module disable mysql
+fi
+sudo yum -y install mysql-community-server=5.7*
+
+echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
+
+sudo service mysqld start
+
+password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysqld.log)
+
+cat <<EOF > config-user
+[client]
+user=root
+password='$password'
+EOF
+
+mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+
+sudo service mysqld start
+
+# default socket path is different between debian/ubuntu and centos/rhel, so we need to create a symlink
+sudo ln -s /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock

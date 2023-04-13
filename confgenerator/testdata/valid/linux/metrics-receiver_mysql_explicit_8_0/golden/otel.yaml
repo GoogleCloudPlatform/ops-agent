@@ -8,7 +8,7 @@ exporters:
       skip_create_descriptor: true
     retry_on_failure:
       enabled: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
     metric:
       instrumentation_library_labels: true
@@ -18,27 +18,12 @@ exporters:
       skip_create_descriptor: true
     retry_on_failure:
       enabled: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  casttosum/iis_1:
-    metrics:
-    - agent.googleapis.com/iis/network/transferred_bytes_count
-    - agent.googleapis.com/iis/new_connection_count
-    - agent.googleapis.com/iis/request_count
   filter/default__pipeline_hostmetrics_0:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
-  filter/default__pipeline_iis_0:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
-  filter/default__pipeline_mssql_0:
     metrics:
       exclude:
         match_type: regexp
@@ -399,50 +384,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/iis_0:
-    transforms:
-    - action: update
-      include: "\\Web Service(_Total)\\Current Connections"
-      new_name: iis/current_connections
-    - action: combine
-      include: "^\\\\Web Service\\(_Total\\)\\\\Total Bytes (?P<direction>.*)$$"
-      match_type: regexp
-      new_name: iis/network/transferred_bytes_count
-      operations:
-      - action: toggle_scalar_data_type
-      submatch_case: lower
-    - action: update
-      include: "\\Web Service(_Total)\\Total Connection Attempts (all instances)"
-      new_name: iis/new_connection_count
-      operations:
-      - action: toggle_scalar_data_type
-    - action: combine
-      include: "^\\\\Web Service\\(_Total\\)\\\\Total (?P<http_method>.*) Requests$$"
-      match_type: regexp
-      new_name: iis/request_count
-      operations:
-      - action: toggle_scalar_data_type
-      submatch_case: lower
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/mssql_0:
-    transforms:
-    - action: update
-      include: "\\SQLServer:General Statistics(_Total)\\User Connections"
-      new_name: mssql/connections/user
-    - action: update
-      include: "\\SQLServer:Databases(_Total)\\Transactions/sec"
-      new_name: mssql/transaction_rate
-    - action: update
-      include: "\\SQLServer:Databases(_Total)\\Write Transactions/sec"
-      new_name: mssql/write_transaction_rate
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/mysqlmetrics_1:
+  metricstransform/mysql_1:
     transforms:
     - action: update
       include: "^mysql\\.buffer_pool\\.(.*)$$"
@@ -514,17 +456,10 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/iis_3:
-    override_scope_name: agent.googleapis.com/iis
-    override_scope_version: "1.0"
-  modifyscope/mssql_1:
-    override_scope_name: agent.googleapis.com/mssql
-    override_scope_version: "1.0"
-  modifyscope/mysqlmetrics_2:
+  modifyscope/mysql_2:
     override_scope_name: agent.googleapis.com/mysql
     override_scope_version: "1.0"
-  normalizesums/iis_2: {}
-  normalizesums/mysqlmetrics_0: {}
+  normalizesums/mysql_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -542,7 +477,7 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  mysql/mysqlmetrics:
+  mysql/mysql:
     collection_interval: 30s
     endpoint: localhost:3306
     metrics:
@@ -590,38 +525,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  windowsperfcounters/iis:
-    collection_interval: 60s
-    perfcounters:
-    - counters:
-      - name: Current Connections
-      - name: Total Bytes Received
-      - name: Total Bytes Sent
-      - name: Total Connection Attempts (all instances)
-      - name: Total Delete Requests
-      - name: Total Get Requests
-      - name: Total Head Requests
-      - name: Total Options Requests
-      - name: Total Post Requests
-      - name: Total Put Requests
-      - name: Total Trace Requests
-      instances:
-      - _Total
-      object: Web Service
-  windowsperfcounters/mssql:
-    collection_interval: 60s
-    perfcounters:
-    - counters:
-      - name: User Connections
-      instances:
-      - _Total
-      object: SQLServer:General Statistics
-    - counters:
-      - name: Transactions/sec
-      - name: Write Transactions/sec
-      instances:
-      - _Total
-      object: SQLServer:Databases
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -635,28 +538,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_iis:
-      exporters:
-      - googlecloud
-      processors:
-      - metricstransform/iis_0
-      - casttosum/iis_1
-      - normalizesums/iis_2
-      - modifyscope/iis_3
-      - filter/default__pipeline_iis_0
-      - resourcedetection/_global_0
-      receivers:
-      - windowsperfcounters/iis
-    metrics/default__pipeline_mssql:
-      exporters:
-      - googlecloud
-      processors:
-      - metricstransform/mssql_0
-      - modifyscope/mssql_1
-      - filter/default__pipeline_mssql_0
-      - resourcedetection/_global_0
-      receivers:
-      - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -666,16 +547,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/mysqlpipeline_mysqlmetrics:
+    metrics/mysql_mysql:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/mysqlmetrics_0
-      - metricstransform/mysqlmetrics_1
-      - modifyscope/mysqlmetrics_2
+      - normalizesums/mysql_0
+      - metricstransform/mysql_1
+      - modifyscope/mysql_2
       - resourcedetection/_global_0
       receivers:
-      - mysql/mysqlmetrics
+      - mysql/mysql
     metrics/otel:
       exporters:
       - googlecloud

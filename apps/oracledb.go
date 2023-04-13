@@ -91,7 +91,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"driver":              "oracle",
 		"datasource":          datasource,
-		"queries":             r.queryConfig(),
+		"queries":             sqlReceiverQueriesConfig(oracleQueries),
 	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
@@ -118,57 +118,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 	}}
 }
 
-type oracleMetric struct {
-	metric_name       string
-	value_column      string
-	unit              string
-	description       string
-	data_type         string
-	monotonic         string
-	value_type        string
-	attribute_columns []string
-	static_attributes map[string]string
-}
-
-type oracleQuery struct {
-	query   string
-	metrics []oracleMetric
-}
-
-func (r MetricsReceiverOracleDB) queryConfig() []map[string]interface{} {
-	cfg := []map[string]interface{}{}
-	for _, q := range oracleQueries {
-		metrics := []map[string]interface{}{}
-		for _, m := range q.metrics {
-			metric := map[string]interface{}{
-				"metric_name":       m.metric_name,
-				"value_column":      m.value_column,
-				"unit":              m.unit,
-				"description":       m.description,
-				"data_type":         m.data_type,
-				"value_type":        m.value_type,
-				"attribute_columns": m.attribute_columns,
-				"static_attributes": m.static_attributes,
-			}
-			if m.data_type == "sum" {
-				metric["monotonic"] = m.monotonic
-			}
-
-			metrics = append(metrics, metric)
-		}
-
-		query := map[string]interface{}{
-			"sql":     q.query,
-			"metrics": metrics,
-		}
-
-		cfg = append(cfg, query)
-	}
-
-	return cfg
-}
-
-var oracleQueries = []oracleQuery{
+var oracleQueries = []sqlReceiverQuery{
 	{
 		query: `SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.TABLESPACE_NAME, ts.CONTENTS,
 				(select sum(df.bytes) from sys.dba_data_files df where df.tablespace_name=ts.tablespace_name)-(select sum(fs.bytes) from sys.dba_free_space fs where fs.tablespace_name=ts.tablespace_name) AS USED_SPACE,
@@ -185,7 +135,7 @@ var oracleQueries = []oracleQuery{
 			JOIN sys.v_$$tempfile t
 			ON t.TS# = ss.TS#
 			GROUP BY ts.NAME`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.tablespace.size",
 				value_column:      "FREE_SPACE",
@@ -218,7 +168,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, CONTENTS, STATUS, COUNT(*) COUNT FROM sys.dba_tablespaces GROUP BY STATUS, CONTENTS",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.tablespace.count",
 				value_column:      "COUNT",
@@ -237,7 +187,7 @@ var oracleQueries = []oracleQuery{
 	// remove uptime until there is a consistent plan for support
 	// {
 	// 	query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, INSTANCE_ROLE, (sysdate - startup_time) * 86400 UPTIME FROM SYS.GV_$$instance",
-	// 	metrics: []oracleMetric{
+	// 	metrics: []sqlReceiverMetric{
 	// 		{
 	// 			metric_name:       "oracle.uptime",
 	// 			value_column:      "UPTIME",
@@ -255,7 +205,7 @@ var oracleQueries = []oracleQuery{
 	// },
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, (SELECT round(case when max(start_time) is null then -1 when sysdate - max(start_time) > 0 then (sysdate - max(start_time)) * 86400 else 0 end) FROM SYS.V_$$rman_backup_job_details ) LATEST_BACKUP FROM DUAL",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.backup.latest",
 				value_column:      "LATEST_BACKUP",
@@ -287,7 +237,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.process.count",
 				value_column:      "PROCESSES_UTIL",
@@ -344,7 +294,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, PROGRAM, SUM(PGA_USED_MEM) USED_MEM, SUM(PGA_ALLOC_MEM) - SUM(PGA_USED_MEM) FREE_MEM FROM SYS.GV_$$PROCESS WHERE PROGRAM <> 'PSEUDO' GROUP BY PROGRAM, INST_ID",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.process.pga_memory.size",
 				value_column:      "USED_MEM",
@@ -377,7 +327,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, WAIT_CLASS, SUM(total_waits_fg) AS TOTAL_WAITS_FG, SUM(total_waits)-SUM(total_waits_fg) AS TOTAL_WAITS_BG, SUM(total_timeouts_fg) AS TOTAL_TIMEOUTS_FG, SUM(total_timeouts)-SUM(TOTAL_TIMEOUTS_FG) AS TOTAL_TIMEOUTS_BG, SUM(time_waited_fg) AS TIME_WAITED_FG, SUM(time_waited)-SUM(TIME_WAITED_FG) AS TIME_WAITED_BG FROM SYS.GV_$$system_event WHERE wait_class <> 'Idle' GROUP BY INST_ID, WAIT_CLASS",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.wait.count",
 				value_column:      "TOTAL_WAITS_FG",
@@ -481,7 +431,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.service.response_time",
 				value_column:      "RESPONSE_TIME",
@@ -552,7 +502,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.cursor.count",
 				value_column:      "CURSORS_CUMULATIVE",
