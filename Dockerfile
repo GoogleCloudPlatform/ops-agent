@@ -106,10 +106,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=centos7-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=centos7-build-fluent-bit /work/cache /work/cache
 COPY --from=centos7-build-systemd /work/cache /work/cache
 COPY --from=centos7-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+RUN echo dummy change
 
 FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
@@ -196,10 +198,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=centos8-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
 COPY --from=centos8-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+RUN echo dummy change
 
 FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
@@ -289,10 +293,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=rockylinux9-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+RUN echo dummy change
 
 FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
@@ -377,10 +383,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=bullseye-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 COPY --from=bullseye-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS bullseye
 COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
@@ -465,10 +473,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=buster-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=buster-build-fluent-bit /work/cache /work/cache
 COPY --from=buster-build-systemd /work/cache /work/cache
 COPY --from=buster-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS buster
 COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
@@ -562,10 +572,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=stretch-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=stretch-build-fluent-bit /work/cache /work/cache
 COPY --from=stretch-build-systemd /work/cache /work/cache
 COPY --from=stretch-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS stretch
 COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
@@ -673,10 +685,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=sles12-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
 COPY --from=sles12-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+RUN echo dummy change
 
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
@@ -775,10 +789,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=sles15-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
 COPY --from=sles15-build-diagnostics /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+RUN echo dummy change
 
 FROM scratch AS sles15
 COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
@@ -867,10 +883,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=bionic-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=bionic-build-fluent-bit /work/cache /work/cache
 COPY --from=bionic-build-systemd /work/cache /work/cache
 COPY --from=bionic-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS bionic
 COPY --from=bionic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-bionic.tgz
@@ -955,10 +973,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=focal-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
 COPY --from=focal-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
@@ -1043,10 +1063,12 @@ WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
 COPY --from=jammy-build-otel /work/cache /work/cache
+RUN echo dummy change 2
 COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
 COPY --from=jammy-build-diagnostics /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+RUN echo dummy change
 
 FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
