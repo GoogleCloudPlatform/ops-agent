@@ -4,12 +4,12 @@ source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
+sudo yum -y install https://repo.mysql.com/mysql57-community-release-el${VERSION_ID}-11.noarch.rpm
 
 if [ ${VERSION_ID} == 8 ]; then
   sudo yum -y module disable mysql
 fi
-sudo yum -y install mysql-community-server=5.7*
+sudo yum -y install mysql-community-server
 
 echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
 

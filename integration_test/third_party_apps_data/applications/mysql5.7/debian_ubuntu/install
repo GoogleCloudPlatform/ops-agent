@@ -4,6 +4,7 @@ sudo apt update
 sudo apt install -y wget
 
 wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-5.7'
 sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
 sudo apt update
 
