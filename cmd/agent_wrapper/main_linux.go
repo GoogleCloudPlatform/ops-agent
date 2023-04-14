@@ -25,24 +25,28 @@ import (
 	"time"
 )
 
+const MaximumWaitForProcessStart = 5 * time.Second
+
 func handleSignals(cmd *exec.Cmd) {
+	/* Relay signals that should be passed down to the subprocess we are wrapping.
+	 */
 	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGCONT)
 	for {
-		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		sig := <-sigs
 		start := time.Now()
+		// It is possible that we receive a signal before the code for `cmd.Run()` set cmd.Process.
+		// In this case we wait up to MaximumWaitForProcessStart before giving up relaying the signal.
 		for {
 			if cmd.Process != nil {
 				cmd.Process.Signal(sig)
 				break
-			} else if 80*time.Second+time.Until(start) <= 0 {
+			} else if time.Until(start.Add(MaximumWaitForProcessStart)) <= 0 {
+				// We waited MaximumWaitForProcessStart and the subprocess did not start. Give up on relaying the signal.
+				log.Printf("Failed to relay signal %v to subprocess as it has not started yet", sig)
 				break
 			}
 			time.Sleep(50 * time.Millisecond)
-		}
-		if sig == syscall.SIGTERM {
-			time.Sleep(80*time.Second + time.Until(start))
-			log.Fatalf("Wrapped %v did not terminate in 80 seconds\n", cmd.Path)
 		}
 	}
 }
