@@ -116,10 +116,12 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    optional: true
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    optional: true
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
