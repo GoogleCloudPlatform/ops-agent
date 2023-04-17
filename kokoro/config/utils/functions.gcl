@@ -13,21 +13,16 @@ environment_variables = lambda vars_: {
 // Create a fetch_keystore action with the given resources.
 //
 // Example usage:
-//  fetch_keystore([[123, 'name']])
 //  fetch_keystore([{id = 123, name = 'name'}])
 // Returns
-//  [{fetch_keystore = {keystore_resource = [{keystore_config_id = 123, keyname = 'name'}]}}]
+//  {fetch_keystore = {keystore_resource = [{keystore_config_id = 123, keyname = 'name'}]}}
 fetch_keystore = lambda keys_: {
   fetch_keystore = {
-    keystore_resource = map(lambda x_: cond(
-      is_tuple(x_),
+    keystore_resource = map(lambda x_: 
       {
         keystore_config_id = x_.id
         keyname = x_.name
       },
-      {
-        keystore_config_id = x_[0]
-        keyname = x_[1]
-      }), keys_)
+      keys_)
   }
 }
