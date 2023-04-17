@@ -257,6 +257,7 @@ func TestAgentWrapper(t *testing.T) {
 			if err := run(ts.getLogFile(), ts.getConfigPath(), getCommand(tc.bytesWritten)); err != nil {
 				t.Fatal(err)
 			}
+			time.Sleep(100 * time.Millisecond)
 
 			// Compare log files in directory sorted by rotation to expected sizes
 			gotLogSizes, err := ts.getLogFileSizes()
