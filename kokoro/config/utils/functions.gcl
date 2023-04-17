@@ -18,10 +18,10 @@ environment_variables = lambda vars_: {
 //  {fetch_keystore = {keystore_resource = [{keystore_config_id = 123, keyname = 'name'}]}}
 fetch_keystore = lambda keys_: {
   fetch_keystore = {
-    keystore_resource = map(lambda x_: 
+    keystore_resource = map(lambda k_: 
       {
-        keystore_config_id = x_.id
-        keyname = x_.name
+        keystore_config_id = k_.id
+        keyname = k_.name
       },
       keys_)
   }
