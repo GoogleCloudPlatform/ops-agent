@@ -21,7 +21,7 @@ type Global struct {
 type LogFileRotation struct {
 	Enabled     *bool `yaml:"enabled"`
 	MaxFileSize *int  `yaml:"max_file_size_megabytes" validate:"omitempty,gte=1"`
-	BackupCount *int  `yaml:"backup_count" validate:"omitempty,gte=0"`
+	BackupCount *int  `yaml:"backup_count" validate:"omitempty,gte=1"`
 }
 
 // Get whether log rotation should be enabled. Defaults to true if unset.
