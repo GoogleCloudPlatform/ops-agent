@@ -28,8 +28,7 @@ import (
 const MaximumWaitForProcessStart = 5 * time.Second
 
 func handleSignals(cmd *exec.Cmd) {
-	/* Relay signals that should be passed down to the subprocess we are wrapping.
-	 */
+	// Relay signals that should be passed down to the subprocess we are wrapping.
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGCONT)
 	for {
