@@ -36,6 +36,9 @@ func (e HealthCheckError) Error() string {
 	return e.Message
 }
 
+// Interface used to verify if an error implements `Unwrap() []error`.
+// The resulting error from `errors.Join(errs ...error)` implements this interface.
+// This error features were added in Go 1.20 release (https://tip.golang.org/doc/go1.20).
 type MultiWrappedError interface {
 	Unwrap() []error
 }
