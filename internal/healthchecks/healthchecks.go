@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var healthChecksLogFile = "health-checks.log"
@@ -45,15 +46,14 @@ func singleErrorResultMessage(e error, Name string) string {
 }
 
 func (r HealthCheckResult) String() string {
-	var message string
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
+		var messageList []string
 		for _, e := range mwErr.Unwrap() {
-			message = message + singleErrorResultMessage(e, r.Name) + "\n"
+			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
 		}
-	} else {
-		message = singleErrorResultMessage(r.Err, r.Name)
+		return strings.Join(messageList, "\n")
 	}
-	return message
+	return singleErrorResultMessage(r.Err, r.Name)
 }
 
 type HealthCheckRegistry []HealthCheck
