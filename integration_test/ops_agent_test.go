@@ -28,13 +28,16 @@ The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
-    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+
+	above REPO_SUFFIX is an artifact registry repo and specifies what region it
 	is in. If not provided, that means that the packages are accessed through
 	packages.cloud.google.com instead, which may point to Cloud Rapture or
 	Artifact Registry under the hood.
+
 AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-    .deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
-    REPO_SUFFIX.
+
+	.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
+	REPO_SUFFIX.
 */
 package integration_test
 
@@ -2299,6 +2302,75 @@ func TestPrometheusMetrics(t *testing.T) {
 		}
 		if multiErr != nil {
 			t.Error(multiErr)
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.relabel_configs",
+				Value:   "8",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.honor_timestamps",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scheme",
+				Value:   "http",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scrape_interval",
+				Value:   "10s",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scrape_interval",
+				Value:   "10s",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
+				Value:   "1",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
 		}
 	})
 }

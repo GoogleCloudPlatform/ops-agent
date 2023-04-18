@@ -1,8 +1,7 @@
-// These are the shared lists of test images organized by distro family and
+// These are the shared lists of test images organized by distro and
 // grouped by the most fine-grained build artifact (in this case, the
 // per-distro Ops Agent package).
 
-// A representation of a test distro.
 local template _distro {
   // List of release images.
   release = external
@@ -13,131 +12,103 @@ local template _distro {
   presubmit = []
 }
 
-local template _family {
-  distros = external
-  // Extract the release image lists for all distros in a given family.
-  releases = sort_asc(flatten(map(lambda d_: d_.release, distros.values())))
-  // Extract the presubmit images for all distros in a given family.
-  presubmits = sort_asc(flatten(map(lambda d_: d_.presubmit, distros.values())))
+// DEB Linux distros. (Do not modify this comment.)
+buster = _distro {
+  release = ['debian-10']
+  presubmit = ['debian-10']
+}
+bullseye = _distro {
+  release = ['debian-11']
+  presubmit = ['debian-11']
+}
+bionic = _distro {
+  release = [
+    'ubuntu-1804-lts',
+    'ubuntu-minimal-1804-lts',
+  ]
+  presubmit = ['ubuntu-1804-lts']
+}
+focal = _distro {
+  release = [
+    'ubuntu-2004-lts',
+    'ubuntu-minimal-2004-lts',
+  ]
+  presubmit = ['ubuntu-minimal-2004-lts']
+}
+jammy = _distro {
+  release = [
+    'ubuntu-2204-lts',
+    'ubuntu-minimal-2204-lts',
+  ]
 }
 
-// DEB Linux distros.
-debian = _family {
-  distros = {
-    buster = _distro {
-      release = ['debian-10']
-      presubmit = ['debian-10']
-    }
-    bullseye = _distro {
-      release = ['debian-11']
-      presubmit = ['debian-11']
-    }
-  }
+// RPM Linux distros. (Do not modify this comment.)
+centos7 = _distro {
+  release = [
+    // CentOS.
+    'centos-7',
+    // RHEL.
+    'rhel-7',
+    'rhel-7-7-sap-ha',
+    'rhel-7-9-sap-ha',
+  ]
+  presubmit = ['centos-7']
 }
-ubuntu = _family {
-  distros = {
-    bionic = _distro {
-      release = [
-        'ubuntu-1804-lts',
-        'ubuntu-minimal-1804-lts',
-      ]
-      presubmit = ['ubuntu-1804-lts']
-    }
-    focal = _distro {
-      release = [
-        'ubuntu-2004-lts',
-        'ubuntu-minimal-2004-lts',
-      ]
-      presubmit = ['ubuntu-minimal-2004-lts']
-    }
-    jammy = _distro {
-      release = [
-        'ubuntu-2204-lts',
-        'ubuntu-minimal-2204-lts',
-      ]
-    }
-  }
+centos8 = _distro {
+  release = [
+    // RHEL.
+    'rhel-8',
+    'rhel-8-1-sap-ha',
+    'rhel-8-2-sap-ha',
+    'rhel-8-4-sap-ha',
+    'rhel-8-6-sap-ha',
+    // Rocky.
+    'rocky-linux-8',
+  ]
+  presubmit = ['rocky-linux-8']
 }
-
-// RPM Linux distros.
-centos = _family {
-  distros = {
-    centos7 = _distro {
-      release = [
-        // CentOS.
-        'centos-7',
-        // RHEL.
-        'rhel-7',
-        'rhel-7-7-sap-ha',
-        'rhel-7-9-sap-ha',
-      ]
-      presubmit = ['centos-7']
-    }
-    centos8 = _distro {
-      release = [
-        // RHEL.
-        'rhel-8',
-        'rhel-8-1-sap-ha',
-        'rhel-8-2-sap-ha',
-        'rhel-8-4-sap-ha',
-        'rhel-8-6-sap-ha',
-        // Rocky.
-        'rocky-linux-8',
-      ]
-      presubmit = ['rocky-linux-8']
-    }
-    rockylinux9 = _distro {
-      release = [
-        // RHEL.
-        'rhel-9',
-        // Rocky.
-        'rocky-linux-9',
-      ]
-      presubmit = ['rocky-linux-9']
-    }
-  }
+rockylinux9 = _distro {
+  release = [
+    // RHEL.
+    'rhel-9',
+    // Rocky.
+    'rocky-linux-9',
+  ]
+  presubmit = ['rocky-linux-9']
 }
-sles = _family {
-  distros = {
-    sles12 = _distro {
-      release = [
-        'sles-12',
-        'sles-12-sp5-sap',
-      ]
-      presubmit = ['sles-12']
-    }
-    sles15 = _distro {
-      release = [
-        'sles-15',
-        'sles-15-sp1-sap',
-        'sles-15-sp2-sap',
-        'opensuse-leap',
-        'opensuse-leap-15-4',
-      ]
-      presubmit = ['sles-15']
-    }
-  }
+sles12 = _distro {
+  release = [
+    'sles-12',
+    'sles-12-sp5-sap',
+  ]
+  presubmit = ['sles-12']
+}
+sles15 = _distro {
+  release = [
+    'sles-15',
+    'sles-15-sp1-sap',
+    'sles-15-sp2-sap',
+    'opensuse-leap',
+    'opensuse-leap-15-4',
+  ]
+  presubmit = ['sles-15']
 }
 
 // Windows distros.
-windows = _family {
-  distros = {
-    windows = _distro {
-      release = [
-        'windows-2012-r2',
-        'windows-2012-r2-core',
-        'windows-2016',
-        'windows-2016-core',
-        'windows-2019',
-        'windows-2019-core',
-        'windows-2022',
-        'windows-2022-core',
-      ]
-      presubmit = [
-        'windows-2012-r2',
-        // TODO(martijnvs): Switch this to windows-20h2-core.
-        'windows-2019',
-      ]
-    }
-  }
+windows = _distro {
+  release = [
+    'windows-2012-r2',
+    'windows-2012-r2-core',
+    'windows-2016',
+    'windows-2016-core',
+    'windows-2019',
+    'windows-2019-core',
+    'windows-2022',
+    'windows-2022-core',
+  ]
+  presubmit = [
+    'windows-2012-r2',
+    // TODO(martijnvs): Switch this to windows-20h2-core.
+    'windows-2019',
+  ]
 }
