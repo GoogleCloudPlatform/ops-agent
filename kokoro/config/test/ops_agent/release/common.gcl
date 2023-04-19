@@ -2,6 +2,9 @@ import '../common.gcl' as common
 
 template config ops_agent_test = common.ops_agent_test {
   params {
+    // TODO(subbarker): Migrate this to use go_test_for_containers.sh. 
+    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
+
     environment {
       // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
