@@ -91,13 +91,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 	return client.CreateTimeSeries(ctx, req)
 }
 
-type APICheck struct{}
-
-func (c APICheck) Name() string {
-	return "API Check"
-}
-
-func (c APICheck) RunCheck(logger *log.Logger) error {
+func runLoggingCheck(logger *log.Logger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -130,12 +124,27 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 			case codes.PermissionDenied:
 				return LogApiPermissionErr
 			case codes.Unauthenticated:
-				return LogApiScopeErr
+				return LogApiUnauthenticatedErr
+			case codes.DeadlineExceeded:
+				return LogApiConnErr
 			}
 		}
-
+		if errors.Is(err, context.DeadlineExceeded) {
+			return LogApiConnErr
+		}
 		return err
 	}
+
+	return nil
+}
+
+func runMonitoringCheck(logger *log.Logger) error {
+	ctx := context.Background()
+	gceMetadata, err := getGCEMetadata()
+	if err != nil {
+		return fmt.Errorf("can't get GCE metadata: %w", err)
+	}
+	logger.Printf("gce metadata: %+v", gceMetadata)
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -162,11 +171,28 @@ func (c APICheck) RunCheck(logger *log.Logger) error {
 			case codes.PermissionDenied:
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
-				return MonApiScopeErr
+				return MonApiUnauthenticatedErr
+			case codes.DeadlineExceeded:
+				return MonApiConnErr
 			}
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return MonApiConnErr
 		}
 		return err
 	}
 
 	return nil
+}
+
+type APICheck struct{}
+
+func (c APICheck) Name() string {
+	return "API Check"
+}
+
+func (c APICheck) RunCheck(logger *log.Logger) error {
+	monErr := runMonitoringCheck(logger)
+	logErr := runLoggingCheck(logger)
+	return errors.Join(monErr, logErr)
 }
