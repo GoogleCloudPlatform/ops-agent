@@ -89,12 +89,29 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   export GCLOUD_TO_TEST
 fi
 
+function dump_stats() {
+  # https://unix.stackexchange.com/a/119170
+  free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }' >> "${LOGS_DIR}/resources.txt"
+  df -h | awk '$NF=="/"{printf "Disk Usage: %d/%dGB (%s)\n", $3,$2,$5}' >> "${LOGS_DIR}/resources.txt"
+  top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}' >> "${LOGS_DIR}/resources.txt"
+}
+
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
+  dump_stats
   cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${LOGS_DIR}/sponge_log.xml"
 }
 # Always run produce_xml on exit, whether the test passes or fails.
 trap produce_xml EXIT
+
+function dump_stats_loop() {
+  for i in $(seq 1 300); do
+    dump_stats
+    sleep 1
+  done
+}
+
+dump_stats_loop &
 
 # Boost the max number of open files from 1024 to 1 million.
 ulimit -n 1000000
