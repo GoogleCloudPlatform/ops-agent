@@ -108,7 +108,12 @@ windows = _distro {
   ]
   presubmit = [
     'windows-2012-r2',
-    // TODO(martijnvs): Switch this to windows-20h2-core.
+    'windows-2012-r2-core',
+    'windows-2016',
+    'windows-2016-core',
     'windows-2019',
+    'windows-2019-core',
+    'windows-2022',
+    'windows-2022-core',
   ]
 }
