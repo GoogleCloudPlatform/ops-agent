@@ -15,17 +15,38 @@
 package healthchecks
 
 import (
+	"errors"
 	"log"
 	"net/http"
 )
 
+type networkRequest struct {
+	name             string
+	url              string
+	successMessage   string
+	healthCheckError HealthCheckError
+}
+
+func (r networkRequest) SendRequest(logger *log.Logger) error {
+	response, err := http.Get(r.url)
+	if err != nil {
+		if isTimeoutError(err) || isConnectionRefusedError(err) {
+			return r.healthCheckError
+		}
+		return err
+	}
+	logger.Printf("%s response status: %s", r.name, response.Status)
+	switch response.StatusCode {
+	case http.StatusOK:
+		logger.Printf(r.successMessage)
+	default:
+		return r.healthCheckError
+	}
+	return nil
+}
+
 var (
-	requests = []struct {
-		name             string
-		url              string
-		successMessage   string
-		healthCheckError HealthCheckError
-	}{
+	requests = []networkRequest{
 		{
 			name:             "Logging API",
 			url:              "https://logging.googleapis.com/$discovery/rest",
@@ -66,22 +87,9 @@ func (c NetworkCheck) Name() string {
 }
 
 func (c NetworkCheck) RunCheck(logger *log.Logger) error {
+	var networkErrors []error
 	for _, r := range requests {
-		response, err := http.Get(r.url)
-		if err != nil {
-			if isTimeoutError(err) || isConnectionRefusedError(err) {
-				return r.healthCheckError
-			}
-			return err
-		}
-		logger.Printf("%s response status: %s", r.name, response.Status)
-		switch response.StatusCode {
-		case http.StatusOK:
-			logger.Printf(r.successMessage)
-		default:
-			return r.healthCheckError
-		}
+		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
-
-	return nil
+	return errors.Join(networkErrors...)
 }

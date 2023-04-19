@@ -12,7 +12,7 @@ local template _distro {
   presubmit = []
 }
 
-// DEB Linux distros.
+// DEB Linux distros. (Do not modify this comment.)
 buster = _distro {
   release = ['debian-10']
   presubmit = ['debian-10']
@@ -42,7 +42,7 @@ jammy = _distro {
   ]
 }
 
-// RPM Linux distros.
+// RPM Linux distros. (Do not modify this comment.)
 centos7 = _distro {
   release = [
     // CentOS.

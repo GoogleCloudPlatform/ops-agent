@@ -3686,15 +3686,20 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.SkipNow()
 		}
 
-		onlyReadScopes := strings.Join([]string{
-			"https://www.googleapis.com/auth/monitoring.read",
+		customScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.write",
 			"https://www.googleapis.com/auth/logging.read",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", onlyReadScopes})
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
 
 		if !gce.IsWindows(vm.Platform) {
-			packages := []string{"netcat"}
+			var packages []string
+			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) {
+				packages = []string{"nc"}
+			} else {
+				packages = []string{"netcat"}
+			}
 			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
 			if err != nil {
 				t.Fatalf("failed to install %v with err: %s", packages, err)
@@ -3722,8 +3727,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "PASS")
-		checkFunc("API", "FAIL")
 		checkFunc("Ports", "FAIL")
+		checkFunc("API", "FAIL")
 	})
 }
 
@@ -3752,8 +3757,8 @@ func TestNetworkHealthCheck(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "PASS")
-		checkFunc("API", "PASS")
 		checkFunc("Ports", "PASS")
+		checkFunc("API", "PASS")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3763,7 +3768,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3780,8 +3785,8 @@ func TestNetworkHealthCheck(t *testing.T) {
 			}
 		}
 		checkFunc("Network", "FAIL")
-		checkFunc("API", "ERROR")
 		checkFunc("Ports", "PASS")
+		checkFunc("API", "FAIL")
 	})
 }
 

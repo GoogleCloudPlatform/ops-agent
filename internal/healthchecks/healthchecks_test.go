@@ -96,7 +96,17 @@ func TestRunAllHealthChecks(t *testing.T) {
 
 	result := allHealthChecks.RunAllHealthChecks(testLogger)
 
-	assert.Check(t, strings.Contains(result[fCheck.Name()].Message, "Result: FAIL"))
-	assert.Check(t, strings.Contains(result[sCheck.Name()].Message, "Result: PASS"))
-	assert.Check(t, strings.Contains(result[eCheck.Name()].Message, "Result: ERROR"))
+	var expected string
+	for _, r := range result {
+		switch r.Name {
+		case "Error Check":
+			expected = "Result: ERROR"
+		case "Success Check":
+			expected = "Result: PASS"
+		case "Failure Check":
+			expected = "Result: FAIL"
+		}
+
+		assert.Check(t, strings.Contains(r.String(), expected))
+	}
 }
