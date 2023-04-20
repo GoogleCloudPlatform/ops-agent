@@ -3650,7 +3650,7 @@ func isHealthCheckTestPlatform(platform string) bool {
 }
 
 func healthCheckResultMessage(name string, result string) string {
-	return fmt.Sprintf("%s Check - Result: %s", name, result)
+	return fmt.Sprintf("[%s Check] Result: %s", name, result)
 }
 
 func getRecentServiceOutputForPlatform(platform string) string {

@@ -16,6 +16,7 @@ package healthchecks_test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -94,19 +95,20 @@ func TestRunAllHealthChecks(t *testing.T) {
 	eCheck := ErrorCheck{}
 	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, sCheck, eCheck}
 
-	result := allHealthChecks.RunAllHealthChecks(testLogger)
+	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
 
 	var expected string
-	for _, r := range result {
+	var result string
+	for _, r := range allCheckResults {
 		switch r.Name {
 		case "Error Check":
-			expected = "Result: ERROR"
+			result = "ERROR"
 		case "Success Check":
-			expected = "Result: PASS"
+			result = "PASS"
 		case "Failure Check":
-			expected = "Result: FAIL"
+			result = "FAIL"
 		}
-
+		expected = fmt.Sprintf("[%s] Result: %s", r.Name, result)
 		assert.Check(t, strings.Contains(r.String(), expected))
 	}
 }
