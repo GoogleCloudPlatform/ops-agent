@@ -137,7 +137,7 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func getHealthCheckResults() map[string]healthchecks.HealthCheckResult {
+func getHealthCheckResults() []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 	logger, closer := healthchecks.CreateHealthChecksLogger(logsDir)
