@@ -37,12 +37,12 @@ type HealthCheckResult struct {
 func singleErrorResultMessage(e error, Name string) string {
 	if e != nil {
 		if healthError, ok := e.(HealthCheckError); ok {
-			return fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+			return fmt.Sprintf("[%s] Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
 				Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
 		}
-		return fmt.Sprintf("%s - Result: ERROR, Detail: %s", Name, e.Error())
+		return fmt.Sprintf("[%s] Result: ERROR, Detail: %s", Name, e.Error())
 	}
-	return fmt.Sprintf("%s - Result: PASS", Name)
+	return fmt.Sprintf("[%s] Result: PASS", Name)
 }
 
 func (r HealthCheckResult) String() string {
@@ -56,13 +56,13 @@ func (r HealthCheckResult) String() string {
 	return singleErrorResultMessage(r.Err, r.Name)
 }
 
-type HealthCheckRegistry []HealthCheck
-
-func HealthCheckRegistryFactory() HealthCheckRegistry {
-	return HealthCheckRegistry{
-		PortsCheck{},
-		NetworkCheck{},
-		APICheck{},
+func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
+	for _, result := range healthCheckResults {
+		if result.Err != nil {
+			errorLogger(result.String())
+		} else {
+			infoLogger(result.String())
+		}
 	}
 }
 
@@ -82,8 +82,18 @@ func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func())
 	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
 }
 
+type HealthCheckRegistry []HealthCheck
+
+func HealthCheckRegistryFactory() HealthCheckRegistry {
+	return HealthCheckRegistry{
+		PortsCheck{},
+		NetworkCheck{},
+		APICheck{},
+	}
+}
+
 func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthCheckResult {
-	result := []HealthCheckResult{}
+	var result []HealthCheckResult
 
 	for _, c := range r {
 		err := c.RunCheck(logger)
@@ -94,14 +104,4 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthChec
 	}
 
 	return result
-}
-
-func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
-	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			errorLogger(result.String())
-		} else {
-			infoLogger(result.String())
-		}
-	}
 }
