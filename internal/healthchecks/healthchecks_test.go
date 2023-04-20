@@ -76,8 +76,7 @@ func (c ErrorCheck) Name() string {
 }
 
 func (c ErrorCheck) RunCheck(logger *log.Logger) error {
-	err := errors.New("Test error.")
-	return err
+	return errors.New("Test error.")
 }
 
 func TestCheckError(t *testing.T) {
@@ -111,4 +110,51 @@ func TestRunAllHealthChecks(t *testing.T) {
 		expected = fmt.Sprintf("[%s] Result: %s", r.Name, result)
 		assert.Check(t, strings.Contains(r.String(), expected))
 	}
+}
+
+type MultipleFailureResultCheck struct{}
+
+func (c MultipleFailureResultCheck) Name() string {
+	return "MultipleResult Check"
+}
+
+func (c MultipleFailureResultCheck) RunCheck(logger *log.Logger) error {
+	return errors.Join(nil, errors.New("Test error."), healthchecks.HcFailureErr)
+}
+
+func TestMultipleFailureResultHealthCheck(t *testing.T) {
+	mCheck := MultipleFailureResultCheck{}
+	wantErrorMessage := "Test error."
+	expectedFailure := fmt.Sprintf("[%s] Result: FAIL", mCheck.Name())
+	expectedError := fmt.Sprintf("[%s] Result: ERROR", mCheck.Name())
+	
+	err := mCheck.RunCheck(testLogger)
+	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
+
+	assert.ErrorContains(t, err, wantErrorMessage)
+	assert.ErrorIs(t, err, healthchecks.HcFailureErr)
+	assert.Check(t, strings.Contains(result.String(), expectedFailure))
+	assert.Check(t, strings.Contains(result.String(), expectedError))
+
+}
+
+type MultipleSuccessResultCheck struct{}
+
+func (c MultipleSuccessResultCheck) Name() string {
+	return "MultipleResult Check"
+}
+
+func (c MultipleSuccessResultCheck) RunCheck(logger *log.Logger) error {
+	return errors.Join(nil, nil, nil)
+}
+
+func TestMultipleFailureHealthCheck(t *testing.T) {
+	sCheck := MultipleSuccessResultCheck{}
+	expectedSuccess := fmt.Sprintf("[%s] Result: PASS", sCheck.Name())
+	
+	err := sCheck.RunCheck(testLogger)
+	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
+
+	assert.NilError(t, err)
+	assert.Check(t, strings.Contains(result.String(), expectedSuccess))
 }

@@ -96,9 +96,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthChec
 	var result []HealthCheckResult
 
 	for _, c := range r {
-		err := c.RunCheck(logger)
-
-		r := HealthCheckResult{Name: c.Name(), Err: err}
+		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
 		logger.Println(r)
 		result = append(result, r)
 	}
