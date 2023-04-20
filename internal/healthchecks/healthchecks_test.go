@@ -122,7 +122,7 @@ func (c MultipleFailureResultCheck) RunCheck(logger *log.Logger) error {
 	return errors.Join(nil, errors.New("Test error."), healthchecks.HcFailureErr)
 }
 
-func TestMultipleFailureResultHealthCheck(t *testing.T) {
+func TestMultipleFailureResultCheck(t *testing.T) {
 	mCheck := MultipleFailureResultCheck{}
 	wantErrorMessage := "Test error."
 	expectedFailure := fmt.Sprintf("[%s] Result: FAIL", mCheck.Name())
@@ -148,7 +148,7 @@ func (c MultipleSuccessResultCheck) RunCheck(logger *log.Logger) error {
 	return errors.Join(nil, nil, nil)
 }
 
-func TestMultipleFailureHealthCheck(t *testing.T) {
+func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
 	expectedSuccess := fmt.Sprintf("[%s] Result: PASS", sCheck.Name())
 	
