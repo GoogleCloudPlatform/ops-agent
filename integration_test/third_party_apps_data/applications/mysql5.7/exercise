@@ -13,14 +13,15 @@ pid-file=/var/run/mysqld/mysqld2.pid
 socket=/var/run/mysqld/mysqld2.sock
 port=3307
 user=mysql
-data-dir=/var/lib/mysql2
+datadir=/var/lib/mysql2
 log-error=/var/log/mysql/error2.log
 server-id=2
 log-bin=/var/log/mysql/mysql2-bin.log
 EOF
 
 # set main target (replica) to use binary logging for replication to work
-echo tee -a /etc/mysql/conf.d/mysqld.cnf <<EOF
+cat <<EOF >  /etc/mysql/conf.d/mysqld.cnf
+[mysqld]
 server-id=1
 log-bin=/var/log/mysql/mysql-bin.log
 EOF
@@ -31,7 +32,7 @@ sudo chown mysql:mysql /etc/mysql/replica_source.cnf
 sudo chmod uga+r /etc/mysql/replica_source.cnf
 sudo chown mysql:mysql /var/log/mysql/
 
-sudo service mysql stop && sudo service mysql start
+sudo service mysql restart
 
 # initialize and start replation source
 sudo mysqld --defaults-group-suffix=2 --initialize
