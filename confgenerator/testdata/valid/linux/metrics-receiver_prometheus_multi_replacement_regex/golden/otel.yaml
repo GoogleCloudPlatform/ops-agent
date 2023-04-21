@@ -50,7 +50,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  groupbyattrs/custom_prometheus:
+  groupbyattrs/prometheus_0:
     keys:
     - namespace
     - cluster
@@ -540,7 +540,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
-      - groupbyattrs/custom_prometheus
+      - groupbyattrs/prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:

@@ -100,7 +100,9 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(

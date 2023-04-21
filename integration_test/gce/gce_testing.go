@@ -154,6 +154,10 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
+	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
+	// Cloud Trace quota is incredibly low, and each call to ListTraces uses 25 quota tokens.
+	traceQueryDerate = 6 // = 30 seconds with above settings
+
 	vmInitTimeout                     = 20 * time.Minute
 	vmInitBackoffDuration             = 10 * time.Second
 	vmInitPokeSSHTimeout              = 30 * time.Second
@@ -523,7 +527,7 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
 		it := lookupTrace(ctx, logger, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
@@ -534,7 +538,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
 			attempt, QueryMaxAttempts)
-		time.Sleep(queryBackoffDuration)
+		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
