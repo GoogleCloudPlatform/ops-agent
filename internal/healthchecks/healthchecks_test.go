@@ -29,7 +29,7 @@ import (
 var testLogger *log.Logger = log.New(ioutil.Discard, "", 0)
 
 func expectedResultMessage(name string, result string) string {
-	return fmt.Sprintf("[%s Check] Result: %s", name, result)
+	return fmt.Sprintf("[%s] Result: %s", name, result)
 }
 
 type FailureCheck struct{}
@@ -155,6 +155,7 @@ func (c MultipleSuccessResultCheck) RunCheck(logger *log.Logger) error {
 func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
 	expectedSuccess := expectedResultMessage(sCheck.Name(), "PASS")
+	fmt.Println(expectedSuccess)
 	
 	err := sCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
