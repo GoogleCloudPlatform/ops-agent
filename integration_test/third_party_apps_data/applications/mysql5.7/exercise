@@ -33,7 +33,7 @@ sudo chown mysql:mysql /var/log/mysql/
 sudo service mysql restart
 
 # initialize and start replation source
-sudo mysqld --defaults-group-suffix=2 --initialize
+sudo mysqld --defaults-group-suffix=2 --initialize --datadir=/var/lib/mysql2
 sudo mysqld --defaults-group-suffix=2 &
 
 # grab root password for replication source
