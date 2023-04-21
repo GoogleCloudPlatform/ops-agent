@@ -26,10 +26,8 @@ server-id=1
 log-bin=/var/log/mysql/mysql-bin.log
 EOF
 
-sudo service mysql restart
-
-sudo chown mysql:mysql /etc/mysql/replica_source.cnf
-sudo chmod uga+r /etc/mysql/replica_source.cnf
+sudo chmod uga+r /etc/mysql/conf.d/replica_source.cnf
+sudo chown mysql:mysql /etc/mysql/conf.d/replica_source.cnf
 sudo chown mysql:mysql /var/log/mysql/
 
 sudo service mysql restart
