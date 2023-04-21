@@ -7,7 +7,7 @@ password='Ss123%321'
 EOF
 
 # set up replication source to validate replica metrics
-cat <<EOF > /etc/mysql/replica_source.cnf
+cat <<EOF > /etc/mysql/conf.d/replica_source.cnf
 [mysqld2]
 pid-file=/var/run/mysqld/mysqld2.pid
 socket=/var/run/mysqld/mysqld2.sock

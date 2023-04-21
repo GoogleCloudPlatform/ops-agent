@@ -38,6 +38,8 @@ platforms_to_skip:
   - sles-15 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
   - rocky-linux-8 # mysql5.7 not available on RHEL8
   - rocky-linux-9 # mysql5.7 not available on RHEL9
+  - debian-11 # mysql5.7 not available on Debian 11
+  - ubuntu-2004-lts # mysql5.7 not available on ubuntu focal
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
