@@ -9,7 +9,13 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlemanagedprometheus:
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
@@ -50,11 +56,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  groupbyattrs/prometheus_0:
-    keys:
-    - namespace
-    - cluster
-    - location
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -429,9 +430,31 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/otlp_0:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: A$${1}
+    - action: update
+      include: "^A((?:[a-z]+\\.)*(?:googleapis\\.com|kubernetes\\.io|istio\\.io|knative\\.dev)/.+)$$"
+      match_type: regexp
+      new_name: B$${1}
+    - action: update
+      include: ^A(.*)$$
+      match_type: regexp
+      new_name: Aworkload.googleapis.com/$${1}
+    - action: update
+      include: ^[AB](.*)$$
+      match_type: regexp
+      new_name: $${1}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -446,6 +469,10 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
+  otlp/otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -463,102 +490,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  prometheus/prometheus:
-    config:
-      global:
-        scrape_interval: 1m
-        scrape_timeout: 10s
-        evaluation_interval: 1m
-      scrape_configs:
-      - job_name: Job_1
-        honor_timestamps: true
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        metrics_path: /metrics
-        scheme: http
-        follow_redirects: true
-        enable_http2: true
-        relabel_configs:
-        - source_labels: [__meta_gce_instance_name]
-          separator: ;
-          regex: (.+)
-          target_label: instance_name
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_instance_id]
-          separator: ;
-          regex: (.+)
-          target_label: instance_id
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_machine_type]
-          separator: ;
-          regex: (.+)
-          target_label: machine_type
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_project_id]
-          separator: ;
-          regex: (.+)
-          target_label: instance_project_id
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_zone]
-          separator: ;
-          regex: (.+)
-          target_label: zone
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_tags]
-          separator: ;
-          regex: (.+)
-          target_label: tags
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_network]
-          separator: ;
-          regex: (.+)
-          target_label: network
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_subnetwork]
-          separator: ;
-          regex: (.+)
-          target_label: subnetwork
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_public_ip]
-          separator: ;
-          regex: (.+)
-          target_label: public_ip
-          replacement: $${1}
-          action: replace
-        - source_labels: [__meta_gce_private_ip]
-          separator: ;
-          regex: (.+)
-          target_label: private_ip
-          replacement: $${1}
-          action: replace
-        static_configs:
-        - targets:
-          - 0.0.0.0:9100
-          labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: __gce__
-            instance_name: test-instance-name
-            location: test-zone
-            machine_type: test-machine-type
-            namespace: test-instance-id
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -590,13 +521,21 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/prometheus__pipeline_prometheus:
+    metrics/otlp_otlp:
       exporters:
-      - googlemanagedprometheus
+      - googlecloud/otel
       processors:
-      - groupbyattrs/prometheus_0
+      - metricstransform/otlp_0
+      - resourcedetection/_global_1
       receivers:
-      - prometheus/prometheus
+      - otlp/otlp
+    traces/traces_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
   telemetry:
     metrics:
       address: 0.0.0.0:20201
