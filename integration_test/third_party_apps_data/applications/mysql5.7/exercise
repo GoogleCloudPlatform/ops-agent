@@ -6,6 +6,67 @@ user=root
 password='Ss123%321'
 EOF
 
+# set up replication source to validate replica metrics
+cat <<EOF > /etc/mysql/replica_source.cnf
+[mysqld2]
+pid-file=/var/run/mysqld/mysqld2.pid
+socket=/var/run/mysqld/mysqld2.sock
+port=3307
+user=mysql
+data-dir=/var/lib/mysql2
+log-error=/var/log/mysql/error2.log
+server-id=2
+log-bin=/var/log/mysql/mysql2-bin.log
+EOF
+
+# set main target (replica) to use binary logging for replication to work
+echo tee -a /etc/mysql/conf.d/mysqld.cnf <<EOF
+server-id=1
+log-bin=/var/log/mysql/mysql-bin.log
+EOF
+
+sudo service mysql restart
+
+sudo chown mysql:mysql /etc/mysql/replica_source.cnf
+sudo chmod uga+r /etc/mysql/replica_source.cnf
+sudo chown mysql:mysql /var/log/mysql/
+
+sudo service mysql stop && sudo service mysql start
+
+# initialize and start replation source
+sudo mysqld --defaults-group-suffix=2 --initialize
+sudo mysqld --defaults-group-suffix=2 &
+
+# grab root password for replication source
+password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/error2.log)
+cat <<EOF > config-user-2
+[client]
+user=root
+password='$password'
+EOF
+
+mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+
+# Create replication user
+mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED BY 'password';"
+mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
+
+# Dump data from replica source
+mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --master-data > /tmp/dbdump.sql
+
+# Capture status to seed replica
+mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;"
+read -r logfile logpos <<< $raw_status
+
+# Dump data from source into replica
+mysql --defaults-extra-file=config-user < /tmp/dbdump.sql
+
+# Configure replication
+mysql --defaults-extra-file=config-user -Bse "STOP SLAVE;"
+mysql --defaults-extra-file=config-user -Bse "CHANGE MASTER TO MASTER_HOST='localhost', MASTER_USER='repl', MASTER_PASSWORD='password', MASTER_LOG_FILE='$logfile', MASTER_LOG_POS=$logpos;"
+mysql --defaults-extra-file=config-user -Bse "START SLAVE;"
+
+
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
