@@ -7,33 +7,32 @@ password='Ss123%321'
 EOF
 
 # set up replication source to validate replica metrics
-cat <<EOF > /etc/mysql/conf.d/replica_source.cnf
-[mysqld2]
-pid-file=/var/run/mysqld/mysqld2.pid
-socket=/var/run/mysqld/mysqld2.sock
-port=3307
-user=mysql
-datadir=/var/lib/mysql2
-log-error=/var/log/mysql/error2.log
-server-id=2
-log-bin=/var/log/mysql/mysql2-bin.log
-EOF
-
 # set main target (replica) to use binary logging for replication to work
-cat <<EOF >  /etc/mysql/conf.d/mysqld.cnf
-[mysqld]
-server-id=1
-log-bin=/var/log/mysql/mysql-bin.log
+sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysqld2.pid
+socket = /var/run/mysqld/mysqld2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
 EOF
 
-sudo chmod uga+r /etc/mysql/conf.d/replica_source.cnf
-sudo chown mysql:mysql /etc/mysql/conf.d/replica_source.cnf
+sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
+
+sudo chmod uga+r /etc/mysql/conf.d/*
+sudo chown mysql:mysql /etc/mysql/conf.d/*
 sudo chown mysql:mysql /var/log/mysql/
 
 sudo service mysql restart
 
 # initialize and start replation source
-sudo mysqld --defaults-group-suffix=2 --initialize --datadir=/var/lib/mysql2
+sudo mysqld --defaults-group-suffix=2 --initialize
 sudo mysqld --defaults-group-suffix=2 &
 
 # grab root password for replication source
