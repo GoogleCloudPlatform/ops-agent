@@ -9,20 +9,3 @@ environment_variables = lambda vars_: {
   assert is_map(vars_) || is_tuple(vars_)
   ret = map(lambda x_: { key = x_[0], value = x_[1] }, vars_.items())
 }.ret
-
-// Create a fetch_keystore action with the given resources.
-//
-// Example usage:
-//  fetch_keystore([{id = 123, name = 'name'}])
-// Returns
-//  {fetch_keystore = {keystore_resource = [{keystore_config_id = 123, keyname = 'name'}]}}
-fetch_keystore = lambda keys_: {
-  fetch_keystore = {
-    keystore_resource = map(lambda k_: 
-      {
-        keystore_config_id = k_.id
-        keyname = k_.name
-      },
-      keys_)
-  }
-}

@@ -8,7 +8,7 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     keystore_keys = super.keystore_keys + [
-      { id = 71565, name = 'rpm-signing-key' },
+      { keystore_config_id = 71565, keyname = 'rpm-signing-key' },
     ]
     environment {
       SKIP_SIGNING = null
