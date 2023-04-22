@@ -13,8 +13,8 @@ server-id = 1
 log-bin = /var/log/mysql/mysql-bin.log
 
 [mysqld2]
-pid-file = /var/run/mysqld/mysqld2.pid
-socket = /var/run/mysqld/mysqld2.sock
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
 port = 3307
 user = mysql
 datadir = /var/lib/mysql2/
