@@ -33,7 +33,7 @@ sudo service mysql restart
 
 # initialize and start replation source
 sudo mysqld --defaults-group-suffix=2 --initialize
-sudo mysqld --defaults-group-suffix=2 &
+sudo nohup mysqld --defaults-group-suffix=2 &
 
 # grab root password for replication source
 password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/error2.log)
