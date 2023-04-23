@@ -43,17 +43,17 @@ user=root
 password='$password'
 EOF
 
-mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
 # Create replication user
-mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED BY 'password';"
-mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED BY 'password';"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
 
 # Dump data from replica source
-mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --master-data > /tmp/dbdump.sql
+sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --master-data > /tmp/dbdump.sql
 
 # Capture status to seed replica
-mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;"
 read -r logfile logpos <<< $raw_status
 
 # Dump data from source into replica
