@@ -18,7 +18,7 @@ user=root
 password='$password'
 EOF
 
-cat /var/log/mysql/error2.log
+sudo cat /var/log/mysql/error2.log
 exit 1
 sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
