@@ -52,4 +52,4 @@ server-id = 2
 log-bin = /var/log/mysql/mysql2-bin.log
 EOF
 
-sudo service mysql restart
+sudo service mysqld restart
