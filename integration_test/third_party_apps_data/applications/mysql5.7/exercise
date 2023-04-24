@@ -9,6 +9,8 @@ EOF
 # initialize and start replation source
 sudo mysqld --defaults-group-suffix=2 --initialize
 nohup sudo mysqld --defaults-group-suffix=2 &
+# give it time to start, since we put it in the background
+sleep 10
 
 # grab root password for replication source
 password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/error2.log)
@@ -18,8 +20,6 @@ user=root
 password='$password'
 EOF
 
-sudo cat /var/log/mysql/error2.log
-exit 1
 sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
 # Create replication user
