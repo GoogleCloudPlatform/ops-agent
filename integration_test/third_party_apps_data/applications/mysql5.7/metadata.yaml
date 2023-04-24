@@ -402,6 +402,9 @@ configuration_options:
         - name: password
           default: null
           description: The password used to connect to the server.
+        - name: application_version
+          default: null
+          description: The version of mysql (major.minor) being monitored. Replication metrics are supported for version 5.7 by setting this to the value 5.7.
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.

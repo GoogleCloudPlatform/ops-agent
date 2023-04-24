@@ -30,7 +30,7 @@ sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse
 sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --master-data > /tmp/dbdump.sql
 
 # Capture status to seed replica
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;")
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW SOURCE STATUS;")
 read -r logfile logpos <<< $raw_status
 
 # Dump data from source into replica
@@ -41,7 +41,7 @@ mysql --defaults-extra-file=config-user -Bse "STOP REPLICA;"
 mysql --defaults-extra-file=config-user -Bse "CHANGE REPLICATION SOURCE TO SOURCE_HOST='localhost', SOURCE_USER='repl', SOURCE_PORT=3307, SOURCE_PASSWORD='password', SOURCE_LOG_FILE='$logfile', SOURCE_LOG_POS=$logpos;"
 mysql --defaults-extra-file=config-user -Bse "START REPLICA;"
 
-
+mysql --defaults-extra-file=config-user -Bse "SET GLOBAL log_slow_extra = 'ON'"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
 mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
