@@ -152,7 +152,7 @@ var (
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,
 		Message:      "The current VM couldn't authenticate to the Logging API.",
-		Action:       "Verify that your credential files, scopes and permissions are set up correctly.",
+		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
@@ -160,7 +160,7 @@ var (
 		Code:         "MonApiUnauthenticatedErr",
 		Class:        Api,
 		Message:      "The current VM couldn't authenticate to the Monitoring API.",
-		Action:       "Verify that your credential files, scopes and permissions are set up correctly.",
+		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
