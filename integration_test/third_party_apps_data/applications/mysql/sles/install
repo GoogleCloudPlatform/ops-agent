@@ -50,3 +50,5 @@ EOF
 fi
 
 sudo service mysql start
+
+# TODO - when reenabling sles support, replication will need to be configured here as in debian & centos
