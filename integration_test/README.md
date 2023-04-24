@@ -274,3 +274,8 @@ TODO: Document log files for a Windows VM.
 
 The `agent_packages` directory contains the package files built from the PR
 and installed on the VM for testing.
+
+# Vendored Dependencies
+
+Due to being throttled by some sites, notably archive.apache.org, we are keeping
+a local copy 

@@ -544,6 +544,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, err
 	}
 
+	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
+		return nonRetryable, err
+	}
+
 	installEnv := make(map[string]string)
 	if folder == "debian_ubuntu" {
 		// Gets us around problematic prompts for user input.
