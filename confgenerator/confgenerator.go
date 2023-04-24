@@ -32,6 +32,7 @@ import (
 )
 
 const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+const healthChecksTag = "ops-agent-health-checks"
 
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
@@ -379,9 +380,14 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		BufferInMemory: true,
 	}.Components(ctx, fluentBitSelfLogTag)...)
 
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths:   []string{"${logs_dir}/../health-checks.log"},
+		BufferInMemory: true,
+	}.Components(ctx, healthChecksTag)...)
+
 	out = append(out, generateSeveritySelfLogsParser(ctx)...)
 
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
+	out = append(out, stackdriverOutputComponent(fmt.Sprintf("(%s)|(%s)", fluentBitSelfLogTag, healthChecksTag), userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
