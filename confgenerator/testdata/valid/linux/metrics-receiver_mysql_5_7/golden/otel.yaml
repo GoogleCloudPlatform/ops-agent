@@ -537,7 +537,7 @@ receivers:
           - 0.0.0.0:20201
   sqlquery/mysql:
     collection_interval: 30s
-    datasource: usr:pwd@tcp(localhost:3306)/?allowNativePasswords=false&checkConnLiveness=false&maxAllowedPacket=0
+    datasource: usr:pwd@tcp(localhost:3306)/?checkConnLiveness=false&maxAllowedPacket=0
     driver: mysql
     queries:
     - metrics:

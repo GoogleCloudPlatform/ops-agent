@@ -68,6 +68,8 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 			Passwd: r.Password,
 			Net:    transport,
 			Addr:   r.Endpoint,
+			// TODO - refactor to allow user config of this field
+			AllowNativePasswords: true,
 		}
 
 		pipelines = append(pipelines, otel.ReceiverPipeline{
