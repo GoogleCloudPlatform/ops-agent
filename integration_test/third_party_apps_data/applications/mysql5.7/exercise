@@ -8,7 +8,7 @@ EOF
 
 # initialize and start replation source
 sudo mysqld --defaults-group-suffix=2 --initialize
-nohup sudo mysqld --defaults-group-suffix=2 &
+nohup sudo mysqld --defaults-group-suffix=2 2>/dev/null >/dev/null </dev/null &
 # give it time to start, since we put it in the background
 sleep 10
 
