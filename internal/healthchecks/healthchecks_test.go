@@ -28,7 +28,7 @@ import (
 
 var testLogger *log.Logger = log.New(ioutil.Discard, "", 0)
 
-func expectedResultMessage(name string, result string) string {
+func generateExpectedResultMessage(name string, result string) string {
 	return fmt.Sprintf("[%s] Result: %s", name, result)
 }
 
@@ -111,7 +111,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 		case "Failure Check":
 			result = "FAIL"
 		}
-		expected = expectedResultMessage(r.Name, result)
+		expected = generateExpectedResultMessage(r.Name, result)
 		assert.Check(t, strings.Contains(r.String(), expected))
 	}
 }
@@ -129,8 +129,8 @@ func (c MultipleFailureResultCheck) RunCheck(logger *log.Logger) error {
 func TestMultipleFailureResultCheck(t *testing.T) {
 	mCheck := MultipleFailureResultCheck{}
 	wantErrorMessage := "Test error."
-	expectedFailure := expectedResultMessage(mCheck.Name(), "FAIL")
-	expectedError := expectedResultMessage(mCheck.Name(), "ERROR")
+	expectedFailure := generateExpectedResultMessage(mCheck.Name(), "FAIL")
+	expectedError := generateExpectedResultMessage(mCheck.Name(), "ERROR")
 	
 	err := mCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
@@ -154,7 +154,7 @@ func (c MultipleSuccessResultCheck) RunCheck(logger *log.Logger) error {
 
 func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
-	expectedSuccess := expectedResultMessage(sCheck.Name(), "PASS")
+	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
 	fmt.Println(expectedSuccess)
 	
 	err := sCheck.RunCheck(testLogger)
