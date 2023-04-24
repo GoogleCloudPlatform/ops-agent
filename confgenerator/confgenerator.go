@@ -78,15 +78,6 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func gcpResourceDetector() otel.Component {
-	return otel.Component{
-		Type: "resourcedetection",
-		Config: map[string]interface{}{
-			"detectors": []string{"gcp"},
-		},
-	}
-}
-
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
@@ -130,7 +121,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		LogLevel:          uc.Metrics.Service.LogLevel,
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		GlobalProcessors:  []otel.Component{gcpResourceDetector()},
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
@@ -169,7 +159,7 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 			}
 
 			// Check the Ops Agent receiver type.
-			if receiverPipeline.Type == otel.GMP {
+			if receiverPipeline.ExporterTypes[pipelineType] == otel.GMP {
 				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 				if len(processorIDs) > 0 {
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")

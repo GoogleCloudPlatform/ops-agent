@@ -50,7 +50,9 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			{
 				// perform custom transformations that aren't supported by the metricstransform processor
