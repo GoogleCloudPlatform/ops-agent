@@ -68,7 +68,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 			Passwd: r.Password,
 			Net:    transport,
 			Addr:   r.Endpoint,
-			// TODO - refactor to allow user config of this field
+			// This defaults to true in the mysql receiver, but we need to set it explicitly here
 			AllowNativePasswords: true,
 		}
 
