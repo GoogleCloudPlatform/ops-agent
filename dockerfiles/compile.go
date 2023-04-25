@@ -225,6 +225,18 @@ var dockerfileArguments = []templateArguments{
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
 	},
+	{
+		from_image:  "ubuntu:lunar",
+		target_name: "lunar",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-11-jdk zip debhelper`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-lunar",
+		package_extension: "deb",
+	},
 }
 
 var dockerfileHeader = `# Copyright 2020 Google LLC
