@@ -13,6 +13,14 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
+lunar = _distro {
+  release = [
+      'ubuntu-2304',
+  ]
+  presubmit = [
+      'ubuntu-2304',
+  ]
+}
 buster = _distro {
   release = ['debian-10']
   presubmit = ['debian-10']
