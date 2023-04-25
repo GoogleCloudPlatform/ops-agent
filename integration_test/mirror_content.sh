@@ -1,26 +1,32 @@
 #!/bin/bash
 
-USAGE="Usage: ./mirror_content.sh <app> <URL>
+USAGE="Usage: ./mirror_content.sh <URL>
 
 This will download the content at <URL> and upload it to:
 
-gs://ops-agents-public-buckets-vendored-deps/app-installers/<app>/<last part of URL>
+https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/<URL without http:// or https://>
 
 This script can only be run by Googlers because release tests read from the
 same bucket as presubmit tests, and we want release tests to be secure."
 
-if [[ "$#" -ne 2 ]]; then
+if [[ "$#" -ne 1 ]]; then
   echo "$USAGE"
   exit 1
 fi
 
 set -euxo pipefail
 
-APP="$1"
-URL="$2"
+URL="$1"
 
 SCRATCH="$(mktemp --directory)"
 
-(cd "${SCRATCH}" && curl -LO --fail-with-body "${URL}")
+(cd "${SCRATCH}" && wget --force-directories "${URL}")
 
-gsutil cp "${SCRATCH}/*" "gs://ops-agents-public-buckets-vendored-deps/app-installers/${APP}/"
+gsutil cp -r "${SCRATCH}/*" "gs://ops-agents-public-buckets-vendored-deps/mirrored-content/"
+
+rm -r "${SCRATCH}"
+
+set +x
+
+STRIPPED_URL="$(echo "${URL}" | sed --regexp-extended 's#^https?://##')"
+echo "Content should be available at https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/${STRIPPED_URL}"

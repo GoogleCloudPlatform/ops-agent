@@ -280,19 +280,19 @@ and installed on the VM for testing.
 Due to being throttled by some sites, notably archive.apache.org, we are keeping
 a local copy of various large installers instead of downloading them fresh each
 time. These are stored in
-https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-vendored-deps/app-installers
+https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-vendored-deps/mirrored-content
 and the script `mirror_content.sh` is intended to help upload the installer
 there. Run it like (using cassandra as an example):
 
 ```
-./mirror_content.sh cassandra https://archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+./mirror_content.sh https://archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
 ```
 
-And then change the `install` script(s) for cassandra to do this:
+And then change the `install` script(s) for cassandra to download from:
 
 ```
-gsutil cp gs://ops-agents-public-buckets-vendored-deps/app-installers/cassandra/apache-cassandra-4.0.1-bin.tar.gz .
+https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
 ```
 
-instead of `curl`/`wget`-ing the URL directly.
+instead of the original URL.
 
