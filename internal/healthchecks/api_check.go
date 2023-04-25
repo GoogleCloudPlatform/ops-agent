@@ -143,7 +143,11 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
+<<<<<<< HEAD
 		return fmt.Errorf("GCE Metadata query failed")
+=======
+		return fmt.Errorf("can't get GCE metadata: %w", err)
+>>>>>>> c033f967 (Error messages don't expose PII)
 	}
 	logger.Infof("GCE Metadata queried successfully")
 
