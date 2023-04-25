@@ -20,12 +20,13 @@ else
     mysql_repo_pkg_name=mysql80-community-release-sl15-1.noarch.rpm
   fi
 
-  sudo zypper modifyrepo -d mysql80-community
-  sudo zypper modifyrepo -e mysql57-community
-
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo zypper -n --no-gpg-checks install https://dev.mysql.com/get/${mysql_repo_pkg_name}
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+
+  sudo zypper modifyrepo -d mysql80-community
+  sudo zypper modifyrepo -e mysql57-community
+
   sudo zypper -n install mysql-community-server
 fi
 
