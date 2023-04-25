@@ -515,111 +515,6 @@ COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for debian-stretch 
-# ======================================
-
-FROM debian:stretch AS stretch-build-base
-
-RUN set -x; \
-		(echo "deb http://ftp.debian.org/debian stretch-backports main" | tee /etc/apt/sources.list.d/backports.list) && \
-		(echo "deb http://ftp.debian.org/debian stretch-backports-sloppy main" >> /etc/apt/sources.list.d/backports.list) && \
-		apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-		build-essential cmake/stretch-backports libuv1/stretch-backports \
-		libarchive13/stretch-backports-sloppy bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
-		RUN set -xe; \
-		mkdir -p /usr/local/java-11-openjdk && \
-		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
-		ENV JAVA_HOME /usr/local/java-11-openjdk/
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM stretch-build-base AS stretch-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN ./otel.sh /work/cache/
-
-FROM stretch-build-base AS stretch-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM stretch-build-base AS stretch-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM stretch-build-base AS stretch-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM stretch-build-golang-base AS stretch-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM stretch-build-golang-base AS stretch-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
-FROM stretch-build-golang-base AS stretch-build
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=stretch-build-otel /work/cache /work/cache
-COPY --from=stretch-build-fluent-bit /work/cache /work/cache
-COPY --from=stretch-build-systemd /work/cache /work/cache
-COPY --from=stretch-build-diagnostics /work/cache /work/cache
-COPY --from=stretch-build-wrapper /work/cache /work/cache
-RUN ./pkg/deb/build.sh
-
-FROM scratch AS stretch
-COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
-COPY --from=stretch-build /google-cloud-ops-agent*.deb /
-
-# ======================================
 # Build Ops Agent for sles-12 
 # ======================================
 
@@ -1243,7 +1138,6 @@ COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
 COPY --from=bullseye /* /
 COPY --from=buster /* /
-COPY --from=stretch /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
 COPY --from=bionic /* /

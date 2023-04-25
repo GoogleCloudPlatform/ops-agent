@@ -123,27 +123,6 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "deb",
 	},
 	{
-		from_image:  "debian:stretch",
-		target_name: "stretch",
-		install_packages: `RUN set -x; \
-		(echo "deb http://ftp.debian.org/debian stretch-backports main" | tee /etc/apt/sources.list.d/backports.list) && \
-		(echo "deb http://ftp.debian.org/debian stretch-backports-sloppy main" >> /etc/apt/sources.list.d/backports.list) && \
-		apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-		build-essential cmake/stretch-backports libuv1/stretch-backports \
-		libarchive13/stretch-backports-sloppy bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
-		RUN set -xe; \
-		mkdir -p /usr/local/java-11-openjdk && \
-		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
-		ENV JAVA_HOME /usr/local/java-11-openjdk/`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-stretch",
-		package_extension: "deb",
-	},
-	{
 		// Use OpenSUSE Leap 42.3 to emulate SLES 12:
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
