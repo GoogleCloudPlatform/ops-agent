@@ -39,6 +39,12 @@ server-id = 2
 log-bin = /var/log/mysql/mysql2-bin.log
 EOF
 
+# Disable apparmor for mysql
+if [[ "${ID}" == ubuntu ]]; then
+  sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+fi
+
 sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
 
 sudo chmod uga+r /etc/mysql/conf.d/*
