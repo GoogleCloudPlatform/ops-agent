@@ -13,10 +13,10 @@ local template _distro {
 }
 lunar = _distro {
   release = [
-    'ubuntu-2304',
+    'ubuntu-2304-amd64',
   ]
   presubmit = [
-    'ubuntu-2304',
+    'ubuntu-2304-amd64',
   ]
 }
 // DEB Linux distros. (Do not modify this comment.)
