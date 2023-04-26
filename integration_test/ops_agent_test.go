@@ -3108,7 +3108,8 @@ func TestLoggingSelfLogs(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-		if _, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, ``, 5); err != nil {
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, ``); err != nil {
 			t.Error(err)
 		}
 	})
