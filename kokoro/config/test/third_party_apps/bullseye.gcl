@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.third_party_apps_test {
   params {
     platforms = [
-      'ubuntu-2304',
+      'ubuntu-2304-amd64',
     ]
   }
 }

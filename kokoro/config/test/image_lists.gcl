@@ -14,6 +14,7 @@ local template _distro {
 lunar = _distro {
   release = [
     'ubuntu-2304-amd64',
+    'ubuntu-minimal-2304-amd64',
   ]
   presubmit = [
     'ubuntu-2304-amd64',
