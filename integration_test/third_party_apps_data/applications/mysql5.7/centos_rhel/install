@@ -33,7 +33,7 @@ sudo chown mysql:mysql /var/log/mysql
 
 # Required to allow mysql to accept connections on 3307
 sudo yum install -y policycoreutils-python
-sudo semanage port -a -t mysqld_port_t -p tcp 3307
+sudo semanage port --add --type mysqld_port_t --proto tcp 3307
 
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
