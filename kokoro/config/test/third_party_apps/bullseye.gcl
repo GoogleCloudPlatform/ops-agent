@@ -5,5 +5,10 @@ config build = common.third_party_apps_test {
     platforms = [
       'ubuntu-2304-amd64',
     ]
+    environment {
+      // DO NOT MERGE: Temporarily disable smart test skipping for
+      // this distro so that all apps actually run.
+      SHORT = 'false'
+    }
   }
 }
