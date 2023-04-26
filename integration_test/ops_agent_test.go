@@ -3095,7 +3095,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
-func TestLoggingFluentbitSelfLogs(t *testing.T) {
+func TestLoggingSelfLogs(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -3106,6 +3106,9 @@ func TestLoggingFluentbitSelfLogs(t *testing.T) {
 		}
 
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
 	})
