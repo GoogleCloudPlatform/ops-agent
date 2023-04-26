@@ -11,7 +11,14 @@ local template _distro {
   // set will be tested by the nightly jobs.
   presubmit = []
 }
-
+lunar = _distro {
+  release = [
+    'ubuntu-2304',
+  ]
+  presubmit = [
+    'ubuntu-2304',
+  ]
+}
 // DEB Linux distros. (Do not modify this comment.)
 buster = _distro {
   release = ['debian-10']
