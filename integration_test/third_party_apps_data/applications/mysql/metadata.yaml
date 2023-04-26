@@ -35,10 +35,7 @@ minimum_supported_agent_version:
   metrics: 2.8.0
   logging: 2.5.0
 supported_operating_systems: linux
-# TODO: Fix errors and enable tests on all platforms.
-platforms_to_skip:
-  - sles-12 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
-  - sles-15 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
+platforms_to_skip: []
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages

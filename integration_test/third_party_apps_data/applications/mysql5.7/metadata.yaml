@@ -32,10 +32,8 @@ configure_integration: |-
   The `mysql` receiver connects by default to a local MySQL/MariaDB
   server using a Unix socket and Unix authentication as the `root` user.
 supported_operating_systems: linux
-# TODO: Fix errors and enable tests on all platforms.
 platforms_to_skip:
-  - sles-12 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
-  - sles-15 # representative metric workload.googleapis.com/mysql.threads not found, skipping remaining metrics
+  - sles-15 # mysql5.7 not available on sles15
   - rocky-linux-8 # mysql5.7 not available on RHEL8
   - rocky-linux-9 # mysql5.7 not available on RHEL9
   - debian-11 # mysql5.7 not available on Debian 11
