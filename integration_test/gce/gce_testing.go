@@ -35,7 +35,7 @@ command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
-	ZONE=us-central1-b \
+	WEIGHTED_ZONES=us-central1-b=1 \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -44,7 +44,8 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
-ZONE: What GCP zone to run in.
+WEIGHTED_ZONES: What GCP zones to run in, with integer weights attached to
+each zone, in the format: zone1=weight1,zone2=weight2
 
 The following variables are optional:
 
@@ -102,6 +103,7 @@ import (
 	trace "cloud.google.com/go/trace/apiv1"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
+	"github.com/smallnest/weighted"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
@@ -119,6 +121,9 @@ var (
 	monClient   *monitoring.MetricClient
 	logClients  *logClientFactory
 	traceClient *trace.Client
+
+	zoneMutex    sync.Mutex
+	zoneSelector *weighted.SW
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -197,6 +202,11 @@ func init() {
 		log.Fatalf("trace.NewClient() failed: %v", err)
 	}
 
+	zoneSelector, err = parseZoneEnvironmentVariables()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Some useful options to pass to gcloud.
 	os.Setenv("CLOUDSDK_PYTHON", "/usr/bin/python3")
 	os.Setenv("CLOUDSDK_CORE_DISABLE_PROMPTS", "1")
@@ -270,6 +280,45 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	}
 	f.clients[project] = logClient
 	return logClient, nil
+}
+
+// parseZoneEnvironmentVariables looks at WEIGHTED_ZONES (and ZONE if needed)
+// and extracts the zones and weights into a a weighted round robin zone
+// selector.
+// TODO(martijnvans): Remove support for ZONE.
+func parseZoneEnvironmentVariables() (*weighted.SW, error) {
+	weightedZones := os.Getenv("WEIGHTED_ZONES")
+	if weightedZones == "" {
+		zone := os.Getenv("ZONE")
+		if zone == "" {
+			return nil, errors.New("either ZONE or WEIGHTED_ZONES must be specified")
+		}
+		weightedZones = zone + "=1"
+	}
+
+	selector := weighted.SW{}
+
+	// Each zoneSpec should look like <string>=<integer>.
+	for _, zoneSpec := range strings.Split(weightedZones, ",") {
+		zoneAndWeight := strings.Split(zoneSpec, "=")
+		if len(zoneAndWeight) != 2 {
+			return nil, fmt.Errorf(`invalid zone specification %q from WEIGHTED_ZONES=%q; should be like "us-central1=5"`, zoneSpec, weightedZones)
+		}
+		weight, err := strconv.Atoi(zoneAndWeight[1])
+		if err != nil {
+			return nil, fmt.Errorf("Zone specification %q had non-integer weight %q", zoneSpec, zoneAndWeight[1])
+		}
+		selector.Add(zoneAndWeight[0], weight)
+	}
+	return &selector, nil
+}
+
+// nextZone selects the next zone from WEIGHTED_ZONES to spawn the next VM in.
+func nextZone() string {
+	zoneMutex.Lock()
+	defer zoneMutex.Unlock()
+
+	return zoneSelector.Next().(string)
 }
 
 // VM represents an individual virtual machine.
@@ -1026,7 +1075,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		vm.Zone = os.Getenv("ZONE")
+		vm.Zone = nextZone()
 	}
 	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
