@@ -13,7 +13,6 @@ metrics:
       type: mysql
       username: root
       password: Ss123%321
-      application_version: 5.7
   service:
     pipelines:
       mysql:
