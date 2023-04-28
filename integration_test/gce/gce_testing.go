@@ -103,7 +103,6 @@ import (
 	trace "cloud.google.com/go/trace/apiv1"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
-	"github.com/smallnest/weighted"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
@@ -122,8 +121,7 @@ var (
 	logClients  *logClientFactory
 	traceClient *trace.Client
 
-	zoneMutex    sync.Mutex
-	zoneSelector *weighted.SW
+	zonePicker *zonePicker
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -202,7 +200,7 @@ func init() {
 		log.Fatalf("trace.NewClient() failed: %v", err)
 	}
 
-	zoneSelector, err = parseZoneEnvironmentVariables()
+	zonePicker, err = newZonePicker(os.Getenv("WEIGHTED_ZONES"), os.Getenv("ZONE"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -280,45 +278,6 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	}
 	f.clients[project] = logClient
 	return logClient, nil
-}
-
-// parseZoneEnvironmentVariables looks at WEIGHTED_ZONES (and ZONE if needed)
-// and extracts the zones and weights into a a weighted round robin zone
-// selector.
-// TODO(martijnvans): Remove support for ZONE.
-func parseZoneEnvironmentVariables() (*weighted.SW, error) {
-	weightedZones := os.Getenv("WEIGHTED_ZONES")
-	if weightedZones == "" {
-		zone := os.Getenv("ZONE")
-		if zone == "" {
-			return nil, errors.New("either ZONE or WEIGHTED_ZONES must be specified")
-		}
-		weightedZones = zone + "=1"
-	}
-
-	selector := weighted.SW{}
-
-	// Each zoneSpec should look like <string>=<integer>.
-	for _, zoneSpec := range strings.Split(weightedZones, ",") {
-		zoneAndWeight := strings.Split(zoneSpec, "=")
-		if len(zoneAndWeight) != 2 {
-			return nil, fmt.Errorf(`invalid zone specification %q from WEIGHTED_ZONES=%q; should be like "us-central1=5"`, zoneSpec, weightedZones)
-		}
-		weight, err := strconv.Atoi(zoneAndWeight[1])
-		if err != nil {
-			return nil, fmt.Errorf("Zone specification %q had non-integer weight %q", zoneSpec, zoneAndWeight[1])
-		}
-		selector.Add(zoneAndWeight[0], weight)
-	}
-	return &selector, nil
-}
-
-// nextZone selects the next zone from WEIGHTED_ZONES to spawn the next VM in.
-func nextZone() string {
-	zoneMutex.Lock()
-	defer zoneMutex.Unlock()
-
-	return zoneSelector.Next().(string)
 }
 
 // VM represents an individual virtual machine.
@@ -1075,8 +1034,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		vm.Zone = nextZone()
+		// Chooses the next zone according to the weights in WEIGHTED_ZONES.
+		vm.Zone = zonePicker.Next()
 	}
+
 	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
 	if vm.MachineType == "" {
