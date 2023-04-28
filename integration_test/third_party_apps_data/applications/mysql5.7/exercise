@@ -23,7 +23,7 @@ EOF
 sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
 # Create replication user
-sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED BY 'password';"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
 sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
 
 # Dump data from replica source

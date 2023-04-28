@@ -36,8 +36,6 @@ type MetricsReceiverMySql struct {
 
 	Password string `yaml:"password" validate:"omitempty"`
 	Username string `yaml:"username" validate:"omitempty"`
-
-	ApplicationVersion string `yaml:"application_version" validate:"omitempty"`
 }
 
 const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
@@ -61,36 +59,34 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 		r.Username = "root"
 	}
 
-	if r.ApplicationVersion == "5.7" {
-		// MySQL 5.7 replication metrics are implemented separate to the main metrics pipeline
-		driverConf := mysql.Config{
-			User:   r.Username,
-			Passwd: r.Password,
-			Net:    transport,
-			Addr:   r.Endpoint,
-			// This defaults to true in the mysql receiver, but we need to set it explicitly here
-			AllowNativePasswords: true,
-		}
-
-		pipelines = append(pipelines, otel.ReceiverPipeline{
-			Receiver: otel.Component{
-				Type: "sqlquery",
-				Config: map[string]interface{}{
-					"collection_interval": r.CollectionIntervalString(),
-					"driver":              "mysql",
-					"datasource":          driverConf.FormatDSN(),
-					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
-				},
-			},
-			Processors: map[string][]otel.Component{"metrics": {
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
-			}},
-		})
+	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
+	driverConf := mysql.Config{
+		User:   r.Username,
+		Passwd: r.Password,
+		Net:    transport,
+		Addr:   r.Endpoint,
+		// This defaults to true in the mysql receiver, but we need to set it explicitly here
+		AllowNativePasswords: true,
 	}
+
+	pipelines = append(pipelines, otel.ReceiverPipeline{
+		Receiver: otel.Component{
+			Type: "sqlquery",
+			Config: map[string]interface{}{
+				"collection_interval": r.CollectionIntervalString(),
+				"driver":              "mysql",
+				"datasource":          driverConf.FormatDSN(),
+				"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
+			},
+		},
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
+	})
 
 	pipelines = append(pipelines, otel.ReceiverPipeline{
 		Receiver: otel.Component{
@@ -133,10 +129,10 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 						"enabled": false,
 					},
 					"mysql.replica.sql_delay": map[string]interface{}{
-						"enabled": true,
+						"enabled": false,
 					},
 					"mysql.replica.time_behind_source": map[string]interface{}{
-						"enabled": true,
+						"enabled": false,
 					},
 				},
 			},
