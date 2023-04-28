@@ -3,9 +3,10 @@ set -e
 sudo yum install -y \
     curl java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
 
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
     activemq.tar.gz \
-    http://archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
+    https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
 
 sudo mkdir /opt/activemq
 sudo tar -xf \

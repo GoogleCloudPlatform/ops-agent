@@ -7,7 +7,8 @@ sudo apt-get install -y default-jre wget
 HBASE_VERSION=2.4.11
 
 sudo mkdir /opt/hbase
-wget --no-verbose https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
+wget --no-verbose https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo tar -xvf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF
