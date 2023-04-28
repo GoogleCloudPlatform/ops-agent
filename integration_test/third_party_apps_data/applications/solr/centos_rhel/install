@@ -10,9 +10,10 @@ EOF
 sudo yum install -y \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof chkconfig
 
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
     solr-8.11.1.tgz \
-    https://archive.apache.org/dist/lucene/solr/8.11.1/solr-8.11.1.tgz
+    https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/lucene/solr/8.11.1/solr-8.11.1.tgz
 
 tar -xzf \
     solr-8.11.1.tgz \
