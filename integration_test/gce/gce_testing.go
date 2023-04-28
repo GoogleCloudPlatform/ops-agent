@@ -121,7 +121,7 @@ var (
 	logClients  *logClientFactory
 	traceClient *trace.Client
 
-	zonePicker *zonePicker
+	zonePicker *weightedRoundRobin
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
