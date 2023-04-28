@@ -3,7 +3,8 @@ set -e
 sudo yum -y install \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
 
-curl -L -o flink.tgz https://archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
+curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
 
 sudo mkdir /opt/flink
 sudo tar -xzf flink.tgz -C /opt/flink --strip-components 1
