@@ -19,6 +19,26 @@
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
+
+# Manually prepare a new enough version of CMake.
+# This should be used on platforms where the default package manager
+# does not provide a new enough version (we require >= 3.12).
+FROM alpine:latest AS cmake-amd64
+
+ENV hash=4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada
+ADD https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh \
+    /cmake.sh
+
+FROM alpine:latest AS cmake-arm64
+
+ENV hash=73a35cab2174a3eb8f35083d55c80871185dc3808f3dae3558cd5fbdb29a4614
+ADD https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-aarch64.sh \
+    /cmake.sh
+
+FROM cmake-${BUILDARCH} AS cmake-install
+RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
+
+
 # ======================================
 # Build Ops Agent for centos-7 
 # ======================================
@@ -29,15 +49,11 @@ RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
-		expect rpm-sign zip wget && \
-		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-		yum install -y cmake3 && \
-		ln -fs cmake3 /usr/bin/cmake && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		expect rpm-sign zip
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+COPY --from=cmake-install /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
@@ -524,7 +540,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip wget && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -536,18 +552,16 @@ RUN set -x; \
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
-	
+		ln -fs /usr/lib/systemd /lib/systemd
 		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-11-openjdk && \
 			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/
+COPY --from=cmake-install /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
@@ -639,7 +653,7 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 FROM opensuse/leap:15.1 AS sles15-build-base
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip wget
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
 		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
 		name=google-cloud-monitoring-sles15-x86_64-test \n\
@@ -653,11 +667,10 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd && \
-			# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-			wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-			(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-			bash cmake.sh --skip-license --prefix=/usr/local
+			ln -fs /usr/lib/systemd /lib/systemd
+COPY --from=cmake-install /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
@@ -753,11 +766,10 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip wget && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		devscripts cdbs pkg-config openjdk-11-jdk zip
+COPY --from=cmake-install /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
