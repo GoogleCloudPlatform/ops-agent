@@ -95,7 +95,7 @@ func runLoggingCheck(logger *log.Logger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		return fmt.Errorf("can't get GCE metadata: %w", err)
+		return fmt.Errorf("can't get GCE metadata")
 	}
 	logger.Printf("GCE Metadata queried successfully")
 
@@ -142,7 +142,7 @@ func runMonitoringCheck(logger *log.Logger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		return fmt.Errorf("can't get GCE metadata: %w", err)
+		return fmt.Errorf("can't get GCE metadata")
 	}
 	logger.Printf("GCE Metadata queried successfully")
 
