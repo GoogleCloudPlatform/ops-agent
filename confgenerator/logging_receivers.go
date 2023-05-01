@@ -81,8 +81,8 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		// DB.locking specifies that the database will be accessed only by Fluent Bit.
 		// Enabling this feature helps to increase performance when accessing the database
 		// but it restrict any external tool to query the content.
-		"DB.locking": "true",
-		// "Read_from_Head": "True",
+		"DB.locking":     "true",
+		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
 		// Set the max size a bit larger to accommodate for long log lines.
