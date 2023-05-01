@@ -97,7 +97,7 @@ func runLoggingCheck(logger *log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
-	logger.Printf("gce metadata: %+v", gceMetadata)
+	logger.Printf("GCE Metadata queried successfully")
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
@@ -144,7 +144,7 @@ func runMonitoringCheck(logger *log.Logger) error {
 	if err != nil {
 		return fmt.Errorf("can't get GCE metadata: %w", err)
 	}
-	logger.Printf("gce metadata: %+v", gceMetadata)
+	logger.Printf("GCE Metadata queried successfully")
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
