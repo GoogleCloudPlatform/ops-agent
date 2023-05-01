@@ -35,7 +35,7 @@ command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
-	WEIGHTED_ZONES=us-central1-b=1 \
+	ZONES=us-central1-b=1 \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -44,8 +44,8 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
-WEIGHTED_ZONES: What GCP zones to run in, with integer weights attached to
-each zone, in the format: zone1=weight1,zone2=weight2
+ZONES: What GCP zones to run in, with integer weights attached to each zone,
+in the format: zone1=weight1,zone2=weight2
 
 The following variables are optional:
 
@@ -200,7 +200,7 @@ func init() {
 		log.Fatalf("trace.NewClient() failed: %v", err)
 	}
 
-	zonePicker, err = newZonePicker(os.Getenv("WEIGHTED_ZONES"), os.Getenv("ZONE"))
+	zonePicker, err = newZonePicker(os.Getenv("ZONES"), os.Getenv("ZONE"))
 	if err != nil {
 		log.Fatal(err)
 	}

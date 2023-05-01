@@ -36,7 +36,7 @@ func (wrr *weightedRoundRobin) Next() string {
 func newZonePicker(weightedZones, zone string) (*weightedRoundRobin, error) {
 	if weightedZones == "" {
 		if zone == "" {
-			return nil, errors.New("either ZONE or WEIGHTED_ZONES must be specified")
+			return nil, errors.New("either ZONE or ZONES must be specified")
 		}
 		weightedZones = zone + "=1"
 	}
@@ -46,7 +46,7 @@ func newZonePicker(weightedZones, zone string) (*weightedRoundRobin, error) {
 	for _, zoneSpec := range strings.Split(weightedZones, ",") {
 		zoneAndWeight := strings.Split(zoneSpec, "=")
 		if len(zoneAndWeight) != 2 {
-			return nil, fmt.Errorf(`invalid zone specification %q from WEIGHTED_ZONES=%q; should be like "us-central1=5"`, zoneSpec, weightedZones)
+			return nil, fmt.Errorf(`invalid zone specification %q from ZONES=%q; should be like "us-central1=5"`, zoneSpec, weightedZones)
 		}
 		weight, err := strconv.Atoi(zoneAndWeight[1])
 		if err != nil {
