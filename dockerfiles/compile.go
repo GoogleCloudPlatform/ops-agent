@@ -54,10 +54,10 @@ func applyTemplate(template string, arguments templateArguments) string {
 }
 
 // installCMake is used on platforms where the default package manager
-// does not provided a new enough version of CMake (we require >= 3.12).
-// The cmake-install layer is defined in template-header.
+// does not provided a recent enough version of CMake (we require >= 3.12).
+// The cmake-install-recent layer is defined in template-header.
 const installCMake = `
-COPY --from=cmake-install /cmake.sh /cmake.sh
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 `
 
