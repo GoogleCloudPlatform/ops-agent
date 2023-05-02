@@ -23,16 +23,20 @@
 # Manually prepare a new enough version of CMake.
 # This should be used on platforms where the default package manager
 # does not provide a new enough version (we require >= 3.12).
+ARG CMAKE_VERSION=3.25.2
+
 FROM alpine:latest AS cmake-amd64
+ARG CMAKE_VERSION
 
 ENV hash=4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada
-ADD https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh \
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.sh \
     /cmake.sh
 
 FROM alpine:latest AS cmake-arm64
+ARG CMAKE_VERSION
 
 ENV hash=73a35cab2174a3eb8f35083d55c80871185dc3808f3dae3558cd5fbdb29a4614
-ADD https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-aarch64.sh \
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.sh \
     /cmake.sh
 
 FROM cmake-${BUILDARCH} AS cmake-install
@@ -51,7 +55,7 @@ RUN set -x; yum -y update && \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
 		expect rpm-sign zip
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
-COPY --from=cmake-install /cmake.sh /cmake.sh
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
 
@@ -564,7 +568,7 @@ RUN set -x; \
 			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/
-COPY --from=cmake-install /cmake.sh /cmake.sh
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
 
@@ -674,7 +678,7 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
 			ln -fs /usr/lib/systemd /lib/systemd
-COPY --from=cmake-install /cmake.sh /cmake.sh
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
 
@@ -774,7 +778,7 @@ RUN set -x; apt-get update && \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
 		devscripts cdbs pkg-config openjdk-11-jdk zip
-COPY --from=cmake-install /cmake.sh /cmake.sh
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
 
