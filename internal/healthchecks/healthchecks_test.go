@@ -17,16 +17,15 @@ package healthchecks_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"gotest.tools/v3/assert"
 )
 
-var testLogger *log.Logger = log.New(ioutil.Discard, "", 0)
+var testLogger *logs.FileLogger = logs.DiscardLogger()
 
 func generateExpectedResultMessage(name string, result string) string {
 	return fmt.Sprintf("[%s] Result: %s", name, result)
@@ -38,7 +37,7 @@ func (c FailureCheck) Name() string {
 	return "Failure Check"
 }
 
-func (c FailureCheck) RunCheck(logger *log.Logger) error {
+func (c FailureCheck) RunCheck(logger *logs.FileLogger) error {
 	return healthchecks.HcFailureErr
 }
 
@@ -61,7 +60,7 @@ func (c SuccessCheck) Name() string {
 	return "Success Check"
 }
 
-func (c SuccessCheck) RunCheck(logger *log.Logger) error {
+func (c SuccessCheck) RunCheck(logger *logs.FileLogger) error {
 	return nil
 }
 
@@ -79,7 +78,7 @@ func (c ErrorCheck) Name() string {
 	return "Error Check"
 }
 
-func (c ErrorCheck) RunCheck(logger *log.Logger) error {
+func (c ErrorCheck) RunCheck(logger *logs.FileLogger) error {
 	return errors.New("Test error.")
 }
 
@@ -122,7 +121,7 @@ func (c MultipleFailureResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleFailureResultCheck) RunCheck(logger *log.Logger) error {
+func (c MultipleFailureResultCheck) RunCheck(logger *logs.FileLogger) error {
 	return errors.Join(nil, errors.New("Test error."), healthchecks.HcFailureErr)
 }
 
@@ -131,7 +130,7 @@ func TestMultipleFailureResultCheck(t *testing.T) {
 	wantErrorMessage := "Test error."
 	expectedFailure := generateExpectedResultMessage(mCheck.Name(), "FAIL")
 	expectedError := generateExpectedResultMessage(mCheck.Name(), "ERROR")
-	
+
 	err := mCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
 
@@ -148,7 +147,7 @@ func (c MultipleSuccessResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleSuccessResultCheck) RunCheck(logger *log.Logger) error {
+func (c MultipleSuccessResultCheck) RunCheck(logger *logs.FileLogger) error {
 	return errors.Join(nil, nil, nil)
 }
 
@@ -156,7 +155,7 @@ func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
 	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
 	fmt.Println(expectedSuccess)
-	
+
 	err := sCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
 

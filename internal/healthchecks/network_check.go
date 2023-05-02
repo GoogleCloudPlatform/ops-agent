@@ -16,8 +16,9 @@ package healthchecks
 
 import (
 	"errors"
-	"log"
 	"net/http"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 type networkRequest struct {
@@ -27,7 +28,7 @@ type networkRequest struct {
 	healthCheckError HealthCheckError
 }
 
-func (r networkRequest) SendRequest(logger *log.Logger) error {
+func (r networkRequest) SendRequest(logger *logs.FileLogger) error {
 	response, err := http.Get(r.url)
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
@@ -86,7 +87,7 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(logger *log.Logger) error {
+func (c NetworkCheck) RunCheck(logger *logs.FileLogger) error {
 	var networkErrors []error
 	for _, r := range requests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))

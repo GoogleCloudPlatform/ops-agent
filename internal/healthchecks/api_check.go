@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -91,7 +91,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 	return client.CreateTimeSeries(ctx, req)
 }
 
-func runLoggingCheck(logger *log.Logger) error {
+func runLoggingCheck(logger *logs.FileLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -138,7 +138,7 @@ func runLoggingCheck(logger *log.Logger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger *log.Logger) error {
+func runMonitoringCheck(logger *logs.FileLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -191,7 +191,7 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(logger *log.Logger) error {
+func (c APICheck) RunCheck(logger *logs.FileLogger) error {
 	monErr := runMonitoringCheck(logger)
 	logErr := runLoggingCheck(logger)
 	return errors.Join(monErr, logErr)

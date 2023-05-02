@@ -20,13 +20,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger *log.Logger) error
+	RunCheck(logger *logs.FileLogger) error
 }
 
 type HealthCheckResult struct {
@@ -66,20 +68,20 @@ func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger fu
 	}
 }
 
-func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func()) {
+func CreateHealthChecksLogger(logDir string) (logger *logs.FileLogger, closer func()) {
 	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		log.Printf("failed to create directory for %q: %v", path, err)
-		return log.Default(), func() {}
+		return logs.Default(), func() {}
 	}
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Printf("failed to open health checks log file %q: %v", path, err)
-		return log.Default(), func() {}
+		return logs.Default(), func() {}
 	}
 
-	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
+	return logs.New(path), func() { file.Close() }
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -92,7 +94,7 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthCheckResult {
+func (r HealthCheckRegistry) RunAllHealthChecks(logger *logs.FileLogger) []HealthCheckResult {
 	var result []HealthCheckResult
 
 	for _, c := range r {
