@@ -21,6 +21,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 
+	"github.com/go-sql-driver/mysql"
+
 	"fmt"
 	"strings"
 )
@@ -55,70 +57,136 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 		r.Username = "root"
 	}
 
-	return []otel.ReceiverPipeline{{
-		Receiver: otel.Component{
-			Type: "mysql",
-			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
-				"endpoint":            r.Endpoint,
-				"username":            r.Username,
-				"password":            r.Password,
-				"transport":           transport,
-				"metrics": map[string]interface{}{
-					"mysql.commands": map[string]interface{}{
-						"enabled": true,
-					},
-					"mysql.index.io.wait.count": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.index.io.wait.time": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.locked_connects": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.mysqlx_connections": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.opened_resources": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.tmp_resources": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.prepared_statements": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.table.io.wait.count": map[string]interface{}{
-						"enabled": false,
-					},
-					"mysql.table.io.wait.time": map[string]interface{}{
-						"enabled": false,
+	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
+	sqlReceiverDriverConfig := mysql.Config{
+		User:   r.Username,
+		Passwd: r.Password,
+		Net:    transport,
+		Addr:   r.Endpoint,
+		// This defaults to true in the mysql receiver, but we need to set it explicitly here
+		AllowNativePasswords: true,
+	}
+
+	return []otel.ReceiverPipeline{
+		{
+			Receiver: otel.Component{
+				Type: "sqlquery",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"driver":              "mysql",
+					"datasource":          sqlReceiverDriverConfig.FormatDSN(),
+					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
+				},
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			}},
+		},
+		{
+			Receiver: otel.Component{
+				Type: "mysql",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"endpoint":            r.Endpoint,
+					"username":            r.Username,
+					"password":            r.Password,
+					"transport":           transport,
+					"metrics": map[string]interface{}{
+						"mysql.commands": map[string]interface{}{
+							"enabled": true,
+						},
+						"mysql.index.io.wait.count": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.index.io.wait.time": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.locked_connects": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.mysqlx_connections": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.opened_resources": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.tmp_resources": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.prepared_statements": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.table.io.wait.count": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.table.io.wait.time": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.replica.sql_delay": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.replica.time_behind_source": map[string]interface{}{
+							"enabled": false,
+						},
 					},
 				},
 			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					// The following changes are here to ensure maximum backwards compatibility after the fixes
+					// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
+					otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+					otel.UpdateMetric("mysql.buffer_pool_pages",
+						otel.ToggleScalarDataType,
+					),
+					otel.UpdateMetric("mysql.threads",
+						otel.ToggleScalarDataType,
+					),
+					otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
+						otel.RenameLabel("status", "kind"),
+						otel.ToggleScalarDataType,
+					),
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			}},
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				// The following changes are here to ensure maximum backwards compatibility after the fixes
-				// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
-				otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
-				otel.UpdateMetric("mysql.buffer_pool_pages",
-					otel.ToggleScalarDataType,
-				),
-				otel.UpdateMetric("mysql.threads",
-					otel.ToggleScalarDataType,
-				),
-				otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
-					otel.RenameLabel("status", "kind"),
-					otel.ToggleScalarDataType,
-				),
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
-		}},
-	}}
+	}
+}
+
+var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
+	{
+		query: `SHOW SLAVE STATUS`,
+		metrics: []sqlReceiverMetric{
+			{
+				metric_name:       "mysql.replica.sql_delay",
+				value_column:      "SQL_Delay",
+				unit:              "s",
+				description:       "The number of seconds that the replica must lag the source.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
+			},
+			{
+				metric_name:       "mysql.replica.time_behind_source",
+				value_column:      "Seconds_Behind_Master",
+				unit:              "s",
+				description:       "This field is an indication of how “late” the replica is.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
+			},
+		},
+	},
 }
 
 func init() {
