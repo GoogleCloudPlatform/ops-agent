@@ -15,7 +15,7 @@ template config common = {
       // The new Cloud NAT gateway must have "Minimum ports per VM instance"
       // set to something >160 as per this article:
       // https://www.suse.com/support/kb/doc/?id=000019662
-      ZONES =join([
+      ZONES = join([
         'us-central1-a=3',
         'us-central1-b=3',
         'us-central1-c=3',

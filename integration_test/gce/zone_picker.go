@@ -29,14 +29,13 @@ func (wrr *weightedRoundRobin) Next() string {
 	return wrr.sw.Next().(string)
 }
 
-// parseZoneEnvironmentVariables looks at `weightedZones` (and `zone` if
-// needed) and extracts the zones and weights into a a weighted round robin
-// zone picker.
+// newZonePicker looks at `weightedZones` (and `zone` if needed) and extracts
+// the zones and weights into a a weighted round robin zone picker.
 // TODO(martijnvans): Remove support for `zone`.
 func newZonePicker(weightedZones, zone string) (*weightedRoundRobin, error) {
 	if weightedZones == "" {
 		if zone == "" {
-			return nil, errors.New("either ZONE or ZONES must be specified")
+			return nil, errors.New("either ZONES or ZONE must be specified")
 		}
 		weightedZones = zone + "=1"
 	}
@@ -46,7 +45,7 @@ func newZonePicker(weightedZones, zone string) (*weightedRoundRobin, error) {
 	for _, zoneSpec := range strings.Split(weightedZones, ",") {
 		zoneAndWeight := strings.Split(zoneSpec, "=")
 		if len(zoneAndWeight) != 2 {
-			return nil, fmt.Errorf(`invalid zone specification %q from ZONES=%q; should be like "us-central1=5"`, zoneSpec, weightedZones)
+			return nil, fmt.Errorf(`invalid zone specification %q from ZONES=%q; should be like "us-central1-b=5"`, zoneSpec, weightedZones)
 		}
 		weight, err := strconv.Atoi(zoneAndWeight[1])
 		if err != nil {
