@@ -245,9 +245,9 @@ func contains(s []string, str string) bool {
 }
 func healthChecksLog(p platform.Platform) string {
 	if p.Type == platform.Windows {
-		return "${logs_dir}/ops-agent-health-checks.log"
+		return "${logs_dir}/health-checks.log"
 	}
-	return "${logs_dir}/../ops-agent-health-checks.log"
+	return "${logs_dir}/../health-checks.log"
 }
 
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
