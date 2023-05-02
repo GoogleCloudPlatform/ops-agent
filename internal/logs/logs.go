@@ -30,12 +30,13 @@ func New(file string) *FileLogger {
 	cfg.OutputPaths = []string{
 		file,
 	}
-	logger, err := cfg.Build()
+	logger, err := cfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sugar := logger.Sugar()
+	sugar := logger.Sugar().With(
+		zap.String("ops-agent-version", version.Version))
 	return &FileLogger{
 		logger: sugar,
 	}
@@ -50,14 +51,14 @@ func Default() *FileLogger {
 	if err != nil {
 		log.Fatal(err)
 	}
-	sugar := logger.Sugar()
+	sugar := logger.Sugar().With(
+		zap.String("version", version.Version))
 	return &FileLogger{
 		logger: sugar,
 	}
 }
 
 func (f FileLogger) Printf(format string, v ...any) {
-	v = append(v, zap.String("version", version.Version))
 	f.logger.Infof(format, v...)
 }
 
