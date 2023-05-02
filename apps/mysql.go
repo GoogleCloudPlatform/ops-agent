@@ -57,9 +57,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 		r.Username = "root"
 	}
 
-	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported,
-	// this configuration is used for the sqlqueryreceiver
-	driverConf := mysql.Config{
+	sqlReceiverDriverConfig := mysql.Config{
 		User:   r.Username,
 		Passwd: r.Password,
 		Net:    transport,
@@ -69,13 +67,13 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	return []otel.ReceiverPipeline{
-		otel.ReceiverPipeline{
+		{
 			Receiver: otel.Component{
 				Type: "sqlquery",
 				Config: map[string]interface{}{
 					"collection_interval": r.CollectionIntervalString(),
 					"driver":              "mysql",
-					"datasource":          driverConf.FormatDSN(),
+					"datasource":          sqlReceiverDriverConfig.FormatDSN(),
 					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
 				},
 			},
@@ -87,7 +85,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			}},
 		},
-		otel.ReceiverPipeline{
+		{
 			Receiver: otel.Component{
 				Type: "mysql",
 				Config: map[string]interface{}{
