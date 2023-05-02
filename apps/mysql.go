@@ -57,6 +57,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 		r.Username = "root"
 	}
 
+	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
 	sqlReceiverDriverConfig := mysql.Config{
 		User:   r.Username,
 		Passwd: r.Password,
