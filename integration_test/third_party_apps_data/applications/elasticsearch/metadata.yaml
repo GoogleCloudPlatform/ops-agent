@@ -301,7 +301,7 @@ expected_metrics:
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
-      type: .*
+      type: hit|miss
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
     value_type: INT64
     kind: GAUGE
