@@ -276,7 +276,11 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
 	}
-	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
+
+	if l.Service.CoroStackSize == "" {
+		l.Service.CoroStackSize = "24576"
+	}
+	service := fluentbit.Service{LogLevel: l.Service.LogLevel, CoroStackSize: l.Service.CoroStackSize}
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
 

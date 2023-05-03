@@ -17,6 +17,7 @@ package fluentbit
 type Service struct {
 	// Allowed log levels are: error, warn, info, debug, and trace.
 	LogLevel string
+	CoroStackSize string
 }
 
 func (s Service) Component() Component {
@@ -30,6 +31,8 @@ func (s Service) Component() Component {
 			"Daemon": "off",
 			// Log_File is set by Fluent Bit systemd unit (e.g. /var/log/google-cloud-ops-agent/subagents/logging-module.log).
 			"Log_Level": s.LogLevel,
+
+			"coro_stack_size": s.CoroStackSize,
 
 			// Use the legacy DNS resolver mechanism to work around b/206549605 temporarily.
 			"dns.resolver": "legacy",

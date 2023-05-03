@@ -66,6 +66,7 @@ func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
 	fromYaml, err := UnmarshalYamlToUnifiedConfig(ctx, toYaml)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
@@ -546,6 +547,7 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type LoggingService struct {
+	CoroStackSize string           `yaml:"coro_stack_size,omitempty"`
 	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
 	Pipelines map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
