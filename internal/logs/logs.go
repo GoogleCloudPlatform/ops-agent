@@ -30,7 +30,7 @@ func New(file string) *FileLogger {
 	cfg := zap.NewProductionConfig()
 	cfg.EncoderConfig.MessageKey = "message"
 	cfg.EncoderConfig.TimeKey = "time"
-	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 
 	cfg.OutputPaths = []string{
 		file,
