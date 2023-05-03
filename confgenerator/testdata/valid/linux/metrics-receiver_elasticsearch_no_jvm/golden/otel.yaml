@@ -448,6 +448,34 @@ receivers:
     collection_interval: 60s
     endpoint: http://localhost:9200
     metrics:
+      elasticsearch.index.cache.evictions:
+        enabled: false
+      elasticsearch.index.cache.memory.usage:
+        enabled: false
+      elasticsearch.index.cache.size:
+        enabled: false
+      elasticsearch.index.documents:
+        enabled: false
+      elasticsearch.index.operations.completed:
+        enabled: false
+      elasticsearch.index.operations.merge.docs_count:
+        enabled: false
+      elasticsearch.index.operations.merge.size:
+        enabled: false
+      elasticsearch.index.operations.time:
+        enabled: false
+      elasticsearch.index.segments.count:
+        enabled: false
+      elasticsearch.index.segments.memory:
+        enabled: false
+      elasticsearch.index.segments.size:
+        enabled: false
+      elasticsearch.index.shards.size:
+        enabled: false
+      elasticsearch.index.translog.operations:
+        enabled: false
+      elasticsearch.index.translog.size:
+        enabled: false
       jvm.classes.loaded:
         enabled: false
       jvm.gc.collections.count:
