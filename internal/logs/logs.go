@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type FileLogger struct {
@@ -48,7 +49,12 @@ func New(file string) *FileLogger {
 }
 
 func DiscardLogger() *FileLogger {
-	return New("/dev/null")
+	observedZapCore, _ := observer.New(zap.InfoLevel)
+	observedLogger := zap.New(observedZapCore)
+	fileLogger := &FileLogger{
+		logger: observedLogger.Sugar(),
+	}
+	return fileLogger
 }
 
 func Default() *FileLogger {

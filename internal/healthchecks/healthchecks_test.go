@@ -25,8 +25,6 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-var testLogger *logs.FileLogger = logs.DiscardLogger()
-
 func generateExpectedResultMessage(name string, result string) string {
 	return fmt.Sprintf("[%s] Result: %s", name, result)
 }
@@ -45,7 +43,7 @@ func TestCheckFailure(t *testing.T) {
 	wantMessage := "The Health Check encountered an internal error."
 	wantAction := "Submit a support case from Google Cloud console."
 	testCheck := FailureCheck{}
-
+	testLogger := logs.DiscardLogger()
 	err := testCheck.RunCheck(testLogger)
 
 	assert.ErrorIs(t, err, healthchecks.HcFailureErr)
@@ -66,6 +64,7 @@ func (c SuccessCheck) RunCheck(logger *logs.FileLogger) error {
 
 func TestCheckSuccess(t *testing.T) {
 	testCheck := SuccessCheck{}
+	testLogger := logs.DiscardLogger()
 
 	err := testCheck.RunCheck(testLogger)
 
@@ -85,6 +84,7 @@ func (c ErrorCheck) RunCheck(logger *logs.FileLogger) error {
 func TestCheckError(t *testing.T) {
 	wantMessage := "Test error."
 	testCheck := ErrorCheck{}
+	testLogger := logs.DiscardLogger()
 
 	err := testCheck.RunCheck(testLogger)
 
@@ -96,6 +96,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	sCheck := SuccessCheck{}
 	eCheck := ErrorCheck{}
 	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, sCheck, eCheck}
+	testLogger := logs.DiscardLogger()
 
 	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
 
@@ -130,6 +131,7 @@ func TestMultipleFailureResultCheck(t *testing.T) {
 	wantErrorMessage := "Test error."
 	expectedFailure := generateExpectedResultMessage(mCheck.Name(), "FAIL")
 	expectedError := generateExpectedResultMessage(mCheck.Name(), "ERROR")
+	testLogger := logs.DiscardLogger()
 
 	err := mCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
@@ -155,6 +157,7 @@ func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
 	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
 	fmt.Println(expectedSuccess)
+	testLogger := logs.DiscardLogger()
 
 	err := sCheck.RunCheck(testLogger)
 	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
