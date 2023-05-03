@@ -29,23 +29,32 @@ func (wrr *weightedRoundRobin) Next() string {
 	return wrr.sw.Next().(string)
 }
 
-// newZonePicker looks at `weightedZones` (and `zone` if needed) and extracts
+// newZonePicker looks at `zones` (and `zone` if needed) and extracts
 // the zones and weights into a a weighted round robin zone picker.
-// TODO(martijnvans): Remove support for `zone`.
-func newZonePicker(weightedZones, zone string) (*weightedRoundRobin, error) {
-	if weightedZones == "" {
+// `zones` should be a comma-separated list of zone specs, where each
+// zone spec is either in the format <zone>=<integer weight> or just <zone>
+// (in which case the weight defaults to 1).
+// TODO(martijnvans): Remove support for the `zone` argument.
+func newZonePicker(zones, zone string) (*weightedRoundRobin, error) {
+	if zones == "" {
 		if zone == "" {
 			return nil, errors.New("either ZONES or ZONE must be specified")
 		}
-		weightedZones = zone + "=1"
+		zones = zone
 	}
 
 	sw := &weighted.SW{}
-	// Each zoneSpec should look like <string>=<integer>.
-	for _, zoneSpec := range strings.Split(weightedZones, ",") {
-		zoneAndWeight := strings.Split(zoneSpec, "=")
-		if len(zoneAndWeight) != 2 {
-			return nil, fmt.Errorf(`invalid zone specification %q from ZONES=%q; should be like "us-central1-b=5"`, zoneSpec, weightedZones)
+	// Each zoneSpec should look like <string>=<integer>
+	// or just <string> (with no "=").
+	for _, zoneSpec := range strings.Split(zones, ",") {
+		// Splits on the first occurrence of "=", if any.
+		// The length of the returned slice is:
+		//   1 if there is no "=" in zoneSpec, and
+		//   2 if there is one or more "=" in zoneSpec.
+		zoneAndWeight := strings.SplitN(zoneSpec, "=", 2)
+		if len(zoneAndWeight) == 1 {
+			// The weight defaults to 1 for any zone with no weight specfied.
+			zoneAndWeight = append(zoneAndWeight, "1")
 		}
 		weight, err := strconv.Atoi(zoneAndWeight[1])
 		if err != nil {
