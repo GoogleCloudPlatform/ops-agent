@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type FileLogger struct {
@@ -27,6 +28,10 @@ type FileLogger struct {
 
 func New(file string) *FileLogger {
 	cfg := zap.NewProductionConfig()
+	cfg.EncoderConfig.MessageKey = "message"
+	cfg.EncoderConfig.TimeKey = "time"
+	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
 	cfg.OutputPaths = []string{
 		file,
 	}
