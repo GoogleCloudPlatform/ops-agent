@@ -152,10 +152,10 @@ var dockerfileArguments = []templateArguments{
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
+		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",

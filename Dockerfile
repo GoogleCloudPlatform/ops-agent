@@ -20,11 +20,13 @@
 # Generated tarball(s) will end up in /tmp/out
 
 
+ARG CMAKE_VERSION=3.25.2
+ARG OPENJDK_VERSION=11.0.13
+ARG OPENJDK_VERSION_SUFFIX=8
+
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
 # does not provide a recent enough version (we require >= 3.12).
-ARG CMAKE_VERSION=3.25.2
-
 FROM alpine:latest AS cmake-amd64-recent
 ARG CMAKE_VERSION
 
@@ -41,6 +43,27 @@ ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-$
 
 FROM cmake-${BUILDARCH}-recent AS cmake-install-recent
 RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
+
+
+# Manually prepare OpenJDK for the current architecture.
+FROM alpine:latest AS openjdk-amd64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=3b1c0c34be4c894e64135a454f2d5aaa4bd10aea04ec2fa0c0efe6bb26528e30
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM alpine:latest AS openjdk-arm64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=a77013bff10a5e9c59159231dd5c4bd071fc4c24beed42bd49b82803ba9506ef
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM openjdk-${BUILDARCH} as openjdk-install
+RUN set -xe; (echo "$hash  /tmp/OpenJDK11U.tar.gz" | sha256sum -c)
 
 
 # ======================================
@@ -562,10 +585,10 @@ RUN set -x; \
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
+		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
