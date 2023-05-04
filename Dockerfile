@@ -688,9 +688,9 @@ FROM opensuse/leap:15.1 AS sles15-build-base
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
-		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
-		name=google-cloud-monitoring-sles15-x86_64-test \n\
-		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
+		name=google-cloud-monitoring-sles15-vendor \n\
+		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-$basearch-test-20221109-1 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
