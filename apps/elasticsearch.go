@@ -49,6 +49,18 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
 
+	metricsConfig := map[string]interface{}{}
+
+	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
+	if !r.ShouldCollectJVMMetrics() {
+		r.skipJVMMetricsConfig(metricsConfig)
+	}
+
+	// Custom logic needed to disable index metrics, since they were previously locked behind a feature gate.
+	// When support for them is added, this logic can be removed and the index name resource attribute will need
+	// to be flattened to the metrics.
+	r.disableIndexMetrics(metricsConfig)
+
 	cfg := map[string]interface{}{
 		"collection_interval":  r.CollectionIntervalString(),
 		"endpoint":             r.Endpoint,
@@ -57,11 +69,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		"nodes":                []string{"_local"},
 		"tls":                  r.TLSConfig(true),
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
-	}
-
-	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
-	if !r.ShouldCollectJVMMetrics() {
-		cfg["metrics"] = r.skipJVMMetricsConfig()
+		"metrics":              metricsConfig,
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -71,6 +79,12 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
+			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
+			otel.MetricsOTTLFilter(
+				[]string{
+					`name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil`,
+				},
+				[]string{}),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
@@ -79,7 +93,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 	}}
 }
 
-func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interface{} {
+func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig(metricsConfig map[string]interface{}) {
 	jvmMetrics := []string{
 		"jvm.classes.loaded",
 		"jvm.gc.collections.count",
@@ -94,15 +108,37 @@ func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interfac
 		"jvm.threads.count",
 	}
 
-	conf := map[string]interface{}{}
-
 	for _, metric := range jvmMetrics {
-		conf[metric] = map[string]bool{
+		metricsConfig[metric] = map[string]bool{
+			"enabled": false,
+		}
+	}
+}
+
+func (r MetricsReceiverElasticsearch) disableIndexMetrics(metricsConfig map[string]interface{}) {
+	indexMetrics := []string{
+		"elasticsearch.index.cache.evictions",
+		"elasticsearch.index.cache.memory.usage",
+		"elasticsearch.index.cache.size",
+		"elasticsearch.index.documents",
+		"elasticsearch.index.operations.completed",
+		"elasticsearch.index.operations.merge.docs_count",
+		"elasticsearch.index.operations.merge.size",
+		"elasticsearch.index.operations.time",
+		"elasticsearch.index.segments.count",
+		"elasticsearch.index.segments.memory",
+		"elasticsearch.index.segments.size",
+		"elasticsearch.index.shards.size",
+		"elasticsearch.index.translog.operations",
+		"elasticsearch.index.translog.size",
+	}
+
+	for _, metric := range indexMetrics {
+		metricsConfig[metric] = map[string]bool{
 			"enabled": false,
 		}
 	}
 
-	return conf
 }
 
 func init() {
