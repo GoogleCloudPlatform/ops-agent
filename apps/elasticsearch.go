@@ -79,6 +79,12 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
+			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
+			otel.MetricsOTTLFilter(
+				[]string{
+					`name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil`,
+				},
+				[]string{}),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
