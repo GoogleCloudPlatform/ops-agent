@@ -15,8 +15,6 @@
 package logs
 
 import (
-	"log"
-
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -38,7 +36,7 @@ func New(file string) *FileLogger {
 	}
 	logger, err := cfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
-		log.Fatal(err)
+		return Default()
 	}
 
 	sugar := logger.Sugar().With(
@@ -60,7 +58,7 @@ func DiscardLogger() *FileLogger {
 func Default() *FileLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		log.Fatal(err)
+		return DiscardLogger()
 	}
 	sugar := logger.Sugar().With(
 		zap.String("version", version.Version))
