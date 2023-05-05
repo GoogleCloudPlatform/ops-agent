@@ -6,10 +6,10 @@ sudo apt-get update
 sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
 oscode="$(lsb_release -sc)"
-if [ "$oscode" = "bullseye" ]; then
-  # currently debian 11 is not supported, install buster package instead
+if [ "$oscode" = "lunar" ]; then
+  # currently ubuntu 23.04 (lunar lobster) is not supported, install jammy (ubuntu 22.04) package instead
   # Could be removed once couchbase-lite gets supported
-  echo 'deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/community/deb/ buster buster/main' | sudo tee /etc/apt/sources.list.d/couchbase.list
+  echo 'deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/community/deb/ jammy jammy/main' | sudo tee /etc/apt/sources.list.d/couchbase.list
   sudo wget -qO- http://packages.couchbase.com/ubuntu/couchbase.key | gpg --dearmor > couchbase.gpg
   sudo mv couchbase.gpg /etc/apt/trusted.gpg.d/couchbase.gpg
   sudo apt update
