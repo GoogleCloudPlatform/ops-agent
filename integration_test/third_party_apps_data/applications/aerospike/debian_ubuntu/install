@@ -15,7 +15,7 @@ install_current() {
     # download, extract, install, and start aerospike community edition
     wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/6.3.0.2/aerospike-server-community_6.3.0.2_tools-8.3.0_${os_version}_$(uname -m).tgz"
     tar -xvf aerospike.tgz
-    (cd aerospike-server-community-6.3.0.2*/ && sudo ./asinstall)
+    (cd aerospike-server-community_6.3.0.2*/ && sudo ./asinstall)
 }
 
 sudo apt-get update

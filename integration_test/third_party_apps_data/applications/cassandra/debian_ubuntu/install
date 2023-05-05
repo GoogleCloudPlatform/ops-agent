@@ -12,7 +12,7 @@ if $ID == "ubuntu" && $VERSION_ID == "23.04"; then
     sudo gpg --export --armor AA8E81B4331F7F50 | sudo apt-key add -
     sudo gpg --export --armor 112695A0E562B32A | sudo apt-key add -
 else
-    echo "deb http://www.apache.org/dist/cassandra/debian 311x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+    echo "deb http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 fi
 
 # Required to install java8 (JVM properties of cassandra are incompatible with >9)
