@@ -5,8 +5,16 @@ sudo apt install -y curl apt-transport-https gnupg
 
 curl https://couchdb.apache.org/repo/keys.asc | gpg --dearmor | sudo tee /usr/share/keyrings/couchdb-archive-keyring.gpg >/dev/null 2>&1
 source /etc/os-release
-echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" \
+
+if [ "${VERSION_CODENAME}" = "lunar" ]; then
+  # currently ubuntu 23.04 (lunar lobster) is not supported, install jammy (ubuntu 22.04) package instead
+  # Could be removed once couchbase-lite gets supported
+  echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ jammy main" \
     | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
+else
+  echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" \
+    | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
+fi
 
 # https://github.com/apache/couchdb-pkg/blob/main/debian/README.Debian
 COUCHDB_PASSWORD=otelp
