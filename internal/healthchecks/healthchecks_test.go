@@ -156,7 +156,6 @@ func (c MultipleSuccessResultCheck) RunCheck(logger *logs.FileLogger) error {
 func TestMultipleSuccessResultCheck(t *testing.T) {
 	sCheck := MultipleSuccessResultCheck{}
 	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
-	fmt.Println(expectedSuccess)
 	testLogger := logs.DiscardLogger()
 
 	err := sCheck.RunCheck(testLogger)
