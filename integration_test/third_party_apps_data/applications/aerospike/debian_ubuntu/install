@@ -50,6 +50,7 @@ case $os_version in
     debian10|debian11|ubuntu20.04|ubuntu22.04)
         install_current;;
     *)  echo "Found os_version: $os_version, not in supported list";;
+esac
 
 
 sudo systemctl enable aerospike
