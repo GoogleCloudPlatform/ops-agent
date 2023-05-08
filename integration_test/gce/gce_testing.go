@@ -1036,7 +1036,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		// Chooses the next zone according to the weights in WEIGHTED_ZONES.
+		// Chooses the next zone from ZONES.
 		vm.Zone = zonePicker.Next()
 	}
 
