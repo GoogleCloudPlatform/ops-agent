@@ -19,7 +19,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -47,24 +46,41 @@ func singleErrorResultMessage(e error, Name string) string {
 	return fmt.Sprintf("[%s] Result: PASS", Name)
 }
 
-func (r HealthCheckResult) String() string {
+func (r HealthCheckResult) ErrorMessages() []string {
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
 		var messageList []string
 		for _, e := range mwErr.Unwrap() {
 			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
 		}
-		return strings.Join(messageList, "\n")
+		return messageList
 	}
-	return singleErrorResultMessage(r.Err, r.Name)
+	return []string{}
 }
 
-func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
-	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			errorLogger(result.String())
-		} else {
-			infoLogger(result.String())
+func (r HealthCheckResult) InfoMessages() []string {
+	if _, ok := r.Err.(MultiWrappedError); ok {
+		var messageList []string
+		return messageList
+	}
+	return []string{singleErrorResultMessage(r.Err, r.Name)}
+
+}
+
+func (r HealthCheckResult) ToStringSlice() []string {
+	if mwErr, ok := r.Err.(MultiWrappedError); ok {
+		var messageList []string
+		for _, e := range mwErr.Unwrap() {
+			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
 		}
+		return messageList
+	}
+	return []string{singleErrorResultMessage(r.Err, r.Name)}
+}
+
+func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func([]string), errorLogger func([]string)) {
+	for _, result := range healthCheckResults {
+		errorLogger(result.ErrorMessages())
+		infoLogger(result.InfoMessages())
 	}
 }
 
@@ -99,9 +115,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *logs.FileLogger) []Healt
 
 	for _, c := range r {
 		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
-		logger.Println(r)
 		result = append(result, r)
 	}
-
 	return result
 }

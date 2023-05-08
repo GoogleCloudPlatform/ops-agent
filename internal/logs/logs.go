@@ -67,8 +67,16 @@ func Default() *FileLogger {
 	}
 }
 
+func (f FileLogger) Infof(format string, v ...any) {
+	f.logger.Infof(format, v...)
+}
+
 func (f FileLogger) Printf(format string, v ...any) {
 	f.logger.Infof(format, v...)
+}
+
+func (f FileLogger) Errorf(format string, v ...any) {
+	f.logger.Errorf(format, v...)
 }
 
 func (f FileLogger) Println(v ...any) {

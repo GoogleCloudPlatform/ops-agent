@@ -39,7 +39,15 @@ func runHealthChecks() {
 	defer closer()
 
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { log.Println(s) }, func(s string) { log.Println(s) })
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(sl []string) {
+		for _, s := range sl {
+			logger.Infof(s)
+		}
+	}, func(sl []string) {
+		for _, s := range sl {
+			logger.Errorf(s)
+		}
+	})
 }
 
 func main() {
