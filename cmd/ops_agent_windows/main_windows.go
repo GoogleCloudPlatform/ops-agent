@@ -61,7 +61,15 @@ func main() {
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
 			healthCheckResults := getHealthCheckResults()
-			healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { infoLog.Println(s) }, func(s string) { infoLog.Println(s) })
+			healthchecks.LogHealthCheckResults(healthCheckResults, func(s []string) {
+				for _, l := range s {
+					infoLog.Println(l)
+				}
+			}, func(s []string) {
+				for _, l := range s {
+					infoLog.Println(l)
+				}
+			})
 			infoLog.Println("Health checks finished")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.

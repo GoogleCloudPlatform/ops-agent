@@ -148,7 +148,15 @@ func getHealthCheckResults() []healthchecks.HealthCheckResult {
 
 func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { srv.log.Info(EngineEventID, s) }, func(s string) { srv.log.Error(EngineEventID, s) })
+	healthchecks.LogHealthCheckResults(healthCheckResults, func(s []string) {
+		for _, l := range s {
+			srv.log.Info(EngineEventID, l)
+		}
+	}, func(s []string) {
+		for _, l := range s {
+			srv.log.Error(EngineEventID, l)
+		}
+	})
 	srv.log.Info(EngineEventID, "Startup checks finished")
 }
 
