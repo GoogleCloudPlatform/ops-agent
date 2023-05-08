@@ -4,7 +4,7 @@ source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
+sudo yum -y install https://repo.mysql.com/mysql57-community-release-el${VERSION_ID}-11.noarch.rpm
 
 if [ ${VERSION_ID} == 8 ]; then
   sudo yum -y module disable mysql
@@ -32,11 +32,7 @@ sudo mkdir /var/log/mysql
 sudo chown mysql:mysql /var/log/mysql
 
 # Required to allow mysql to accept connections on 3307
-if [ ${ID} == rocky ]; then
-  sudo yum install -y policycoreutils-python-utils
-else
-  sudo yum install -y policycoreutils-python
-fi
+sudo yum install -y policycoreutils-python
 sudo semanage port --add --type mysqld_port_t --proto tcp 3307
 
 # set up replication source to validate replica metrics

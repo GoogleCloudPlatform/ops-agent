@@ -4,13 +4,13 @@ sudo apt update
 sudo apt install -y wget
 
 wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-5.7'
 sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
 sudo apt update
-sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
 
 source /etc/os-release
 
-sudo apt install -y mysql-server
+sudo apt install -y mysql-server=5.7*
 
 if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18
@@ -38,12 +38,6 @@ log-error = /var/log/mysql/error2.log
 server-id = 2
 log-bin = /var/log/mysql/mysql2-bin.log
 EOF
-
-# Disable apparmor for mysql
-if [[ "${ID}" == ubuntu ]]; then
-  sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
-  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
-fi
 
 sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
 

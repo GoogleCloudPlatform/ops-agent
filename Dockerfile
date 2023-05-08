@@ -19,6 +19,53 @@
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
+
+ARG CMAKE_VERSION=3.25.2
+ARG OPENJDK_VERSION=11.0.13
+ARG OPENJDK_VERSION_SUFFIX=8
+
+# Manually prepare a recent enough version of CMake.
+# This should be used on platforms where the default package manager
+# does not provide a recent enough version (we require >= 3.12).
+FROM alpine:latest AS cmake-amd64-recent
+ARG CMAKE_VERSION
+
+ENV hash=4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.sh \
+    /cmake.sh
+
+FROM alpine:latest AS cmake-arm64-recent
+ARG CMAKE_VERSION
+
+ENV hash=73a35cab2174a3eb8f35083d55c80871185dc3808f3dae3558cd5fbdb29a4614
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.sh \
+    /cmake.sh
+
+FROM cmake-${BUILDARCH}-recent AS cmake-install-recent
+RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
+
+
+# Manually prepare OpenJDK for the current architecture.
+FROM alpine:latest AS openjdk-amd64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=3b1c0c34be4c894e64135a454f2d5aaa4bd10aea04ec2fa0c0efe6bb26528e30
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM alpine:latest AS openjdk-arm64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=a77013bff10a5e9c59159231dd5c4bd071fc4c24beed42bd49b82803ba9506ef
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM openjdk-${BUILDARCH} as openjdk-install
+RUN set -xe; (echo "$hash  /tmp/OpenJDK11U.tar.gz" | sha256sum -c)
+
+
 # ======================================
 # Build Ops Agent for centos-7 
 # ======================================
@@ -29,22 +76,19 @@ RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
-		expect rpm-sign zip wget && \
-		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-		yum install -y cmake3 && \
-		ln -fs cmake3 /usr/bin/cmake && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		expect rpm-sign zip
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -140,9 +184,10 @@ RUN set -x; yum -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -241,9 +286,10 @@ RUN set -x; dnf -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -337,9 +383,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -433,9 +480,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -524,7 +572,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip wget && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -536,25 +584,24 @@ RUN set -x; \
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
-	
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
+		ln -fs /usr/lib/systemd /lib/systemd
+		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -639,11 +686,11 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 FROM opensuse/leap:15.1 AS sles15-build-base
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip wget
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
-		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
-		name=google-cloud-monitoring-sles15-x86_64-test \n\
-		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
+		name=google-cloud-monitoring-sles15-vendor \n\
+		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-$basearch-test-20221109-1 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
@@ -653,18 +700,18 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd && \
-			# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-			wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-			(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-			bash cmake.sh --skip-license --prefix=/usr/local
+			ln -fs /usr/lib/systemd /lib/systemd
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -753,18 +800,18 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip wget && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		devscripts cdbs pkg-config openjdk-11-jdk zip
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -858,9 +905,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -954,9 +1002,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -1050,9 +1099,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.20.2.linux-amd64.tar.gz /tmp/go1.20.2.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.20.2.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 

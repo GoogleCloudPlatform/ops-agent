@@ -28,6 +28,10 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
+  filter/elasticsearch_1:
+    metrics:
+      metric:
+      - name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil
   filter/fluentbit_0:
     metrics:
       include:
@@ -56,7 +60,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/elasticsearch_1:
+  metricstransform/elasticsearch_2:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -436,7 +440,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/elasticsearch_2:
+  modifyscope/elasticsearch_3:
     override_scope_name: agent.googleapis.com/elasticsearch
     override_scope_version: "1.0"
   normalizesums/elasticsearch_0: {}
@@ -447,6 +451,35 @@ receivers:
   elasticsearch/elasticsearch:
     collection_interval: 60s
     endpoint: http://localhost:9200
+    metrics:
+      elasticsearch.index.cache.evictions:
+        enabled: false
+      elasticsearch.index.cache.memory.usage:
+        enabled: false
+      elasticsearch.index.cache.size:
+        enabled: false
+      elasticsearch.index.documents:
+        enabled: false
+      elasticsearch.index.operations.completed:
+        enabled: false
+      elasticsearch.index.operations.merge.docs_count:
+        enabled: false
+      elasticsearch.index.operations.merge.size:
+        enabled: false
+      elasticsearch.index.operations.time:
+        enabled: false
+      elasticsearch.index.segments.count:
+        enabled: false
+      elasticsearch.index.segments.memory:
+        enabled: false
+      elasticsearch.index.segments.size:
+        enabled: false
+      elasticsearch.index.shards.size:
+        enabled: false
+      elasticsearch.index.translog.operations:
+        enabled: false
+      elasticsearch.index.translog.size:
+        enabled: false
     nodes:
     - _local
     password: ""
@@ -502,8 +535,9 @@ service:
       - googlecloud/otel
       processors:
       - normalizesums/elasticsearch_0
-      - metricstransform/elasticsearch_1
-      - modifyscope/elasticsearch_2
+      - filter/elasticsearch_1
+      - metricstransform/elasticsearch_2
+      - modifyscope/elasticsearch_3
       - resourcedetection/_global_0
       receivers:
       - elasticsearch/elasticsearch
