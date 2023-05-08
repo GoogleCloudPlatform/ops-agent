@@ -288,6 +288,28 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       state: free|used
+  - type: workload.googleapis.com/elasticsearch.cluster.in_flight_fetch
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.cluster.pending_tasks
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.node.cache.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      type: hit|miss
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.total
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
 expected_logs:
   - log_name: elasticsearch_json
     fields:
