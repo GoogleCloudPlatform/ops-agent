@@ -66,7 +66,17 @@ func (r HealthCheckResult) InfoMessages() []string {
 
 }
 
-func (r HealthCheckResult) ToStringSlice() []string {
+func (r HealthCheckResult) LogResult(logger *logs.StructuredLogger) {
+	for _, m := range r.StringSlice() {
+		if r.Err != nil {
+			logger.Infof(m)
+		} else {
+			logger.Errorf(m)
+		}
+	}
+}
+
+func (r HealthCheckResult) StringSlice() []string {
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
 		var messageList []string
 		for _, e := range mwErr.Unwrap() {
@@ -95,20 +105,21 @@ func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger fu
 	}
 }
 
-func CreateHealthChecksLogger(logDir string) (logger *logs.StructuredLogger, closer func()) {
+func CreateHealthChecksLogger(logDir string) *logs.StructuredLogger {
 	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		log.Printf("failed to create directory for %q: %v", path, err)
-		return logs.Default(), func() {}
+		return logs.Default()
 	}
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Printf("failed to open health checks log file %q: %v", path, err)
-		return logs.Default(), func() {}
+		return logs.Default()
 	}
+	file.Close()
 
-	return logs.New(path), func() { file.Close() }
+	return logs.New(path)
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -126,13 +137,7 @@ func (r HealthCheckRegistry) RunAllHealthChecks(logger *logs.StructuredLogger) [
 
 	for _, c := range r {
 		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
-		for _, l := range r.ToStringSlice() {
-			if r.Err != nil {
-				logger.Infof(l)
-			} else {
-				logger.Errorf(l)
-			}
-		}
+		r.LogResult(logger)
 		result = append(result, r)
 	}
 	return result

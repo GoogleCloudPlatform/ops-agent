@@ -112,7 +112,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 			result = "FAIL"
 		}
 		expected = generateExpectedResultMessage(r.Name, result)
-		assert.Check(t, strings.Contains(r.ToStringSlice()[0], expected))
+		assert.Check(t, strings.Contains(r.StringSlice()[0], expected))
 	}
 }
 
@@ -138,8 +138,8 @@ func TestMultipleFailureResultCheck(t *testing.T) {
 
 	assert.ErrorContains(t, err, wantErrorMessage)
 	assert.ErrorIs(t, err, healthchecks.HcFailureErr)
-	assert.Check(t, strings.Contains(result.ToStringSlice()[0], expectedError))
-	assert.Check(t, strings.Contains(result.ToStringSlice()[1], expectedFailure))
+	assert.Check(t, strings.Contains(result.StringSlice()[0], expectedError))
+	assert.Check(t, strings.Contains(result.StringSlice()[1], expectedFailure))
 
 }
 
@@ -162,5 +162,5 @@ func TestMultipleSuccessResultCheck(t *testing.T) {
 	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
 
 	assert.NilError(t, err)
-	assert.Check(t, strings.Contains(result.ToStringSlice()[0], expectedSuccess))
+	assert.Check(t, strings.Contains(result.StringSlice()[0], expectedSuccess))
 }

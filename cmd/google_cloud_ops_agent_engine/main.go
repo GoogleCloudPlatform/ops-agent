@@ -36,8 +36,7 @@ var (
 )
 
 func runHealthChecks() {
-	logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
-	defer closer()
+	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
 	defaultLogger := logs.Default()
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
