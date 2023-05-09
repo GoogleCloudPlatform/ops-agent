@@ -9,6 +9,10 @@ osname="$(lsb_release -si)"
 
 case $osname in 
   Ubuntu)
+    if [ "$oscode" = "lunar" ]; then
+      # Ubuntu 23.04 is not officially supported, so use 'jammy'.
+      oscode="jammy"
+    fi
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     ;;
   Debian)
