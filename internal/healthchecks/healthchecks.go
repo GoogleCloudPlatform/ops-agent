@@ -90,13 +90,6 @@ func (r HealthCheckResult) String() string {
 
 func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func([]string), errorLogger func([]string)) {
 	for _, result := range healthCheckResults {
-
-		// if result.Err != nil {
-		// 	errorLogger(result.String())
-		// } else {
-		// 	infoLogger(result.String())
-		// }
-
 		errorLogger(result.ErrorMessages())
 		infoLogger(result.InfoMessages())
 	}
