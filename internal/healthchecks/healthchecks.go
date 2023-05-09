@@ -28,7 +28,7 @@ var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger *logs.FileLogger) error
+	RunCheck(logger *logs.StructuredLogger) error
 }
 
 type HealthCheckResult struct {
@@ -102,7 +102,7 @@ func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger fu
 	}
 }
 
-func CreateHealthChecksLogger(logDir string) (logger *logs.FileLogger, closer func()) {
+func CreateHealthChecksLogger(logDir string) (logger *logs.StructuredLogger, closer func()) {
 	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(logDir, 0755); err != nil {
@@ -128,11 +128,18 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger *logs.FileLogger) []HealthCheckResult {
+func (r HealthCheckRegistry) RunAllHealthChecks(logger *logs.StructuredLogger) []HealthCheckResult {
 	var result []HealthCheckResult
 
 	for _, c := range r {
 		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
+		for _, l := range r.ToStringSlice() {
+			if r.Err != nil {
+				logger.Infof(l)
+			} else {
+				logger.Errorf(l)
+			}
+		}
 		result = append(result, r)
 	}
 	return result

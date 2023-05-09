@@ -35,7 +35,7 @@ func (c FailureCheck) Name() string {
 	return "Failure Check"
 }
 
-func (c FailureCheck) RunCheck(logger *logs.FileLogger) error {
+func (c FailureCheck) RunCheck(logger *logs.StructuredLogger) error {
 	return healthchecks.HcFailureErr
 }
 
@@ -58,7 +58,7 @@ func (c SuccessCheck) Name() string {
 	return "Success Check"
 }
 
-func (c SuccessCheck) RunCheck(logger *logs.FileLogger) error {
+func (c SuccessCheck) RunCheck(logger *logs.StructuredLogger) error {
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (c ErrorCheck) Name() string {
 	return "Error Check"
 }
 
-func (c ErrorCheck) RunCheck(logger *logs.FileLogger) error {
+func (c ErrorCheck) RunCheck(logger *logs.StructuredLogger) error {
 	return errors.New("Test error.")
 }
 
@@ -122,7 +122,7 @@ func (c MultipleFailureResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleFailureResultCheck) RunCheck(logger *logs.FileLogger) error {
+func (c MultipleFailureResultCheck) RunCheck(logger *logs.StructuredLogger) error {
 	return errors.Join(nil, errors.New("Test error."), healthchecks.HcFailureErr)
 }
 
@@ -149,7 +149,7 @@ func (c MultipleSuccessResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleSuccessResultCheck) RunCheck(logger *logs.FileLogger) error {
+func (c MultipleSuccessResultCheck) RunCheck(logger *logs.StructuredLogger) error {
 	return errors.Join(nil, nil, nil)
 }
 
