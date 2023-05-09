@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -58,9 +59,8 @@ func (r HealthCheckResult) ErrorMessages() []string {
 }
 
 func (r HealthCheckResult) InfoMessages() []string {
-	if _, ok := r.Err.(MultiWrappedError); ok {
-		var messageList []string
-		return messageList
+	if r.Err != nil {
+		return []string{}
 	}
 	return []string{singleErrorResultMessage(r.Err, r.Name)}
 
@@ -77,8 +77,26 @@ func (r HealthCheckResult) ToStringSlice() []string {
 	return []string{singleErrorResultMessage(r.Err, r.Name)}
 }
 
+func (r HealthCheckResult) String() string {
+	if mwErr, ok := r.Err.(MultiWrappedError); ok {
+		var messageList []string
+		for _, e := range mwErr.Unwrap() {
+			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
+		}
+		return strings.Join(messageList, "\n")
+	}
+	return singleErrorResultMessage(r.Err, r.Name)
+}
+
 func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func([]string), errorLogger func([]string)) {
 	for _, result := range healthCheckResults {
+
+		// if result.Err != nil {
+		// 	errorLogger(result.String())
+		// } else {
+		// 	infoLogger(result.String())
+		// }
+
 		errorLogger(result.ErrorMessages())
 		infoLogger(result.InfoMessages())
 	}
