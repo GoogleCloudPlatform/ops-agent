@@ -11,9 +11,8 @@ if [ "${VERSION_CODENAME}" = "lunar" ]; then
   # Could be removed once couchbase-lite gets supported
   echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ jammy main" \
     | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
-  sudo apt-get update
-  sudo apt-get install libicu
-  sudo apt-get install libicu-dev
+  wget http://security.ubuntu.com/ubuntu/pool/main/i/icu/libicu70_70.1-2_amd64.deb
+  sudo dpkg -i libicu70_70.1-2_amd64.deb
 else
   echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" \
     | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
