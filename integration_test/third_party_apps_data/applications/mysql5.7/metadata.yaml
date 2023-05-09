@@ -38,6 +38,7 @@ platforms_to_skip:
   - rocky-linux-9 # mysql5.7 not available on RHEL9
   - debian-11 # mysql5.7 not available on Debian 11
   - ubuntu-2004-lts # mysql5.7 not available on ubuntu focal
+  - ubuntu-2304-amd64 # mysql5.7 not available on ubuntu lunar
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
