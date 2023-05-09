@@ -2,7 +2,7 @@ set -e
 
 # Required to install cassandra
 source /etc/os-release
-if $ID == "ubuntu" && $VERSION_ID == "23.04"; then
+if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "23.04" ]]; then
     # There is a python dependency that fails for any older versions of cassandra on ubuntu 23
     echo "deb http://www.apache.org/dist/cassandra/debian 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
