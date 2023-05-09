@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var (
@@ -38,14 +39,15 @@ func runHealthChecks() {
 	logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
 	defer closer()
 
+	defaultLogger := logs.Default()
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, func(sl []string) {
 		for _, s := range sl {
-			logger.Infof(s)
+			defaultLogger.Infof(s)
 		}
 	}, func(sl []string) {
 		for _, s := range sl {
-			logger.Errorf(s)
+			defaultLogger.Errorf(s)
 		}
 	})
 }
