@@ -21,11 +21,17 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type StructuredLogger struct {
+type StructuredLogger interface {
+	Infof(format string, v ...any)
+	Errorf(format string, v ...any)
+	Println(v ...any)
+}
+
+type ZapStructuredLogger struct {
 	logger *zap.SugaredLogger
 }
 
-func New(file string) *StructuredLogger {
+func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
 	cfg.EncoderConfig.MessageKey = "message"
 	cfg.EncoderConfig.TimeKey = "time"
@@ -41,40 +47,40 @@ func New(file string) *StructuredLogger {
 
 	sugar := logger.Sugar().With(
 		zap.String("ops-agent-version", version.Version))
-	return &StructuredLogger{
+	return &ZapStructuredLogger{
 		logger: sugar,
 	}
 }
 
-func DiscardLogger() *StructuredLogger {
+func DiscardLogger() *ZapStructuredLogger {
 	observedZapCore, _ := observer.New(zap.InfoLevel)
 	observedLogger := zap.New(observedZapCore)
-	fileLogger := &StructuredLogger{
+	fileLogger := &ZapStructuredLogger{
 		logger: observedLogger.Sugar(),
 	}
 	return fileLogger
 }
 
-func Default() *StructuredLogger {
+func Default() *ZapStructuredLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return DiscardLogger()
 	}
 	sugar := logger.Sugar().With(
 		zap.String("version", version.Version))
-	return &StructuredLogger{
+	return &ZapStructuredLogger{
 		logger: sugar,
 	}
 }
 
-func (f StructuredLogger) Infof(format string, v ...any) {
+func (f ZapStructuredLogger) Infof(format string, v ...any) {
 	f.logger.Infof(format, v...)
 }
 
-func (f StructuredLogger) Errorf(format string, v ...any) {
+func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
 }
 
-func (f StructuredLogger) Println(v ...any) {
+func (f ZapStructuredLogger) Println(v ...any) {
 	f.logger.Infoln(v...)
 }

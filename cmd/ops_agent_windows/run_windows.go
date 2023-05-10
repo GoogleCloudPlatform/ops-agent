@@ -140,23 +140,31 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 func getHealthCheckResults() []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-	logger, closer := healthchecks.CreateHealthChecksLogger(logsDir)
-	defer closer()
+	logger := healthchecks.CreateHealthChecksLogger(logsDir)
 
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
+type WindowsServiceLogger struct {
+	srv *service
+}
+
+func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
+	wsl.srv.log.Info(EngineEventID, fmt.Sprint(format, v))
+}
+
+func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
+	wsl.srv.log.Error(EngineEventID, fmt.Sprint(format, v))
+}
+
+func (wsl WindowsServiceLogger) Println(v ...any) {
+	wsl.srv.log.Info(EngineEventID, v)
+}
+
 func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(s []string) {
-		for _, l := range s {
-			srv.log.Info(EngineEventID, l)
-		}
-	}, func(s []string) {
-		for _, l := range s {
-			srv.log.Error(EngineEventID, l)
-		}
-	})
+	logger := WindowsServiceLogger{srv}
+	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 	srv.log.Info(EngineEventID, "Startup checks finished")
 }
 

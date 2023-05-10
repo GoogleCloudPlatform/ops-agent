@@ -36,8 +36,29 @@ var (
 	healthChecks      = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
+type WindowsDefaultLogger struct {
+	l *log.Logger
+}
+
+func (wdl WindowsDefaultLogger) Printf(format string, v ...any) {
+	wdl.l.Printf(format, v...)
+}
+
+func (wdl WindowsDefaultLogger) Infof(format string, v ...any) {
+	wdl.l.Printf(format, v...)
+}
+
+func (wdl WindowsDefaultLogger) Errorf(format string, v ...any) {
+	wdl.l.Printf(format, v...)
+}
+
+func (wdl WindowsDefaultLogger) Println(v ...any) {
+	wdl.l.Println(v...)
+}
+
 func main() {
-	infoLog := log.New(os.Stdout, log.Prefix(), log.Flags())
+
+	infoLog := WindowsDefaultLogger{log.New(os.Stdout, log.Prefix(), log.Flags())}
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -61,15 +82,7 @@ func main() {
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
 			healthCheckResults := getHealthCheckResults()
-			healthchecks.LogHealthCheckResults(healthCheckResults, func(s []string) {
-				for _, l := range s {
-					infoLog.Println(l)
-				}
-			}, func(s []string) {
-				for _, l := range s {
-					infoLog.Println(l)
-				}
-			})
+			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.

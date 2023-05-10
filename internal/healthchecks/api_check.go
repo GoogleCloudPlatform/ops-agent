@@ -91,7 +91,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 	return client.CreateTimeSeries(ctx, req)
 }
 
-func runLoggingCheck(logger *logs.StructuredLogger) error {
+func runLoggingCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -138,7 +138,7 @@ func runLoggingCheck(logger *logs.StructuredLogger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger *logs.StructuredLogger) error {
+func runMonitoringCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
@@ -191,7 +191,7 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(logger *logs.StructuredLogger) error {
+func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	monErr := runMonitoringCheck(logger)
 	logErr := runLoggingCheck(logger)
 	return errors.Join(monErr, logErr)

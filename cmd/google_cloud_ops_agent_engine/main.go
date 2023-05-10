@@ -40,15 +40,7 @@ func runHealthChecks() {
 
 	defaultLogger := logs.Default()
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
-	healthchecks.LogHealthCheckResults(healthCheckResults, func(sl []string) {
-		for _, s := range sl {
-			defaultLogger.Infof(s)
-		}
-	}, func(sl []string) {
-		for _, s := range sl {
-			defaultLogger.Errorf(s)
-		}
-	})
+	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
 func main() {

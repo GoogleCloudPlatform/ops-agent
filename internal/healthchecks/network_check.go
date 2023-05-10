@@ -28,7 +28,7 @@ type networkRequest struct {
 	healthCheckError HealthCheckError
 }
 
-func (r networkRequest) SendRequest(logger *logs.StructuredLogger) error {
+func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	response, err := http.Get(r.url)
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
@@ -87,7 +87,7 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(logger *logs.StructuredLogger) error {
+func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
 	var networkErrors []error
 	for _, r := range requests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))
