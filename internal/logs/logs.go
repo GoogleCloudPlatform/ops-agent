@@ -15,6 +15,9 @@
 package logs
 
 import (
+	"log"
+	"os"
+
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -83,4 +86,32 @@ func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 
 func (f ZapStructuredLogger) Println(v ...any) {
 	f.logger.Infoln(v...)
+}
+
+type SimpleLogger struct {
+	l *log.Logger
+}
+
+func (sl SimpleLogger) Fatalf(format string, v ...any) {
+	sl.l.Fatalf(format, v...)
+}
+
+func (sl SimpleLogger) Printf(format string, v ...any) {
+	sl.l.Printf(format, v...)
+}
+
+func (sl SimpleLogger) Infof(format string, v ...any) {
+	sl.l.Printf(format, v...)
+}
+
+func (sl SimpleLogger) Errorf(format string, v ...any) {
+	sl.l.Printf(format, v...)
+}
+
+func (sl SimpleLogger) Println(v ...any) {
+	sl.l.Println(v...)
+}
+
+func NewSimpleLogger() SimpleLogger {
+	return SimpleLogger{log.New(os.Stdout, log.Prefix(), log.Flags())}
 }

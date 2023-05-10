@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 )
@@ -36,29 +37,9 @@ var (
 	healthChecks      = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-type WindowsDefaultLogger struct {
-	l *log.Logger
-}
-
-func (wdl WindowsDefaultLogger) Printf(format string, v ...any) {
-	wdl.l.Printf(format, v...)
-}
-
-func (wdl WindowsDefaultLogger) Infof(format string, v ...any) {
-	wdl.l.Printf(format, v...)
-}
-
-func (wdl WindowsDefaultLogger) Errorf(format string, v ...any) {
-	wdl.l.Printf(format, v...)
-}
-
-func (wdl WindowsDefaultLogger) Println(v ...any) {
-	wdl.l.Println(v...)
-}
-
 func main() {
 
-	infoLog := WindowsDefaultLogger{log.New(os.Stdout, log.Prefix(), log.Flags())}
+	infoLog := logs.NewSimpleLogger()
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)

@@ -38,7 +38,8 @@ var (
 func runHealthChecks() {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
-	defaultLogger := logs.Default()
+	defaultLogger := logs.NewSimpleLogger()
+
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
