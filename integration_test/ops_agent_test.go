@@ -278,8 +278,8 @@ func setupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 }
 
 // restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
