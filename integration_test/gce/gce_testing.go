@@ -1003,6 +1003,10 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
 	labelsCopy := make(map[string]string)
 
+	// Attach labels to automate cleanup
+	labelsCopy["env"] = "test"
+	labelsCopy["ttl"] = "180" // minutes
+
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
 	}
@@ -1011,10 +1015,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	if buildID := os.Getenv("KOKORO_BUILD_ID"); buildID != "" {
 		labelsCopy["kokoro_build_id"] = buildID
 	}
-
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
 
 	return labelsCopy, nil
 }
