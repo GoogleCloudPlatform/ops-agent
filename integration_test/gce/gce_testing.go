@@ -1026,8 +1026,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:  options.Project,
 		Platform: options.Platform,
+		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1048,9 +1054,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
-	// The VM name needs to adhere to these restrictions:
-	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
@@ -1716,6 +1719,8 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
