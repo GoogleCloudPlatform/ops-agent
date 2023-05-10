@@ -157,9 +157,7 @@ func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
 	wsl.srv.log.Error(EngineEventID, fmt.Sprint(format, v))
 }
 
-func (wsl WindowsServiceLogger) Println(v ...any) {
-	wsl.srv.log.Info(EngineEventID, v)
-}
+func (wsl WindowsServiceLogger) Println(v ...any) {}
 
 func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
