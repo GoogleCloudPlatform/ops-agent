@@ -351,7 +351,7 @@ func init() {
 		InstanceName:  "test-instance-name",
 		Tags:          "test-tag",
 		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value"},
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}
