@@ -237,7 +237,7 @@ func locationFromEnvVars() packageLocation {
 // installOpsAgent installs the Ops Agent on the given VM. Preferentially
 // chooses to install from location.packagesInGCS if that is set, otherwise
 // falls back to location.repoSuffix.
-func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
+func installOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location packageLocation) error {
 	if location.packagesInGCS != "" {
 		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
@@ -247,26 +247,26 @@ func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 			suffix = "all"
 		}
 		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
+			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
 			return err
 		}
-		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
+		if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
 			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
-		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
+		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
 		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
 	}
 
 	runInstallScript := func() error {
 		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
-	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
+	if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
 		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
 	}
 	return nil
@@ -291,7 +291,7 @@ func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *g
 // setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
-	if err := installOpsAgent(ctx, logger, vm, location); err != nil {
+	if err := installOpsAgent(ctx, logger.ToMainLog(), vm, location); err != nil {
 		return err
 	}
 	startupDelay := 20 * time.Second
@@ -3145,7 +3145,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger, vm, locationFromEnvVars()); err != nil {
+		if err := installOpsAgent(ctx, logger.ToMainLog(), vm, locationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
