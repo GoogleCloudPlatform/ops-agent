@@ -701,28 +701,28 @@ func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCre
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
-func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
+func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if err := gce.InstallGsutilIfNeeded(ctx, logger.ToMainLog(), vm); err != nil {
+	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "ls /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "ls /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
 		return err
 	}
 	if IsRPMBased(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}
 		return nil
@@ -732,21 +732,21 @@ func InstallPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger,
 	// 1. install stable package from Rapture
 	// 2. install just-built package from GCS
 	// Nor do I know why apt considers that sequence to be a downgrade.
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
-func installWindowsPackageFromGCS(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
+func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil

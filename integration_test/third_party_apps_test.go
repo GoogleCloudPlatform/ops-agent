@@ -166,7 +166,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	if packagesInGCS == "" {
 		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger.ToMainLog(), vm, packagesInGCS)
 }
 
 // updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
