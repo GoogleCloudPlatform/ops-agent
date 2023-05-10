@@ -94,9 +94,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 func runLoggingCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
-
 	if err != nil {
-		return fmt.Errorf("GCE Metadata query failed")
+		return fmt.Errorf("can't get GCE metadata")
 	}
 	logger.Infof("GCE Metadata queried successfully")
 
@@ -143,11 +142,7 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-<<<<<<< HEAD
-		return fmt.Errorf("GCE Metadata query failed")
-=======
-		return fmt.Errorf("can't get GCE metadata: %w", err)
->>>>>>> c033f967 (Error messages don't expose PII)
+		return fmt.Errorf("can't get GCE metadata")
 	}
 	logger.Infof("GCE Metadata queried successfully")
 
