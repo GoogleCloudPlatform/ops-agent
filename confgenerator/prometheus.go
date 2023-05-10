@@ -163,8 +163,7 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		sanitizedValue := sanitizeMetadataLabelValue(v)
-		metaLabels[prefix+sanitizedKey] = sanitizedValue
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
 	}
 
 	// Labels are not available using the GCE metadata API.
@@ -189,17 +188,6 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	metaLabels["machine_type"] = gceMetadata.MachineType
 
 	return metaLabels
-}
-
-func sanitizeMetadataLabelValue(value string) string {
-	sanitized := []rune{}
-	for _, c := range value {
-		if c == '$' {
-			sanitized = append(sanitized, '$')
-		}
-		sanitized = append(sanitized, c)
-	}
-	return string(sanitized)
 }
 
 func validatePrometheusConfig(sl validator.StructLevel) {
