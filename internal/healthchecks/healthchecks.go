@@ -47,28 +47,9 @@ func singleErrorResultMessage(e error, Name string) string {
 	return fmt.Sprintf("[%s] Result: PASS", Name)
 }
 
-func (r HealthCheckResult) ErrorMessages() []string {
-	if mwErr, ok := r.Err.(MultiWrappedError); ok {
-		var messageList []string
-		for _, e := range mwErr.Unwrap() {
-			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
-		}
-		return messageList
-	}
-	return []string{}
-}
-
-func (r HealthCheckResult) InfoMessages() []string {
-	if r.Err != nil {
-		return []string{}
-	}
-	return []string{singleErrorResultMessage(r.Err, r.Name)}
-
-}
-
 func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
 	for _, m := range r.StringSlice() {
-		if r.Err != nil {
+		if r.Err == nil {
 			logger.Infof(m)
 		} else {
 			logger.Errorf(m)
@@ -88,14 +69,7 @@ func (r HealthCheckResult) StringSlice() []string {
 }
 
 func (r HealthCheckResult) String() string {
-	if mwErr, ok := r.Err.(MultiWrappedError); ok {
-		var messageList []string
-		for _, e := range mwErr.Unwrap() {
-			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
-		}
-		return strings.Join(messageList, "\n")
-	}
-	return singleErrorResultMessage(r.Err, r.Name)
+	return strings.Join(r.StringSlice(), "\n")
 }
 
 func LogHealthCheckResults(healthCheckResults []HealthCheckResult, logger logs.StructuredLogger) {

@@ -55,19 +55,20 @@ func New(file string) *ZapStructuredLogger {
 	}
 }
 
-func DiscardLogger() *ZapStructuredLogger {
-	observedZapCore, _ := observer.New(zap.InfoLevel)
+func DiscardLogger() (*ZapStructuredLogger, *observer.ObservedLogs) {
+	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	observedLogger := zap.New(observedZapCore)
 	fileLogger := &ZapStructuredLogger{
 		logger: observedLogger.Sugar(),
 	}
-	return fileLogger
+	return fileLogger, observedLogs
 }
 
 func Default() *ZapStructuredLogger {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		return DiscardLogger()
+		logger, _ := DiscardLogger()
+		return logger
 	}
 	sugar := logger.Sugar().With(
 		zap.String("version", version.Version))
