@@ -68,7 +68,7 @@ func (r HealthCheckResult) InfoMessages() []string {
 
 func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
 	for _, m := range r.StringSlice() {
-		if r.Err != nil {
+		if r.Err == nil {
 			logger.Infof(m)
 		} else {
 			logger.Errorf(m)
