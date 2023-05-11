@@ -21,6 +21,9 @@ bullseye = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
+bullseye_arm = _distro {
+  release = ['debian-11-arm64']
+}
 bionic = _distro {
   release = [
     'ubuntu-1804-lts',
