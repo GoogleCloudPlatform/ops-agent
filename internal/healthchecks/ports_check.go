@@ -17,12 +17,12 @@ package healthchecks
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 const (
@@ -50,13 +50,13 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck(logger *log.Logger) error {
+func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
 	fbErr := runFluentBitCheck(logger)
 	otelErr := runOtelCollectorCheck(logger)
 	return errors.Join(fbErr, otelErr)
 }
 
-func runFluentBitCheck(logger *log.Logger) error {
+func runFluentBitCheck(logger logs.StructuredLogger) error {
 	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func runFluentBitCheck(logger *log.Logger) error {
 	return nil
 }
 
-func runOtelCollectorCheck(logger *log.Logger) error {
+func runOtelCollectorCheck(logger logs.StructuredLogger) error {
 	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func runOtelCollectorCheck(logger *log.Logger) error {
 	return nil
 }
 
-func runPortCheck(logger *log.Logger, port int, host, network string, healthCheckError error) error {
+func runPortCheck(logger logs.StructuredLogger, port int, host, network string, healthCheckError error) error {
 	available, err := checkIfPortAvailable(host, strconv.Itoa(port), network)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func runPortCheck(logger *log.Logger, port int, host, network string, healthChec
 	if !available {
 		return healthCheckError
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(host, strconv.Itoa(port)))
+	logger.Infof("listening to %s:", net.JoinHostPort(host, strconv.Itoa(port)))
 
 	return nil
 }
