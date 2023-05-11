@@ -66,7 +66,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/exp/slices"
@@ -116,14 +115,6 @@ func stopCommandForPlatform(platform string) string {
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
-}
-
-func restartCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
 }
 
 func systemLogTagForPlatform(platform string) string {
@@ -215,104 +206,6 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-type packageLocation struct {
-	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
-	// This setting takes precedence over repoSuffix.
-	packagesInGCS string
-	// Package repository suffix to install from. Setting this to ""
-	// means to install the latest stable release.
-	repoSuffix string
-	// Region the packages live in in Artifact Registry.
-	artifactRegistryRegion string
-}
-
-func locationFromEnvVars() packageLocation {
-	return packageLocation{
-		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:             os.Getenv("REPO_SUFFIX"),
-		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
-	}
-}
-
-// installOpsAgent installs the Ops Agent on the given VM. Preferentially
-// chooses to install from location.packagesInGCS if that is set, otherwise
-// falls back to location.repoSuffix.
-func installOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location packageLocation) error {
-	if location.packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
-	}
-	if gce.IsWindows(vm.Platform) {
-		suffix := location.repoSuffix
-		if suffix == "" {
-			suffix = "all"
-		}
-		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
-			return err
-		}
-		if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
-			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
-		}
-		return nil
-	}
-
-	if _, err := gce.RunRemotely(ctx,
-		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
-		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
-	}
-
-	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
-		return err
-	}
-	if err := agents.RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
-		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
-	}
-	return nil
-}
-
-// setupOpsAgent installs the Ops Agent and installs the given config.
-func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
-	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
-}
-
-// restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
-	}
-	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-	// is 5 seconds, so we should probably give it at least that long.
-	time.Sleep(10 * time.Second)
-	return nil
-}
-
-// setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
-// decide which version of the agent gets installed.
-func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
-	if err := installOpsAgent(ctx, logger.ToMainLog(), vm, location); err != nil {
-		return err
-	}
-	startupDelay := 20 * time.Second
-	if len(config) > 0 {
-		if gce.IsWindows(vm.Platform) {
-			// Sleep to avoid some flaky errors when restarting the agent because the
-			// services have not fully started up yet.
-			time.Sleep(startupDelay)
-		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgentFrom() failed to upload config file: %v", err)
-		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
-			return err
-		}
-	}
-	// Give agents time to start up.
-	time.Sleep(startupDelay)
-	return nil
-}
-
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -401,7 +294,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Java: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -535,7 +428,7 @@ TypeError: can only concatenate str (not "int") to str
 			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -656,7 +549,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -759,7 +652,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -817,7 +710,7 @@ func TestCustomLogFile(t *testing.T) {
         exporters: [google]
 `, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -868,7 +761,7 @@ func TestCustomLogFormat(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -912,7 +805,7 @@ func TestHTTPRequestLog(t *testing.T) {
         processors: [json1]
         exporters: [google]`, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1034,7 +927,7 @@ func TestInvalidConfig(t *testing.T) {
 `
 
 		// Run install with an invalid config. We expect to see an error.
-		if err := setupOpsAgent(ctx, logger, vm, config); err == nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err == nil {
 			t.Fatal("Expected agent to reject bad config.")
 		}
 	})
@@ -1079,7 +972,7 @@ func TestProcessorOrder(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1142,7 +1035,7 @@ func TestSyslogTCP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1198,7 +1091,7 @@ func TestSyslogUDP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1265,7 +1158,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1351,7 +1244,7 @@ func TestModifyFields(t *testing.T) {
         exporters: [google]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1417,7 +1310,7 @@ logging:
           - google
 `
 		config := fmt.Sprintf(configStr, file1)
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1457,7 +1350,7 @@ func TestResourceNameLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1498,7 +1391,7 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1544,7 +1437,7 @@ func TestTCPLog(t *testing.T) {
         receivers: [tcp_logs]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1584,7 +1477,7 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1626,7 +1519,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1671,7 +1564,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
       default_pipeline:
         receivers: [%s]
 `, log, channel, log)
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1730,7 +1623,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       pipeline_xml:
         receivers: [winlog2_xml]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1949,7 +1842,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1992,7 +1885,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2012,7 +1905,7 @@ func TestSystemLogByDefault(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2149,7 +2042,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 		t.Parallel()
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2177,7 +2070,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, settings); err != nil {
 			t.Fatal(err)
 		}
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2246,7 +2139,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2479,7 +2372,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2723,7 +2616,7 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2943,7 +2836,7 @@ metrics:
         processors: [metrics_filter]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, excludeConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, excludeConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3025,7 +2918,7 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 }
 
 func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
-	if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3101,7 +2994,7 @@ func TestLoggingFluentbitSelfLogs(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3145,7 +3038,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger.ToMainLog(), vm, locationFromEnvVars()); err != nil {
+		if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3188,11 +3081,11 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		// This will install the stable Ops Agent (REPO_SUFFIX="").
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", packageLocation{}); err != nil {
+		if err := agents.SetupOpsAgentFrom(ctx, logger, vm, "", agents.PackageLocation{}); err != nil {
 			// Installation from stable may fail before the first release on
 			// a new platform.
-			if strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") ||
-				strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script") {
+			if strings.HasPrefix(err.Error(), "InstallOpsAgent() failed to run googet") ||
+				strings.HasPrefix(err.Error(), "InstallOpsAgent() error running repo script") {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
 			}
 			t.Fatal(err)
@@ -3204,8 +3097,8 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		}
 
 		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
-		secondVersion := locationFromEnvVars()
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
+		secondVersion := agents.LocationFromEnvVars()
+		if err := agents.SetupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3419,7 +3312,7 @@ traces:
   service:
     pipelines:
 `
-		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3523,7 +3416,7 @@ traces:
   service:
     pipelines:
 `
-		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3626,7 +3519,7 @@ metrics:
   service:
     pipelines:
 `
-		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3716,7 +3609,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		// Wait for port to be in listen mode.
 		time.Sleep(30 * time.Second)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3746,7 +3639,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3818,7 +3711,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
         receivers: [log_syslog]
         processors: []`, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 		var bufferDir string
