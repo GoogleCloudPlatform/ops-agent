@@ -1,10 +1,10 @@
 # HELP test_histogram Test Histogram.
 # TYPE test_histogram histogram
-test_histogram_bucket{le="0"} 2
-test_histogram_bucket{le="20"} 6
-test_histogram_bucket{le="40"} 10
-test_histogram_bucket{le="60"} 14
-test_histogram_bucket{le="80"} 18
-test_histogram_bucket{le="+Inf"} 20
+test_histogram_bucket{le="0"} 2 # {TraceID: "trace_id"} 0.64
+test_histogram_bucket{le="20"} 6 # {TraceID: "trace_id"} 0.64
+test_histogram_bucket{le="40"} 10 # {TraceID: "trace_id"} 0.64
+test_histogram_bucket{le="60"} 14 # {TraceID: "trace_id"} 0.64
+test_histogram_bucket{le="80"} 18 # {TraceID: "trace_id"} 0.64
+test_histogram_bucket{le="+Inf"} 20 # {TraceID: "trace_id"} 0.64
 test_histogram_sum 900
 test_histogram_count 20
