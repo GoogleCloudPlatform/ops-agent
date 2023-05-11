@@ -151,7 +151,7 @@ type WindowsServiceLogger struct {
 
 func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
 	if len(v) > 0 {
-		wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, v))
+		wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, v...))
 	} else {
 		wsl.srv.log.Info(EngineEventID, format)
 	}
@@ -159,7 +159,7 @@ func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
 
 func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
 	if len(v) > 0 {
-		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v))
+		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
 	} else {
 		wsl.srv.log.Error(EngineEventID, format)
 	}
