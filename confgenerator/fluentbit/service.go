@@ -47,6 +47,8 @@ func (s Service) Component() Component {
 			// Every chunk is a file, so having it up in memory means having an open file descriptor. In case there are thousands of chunks,
 			// we don't want them to all be loaded into the memory.
 			"storage.max_chunks_up": "128",
+
+			"coro_stack_size": "245760",
 		},
 	}
 }
