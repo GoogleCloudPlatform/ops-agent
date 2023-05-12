@@ -29,6 +29,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -37,6 +38,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
@@ -662,6 +664,124 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 		Start-Process -FilePath "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" -ArgumentList "/S" -Wait -NoNewWindow`
 	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	return err
+}
+
+func restartOpsAgentForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Restart-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
+}
+
+// PackageLocation describes a location where packages
+// (currently, only the Ops Agent packages) live.
+type PackageLocation struct {
+	// If provided, a URL for a directory in GCS containing .deb/.rpm/.goo files
+	// to install on the testing VMs.
+	// This setting is mutually exclusive with repoSuffix.
+	packagesInGCS string
+	// Package repository suffix to install from. Setting this and packagesInGCS
+	// to "" means to install the latest stable release.
+	repoSuffix string
+	// Region the packages live in in Artifact Registry. Requires repoSuffix
+	// to be nonempty.
+	artifactRegistryRegion string
+}
+
+// LocationFromEnvVars assembles a PackageLocation from environment variables.
+func LocationFromEnvVars() PackageLocation {
+	return PackageLocation{
+		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
+	}
+}
+
+// InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
+// PackageLocation to determine where to install the agent from. For details
+// about PackageLocation, see the documentation for the PackageLocation struct.
+func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+	if location.packagesInGCS != "" && location.repoSuffix != "" {
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
+	}
+	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
+		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
+	}
+
+	if location.packagesInGCS != "" {
+		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
+	}
+	if gce.IsWindows(vm.Platform) {
+		suffix := location.repoSuffix
+		if suffix == "" {
+			suffix = "all"
+		}
+		runGoogetInstall := func() error {
+			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
+			return err
+		}
+		if err := RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
+			return fmt.Errorf("InstallOpsAgent() failed to run googet: %v", err)
+		}
+		return nil
+	}
+
+	if _, err := gce.RunRemotely(ctx,
+		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
+		return fmt.Errorf("InstallOpsAgent() failed to download repo script: %v", err)
+	}
+
+	runInstallScript := func() error {
+		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		return err
+	}
+	if err := RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
+		return fmt.Errorf("InstallOpsAgent() error running repo script: %v", err)
+	}
+	return nil
+}
+
+// SetupOpsAgent installs the Ops Agent and installs the given config.
+func SetupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
+	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
+}
+
+// restartOpsAgent restarts the Ops Agent and waits for it to become available.
+func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartOpsAgentForPlatform(vm.Platform)); err != nil {
+		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+	}
+	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
+	// is 5 seconds, so we should probably give it at least that long.
+	time.Sleep(10 * time.Second)
+	return nil
+}
+
+// SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
+// decide which version of the agent gets installed.
+func SetupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location PackageLocation) error {
+	if err := InstallOpsAgent(ctx, logger.ToMainLog(), vm, location); err != nil {
+		return err
+	}
+	startupDelay := 20 * time.Second
+	if len(config) > 0 {
+		if gce.IsWindows(vm.Platform) {
+			// Sleep to avoid some flaky errors when restarting the agent because the
+			// services have not fully started up yet.
+			time.Sleep(startupDelay)
+		}
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
+			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
+		}
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+			return err
+		}
+	}
+	// Give agents time to start up.
+	time.Sleep(startupDelay)
+	return nil
 }
 
 // RecommendedMachineType returns a reasonable setting for a VM's machine type
