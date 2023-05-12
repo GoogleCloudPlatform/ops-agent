@@ -666,28 +666,6 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 	return err
 }
 
-// PackageLocation describes a location where packages
-// (currently, only the Ops Agent packages) live.
-type PackageLocation struct {
-	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
-	// This setting takes precedence over repoSuffix.
-	packagesInGCS string
-	// Package repository suffix to install from. Setting this to ""
-	// means to install the latest stable release.
-	repoSuffix string
-	// Region the packages live in in Artifact Registry. Requires repoSuffix
-	// to be nonempty.
-	artifactRegistryRegion string
-}
-
-func LocationFromEnvVars() PackageLocation {
-	return PackageLocation{
-		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:             os.Getenv("REPO_SUFFIX"),
-		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
-	}
-}
-
 func restartOpsAgentForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return "Restart-Service google-cloud-ops-agent -Force"
@@ -696,12 +674,43 @@ func restartOpsAgentForPlatform(platform string) string {
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
 }
 
-// InstallOpsAgent installs the Ops Agent on the given VM. Preferentially
-// chooses to install from location.packagesInGCS if that is set, otherwise
-// falls back to location.repoSuffix.
+// PackageLocation describes a location where packages
+// (currently, only the Ops Agent packages) live.
+type PackageLocation struct {
+	// If provided, a URL for a directory in GCS containing .deb/.rpm/.goo files
+	// to install on the testing VMs.
+	// This setting is mutually exclusive with repoSuffix.
+	packagesInGCS string
+	// Package repository suffix to install from. Setting this and packagesInGCS
+	// to "" means to install the latest stable release.
+	repoSuffix string
+	// Region the packages live in in Artifact Registry. Requires repoSuffix
+	// to be nonempty.
+	artifactRegistryRegion string
+}
+
+// LocationFromEnvVars assembles a PackageLocation from environment variables.
+func LocationFromEnvVars() PackageLocation {
+	return PackageLocation{
+		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
+	}
+}
+
+// InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
+// PackageLocation to determine where to install the agent from. For details
+// about PackageLocation, see the documentation for the PackageLocation struct. 
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+	if location.packagesInGCS != "" && location.repoSuffix != "" {
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
+	}
+	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
+		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
+	}
+
 	if location.packagesInGCS != "" {
-		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
+		return installPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
 		suffix := location.repoSuffix
@@ -807,12 +816,12 @@ func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCre
 	return ctx, logger, vm
 }
 
-// InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
+// installPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
-func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+func installPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
