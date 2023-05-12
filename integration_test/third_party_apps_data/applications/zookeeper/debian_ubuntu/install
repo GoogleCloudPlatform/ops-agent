@@ -2,3 +2,13 @@ set -e
 
 sudo apt-get update
 sudo apt install -y zookeeper-bin zookeeperd
+
+# For some reason the zookeeper package doesn't set the CLASSPATH in the environment file
+# on ubuntu 23, which it does on previous versions of ubuntu.
+if [ "$(lsb_release -sc)" = "lunar" ]; then
+    sudo tee -a /etc/zookeeper/conf/environment >/dev/null <<EOF
+CLASSPATH="/etc/zookeeper/conf:/usr/share/java/jline.jar:/usr/share/java/log4j-1.2.jar:/usr/share/java/xercesImpl.jar:/usr/share/java/xmlParserAPIs.jar:/usr/share/java/netty.jar:/usr/share/java/slf4j-api.jar:/usr/share/java/slf4j-log4j12.jar:/usr/share/java/zookeeper.jar"
+EOF
+
+    sudo service zookeeper restart
+fi
