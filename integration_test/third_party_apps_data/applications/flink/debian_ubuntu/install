@@ -1,7 +1,11 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y curl default-jre
+if [ "$(lsb_release -sc)" = "lunar" ]; then
+  sudo apt-get install -y curl openjdk-11-jre
+else
+  sudo apt-get install -y curl default-jre
+fi
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
