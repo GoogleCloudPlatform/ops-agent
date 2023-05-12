@@ -710,7 +710,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	if location.packagesInGCS != "" {
-		return installPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
+		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
 		suffix := location.repoSuffix
@@ -816,12 +816,12 @@ func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCre
 	return ctx, logger, vm
 }
 
-// installPackageFromGCS installs the agent package from GCS onto the given Linux VM.
+// InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
-func installPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
