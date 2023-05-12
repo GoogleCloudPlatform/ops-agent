@@ -78,7 +78,16 @@ GO_VERSION="1.19"
 
 # Download and install a newer version of go.
 # Install from a GCS bucket to avoid being throttled by go.dev.
-gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
+unset ARCH
+case "$(uname -m)" in
+  "x86_64")
+    ARCH="amd64"
+    ;;
+  "aarch64")
+    ARCH="arm64"
+    ;;
+esac
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-${ARCH}.tar.gz" - | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin

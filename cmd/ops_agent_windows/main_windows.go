@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 )
@@ -37,7 +38,8 @@ var (
 )
 
 func main() {
-	infoLog := log.New(os.Stdout, log.Prefix(), log.Flags())
+
+	infoLog := logs.NewSimpleLogger()
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -61,7 +63,7 @@ func main() {
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
 			healthCheckResults := getHealthCheckResults()
-			healthchecks.LogHealthCheckResults(healthCheckResults, func(s string) { infoLog.Println(s) }, func(s string) { infoLog.Println(s) })
+			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.

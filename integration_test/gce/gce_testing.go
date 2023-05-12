@@ -35,7 +35,7 @@ command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
-	ZONE=us-central1-b \
+	ZONES=us-central1-b \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -44,7 +44,10 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
-ZONE: What GCP zone to run in.
+ZONES: What GCP zones to run in as a comma-separated list, with optional
+integer weights attached to each zone, in the format:
+zone1=weight1,zone2=weight2. Any zone with no weight is given a default weight
+of 1.
 
 The following variables are optional:
 
@@ -119,6 +122,8 @@ var (
 	monClient   *monitoring.MetricClient
 	logClients  *logClientFactory
 	traceClient *trace.Client
+
+	zonePicker *weightedRoundRobin
 
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
@@ -195,6 +200,11 @@ func init() {
 	traceClient, err = trace.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
+	zonePicker, err = newZonePicker(os.Getenv("ZONES"), os.Getenv("ZONE"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Some useful options to pass to gcloud.
@@ -991,7 +1001,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup
+		"env": "test",
+		"ttl": "180", // minutes
+	}
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -1001,10 +1015,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	if buildID := os.Getenv("KOKORO_BUILD_ID"); buildID != "" {
 		labelsCopy["kokoro_build_id"] = buildID
 	}
-
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
 
 	return labelsCopy, nil
 }
@@ -1016,8 +1026,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:  options.Project,
 		Platform: options.Platform,
+		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1026,8 +1042,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		vm.Zone = os.Getenv("ZONE")
+		// Chooses the next zone from ZONES.
+		vm.Zone = zonePicker.Next()
 	}
+
 	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
 	if vm.MachineType == "" {
@@ -1036,9 +1054,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
-	// The VM name needs to adhere to these restrictions:
-	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
@@ -1188,6 +1203,12 @@ func IsRHEL(platform string) bool {
 
 func isRHEL7SAPHA(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
+}
+
+func IsARM(platform string) bool {
+	// At the time of writing, all ARM images and image families on GCE
+	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
+	return strings.Contains(platform, "arm64")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1402,9 +1423,13 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repo := "google-cloud-monitoring-sles12-x86_64-test-vendor"
+		repoArch := "x86_64"
+		if IsARM(vm.Platform) {
+			repoArch = "aarch64"
+		}
+		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
 		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-x86_64-test-vendor"
+			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
@@ -1704,6 +1729,8 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
