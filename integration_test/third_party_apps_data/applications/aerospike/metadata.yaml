@@ -68,7 +68,7 @@ expected_metrics:
       node_name: .*
       namespace_name: .*
     monitored_resource: gce_instance
-    type: workload.googleapis.com/aerospike.namespace.scan.count
+    type: workload.googleapis.com/aerospike.namespace.scan.count # This aerospike metric is broken for aerospike 6.X - see issue raised https://github.com/open-telemetry/opentelemetry-collector-contrib#21834
     optional: true
     value_type: INT64
   - kind: CUMULATIVE

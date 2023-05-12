@@ -2,7 +2,8 @@ set -e
 set -o pipefail
 
 sudo apt-get update
-if [ "$(lsb_release -sc)" = "lunar" ]; then
+source /etc/os-release
+if [ "${VERSION_CODENAME}" = "lunar" ]; then
   sudo apt-get install -y openjdk-11-jre wget
 else
   sudo apt-get install -y default-jre wget
