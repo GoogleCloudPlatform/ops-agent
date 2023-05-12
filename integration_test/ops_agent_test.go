@@ -3344,19 +3344,23 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
 	goVersion := "1.19"
+	goArch := "amd64"
+	if gce.IsARM(vm.Platform) {
+		goArch = "arm64"
+	}
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
 		// TODO: host go windows installer in the GCS if `golang.org` throttle
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
-			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
+			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
+			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -e
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
-				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
+				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
+				tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
 	return err
