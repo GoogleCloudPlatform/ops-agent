@@ -762,7 +762,7 @@ func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, location PackageLocation) error {
-	if err := InstallOpsAgent(ctx, logger.ToMainLog(), vm, location); err != nil {
+	if err := InstallOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
 	startupDelay := 20 * time.Second
