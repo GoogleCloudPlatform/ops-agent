@@ -129,8 +129,8 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 			return fmt.Errorf("Could not install Python: %w", err)
 		}
 	} else {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", `sudo apt install python3`); err != nil {
-			return fmt.Errorf("Could not install Python: %w", err)
+		if err := agents.InstallPackages(ctx, logger, vm, []string{"python3"}); err != nil {
+			return err
 		}
 	}
 	// Upload log_generator.py.
