@@ -808,18 +808,16 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 // given permission to read from that bucket. This was accomplished by adding
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
-func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM, content io.Reader, remotePath string) (err error) {
+func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		dirLog.ToMainLog().Printf("Uploading file finished. For details see file_uploads.txt. err=%v", err)
+		logger.Printf("Uploading file finished with err=%v", err)
 	}()
-	logger := dirLog.ToFile("file_uploads.txt")
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
 	_, copyErr := io.Copy(writer, content)
 	// We have to make sure to call Close() here in order to tell it to finish
 	// the upload operation.
 	closeErr := writer.Close()
-	logger.Printf("Upload to %v finished with copyErr=%v, closeErr=%v", object, copyErr, closeErr)
 	err = multierr.Combine(copyErr, closeErr)
 	if err != nil {
 		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
@@ -831,7 +829,6 @@ func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM,
 	// (note that the go client libraries use resumable uploads).
 	defer func() {
 		deleteErr := object.Delete(ctx)
-		logger.Printf("Deleting %v finished with deleteErr=%v", object, deleteErr)
 		if deleteErr != nil {
 			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
 		}
@@ -886,7 +883,7 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
@@ -1001,7 +998,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup
+		"env": "test",
+		"ttl": "180", // minutes
+	}
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -1011,10 +1012,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	if buildID := os.Getenv("KOKORO_BUILD_ID"); buildID != "" {
 		labelsCopy["kokoro_build_id"] = buildID
 	}
-
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
 
 	return labelsCopy, nil
 }
