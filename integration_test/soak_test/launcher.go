@@ -40,14 +40,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
 
-const (
+var (
 	logSizeInBytes = os.Getenv("LOG_SIZE_IN_BYTES")
 	logRate        = os.Getenv("LOG_RATE")
 	logPath        = "/tmp/tail_file"
@@ -82,7 +82,7 @@ func mainErr() error {
 		Platform: distro,
 		Name:     vmName,
 		Labels: map[string]string{
-			"ttl": string(int(parsedTTL / time.Minute)),
+			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
 		},
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
@@ -106,7 +106,7 @@ func mainErr() error {
         receivers: [mylog_source]
         exporters: [google]
 `, logPath)
-	if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 		return err
 	}
 
