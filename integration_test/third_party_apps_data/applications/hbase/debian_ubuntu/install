@@ -2,7 +2,12 @@ set -e
 set -o pipefail
 
 sudo apt-get update
-sudo apt-get install -y default-jre wget
+source /etc/os-release
+if [ "${VERSION_CODENAME}" = "lunar" ]; then
+  sudo apt-get install -y openjdk-11-jre wget
+else
+  sudo apt-get install -y default-jre wget
+fi
 
 HBASE_VERSION=2.4.11
 

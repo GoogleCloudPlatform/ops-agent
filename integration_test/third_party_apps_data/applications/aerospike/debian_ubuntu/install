@@ -1,14 +1,34 @@
 set -e
 
+install_previous() {
+    # download, extract, install, and start aerospike community edition
+    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.23/aerospike-server-community-5.7.0.23-$os_version.tgz"
+    tar -xvf aerospike.tgz
+    (cd aerospike-server-community-5.7.0.23-*/ && sudo ./asinstall)
+
+    wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.1.1/aerospike-tools-7.1.1-$os_version.tgz"
+    tar -xzf aerospike-tools.tgz
+    (cd aerospike-tools-7.1.1-*/ && sudo ./asinstall)
+}
+
+install_current() {
+    # download, extract, install, and start aerospike community edition
+    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/6.3.0.2/aerospike-server-community_6.3.0.2_tools-8.3.0_${os_version}_$(uname -m).tgz"
+    tar -xvf aerospike.tgz
+    (cd aerospike-server-community_6.3.0.2*/ && sudo ./asinstall)
+}
+
 sudo apt-get update
 sudo apt-get install -y wget
 
 source /etc/os-release
+
 case $ID in
     debian)
         case "$VERSION_ID" in
             9*) debian_version="debian9";;
-            10*|11*) debian_version="debian10";;
+            10*) debian_version="debian10";;
+            11*) debian_version="debian11";;
             *) echo "Found version: $VERSION_ID, supported versions are 9/10/11";;
         esac
         os_version=$debian_version
@@ -17,20 +37,21 @@ case $ID in
         case "$VERSION_ID" in
             18*) ubuntu_version="ubuntu18.04";;
             20*) ubuntu_version="ubuntu20.04";;
-            *) echo "Found version: $VERSION_ID, supported versions are 18/20"
+            23*) ubuntu_version="ubuntu22.04";;
+            *) echo "Found version: $VERSION_ID, supported versions are 18/20/23"
         esac
         os_version=$ubuntu_version
         ;;
 esac
 
-# download, extract, install, and start aerospike community edition
-wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.23/aerospike-server-community-5.7.0.23-$os_version.tgz"
-tar -xvf aerospike.tgz
-(cd aerospike-server-community-5.7.0.23-*/ && sudo ./asinstall)
+case $os_version in
+    debian9|ubuntu18.04)
+        install_previous;;
+    debian10|debian11|ubuntu20.04|ubuntu22.04)
+        install_current;;
+    *)  echo "Found os_version: $os_version, not in supported list";;
+esac
 
-wget -O aerospike-tools.tgz "https://download.aerospike.com/artifacts/aerospike-tools/7.1.1/aerospike-tools-7.1.1-$os_version.tgz"
-tar -xzf aerospike-tools.tgz
-(cd aerospike-tools-7.1.1-*/ && sudo ./asinstall)
 
 sudo systemctl enable aerospike
 sudo systemctl start aerospike
