@@ -37,10 +37,12 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -48,14 +50,18 @@ import (
 )
 
 var (
-	logSizeInBytes = os.Getenv("LOG_SIZE_IN_BYTES")
-	logRate        = os.Getenv("LOG_RATE")
-	logPath        = "/tmp/tail_file"
+	logSizeInBytes   = os.Getenv("LOG_SIZE_IN_BYTES")
+	logRate          = os.Getenv("LOG_RATE")
+	logPath          = "/tmp/tail_file"
+	logGeneratorPath = "/log_generator.py"
 
 	ttl    = os.Getenv("TTL")
 	distro = os.Getenv("DISTRO")
 	vmName = os.Getenv("VM_NAME")
 )
+
+//go:embed log_generator.py
+var logGeneratorSource string
 
 func main() {
 	if err := mainErr(); err != nil {
@@ -134,12 +140,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 		}
 	}
 	// Upload log_generator.py.
-	logGeneratorFile, err := os.Open("../perf/perf_v2/operations/generate_logs/log_generator.py")
-	if err != nil {
-		return err
-	}
-	logGeneratorPath := "/log_generator.py"
-	if err := gce.UploadContent(ctx, logger, vm, logGeneratorFile, logGeneratorPath); err != nil {
+	if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logGeneratorSource), logGeneratorPath); err != nil {
 		return err
 	}
 
