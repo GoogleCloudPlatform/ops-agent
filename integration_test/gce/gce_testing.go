@@ -808,18 +808,16 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 // given permission to read from that bucket. This was accomplished by adding
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
-func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM, content io.Reader, remotePath string) (err error) {
+func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		dirLog.ToMainLog().Printf("Uploading file finished. For details see file_uploads.txt. err=%v", err)
+		logger.Printf("Uploading file finished with err=%v", err)
 	}()
-	logger := dirLog.ToFile("file_uploads.txt")
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
 	_, copyErr := io.Copy(writer, content)
 	// We have to make sure to call Close() here in order to tell it to finish
 	// the upload operation.
 	closeErr := writer.Close()
-	logger.Printf("Upload to %v finished with copyErr=%v, closeErr=%v", object, copyErr, closeErr)
 	err = multierr.Combine(copyErr, closeErr)
 	if err != nil {
 		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
@@ -831,7 +829,6 @@ func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM,
 	// (note that the go client libraries use resumable uploads).
 	defer func() {
 		deleteErr := object.Delete(ctx)
-		logger.Printf("Deleting %v finished with deleteErr=%v", object, deleteErr)
 		if deleteErr != nil {
 			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
 		}
@@ -886,7 +883,7 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
@@ -1001,7 +998,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup
+		"env": "test",
+		"ttl": "180", // minutes
+	}
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -1011,10 +1012,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	if buildID := os.Getenv("KOKORO_BUILD_ID"); buildID != "" {
 		labelsCopy["kokoro_build_id"] = buildID
 	}
-
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
 
 	return labelsCopy, nil
 }
@@ -1026,8 +1023,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:  options.Project,
 		Platform: options.Platform,
+		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1048,9 +1051,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
-	// The VM name needs to adhere to these restrictions:
-	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
@@ -1200,6 +1200,12 @@ func IsRHEL(platform string) bool {
 
 func isRHEL7SAPHA(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
+}
+
+func IsARM(platform string) bool {
+	// At the time of writing, all ARM images and image families on GCE
+	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
+	return strings.Contains(platform, "arm64")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1414,9 +1420,13 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repo := "google-cloud-monitoring-sles12-x86_64-test-vendor"
+		repoArch := "x86_64"
+		if IsARM(vm.Platform) {
+			repoArch = "aarch64"
+		}
+		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
 		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-x86_64-test-vendor"
+			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
@@ -1716,6 +1726,8 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
