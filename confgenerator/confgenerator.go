@@ -395,7 +395,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 	out = append(out, generateSeveritySelfLogsParser(ctx)...)
 	out = append(out, generateHealthChecksLogsParser(ctx)...)
 
-	out = append(out, stackdriverOutputComponent(fmt.Sprintf("(%s)|(%s)", fluentBitSelfLogTag, healthChecksTag), userAgent, ""))
+	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthChecksTag}, "|"), userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
