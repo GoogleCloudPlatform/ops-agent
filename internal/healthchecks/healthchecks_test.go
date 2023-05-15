@@ -108,13 +108,13 @@ func TestRunAllHealthChecks(t *testing.T) {
 		switch r.Name {
 		case "Error Check":
 			result = "ERROR"
-			level = "error"
+			level = "ERROR"
 		case "Success Check":
 			result = "PASS"
 			level = "info"
 		case "Failure Check":
 			result = "FAIL"
-			level = "error"
+			level = "ERROR"
 		}
 		expected = generateExpectedResultMessage(r.Name, result)
 
@@ -176,5 +176,5 @@ func TestMultipleSuccessResultCheck(t *testing.T) {
 	assert.NilError(t, err)
 
 	assert.Check(t, strings.Contains(observedLogs.All()[0].Entry.Message, expectedSuccess))
-	assert.Equal(t, observedLogs.All()[0].Entry.Level.String(), "info")
+	assert.Equal(t, observedLogs.All()[0].Entry.Level.String(), "INFO")
 }

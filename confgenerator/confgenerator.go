@@ -32,6 +32,7 @@ import (
 )
 
 const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+const healthChecksTag = "ops-agent-health-checks"
 
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
@@ -243,6 +244,13 @@ func contains(s []string, str string) bool {
 	return false
 }
 
+func healthChecksLog(p platform.Platform) string {
+	if p.Type == platform.Windows {
+		return "${logs_dir}/health-checks.log"
+	}
+	return "${logs_dir}/../health-checks.log"
+}
+
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
 	var multilineParserNames []string
 	if processor.Type() != "parse_multiline" {
@@ -379,12 +387,36 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		BufferInMemory: true,
 	}.Components(ctx, fluentBitSelfLogTag)...)
 
-	out = append(out, generateSeveritySelfLogsParser(ctx)...)
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths:   []string{healthChecksLog(platform.FromContext(ctx))},
+		BufferInMemory: true,
+	}.Components(ctx, healthChecksTag)...)
 
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
+	out = append(out, generateSeveritySelfLogsParser(ctx)...)
+	out = append(out, generateHealthChecksLogsParser(ctx)...)
+
+	out = append(out, stackdriverOutputComponent(fmt.Sprintf("(%s)|(%s)", fluentBitSelfLogTag, healthChecksTag), userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
+}
+
+func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+	out = append(out, LoggingProcessorParseJson{}.Components(ctx, healthChecksTag, "health-checks-json")...)
+	out = append(out, []fluentbit.Component{
+		// This is used to exclude any previous content of the health-checks file that
+		// does not contain the ops-agent-version field.
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":  "grep",
+				"Match": healthChecksTag,
+				"Regex": "ops-agent-version ^\\d.*",
+			},
+		},
+	}...)
+	return out
 }
 
 func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
