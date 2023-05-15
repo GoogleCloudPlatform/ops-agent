@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration_test
+
 /*
 The launcher command launches a VM and begins a soak test on it.
 
