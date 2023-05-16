@@ -4,8 +4,8 @@ curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
 
 # Required to install cassandra
 source /etc/os-release
-if [[ "${VERSION_CODENAME}" = "lunar" ]]; then
-    # There is a python dependency that fails for any older versions of cassandra on ubuntu 23
+if [[ "${VERSION_ID}" == 23* ]]; then
+    # There is a python dependency that fails for any older versions of cassandra on Ubuntu 23, so explicitly install Cassandra 4.1x.
     echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update

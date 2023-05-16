@@ -11,15 +11,6 @@ local template _distro {
   // set will be tested by the nightly jobs.
   presubmit = []
 }
-lunar = _distro {
-  release = [
-    'ubuntu-2304-amd64',
-    'ubuntu-minimal-2304-amd64',
-  ]
-  presubmit = [
-    'ubuntu-2304-amd64',
-  ]
-}
 // DEB Linux distros. (Do not modify this comment.)
 buster = _distro {
   release = ['debian-10']
@@ -52,6 +43,13 @@ jammy = _distro {
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
   ]
+}
+lunar = _distro {
+  release = [
+    'ubuntu-2304-amd64',
+    'ubuntu-minimal-2304-amd64',
+  ]
+  presubmit = ['ubuntu-2304-amd64']
 }
 
 // RPM Linux distros. (Do not modify this comment.)
