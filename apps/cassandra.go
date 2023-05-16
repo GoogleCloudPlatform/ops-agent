@@ -241,8 +241,10 @@ type LoggingReceiverCassandraGC struct {
 func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log file path on Debian / Ubuntu / RHEL / CentOS
+			// Default log file path on Debian / Ubuntu / RHEL / CentOS for JDK 8
 			"/var/log/cassandra/gc.log.*.current",
+			// Default log file path on Debian / Ubuntu / RHEL / CentOS for JDK 11
+			"/var/log/cassandra/gc.log",
 			// No default install position / log path for SLES
 		}
 	}
