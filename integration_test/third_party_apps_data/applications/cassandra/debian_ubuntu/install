@@ -1,26 +1,22 @@
 set -e
 
+curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
+
 # Required to install cassandra
 source /etc/os-release
 if [[ "${VERSION_CODENAME}" = "lunar" ]]; then
     # There is a python dependency that fails for any older versions of cassandra on ubuntu 23
-    echo "deb http://www.apache.org/dist/cassandra/debian 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+    echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
-    # These keys had to be manually added to apt keyring to install java 8 on ubuntu 23
-    sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv AA8E81B4331F7F50
-    sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv 112695A0E562B32A
-    sudo gpg --export --armor AA8E81B4331F7F50 | sudo apt-key add -
-    sudo gpg --export --armor 112695A0E562B32A | sudo apt-key add -
+    sudo apt update
+    sudo apt install -y openjdk-11-jdk cassandra
 else
     echo "deb http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+    # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)
+    echo "deb http://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+
+    sudo apt update
+    sudo apt install -y openjdk-8-jdk cassandra
 fi
-
-# Required to install java8 (JVM properties of cassandra are incompatible with >9)
-echo "deb http://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-
-curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
-
-sudo apt update
-sudo apt install -y openjdk-8-jdk cassandra
 
 sudo service cassandra start
