@@ -9,7 +9,7 @@ ways of doing it. `Chrome RDP plugin` is simpler to set up, but it has poor
 performance. And the UI windows scrolling is not very user friendly. This may
 fit in a use case where you just want to spot check something simple. `Microsoft
 Remote Desktop (Mac)` takes longer for the initial setup, but is recommended for
-non-trivial interactions with Windows VMs. [Remmina](https://remmina.org/) is the alternative on Linux-based sytems.
+non-trivial interactions with Windows VMs. [Remmina](https://remmina.org/) is the alternative on Linux-based systems.
 
 ## Microsoft Remote Desktop (Mac)
 

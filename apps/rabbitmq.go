@@ -35,7 +35,7 @@ func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid stri
 		Parsers: []confgenerator.RegexParser{
 			{
 				// Sample log line:
-				// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+				// 2022-01-31 18:01:20.441571+00:00 [error] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
 				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "timestamp",
@@ -90,7 +90,7 @@ func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []f
 	}
 	// Some multiline entries related to crash logs are important to capture and end in
 	//
-	// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
+	// 2022-01-31 18:07:43.557042+00:00 [error] <0.130.0>
 	// BOOT FAILED
 	// ===========
 	// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq

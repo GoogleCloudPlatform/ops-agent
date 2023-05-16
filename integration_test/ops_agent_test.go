@@ -935,7 +935,7 @@ func TestInvalidConfig(t *testing.T) {
 
 func TestProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
-	// config had mis-ordered filters: json2 came before json1 because "log"
+	// config had miss-ordered filters: json2 came before json1 because "log"
 	// sorts before "message".  The correct order is json1 then json2.
 	//
 	// Due to the bug, the log contents came through as a string, not as
@@ -2191,7 +2191,7 @@ func TestPrometheusMetrics(t *testing.T) {
 			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
 		}
 		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't have VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
 		}
 		if multiErr != nil {
 			t.Error(multiErr)
@@ -2770,7 +2770,7 @@ func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger
 						test.MetricName, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
 				}
 			default:
-				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ExpectedValueType))
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implemented", test.ExpectedValueType))
 			}
 
 		}
@@ -3756,7 +3756,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Threshhold of ~6.5GiB since du returns size in KB
+		// Threshold of ~6.5GiB since du returns size in KB
 		threshold := 6500000
 		if byteCount > threshold {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)

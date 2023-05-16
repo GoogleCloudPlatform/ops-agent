@@ -179,7 +179,7 @@ type LoggingReceiverPostgresql struct {
 func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log paths for Debain / Ubuntu
+			// Default log paths for Debian / Ubuntu
 			"/var/log/postgresql/postgresql*.log",
 			// Default log paths for SLES
 			"/var/lib/pgsql/data/log/postgresql*.log",

@@ -53,7 +53,7 @@ func newZonePicker(zones, zone string) (*weightedRoundRobin, error) {
 		//   2 if there is one or more "=" in zoneSpec.
 		zoneAndWeight := strings.SplitN(zoneSpec, "=", 2)
 		if len(zoneAndWeight) == 1 {
-			// The weight defaults to 1 for any zone with no weight specfied.
+			// The weight defaults to 1 for any zone with no weight specified.
 			zoneAndWeight = append(zoneAndWeight, "1")
 		}
 		weight, err := strconv.Atoi(zoneAndWeight[1])

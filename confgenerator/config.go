@@ -369,7 +369,7 @@ type Component interface {
 }
 
 // ConfigComponent holds the shared configuration fields that all components have.
-// It is also used by itself when unmarshaling a component's configuration.
+// It is also used by itself when unmarshalling a component's configuration.
 type ConfigComponent struct {
 	Type string `yaml:"type" validate:"required" tracking:""`
 }

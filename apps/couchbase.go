@@ -365,7 +365,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, ta
 	return c
 }
 
-// LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
+// LoggingProcessorCouchbaseGOXDCR is a struct that will generate the fluentbit components for the goxdcr logs
 type LoggingProcessorCouchbaseGOXDCR struct {
 	confgenerator.ConfigComponent           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`

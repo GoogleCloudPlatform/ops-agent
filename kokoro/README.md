@@ -4,7 +4,7 @@ This directory contains configs and scripts that are executed by Kokoro. The
 configs are written in a quirky language called GCL, which stands for "General
 Configuration Language". Each file `foo.gcl` corresponds to a single Kokoro
 build that gets launched on each PR to run integration tests. They share
-common config fields by inheriting from a heirarchy of `common.gcl` files.
+common config fields by inheriting from a hierarchy of `common.gcl` files.
 After being run through the GCL interpreter, each `foo.gcl` is resolved into a
 protocol buffer that determines what that particular build will do. The most
 important field is `build_file`, which determines which script to run. The

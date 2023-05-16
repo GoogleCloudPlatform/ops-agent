@@ -438,7 +438,7 @@ type LoggingReceiverMysqlGeneral struct {
 func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
+			// Default log path for CentOS / RHEL / SLES / Debian / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
 		}
 	}
@@ -455,7 +455,7 @@ type LoggingReceiverMysqlSlow struct {
 func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
+			// Default log path for CentOS / RHEL / SLES / Debian / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
 		}
 	}
