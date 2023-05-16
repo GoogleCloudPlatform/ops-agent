@@ -6,7 +6,7 @@ sudo apt-get update
 sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
 source /etc/os-release
-if [[ "${VERSION_CODENAME}" = "lunar" || "${VERSION_CODENAME}" == "jammy" ]]; then
+if [[ "${VERSION_ID}" == 22* || "${VERSION_ID}" == 23* ]]; then
   # currently ubuntu 23.04 (lunar) and 22.04 (jammy) are not supported, install focal (ubuntu 20.04) package instead
   # Could be removed once couchbase-lite gets supported
   echo 'deb [ arch=amd64 ] http://packages.couchbase.com/releases/couchbase-server/community/deb/ focal focal/main' | sudo tee /etc/apt/sources.list.d/couchbase.list

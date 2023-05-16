@@ -2,8 +2,8 @@ set -e
 
 sudo apt-get update
 source /etc/os-release
-if [ "${VERSION_CODENAME}" = "lunar" ]; then
-  sudo apt-get install -y curl openjdk-11-jre
+if [ "${VERSION_ID}" == 23* ]; then
+  sudo apt-get install -y curl openjdk-11-jre # default-jre pulls in openjdk-17-jre for Ubuntu 23.04 (see https://www.ubuntuupdates.org/package/core/lunar/main/base/default-jre). Java 17 support is in progress for Flink (see https://issues.apache.org/jira/browse/FLINK-15736)
 else
   sudo apt-get install -y curl default-jre
 fi

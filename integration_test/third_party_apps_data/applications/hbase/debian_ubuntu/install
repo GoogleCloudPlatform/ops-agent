@@ -3,8 +3,8 @@ set -o pipefail
 
 sudo apt-get update
 source /etc/os-release
-if [ "${VERSION_CODENAME}" = "lunar" ]; then
-  sudo apt-get install -y openjdk-11-jre wget
+if [ "${VERSION_ID}" == 23* ]; then
+  sudo apt-get install -y openjdk-11-jre wget # default-jre pulls in openjdk-17-jre for Ubuntu 23.04 (see https://www.ubuntuupdates.org/package/core/lunar/main/base/default-jre). HBase does not currently support Java 17 (see https://hbase.apache.org/book.html#java)
 else
   sudo apt-get install -y default-jre wget
 fi
