@@ -75,6 +75,10 @@ The default is "stackdriver-test-143416-file-transfers".
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 If provided, this value overrides the selection made by the callers to
 this library.
+
+DISABLE_PREPARE_SLES: Hopefully temporary option to disable workarounds for
+flaky startup of SLES VMs. Workarounds are disabled by setting this to the
+string "true".
 */
 package gce
 
@@ -1161,7 +1165,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if strings.HasPrefix(vm.Platform, "sles-") {
+	if strings.HasPrefix(vm.Platform, "sles-") && os.Getenv("DISABLE_PREPARE_SLES") != "true" {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
