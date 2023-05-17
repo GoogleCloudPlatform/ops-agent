@@ -188,6 +188,11 @@ expected_logs:
       - name: jsonPayload.timeStopping
         type: string
         description: Seconds the JVM took to stop threads before garbage collection
+      # Level, pid and tid are only available for GC logs with Java 11 and above
+      - name: jsonPayload.level
+        type: string
+        optional: true
+        description: Level of the log entry
       - name: jsonPayload.pid
         type: string
         optional: true
