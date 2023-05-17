@@ -188,6 +188,14 @@ expected_logs:
       - name: jsonPayload.timeStopping
         type: string
         description: Seconds the JVM took to stop threads before garbage collection
+      - name: jsonPayload.pid
+        type: string
+        optional: true
+        description: Process ID of the Java process logging the message
+      - name: jsonPayload.tid
+        type: string
+        optional: true
+        description: Thread ID of the Java process logging the message
       - name: severity
         type: string
         description: ''
