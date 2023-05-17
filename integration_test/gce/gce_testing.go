@@ -1202,6 +1202,10 @@ func IsRHEL(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-")
 }
 
+func IsRocky(platform string) bool {
+	return strings.HasPrefix(platform, "rocky-")
+}
+
 func isRHEL7SAPHA(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
 }

@@ -3589,7 +3589,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 		if !gce.IsWindows(vm.Platform) {
 			var packages []string
-			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) {
+			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) || gce.IsRocky(vm.Platform)  {
 				packages = []string{"nc"}
 			} else {
 				packages = []string{"netcat"}
