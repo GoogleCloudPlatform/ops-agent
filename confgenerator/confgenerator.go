@@ -246,9 +246,9 @@ func contains(s []string, str string) bool {
 
 func healthChecksLog(p platform.Platform) string {
 	if p.Type == platform.Windows {
-		return "${logs_dir}/health-checks.log"
+		return path.Join("${logs_dir}", "health-checks.log")
 	}
-	return "${logs_dir}/../health-checks.log"
+	return path.Join("${logs_dir}", "health-checks.log")
 }
 
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
@@ -381,14 +381,14 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+		IncludePaths: []string{path.Join("${logs_dir}", "subagents", "logging-module.log")},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
 	}.Components(ctx, fluentBitSelfLogTag)...)
 
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLog(platform.FromContext(ctx))},
+		IncludePaths:   []string{path.Join("${logs_dir}", "health-checks.log")},
 		BufferInMemory: true,
 	}.Components(ctx, healthChecksTag)...)
 
