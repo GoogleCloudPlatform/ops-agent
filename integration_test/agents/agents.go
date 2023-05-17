@@ -713,23 +713,25 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 	if gce.IsWindows(vm.Platform) {
-		suffix := location.repoSuffix
-		if suffix == "" {
-			suffix = "all"
+		if _, err := gce.RunRemotely(ctx, logger, vm, "", `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
+			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
-		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
+		runScript := func() error {
+			scriptCmd := fmt.Sprintf(`$env:REPO_SUFFIX='%s'
+$env:ARTIFACT_REGISTRY_REGION='%s'
+Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, location.repoSuffix, location.ArtifactRegistryRegion)
+			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
-		if err := RunInstallFuncWithRetry(ctx, logger, vm, runGoogetInstall); err != nil {
-			return fmt.Errorf("InstallOpsAgent() failed to run googet: %v", err)
+		if err := RunInstallFuncWithRetry(ctx, logger, vm, runScript); err != nil {
+			return fmt.Errorf("InstallOpsAgent() failed to run repo script: %w", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
 		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
-		return fmt.Errorf("InstallOpsAgent() failed to download repo script: %v", err)
+		return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 	}
 
 	runInstallScript := func() error {
@@ -738,7 +740,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		return err
 	}
 	if err := RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
-		return fmt.Errorf("InstallOpsAgent() error running repo script: %v", err)
+		return fmt.Errorf("InstallOpsAgent() error running repo script: %w", err)
 	}
 	return nil
 }
