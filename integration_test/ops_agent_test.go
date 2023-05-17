@@ -3546,10 +3546,6 @@ metrics:
 	})
 }
 
-func isHealthCheckTestPlatform(platform string) bool {
-	return platform == "windows-2019" || platform == "debian-11"
-}
-
 func healthCheckResultMessage(name string, result string) string {
 	return fmt.Sprintf("[%s Check] Result: %s", name, result)
 }
@@ -3583,9 +3579,6 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
-		}
 
 		customScopes := strings.Join([]string{
 			"https://www.googleapis.com/auth/monitoring.write",
@@ -3637,9 +3630,6 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
-		}
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
