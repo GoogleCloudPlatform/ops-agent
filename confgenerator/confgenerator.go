@@ -412,7 +412,7 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			Config: map[string]string{
 				"Name":  "grep",
 				"Match": healthChecksTag,
-				"Regex": "ops-agent-version ^\\d.*",
+				"Regex": "ops-agent-version ^.*",
 			},
 		},
 	}...)
