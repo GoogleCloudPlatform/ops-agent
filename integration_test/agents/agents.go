@@ -719,7 +719,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		runScript := func() error {
 			scriptCmd := fmt.Sprintf(`$env:REPO_SUFFIX='%s'
 $env:ARTIFACT_REGISTRY_REGION='%s'
-Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, location.repoSuffix, location.ArtifactRegistryRegion)
+Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, location.repoSuffix, location.artifactRegistryRegion)
 			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
