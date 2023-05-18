@@ -244,11 +244,12 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func healthChecksLog(p platform.Platform) string {
+func fluentbitSelfLogs(p platform.Platform) string {
+	loggingModule := "logging-module.log"
 	if p.Type == platform.Windows {
-		return path.Join("${logs_dir}", "health-checks.log")
+		return path.Join("${logs_dir}", loggingModule)
 	}
-	return path.Join("${logs_dir}", "health-checks.log")
+	return path.Join("${logs_dir}", "subagents", loggingModule)
 }
 
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
@@ -381,7 +382,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{path.Join("${logs_dir}", "subagents", "logging-module.log")},
+		IncludePaths: []string{fluentbitSelfLogs(platform.FromContext(ctx))},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
