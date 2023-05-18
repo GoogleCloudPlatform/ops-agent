@@ -20,10 +20,6 @@ case $VERSION_ID in
   20.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
-  23.04)
-    # rabbitmq is not supported for Ubuntu 23.04 - install 22.04 instead
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-    ;;
   # debian
   10)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
