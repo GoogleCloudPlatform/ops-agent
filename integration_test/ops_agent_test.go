@@ -3561,6 +3561,17 @@ func getRecentServiceOutputForPlatform(platform string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
+func installPortsTestDependencies(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if !gce.IsWindows(vm.Platform) {
+		packages := []string{"nc", "netcat"}
+		err := agents.InstallPackages(ctx, logger, vm, packages)
+		if err != nil {
+			return fmt.Errorf("failed to install %v with err: %s", packages, err)
+		}
+	}
+	return nil
+}
+
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
@@ -3587,17 +3598,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}, ",")
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
 
-		if !gce.IsWindows(vm.Platform) {
-			var packages []string
-			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) || gce.IsRocky(vm.Platform)  {
-				packages = []string{"nc"}
-			} else {
-				packages = []string{"netcat"}
-			}
-			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
-			if err != nil {
-				t.Fatalf("failed to install %v with err: %s", packages, err)
-			}
+		if err := installPortsTestDependencies(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
 		}
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
