@@ -998,11 +998,7 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := map[string]string{
-		// Attach labels to automate cleanup
-		"env": "test",
-		"ttl": "180", // minutes
-	}
+	labelsCopy := make(map[string]string)
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -1074,7 +1070,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		imageOrImageFamilyFlag = "--image=" + image
 	}
 	args := []string{
-		"compute", "instances", "create", vm.Name,
+		// "beta" is needed for --max-run-duration below.
+		"beta", "compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
@@ -1101,6 +1098,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// will talk to the external internet by routing through a Cloud NAT
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
+	}
+	if vm.TimeToLive != "" {
+		TODO: set default ttl (180m) somehow
+		args = append(args, "--max-run-duration="+vm.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	}
 	args = append(args, options.ExtraCreateArguments...)
 
