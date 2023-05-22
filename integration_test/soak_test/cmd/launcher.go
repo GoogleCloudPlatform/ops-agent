@@ -79,7 +79,6 @@ var (
 var logGeneratorSource string
 
 func main() {
-	log.Fatal("blerp")
 	if err := mainErr(); err != nil {
 		log.Fatal(err)
 	}
