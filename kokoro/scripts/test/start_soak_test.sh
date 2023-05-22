@@ -6,7 +6,7 @@ set -x
 set -o pipefail
 
 for GIT_ALIAS in git github; do
-  CANDIDATE_LOCATION="${KOKORO_ARTIFACTS_DIR}/${GIT_ALIAS}/unified_agents/integration_test/soak_test/cmd"
+  CANDIDATE_LOCATION="${KOKORO_ARTIFACTS_DIR}/${GIT_ALIAS}/unified_agents/integration_test/soak_test/cmd/launcher"
   if [[ -d "${CANDIDATE_LOCATION}" ]]; then
     cd "${CANDIDATE_LOCATION}"
     break
