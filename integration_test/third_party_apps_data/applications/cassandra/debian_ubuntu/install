@@ -11,9 +11,9 @@ if [[ "${VERSION_ID}" == 23* ]]; then
     sudo apt update
     sudo apt install -y openjdk-11-jdk cassandra
 else
-    echo "deb http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+    echo "deb https://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
     # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)
-    echo "deb http://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+    echo "deb https://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
     sudo apt install -y openjdk-8-jdk cassandra
