@@ -18,7 +18,4 @@ LOG_SIZE_IN_BYTES=${LOG_SIZE_IN_BYTES-1000} \
 VM_NAME="${VM_NAME:-soak-test-${KOKORO_BUILD_NUMBER}-$(date +%F)}" \
 DISTRO="${DISTRO:-ubuntu-2004-lts}" \
 TTL="${TTL:-30m}" \
-  go run . \
-  -tags=integration_test \
-  -timeout=1h
-
+  go run -tags=integration_test .
