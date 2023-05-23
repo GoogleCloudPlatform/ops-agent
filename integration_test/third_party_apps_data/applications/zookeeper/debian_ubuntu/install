@@ -3,6 +3,7 @@ set -e
 sudo apt-get update
 sudo apt install -y zookeeper-bin zookeeperd
 
+# TODO: Investigate why this happens and if this is the correct solution.
 # For some reason the zookeeper package doesn't set the CLASSPATH in the environment file
 # on Ubuntu 23.04, which it does on previous versions of Ubuntu.
 source /etc/os-release

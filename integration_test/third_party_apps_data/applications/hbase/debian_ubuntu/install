@@ -3,11 +3,10 @@ set -o pipefail
 
 sudo apt-get update
 source /etc/os-release
-if [[ "${VERSION_ID}" == 23* ]]; then
-  sudo apt-get install -y openjdk-11-jre wget # default-jre pulls in openjdk-17-jre for Ubuntu 23.04 (see https://www.ubuntuupdates.org/package/core/lunar/main/base/default-jre). HBase does not currently support Java 17 (see https://hbase.apache.org/book.html#java)
-else
-  sudo apt-get install -y default-jre wget
-fi
+
+# All other tested distributions have default-jre point to openjdk-11-jre, but default-jre pulls in openjdk-17-jre
+# for Ubuntu 23.04, and HBase does not currently support Java 17 (see https://hbase.apache.org/book.html#java)
+sudo apt-get install -y openjdk-11-jre wget
 
 HBASE_VERSION=2.4.11
 
