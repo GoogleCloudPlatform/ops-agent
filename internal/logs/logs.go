@@ -15,13 +15,23 @@
 package logs
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+)
+
+const (
+	messageKey        = "message"
+	severityKey       = "logging.googleapis.com/severity"
+	sourceLocationKey = "logging.googleapis.com/sourceLocation"
+	timeKey           = "timestamp"
 )
 
 type StructuredLogger interface {
@@ -34,11 +44,68 @@ type ZapStructuredLogger struct {
 	logger *zap.SugaredLogger
 }
 
+func severityEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+	var severity string
+
+	switch level {
+	case zapcore.ErrorLevel:
+		severity = "ERROR"
+	case zapcore.WarnLevel:
+		severity = "WARNING"
+	case zapcore.InfoLevel:
+		severity = "INFO"
+	case zapcore.DebugLevel:
+		severity = "DEBUG"
+	default:
+		severity = "DEFAULT"
+	}
+	enc.AppendString(severity)
+}
+
+type stringMap map[string]string
+
+func (sm stringMap) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	for k, v := range sm {
+		enc.AddString(k, v)
+	}
+	return nil
+}
+func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	ae, ok := enc.(zapcore.ArrayEncoder)
+	if !ok {
+		zapcore.RFC3339NanoTimeEncoder(t, enc)
+		return
+	}
+	nanos := t.UnixNano()
+	sec := float64(nanos) / float64(time.Second)
+	ae.AppendObject(stringMap{
+		"seconds": fmt.Sprintf("%f", sec),
+		"nanos":   fmt.Sprintf("%d", nanos),
+	})
+}
+
+func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
+	ae, ok := enc.(zapcore.ArrayEncoder)
+	if !ok {
+		zapcore.FullCallerEncoder(caller, enc)
+		return
+	}
+	ae.AppendObject(stringMap{
+		"file":     caller.File,
+		"function": caller.Function,
+		"line":     strconv.Itoa(caller.Line),
+	})
+}
+
 func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
-	cfg.EncoderConfig.MessageKey = "message"
-	cfg.EncoderConfig.TimeKey = "time"
-	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	cfg.EncoderConfig.CallerKey = sourceLocationKey
+	cfg.EncoderConfig.MessageKey = messageKey
+	cfg.EncoderConfig.LevelKey = severityKey
+	cfg.EncoderConfig.TimeKey = timeKey
+	cfg.EncoderConfig.EncodeTime = timeEncoder
+	cfg.EncoderConfig.EncodeLevel = severityEncoder
+	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder
 
 	cfg.OutputPaths = []string{
 		file,
