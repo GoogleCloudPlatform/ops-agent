@@ -31,7 +31,7 @@ const (
 	messageKey        = "message"
 	severityKey       = "logging.googleapis.com/severity"
 	sourceLocationKey = "logging.googleapis.com/sourceLocation"
-	timeKey           = "timestamp"
+	timeKey           = "time"
 )
 
 type StructuredLogger interface {
@@ -103,7 +103,7 @@ func New(file string) *ZapStructuredLogger {
 	cfg.EncoderConfig.MessageKey = messageKey
 	cfg.EncoderConfig.LevelKey = severityKey
 	cfg.EncoderConfig.TimeKey = timeKey
-	cfg.EncoderConfig.EncodeTime = timeEncoder
+	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	cfg.EncoderConfig.EncodeLevel = severityEncoder
 	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder
 

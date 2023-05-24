@@ -403,7 +403,12 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 
 func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingProcessorParseJson{}.Components(ctx, healthChecksTag, "health-checks-json")...)
+	out = append(out, LoggingProcessorParseJson{
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
+		},
+	}.Components(ctx, healthChecksTag, "health-checks-json")...)
 	out = append(out, []fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the ops-agent-version field.
