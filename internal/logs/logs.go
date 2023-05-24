@@ -15,11 +15,9 @@
 package logs
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
@@ -69,19 +67,6 @@ func (sm stringMap) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		enc.AddString(k, v)
 	}
 	return nil
-}
-func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	ae, ok := enc.(zapcore.ArrayEncoder)
-	if !ok {
-		zapcore.RFC3339NanoTimeEncoder(t, enc)
-		return
-	}
-	nanos := t.UnixNano()
-	sec := float64(nanos) / float64(time.Second)
-	ae.AppendObject(stringMap{
-		"seconds": fmt.Sprintf("%f", sec),
-		"nanos":   fmt.Sprintf("%d", nanos),
-	})
 }
 
 func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
