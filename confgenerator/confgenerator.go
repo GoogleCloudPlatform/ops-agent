@@ -404,6 +404,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingProcessorParseJson{
+		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
 		ParserShared: ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
