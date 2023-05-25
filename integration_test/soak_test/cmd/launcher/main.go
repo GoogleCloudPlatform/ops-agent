@@ -56,7 +56,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -93,18 +92,11 @@ func mainErr() error {
 	// Log to stderr.
 	logger := log.Default()
 
-	parsedTTL, err := time.ParseDuration(ttl)
-	if err != nil {
-		return fmt.Errorf("Could not parse TTL duration %q: %w", ttl, err)
-	}
-
 	// Create the VM.
 	options := gce.VMOptions{
-		Platform: distro,
-		Name:     vmName,
-		Labels: map[string]string{
-			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
-		},
+		Platform:   distro,
+		TimeToLive: ttl,
+		Name:       vmName,
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
 	if err != nil {
