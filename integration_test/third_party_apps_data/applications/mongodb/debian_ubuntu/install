@@ -12,10 +12,6 @@ case $osname in
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     ;;
   Debian)
-    # Debian 11 is not officially supported, so use 'buster'.
-    if [ "$oscode" = "bullseye" ]; then
-      oscode="buster"
-    fi
     echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
     ;;
   *)
