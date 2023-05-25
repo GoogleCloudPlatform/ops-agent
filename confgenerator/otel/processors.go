@@ -40,6 +40,28 @@ func MetricsFilter(polarity, matchType string, metricNames ...string) Component 
 	}
 }
 
+// MetricsOTTLFilter returns a Component that filters metrics using OTTL.
+// OTTL can only be used as an exclude filter, any metrics or datapoints that match
+// one of the provided queries are dropped.
+// Example query: 'name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil'
+func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Component {
+	metricsConfig := map[string]interface{}{}
+
+	if len(metricQueries) > 0 {
+		metricsConfig["metric"] = metricQueries
+	}
+	if len(datapointQueries) > 0 {
+		metricsConfig["datapoint"] = metricQueries
+	}
+
+	return Component{
+		Type: "filter",
+		Config: map[string]interface{}{
+			"metrics": metricsConfig,
+		},
+	}
+}
+
 // MetricsTransform returns a Component that performs the transformations specified as arguments.
 func MetricsTransform(metrics ...map[string]interface{}) Component {
 	return Component{

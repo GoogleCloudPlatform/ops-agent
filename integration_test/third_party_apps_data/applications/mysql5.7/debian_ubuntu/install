@@ -1,0 +1,48 @@
+set -e
+
+sudo apt update
+sudo apt install -y wget
+
+wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-5.7'
+sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
+sudo apt update
+
+source /etc/os-release
+
+sudo apt install -y mysql-server=5.7*
+
+if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
+  sudo apt install -y libmariadbclient18
+elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
+  sudo apt install -y libmysqlclient20
+elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
+  sudo apt install -y libmysqlclient21
+fi
+
+sudo service mysql start
+
+# set up replication source to validate replica metrics
+# set main target (replica) to use binary logging for replication to work
+sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
+EOF
+
+sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
+
+sudo chmod uga+r /etc/mysql/conf.d/*
+sudo chown mysql:mysql /etc/mysql/conf.d/*
+sudo chown mysql:mysql /var/log/mysql/
+
+sudo service mysql restart

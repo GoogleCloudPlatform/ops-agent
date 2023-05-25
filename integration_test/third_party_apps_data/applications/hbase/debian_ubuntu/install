@@ -2,12 +2,16 @@ set -e
 set -o pipefail
 
 sudo apt-get update
-sudo apt-get install -y default-jre wget
+
+# All other tested distributions have default-jre point to openjdk-11-jre, but default-jre pulls in openjdk-17-jre
+# for Ubuntu 23.04, and HBase does not currently support Java 17 (see https://hbase.apache.org/book.html#java)
+sudo apt-get install -y openjdk-11-jre wget
 
 HBASE_VERSION=2.4.11
 
 sudo mkdir /opt/hbase
-wget --no-verbose https://archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
+wget --no-verbose https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/hbase/"$HBASE_VERSION"/hbase-"$HBASE_VERSION"-bin.tar.gz
 sudo tar -xvf hbase-"$HBASE_VERSION"-bin.tar.gz -C /opt/hbase --strip 1
 
 sudo tee /opt/hbase/conf/hbase-env.sh <<EOF

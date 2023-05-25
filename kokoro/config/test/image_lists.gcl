@@ -30,6 +30,10 @@ bullseye = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
+bullseye_arm = _distro {
+  release = ['debian-11-arm64']
+  presubmit = ['debian-11-arm64']
+}
 bionic = _distro {
   release = [
     'ubuntu-1804-lts',
@@ -49,6 +53,13 @@ jammy = _distro {
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
   ]
+}
+lunar = _distro {
+  release = [
+    'ubuntu-2304-amd64',
+    'ubuntu-minimal-2304-amd64',
+  ]
+  presubmit = ['ubuntu-2304-amd64']
 }
 
 // RPM Linux distros. (Do not modify this comment.)

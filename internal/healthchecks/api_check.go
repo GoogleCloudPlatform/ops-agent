@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -91,13 +91,13 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 	return client.CreateTimeSeries(ctx, req)
 }
 
-func runLoggingCheck(logger *log.Logger) error {
+func runLoggingCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		return fmt.Errorf("can't get GCE metadata: %w", err)
+		return fmt.Errorf("can't get GCE metadata")
 	}
-	logger.Printf("gce metadata: %+v", gceMetadata)
+	logger.Infof("GCE Metadata queried successfully")
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
@@ -105,7 +105,7 @@ func runLoggingCheck(logger *log.Logger) error {
 		return err
 	}
 	defer logClient.Close()
-	logger.Printf("logging client was created successfully")
+	logger.Infof("logging client was created successfully")
 
 	if err := logClient.Ping(ctx); err != nil {
 		logger.Println(err)
@@ -138,13 +138,13 @@ func runLoggingCheck(logger *log.Logger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger *log.Logger) error {
+func runMonitoringCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 	gceMetadata, err := getGCEMetadata()
 	if err != nil {
-		return fmt.Errorf("can't get GCE metadata: %w", err)
+		return fmt.Errorf("can't get GCE metadata")
 	}
-	logger.Printf("gce metadata: %+v", gceMetadata)
+	logger.Infof("GCE Metadata queried successfully")
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -152,7 +152,7 @@ func runMonitoringCheck(logger *log.Logger) error {
 		return err
 	}
 	defer monClient.Close()
-	logger.Printf("monitoring client was created successfully")
+	logger.Infof("monitoring client was created successfully")
 
 	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
 		logger.Println(err)
@@ -191,7 +191,7 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(logger *log.Logger) error {
+func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	monErr := runMonitoringCheck(logger)
 	logErr := runLoggingCheck(logger)
 	return errors.Join(monErr, logErr)

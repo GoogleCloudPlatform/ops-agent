@@ -48,9 +48,9 @@ make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
-You can also specify the `ZONE` and `PLATFORMS` variables if you would like
-to run the tests on something other than the defaults (`us-central1-b` for 
-ZONE and `debian-11` for `PLATFORMS`).
+You can also specify the `ZONES` and `PLATFORMS` variables if you would like
+to run the tests on something other than the defaults (`us-central1-b` for
+ZONES and `debian-11` for `PLATFORMS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the
@@ -274,3 +274,25 @@ TODO: Document log files for a Windows VM.
 
 The `agent_packages` directory contains the package files built from the PR
 and installed on the VM for testing.
+
+# Vendored Dependencies
+
+Due to being throttled by some sites, notably archive.apache.org, we are keeping
+a local copy of various large installers instead of downloading them fresh each
+time. These are stored in
+https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-vendored-deps/mirrored-content
+and the script `mirror_content.sh` is intended to help upload the installer
+there. Run it like (using cassandra as an example):
+
+```
+./mirror_content.sh https://archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+```
+
+And then change the `install` script(s) for cassandra to download from:
+
+```
+https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+```
+
+instead of the original URL.
+
