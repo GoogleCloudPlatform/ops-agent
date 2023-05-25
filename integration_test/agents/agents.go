@@ -808,7 +808,13 @@ func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCre
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform), ExtraCreateArguments: extraCreateArguments})
+	options := gce.VMOptions{
+		Platform:             platform,
+		TimeToLive:           "3h",
+		MachineType:          RecommendedMachineType(platform),
+		ExtraCreateArguments: extraCreateArguments,
+	}
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)

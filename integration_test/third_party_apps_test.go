@@ -891,6 +891,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
 					Platform:             tc.platform,
+					TimeToLive:           "3h",
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}

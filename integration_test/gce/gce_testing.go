@@ -1103,10 +1103,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
 	}
-	if vm.TimeToLive != "" {
-		TODO: set default ttl (180m) somehow
-		args = append(args, "--max-run-duration="+vm.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
+	ttl := options.TimeToLive
+	if ttl == "" {
+		ttl = "3h"
 	}
+	args = append(args, "--max-run-duration="+ttl, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
@@ -1731,6 +1732,11 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. The default TimeToLive is "3h", meaning 3 hours. After that the
+	// VM will be deleted.
+	// TODO: Change the default TimeToLive to infinite and move the 3h
+	// to each callsite into this library.
+	TimeToLive string
 	// Optional. If missing, a random name will be generated.
 	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
