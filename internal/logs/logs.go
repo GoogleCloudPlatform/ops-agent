@@ -15,11 +15,9 @@
 package logs
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
@@ -31,7 +29,7 @@ const (
 	messageKey        = "message"
 	severityKey       = "logging.googleapis.com/severity"
 	sourceLocationKey = "logging.googleapis.com/sourceLocation"
-	timeKey           = "timestamp"
+	timeKey           = "time"
 )
 
 type StructuredLogger interface {
@@ -70,19 +68,6 @@ func (sm stringMap) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	}
 	return nil
 }
-func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	ae, ok := enc.(zapcore.ArrayEncoder)
-	if !ok {
-		zapcore.RFC3339NanoTimeEncoder(t, enc)
-		return
-	}
-	nanos := t.UnixNano()
-	sec := float64(nanos) / float64(time.Second)
-	ae.AppendObject(stringMap{
-		"seconds": fmt.Sprintf("%f", sec),
-		"nanos":   fmt.Sprintf("%d", nanos),
-	})
-}
 
 func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
 	ae, ok := enc.(zapcore.ArrayEncoder)
@@ -103,7 +88,7 @@ func New(file string) *ZapStructuredLogger {
 	cfg.EncoderConfig.MessageKey = messageKey
 	cfg.EncoderConfig.LevelKey = severityKey
 	cfg.EncoderConfig.TimeKey = timeKey
-	cfg.EncoderConfig.EncodeTime = timeEncoder
+	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	cfg.EncoderConfig.EncodeLevel = severityEncoder
 	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder
 
