@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
@@ -21,7 +21,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
 		metricsdk.WithResource(resource.Default()),
 	)
-	global.SetMeterProvider(metricProvider)
+	otel.SetMeterProvider(metricProvider)
 	return metricProvider.Shutdown, nil
 }
 
@@ -39,7 +39,7 @@ func main() {
 		}
 	}()
 
-	meter := global.MeterProvider().Meter("foo")
+	meter := otel.GetMeterProvider().Meter("foo")
 
 	// Test gauge metrics
 	testGaugeMetric(meter, "otlp.test.gauge")
