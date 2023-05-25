@@ -60,6 +60,9 @@ configure_integration: |-
   vault token create -field=token -policy prometheus-metrics > prometheus-token
   ```
 supported_operating_systems: linux
+platforms_to_skip:
+  # Vault is not supported on Ubuntu 23.04
+  - ubuntu-2304-amd64
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count

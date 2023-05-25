@@ -33,11 +33,13 @@ configure_integration: |-
   server using a Unix socket and Unix authentication as the `root` user.
 supported_operating_systems: linux
 platforms_to_skip:
-  - sles-15 # mysql5.7 not available on sles15
-  - rocky-linux-8 # mysql5.7 not available on RHEL8
-  - rocky-linux-9 # mysql5.7 not available on RHEL9
-  - debian-11 # mysql5.7 not available on Debian 11
-  - ubuntu-2004-lts # mysql5.7 not available on ubuntu focal
+  # MySQL5.7 is not supported on SLES 15, Rocky Linux 8, Rocky Linux 9, Ubuntu 20.04, Ubuntu 23.04, or Debian 11
+  - sles-15
+  - rocky-linux-8
+  - rocky-linux-9
+  - debian-11
+  - ubuntu-2004-lts
+  - ubuntu-2304-amd64
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages

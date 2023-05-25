@@ -142,7 +142,7 @@ expected_logs:
   - log_name: nginx_access
     fields:
       - name: httpRequest.remoteIp
-        value_regex: ::1
+        value_regex: (::1|127\.0\.0\.1)
         type: string
         description: "The IP address (IPv4 or IPv6) of the client that issued the HTTP request. This field can include port information. Examples: 192.168.1.1, 10.0.0.1:80, FE80::0202:B3FF:FE1E:8329."
         optional: true
@@ -190,7 +190,7 @@ expected_logs:
   - log_name: nginx_error
     fields:
       - name: jsonPayload.client
-        value_regex: ::1
+        value_regex: (::1|127\.0\.0\.1)
         type: string
         description: Client IP address (optional)
       - name: jsonPayload.level
