@@ -44,7 +44,7 @@ PROJECT=my_project \
   TTL=100m \
   LOG_SIZE_IN_BYTES=1000 \
   LOG_RATE=1000 \
-  go run -tags=integration_test launcher.go
+	go run -tags=integration_test .
 ```
 */
 
@@ -131,7 +131,9 @@ func mainErr() error {
 		return err
 	}
 
-	// Install python.
+	// Install Python.
+	// TODO: Consider shipping over a prebuilt binary so that we don't need to
+	// install Python.
 	if gce.IsWindows(vm.Platform) {
 		installPython := `$tempDir = "/tmp"
 mkdir $tempDir
