@@ -45,6 +45,13 @@ jammy = _distro {
     'ubuntu-minimal-2204-lts',
   ]
 }
+lunar = _distro {
+  release = [
+    'ubuntu-2304-amd64',
+    'ubuntu-minimal-2304-amd64',
+  ]
+  presubmit = ['ubuntu-2304-amd64']
+}
 
 // RPM Linux distros. (Do not modify this comment.)
 centos7 = _distro {
