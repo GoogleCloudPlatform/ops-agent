@@ -62,7 +62,7 @@ var (
 	testPlatforms = []platformConfig{
 		{
 			name:            "linux",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
 			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 			platform: platform.Platform{
 				Type: platform.Linux,

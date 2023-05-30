@@ -244,11 +244,16 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func healthChecksLog(p platform.Platform) string {
+func fluentbitSelfLogsPath(p platform.Platform) string {
+	loggingModule := "logging-module.log"
 	if p.Type == platform.Windows {
-		return "${logs_dir}/health-checks.log"
+		return path.Join("${logs_dir}", loggingModule)
 	}
-	return "${logs_dir}/../health-checks.log"
+	return path.Join("${logs_dir}", "subagents", loggingModule)
+}
+
+func healthChecksLogsPath() string {
+	return path.Join("${logs_dir}", "health-checks.log")
 }
 
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
@@ -381,14 +386,14 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
 	}.Components(ctx, fluentBitSelfLogTag)...)
 
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLog(platform.FromContext(ctx))},
+		IncludePaths:   []string{healthChecksLogsPath()},
 		BufferInMemory: true,
 	}.Components(ctx, healthChecksTag)...)
 
@@ -403,7 +408,13 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 
 func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingProcessorParseJson{}.Components(ctx, healthChecksTag, "health-checks-json")...)
+	out = append(out, LoggingProcessorParseJson{
+		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
+		},
+	}.Components(ctx, healthChecksTag, "health-checks-json")...)
 	out = append(out, []fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the ops-agent-version field.
