@@ -392,7 +392,9 @@ func isRetriableLookupError(err error) bool {
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
 	// The Internal case catches some transient errors returned by the monitoring API sometimes.
-	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal)
+	// The ResourceExhausted case catches API quota errors like:
+	// https://source.cloud.google.com/results/invocations/863be0a0-fa7c-4dab-a8df-7689d91513a7.
+	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal || myStatus.Code() == codes.ResourceExhausted)
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
