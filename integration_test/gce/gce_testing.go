@@ -206,7 +206,7 @@ func init() {
 		log.Fatalf("trace.NewClient() failed: %v", err)
 	}
 
-	zonePicker, err = newZonePicker(os.Getenv("ZONES"), os.Getenv("ZONE"))
+	zonePicker, err = newZonePicker(os.Getenv("ZONES"))
 	if err != nil {
 		log.Fatal(err)
 	}
