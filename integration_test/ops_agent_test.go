@@ -1367,6 +1367,57 @@ func TestResourceNameLabel(t *testing.T) {
 	})
 }
 
+func TestParseJson(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"stream1":"stdout"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.stream1="stdout"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+
+		line = `{"stream":"stdout"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check = fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.stream="stdout"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
