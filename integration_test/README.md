@@ -48,9 +48,9 @@ make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
-You can also specify the `ZONE` and `PLATFORMS` variables if you would like
-to run the tests on something other than the defaults (`us-central1-b` for 
-ZONE and `debian-11` for `PLATFORMS`).
+You can also specify the `ZONES` and `PLATFORMS` variables if you would like
+to run the tests on something other than the defaults (`us-central1-b` for
+ZONES and `debian-11` for `PLATFORMS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the

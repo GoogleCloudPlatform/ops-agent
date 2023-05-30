@@ -62,7 +62,7 @@ var (
 	testPlatforms = []platformConfig{
 		{
 			name:            "linux",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
 			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 			platform: platform.Platform{
 				Type: platform.Linux,
@@ -351,7 +351,7 @@ func init() {
 		InstanceName:  "test-instance-name",
 		Tags:          "test-tag",
 		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value"},
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}

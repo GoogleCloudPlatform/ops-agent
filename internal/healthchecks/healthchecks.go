@@ -20,13 +20,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger *log.Logger) error
+	RunCheck(logger logs.StructuredLogger) error
 }
 
 type HealthCheckResult struct {
@@ -45,41 +47,52 @@ func singleErrorResultMessage(e error, Name string) string {
 	return fmt.Sprintf("[%s] Result: PASS", Name)
 }
 
-func (r HealthCheckResult) String() string {
+func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
+	for _, m := range r.StringSlice() {
+		if r.Err == nil {
+			logger.Infof(m)
+		} else {
+			logger.Errorf(m)
+		}
+	}
+}
+
+func (r HealthCheckResult) StringSlice() []string {
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
 		var messageList []string
 		for _, e := range mwErr.Unwrap() {
 			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
 		}
-		return strings.Join(messageList, "\n")
+		return messageList
 	}
-	return singleErrorResultMessage(r.Err, r.Name)
+	return []string{singleErrorResultMessage(r.Err, r.Name)}
 }
 
-func LogHealthCheckResults(healthCheckResults []HealthCheckResult, infoLogger func(string), errorLogger func(string)) {
+func (r HealthCheckResult) String() string {
+	return strings.Join(r.StringSlice(), "\n")
+}
+
+func LogHealthCheckResults(healthCheckResults []HealthCheckResult, logger logs.StructuredLogger) {
 	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			errorLogger(result.String())
-		} else {
-			infoLogger(result.String())
-		}
+		result.LogResult(logger)
 	}
 }
 
-func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func()) {
+func CreateHealthChecksLogger(logDir string) logs.StructuredLogger {
 	path := filepath.Join(logDir, healthChecksLogFile)
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		log.Printf("failed to create directory for %q: %v", path, err)
-		return log.Default(), func() {}
+		return logs.Default()
 	}
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Printf("failed to open health checks log file %q: %v", path, err)
-		return log.Default(), func() {}
+		return logs.Default()
 	}
+	file.Close()
 
-	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
+	return logs.New(path)
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -92,14 +105,13 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) []HealthCheckResult {
+func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger) []HealthCheckResult {
 	var result []HealthCheckResult
 
 	for _, c := range r {
 		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
-		logger.Println(r)
+		r.LogResult(logger)
 		result = append(result, r)
 	}
-
 	return result
 }

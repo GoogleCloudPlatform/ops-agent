@@ -163,7 +163,7 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = v
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
 	}
 
 	// Labels are not available using the GCE metadata API.
