@@ -3,7 +3,7 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      DISTRO = 'bullseye'
+      DISTRO = 'bullseye_arm'
       PKGFORMAT = 'deb'
     }
   }
