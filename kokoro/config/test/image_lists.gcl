@@ -13,14 +13,6 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
-bullseye_arm = _distro {
-  release = [
-      'debian-11-arm64',
-  ]
-  presubmit = [
-      'debian-11-arm64',
-  ]
-}
 lunar = _distro {
   release = [
       'ubuntu-2304-amd64',
