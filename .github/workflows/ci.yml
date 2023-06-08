@@ -48,3 +48,5 @@ jobs:
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALS }}'
+    - run: |
+        gsutil cp *.cover gs://sarsfield-ng3-test/
