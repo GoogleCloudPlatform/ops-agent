@@ -100,16 +100,19 @@ func mainErr() error {
 
 	// Create the VM.
 	options := gce.VMOptions{
-		Platform: distro,
-		Name:     vmName,
+		Platform:    distro,
+		Name:        vmName,
+		MachineType: "e2-standard-16",
 		Labels: map[string]string{
 			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
 		},
+		ExtraCreateArguments: []string{"--boot-disk-size=4000GB"},
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
 	if err != nil {
 		return err
 	}
+	debugLogPath := "/tmp/log_generator.log"
 
 	// Install the Ops Agent with a config telling it to watch logPath.
 	config := fmt.Sprintf(`logging:
@@ -117,6 +120,7 @@ func mainErr() error {
     mylog_source:
       type: files
       include_paths:
+      - %s
       - %s
   exporters:
     google:
@@ -126,7 +130,7 @@ func mainErr() error {
       my_pipeline:
         receivers: [mylog_source]
         exporters: [google]
-`, logPath)
+`, logPath, debugLogPath)
 	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 		return err
 	}
@@ -173,8 +177,8 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
   --log-rate="%v" \
   --log-write-type=file \
   --file-path="%v" \
-  &> log_generator.log &
-`, logGeneratorPath, logSizeInBytes, logRate, logPath)
+  &> %v &
+`, logGeneratorPath, logSizeInBytes, logRate, logPath, debugLogPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", startLogGenerator); err != nil {
 		return err
