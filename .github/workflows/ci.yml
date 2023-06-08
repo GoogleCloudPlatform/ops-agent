@@ -49,4 +49,5 @@ jobs:
       with:
         credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALS }}'
     - run: |
+        gcloud auth list
         gsutil cp covprofile gs://sarsfield-ng3-test/
