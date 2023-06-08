@@ -189,7 +189,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 	if !gce.IsWindows(vm.Platform) {
 		time.Sleep(5 * time.Second)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "cat log_generator.log"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "", "cat "+debugLogPath); err != nil {
 			return err
 		}
 	}
