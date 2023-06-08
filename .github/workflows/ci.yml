@@ -52,4 +52,4 @@ jobs:
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'covprofile'
-        destination: 'gs://sarsfield-ng3-test/'
+        destination: 'sarsfield-ng3-test'
