@@ -47,7 +47,7 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
       with:
-        credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALSZZZ }}'
+        credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALS }}'
     - run: |
         gcloud auth list
         gsutil cp covprofile gs://sarsfield-ng3-test/
