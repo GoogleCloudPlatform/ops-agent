@@ -41,7 +41,8 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
-    - run: echo "foo data" > abs_metadata.json
+    - run: ABS_METADATA='bar data'
+    - run: echo $ABS_METADATA > abs_metadata.json
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
