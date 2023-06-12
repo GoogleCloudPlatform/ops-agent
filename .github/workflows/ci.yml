@@ -41,8 +41,7 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
-    - run: ABS_METADATA='{"host": "github", "project": "cloud-ops-agent", "trace_type": "LCOV", "commit_id": '\"${GITHUB_SHA}\"', "ref": "HEAD", "source": "https://github.com/GoogleCloudPlatform/ops-agent", "owner": "stackdriver-instrumentation-dev", "bug_component": "931151"}'
-    - run: echo $ABS_METADATA > abs_metadata.json
+    - run: echo "foo data" > abs_metadata.json
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
