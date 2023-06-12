@@ -31,9 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-const fluentBitSelfLogTag = "ops-agent-fluent-bit"
-const healthChecksTag = "ops-agent-health-checks"
-
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -385,77 +382,10 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
-		//Following: b/226668416 temporarily set storage.type to "memory"
-		//to prevent chunk corruption errors
-		BufferInMemory: true,
-	}.Components(ctx, fluentBitSelfLogTag)...)
-
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLogsPath()},
-		BufferInMemory: true,
-	}.Components(ctx, healthChecksTag)...)
-
-	out = append(out, generateSeveritySelfLogsParser(ctx)...)
-	out = append(out, generateHealthChecksLogsParser(ctx)...)
-
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthChecksTag}, "|"), userAgent, ""))
+	out = append(out, generateSelfLogComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
-}
-
-func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingProcessorParseJson{
-		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
-		ParserShared: ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
-		},
-	}.Components(ctx, healthChecksTag, "health-checks-json")...)
-	out = append(out, []fluentbit.Component{
-		// This is used to exclude any previous content of the health-checks file that
-		// does not contain the ops-agent-version field.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "grep",
-				"Match": healthChecksTag,
-				"Regex": "ops-agent-version ^.*",
-			},
-		},
-	}...)
-	return out
-}
-
-func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-
-	parser := LoggingProcessorParseRegex{
-		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
-		PreserveKey: true,
-		ParserShared: ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y/%m/%d %H:%M:%S",
-			Types: map[string]string{
-				"severity": "string",
-			},
-		},
-	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")
-
-	out = append(out, parser...)
-
-	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
-		[]struct{ SrcVal, DestVal string }{
-			{"debug", "DEBUG"},
-			{"error", "ERROR"},
-			{"info", "INFO"},
-			{"warn", "WARNING"},
-		})...,
-	)
-	return out
 }
 
 func getMD5Hash(text string) string {
