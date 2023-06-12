@@ -25,7 +25,7 @@ jobs:
     - run: |
         git config --global core.symlinks true
         git config --global core.autocrlf false
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - uses: actions/setup-go@v3
@@ -41,5 +41,24 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
+    - run: ABS_METADATA='{"host": "github", "project": "cloud-ops-agent", "trace_type": "LCOV", "commit_id": '\"${GITHUB_SHA}\"', "ref": "HEAD", "source": "https://github.com/GoogleCloudPlatform/ops-agent", "owner": "stackdriver-instrumentation-dev", "bug_component": "931151"}'
+    - run: echo $ABS_METADATA > abs_metadata.json
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALS }}'
+    - id: 'upload-coverage'
+      name: 'Upload Coverage File'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: 'covprofile'
+        destination: 'sarsfield-ng3-test'
+    - id: 'upload-metadata'
+      name: 'Upload Coverage Metadata'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: 'abs_metadata.json'
+        destination: 'sarsfield-ng3-test'
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
