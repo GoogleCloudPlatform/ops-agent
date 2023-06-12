@@ -13,8 +13,8 @@ template config common = {
       // Cloud Router and Cloud NAT gateway for that region. This is because
       // we use --no-address on Kokoro, because of b/169084857.
       // The new Cloud NAT gateway must have "Minimum ports per VM instance"
-      // set to something >160 as per this article:
-      // https://www.suse.com/support/kb/doc/?id=000019662
+      // set to 512 as per this article:
+      // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
       ZONES = join([
         'us-central1-a=3',
         'us-central1-b=3',

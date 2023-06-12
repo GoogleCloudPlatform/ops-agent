@@ -29,18 +29,14 @@ func (wrr *weightedRoundRobin) Next() string {
 	return wrr.sw.Next().(string)
 }
 
-// newZonePicker looks at `zones` (and `zone` if needed) and extracts
-// the zones and weights into a a weighted round robin zone picker.
-// `zones` should be a comma-separated list of zone specs, where each
-// zone spec is either in the format <zone>=<integer weight> or just <zone>
-// (in which case the weight defaults to 1).
-// TODO(martijnvans): Remove support for the `zone` argument.
-func newZonePicker(zones, zone string) (*weightedRoundRobin, error) {
+// newZonePicker looks at `zones` and extracts the zones and weights into a a
+// weighted round robin zone picker.  `zones` should be a comma-separated list
+// of zone specs, where each zone spec is either in the format
+// <zone>=<integer weight> or just <zone> (in which case the weight defaults to
+// 1).
+func newZonePicker(zones string) (*weightedRoundRobin, error) {
 	if zones == "" {
-		if zone == "" {
-			return nil, errors.New("either ZONES or ZONE must be specified")
-		}
-		zones = zone
+		return nil, errors.New("ZONES must not be empty")
 	}
 
 	sw := &weighted.SW{}
