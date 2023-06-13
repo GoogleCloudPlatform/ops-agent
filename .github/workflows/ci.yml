@@ -53,8 +53,8 @@ jobs:
         mkdir -p "${{ env.INC_DIR }}"
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.INC_DIR }}/metadata.json
-        cp covprofile ${{ env.ABS_DIR }}/coverage.out
-        cp covprofile ${{ env.INC_DIR }}/coverage.out
+        cp covprofile ${{ env.ABS_DIR }}/${{ runner.os }}_coverage.out
+        cp covprofile ${{ env.INC_DIR }}/${{ runner.os }}_coverage.out
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
