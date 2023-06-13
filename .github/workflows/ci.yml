@@ -42,8 +42,8 @@ jobs:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
     - run: | 
-        echo "{ABS_DIR}={ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}}" >> "$GITHUB_ENV"
-        echo "{INC_DIR}={ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}}" >> "$GITHUB_ENV"
+        echo "ABS_DIR=ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
+        echo "INC_DIR=ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
     - run: |
         mkdir -p "${{ env.ABS_DIR }}"
         mkdir -p "${{ env.INC_DIR }}"
