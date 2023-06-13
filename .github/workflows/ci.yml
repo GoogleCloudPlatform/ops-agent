@@ -44,8 +44,8 @@ jobs:
     - run: | 
         set ABS_DIR = ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}
         set INC_DIR = ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}
-        mkdir -p $ABS_DIR
-        mkdir -p $INC_DIR
+        mkdir -p "$ABS_DIR"
+        mkdir -p "$INC_DIR"
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > $ABS_DIR/metadata.json
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > $INC_DIR/metadata.json
         cp covprofile $ABS_DIR/coverage.out
