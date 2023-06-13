@@ -41,7 +41,8 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
-    - run: echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":\"${GITHUB_SHA}\","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > abs_metadata.json
+    - run: echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > abs_metadata.json
+    - run: echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > inc_metadata.json
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
@@ -53,11 +54,17 @@ jobs:
       with:
         path: 'covprofile'
         destination: 'sarsfield-ng3-test'
-    - id: 'upload-metadata'
-      name: 'Upload Coverage Metadata'
+    - id: 'upload-metadata-abs'
+      name: 'Upload Absolute Coverage Metadata'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'abs_metadata.json'
+        destination: 'sarsfield-ng3-test'
+    - id: 'upload-metadata-inc'
+      name: 'Upload Incremental Coverage Metadata'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: 'inc_metadata.json'
         destination: 'sarsfield-ng3-test'
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
