@@ -48,12 +48,19 @@ jobs:
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.BUILD_AND_TEST_EXTERNAL_CREDENTIALS }}'
-    - id: 'upload-coverage'
-      name: 'Upload Coverage File'
+    - id: 'upload-coverage-abs'
+      name: 'Upload Absolute Coverage File'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'covprofile'
-        destination: 'sarsfield-ng3-test'
+        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}'
+        process_gcloudignore: false
+    - id: 'upload-coverage-inc'
+      name: 'Upload Incremental Coverage File'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: 'covprofile'
+        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}'
         process_gcloudignore: false
     - id: 'upload-metadata-abs'
       name: 'Upload Absolute Coverage Metadata'
