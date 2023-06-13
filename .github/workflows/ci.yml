@@ -41,10 +41,14 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
-    - run: | 
-        echo "ABS_DIR=ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
-        echo "INC_DIR=ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
-    - run: |
+    - id: 'set-coverage-vars'
+      name: 'Set Coverage Env Vars'
+      run: | 
+        echo "ABS_DIR=ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
+        echo "INC_DIR=ng3-customer-telemetry-coverage/incremental/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
+    - id: 'prepare-coverage-data'
+      name: 'Prepare Coverage Data'
+      run: |
         mkdir -p "${{ env.ABS_DIR }}"
         mkdir -p "${{ env.INC_DIR }}"
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
@@ -56,11 +60,11 @@ jobs:
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.build_and_test_external_credentials }}'
-    - id: 'upload-coverage'
-      name: 'Upload Coverage '
+    - id: 'upload-coverage-data'
+      name: 'Upload Coverage Data'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
-        path: 'ng3-cloud-ops-agent-coverage'
+        path: 'ng3-customer-telemetry-coverage'
         glob: '**'
         destination: 'sarsfield-ng3-test'
         process_gcloudignore: false
