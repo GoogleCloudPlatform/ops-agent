@@ -41,40 +41,26 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
-    - run: echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > abs_metadata.json
-    - run: echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > inc_metadata.json
+    - run: ABS_DIR = ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }} |
+           INC_DIR = ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}
+           mkdir -p $ABS_DIR
+           mkdir $INC_DIR
+           echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > $ABS_DIR/${{ github.run_id }}/metadata.json
+           echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > $INC_DIR/${{ github.run_id }}/metadata.json
+           cp covprofile $ABS_DIR/coverage.out
+           cp covprofile $INC_DIR/coverage.out
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.build_and_test_external_credentials }}'
-    - id: 'upload-coverage-abs'
-      name: 'Upload Absolute Coverage File'
+    - id: 'upload-coverage'
+      name: 'Upload Coverage '
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
-        path: 'covprofile'
-        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}/coverage.out'
-        process_gcloudignore: false
-    - id: 'upload-coverage-inc'
-      name: 'Upload Incremental Coverage File'
-      uses: 'google-github-actions/upload-cloud-storage@v1'
-      with:
-        path: 'covprofile'
-        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}/coverage.out'
-        process_gcloudignore: false
-    - id: 'upload-metadata-abs'
-      name: 'Upload Absolute Coverage Metadata'
-      uses: 'google-github-actions/upload-cloud-storage@v1'
-      with:
-        path: 'abs_metadata.json'
-        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/absolute/cloud-ops-agent/${{ github.run_id }}/metadata.json'
-        process_gcloudignore: false
-    - id: 'upload-metadata-inc'
-      name: 'Upload Incremental Coverage Metadata'
-      uses: 'google-github-actions/upload-cloud-storage@v1'
-      with:
-        path: 'inc_metadata.json'
-        destination: 'sarsfield-ng3-test/ng3-cloud-ops-agent-coverage/incremental/cloud-ops-agent/${{ github.run_id }}/metadata.json'
+        path: 'ng3-cloud-ops-agent-coverage'
+        glob: '**'
+        destination: 'sarsfield-ng3-test'
         process_gcloudignore: false
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
