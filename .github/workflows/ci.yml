@@ -54,17 +54,20 @@ jobs:
       with:
         path: 'covprofile'
         destination: 'sarsfield-ng3-test'
+        process_gcloudignore: false
     - id: 'upload-metadata-abs'
       name: 'Upload Absolute Coverage Metadata'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'abs_metadata.json'
         destination: 'sarsfield-ng3-test'
+        process_gcloudignore: false
     - id: 'upload-metadata-inc'
       name: 'Upload Incremental Coverage Metadata'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'inc_metadata.json'
         destination: 'sarsfield-ng3-test'
+        process_gcloudignore: false
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
