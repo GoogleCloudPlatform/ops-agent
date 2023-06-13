@@ -15,6 +15,9 @@
 on: [push, pull_request]
 name: Test
 jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
   test:
     strategy:
       fail-fast: false
@@ -36,31 +39,36 @@ jobs:
         go install golang.org/x/tools/cmd/goimports@latest
         go install github.com/mattn/goveralls@latest
     - if: ${{ runner.os == 'Linux' }}
-      run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
-    - run: go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
-    - env:
+      env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
-      run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
+      run: |
+        if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
+        go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
+        goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
     - id: 'set-coverage-vars'
+      if: ${{ runner.os == 'Linux' }}
       name: 'Set Coverage Env Vars'
       run: | 
         echo "ABS_DIR=ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
         echo "INC_DIR=ng3-customer-telemetry-coverage/incremental/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
     - id: 'prepare-coverage-data'
+      if: ${{ runner.os == 'Linux' }}
       name: 'Prepare Coverage Data'
       run: |
         mkdir -p "${{ env.ABS_DIR }}"
         mkdir -p "${{ env.INC_DIR }}"
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.INC_DIR }}/metadata.json
-        cp covprofile ${{ env.ABS_DIR }}/${{ runner.os }}_coverage.out
-        cp covprofile ${{ env.INC_DIR }}/${{ runner.os }}_coverage.out
+        cp covprofile ${{ env.ABS_DIR }}/coverage.out
+        cp covprofile ${{ env.INC_DIR }}/coverage.out
     - id: 'auth'
+      if: ${{ runner.os == 'Linux' }}
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.build_and_test_external_credentials }}'
     - id: 'upload-coverage-data'
+      if: ${{ runner.os == 'Linux' }}
       name: 'Upload Coverage Data'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
