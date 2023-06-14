@@ -79,20 +79,14 @@ func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component 
 func generateSelfLogComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
+		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx)), healthChecksLogsPath()},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
 	}.Components(ctx, selfLogsTag)...)
 
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLogsPath()},
-		BufferInMemory: true,
-	}.Components(ctx, selfLogsTag)...)
-
 	out = append(out, generateFluentBitSelfLogsParser(ctx)...)
 	out = append(out, generateHealthChecksLogsParser(ctx)...)
-
 	out = append(out, stackdriverOutputComponent(selfLogsTag, userAgent, ""))
 
 	return out
