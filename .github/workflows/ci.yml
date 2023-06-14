@@ -45,19 +45,14 @@ jobs:
     - id: 'set-coverage-vars'
       if: ${{ runner.os == 'Linux' }}
       name: 'Set Coverage Env Vars'
-      run: | 
-        echo "ABS_DIR=ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
-        echo "INC_DIR=ng3-customer-telemetry-coverage/incremental/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
+      run: echo "ABS_DIR=ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
     - id: 'prepare-coverage-data'
       if: ${{ runner.os == 'Linux' }}
       name: 'Prepare Coverage Data'
       run: |
         mkdir -p "${{ env.ABS_DIR }}"
-        mkdir -p "${{ env.INC_DIR }}"
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
-        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","patchset_num":"1","change_id":"${{ github.run_number }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.INC_DIR }}/metadata.json
         cp covprofile ${{ env.ABS_DIR }}/coverage.out
-        cp covprofile ${{ env.INC_DIR }}/coverage.out
     - id: 'auth'
       if: ${{ runner.os == 'Linux' }}
       name: 'Authenticate to Google Cloud'
