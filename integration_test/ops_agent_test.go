@@ -1524,11 +1524,10 @@ func TestFluentForwardLog(t *testing.T) {
 		//
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
-		var command string
+		command := "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+
 		if gce.IsWindows(platform) {
 			command = "echo '{\"msg\":\"test fluent forward log\"}' | C:\\Program Files\\Google\\Cloud Operations\\Ops Agent\\bin\\fluent-bit.exe -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
-		} else {
-			command = "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
 		}
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
