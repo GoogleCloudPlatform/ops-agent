@@ -1420,8 +1420,10 @@ func TestTCPLog(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		if gce.IsWindows(platform) {
+			// DELETE THIS BLOCK WHEN TCP BUG IS FIXED. The code for testing on Windows is already present below.
 			t.SkipNow()
 		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1441,9 +1443,47 @@ func TestTCPLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		command := "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170"
+		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
+		// use this Powershell Script that can send TCP messages.
+		if gce.IsWindows(platform) {
+			tcp_script := `
+			param([string]$TargetIP = "", [int]$TargetPort = 0, [string]$Message = "")
+
+			try {
+				if ($TargetIP -eq "" ) { $TargetIP = read-host "Enter target IP address" }
+				if ($TargetPort -eq 0 ) { $TargetPort = read-host "Enter target port" }
+				if ($Message -eq "" ) { $Message = read-host "Enter message to send" }
+
+					$IP = [System.Net.Dns]::GetHostAddresses($TargetIP) 
+					$Address = [System.Net.IPAddress]::Parse($IP) 
+					$Socket = New-Object System.Net.Sockets.TCPClient($Address,$TargetPort) 
+					$Stream = $Socket.GetStream() 
+					$Writer = New-Object System.IO.StreamWriter($Stream)
+					$Message | % {
+						$Writer.WriteLine($_)
+						$Writer.Flush()
+					}
+					$Stream.Close()
+					$Socket.Close()
+
+				"??  Done."
+				exit 0 # success
+			} catch {
+				"?? Error in line $($_.InvocationInfo.ScriptLineNumber): $($Error[0])"
+				exit 1
+			}`
+
+			if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", (fmt.Sprintf("echo '%s' | Out-File -FilePath send-tcp.ps1", tcp_script))); err != nil {
+				t.Fatalf("Error creating TCP script. %v", err)
+			}
+
+			command = "./send-tcp.ps1 127.0.0.1 5170 '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}'"
+		}
+
 		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
 		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
@@ -1461,9 +1501,7 @@ func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1486,7 +1524,14 @@ func TestFluentForwardLog(t *testing.T) {
 		//
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+		var command string
+		if gce.IsWindows(platform) {
+			command = "echo '{\"msg\":\"test fluent forward log\"}' | C:\\Program Files\\Google\\Cloud Operations\\Ops Agent\\bin\\fluent-bit.exe -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+		} else {
+			command = "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
 		}
 
