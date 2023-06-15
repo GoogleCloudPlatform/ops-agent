@@ -6,7 +6,10 @@ DESTDIR="${DESTDIR}${otel_dir}"
 cd submodules/opentelemetry-java-contrib
 mkdir -p "$DESTDIR"
 ./gradlew --no-daemon :jmx-metrics:build
-cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
+
+# Released versions don't have the SNAPSHOT suffix. Since the JMX Metric Gatherer is not
+# marked as stable yet, the jar has the 'alpha' suffix.
+cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
 
 # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
 # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive
