@@ -679,11 +679,15 @@ func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 	return writer.guarded.Write(p)
 }
 
-// runCommand invokes a binary and waits until it finishes. Returns the stdout
-// and stderr, and an error if the binary had a nonzero exit code.
+// runCommandWithTimeout invokes a binary. If the timeout argument is greater than 0,
+// then the process is killed after the timeout period. If the timeout is less than or equal to 0,
+// then the function just waits until the command finishes.
+// timeout argument is in seconds.
+// Returns the stdout and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
-func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+
+func runCommandWithTimeout(ctx context.Context, logger *log.Logger, stdin string, args []string, timeout time.Duration) (CommandOutput, error) {
 	var output CommandOutput
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
@@ -711,8 +715,22 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
-	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
+	if err = cmd.Start(); err != nil {
+		err = fmt.Errorf("Command failed to start: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
+	} else {
+		if timeout.Seconds() <= 0 {
+			if err = cmd.Wait(); err != nil {
+				err = fmt.Errorf("Command failed to run: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
+			}
+		} else {
+			// If there's an error in killing the process, we just log it. No need to propagate it back to the caller
+			// as they might assume the actual command failed to run and stop the program or retry the same command.
+			logger.Printf("Waiting %s until timing out command", timeout.String())
+			time.Sleep(timeout)
+			if e := cmd.Process.Kill(); e != nil {
+				logger.Printf("Failed to kill process %v", e)
+			}
+		}
 	}
 
 	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
@@ -722,6 +740,14 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	output.Stderr = stderrBuilder.String()
 
 	return output, err
+}
+
+// runCommand invokes a binary and waits until it finishes. Returns the stdout
+// and stderr, and an error if the binary had a nonzero exit code.
+// args is a slice containing the binary to invoke along with all its arguments,
+// e.g. {"echo", "hello"}.
+func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+	return runCommandWithTimeout(ctx, logger, stdin, args, 0)
 }
 
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
@@ -770,16 +796,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
-// RunRemotely runs a command on the provided VM.
-// The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
-// Returns the combined stdout+stderr as a string, plus an error if there was
-// a problem.
-//
-// 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
-// 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used.
-func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
-	logger.Printf("Running command remotely: %v", command)
+func runRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string, timeout time.Duration) (_ CommandOutput, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("Command failed: %v\n%v", command, err)
@@ -802,7 +819,39 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
-	return runCommand(ctx, logger, stdin, args)
+
+	if timeout.Seconds() <= 0 {
+		return runCommand(ctx, logger, stdin, args)
+	}
+
+	return runCommandWithTimeout(ctx, logger, stdin, args, timeout)
+
+}
+
+// RunRemotely runs a command on the provided VM.
+// The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
+// Returns the combined stdout+stderr as a string, plus an error if there was
+// a problem.
+//
+// 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
+// 'stdin' is what to supply to the command on stdin. It is usually "".
+// TODO: Remove the stdin parameter, because it is hardly used.
+func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	logger.Printf("Running command remotely: %v", command)
+
+	return runRemotely(ctx, logger, vm, stdin, command, 0)
+}
+
+// RunRemotelyWithTimeout runs a command on the provided VM for a certain time period.
+// The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
+// Returns the combined stdout+stderr as a string, plus an error if there was
+// a problem.
+// The timeout value is an integer representing seconds. If the command does not finish running by the
+// timeout period, the process is killed.
+
+func RunRemotelyWithTimeout(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string, timeout time.Duration) (_ CommandOutput, err error) {
+	logger.Printf("Running command remotely with timeout: %v", command)
+	return runRemotely(ctx, logger, vm, stdin, command, timeout)
 }
 
 // UploadContent takes an io.Reader and uploads its contents as a file to a

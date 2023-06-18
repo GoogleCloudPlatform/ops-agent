@@ -1515,7 +1515,8 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+		var err error
+		if err = agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1524,17 +1525,25 @@ func TestFluentForwardLog(t *testing.T) {
 		//
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
-		command := "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
 
+		var log string
+		var command string
+		timeout := 0 * time.Second
 		if gce.IsWindows(platform) {
-			command = "echo '{\"msg\":\"test fluent forward log\"}' | C:\\Program Files\\Google\\Cloud Operations\\Ops Agent\\bin\\fluent-bit.exe -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+			command = `& "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe" "-i random" "-o forward://127.0.0.1:24224" "-t forwarder_tag"`
+			timeout = 40 * time.Second
+			log = "jsonPayload.rand_value:*"
+
+		} else {
+			command = "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+			log = "jsonPayload.msg:test fluent forward log"
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
+		if _, err = gce.RunRemotelyWithTimeout(ctx, logger.ToMainLog(), vm, "", command, timeout); err != nil {
+			t.Fatalf("Error writing dummy forward protocol log line %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
+		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", 3*time.Minute, log); err != nil {
 			t.Error(err)
 		}
 	})
