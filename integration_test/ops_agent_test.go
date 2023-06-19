@@ -1538,18 +1538,18 @@ func TestFluentForwardLog(t *testing.T) {
 
 		var log string
 		var command string
-		timeout := 0 * time.Second
+		wait := true
 		if gce.IsWindows(platform) {
 			command = `& "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe" "-i random" "-o forward://127.0.0.1:24224" "-t forwarder_tag"`
-			timeout = 40 * time.Second
 			log = "jsonPayload.rand_value:*"
+			wait = false
 
 		} else {
 			command = "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
 			log = "jsonPayload.msg:test fluent forward log"
 		}
 
-		if _, err = gce.RunRemotelyWithTimeout(ctx, logger.ToMainLog(), vm, "", command, timeout); err != nil {
+		if _, err = gce.StartRemotely(ctx, logger.ToMainLog(), vm, "", command, wait); err != nil {
 			t.Fatalf("Error writing dummy forward protocol log line %v", err)
 		}
 
