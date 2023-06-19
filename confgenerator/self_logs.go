@@ -62,7 +62,7 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			Config: map[string]string{
 				"Name":  "grep",
 				"Match": healthLogsTag,
-				"Regex": fmt.Sprintf("%s (INFO|ERROR|WARNING|DEBUG|DEFAULT)", severityKey),
+				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", severityKey),
 			},
 		},
 	}...)
