@@ -15,6 +15,8 @@ RUN setx /M PATH "%PATH%;C:\WinFlexBison"
 RUN setx /M PATH "%PATH%;C:\Go\bin"
 RUN setx /M PATH "%PATH%;C:\Java\bin"
 
+RUN echo "%PATH%"
+
 RUN setx /M JAVA_HOME "C:\Java"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
@@ -36,6 +38,8 @@ WORKDIR /local
 ADD https://aka.ms/vs/16/release/vs_buildtools.exe /local/vs_buildtools.exe
 ADD https://aka.ms/vs/16/release/channel /local/VisualStudio.chman
 
+RUN echo "%PATH%"
+
 RUN Start-Process /local/vs_buildtools.exe `
     -ArgumentList '--quiet ', '--wait ', '--norestart ', '--nocache', `
     '--installPath C:\BuildTools', `
@@ -43,6 +47,8 @@ RUN Start-Process /local/vs_buildtools.exe `
     '--installChannelUri C:\local\VisualStudio.chman', `
     '--add Microsoft.VisualStudio.Workload.VCTools', `
     '--includeRecommended'  -NoNewWindow -Wait;
+
+RUN echo "%PATH%"
 
 #
 # Technique from https://github.com/StefanScherer/dockerfiles-windows/blob/master/mongo/3.6/Dockerfile
@@ -102,6 +108,8 @@ RUN go install github.com/google/googet/v2/goopack@latest;
 COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
+
+RUN echo "%PATH%"
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
