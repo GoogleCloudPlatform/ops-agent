@@ -1443,7 +1443,7 @@ func TestTCPLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		command := "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170"
+		command := "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170 && echo '{\"msg\":\"test tcp log 3\"}{\"msg\":\"test tcp log 4\"}' > /dev/tcp/localhost/5170"
 		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
 		// use this Powershell Script that can send TCP messages.
 		if gce.IsWindows(platform) {
@@ -1478,11 +1478,12 @@ func TestTCPLog(t *testing.T) {
 				t.Fatalf("Error creating TCP script. %v", err)
 			}
 
-			command = "./send-tcp.ps1 127.0.0.1 5170 '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}'"
+			command = `(./send-tcp.ps1 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}') -and (./send-tcp.ps1 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}')`
 		}
 
 		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
 		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
+
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
@@ -1494,6 +1495,15 @@ func TestTCPLog(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 2"); err != nil {
 			t.Error(err)
 		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 3"); err != nil {
+			t.Error(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 4"); err != nil {
+			t.Error(err)
+		}
+
 	})
 }
 

@@ -682,7 +682,6 @@ func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 // runCommandWithTimeout invokes a binary. If the timeout argument is greater than 0,
 // then the process is killed after the timeout period. If the timeout is less than or equal to 0,
 // then the function just waits until the command finishes.
-// timeout argument is in seconds.
 // Returns the stdout and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
@@ -820,10 +819,6 @@ func runRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
 
-	if timeout.Seconds() <= 0 {
-		return runCommand(ctx, logger, stdin, args)
-	}
-
 	return runCommandWithTimeout(ctx, logger, stdin, args, timeout)
 
 }
@@ -844,10 +839,9 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 
 // RunRemotelyWithTimeout runs a command on the provided VM for a certain time period.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
+// The process is killed if it does not finish running by the timeout period.
 // Returns the combined stdout+stderr as a string, plus an error if there was
 // a problem.
-// The timeout value is an integer representing seconds. If the command does not finish running by the
-// timeout period, the process is killed.
 
 func RunRemotelyWithTimeout(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string, timeout time.Duration) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely with timeout: %v", command)
