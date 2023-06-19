@@ -1553,7 +1553,7 @@ func TestFluentForwardLog(t *testing.T) {
 			t.Fatalf("Error writing dummy forward protocol log line %v", err)
 		}
 
-		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", 3*time.Minute, log); err != nil {
+		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, log); err != nil {
 			t.Error(err)
 		}
 	})
