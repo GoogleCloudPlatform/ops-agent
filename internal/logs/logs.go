@@ -19,7 +19,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -100,11 +99,8 @@ func New(file string) *ZapStructuredLogger {
 	if err != nil {
 		return Default()
 	}
-
-	sugar := logger.Sugar().With(
-		zap.String("agent-version", version.Version))
 	return &ZapStructuredLogger{
-		logger: sugar,
+		logger: logger.Sugar(),
 	}
 }
 
@@ -123,10 +119,8 @@ func Default() *ZapStructuredLogger {
 		logger, _ := DiscardLogger()
 		return logger
 	}
-	sugar := logger.Sugar().With(
-		zap.String("version", version.Version))
 	return &ZapStructuredLogger{
-		logger: sugar,
+		logger: logger.Sugar(),
 	}
 }
 

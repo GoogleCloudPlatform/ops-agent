@@ -17,15 +17,21 @@ package confgenerator
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
-const fluentBitSelfLogTag = "ops-agent-fluent-bit"
-const healthLogsTag = "ops-agent-health"
+
+const (
+	fluentBitSelfLogTag = "ops-agent-fluent-bit"
+	healthLogsTag = "ops-agent-health"
+	severityKey       = "logging.googleapis.com/severity"
+)
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
 	loggingModule := "logging-module.log"
@@ -56,7 +62,7 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			Config: map[string]string{
 				"Name":  "grep",
 				"Match": healthLogsTag,
-				"Regex": "agent-version ^.*",
+				"Regex": fmt.Sprintf("%s (INFO|ERROR|WARNING|DEBUG|DEFAULT)", severityKey),
 			},
 		},
 	}...)
@@ -101,6 +107,7 @@ func generateHealthLogsComponent(ctx context.Context) []fluentbit.Component {
 				{"Match", healthLogsTag},
 				{"Record", "schema-version v1"},
 				{"Record", "agent-kind ops-agent"},
+				{"Record", fmt.Sprintf("agent-version %s", version.Version)},
 			},
 		},
 		{
