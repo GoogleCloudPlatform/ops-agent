@@ -25,7 +25,7 @@ import (
 )
 
 const fluentBitSelfLogTag = "ops-agent-fluent-bit"
-const healthChecksTag = "ops-agent-health-checks"
+const healthLogsTag = "ops-agent-health"
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
 	loggingModule := "logging-module.log"
@@ -39,27 +39,6 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
-func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
-		//Following: b/226668416 temporarily set storage.type to "memory"
-		//to prevent chunk corruption errors
-		BufferInMemory: true,
-	}.Components(ctx, fluentBitSelfLogTag)...)
-
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLogsPath()},
-		BufferInMemory: true,
-	}.Components(ctx, healthChecksTag)...)
-
-	out = append(out, generateSeveritySelfLogsParser(ctx)...)
-	out = append(out, generateHealthChecksLogsParser(ctx)...)
-
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthChecksTag}, "|"), userAgent, ""))
-	return out
-}
-
 func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingProcessorParseJson{
@@ -68,7 +47,7 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
 		},
-	}.Components(ctx, healthChecksTag, "health-checks-json")...)
+	}.Components(ctx, healthLogsTag, "health-checks-json")...)
 	out = append(out, []fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the ops-agent-version field.
@@ -76,15 +55,16 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":  "grep",
-				"Match": healthChecksTag,
-				"Regex": "ops-agent-version ^.*",
+				"Match": healthLogsTag,
+				"Regex": "agent-version ^.*",
 			},
 		},
 	}...)
+
 	return out
 }
 
-func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
+func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
 	parser := LoggingProcessorParseRegex{
@@ -109,5 +89,54 @@ func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
 			{"warn", "WARNING"},
 		})...,
 	)
+	return out
+}
+
+func generateHealthLogsComponent(ctx context.Context) []fluentbit.Component {
+	return []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name", "record_modifier"},
+				{"Match", healthLogsTag},
+				{"Record", "schema-version v1"},
+				{"Record", "agent-kind ops-agent"},
+			},
+		},
+		{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name",  "nest"},
+				{"Match", healthLogsTag},
+				{"Operation", "nest"},
+				{"Wildcard", "schema-version"},
+				{"Wildcard", "agent-version"},
+				{"Wildcard", "agent-kind"},
+				{"Nest_under", "health-signal"},
+			},
+		},
+	}
+}
+
+func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
+		//Following: b/226668416 temporarily set storage.type to "memory"
+		//to prevent chunk corruption errors
+		BufferInMemory: true,
+	}.Components(ctx, fluentBitSelfLogTag)...)
+
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths:   []string{healthChecksLogsPath()},
+		BufferInMemory: true,
+	}.Components(ctx, healthLogsTag)...)
+
+	// Parsers
+	out = append(out, generateFluentBitSelfLogsParser(ctx)...)
+	out = append(out, generateHealthChecksLogsParser(ctx)...)
+
+	out = append(out, generateHealthLogsComponent(ctx)...) 
+	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
 }

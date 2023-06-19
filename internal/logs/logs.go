@@ -102,7 +102,7 @@ func New(file string) *ZapStructuredLogger {
 	}
 
 	sugar := logger.Sugar().With(
-		zap.String("ops-agent-version", version.Version))
+		zap.String("agent-version", version.Version))
 	return &ZapStructuredLogger{
 		logger: sugar,
 	}
