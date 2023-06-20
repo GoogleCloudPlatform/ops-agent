@@ -122,7 +122,7 @@ func mainErr() error {
       type: files
       include_paths:
       - %s
-	generator_debug_logs:
+    generator_debug_logs:
       type: files
       include_paths:
       - %s
