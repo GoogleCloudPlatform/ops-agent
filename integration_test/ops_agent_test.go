@@ -2130,6 +2130,7 @@ func TestPrometheusMetrics(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
+
 		promConfig := `metrics:
   receivers:
     prometheus:
