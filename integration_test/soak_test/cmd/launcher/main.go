@@ -133,8 +133,8 @@ func mainErr() error {
     pipelines:
       my_pipeline:
         receivers:
-		- mylog_source
-		- generator_debug_logs
+        - mylog_source
+        - generator_debug_logs
         exporters: [google]
 `, logPath, debugLogPath)
 	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
