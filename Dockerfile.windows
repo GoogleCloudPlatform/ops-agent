@@ -10,10 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
-RUN setx /M PATH "%PATH%;C:\WinFlexBison"
-RUN setx /M PATH "%PATH%;C:\Go\bin"
-RUN setx /M PATH "%PATH%;C:\Java\bin"
+RUN setx /M PATH "%PATH%;C:\WinFlexBison;C:\Go\bin;C:\Java\bin;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 
 RUN setx /M JAVA_HOME "C:\Java"
 
