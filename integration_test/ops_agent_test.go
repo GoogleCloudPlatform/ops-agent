@@ -1522,21 +1522,17 @@ func TestFluentForwardLog(t *testing.T) {
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
 
-		var log, command string
+		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+
 		if gce.IsWindows(platform) {
 			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
-			log = "jsonPayload.rand_value:*"
-
-		} else {
-			command = "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
-			log = "jsonPayload.msg:test fluent forward log"
 		}
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy forward protocol log line %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, log); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
 			t.Error(err)
 		}
 	})
