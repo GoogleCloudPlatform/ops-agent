@@ -95,13 +95,6 @@ integration_tests:
 	-tags=integration_test \
 	-timeout=4h
 
-integration_tests2:
-	ZONES="${ZONES}" \
-	PLATFORMS="${PLATFORMS}" \
-	go test -run TestFluentForwardLog -v ./integration_test/ops_agent_test.go  \
-	-tags=integration_test \
-	-timeout=4h
-
 third_party_apps_test:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
