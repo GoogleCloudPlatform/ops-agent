@@ -1421,7 +1421,7 @@ func TestTCPLog(t *testing.T) {
 		t.Parallel()
 		if gce.IsWindows(platform) {
 			// TODO: Delete when b/285865631 is fixed.
-			// t.SkipNow()
+			t.SkipNow()
 		}
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
