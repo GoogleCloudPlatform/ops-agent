@@ -114,13 +114,17 @@ func mainErr() error {
 	}
 	debugLogPath := "/tmp/log_generator.log"
 
-	// Install the Ops Agent with a config telling it to watch logPath.
+	// Install the Ops Agent with a config telling it to watch logPath,
+	// and debugLogPath for debugging.
 	config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
       include_paths:
       - %s
+	generator_debug_logs:
+      type: files
+      include_paths:
       - %s
   exporters:
     google:
@@ -128,7 +132,9 @@ func mainErr() error {
   service:
     pipelines:
       my_pipeline:
-        receivers: [mylog_source]
+        receivers:
+		- mylog_source
+		- generator_debug_logs
         exporters: [google]
 `, logPath, debugLogPath)
 	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
