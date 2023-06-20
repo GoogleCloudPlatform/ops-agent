@@ -19,7 +19,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -39,8 +38,13 @@ type HealthCheckResult struct {
 func singleErrorResultMessage(e error, Name string) string {
 	if e != nil {
 		if healthError, ok := e.(HealthCheckError); ok {
-			return fmt.Sprintf("[%s] Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
-				Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+			if healthError.IsFatal {
+				return fmt.Sprintf("[%s] Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+					Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+			} else {
+				return fmt.Sprintf("[%s] Result: WARNING, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+					Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+			}
 		}
 		return fmt.Sprintf("[%s] Result: ERROR, Detail: %s", Name, e.Error())
 	}
@@ -48,28 +52,24 @@ func singleErrorResultMessage(e error, Name string) string {
 }
 
 func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
-	for _, m := range r.StringSlice() {
-		if r.Err == nil {
-			logger.Infof(m)
+	for _, e := range r.ErrorSlice() {
+		if e == nil {
+			logger.Infof(singleErrorResultMessage(e, r.Name))
 		} else {
-			logger.Errorf(m)
+			if healthError, ok := e.(HealthCheckError); ok && !healthError.IsFatal {
+				logger.Warnf(singleErrorResultMessage(e, r.Name))
+			} else {
+				logger.Errorf(singleErrorResultMessage(e, r.Name))
+			}
 		}
 	}
 }
 
-func (r HealthCheckResult) StringSlice() []string {
+func (r HealthCheckResult) ErrorSlice() []error {
 	if mwErr, ok := r.Err.(MultiWrappedError); ok {
-		var messageList []string
-		for _, e := range mwErr.Unwrap() {
-			messageList = append(messageList, singleErrorResultMessage(e, r.Name))
-		}
-		return messageList
+		return mwErr.Unwrap()
 	}
-	return []string{singleErrorResultMessage(r.Err, r.Name)}
-}
-
-func (r HealthCheckResult) String() string {
-	return strings.Join(r.StringSlice(), "\n")
+	return []error{r.Err}
 }
 
 func LogHealthCheckResults(healthCheckResults []HealthCheckResult, logger logs.StructuredLogger) {
