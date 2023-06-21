@@ -34,6 +34,7 @@ const (
 
 type StructuredLogger interface {
 	Infof(format string, v ...any)
+	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
 	Println(v ...any)
 }
@@ -133,6 +134,10 @@ func (f ZapStructuredLogger) Infof(format string, v ...any) {
 	f.logger.Infof(format, v...)
 }
 
+func (f ZapStructuredLogger) Warnf(format string, v ...any) {
+	f.logger.Warnf(format, v...)
+}
+
 func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
 }
@@ -154,6 +159,10 @@ func (sl SimpleLogger) Printf(format string, v ...any) {
 }
 
 func (sl SimpleLogger) Infof(format string, v ...any) {
+	sl.l.Printf(format, v...)
+}
+
+func (sl SimpleLogger) Warnf(format string, v ...any) {
 	sl.l.Printf(format, v...)
 }
 
