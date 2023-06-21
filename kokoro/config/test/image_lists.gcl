@@ -30,7 +30,7 @@ bullseye = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
-bullseye_arm = _distro {
+bullseye_arm64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
