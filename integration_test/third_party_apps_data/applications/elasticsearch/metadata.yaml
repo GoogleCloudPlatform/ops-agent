@@ -29,7 +29,7 @@ configure_integration: |-
   privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster)
   {: .external}.
 minimum_supported_agent_version:
-  metrics: 2.21.0
+  metrics: 2.32.0
   logging: 2.9.0
 supported_operating_systems: linux
 supported_app_version: ["7.9+"]
