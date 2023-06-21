@@ -3550,8 +3550,17 @@ func isHealthCheckTestPlatform(platform string) bool {
 	return platform == "windows-2019" || platform == "debian-11"
 }
 
-func healthCheckResultMessage(name string, result string) string {
+func healthCheckResultMessage(name string, result string, code string) string {
+	if result == "FAIL" || result == "WARNING" {
+		return fmt.Sprintf("[%s Check] Result: %s, Error code: %s", name, result, code)
+	}
 	return fmt.Sprintf("[%s Check] Result: %s", name, result)
+}
+
+func checkExpectedHealthCheckResult(t *testing.T, output string, name string, expected string, code string) {
+	if !strings.Contains(output, healthCheckResultMessage(name, expected, code)) {
+		t.Errorf("expected %s check to %s", name, expected)
+	}
 }
 
 func getRecentServiceOutputForPlatform(platform string) string {
@@ -3588,7 +3597,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}
 
 		customScopes := strings.Join([]string{
-			"https://www.googleapis.com/auth/monitoring.write",
+			"https://www.googleapis.com/auth/monitoring.read",
 			"https://www.googleapis.com/auth/logging.read",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
@@ -3622,14 +3631,10 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc := func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "PASS")
-		checkFunc("Ports", "FAIL")
-		checkFunc("API", "FAIL")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "FbMetricsPortErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
 	})
 }
 
@@ -3652,14 +3657,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc := func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "PASS")
-		checkFunc("Ports", "PASS")
-		checkFunc("API", "PASS")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3680,14 +3680,13 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc = func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "FAIL")
-		checkFunc("Ports", "PASS")
-		checkFunc("API", "FAIL")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiConnErr")
 	})
 }
 
