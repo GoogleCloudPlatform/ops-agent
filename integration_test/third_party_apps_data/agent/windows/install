@@ -1,3 +1,4 @@
+$ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 # These are the steps from our public documentation:
