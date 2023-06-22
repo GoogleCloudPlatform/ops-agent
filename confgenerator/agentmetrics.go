@@ -45,7 +45,9 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
@@ -109,7 +111,9 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
@@ -117,6 +121,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				"fluentbit_uptime",
 				"fluentbit_stackdriver_requests_total",
 				"fluentbit_stackdriver_proc_records_total",
+				"fluentbit_stackdriver_retried_records_total",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
@@ -133,6 +138,12 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 					otel.AggregateLabels("sum", "response_code"),
 				),
 				otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("status", "response_code"),
+					otel.AggregateLabels("sum", "response_code"),
+				),
+				otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "agent/log_entry_retry_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.RenameLabel("status", "response_code"),

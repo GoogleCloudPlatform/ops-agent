@@ -36,6 +36,7 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -84,6 +85,18 @@ processors:
     - action: update
       include: fluentbit_stackdriver_proc_records_total
       new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: agent/log_entry_retry_count
       operations:
       - action: toggle_scalar_data_type
       - action: update_label
@@ -374,6 +387,12 @@ processors:
   metricstransform/mysql_1:
     transforms:
     - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: workload.googleapis.com/$${1}
+  metricstransform/mysql_1_1:
+    transforms:
+    - action: update
       include: "^mysql\\.buffer_pool\\.(.*)$$"
       match_type: regexp
       new_name: mysql.buffer_pool_$${1}
@@ -443,10 +462,14 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/mysql_1_2:
+    override_scope_name: agent.googleapis.com/mysql
+    override_scope_version: "1.0"
   modifyscope/mysql_2:
     override_scope_name: agent.googleapis.com/mysql
     override_scope_version: "1.0"
   normalizesums/mysql_0: {}
+  normalizesums/mysql_1_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -464,7 +487,7 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  mysql/mysql:
+  mysql/mysql_1:
     collection_interval: 30s
     endpoint: localhost:3306
     metrics:
@@ -481,6 +504,10 @@ receivers:
       mysql.opened_resources:
         enabled: false
       mysql.prepared_statements:
+        enabled: false
+      mysql.replica.sql_delay:
+        enabled: false
+      mysql.replica.time_behind_source:
         enabled: false
       mysql.table.io.wait.count:
         enabled: false
@@ -508,6 +535,31 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
+  sqlquery/mysql:
+    collection_interval: 30s
+    datasource: usr:pwd@tcp(localhost:3306)/?checkConnLiveness=false&maxAllowedPacket=0
+    driver: mysql
+    queries:
+    - metrics:
+      - attribute_columns: []
+        data_type: sum
+        description: The number of seconds that the replica must lag the source.
+        metric_name: mysql.replica.sql_delay
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: SQL_Delay
+        value_type: int
+      - attribute_columns: []
+        data_type: sum
+        description: This field is an indication of how “late” the replica is.
+        metric_name: mysql.replica.time_behind_source
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: Seconds_Behind_Master
+        value_type: int
+      sql: SHOW SLAVE STATUS
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -539,7 +591,17 @@ service:
       - modifyscope/mysql_2
       - resourcedetection/_global_0
       receivers:
-      - mysql/mysql
+      - sqlquery/mysql
+    metrics/mysql_mysql_1:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - normalizesums/mysql_1_0
+      - metricstransform/mysql_1_1
+      - modifyscope/mysql_1_2
+      - resourcedetection/_global_0
+      receivers:
+      - mysql/mysql_1
     metrics/otel:
       exporters:
       - googlecloud

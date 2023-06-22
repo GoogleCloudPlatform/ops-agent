@@ -90,9 +90,16 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 		Receiver: prometheusToOtelComponent(r.PromConfig),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
-			"metrics": nil,
+			"metrics": {
+				otel.GroupByGMPAttrs(),
+			},
 		},
-		Type: otel.GMP,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.GMP,
+		},
+		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
+			"metrics": otel.None,
+		},
 	}}
 }
 
@@ -156,7 +163,7 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = v
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
 	}
 
 	// Labels are not available using the GCE metadata API.

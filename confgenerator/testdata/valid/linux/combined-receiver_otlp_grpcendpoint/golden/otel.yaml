@@ -19,6 +19,10 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlemanagedprometheus:
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -36,6 +40,7 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -55,6 +60,11 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
+  groupbyattrs/otlp_2:
+    keys:
+    - namespace
+    - cluster
+    - location
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -84,6 +94,18 @@ processors:
     - action: update
       include: fluentbit_stackdriver_proc_records_total
       new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: agent/log_entry_retry_count
       operations:
       - action: toggle_scalar_data_type
       - action: update_label
@@ -417,27 +439,27 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otlp_0:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: A$${1}
-    - action: update
-      include: "^A((?:[a-z]+\\.)*(?:googleapis\\.com|kubernetes\\.io|istio\\.io|knative\\.dev)/.+)$$"
-      match_type: regexp
-      new_name: B$${1}
-    - action: update
-      include: ^A(.*)$$
-      match_type: regexp
-      new_name: Aworkload.googleapis.com/$${1}
-    - action: update
-      include: ^[AB](.*)$$
-      match_type: regexp
-      new_name: $${1}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
+  resourcedetection/otlp_0:
+    detectors:
+    - gcp
+    override: false
+  transform/otlp_1:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["namespace"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -506,17 +528,18 @@ service:
       - prometheus/otel
     metrics/otlp_otlp:
       exporters:
-      - googlecloud/otel
+      - googlemanagedprometheus
       processors:
-      - metricstransform/otlp_0
-      - resourcedetection/_global_0
+      - resourcedetection/otlp_0
+      - transform/otlp_1
+      - groupbyattrs/otlp_2
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
       exporters:
       - googlecloud/otel
       processors:
-      - resourcedetection/_global_0
+      - resourcedetection/_global_1
       receivers:
       - otlp/otlp
   telemetry:

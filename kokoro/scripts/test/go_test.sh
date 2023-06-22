@@ -50,6 +50,9 @@ source kokoro/scripts/utils/common.sh
 
 track_flakiness
 
+# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
+git config --global --add safe.directory "$(pwd)"
+
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.
@@ -75,7 +78,16 @@ GO_VERSION="1.19"
 
 # Download and install a newer version of go.
 # Install from a GCS bucket to avoid being throttled by go.dev.
-gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
+unset ARCH
+case "$(uname -m)" in
+  "x86_64")
+    ARCH="amd64"
+    ;;
+  "aarch64")
+    ARCH="arm64"
+    ;;
+esac
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-${ARCH}.tar.gz" - | \
   sudo tar --directory /usr/local -xzf /dev/stdin
 
 PATH=$PATH:/usr/local/go/bin

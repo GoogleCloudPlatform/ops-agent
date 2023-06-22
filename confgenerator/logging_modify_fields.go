@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -54,7 +55,7 @@ func (p LoggingProcessorModifyFields) Type() string {
 	return "modify_fields"
 }
 
-func (p LoggingProcessorModifyFields) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorModifyFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c, err := p.components(tag, uid)
 	if err != nil {
 		// It shouldn't be possible to get here if the input validation is working, so treat this as a code bug.

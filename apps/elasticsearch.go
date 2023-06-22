@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -48,6 +49,18 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
 
+	metricsConfig := map[string]interface{}{}
+
+	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
+	if !r.ShouldCollectJVMMetrics() {
+		r.skipJVMMetricsConfig(metricsConfig)
+	}
+
+	// Custom logic needed to disable index metrics, since they were previously locked behind a feature gate.
+	// When support for them is added, this logic can be removed and the index name resource attribute will need
+	// to be flattened to the metrics.
+	r.disableIndexMetrics(metricsConfig)
+
 	cfg := map[string]interface{}{
 		"collection_interval":  r.CollectionIntervalString(),
 		"endpoint":             r.Endpoint,
@@ -56,11 +69,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		"nodes":                []string{"_local"},
 		"tls":                  r.TLSConfig(true),
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
-	}
-
-	// Custom logic needed to skip JVM metrics, since JMX receiver is not used here.
-	if !r.ShouldCollectJVMMetrics() {
-		cfg["metrics"] = r.skipJVMMetricsConfig()
+		"metrics":              metricsConfig,
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -70,6 +79,12 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
+			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
+			otel.MetricsOTTLFilter(
+				[]string{
+					`name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil`,
+				},
+				[]string{}),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
@@ -78,7 +93,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 	}}
 }
 
-func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interface{} {
+func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig(metricsConfig map[string]interface{}) {
 	jvmMetrics := []string{
 		"jvm.classes.loaded",
 		"jvm.gc.collections.count",
@@ -93,15 +108,37 @@ func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig() map[string]interfac
 		"jvm.threads.count",
 	}
 
-	conf := map[string]interface{}{}
-
 	for _, metric := range jvmMetrics {
-		conf[metric] = map[string]bool{
+		metricsConfig[metric] = map[string]bool{
+			"enabled": false,
+		}
+	}
+}
+
+func (r MetricsReceiverElasticsearch) disableIndexMetrics(metricsConfig map[string]interface{}) {
+	indexMetrics := []string{
+		"elasticsearch.index.cache.evictions",
+		"elasticsearch.index.cache.memory.usage",
+		"elasticsearch.index.cache.size",
+		"elasticsearch.index.documents",
+		"elasticsearch.index.operations.completed",
+		"elasticsearch.index.operations.merge.docs_count",
+		"elasticsearch.index.operations.merge.size",
+		"elasticsearch.index.operations.time",
+		"elasticsearch.index.segments.count",
+		"elasticsearch.index.segments.memory",
+		"elasticsearch.index.segments.size",
+		"elasticsearch.index.shards.size",
+		"elasticsearch.index.translog.operations",
+		"elasticsearch.index.translog.size",
+	}
+
+	for _, metric := range indexMetrics {
+		metricsConfig[metric] = map[string]bool{
 			"enabled": false,
 		}
 	}
 
-	return conf
 }
 
 func init() {
@@ -116,7 +153,7 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	// sample log line:
@@ -132,14 +169,14 @@ func (p LoggingProcessorElasticsearchJson) Components(tag, uid string) []fluentb
 		},
 	}
 
-	c = append(c, jsonParser.Components(tag, uid)...)
-	c = append(c, p.severityParser(tag, uid)...)
-	c = append(c, p.nestingProcessors(tag, uid)...)
+	c = append(c, jsonParser.Components(ctx, tag, uid)...)
+	c = append(c, p.severityParser(ctx, tag, uid)...)
+	c = append(c, p.nestingProcessors(ctx, tag, uid)...)
 
 	return c
 }
 
-func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) severityParser(ctx context.Context, tag, uid string) []fluentbit.Component {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
@@ -158,10 +195,10 @@ func (p LoggingProcessorElasticsearchJson) severityParser(tag, uid string) []flu
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 }
 
-func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchJson) nestingProcessors(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -189,7 +226,7 @@ func (p LoggingProcessorElasticsearchJson) nestingProcessors(tag, uid string) []
 			NestUnder:    prefix,
 			RemovePrefix: fmt.Sprintf("%s.", prefix),
 		}
-		c = append(c, nestProcessor.Components(tag, uid)...)
+		c = append(c, nestProcessor.Components(ctx, tag, uid)...)
 	}
 
 	return c
@@ -203,7 +240,7 @@ func (LoggingProcessorElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
-func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	regexParser := confgenerator.LoggingProcessorParseRegex{
@@ -219,13 +256,13 @@ func (p LoggingProcessorElasticsearchGC) Components(tag, uid string) []fluentbit
 		},
 	}
 
-	c = append(c, regexParser.Components(tag, uid)...)
+	c = append(c, regexParser.Components(ctx, tag, uid)...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -235,7 +272,7 @@ type LoggingReceiverElasticsearchJson struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
 		r.IncludePaths = []string{
@@ -269,8 +306,8 @@ func (r LoggingReceiverElasticsearchJson) Components(tag string) []fluentbit.Com
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchJson.Components(tag, "elasticsearch_json")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorElasticsearchJson.Components(ctx, tag, "elasticsearch_json")...)
 }
 
 type LoggingReceiverElasticsearchGC struct {
@@ -278,7 +315,7 @@ type LoggingReceiverElasticsearchGC struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default GC log for Elasticsearch
 		r.IncludePaths = []string{
@@ -286,8 +323,8 @@ func (r LoggingReceiverElasticsearchGC) Components(tag string) []fluentbit.Compo
 		}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(tag, "elasticsearch_gc")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
 }
 
 func init() {

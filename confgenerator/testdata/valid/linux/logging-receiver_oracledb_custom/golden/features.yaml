@@ -15,6 +15,10 @@
   key: "[1].enabled"
   value: "true"
 - module: logging
+  feature: receivers:oracledb_alert
+  key: "[1].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:oracledb_audit
   key: "[2].enabled"
   value: "true"
@@ -22,6 +26,10 @@
   feature: receivers:oracledb_audit
   key: "[3].enabled"
   value: "true"
+- module: logging
+  feature: receivers:oracledb_audit
+  key: "[3].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:syslog
   key: "[4].enabled"

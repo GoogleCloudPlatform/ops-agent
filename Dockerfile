@@ -19,6 +19,53 @@
 # or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
 # Generated tarball(s) will end up in /tmp/out
 
+
+ARG CMAKE_VERSION=3.25.2
+ARG OPENJDK_VERSION=11.0.13
+ARG OPENJDK_VERSION_SUFFIX=8
+
+# Manually prepare a recent enough version of CMake.
+# This should be used on platforms where the default package manager
+# does not provide a recent enough version (we require >= 3.12).
+FROM alpine:latest AS cmake-amd64-recent
+ARG CMAKE_VERSION
+
+ENV hash=4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.sh \
+    /cmake.sh
+
+FROM alpine:latest AS cmake-arm64-recent
+ARG CMAKE_VERSION
+
+ENV hash=73a35cab2174a3eb8f35083d55c80871185dc3808f3dae3558cd5fbdb29a4614
+ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.sh \
+    /cmake.sh
+
+FROM cmake-${BUILDARCH}-recent AS cmake-install-recent
+RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
+
+
+# Manually prepare OpenJDK for the current architecture.
+FROM alpine:latest AS openjdk-amd64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=3b1c0c34be4c894e64135a454f2d5aaa4bd10aea04ec2fa0c0efe6bb26528e30
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM alpine:latest AS openjdk-arm64
+ARG OPENJDK_VERSION
+ARG OPENJDK_VERSION_SUFFIX
+
+ENV hash=a77013bff10a5e9c59159231dd5c4bd071fc4c24beed42bd49b82803ba9506ef
+ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK11U.tar.gz
+
+FROM openjdk-${BUILDARCH} as openjdk-install
+RUN set -xe; (echo "$hash  /tmp/OpenJDK11U.tar.gz" | sha256sum -c)
+
+
 # ======================================
 # Build Ops Agent for centos-7 
 # ======================================
@@ -29,22 +76,19 @@ RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
-		expect rpm-sign zip wget && \
-		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-		yum install -y cmake3 && \
-		ln -fs cmake3 /usr/bin/cmake && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		expect rpm-sign zip
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -92,6 +136,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM centos7-build-golang-base AS centos7-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM centos7-build-golang-base AS centos7-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -109,6 +160,7 @@ COPY --from=centos7-build-otel /work/cache /work/cache
 COPY --from=centos7-build-fluent-bit /work/cache /work/cache
 COPY --from=centos7-build-systemd /work/cache /work/cache
 COPY --from=centos7-build-diagnostics /work/cache /work/cache
+COPY --from=centos7-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS centos7
@@ -132,9 +184,10 @@ RUN set -x; yum -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -182,6 +235,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM centos8-build-golang-base AS centos8-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -199,6 +259,7 @@ COPY --from=centos8-build-otel /work/cache /work/cache
 COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
 COPY --from=centos8-build-diagnostics /work/cache /work/cache
+COPY --from=centos8-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS centos8
@@ -225,9 +286,10 @@ RUN set -x; dnf -y update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -275,6 +337,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM rockylinux9-build-golang-base AS rockylinux9-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -292,11 +361,109 @@ COPY --from=rockylinux9-build-otel /work/cache /work/cache
 COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
+COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
+
+# ======================================
+# Build Ops Agent for debian-bookworm 
+# ======================================
+
+FROM debian:bookworm AS bookworm-build-base
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-17-jdk zip
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM bookworm-build-base AS bookworm-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN ./otel.sh /work/cache/
+
+FROM bookworm-build-base AS bookworm-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM bookworm-build-base AS bookworm-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM bookworm-build-base AS bookworm-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM bookworm-build-golang-base AS bookworm-build-diagnostics
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
+COPY ./builds/ops_agent_diagnostics.sh .
+RUN ./ops_agent_diagnostics.sh /work/cache/
+
+
+FROM bookworm-build-golang-base AS bookworm-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM bookworm-build-golang-base AS bookworm-build
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY VERSION build.sh ./
+COPY debian debian
+COPY pkg pkg
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=bookworm-build-otel /work/cache /work/cache
+COPY --from=bookworm-build-fluent-bit /work/cache /work/cache
+COPY --from=bookworm-build-systemd /work/cache /work/cache
+COPY --from=bookworm-build-diagnostics /work/cache /work/cache
+COPY --from=bookworm-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+FROM scratch AS bookworm
+COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
+COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 
 # ======================================
 # Build Ops Agent for debian-bullseye 
@@ -313,9 +480,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -363,6 +531,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM bullseye-build-golang-base AS bullseye-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM bullseye-build-golang-base AS bullseye-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -380,6 +555,7 @@ COPY --from=bullseye-build-otel /work/cache /work/cache
 COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 COPY --from=bullseye-build-diagnostics /work/cache /work/cache
+COPY --from=bullseye-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS bullseye
@@ -401,9 +577,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -451,6 +628,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM buster-build-golang-base AS buster-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM buster-build-golang-base AS buster-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -468,108 +652,12 @@ COPY --from=buster-build-otel /work/cache /work/cache
 COPY --from=buster-build-fluent-bit /work/cache /work/cache
 COPY --from=buster-build-systemd /work/cache /work/cache
 COPY --from=buster-build-diagnostics /work/cache /work/cache
+COPY --from=buster-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS buster
 COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
-
-# ======================================
-# Build Ops Agent for debian-stretch 
-# ======================================
-
-FROM debian:stretch AS stretch-build-base
-
-RUN set -x; \
-		(echo "deb http://ftp.debian.org/debian stretch-backports main" | tee /etc/apt/sources.list.d/backports.list) && \
-		(echo "deb http://ftp.debian.org/debian stretch-backports-sloppy main" >> /etc/apt/sources.list.d/backports.list) && \
-		apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-		build-essential cmake/stretch-backports libuv1/stretch-backports \
-		libarchive13/stretch-backports-sloppy bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
-		RUN set -xe; \
-		mkdir -p /usr/local/java-11-openjdk && \
-		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
-		ENV JAVA_HOME /usr/local/java-11-openjdk/
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM stretch-build-base AS stretch-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN ./otel.sh /work/cache/
-
-FROM stretch-build-base AS stretch-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM stretch-build-base AS stretch-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM stretch-build-base AS stretch-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM stretch-build-golang-base AS stretch-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM stretch-build-golang-base AS stretch-build
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=stretch-build-otel /work/cache /work/cache
-COPY --from=stretch-build-fluent-bit /work/cache /work/cache
-COPY --from=stretch-build-systemd /work/cache /work/cache
-COPY --from=stretch-build-diagnostics /work/cache /work/cache
-RUN ./pkg/deb/build.sh
-
-FROM scratch AS stretch
-COPY --from=stretch-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-stretch.tgz
-COPY --from=stretch-build /google-cloud-ops-agent*.deb /
 
 # ======================================
 # Build Ops Agent for sles-12 
@@ -581,7 +669,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip wget && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -593,25 +681,24 @@ RUN set -x; \
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
-	
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
+		ln -fs /usr/lib/systemd /lib/systemd
+		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-11-openjdk/
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -659,6 +746,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM sles12-build-golang-base AS sles12-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM sles12-build-golang-base AS sles12-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -676,6 +770,7 @@ COPY --from=sles12-build-otel /work/cache /work/cache
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
 COPY --from=sles12-build-diagnostics /work/cache /work/cache
+COPY --from=sles12-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS sles12
@@ -688,11 +783,11 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 FROM opensuse/leap:15.1 AS sles15-build-base
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip wget
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
-		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
-		name=google-cloud-monitoring-sles15-x86_64-test \n\
-		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
+		name=google-cloud-monitoring-sles15-vendor \n\
+		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-$basearch-test-20221109-1 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
@@ -702,18 +797,18 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd && \
-			# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-			wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-			(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-			bash cmake.sh --skip-license --prefix=/usr/local
+			ln -fs /usr/lib/systemd /lib/systemd
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -761,6 +856,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM sles15-build-golang-base AS sles15-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM sles15-build-golang-base AS sles15-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -778,6 +880,7 @@ COPY --from=sles15-build-otel /work/cache /work/cache
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
 COPY --from=sles15-build-diagnostics /work/cache /work/cache
+COPY --from=sles15-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
 FROM scratch AS sles15
@@ -794,18 +897,18 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip wget && \
-		# Download and install CMake manually (zypper only gives us CMake 3.5, but we need >= 3.12)
-		wget https://github.com/Kitware/CMake/releases/download/v3.25.2/cmake-3.25.2-linux-x86_64.sh -O cmake.sh && \
-		(echo '4d98de8d605da676e71a889dd94f80c76abb377fade2f21e3510e62ece1e1ada  cmake.sh' | sha256sum --check) && \
-		bash cmake.sh --skip-license --prefix=/usr/local
+		devscripts cdbs pkg-config openjdk-11-jdk zip
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -853,6 +956,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM bionic-build-golang-base AS bionic-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM bionic-build-golang-base AS bionic-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -870,6 +980,7 @@ COPY --from=bionic-build-otel /work/cache /work/cache
 COPY --from=bionic-build-fluent-bit /work/cache /work/cache
 COPY --from=bionic-build-systemd /work/cache /work/cache
 COPY --from=bionic-build-diagnostics /work/cache /work/cache
+COPY --from=bionic-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS bionic
@@ -891,9 +1002,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -941,6 +1053,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM focal-build-golang-base AS focal-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM focal-build-golang-base AS focal-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -958,6 +1077,7 @@ COPY --from=focal-build-otel /work/cache /work/cache
 COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
 COPY --from=focal-build-diagnostics /work/cache /work/cache
+COPY --from=focal-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS focal
@@ -979,9 +1099,10 @@ RUN set -x; apt-get update && \
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ADD https://golang.org/dl/go1.19.linux-amd64.tar.gz /tmp/go1.19.linux-amd64.tar.gz
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.19.linux-amd64.tar.gz -C /usr/local
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -1029,6 +1150,13 @@ COPY ./builds/ops_agent_diagnostics.sh .
 RUN ./ops_agent_diagnostics.sh /work/cache/
 
 
+FROM jammy-build-golang-base AS jammy-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
 FROM jammy-build-golang-base AS jammy-build
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
@@ -1046,21 +1174,120 @@ COPY --from=jammy-build-otel /work/cache /work/cache
 COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
 COPY --from=jammy-build-diagnostics /work/cache /work/cache
+COPY --from=jammy-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 
+# ======================================
+# Build Ops Agent for ubuntu-lunar 
+# ======================================
+
+FROM ubuntu:lunar AS lunar-build-base
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-11-jdk zip debhelper
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM lunar-build-base AS lunar-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN ./otel.sh /work/cache/
+
+FROM lunar-build-base AS lunar-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM lunar-build-base AS lunar-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM lunar-build-base AS lunar-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM lunar-build-golang-base AS lunar-build-diagnostics
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
+COPY ./builds/ops_agent_diagnostics.sh .
+RUN ./ops_agent_diagnostics.sh /work/cache/
+
+
+FROM lunar-build-golang-base AS lunar-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM lunar-build-golang-base AS lunar-build
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY VERSION build.sh ./
+COPY debian debian
+COPY pkg pkg
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=lunar-build-otel /work/cache /work/cache
+COPY --from=lunar-build-fluent-bit /work/cache /work/cache
+COPY --from=lunar-build-systemd /work/cache /work/cache
+COPY --from=lunar-build-diagnostics /work/cache /work/cache
+COPY --from=lunar-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+FROM scratch AS lunar
+COPY --from=lunar-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-lunar.tgz
+COPY --from=lunar-build /google-cloud-ops-agent*.deb /
+
 FROM scratch
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
+COPY --from=bookworm /* /
 COPY --from=bullseye /* /
 COPY --from=buster /* /
-COPY --from=stretch /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
 COPY --from=bionic /* /
 COPY --from=focal /* /
 COPY --from=jammy /* /
+COPY --from=lunar /* /

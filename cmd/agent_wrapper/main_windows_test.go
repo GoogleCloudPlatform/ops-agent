@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-// +build !windows
+//go:build windows
 
-package windows
+package main
 
-import "fmt"
+import (
+	"os/exec"
+	"strings"
+)
 
-func Is2012() bool {
-	return false
-}
-
-func Is2016() bool {
-	return false
-}
-
-func GetOldWinlogChannels() ([]string, error) {
-	return nil, fmt.Errorf("not a Windows platform")
+// Get a command that will write the given number of bytes
+func getCommand(writeBytes int) *exec.Cmd {
+	return exec.Command("cmd", "/C", "@echo", strings.Repeat("a", int(writeBytes-2)))
 }

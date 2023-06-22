@@ -21,6 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
 )
@@ -32,10 +34,12 @@ const serviceDisplayName = "Google Cloud Ops Agent"
 var (
 	installServices   = flag.Bool("install", false, "whether to install the services")
 	uninstallServices = flag.Bool("uninstall", false, "whether to uninstall the services")
+	healthChecks      = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
 func main() {
-	infoLog := log.New(os.Stdout, log.Prefix(), log.Flags())
+
+	infoLog := logs.NewSimpleLogger()
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -57,10 +61,14 @@ func main() {
 				log.Fatal(err)
 			}
 			infoLog.Printf("uninstalled services")
+		} else if *healthChecks {
+			healthCheckResults := getHealthCheckResults()
+			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
+			infoLog.Println("Health checks finished")
 		} else {
 			// TODO: add an interactive GUI box with the Install, Uninstall, and Cancel buttons.
 			fmt.Println("Invoked as a standalone program with no flags. Nothing to do.")
-			fmt.Println("Use either --install or --uninstall to take action.")
+			fmt.Println("Use either --healthchecks, --install, --uninstall to take action.")
 		}
 	}
 }
@@ -128,12 +136,14 @@ func initServices() error {
 			// TODO: fluent-bit hardcodes a service name of "fluent-bit"; do we need to match that?
 			fmt.Sprintf("%s-fluent-bit", serviceName),
 			fmt.Sprintf("%s - Logging Agent", serviceDisplayName),
-			filepath.Join(base, "fluent-bit.exe"),
+			filepath.Join(base, fmt.Sprintf("%s-wrapper.exe", serviceName)),
 			[]string{
+				"-log_path", filepath.Join(logDirectory, "logging-module.log"),
+				"-config_path", filepath.Join(base, "../config/config.yaml"),
+				filepath.Join(base, "fluent-bit.exe"),
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
 				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
 				"--storage_path", fluentbitStoragePath,
-				"--log_file", filepath.Join(logDirectory, "logging-module.log"),
 			},
 		},
 		{

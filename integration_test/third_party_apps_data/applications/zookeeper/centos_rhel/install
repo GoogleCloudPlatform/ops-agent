@@ -3,8 +3,9 @@ set -e
 sudo yum install -y curl java
 
 sudo mkdir -p /opt/zookeeper/stage
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 sudo curl \
-    "https://archive.apache.org/dist/zookeeper/zookeeper-3.7.1/apache-zookeeper-3.7.1-bin.tar.gz" \
+    "https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/zookeeper/zookeeper-3.7.1/apache-zookeeper-3.7.1-bin.tar.gz" \
     -o /opt/zookeeper/stage/zk.tgz
 sudo tar -xvzf /opt/zookeeper/stage/zk.tgz -C /opt/zookeeper --strip 1
 

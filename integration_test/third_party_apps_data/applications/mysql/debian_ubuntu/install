@@ -21,3 +21,34 @@ elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
 fi
 
 sudo service mysql start
+
+# set up replication source to validate replica metrics
+# set main target (replica) to use binary logging for replication to work
+sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
+EOF
+
+# Disable apparmor for mysql
+if [[ "${ID}" == ubuntu ]]; then
+  sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+fi
+
+sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
+
+sudo chmod uga+r /etc/mysql/conf.d/*
+sudo chown mysql:mysql /etc/mysql/conf.d/*
+sudo chown mysql:mysql /var/log/mysql/
+
+sudo service mysql restart

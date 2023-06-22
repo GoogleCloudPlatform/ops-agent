@@ -27,6 +27,7 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -75,6 +76,18 @@ processors:
     - action: update
       include: fluentbit_stackdriver_proc_records_total
       new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: agent/log_entry_retry_count
       operations:
       - action: toggle_scalar_data_type
       - action: update_label

@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -28,7 +30,7 @@ func (LoggingProcessorSapHanaTrace) Type() string {
 	return "saphana"
 }
 
-func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Undocumented Format: [thread_id]{connection_id}[transaction_id/update_transaction_id] timestamp severity_flag component source_file : message
 		// Sample line: [7893]{200068}[20/40637286] 2021-11-04 13:13:25.025767 w FileIO           FileSystem.cpp(00085) : Unsupported file system "ext4" for "/usr/sap/MMM/SYS/global/hdb/data/mnt00001"
@@ -51,7 +53,7 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 				"source_line":           "int",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
@@ -86,7 +88,7 @@ func (p LoggingProcessorSapHanaTrace) Components(tag string, uid string) []fluen
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -97,7 +99,7 @@ type LoggingReceiverSapHanaTrace struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverSapHanaTrace) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc",
@@ -124,8 +126,8 @@ func (r LoggingReceiverSapHanaTrace) Components(tag string) []fluentbit.Componen
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorSapHanaTrace.Components(tag, r.Type())...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorSapHanaTrace.Components(ctx, tag, r.Type())...)
 	return c
 }
 

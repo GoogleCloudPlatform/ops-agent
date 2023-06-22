@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -51,6 +52,8 @@ type service struct {
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
 	if err := s.parseFlags(args); err != nil {
@@ -59,14 +62,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0x00000057
 	}
 
-	if err := s.generateConfigs(); err != nil {
+	if err := s.generateConfigs(ctx); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
-
-	s.runStartupChecks()
+	s.runHealthChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -88,6 +90,8 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 			default:
 				s.log.Error(EngineEventID, fmt.Sprintf("unexpected control request #%d", c))
 			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -133,26 +137,55 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func (s *service) runStartupChecks() {
+func getHealthCheckResults() []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-	logger, closer := healthchecks.CreateHealthChecksLogger(logsDir)
-	defer closer()
+	logger := healthchecks.CreateHealthChecksLogger(logsDir)
 
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
-	for _, result := range healthCheckResults {
-		if result.Err != nil {
-			s.log.Error(EngineEventID, result.Message)
-		} else {
-			s.log.Info(EngineEventID, result.Message)
-		}
-	}
-	s.log.Info(EngineEventID, "Startup checks finished")
+	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
-func (s *service) generateConfigs() error {
+type WindowsServiceLogger struct {
+	srv *service
+}
+
+func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
+	if len(v) > 0 {
+		wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, v...))
+	} else {
+		wsl.srv.log.Info(EngineEventID, format)
+	}
+}
+
+func (wsl WindowsServiceLogger) Warnf(format string, v ...any) {
+	if len(v) > 0 {
+		wsl.srv.log.Warning(EngineEventID, fmt.Sprintf(format, v...))
+	} else {
+		wsl.srv.log.Warning(EngineEventID, format)
+	}
+}
+
+func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
+	if len(v) > 0 {
+		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
+	} else {
+		wsl.srv.log.Error(EngineEventID, format)
+	}
+
+}
+
+func (wsl WindowsServiceLogger) Println(v ...any) {}
+
+func (srv *service) runHealthChecks() {
+	healthCheckResults := getHealthCheckResults()
+	logger := WindowsServiceLogger{srv}
+	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
+	srv.log.Info(EngineEventID, "Startup checks finished")
+}
+
+func (s *service) generateConfigs(ctx context.Context) error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(s.userConf, "windows", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
@@ -167,8 +200,8 @@ func (s *service) generateConfigs() error {
 		"otel",
 		"fluentbit",
 	} {
-		if err := confgenerator.GenerateFilesFromConfig(
-			uc,
+		if err := uc.GenerateFilesFromConfig(
+			ctx,
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),

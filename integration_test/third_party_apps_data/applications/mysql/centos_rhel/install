@@ -3,6 +3,7 @@ set -e
 source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
 sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
 
 if [ ${VERSION_ID} == 8 ]; then
@@ -24,7 +25,35 @@ EOF
 
 mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
-sudo service mysqld start
-
-# default socket path is different between debian/ubuntu and centos/rhel, so we need to create a symlink
+# default socket path is different from originally set default (from debian/ubuntu), so we need to create a symlink
 sudo ln -s /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock
+
+sudo mkdir /var/log/mysql
+sudo chown mysql:mysql /var/log/mysql
+
+# Required to allow mysql to accept connections on 3307
+if [ ${ID} == rocky ]; then
+  sudo yum install -y policycoreutils-python-utils
+else
+  sudo yum install -y policycoreutils-python
+fi
+sudo semanage port --add --type mysqld_port_t --proto tcp 3307
+
+# set up replication source to validate replica metrics
+# set main target (replica) to use binary logging for replication to work
+sudo tee -a /etc/my.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
+EOF
+
+sudo service mysqld restart

@@ -149,14 +149,15 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 	return nil
 }
 
-func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, death chan bool) error {
+func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) (err error) {
 	// Resource for GCP and SDK detectors
-	ctx := context.Background()
-
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
 	)
+	if err != nil {
+		return fmt.Errorf("failed to create resource: %w", err)
+	}
 
 	// Create exporter pipeline
 	exporter, err := mexporter.New(
@@ -184,6 +185,17 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 		metricsdk.WithResource(res),
 	)
 
+	defer func() {
+		if serr := provider.Shutdown(ctx); serr != nil {
+			myStatus, ok := status.FromError(serr)
+			if !ok && myStatus.Code() == codes.Unknown {
+				log.Print(serr)
+			} else if err == nil {
+				err = fmt.Errorf("failed to shutdown meter provider: %w", serr)
+			}
+		}
+	}()
+
 	meter := provider.Meter("ops_agent/self_metrics")
 	err = InstrumentEnabledReceiversMetric(mergedUc, meter)
 	if err != nil {
@@ -197,7 +209,6 @@ func CollectOpsAgentSelfMetrics(userUc, mergedUc *confgenerator.UnifiedConfig, d
 	}
 
 	timer := time.NewTimer(10 * time.Second)
-waitForDeathSignal:
 
 	for {
 		select {
@@ -206,18 +217,8 @@ waitForDeathSignal:
 			if err != nil {
 				log.Print(err)
 			}
-		case <-death:
-			break waitForDeathSignal
+		case <-ctx.Done():
+			return nil
 		}
 	}
-
-	if err = provider.Shutdown(ctx); err != nil {
-		myStatus, ok := status.FromError(err)
-		if !ok && myStatus.Code() == codes.Unknown {
-			log.Print(err)
-		} else {
-			return fmt.Errorf("failed to shutdown meter provider: %w", err)
-		}
-	}
-	return nil
 }

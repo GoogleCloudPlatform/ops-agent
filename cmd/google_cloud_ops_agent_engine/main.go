@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -22,28 +23,25 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var (
-	service  = flag.String("service", "", "service to generate config for")
-	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
-	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
-	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	service      = flag.String("service", "", "service to generate config for")
+	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
+	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
+	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
+	stateDir     = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runStartupChecks(service string) {
-	if service == "" {
-		gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-		logger, closer := healthchecks.CreateHealthChecksLogger(*logsDir)
-		defer closer()
+func runHealthChecks() {
+	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
-		healthCheckResults := gceHealthChecks.RunAllHealthChecks(logger)
-		for _, result := range healthCheckResults {
-			log.Printf(result.Message)
-		}
-		log.Println("Startup checks finished")
-	}
+	defaultLogger := logs.NewSimpleLogger()
+
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
+	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
 func main() {
@@ -52,9 +50,11 @@ func main() {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
 	}
 }
+
 func run() error {
+	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,13 @@ func run() error {
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	runStartupChecks(*service)
-
-	return confgenerator.GenerateFilesFromConfig(uc, *service, *logsDir, *stateDir, *outDir)
+	if *service == "" {
+		runHealthChecks()
+		log.Println("Startup checks finished")
+		if *healthChecks {
+			// If healthchecks is set, stop here
+			return nil
+		}
+	}
+	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
 }

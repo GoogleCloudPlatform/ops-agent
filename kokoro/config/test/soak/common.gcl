@@ -1,0 +1,13 @@
+import '../common.gcl' as common
+
+template config soak_test = common.go_test {
+  params {
+    // This test doesn't use `platforms`, it sets an env variable called DISTRO
+    // instead.
+    platforms = []
+
+    build_file = 'unified_agents/kokoro/scripts/test/start_soak_test.sh'
+
+    test_suite = null
+  }
+}

@@ -40,6 +40,28 @@ func MetricsFilter(polarity, matchType string, metricNames ...string) Component 
 	}
 }
 
+// MetricsOTTLFilter returns a Component that filters metrics using OTTL.
+// OTTL can only be used as an exclude filter, any metrics or datapoints that match
+// one of the provided queries are dropped.
+// Example query: 'name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil'
+func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Component {
+	metricsConfig := map[string]interface{}{}
+
+	if len(metricQueries) > 0 {
+		metricsConfig["metric"] = metricQueries
+	}
+	if len(datapointQueries) > 0 {
+		metricsConfig["datapoint"] = metricQueries
+	}
+
+	return Component{
+		Type: "filter",
+		Config: map[string]interface{}{
+			"metrics": metricsConfig,
+		},
+	}
+}
+
 // MetricsTransform returns a Component that performs the transformations specified as arguments.
 func MetricsTransform(metrics ...map[string]interface{}) Component {
 	return Component{
@@ -334,5 +356,33 @@ func ModifyInstrumentationScope(name string, version string) Component {
 			"override_scope_name":    "agent.googleapis.com/" + name,
 			"override_scope_version": version,
 		},
+	}
+}
+
+// GroupByGMPAttrs moves the "namespace", "cluster", and "location"
+// metric attributes to resource attributes. The
+// googlemanagedprometheus exporter will use these resource attributes
+// to populate metric labels.
+func GroupByGMPAttrs() Component {
+	return Component{
+		Type: "groupbyattrs",
+		Config: map[string]interface{}{
+			"keys": []string{"namespace", "cluster", "location"},
+		},
+	}
+}
+
+// GCPResourceDetector returns a resourcedetection processor configured for only GCP.
+func GCPResourceDetector(override bool) Component {
+	config := map[string]interface{}{
+		"detectors": []string{"gcp"},
+	}
+	if override != true {
+		// override defaults to true; omit it in that case to prevent config diffs.
+		config["override"] = override
+	}
+	return Component{
+		Type:   "resourcedetection",
+		Config: config,
 	}
 }

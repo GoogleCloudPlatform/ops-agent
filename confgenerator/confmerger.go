@@ -15,17 +15,23 @@
 // Package confgenerator provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
+import (
+	"context"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+)
+
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-func MergeConfFiles(userConfPath, platform string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
-	builtInStruct := builtInConfStructs[platform]
+func MergeConfFiles(ctx context.Context, userConfPath string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
+	builtInStruct := builtInConfStructs[platform.FromContext(ctx).Name()]
 
 	// Start with the built-in config.
-	result, err := builtInStruct.DeepCopy(platform)
+	result, err := builtInStruct.DeepCopy(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	overrides, err := ReadUnifiedConfigFromFile(userConfPath, platform)
+	overrides, err := ReadUnifiedConfigFromFile(ctx, userConfPath)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +57,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 	// built-in configs do not contain these sections.
 	original.Combined = overrides.Combined
 	original.Traces = overrides.Traces
+	original.Global = overrides.Global
 
 	// For "default_pipeline", we go one level deeper.
 	// this covers 2 cases:

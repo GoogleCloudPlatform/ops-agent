@@ -29,7 +29,7 @@ configure_integration: |-
   privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster)
   {: .external}.
 minimum_supported_agent_version:
-  metrics: 2.21.0
+  metrics: 2.32.0
   logging: 2.9.0
 supported_operating_systems: linux
 supported_app_version: ["7.9+"]
@@ -288,6 +288,28 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       state: free|used
+  - type: workload.googleapis.com/elasticsearch.cluster.in_flight_fetch
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.cluster.pending_tasks
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.node.cache.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    labels:
+      type: hit|miss
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.total
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
 expected_logs:
   - log_name: elasticsearch_json
     fields:

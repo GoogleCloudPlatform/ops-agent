@@ -10,10 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
-RUN setx /M PATH "%PATH%;C:\WinFlexBison"
-RUN setx /M PATH "%PATH%;C:\Go\bin"
-RUN setx /M PATH "%PATH%;C:\Java\bin"
+RUN setx /M PATH "%PATH%;C:\WinFlexBison;C:\Go\bin;C:\Java\bin;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 
 RUN setx /M JAVA_HOME "C:\Java"
 
@@ -78,12 +75,12 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
     Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
 
 #
-# Install Golang 1.19
+# Install Golang
 #
-ADD https://go.dev/dl/go1.19.windows-amd64.msi /local/go1.19.windows-amd64.msi
+ADD https://go.dev/dl/go1.20.2.windows-amd64.msi /local/go1.20.2.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.19.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.20.2.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
@@ -124,7 +121,7 @@ COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-c
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
 RUN ./gradlew --no-daemon :jmx-metrics:build; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector
@@ -165,6 +162,17 @@ COPY . /work
 
 RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_ops_agent_diagnostics; `
     Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
+
+###############################################################################
+# Build agent wrapping tool
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
+    Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
 ###############################################################################
 # Packaging
