@@ -198,18 +198,6 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "rpm",
 	},
 	{
-		from_image:  "ubuntu:bionic-20220801",
-		target_name: "bionic",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip` + installCMake,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-bionic",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:focal",
 		target_name: "focal",
 		install_packages: `RUN set -x; apt-get update && \
