@@ -1,9 +1,17 @@
 set -e
 sudo apt update
 sudo apt-get install -y curl default-jdk default-jdk-headless
-sudo apt install tomcat10 -y
-sudo mkdir -p /etc/systemd/system/tomcat10.service.d
-sudo cat >> /etc/systemd/system/tomcat10.service.d/local.conf << EOF
+
+TOMCAT_VERSION=tomcat9
+
+source /etc/os-release
+if [[ "${VERSION_ID}" == 12 ]]; then
+    TOMCAT_VERSION=tomcat10
+fi
+
+sudo apt install ${TOMCAT_VERSION} -y
+sudo mkdir -p /etc/systemd/system/${TOMCAT_VERSION}.service.d
+sudo cat >> /etc/systemd/system/${TOMCAT_VERSION}.service.d/local.conf << EOF
 [Service]
 # Configuration
 Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
@@ -12,5 +20,5 @@ EOF
 
 sudo systemctl daemon-reload
 
-sudo systemctl restart tomcat10
+sudo systemctl restart ${TOMCAT_VERSION}
 sleep 60
