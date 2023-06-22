@@ -9,6 +9,12 @@ if [[ "${VERSION_ID}" == 23* ]]; then
 
     sudo apt update
     sudo apt install -y openjdk-11-jdk cassandra
+else if [[ "${VERSION_ID}" == 12 ]]; then
+    # There is a python dependency that fails for any older versions of cassandra on Debian 12, so explicitly install Cassandra 4.1x.
+    echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+
+    sudo apt update
+    sudo apt install -y openjdk-17-jdk cassandra
 else
     echo "deb https://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
     # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)

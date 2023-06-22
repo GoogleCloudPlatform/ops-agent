@@ -37,7 +37,8 @@ platforms_to_skip:
   - sles-15
   - rocky-linux-8
   - rocky-linux-9
-  - debian-11
+  - debian-11 #TODO check if this is still not supported
+  - debian-12
   - ubuntu-2004-lts
   - ubuntu-2304-amd64
 supported_app_version: ["8.0", "5.7"]

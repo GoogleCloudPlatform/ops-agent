@@ -29,7 +29,8 @@ case $ID in
             9*) debian_version="debian9";;
             10*) debian_version="debian10";;
             11*) debian_version="debian11";;
-            *) echo "Found version: $VERSION_ID, supported versions are 9/10/11";;
+            12*) debian_version="debian12";;
+            *) echo "Found version: $VERSION_ID, supported versions are 9/10/11/12";;
         esac
         os_version=$debian_version
         ;;
@@ -47,7 +48,7 @@ esac
 case $os_version in
     debian9|ubuntu18.04)
         install_previous;;
-    debian10|debian11|ubuntu20.04|ubuntu22.04)
+    debian10|debian11|debian12|ubuntu20.04|ubuntu22.04)
         install_current;;
     *)  echo "Found os_version: $os_version, not in supported list";;
 esac
