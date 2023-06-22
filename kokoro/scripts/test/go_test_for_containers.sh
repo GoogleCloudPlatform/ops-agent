@@ -109,6 +109,8 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
+date  # benchmarking compile times here
+
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   go test -v "${TEST_SUITE_NAME}.go" \
   "${args[@]}" \
