@@ -47,6 +47,15 @@ configure_integration: |-
   GRANT SELECT ON SYS.GLOBAL_NAME to otel;
   </pre>
 supported_operating_systems: linux
+# Oracle DB is difficult to install on these platforms.
+platforms_to_skip:
+  - debian-10
+  - debian-11
+  - ubuntu-2004-lts
+  - ubuntu-2304-amd64
+  - sles-12
+  - sles-15
+  - rocky-linux-9
 supported_app_version: ["12.2", "18c", "19c", "21c"]
 expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest

@@ -31,7 +31,7 @@ func (r MetricsReceiverJVM) Type() string {
 	return "jvm"
 }
 
-func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverJVM) Pipelines() []otel.ReceiverPipeline {
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultJVMEndpoint).
 		ConfigurePipelines(
@@ -41,6 +41,7 @@ func (r MetricsReceiverJVM) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }

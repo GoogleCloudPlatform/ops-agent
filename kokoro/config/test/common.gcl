@@ -13,9 +13,17 @@ template config common = {
       // Cloud Router and Cloud NAT gateway for that region. This is because
       // we use --no-address on Kokoro, because of b/169084857.
       // The new Cloud NAT gateway must have "Minimum ports per VM instance"
-      // set to something >160 as per this article:
-      // https://www.suse.com/support/kb/doc/?id=000019662
-      ZONE = 'us-central1-b'
+      // set to 512 as per this article:
+      // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
+      ZONES = join([
+        'us-central1-a=3',
+        'us-central1-b=3',
+        'us-central1-c=3',
+        'us-central1-f=3',
+        'us-east1-b=2',
+        'us-east1-c=2',
+        'us-east1-d=2',
+      ], ',')
 
       PLATFORMS = join(platforms, ',')
     }
@@ -37,7 +45,7 @@ template config go_test = common {
   params {
     test_suite = external
 
-    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
+    build_file = 'unified_agents/kokoro/scripts/test/go_test_for_containers.sh'
 
     environment {
       TEST_SUITE_NAME = test_suite

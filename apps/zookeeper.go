@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -38,12 +40,12 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverZookeeper) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "zookeeper",
 			Config: map[string]interface{}{
@@ -51,12 +53,13 @@ func (r MetricsReceiverZookeeper) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -68,7 +71,7 @@ func (LoggingProcessorZookeeperGeneral) Type() string {
 	return "zookeeper_general"
 }
 
-func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	complexRegex := confgenerator.LoggingProcessorParseRegexComplex{
@@ -119,8 +122,8 @@ func (p LoggingProcessorZookeeperGeneral) Components(tag, uid string) []fluentbi
 		},
 	}
 
-	c = append(c, complexRegex.Components(tag, uid)...)
-	c = append(c, severityParser(p.Type(), tag, uid)...)
+	c = append(c, complexRegex.Components(ctx, tag, uid)...)
+	c = append(c, severityParser(ctx, p.Type(), tag, uid)...)
 
 	return c
 }
@@ -130,7 +133,7 @@ type LoggingReceiverZookeeperGeneral struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default log for Zookeeper.
 		r.IncludePaths = []string{
@@ -152,11 +155,11 @@ func (r LoggingReceiverZookeeperGeneral) Components(tag string) []fluentbit.Comp
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorZookeeperGeneral.Components(tag, "zookeeper_general")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorZookeeperGeneral.Components(ctx, tag, "zookeeper_general")...)
 }
 
-func severityParser(processorType, tag, uid string) []fluentbit.Component {
+func severityParser(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
@@ -174,7 +177,7 @@ func severityParser(processorType, tag, uid string) []fluentbit.Component {
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 }
 
 func init() {

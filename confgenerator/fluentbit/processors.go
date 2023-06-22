@@ -72,7 +72,8 @@ func TranslationComponents(tag, src, dest string, removeSrc bool, translations [
 
 // LuaFilterComponents returns components that execute the Lua script given in src on records that match tag.
 // TODO(ridwanmsharif): Replace this with in-config script when
-//   fluent/fluent-bit#4634 is supported.
+//
+//	fluent/fluent-bit#4634 is supported.
 func LuaFilterComponents(tag, function, src string) []Component {
 	hasher := md5.New()
 	hasher.Write([]byte(src))

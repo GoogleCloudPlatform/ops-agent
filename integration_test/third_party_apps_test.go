@@ -29,6 +29,9 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
+ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
+    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in.
 */
 
 package integration_test
@@ -50,6 +53,7 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
@@ -147,10 +151,9 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 // Installs the agent according to the instructions in a script
 // stored in the scripts directory.
 func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	environmentVariables := make(map[string]string)
-	suffix := os.Getenv("REPO_SUFFIX")
-	if suffix != "" {
-		environmentVariables["REPO_SUFFIX"] = suffix
+	environmentVariables := map[string]string{
+		"REPO_SUFFIX":              os.Getenv("REPO_SUFFIX"),
+		"ARTIFACT_REGISTRY_REGION": os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
 		return retryable, fmt.Errorf("error installing agent: %v", err)
@@ -163,7 +166,7 @@ func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 	if packagesInGCS == "" {
 		return installUsingScript(ctx, logger, vm)
 	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
+	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger.ToMainLog(), vm, packagesInGCS)
 }
 
 // updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
@@ -248,7 +251,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 	if expectedField.ValueRegex != "" {
 		pattern = expectedField.ValueRegex
 	}
-	match, err := regexp.MatchString(fmt.Sprintf("^(?:%s)$", pattern), actualField)
+	match, err := regexp.MatchString(pattern, actualField)
 	if err != nil {
 		return err
 	}
@@ -460,7 +463,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -505,7 +508,18 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for range requiredMetrics {
 		err = multierr.Append(err, <-c)
 	}
-	return err
+
+	if fc == nil {
+		logger.ToMainLog().Printf("skipping feature tracking integration tests")
+		return err
+	}
+
+	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if ft_err != nil {
+		return multierr.Append(err, ft_err)
+	}
+
+	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
@@ -518,38 +532,6 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 		return err
 	}
 	return metadata.AssertMetric(metric, series)
-}
-
-type testConfig struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-
-	// per_application_overrides is a map from application to specific settings
-	// for that application.
-	PerApplicationOverrides map[string]struct {
-		// platforms_to_skip is a list of platforms that need to be skipped for
-		// this application. Ideally this will be empty or nearly empty most of
-		// the time.
-		PlatformsToSkip []string `yaml:"platforms_to_skip"`
-	} `yaml:"per_application_overrides"`
-}
-
-// parseTestConfigFile looks for test_config.yaml, and if it exists, merges
-// any options in it into the default test config and returns the result.
-func parseTestConfigFile() (testConfig, error) {
-	config := testConfig{}
-
-	bytes, err := readFileFromScriptsDir("test_config.yaml")
-	if err != nil {
-		log.Printf("Reading test_config.yaml failed with err=%v, proceeding...", err)
-		// Probably the file is just missing, return the defaults.
-		return config, nil
-	}
-
-	if err = yaml.UnmarshalStrict(bytes, &config); err != nil {
-		return testConfig{}, err
-	}
-	return config, nil
 }
 
 // runSingleTest starts with a fresh VM, installs the app and agent on it,
@@ -627,12 +609,50 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics); err != nil {
+
+		// All integrations are expected to set the instrumentation_source label.
+		for _, m := range metadata.ExpectedMetrics {
+			// The windows metrics that do not target workload.googleapis.com cannot set
+			// the instrumentation_ labels
+			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
+				continue
+			}
+			if m.Labels == nil {
+				m.Labels = map[string]string{}
+			}
+			if _, ok := m.Labels["instrumentation_source"]; !ok {
+				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
+			}
+			if _, ok := m.Labels["instrumentation_version"]; !ok {
+				m.Labels["instrumentation_version"] = `.*`
+			}
+		}
+
+		fc, err := getExpectedFeatures(app)
+
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
 
 	return nonRetryable, nil
+}
+
+func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTrackingContainer, error) {
+	var fc feature_tracking_metadata.FeatureTrackingContainer
+
+	featuresScript := path.Join("applications", app, "features.yaml")
+	featureBytes, err := readFileFromScriptsDir(featuresScript)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fc, nil
 }
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
@@ -673,7 +693,7 @@ func modifiedFiles(t *testing.T) []string {
 	stdout := string(out)
 	if err != nil {
 		stderr := ""
-        	if exitError := err.(*exec.ExitError); exitError != nil {
+		if exitError := err.(*exec.ExitError); exitError != nil {
 			stderr = string(exitError.Stderr)
 		}
 		t.Fatalf("got error calling `git diff`: %v\nstderr=%v\nstdout=%v", err, stderr, stdout)
@@ -683,36 +703,65 @@ func modifiedFiles(t *testing.T) []string {
 	return strings.Split(stdout, "\n")
 }
 
-// Determine what apps are impacted by current code changes.
-// Extracts app names as follows:
+// isCriticalFile returns true if the given modified source file
+// means we should test all applications.
+func isCriticalFile(f string) bool {
+	if strings.HasPrefix(f, "submodules/") ||
+		strings.HasPrefix(f, "integration_test/third_party_apps_data/agent/") {
+		return true
+	}
+	for _, criticalFile := range []string{
+		"go.mod",
+		"integration_test/agents/agents.go",
+		"integration_test/gce/gce_testing.go",
+		"integration_test/third_party_apps_test.go",
+	} {
+		if f == criticalFile {
+			return true
+		}
+	}
+	return false
+}
+
+// determineImpactedApps determines what apps are impacted by current code
+// changes. Some code changes are considered critical, like changing
+// submodules.
+// For critical code changes, all apps are considered impacted.
+// For non-critical code changes, extracts app names as follows:
 //
 //	apps/<appname>.go
 //	integration_test/third_party_apps_data/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
-func determineImpactedApps(mf []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
+func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
 
-	for _, f := range mf {
-		// File names: submodules/fluent-bit
-		if strings.HasPrefix(f, "submodules/") {
-			for app, _ := range allApps {
+	for _, f := range modifiedFiles {
+		if isCriticalFile(f) {
+			// Consider all apps as impacted.
+			for app := range allApps {
 				impactedApps[app] = true
 			}
 			return impactedApps
 		}
 	}
 
-	for _, f := range mf {
+	for _, f := range modifiedFiles {
 		if strings.HasPrefix(f, "apps/") {
 
-			// File names: apps/<appname>.go
+			// File names: apps/<f>.go
 			f := strings.TrimPrefix(f, "apps/")
 			f = strings.TrimSuffix(f, ".go")
 
-			if _, ok := allApps[f]; ok {
-				impactedApps[f] = true
+			// To support testing multiple versions of an app, we consider all apps
+			// in allApps to be a match if they have <f> as a prefix.
+			// For example, consider f = "mongodb". Then all of
+			// {mongodb3.6, mongodb} are considered impacted.
+			for app := range allApps {
+				if strings.HasPrefix(app, f) {
+					impactedApps[app] = true
+				}
 			}
 		} else if strings.HasPrefix(f, "integration_test/third_party_apps_data/applications/") {
 			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
@@ -752,7 +801,7 @@ const (
 	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
 	SAPHANAApp      = "saphana"
 
-	OracleDBApp = "oracledb"
+	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
 )
 
@@ -771,14 +820,15 @@ func incompatibleOperatingSystem(testCase test) string {
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   * For all impacted apps, test on all platforms.
-//   * Always test all apps against the default platform.
-//   * Always test the default app (postgres/active_directory_ds for now)
+//   - For all impacted apps, test on all platforms.
+//   - Always test all apps against the default platform.
+//   - Always test the default app (postgres/active_directory_ds for now)
 //     on all platforms.
+//
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -788,8 +838,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if metadata.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
-			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
+			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
@@ -810,10 +860,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
-	testConfig, err := parseTestConfigFile()
-	if err != nil {
-		t.Fatal(err)
-	}
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
@@ -824,7 +870,7 @@ func TestThirdPartyApps(t *testing.T) {
 	}
 
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps))
 
 	// Execute tests
 	for _, tc := range tests {
@@ -863,7 +909,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
 				}

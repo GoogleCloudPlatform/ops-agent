@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -32,11 +34,11 @@ func (MetricsReceiverFlink) Type() string {
 
 const defaultFlinkEndpoint = "http://localhost:8081"
 
-func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{
@@ -44,7 +46,7 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
@@ -61,7 +63,8 @@ func (r MetricsReceiverFlink) Pipelines() []otel.Pipeline {
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -77,7 +80,7 @@ func (LoggingProcessorFlink) Type() string {
 	return "flink"
 }
 
-func (p LoggingProcessorFlink) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -111,7 +114,7 @@ func (p LoggingProcessorFlink) Components(tag string, uid string) []fluentbit.Co
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels are just log4j log levels
 	// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
@@ -132,7 +135,7 @@ func (p LoggingProcessorFlink) Components(tag string, uid string) []fluentbit.Co
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -143,7 +146,7 @@ type LoggingReceiverFlink struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverFlink) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -151,8 +154,8 @@ func (r LoggingReceiverFlink) Components(tag string) []fluentbit.Component {
 			"/opt/flink/log/flink-*-client-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorFlink.Components(tag, "flink")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorFlink.Components(ctx, tag, "flink")...)
 	return c
 }
 

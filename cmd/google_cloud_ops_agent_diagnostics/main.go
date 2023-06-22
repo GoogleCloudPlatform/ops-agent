@@ -15,24 +15,30 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
 
-func getUnifiedConfigAndValidate(userConfPath, platform string) (confgenerator.UnifiedConfig, error) {
-	_, mergedConfig, err := confgenerator.MergeConfFiles(userConfPath, platform, apps.BuiltInConfStructs)
+// getUserAndMergedConfigs if successful will return both the users original
+// config and merged config respectively
+func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return nil, nil, err
+	}
+	if userUc == nil {
+		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, platform)
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
 	if err != nil {
-		return confgenerator.UnifiedConfig{}, err
+		return nil, nil, err
 	}
 
-	return uc, nil
+	return userUc, mergedUc, nil
 }
 
 func main() {
@@ -41,7 +47,7 @@ func main() {
 			log.Fatal("Recovered in run", r)
 		}
 	}()
-	if err := run(); err != nil {
+	if err := run(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 }

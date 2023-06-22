@@ -102,6 +102,7 @@ type IntegrationMetadata struct {
 	MinimumSupportedAgentVersion *MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
+	PlatformsToSkip              []string                      `yaml:"platforms_to_skip"`
 	RestartAfterInstall          bool                          `yaml:"restart_after_install"`
 	Troubleshoot                 string                        `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
@@ -195,9 +196,9 @@ func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 	// Only expected labels must be present
 	var err error
-	for actualLabel := range series.Metric.Labels {
+	for actualLabel, actualValue := range series.Metric.Labels {
 		if _, ok := metric.Labels[actualLabel]; !ok {
-			err = multierr.Append(err, fmt.Errorf("unexpected label: %s", actualLabel))
+			err = multierr.Append(err, fmt.Errorf("got unexpected label %q with value %q", actualLabel, actualValue))
 		}
 	}
 	// All expected labels must be present and match the given pattern

@@ -17,6 +17,7 @@ package apps
 import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverMssql struct {
@@ -24,23 +25,23 @@ type MetricsReceiverMssql struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	ReceiverVersion string `yaml:"receiver_version,omitempty"`
+	confgenerator.VersionedReceivers `yaml:",inline"`
 }
 
 func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
+func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 	if m.ReceiverVersion == "2" {
-		return []otel.Pipeline{{
+		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
 					"collection_interval": m.CollectionIntervalString(),
 				},
 			},
-			Processors: []otel.Component{
+			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
 					otel.RenameMetric(
 						"sqlserver.transaction_log.usage",
@@ -52,11 +53,12 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 					otel.FlattenResourceAttribute("sqlserver.database.name", "database"),
 				),
 				otel.NormalizeSums(),
-			},
+				otel.ModifyInstrumentationScope(m.Type(), "2.0"),
+			}},
 		}}
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -78,7 +80,10 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
 					`\SQLServer:General Statistics(_Total)\User Connections`,
@@ -94,10 +99,11 @@ func (m MetricsReceiverMssql) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(m.Type(), "1.0"),
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, platform.Windows)
 }

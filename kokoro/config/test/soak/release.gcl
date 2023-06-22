@@ -1,0 +1,11 @@
+import 'common.gcl' as common
+
+config build = common.soak_test {
+  params {
+    environment {
+      TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
+      SERVICE_EMAIL =
+          'build-and-test@stackdriver-test-143416.iam.gserviceaccount.com'
+    }
+  }
+}

@@ -114,6 +114,18 @@ func testModifiedMetadata(t *testing.T, filePaths []string) {
 				t.Fatal(err)
 			}
 
+			if originalMetadata.MinimumSupportedAgentVersion == nil && modifiedMetadata.MinimumSupportedAgentVersion == nil {
+				return
+			}
+
+			if originalMetadata.MinimumSupportedAgentVersion == nil && modifiedMetadata.MinimumSupportedAgentVersion != nil {
+				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been added for path: %s\n modified: %+v\n", filePath, modifiedMetadata.MinimumSupportedAgentVersion))
+			}
+
+			if originalMetadata.MinimumSupportedAgentVersion != nil && modifiedMetadata.MinimumSupportedAgentVersion == nil {
+				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been removed for path: %s\n original: %+v\n", filePath, originalMetadata.MinimumSupportedAgentVersion))
+			}
+
 			if *modifiedMetadata.MinimumSupportedAgentVersion != *originalMetadata.MinimumSupportedAgentVersion {
 				t.Fatal(fmt.Errorf("minimum_supported_agent_version has been modified for path: %s\n modified: %+v\n original: %+v", filePath, modifiedMetadata.MinimumSupportedAgentVersion, originalMetadata.MinimumSupportedAgentVersion))
 			}

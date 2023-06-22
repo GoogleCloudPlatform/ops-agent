@@ -9,36 +9,36 @@ exporters:
     retry_on_failure:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    retry_on_failure:
+      enabled: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
-  agentmetrics/default__pipeline_hostmetrics_0:
+  agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  casttosum/default__pipeline_iis_1:
+  casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  filter/default__pipeline_hostmetrics_1:
-    metrics:
-      exclude:
-        match_type: strict
-        metric_names:
-        - system.cpu.time
-        - system.network.dropped
-        - system.filesystem.inodes.usage
-        - system.paging.faults
-        - system.disk.operation_time
-  filter/default__pipeline_hostmetrics_3:
+  filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_iis_3:
+  filter/default__pipeline_iis_0:
     metrics:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_mssql_1:
+  filter/default__pipeline_mssql_0:
     metrics:
       exclude:
         match_type: regexp
@@ -51,6 +51,17 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
+  filter/hostmetrics_1:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+        - system.cpu.time
+        - system.network.dropped
+        - system.filesystem.inodes.usage
+        - system.paging.faults
+        - system.disk.operation_time
   filter/otel_0:
     metrics:
       include:
@@ -60,7 +71,61 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/default__pipeline_hostmetrics_2:
+  metricstransform/fluentbit_1:
+    transforms:
+    - action: update
+      include: fluentbit_uptime
+      new_name: agent/uptime
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: version
+        new_value: google-cloud-ops-agent-logging/latest-build_distro
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - version
+    - action: update
+      include: fluentbit_stackdriver_requests_total
+      new_name: agent/request_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_proc_records_total
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/hostmetrics_2:
     transforms:
     - action: update
       include: system.cpu.time
@@ -315,7 +380,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -323,7 +388,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -334,7 +399,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_iis_0:
+  metricstransform/iis_0:
     transforms:
     - action: update
       include: "\\Web Service(_Total)\\Current Connections"
@@ -362,7 +427,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_mssql_0:
+  metricstransform/mssql_0:
     transforms:
     - action: update
       include: "\\SQLServer:General Statistics(_Total)\\User Connections"
@@ -377,49 +442,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/fluentbit_1:
+  metricstransform/mysqlmetrics_1:
     transforms:
-    - action: update
-      include: fluentbit_uptime
-      new_name: agent/uptime
-      operations:
-      - action: toggle_scalar_data_type
-      - action: add_label
-        new_label: version
-        new_value: google-cloud-ops-agent-logging/latest-build_distro
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - version
-    - action: update
-      include: fluentbit_stackdriver_requests_total
-      new_name: agent/request_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: fluentbit_stackdriver_proc_records_total
-      new_name: agent/log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
     - action: update
       include: ^(.*)$$
       match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/mysqlpipeline_mysqlmetrics_1:
+      new_name: workload.googleapis.com/$${1}
+  metricstransform/mysqlmetrics_1_1:
     transforms:
     - action: update
       include: "^mysql\\.buffer_pool\\.(.*)$$"
@@ -491,13 +520,26 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/default__pipeline_iis_2: {}
-  normalizesums/mysqlpipeline_mysqlmetrics_0: {}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
+  modifyscope/mysqlmetrics_1_2:
+    override_scope_name: agent.googleapis.com/mysql
+    override_scope_version: "1.0"
+  modifyscope/mysqlmetrics_2:
+    override_scope_name: agent.googleapis.com/mysql
+    override_scope_version: "1.0"
+  normalizesums/iis_2: {}
+  normalizesums/mysqlmetrics_0: {}
+  normalizesums/mysqlmetrics_1_0: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
-  hostmetrics/default__pipeline_hostmetrics:
+  hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
       cpu: {}
@@ -510,9 +552,34 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  mysql/mysqlpipeline_mysqlmetrics:
+  mysql/mysqlmetrics_1:
     collection_interval: 30s
     endpoint: localhost:3306
+    metrics:
+      mysql.commands:
+        enabled: true
+      mysql.index.io.wait.count:
+        enabled: false
+      mysql.index.io.wait.time:
+        enabled: false
+      mysql.locked_connects:
+        enabled: false
+      mysql.mysqlx_connections:
+        enabled: false
+      mysql.opened_resources:
+        enabled: false
+      mysql.prepared_statements:
+        enabled: false
+      mysql.replica.sql_delay:
+        enabled: false
+      mysql.replica.time_behind_source:
+        enabled: false
+      mysql.table.io.wait.count:
+        enabled: false
+      mysql.table.io.wait.time:
+        enabled: false
+      mysql.tmp_resources:
+        enabled: false
     password: pwd
     transport: tcp
     username: usr
@@ -533,7 +600,32 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  windowsperfcounters/default__pipeline_iis:
+  sqlquery/mysqlmetrics:
+    collection_interval: 30s
+    datasource: usr:pwd@tcp(localhost:3306)/?checkConnLiveness=false&maxAllowedPacket=0
+    driver: mysql
+    queries:
+    - metrics:
+      - attribute_columns: []
+        data_type: sum
+        description: The number of seconds that the replica must lag the source.
+        metric_name: mysql.replica.sql_delay
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: SQL_Delay
+        value_type: int
+      - attribute_columns: []
+        data_type: sum
+        description: This field is an indication of how “late” the replica is.
+        metric_name: mysql.replica.time_behind_source
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: Seconds_Behind_Master
+        value_type: int
+      sql: SHOW SLAVE STATUS
+  windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
     - counters:
@@ -551,7 +643,7 @@ receivers:
       instances:
       - _Total
       object: Web Service
-  windowsperfcounters/default__pipeline_mssql:
+  windowsperfcounters/mssql:
     collection_interval: 60s
     perfcounters:
     - counters:
@@ -571,33 +663,35 @@ service:
       exporters:
       - googlecloud
       processors:
-      - agentmetrics/default__pipeline_hostmetrics_0
-      - filter/default__pipeline_hostmetrics_1
-      - metricstransform/default__pipeline_hostmetrics_2
-      - filter/default__pipeline_hostmetrics_3
+      - agentmetrics/hostmetrics_0
+      - filter/hostmetrics_1
+      - metricstransform/hostmetrics_2
+      - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
-      - hostmetrics/default__pipeline_hostmetrics
+      - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
       - googlecloud
       processors:
-      - metricstransform/default__pipeline_iis_0
-      - casttosum/default__pipeline_iis_1
-      - normalizesums/default__pipeline_iis_2
-      - filter/default__pipeline_iis_3
+      - metricstransform/iis_0
+      - casttosum/iis_1
+      - normalizesums/iis_2
+      - modifyscope/iis_3
+      - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
-      - windowsperfcounters/default__pipeline_iis
+      - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
       - googlecloud
       processors:
-      - metricstransform/default__pipeline_mssql_0
-      - filter/default__pipeline_mssql_1
+      - metricstransform/mssql_0
+      - modifyscope/mssql_1
+      - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
-      - windowsperfcounters/default__pipeline_mssql
+      - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -609,13 +703,24 @@ service:
       - prometheus/fluentbit
     metrics/mysqlpipeline_mysqlmetrics:
       exporters:
-      - googlecloud
+      - googlecloud/otel
       processors:
-      - normalizesums/mysqlpipeline_mysqlmetrics_0
-      - metricstransform/mysqlpipeline_mysqlmetrics_1
+      - normalizesums/mysqlmetrics_0
+      - metricstransform/mysqlmetrics_1
+      - modifyscope/mysqlmetrics_2
       - resourcedetection/_global_0
       receivers:
-      - mysql/mysqlpipeline_mysqlmetrics
+      - sqlquery/mysqlmetrics
+    metrics/mysqlpipeline_mysqlmetrics_1:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - normalizesums/mysqlmetrics_1_0
+      - metricstransform/mysqlmetrics_1_1
+      - modifyscope/mysqlmetrics_1_2
+      - resourcedetection/_global_0
+      receivers:
+      - mysql/mysqlmetrics_1
     metrics/otel:
       exporters:
       - googlecloud

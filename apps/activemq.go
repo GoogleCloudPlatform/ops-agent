@@ -36,7 +36,7 @@ func (r MetricsReceiverActivemq) Type() string {
 	return "activemq"
 }
 
-func (r MetricsReceiverActivemq) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverActivemq) Pipelines() []otel.ReceiverPipeline {
 
 	targetSystem := "activemq"
 
@@ -49,6 +49,7 @@ func (r MetricsReceiverActivemq) Pipelines() []otel.Pipeline {
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			},
 		)
 }

@@ -15,22 +15,34 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/shirou/gopsutil/host"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var (
-	service  = flag.String("service", "", "service to generate config for")
-	outDir   = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input    = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
-	logsDir  = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
-	stateDir = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	service      = flag.String("service", "", "service to generate config for")
+	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
+	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
+	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
+	stateDir     = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
+
+func runHealthChecks() {
+	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
+
+	defaultLogger := logs.NewSimpleLogger()
+
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
+	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
+}
 
 func main() {
 	flag.Parse()
@@ -38,9 +50,11 @@ func main() {
 		log.Fatalf("The agent config file is not valid. Detailed error: %s", err)
 	}
 }
+
 func run() error {
+	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	builtInConfig, mergedConfig, err := confgenerator.MergeConfFiles(*input, "linux", apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
@@ -48,16 +62,16 @@ func run() error {
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
-	log.Printf("Built-in config:\n%s", builtInConfig)
-	log.Printf("Merged config:\n%s", mergedConfig)
+	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
+	log.Printf("Merged config:\n%s", uc)
 
-	hostInfo, err := host.Info()
-	if err != nil {
-		return err
+	if *service == "" {
+		runHealthChecks()
+		log.Println("Startup checks finished")
+		if *healthChecks {
+			// If healthchecks is set, stop here
+			return nil
+		}
 	}
-	uc, err := confgenerator.ParseUnifiedConfigAndValidate(mergedConfig, hostInfo.OS)
-	if err != nil {
-		return err
-	}
-	return confgenerator.GenerateFilesFromConfig(&uc, *service, *logsDir, *stateDir, *outDir)
+	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
 }

@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -28,17 +30,17 @@ type MetricsReceiverNginx struct {
 	StubStatusURL string `yaml:"stub_status_url" validate:"omitempty,url"`
 }
 
-const defaultStubStatusURL = "http://localhost/status"
+const defaultStubStatusURL = "http://127.0.0.1/status"
 
 func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverNginx) Pipelines() []otel.ReceiverPipeline {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
 			Config: map[string]interface{}{
@@ -46,12 +48,13 @@ func (r MetricsReceiverNginx) Pipelines() []otel.Pipeline {
 				"endpoint":            r.StubStatusURL,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -67,8 +70,8 @@ func (LoggingProcessorNginxAccess) Type() string {
 	return "nginx_access"
 }
 
-func (p LoggingProcessorNginxAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(p.Type(), tag, uid)
+func (p LoggingProcessorNginxAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
 
 type LoggingProcessorNginxError struct {
@@ -79,7 +82,7 @@ func (LoggingProcessorNginxError) Type() string {
 	return "nginx_error"
 }
 
-func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
@@ -95,7 +98,7 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 				"connection": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
 	c = append(c,
@@ -117,7 +120,7 @@ func (p LoggingProcessorNginxError) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -127,12 +130,12 @@ type LoggingReceiverNginxAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/access.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorNginxAccess.Components(tag, "nginx_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorNginxAccess.Components(ctx, tag, "nginx_access")...)
 	return c
 }
 
@@ -141,12 +144,12 @@ type LoggingReceiverNginxError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/error.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorNginxError.Components(tag, "nginx_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorNginxError.Components(ctx, tag, "nginx_error")...)
 	return c
 }
 

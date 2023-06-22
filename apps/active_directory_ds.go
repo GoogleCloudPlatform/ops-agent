@@ -15,9 +15,12 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverActiveDirectoryDS struct {
@@ -29,25 +32,26 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.Pipeline {
-	return []otel.Pipeline{{
+func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.ReceiverPipeline {
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverActiveDirectoryDS{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverActiveDirectoryDS{} }, platform.Windows)
 }
 
 type LoggingReceiverActiveDirectoryDS struct {
@@ -58,21 +62,21 @@ func (r LoggingReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r LoggingReceiverActiveDirectoryDS) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverActiveDirectoryDS) Components(ctx context.Context, tag string) []fluentbit.Component {
 	l := confgenerator.LoggingReceiverWindowsEventLog{
 		Channels: []string{"Directory Service", "Active Directory Web Services"},
 	}
 
-	c := append(l.Components(tag),
+	c := append(l.Components(ctx, tag),
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(r.Type()),
 			},
-		}.Components(tag, "active_directory_ds")...,
+		}.Components(ctx, tag, "active_directory_ds")...,
 	)
 	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverActiveDirectoryDS{} }, "windows")
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverActiveDirectoryDS{} }, platform.Windows)
 }

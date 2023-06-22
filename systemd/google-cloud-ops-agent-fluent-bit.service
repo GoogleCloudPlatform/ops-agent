@@ -16,15 +16,15 @@
 Description=Google Cloud Ops Agent - Logging Agent
 PartOf=google-cloud-ops-agent.service
 Requires=network-online.target
-After=network-online.target
+After=network-online.target google-cloud-ops-agent.service
 
 [Service]
 RuntimeDirectory=google-cloud-ops-agent-fluent-bit
 StateDirectory=google-cloud-ops-agent/fluent-bit
-LogsDirectory=google-cloud-ops-agent/subagents
+LogsDirectory=google-cloud-ops-agent
 Type=simple
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -service=fluentbit -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -logs ${LOGS_DIRECTORY} -state ${STATE_DIRECTORY}
-ExecStart=@PREFIX@/subagents/fluent-bit/bin/fluent-bit --config ${RUNTIME_DIRECTORY}/fluent_bit_main.conf --parser ${RUNTIME_DIRECTORY}/fluent_bit_parser.conf --log_file ${LOGS_DIRECTORY}/logging-module.log --storage_path ${STATE_DIRECTORY}/buffers
+ExecStart=@PREFIX@/libexec/google_cloud_ops_agent_wrapper -config_path @SYSCONFDIR@/google-cloud-ops-agent/config.yaml -log_path ${LOGS_DIRECTORY}/subagents/logging-module.log @PREFIX@/subagents/fluent-bit/bin/fluent-bit --config ${RUNTIME_DIRECTORY}/fluent_bit_main.conf --parser ${RUNTIME_DIRECTORY}/fluent_bit_parser.conf --storage_path ${STATE_DIRECTORY}/buffers
 Restart=always
 # For debugging:
 RuntimeDirectoryPreserve=yes

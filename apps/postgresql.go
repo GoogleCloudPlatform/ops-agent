@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -43,7 +45,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -66,12 +68,12 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
@@ -79,9 +81,13 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.Pipeline {
 				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
 			),
 			otel.MetricsTransform(
+				otel.UpdateMetric("postgresql.bgwriter.duration",
+					otel.ToggleScalarDataType,
+				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -97,7 +103,7 @@ func (LoggingProcessorPostgresql) Type() string {
 	return "postgresql_general"
 }
 
-func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -131,7 +137,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
@@ -159,7 +165,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -170,7 +176,7 @@ type LoggingReceiverPostgresql struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log paths for Debain / Ubuntu
@@ -181,8 +187,8 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorPostgresql.Components(tag, "postgresql")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorPostgresql.Components(ctx, tag, "postgresql")...)
 	return c
 }
 

@@ -27,12 +27,17 @@ PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
 The following variables are optional:
 
 REPO_SUFFIX: If provided, what package repo suffix to install the ops agent from.
-AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
-.deb/.rpm/.goo files to install on the testing VMs.
+ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
 
-REPO_SUFFIX_PREVIOUS: Used only by TestUpgradeOpsAgent, this specifies which
-version of the Ops Agent to install first, before installing the version
-from REPO_SUFFIX/AGENT_PACKAGES_IN_GCS. The default of "" means stable.
+	above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in. If not provided, that means that the packages are accessed through
+	packages.cloud.google.com instead, which may point to Cloud Rapture or
+	Artifact Registry under the hood.
+
+AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
+
+	.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
+	REPO_SUFFIX.
 */
 package integration_test
 
@@ -40,33 +45,36 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	cloudlogging "cloud.google.com/go/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
+	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
-	"google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
-	"gopkg.in/yaml.v2"
-
-	cloudlogging "cloud.google.com/go/logging"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
+	"golang.org/x/exp/slices"
+	"google.golang.org/genproto/googleapis/api/distribution"
+	"google.golang.org/genproto/googleapis/api/metric"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v2"
 )
 
 //go:embed testdata
@@ -93,12 +101,20 @@ func workDirForPlatform(platform string) string {
 	return "/root/work"
 }
 
-func restartCommandForPlatform(platform string) string {
+func startCommandForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
+		return "Start-Service google-cloud-ops-agent"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func stopCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
 
 func systemLogTagForPlatform(platform string) string {
@@ -144,7 +160,14 @@ func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	return err
 }
 
+// writeToWindowsEventLog writes an event payload to the given channel (logName).
 func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string) error {
+	return writeToWindowsEventLogWithSeverity(ctx, logger, vm, logName, payload, "Information")
+}
+
+// writeToWindowsEventLogWithSeverity writes an event payload to the given channel (logName)
+// using the given severity (Error, Information, FailureAudit, SuccessAudit, Warning).
+func writeToWindowsEventLogWithSeverity(ctx context.Context, logger *log.Logger, vm *gce.VM, logName, payload string, severity string) error {
 	// If this is the first time we're trying to write to logName, we need to
 	// register a fake log source with New-EventLog.
 	// There's a problem:  there's no way (that I can find) to check whether a
@@ -154,12 +177,12 @@ func writeToWindowsEventLog(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// per logName.
 	source := logName + "__ops_agent_test"
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed to register new source %v: %v", logName, payload, source, err)
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed to register new source %v: %v", logName, payload, severity, source, err)
 	}
 
 	// Use a Powershell here-string to avoid most quoting issues.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -Message @'\n%s\n'@", logName, source, payload)); err != nil {
-		return fmt.Errorf("writeToWindowsEventLog(logName=%q, payload=%q) failed: %v", logName, payload, err)
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -EntryType '%s' -Message @'\n%s\n'@", logName, source, severity, payload)); err != nil {
+		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed: %v", logName, payload, severity, err)
 	}
 	return nil
 }
@@ -183,100 +206,6 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-type packageLocation struct {
-	// See description of AGENT_PACKAGES_IN_GCS at the top of this file.
-	// This setting takes precedence over repoSuffix.
-	packagesInGCS string
-	// Package repository suffix to install from. Setting this to ""
-	// means to install the latest stable release.
-	repoSuffix string
-}
-
-func locationFromEnvVars() packageLocation {
-	return packageLocation{
-		packagesInGCS: os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:    os.Getenv("REPO_SUFFIX"),
-	}
-}
-
-// installOpsAgent installs the Ops Agent on the given VM. Preferentially
-// chooses to install from location.packagesInGCS if that is set, otherwise
-// falls back to location.repoSuffix.
-func installOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, location packageLocation) error {
-	if location.packagesInGCS != "" {
-		return agents.InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
-	}
-	if gce.IsWindows(vm.Platform) {
-		suffix := location.repoSuffix
-		if suffix == "" {
-			suffix = "all"
-		}
-		runGoogetInstall := func() error {
-			_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("googet -noconfirm install -sources https://packages.cloud.google.com/yuck/repos/google-cloud-ops-agent-windows-%s google-cloud-ops-agent", suffix))
-			return err
-		}
-		if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runGoogetInstall); err != nil {
-			return fmt.Errorf("installOpsAgent() failed to run googet: %v", err)
-		}
-		return nil
-	}
-
-	if _, err := gce.RunRemotely(ctx,
-		logger.ToMainLog(), vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
-		return fmt.Errorf("installOpsAgent() failed to download repo script: %v", err)
-	}
-
-	runInstallScript := func() error {
-		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "sudo REPO_SUFFIX="+location.repoSuffix+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
-		return err
-	}
-	if err := agents.RunInstallFuncWithRetry(ctx, logger.ToMainLog(), vm, runInstallScript); err != nil {
-		return fmt.Errorf("installOpsAgent() error running repo script: %v", err)
-	}
-	return nil
-}
-
-// setupOpsAgent installs the Ops Agent and installs the given config.
-func setupOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string) error {
-	return setupOpsAgentFrom(ctx, logger, vm, config, locationFromEnvVars())
-}
-
-// restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
-		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
-	}
-	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-	// is 5 seconds, so we should probably give it at least that long.
-	time.Sleep(10 * time.Second)
-	return nil
-}
-
-// setupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
-// decide which version of the agent gets installed.
-func setupOpsAgentFrom(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, config string, location packageLocation) error {
-	if err := installOpsAgent(ctx, logger, vm, location); err != nil {
-		return err
-	}
-	startupDelay := 20 * time.Second
-	if len(config) > 0 {
-		if gce.IsWindows(vm.Platform) {
-			// Sleep to avoid some flaky errors when restarting the agent because the
-			// services have not fully started up yet.
-			time.Sleep(startupDelay)
-		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("setupOpsAgentFrom() failed to upload config file: %v", err)
-		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
-			return err
-		}
-	}
-	// Give agents time to start up.
-	time.Sleep(startupDelay)
-	return nil
-}
-
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -291,6 +220,7 @@ func TestParseMultilineFileJava(t *testing.T) {
     files_1:
       type: files
       include_paths: [%s]
+      record_log_file_path: true
       wildcard_refresh_interval: 30s
   processors:
     multiline_parser_1:
@@ -305,7 +235,7 @@ func TestParseMultilineFileJava(t *testing.T) {
         processors: [multiline_parser_1]`, logPath)
 
 		//Below lines comes from 3 java exception stacktraces, thus expect 3 logEntries.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
   at com.my.app.Object.do$a1(MakeLog.java:50)
   at java.lang.Thing.call(Thing.java:10)
 javax.servlet.ServletException: Something bad happened
@@ -364,7 +294,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Java: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -407,7 +337,7 @@ func TestParseMultilineFileJavaPython(t *testing.T) {
         processors: [multiline_parser_1]`, logPath)
 
 		//Below lines comes from 3 java and 3 python exception stacktraces, thus expect 6 logEntries.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(`Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
   at com.my.app.Object.do$a1(MakeLog.java:50)
   at java.lang.Thing.call(Thing.java:10)
 Traceback (most recent call last):
@@ -498,7 +428,7 @@ TypeError: can only concatenate str (not "int") to str
 			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -566,7 +496,7 @@ func TestParseMultilineFileGolangJavaPython(t *testing.T) {
         processors: [multiline_parser_1]`, logPath)
 
 		//Below lines comes from Go, Python and Java exception stacktraces.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
 goroutine 24 [running]:
 net/http.(*conn).serve.func1(0xc00007eaa0)
 	/usr/local/go/src/net/http/server.go:1746 +0xd0
@@ -619,7 +549,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -669,7 +599,7 @@ func TestParseMultilineFileMissingParser(t *testing.T) {
         processors: [multiline_parser_1]`, logPath)
 
 		//Below lines comes from Go, Python and Java exception stacktraces.
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(`2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
 goroutine 24 [running]:
 net/http.(*conn).serve.func1(0xc00007eaa0)
 	/usr/local/go/src/net/http/server.go:1746 +0xd0
@@ -722,7 +652,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -780,11 +710,11 @@ func TestCustomLogFile(t *testing.T) {
         exporters: [google]
 `, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
@@ -831,17 +761,17 @@ func TestCustomLogFormat(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
-		// correctly in windows (b/218888265).
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
+		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
+		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
 			t.Error(err)
 		}
@@ -875,7 +805,7 @@ func TestHTTPRequestLog(t *testing.T) {
         processors: [json1]
         exporters: [google]`, logPath)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -913,7 +843,7 @@ func TestHTTPRequestLog(t *testing.T) {
 		// Write both logs to log source file at the same time.
 		err = gce.UploadContent(
 			ctx,
-			logger,
+			logger.ToMainLog(),
 			vm,
 			strings.NewReader(fmt.Sprintf("%s\n%s\n", string(newLogBytes), string(oldLogBytes))),
 			logPath)
@@ -997,7 +927,7 @@ func TestInvalidConfig(t *testing.T) {
 `
 
 		// Run install with an invalid config. We expect to see an error.
-		if err := setupOpsAgent(ctx, logger, vm, config); err == nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err == nil {
 			t.Fatal("Expected agent to reject bad config.")
 		}
 	})
@@ -1042,14 +972,14 @@ func TestProcessorOrder(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
 		// correctly in windows (b/218888265).
 		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
@@ -1105,7 +1035,7 @@ func TestSyslogTCP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1161,7 +1091,7 @@ func TestSyslogUDP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1228,15 +1158,15 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := `{"field":"value"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file2); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
@@ -1314,12 +1244,12 @@ func TestModifyFields(t *testing.T) {
         exporters: [google]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
@@ -1380,12 +1310,12 @@ logging:
           - google
 `
 		config := fmt.Sprintf(configStr, file1)
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
@@ -1420,12 +1350,12 @@ func TestResourceNameLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := `{"default_present":"original"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
@@ -1461,12 +1391,12 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
 		line := `{"default_present":"original"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
@@ -1507,7 +1437,7 @@ func TestTCPLog(t *testing.T) {
         receivers: [tcp_logs]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1547,7 +1477,7 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1589,7 +1519,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1607,6 +1537,331 @@ func TestWindowsEventLog(t *testing.T) {
 			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "windows_event_log", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
 				t.Fatal(err)
 			}
+		}
+	})
+}
+
+func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		log := "windows_event_log"
+		channel := "Microsoft-Windows-User Control Panel/Operational"
+		config := fmt.Sprintf(`logging:
+  receivers:
+    %s:
+      type: windows_event_log
+      channels:
+      - Application
+      - %s
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [%s]
+`, log, channel, log)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Quote-and-escape the query string so that Cloud Logging accepts it
+		expectedWarning := fmt.Sprintf(`"\"channels[1]\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, channel)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestWindowsEventLogV2(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
+		// There is a limitation on custom event log sources that requires their associated
+		// log names to have a unique eight-character prefix, so unfortunately we can only test
+		// at most one "Microsoft-*" log.
+		config := `logging:
+  receivers:
+    winlog2_space:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Microsoft-Windows-User Profile Service/Operational
+    winlog2_default:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Application
+      - System
+    winlog2_xml:
+      type: windows_event_log
+      receiver_version: 2
+      channels:
+      - Application
+      - System
+      render_as_xml: true
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: []
+      pipeline_space:
+        receivers: [winlog2_space]
+      pipeline_v1_v2_simultaneously:
+        receivers: [windows_event_log, winlog2_default]
+      pipeline_xml:
+        receivers: [winlog2_xml]
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
+		payloads := map[string]map[string]string{
+			"winlog2_space": {
+				"Microsoft-Windows-User Profile Service/Operational": "control_panel_msg",
+			},
+			"winlog2_default": {
+				"Application": "application_msg",
+				"System":      "system_msg",
+			},
+			"winlog2_xml": {
+				"Application": "application_xml_msg",
+				"System":      "system_xml_msg",
+			},
+		}
+		for r := range payloads {
+			for log, payload := range payloads[r] {
+				if err := writeToWindowsEventLog(ctx, logger.ToMainLog(), vm, log, payload); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		// Manually re-send a log as a Warning to test severity parsing.
+		if err := writeToWindowsEventLogWithSeverity(ctx, logger.ToMainLog(), vm, "Application", "warning_msg", "Warning"); err != nil {
+			t.Fatal(err)
+		}
+
+		// For winlog2_space, we simply check that the logs were ingested.
+		for _, payload := range payloads["winlog2_space"] {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_space", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		// For pipeline_v1_v2_simultaneously, we expect logs to show up *twice*: once for v1 and once for v2.
+		// They can be distinguished by the presence of v1-only and v2-only fields
+		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
+		for _, payload := range payloads["winlog2_default"] {
+			queryV1 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeGenerated:*"
+			queryV2 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeCreated:*"
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "windows_event_log", time.Hour, queryV1); err != nil {
+				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
+			}
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, queryV2); err != nil {
+				t.Fatalf("expected v2 log for %s but it wasn't found: err=%v", payload, err)
+			}
+		}
+
+		// Verify that the warning message has the correct severity.
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_default", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
+			t.Fatal(err)
+		}
+
+		// For winlog2_xml, verify the following:
+		// - that jsonPayload only has the fields we expect (Message, StringInserts, raw_xml).
+		// - that jsonPayload.raw_xml contains a valid XML document.
+		// - that a few sample fields are present in that XML document.
+		for _, payload := range payloads["winlog2_xml"] {
+			log, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "winlog2_xml", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// We don't know (and don't care about) the runtime type graph of log.Payload, so normalize it into a simple map.
+			rawJson, err := json.Marshal(log.Payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			jsonMap := map[string]any{}
+			err = json.Unmarshal(rawJson, &jsonMap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(jsonMap) != 3 ||
+				!hasKeyWithValueType[string](jsonMap, "Message") ||
+				!hasKeyWithValueType[[]any](jsonMap, "StringInserts") ||
+				!hasKeyWithValueType[string](jsonMap, "raw_xml") {
+				t.Fatalf("expected exactly 3 fields in jsonPayload (Message, StringInserts, raw_xml): jsonPayload=%+v", jsonMap)
+			}
+			rawXml := jsonMap["raw_xml"].(string)
+			xmlStruct := struct {
+				System struct {
+					TimeCreated struct {
+						SystemTime string `xml:",attr"`
+					}
+				}
+				EventData struct {
+					Data string
+				}
+			}{}
+			err = xml.Unmarshal([]byte(rawXml), &xmlStruct)
+			if err != nil {
+				t.Fatalf("expected raw_xml to contain a valid XML document: raw_xml=%s, err=%v", rawXml, err)
+			}
+			if xmlStruct.EventData.Data == "" || xmlStruct.System.TimeCreated.SystemTime == "" {
+				t.Fatalf("expected raw_xml to contain a few sample fields, but it didn't: raw_xml=%s", rawXml)
+			}
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[0].channels.__length",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[1].channels.__length",
+				Value:   "1",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].receiver_version",
+				Value:   "2",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].render_as_xml",
+				Value:   "true",
+			},
+			{
+				Module:  "logging",
+				Feature: "receivers:windows_event_log",
+				Key:     "[2].channels.__length",
+				Value:   "2",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
+func hasKeyWithValueType[V any](m map[string]any, k string) bool {
+	v, okKey := m[k]
+	if !okKey {
+		return false
+	}
+	_, okValue := v.(V)
+	return okValue
+}
+
+func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
+			t.Fatal(err)
+		}
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Write an event and record its approximate time
+		testMessage := "TestWindowsEventLogWithNonDefaultTimeZone"
+		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, testMessage); err != nil {
+			t.Fatal(err)
+		}
+		eventTime := time.Now()
+
+		// Validate that the log written to Cloud Logging has a timestamp that's
+		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
+		logEntry, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "windows_event_log", 24*time.Hour, logMessageQueryForPlatform(platform, testMessage), gce.QueryMaxAttempts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		timeDiff := eventTime.Sub(logEntry.Timestamp).Abs()
+		if timeDiff.Minutes() > 5 {
+			t.Fatalf("timestamp differs by %v minutes", timeDiff.Minutes())
 		}
 	})
 }
@@ -1630,7 +1885,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1650,7 +1905,7 @@ func TestSystemLogByDefault(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1688,7 +1943,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 	var agentMetrics struct {
 		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 	}
-
 	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
@@ -1702,23 +1956,17 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 			continue
 		}
 
-		var series *monitoring.TimeSeries
+		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, window, nil, false)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-	}
-
-	if t.Failed() {
-		// Return early instead of waiting up to 7 minutes for the second round
-		// of querying for metrics.
-		return
 	}
 
 	// Now that we've established that the preceding metrics are being uploaded
@@ -1761,14 +2009,40 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *logging.Direc
 		}()
 	}
 	metricsWaitGroup.Wait()
+
+	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
+	if err != nil {
+		t.Fatal("Could not find features.yaml")
+		return
+	}
+
+	var fc feature_tracking_metadata.FeatureTrackingContainer
+
+	err = yaml.UnmarshalStrict(featureBytes, &fc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1796,7 +2070,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, settings); err != nil {
 			t.Fatal(err)
 		}
-		if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1865,11 +2139,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-		if err := setupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1926,88 +2196,155 @@ func TestPrometheusMetrics(t *testing.T) {
 		if multiErr != nil {
 			t.Error(multiErr)
 		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.relabel_configs",
+				Value:   "8",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.honor_timestamps",
+				Value:   "true",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scheme",
+				Value:   "http",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scrape_interval",
+				Value:   "10s",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.scrape_interval",
+				Value:   "10s",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
+				Value:   "1",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	})
 }
 
 // Test the Counter and Gauge metric types using a JSON Prometheus exporter
-// The JSON exporter will connect to a Python http server that serve static JSON files
+// The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
-		// TODO: b/260616780 fix rhel-7-6-sap-ha failure for this test
-		if gce.IsWindows(platform) || platform == "rhel-7-6-sap-ha" {
+		if gce.IsWindows(platform) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		type fileToUpload struct {
-			local, remote string
-		}
-
+		prometheusTestdata := path.Join("testdata", "prometheus")
 		filesToUpload := []fileToUpload{
-			{local: path.Join("testdata", "prometheus", "data.json"),
-				remote: "data.json"},
-			{local: path.Join("testdata", "prometheus", "json_exporter_config.yaml"),
-				remote: "json_exporter_config.yaml"},
+			{
+				local:  path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join("/opt", "go-http-server", "http_server.go"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "data.json"),
+				remote: path.Join("/opt", "go-http-server", "data.json"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
+				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
+			},
+			{
+				local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
+			},
 		}
 
-		workDir := path.Join(workDirForPlatform(vm.Platform), "json_exporter")
-
-		for _, file := range filesToUpload {
-			f, err := testdataDir.Open(file.local)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer f.Close()
-			err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
-			if err != nil {
-				t.Fatal(err)
-			}
-		}
-
-		packages := []string{"wget", "python3"}
-		err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload)
 		if err != nil {
-			t.Fatalf("failed to install %v with err: %s", packages, err)
+			t.Fatal(err)
 		}
 
-		// Run the setup script to run the Python http server and the JSON exporter
-		setupScript, err := testdataDir.ReadFile(path.Join("testdata", "prometheus", "setup_json_exporter.sh"))
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		// Run the setup script to run the http server and the JSON exporter
+		setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
-
-		env := map[string]string{"WORKDIR": workDir}
-		maxAttampts := 5
-		for attempt := 0; attempt < maxAttampts; attempt++ {
-			setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, env)
-			// Since the script will start the processes in the background, the script should finish without error
-			if err != nil {
-				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
-			}
-			// Wait until both are ready
-			time.Sleep(30 * time.Second)
-			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-			// We will retry when:
-			// 1. JSON exporter is not started: in this case the stderr will have: "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
-			// 2. The Python HTTP server is not started: in this case the stdout will not have the expected Prometheus style metrics
-			// If neither cases - break the retrying loop
-			if liveCheckErr == nil && !strings.Contains(liveCheckOut.Stderr, "Connection refused") && strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-				break
-			}
-
-			// Out of attempts
-			if attempt == maxAttampts-1 {
-				errString := fmt.Sprintf("last stdout: %s last stderr: %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
-				if liveCheckErr != nil {
-					errString = fmt.Sprintf("last err: %v %s", liveCheckErr, errString)
-				}
-				t.Fatalf("failed to start the HTTP server or JSON exporter - exhausted retries. %s", errString)
-			}
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		if err != nil {
+			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
-
+		// Wait until both are ready
+		time.Sleep(30 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		// We will abort when:
+		// 1. JSON exporter is not started: in this case the stderr will have:
+		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+		// 2. The HTTP server is not started: in this case the stdout will not
+		// have the expected Prometheus style metrics
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+			t.Fatal("Json Exporter failed to start")
+		}
+		// Initially, __address__ is the target[0] which is
+		// "http://localhost:8000/data.json";
+		// The first relabeling moves __address__ to __param_target, so we have
+		// "target=http://localhost:8000/data.json" of the final url;
+		// The params: module: [default] adds the module=default so we have
+		// "module=default&target=http://localhost:8000/data.json"
+		// The metric_path: /probe adds that to url:
+		// "probe?module=default&target=http://localhost:8000/data.json";
+		// And the last relabeling changes the __address__ to localhost:7979:
+		// "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"
+		// which is the URL needed to query metrics hosted by the JSON exporter
+		// This is the usual way of using the exporter as this allows us to
+		// specify multiple `targets` within one `scrape_configs`
 		config := `metrics:
   receivers:
     prom_app:
@@ -2035,11 +2372,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		// Turn on the prometheus feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "prometheus_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-		if err := setupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2049,48 +2382,423 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
 
-		type promMetricTest struct {
-			metricName         string
-			expectedMetricKind metric.MetricDescriptor_MetricKind
-			expectedValueType  metric.MetricDescriptor_ValueType
-			expectedValue      float64
-		}
-
-		testData := []promMetricTest{
-			{"prometheus.googleapis.com/test_gauge_value/gauge",
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789},
+		tests := []prometheusMetricTest{
+			{"prometheus.googleapis.com/test_gauge_value/gauge", nil,
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789.0},
 			// Since we are sending the same number at every time point,
 			// the cumulative counter metric will return 0 as no change in values
-			{"prometheus.googleapis.com/test_counter_value/counter",
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0},
+			{"prometheus.googleapis.com/test_counter_value/counter", nil,
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 			// Untyped type - GCM will have untyped metrics as gauge type
-			{"prometheus.googleapis.com/test_untyped_value/gauge",
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56},
+			{"prometheus.googleapis.com/test_untyped_value/gauge", nil,
+				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
 		}
 
 		var multiErr error
-		for _, test := range testData {
-			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, test.metricName, window, nil, true); err != nil {
-				multiErr = multierr.Append(multiErr, err)
-			} else {
-				if pts.MetricKind != test.expectedMetricKind {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.metricName, pts.MetricKind, test.expectedMetricKind))
-				}
-				if pts.ValueType != test.expectedValueType {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.metricName, pts.ValueType, test.expectedValueType))
-				}
-				if len(pts.Points) == 0 {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.metricName))
-				} else if pts.Points[0].Value.GetDoubleValue() != test.expectedValue {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.metricName, pts.Points[0].Value.GetDoubleValue(), test.expectedValue))
-				}
-			}
+		for _, test := range tests {
+			multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
 		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+}
+
+// TestPrometheusHistogramMetrics tests the Histogram metric type using static
+// testing files.
+func TestPrometheusHistogramMetrics(t *testing.T) {
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	filesToUpload := map[string]fileToUpload{
+		"step_one": {local: path.Join(prometheusTestdata, "sample_histogram_step_1"),
+			remote: path.Join(remoteWorkDir, "data")},
+		"step_two": {local: path.Join(prometheusTestdata, "sample_histogram_step_2"),
+			remote: path.Join(remoteWorkDir, "data")},
+	}
+
+	// For Histogram: We use prometheus.LinearBuckets(0, 20, 5), to have
+	// buckets w/ le=[0, 20, 40, 60, 80] plus the +inf final bucket
+	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Bounds (less than or equal) |0  |20     |40     |60     |80     |+inf
+	// Points                      |[0]|[10,20]|[30,40]|[50,60]|[70,80]|[90]
+	// Count                       |1  |2      |2      |2      |2      |1
+	// And histogram metrics are stored as cumulative type metrics, and
+	// histogram metrics get normalized
+	// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+	// so for this initial step, Count/Mean/SumOfSquaredDeviation are all
+	// zeros, and the BucketCounts is nil
+	stepOneExpected := &distribution.Distribution{
+		Count:                 0,
+		Mean:                  0,
+		SumOfSquaredDeviation: 0,
+		BucketOptions: &distribution.Distribution_BucketOptions{
+			Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+				ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+					Bounds: []float64{0, 20, 40, 60, 80},
+				},
+			},
+		},
+	}
+
+	// For step 2, we repeat and observe points
+	// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Bounds (less than or equal)  |0  |20     |40     |60     |80     |+inf
+	// Total Observed in step 1 & 2 |2  |4      |4      |4      |4      |2
+	// Delta                        |1  |2      |2      |2      |2      |1
+	// Again, histogram metrics are stored as cumulative type metrics, so
+	// for this second step, the BucketCounts is the delta value in the
+	// above table.
+	// Count is the # of new points 10.
+	// Mean is (delta of sum) / (# of new points) = (900 - 450) / 10 = 45
+	// SumOfSquaredDeviation is not part of the Prometheus histogram. The
+	// value is calculated by the googlemanagedprometheusexporter. since the
+	// exporter does not have the actual observed values, the calculation
+	// assumes all points are in the middle of the bucket, and for +inf
+	// the points are at the largest boundary. See:
+	// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/36f91511cfd7be17370e23c36ee839a70cdc914d/exporter/collector/metrics.go#L560
+	// So here SumOfSquaredDeviation = (x_i - mean)^2 for x_i in
+	// [0, 10, 10, 30, 30, 50, 50, 70, 70, 80] and mean 45
+	stepTwoExpected := &distribution.Distribution{
+		Count:                 10,
+		Mean:                  45,
+		SumOfSquaredDeviation: 7450,
+		BucketOptions: &distribution.Distribution_BucketOptions{
+			Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+				ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+					Bounds: []float64{0, 20, 40, 60, 80},
+				},
+			},
+		},
+		BucketCounts: []int64{1, 2, 2, 2, 2, 1},
+	}
+
+	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
+		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpected)
+		},
+		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpected)
+		},
+	}
+	testPrometheusMetrics(t, filesToUpload, checks)
+}
+
+// TestPrometheusSummaryMetrics tests the Summary metric type using static
+// testing files.
+func TestPrometheusSummaryMetrics(t *testing.T) {
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	filesToUpload := map[string]fileToUpload{
+		"step_one": {local: path.Join(prometheusTestdata, "sample_summary_step_1"),
+			remote: path.Join(remoteWorkDir, "data")},
+		"step_two": {local: path.Join(prometheusTestdata, "sample_summary_step_2"),
+			remote: path.Join(remoteWorkDir, "data")},
+	}
+
+	// For Summary: We use Objectives [0.5, 0.9, 0.99]
+	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Objectives |0.5            |0.9               |0.99
+	// Points     |[0,10,20,30,40]|[..., 50,60,70,80]|[...,90]
+	// Quantile   |40             |80                |90
+	// And summary metrics' quantiles are stored as gauge type metrics, so
+	// for this initial step, quantiles have the actual values.
+	// But count and sum are stored as cumulative values, and those two get
+	// normalized
+	// (https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/360)
+	// and they are 0s for the first step
+	stepOneExpected := prometheusSummaryMetric{
+		Quantiles: map[string]float64{
+			"0.5":  40,
+			"0.9":  80,
+			"0.99": 90,
+		},
+		Count: 0,
+		Sum:   0,
+	}
+
+	// For step 2, we repeat and observe points
+	// [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+	// And get:
+	// Objectives |0.5            |0.9               |0.99
+	// Quantile   |40             |80                |90
+	// And summary metrics' quantiles are stored as gauge type metrics, so
+	// for this second step, quantiles have the actual values.
+	// But count and sum are stored as cumulative values, thus:
+	// Count = (delta of count) = 20 - 10 = 10
+	// Sum = (delta of sum) = 900 - 450 = 450
+	stepTwoExpected := prometheusSummaryMetric{
+		Quantiles: map[string]float64{
+			"0.5":  40,
+			"0.9":  80,
+			"0.99": 90,
+		},
+		Count: 10,
+		Sum:   450,
+	}
+
+	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
+		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpected)
+		},
+		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepTwoExpected)
+		},
+	}
+	testPrometheusMetrics(t, filesToUpload, checks)
+}
+
+// testPrometheusMetrics tests different Prometheus metric types using static
+// testing files. The files will contain metrics in the right format and hosted
+// by a simple HTTP server so that the agent can scrape the metrics
+// The test will send two sets of metric points, to verify the metrics are
+// correctly received and processed
+func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, checks map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		prometheusTestdata := path.Join("testdata", "prometheus")
+		remoteWorkDir := path.Join("/opt", "go-http-server")
+		serviceFiles := []fileToUpload{
+			{local: path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join(remoteWorkDir, "http_server.go")},
+			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
+		}
+
+		// 1. Upload the step one files and files used to setup the http service
+		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, testFiles["step_one"]))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 2. Setup the golang and start the go http server
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		setupScript := `sudo systemctl daemon-reload
+			sudo systemctl enable http-server-for-prometheus-test
+			sudo systemctl restart http-server-for-prometheus-test`
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		if err != nil {
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
+		}
+		// Wait until the http server is ready
+		time.Sleep(5 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+		}
+		// 3. Config and start the agent
+		// Set the scrape interval to 10 second, so that metrics points can be
+		// received faster to shorten the duration of this test
+		config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+		var multiErr error
+		multiErr = multierr.Append(multiErr, checks["step_one"](ctx, logger, vm, window))
+
+		// 5. Replace the text file with the step two metrics
+		err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{testFiles["step_two"]})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 6. Wait until the new points have arrived
+		time.Sleep(3 * time.Minute)
+		multiErr = multierr.Append(multiErr, checks["step_two"](ctx, logger, vm, window))
 
 		if multiErr != nil {
 			t.Error(multiErr)
 		}
 	})
+}
+
+// assertPrometheusHistogramMetric Check if the last point of the time series is
+// the expected Prometheus histogram metric point
+func assertPrometheusHistogramMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, name string, window time.Duration, expected *distribution.Distribution) error {
+	// GCM map Prometheus histogram to cumulative distribution
+	test := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/histogram", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DISTRIBUTION,
+		ExpectedValue:      expected,
+	}
+	return assertPrometheusMetric(ctx, logger, vm, window, test)
+}
+
+// A sample of the Prometheus summary metric with name 'test_summary':
+// # HELP test_summary Test Summary.
+// # TYPE test_summary summary
+// test_summary{quantile="0.5"} 40
+// test_summary{quantile="0.9"} 80
+// test_summary{quantile="0.99"} 90
+// test_summary_sum 450
+// test_summary_count 10
+type prometheusSummaryMetric struct {
+	Quantiles  map[string]float64
+	Count, Sum float64
+}
+
+// assertPrometheusSummaryMetric checks if the last point of the time series is
+// the expected prometheus summary metric point
+func assertPrometheusSummaryMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, name string, window time.Duration, expected prometheusSummaryMetric) error {
+	var multiErr error
+	// There is no direct mapping of Prometheus summary type. Instead, GCM
+	// would store the quantiles into prometheus.googleapis.com/NAME/summary
+	// with the actual quantile as a metric label, of type gauge
+	for quantile, value := range expected.Quantiles {
+		test := prometheusMetricTest{
+			MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/summary", name),
+			ExtraFilter:        []string{fmt.Sprintf(`metric.labels.quantile = "%s"`, quantile)},
+			ExpectedMetricKind: metric.MetricDescriptor_GAUGE,
+			ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+			ExpectedValue:      value,
+		}
+		multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+	}
+	// The count value in Prometheus summary goes to
+	// prometheus.googleapis.com/NAME_count/summary of type cumulative
+	testCount := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_count/summary", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+		ExpectedValue:      expected.Count,
+	}
+	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testCount))
+	// The sum value in Prometheus summary goes to
+	// prometheus.googleapis.com/NAME_sum/summary:counter of type cumulative
+	testSummary := prometheusMetricTest{
+		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_sum/summary:counter", name),
+		ExtraFilter:        nil,
+		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
+		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
+		ExpectedValue:      expected.Sum,
+	}
+	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testSummary))
+	return multiErr
+}
+
+// prometheusMetricTest specify a test to use 'MetricName' and 'ExtraFilter' to
+// get the metric and compare with the expected kind, type and value
+type prometheusMetricTest struct {
+	MetricName         string
+	ExtraFilter        []string
+	ExpectedMetricKind metric.MetricDescriptor_MetricKind
+	ExpectedValueType  metric.MetricDescriptor_ValueType
+	ExpectedValue      any
+}
+
+// assertPrometheusMetric with a given test, wait for the metric, and thenuse
+// the latest point as the actual value and compare with the expected value
+func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, test prometheusMetricTest) error {
+	var multiErr error
+	if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, test.MetricName, window, test.ExtraFilter, true); err != nil {
+		multiErr = multierr.Append(multiErr, err)
+	} else {
+		if pts.MetricKind != test.ExpectedMetricKind {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.MetricName, pts.MetricKind, test.ExpectedMetricKind))
+		}
+		if pts.ValueType != test.ExpectedValueType {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.MetricName, pts.ValueType, test.ExpectedValueType))
+		}
+		if len(pts.Points) == 0 {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.MetricName))
+		} else {
+			// Use the last/latest point
+			actual := pts.Points[len(pts.Points)-1]
+			switch test.ExpectedValueType {
+			case metric.MetricDescriptor_DOUBLE:
+				expectedValue := test.ExpectedValue.(float64)
+				actualValue := actual.Value.GetDoubleValue()
+				if actualValue != expectedValue {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.MetricName, actualValue, expectedValue))
+				}
+			case metric.MetricDescriptor_DISTRIBUTION:
+				expectedValue := test.ExpectedValue.(*distribution.Distribution)
+				actualValue := actual.Value.GetDistributionValue()
+				if !slices.Equal(actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()) {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets bounds %v; expected %v",
+						test.MetricName, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
+				}
+				if !slices.Equal(actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()) {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets with counts %v; expected %v",
+						test.MetricName, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
+				}
+				if actualValue.Count != expectedValue.Count {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has count %d; expected %d",
+						test.MetricName, actualValue.Count, expectedValue.Count))
+				}
+				if actualValue.Mean != expectedValue.Mean {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has mean %f; expected %f",
+						test.MetricName, actualValue.Mean, expectedValue.Mean))
+				}
+				if actualValue.SumOfSquaredDeviation != expectedValue.SumOfSquaredDeviation {
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has sum of squared deviation %f; expected %f",
+						test.MetricName, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
+				}
+			default:
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ExpectedValueType))
+			}
+
+		}
+	}
+	return multiErr
+}
+
+type fileToUpload struct {
+	local, remote string
+}
+
+// uploadFiles upload files from fs embedded file system to vm
+func uploadFiles(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, fs embed.FS, files []fileToUpload) error {
+	for _, upload := range files {
+		err := func() error {
+			f, err := fs.Open(upload.local)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			err = gce.UploadContent(ctx, logger.ToMainLog(), vm, f, upload.remote)
+			return err
+		}()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TestExcludeMetrics(t *testing.T) {
@@ -2128,7 +2836,7 @@ metrics:
         processors: [metrics_filter]
 `
 
-		if err := setupOpsAgent(ctx, logger, vm, excludeConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, excludeConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2210,7 +2918,7 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 }
 
 func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
-	if err := setupOpsAgent(ctx, logger, vm, ""); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2280,6 +2988,26 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
+func TestLoggingSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	time.Sleep(3 * time.Minute)
 	// Query for a metric sent by the diagnostics service from the last
@@ -2314,7 +3042,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 2. Install the Ops Agent.  Installation will succeed but log an error.
-		if err := installOpsAgent(ctx, logger, vm, locationFromEnvVars()); err != nil {
+		if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2356,12 +3084,12 @@ func TestUpgradeOpsAgent(t *testing.T) {
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		// This will install the Ops Agent from REPO_SUFFIX_PREVIOUS, with
-		// a default value of "", which means stable.
-		firstVersion := packageLocation{repoSuffix: os.Getenv("REPO_SUFFIX_PREVIOUS")}
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", firstVersion); err != nil {
-			// Installation from stable may fail before the first release.
-			if firstVersion.repoSuffix == "" && (strings.HasPrefix(err.Error(), "installOpsAgent() failed to run googet") || strings.HasPrefix(err.Error(), "installOpsAgent() error running repo script")) {
+		// This will install the stable Ops Agent (REPO_SUFFIX="").
+		if err := agents.SetupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", agents.PackageLocation{}); err != nil {
+			// Installation from stable may fail before the first release on
+			// a new platform.
+			if strings.HasPrefix(err.Error(), "InstallOpsAgent() failed to run googet") ||
+				strings.HasPrefix(err.Error(), "InstallOpsAgent() error running repo script") {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
 			}
 			t.Fatal(err)
@@ -2373,8 +3101,8 @@ func TestUpgradeOpsAgent(t *testing.T) {
 		}
 
 		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
-		secondVersion := locationFromEnvVars()
-		if err := setupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
+		secondVersion := agents.LocationFromEnvVars()
+		if err := agents.SetupOpsAgentFrom(ctx, logger.ToMainLog(), vm, "", secondVersion); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2471,7 +3199,7 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 			return nil, err
 		}
 		defer f.Close()
-		err = gce.UploadContent(ctx, logger, vm, f, path.Join(workDir, file.remote))
+		err = gce.UploadContent(ctx, logger.ToMainLog(), vm, f, path.Join(workDir, file.remote))
 		if err != nil {
 			return nil, err
 		}
@@ -2513,19 +3241,23 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
 	goVersion := "1.19"
+	goArch := "amd64"
+	if gce.IsARM(vm.Platform) {
+		goArch = "arm64"
+	}
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
 		// TODO: host go windows installer in the GCS if `golang.org` throttle
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
-			Invoke-WebRequest "https://go.dev/dl/go%s.windows-amd64.msi" -OutFile golang.msi
-			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion)
+			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
+			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -e
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-amd64.tar.gz" - | \
-				tar --directory /usr/local -xzf /dev/stdin`, goVersion)
+				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
+				tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
 	return err
@@ -2543,7 +3275,7 @@ func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM,
 	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
 		return err
 	}
-	if err := gce.UploadContent(ctx, logger, vm, content, path.Join(workDir, "main.go")); err != nil {
+	if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, content, path.Join(workDir, "main.go")); err != nil {
 		return err
 	}
 	goInitAndRun := fmt.Sprintf(`
@@ -2556,7 +3288,7 @@ func runGoCode(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM,
 	return err
 }
 
-func TestOTLPMetrics(t *testing.T) {
+func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2572,15 +3304,25 @@ combined:
   receivers:
     otlp:
       type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
 metrics:
   service:
     pipelines:
       otlp:
         receivers:
-        - otlp`
-		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
 
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
@@ -2595,16 +3337,167 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.gauge", time.Hour, nil, false); err != nil {
-			t.Error(err)
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, name := range []string{
+			"workload.googleapis.com/otlp.test.gauge",
+			"workload.googleapis.com/otlp.test.cumulative",
+			"workload.googleapis.com/otlp.test.prefix1",
+			"workload.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2",
+			"workload.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc",
+			"workload.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+			"workload.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5",
+		} {
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, false); err != nil {
+				t.Error(err)
+			}
 		}
-		if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
 			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
 		}
 	})
 }
 
-func testOTLPTraces(t *testing.T) {
+func TestOTLPMetricsGMP(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		// Turn on the otlp feature gate.
+		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
+			t.Fatal(err)
+		}
+
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(20 * time.Second)
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, name := range []string{
+			"prometheus.googleapis.com/otlp_test_gauge/gauge",
+			"prometheus.googleapis.com/otlp_test_cumulative/counter",
+			"prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
+			"prometheus.googleapis.com/invalid_googleapis_com_otlp_test_prefix2/gauge",
+			"prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com_abc/gauge",
+			"prometheus.googleapis.com/WORKLOAD_GOOGLEAPIS_COM_otlp_test_prefix4/gauge",
+			"prometheus.googleapis.com/WORKLOAD_googleapis_com_otlp_test_prefix5/gauge",
+		} {
+			if _, err = gce.WaitForMetric(ctx, logger.ToMainLog(), vm, name, time.Hour, nil, true); err != nil {
+				t.Error(err)
+			}
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
+func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2625,8 +3518,12 @@ traces:
     pipelines:
       otlp:
         receivers:
-        - otlp`
-		if err := setupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+        - otlp
+metrics:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2646,6 +3543,232 @@ traces:
 		if _, err := gce.WaitForTrace(ctx, logger.ToMainLog(), vm, time.Hour); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func isHealthCheckTestPlatform(platform string) bool {
+	return platform == "windows-2019" || platform == "debian-11"
+}
+
+func healthCheckResultMessage(name string, result string, code string) string {
+	if result == "FAIL" || result == "WARNING" {
+		return fmt.Sprintf("[%s Check] Result: %s, Error code: %s", name, result, code)
+	}
+	return fmt.Sprintf("[%s Check] Result: %s", name, result)
+}
+
+func checkExpectedHealthCheckResult(t *testing.T, output string, name string, expected string, code string) {
+	if !strings.Contains(output, healthCheckResultMessage(name, expected, code)) {
+		t.Errorf("expected %s check to %s", name, expected)
+	}
+}
+
+func getRecentServiceOutputForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		cmd := strings.Join([]string{
+			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past } | select -ExpandProperty Message",
+		}, ";")
+		return cmd
+	}
+	return "sudo systemctl status google-cloud-ops-agent"
+}
+
+func listenToPortForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		cmd := strings.Join([]string{
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
+		}, ";")
+
+		return cmd
+	}
+	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
+		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+	}
+	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+}
+
+func TestPortsAndAPIHealthChecks(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		customScopes := strings.Join([]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/devstorage.read_write",
+		}, ",")
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
+
+		if !gce.IsWindows(vm.Platform) {
+			var packages []string
+			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) {
+				packages = []string{"nc"}
+			} else {
+				packages = []string{"netcat"}
+			}
+			err := agents.InstallPackages(ctx, logger.ToMainLog(), vm, packages)
+			if err != nil {
+				t.Fatalf("failed to install %v with err: %s", packages, err)
+			}
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+		// Wait for port to be in listen mode.
+		time.Sleep(30 * time.Second)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "FbMetricsPortErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+	})
+}
+
+func TestNetworkHealthCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Setting deny egress firewall rule. Waiting to changes to propagate
+		if _, err := gce.AddTagToVm(ctx, logger.ToMainLog(), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiConnErr")
+	})
+}
+
+func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--boot-disk-size", "100G"})
+		logPath := logPathForPlatform(vm.Platform)
+		logsPerSecond := 100000
+		config := fmt.Sprintf(`logging:
+  receivers:
+    log_syslog:
+      type: files
+      include_paths:
+      - %s
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [log_syslog]
+        processors: []`, logPath)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+		var bufferDir string
+		generateLogPerSecondFile := fmt.Sprintf(`
+        x=1
+        while [ $x -le %d ]
+        do
+          echo "Hello world! $x" >> ~/log_%d.log
+          ((x++))
+        done`, logsPerSecond, logsPerSecond)
+		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+
+		generateLogsScript := fmt.Sprintf(`
+			mkdir -p %s
+			x=1
+			while [ $x -le 420 ]
+			do
+			  cp ~/log_%d.log %s/$x.log
+			  ((x++))
+
+			  sleep 1
+			done
+			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDir)
+
+		if _, err := gce.AddTagToVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
+		output, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		byteCount, err := strconv.Atoi(strings.TrimSuffix(output.Stdout, "\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Threshhold of ~6.5GiB since du returns size in KB
+		threshold := 6500000
+		if byteCount > threshold {
+			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
+		}
+
+		if _, err := gce.RemoveTagFromVm(ctx, logger.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+			t.Fatal(err)
+		}
+
 	})
 }
 

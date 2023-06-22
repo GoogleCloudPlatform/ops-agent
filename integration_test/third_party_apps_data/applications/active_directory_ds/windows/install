@@ -1,3 +1,4 @@
+$ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 Install-windowsfeature -name AD-Domain-Services -IncludeManagementTools

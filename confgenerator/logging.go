@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -24,7 +25,7 @@ const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentati
 const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(tag, logName, receiverType string, hostName string) []fluentbit.Component {
+func setLogNameComponents(ctx context.Context, tag, logName, receiverType string, hostName string) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
@@ -40,36 +41,42 @@ func setLogNameComponents(tag, logName, receiverType string, hostName string) []
 			// 	StaticValue: &receiverType,
 			// },
 		},
-	}.Components(tag, "setlogname")
+	}.Components(ctx, tag, "setlogname")
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(match, userAgent string) fluentbit.Component {
+func stackdriverOutputComponent(match, userAgent string, storageLimitSize string) fluentbit.Component {
+	config := map[string]string{
+		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
+		"Name":              "stackdriver",
+		"Match_Regex":       fmt.Sprintf("^(%s)$", match),
+		"resource":          "gce_instance",
+		"stackdriver_agent": userAgent,
+
+		"http_request_key": HttpRequestKey,
+
+		// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
+		// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
+		"Retry_Limit": "3",
+
+		// https://docs.fluentbit.io/manual/administration/security
+		// Enable TLS support.
+		"tls": "On",
+		// Do not force certificate validation.
+		"tls.verify": "Off",
+
+		"workers": "8",
+
+		// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
+		"net.connect_timeout_log_error": "False",
+	}
+
+	if storageLimitSize != "" {
+		config["storage.total_limit_size"] = storageLimitSize
+	}
+
 	return fluentbit.Component{
-		Kind: "OUTPUT",
-		Config: map[string]string{
-			// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
-			"Name":              "stackdriver",
-			"Match_Regex":       fmt.Sprintf("^(%s)$", match),
-			"resource":          "gce_instance",
-			"stackdriver_agent": userAgent,
-
-			"http_request_key": HttpRequestKey,
-
-			// https://docs.fluentbit.io/manual/administration/scheduling-and-retries
-			// After 3 retries, a given chunk will be discarded. So bad entries don't accidentally stay around forever.
-			"Retry_Limit": "3",
-
-			// https://docs.fluentbit.io/manual/administration/security
-			// Enable TLS support.
-			"tls": "On",
-			// Do not force certificate validation.
-			"tls.verify": "Off",
-
-			"workers": "8",
-
-			// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
-			"net.connect_timeout_log_error": "False",
-		},
+		Kind:   "OUTPUT",
+		Config: config,
 	}
 }

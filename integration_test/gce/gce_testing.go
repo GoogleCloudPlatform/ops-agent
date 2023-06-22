@@ -35,7 +35,7 @@ command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
-	ZONE=us-central1-b \
+	ZONES=us-central1-b \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -44,7 +44,10 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
-ZONE: What GCP zone to run in.
+ZONES: What GCP zones to run in as a comma-separated list, with optional
+integer weights attached to each zone, in the format:
+zone1=weight1,zone2=weight2. Any zone with no weight is given a default weight
+of 1.
 
 The following variables are optional:
 
@@ -72,6 +75,10 @@ The default is "stackdriver-test-143416-file-transfers".
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 If provided, this value overrides the selection made by the callers to
 this library.
+
+DISABLE_PREPARE_SLES: Hopefully temporary option to disable workarounds for
+flaky startup of SLES VMs. Workarounds are disabled by setting this to the
+string "true".
 */
 package gce
 
@@ -121,6 +128,8 @@ var (
 	logClients  *logClientFactory
 	traceClient *trace.Client
 
+	zonePicker *weightedRoundRobin
+
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
 	// that use this library are advised to call CleanupKeys() at the end of
@@ -136,6 +145,8 @@ var (
 
 	// Local filesystem path to a directory to put log files into.
 	logRootDir string
+
+	ErrInvalidIteratorLength = errors.New("iterator length is less than the defined minimum length")
 )
 
 const (
@@ -153,8 +164,13 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
+	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
+	// Cloud Trace quota is incredibly low, and each call to ListTraces uses 25 quota tokens.
+	traceQueryDerate = 6 // = 30 seconds with above settings
+
 	vmInitTimeout                     = 20 * time.Minute
 	vmInitBackoffDuration             = 10 * time.Second
+	vmInitPokeSSHTimeout              = 30 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	slesStartupDelay           = 60 * time.Second
@@ -164,6 +180,8 @@ const (
 	sshUserName = "test_user"
 
 	exhaustedRetriesSuffix = "exhausted retries"
+
+	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 )
 
 func init() {
@@ -187,6 +205,11 @@ func init() {
 	traceClient, err = trace.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
+	zonePicker, err = newZonePicker(os.Getenv("ZONES"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Some useful options to pass to gcloud.
@@ -363,11 +386,16 @@ func PlatformKind(platform string) string {
 // isRetriableLookupError returns whether the given error, returned from
 // lookup[Metric|Trace]() or WaitFor[Metric|Trace](), should be retried.
 func isRetriableLookupError(err error) bool {
+	if errors.Is(err, ErrInvalidIteratorLength) {
+		return true
+	}
 	myStatus, ok := status.FromError(err)
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
 	// The Internal case catches some transient errors returned by the monitoring API sometimes.
-	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal)
+	// The ResourceExhausted case catches API quota errors like:
+	// https://source.cloud.google.com/results/invocations/863be0a0-fa7c-4dab-a8df-7689d91513a7.
+	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal || myStatus.Code() == codes.ResourceExhausted)
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
@@ -412,18 +440,29 @@ func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Du
 	return traceClient.ListTraces(ctx, req)
 }
 
-// nonEmptySeries evaluates the given iterator, returning its first non-empty
-// time series. An error is returned if the evaluation fails.
-// A return value of (nil, nil) indicates that the evaluation succeeded
-// but returned no data.
-func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*monitoringpb.TimeSeries, error) {
+// nonEmptySeriesList evaluates the given iterator, returning a non-empty slice of
+// time series, the length of the slice is guaranteed to be of size minimumRequiredSeries or greater.
+// A panic is issued if minimumRequiredSeries is zero or negative.
+// An error is returned if the evaluation fails or produces a non-empty slice with length less than minimumRequiredSeries.
+// A return value of (nil, nil) indicates that the evaluation succeeded but returned no data.
+func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
+	if minimumRequiredSeries < 1 {
+		panic("minimumRequiredSeries cannot be negative or 0")
+	}
 	// Loop through the iterator, looking for at least one non-empty time series.
+	tsList := make([]*monitoringpb.TimeSeries, 0)
 	for {
 		series, err := it.Next()
-		logger.Printf("nonEmptySeries() iterator supplied err %v and series %v", err, series)
+		logger.Printf("nonEmptySeriesList() iterator supplied err %v and series %v", err, series)
 		if err == iterator.Done {
-			// Either there were no data series in the iterator or all of them were empty.
-			return nil, nil
+			if len(tsList) == 0 {
+				return nil, nil
+			}
+			if len(tsList) < minimumRequiredSeries {
+				return nil, ErrInvalidIteratorLength
+			}
+			// Success
+			return tsList, nil
 		}
 		if err != nil {
 			return nil, err
@@ -432,8 +471,10 @@ func nonEmptySeries(logger *log.Logger, it *monitoring.TimeSeriesIterator) (*mon
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		// Success, we found a time series with len(series.Points) > 0.
-		return series, nil
+		if len(tsList) >= minimumRequiredSeries {
+			return tsList, nil
+		}
+		tsList = append(tsList, series)
 	}
 }
 
@@ -452,17 +493,32 @@ func firstTrace(it *trace.TraceIterator) (*cloudtrace.Trace, error) {
 	return trace, nil
 }
 
-// WaitForMetric looks for the given metric in the backend and returns it if it
+// WaitForMetric looks for the given metrics in the backend and returns it if it
 // exists. An error is returned otherwise. This function will retry "no data"
 // errors a fixed number of times. This is useful because it takes time for
 // monitoring data to become visible after it has been uploaded.
 func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool) (*monitoringpb.TimeSeries, error) {
+	series, err := WaitForMetricSeries(ctx, logger, vm, metric, window, extraFilters, isPrometheus, 1)
+	if err != nil {
+		return nil, err
+	}
+	logger.Printf("WaitForMetric metric=%v, series=%v", metric, series)
+	return series[0], nil
+}
+
+// WaitForMetricSeries looks for the given metrics in the backend and returns a slice if it
+// exists. An error is returned otherwise. This function will retry "no data"
+// errors a fixed number of times. This is useful because it takes time for
+// monitoring data to become visible after it has been uploaded.
+func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration, extraFilters []string, isPrometheus bool, minimumRequiredSeries int) ([]*monitoringpb.TimeSeries, error) {
 	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, extraFilters, isPrometheus)
-		series, err := nonEmptySeries(logger, it)
-		if series != nil && err == nil {
+		tsList, err := nonEmptySeriesList(logger, it, minimumRequiredSeries)
+
+		if tsList != nil && err == nil {
 			// Success.
-			return series, nil
+			logger.Printf("Successfully found series=%v", tsList)
+			return tsList, nil
 		}
 		if err != nil && !isRetriableLookupError(err) {
 			return nil, fmt.Errorf("WaitForMetric(metric=%q, extraFilters=%v): %v", metric, extraFilters, err)
@@ -470,11 +526,13 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 		// We can get here in two cases:
 		// 1. the lookup succeeded but found no data
 		// 2. the lookup hit a retriable error. This case happens very rarely.
-		logger.Printf("nonEmptySeries check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
+		logger.Printf("nonEmptySeriesList check(metric=%q, extraFilters=%v): request_error=%v, retrying (%d/%d)...",
 			metric, extraFilters, err, attempt, QueryMaxAttempts)
+
 		time.Sleep(queryBackoffDuration)
 	}
-	return nil, fmt.Errorf("WaitForMetric(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
+
+	return nil, fmt.Errorf("WaitForMetricSeries(metric=%s, extraFilters=%v) failed: %s", metric, extraFilters, exhaustedRetriesSuffix)
 }
 
 // WaitForTrace looks for any trace from the given VM in the backend and returns
@@ -486,7 +544,7 @@ func WaitForMetric(ctx context.Context, logger *log.Logger, vm *VM, metric strin
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
 		it := lookupTrace(ctx, logger, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
@@ -497,7 +555,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
 			attempt, QueryMaxAttempts)
-		time.Sleep(queryBackoffDuration)
+		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
@@ -514,9 +572,9 @@ func IsExhaustedRetriesMetricError(err error) bool {
 func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
 		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
-		series, err := nonEmptySeries(logger, it)
-		found := series != nil
-		logger.Printf("nonEmptySeries check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
+		series, err := nonEmptySeriesList(logger, it, 1)
+		found := len(series) > 0
+		logger.Printf("nonEmptySeriesList check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
 			metric, err, found, attempt, queryMaxAttemptsMetricMissing)
 
 		if err == nil {
@@ -737,6 +795,7 @@ func wrapPowershellCommand(command string) (string, error) {
 // a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
+// For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
@@ -822,18 +881,16 @@ func stderrFromXML(rawOutput string) string {
 // given permission to read from that bucket. This was accomplished by adding
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
-func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM, content io.Reader, remotePath string) (err error) {
+func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		dirLog.ToMainLog().Printf("Uploading file finished. For details see file_uploads.txt. err=%v", err)
+		logger.Printf("Uploading file finished with err=%v", err)
 	}()
-	logger := dirLog.ToFile("file_uploads.txt")
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
 	_, copyErr := io.Copy(writer, content)
 	// We have to make sure to call Close() here in order to tell it to finish
 	// the upload operation.
 	closeErr := writer.Close()
-	logger.Printf("Upload to %v finished with copyErr=%v, closeErr=%v", object, copyErr, closeErr)
 	err = multierr.Combine(copyErr, closeErr)
 	if err != nil {
 		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
@@ -845,7 +902,6 @@ func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM,
 	// (note that the go client libraries use resumable uploads).
 	defer func() {
 		deleteErr := object.Delete(ctx)
-		logger.Printf("Deleting %v finished with deleteErr=%v", object, deleteErr)
 		if deleteErr != nil {
 			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
 		}
@@ -889,6 +945,13 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
 // env is a map containing environment variables to provide to the script as it runs.
 // The environment variables and the flags will be wrapped in quotes.
+// This function is necessary to handle long commands, particularly on Windows,
+// since there is a length limit on the commands you can pass to RunRemotely:
+// powershell will complain if its -EncodedCommand parameter is too long.
+// It is highly recommended that any powershell script passed in here start with:
+// $ErrorActionPreference = 'Stop'
+// This will cause a broader class of errors to be reported as an error (nonzero exit code)
+// by powershell.
 func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
@@ -897,14 +960,24 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 	flagsStr := strings.Join(quotedFlags, " ")
 
 	if IsWindows(vm.Platform) {
-		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), "C:\\temp.ps1"); err != nil {
+		// Use a UUID for the script name in case RunScriptRemotely is being
+		// called concurrently on the same VM.
+		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
+		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
-		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File C:\\temp.ps1 "+flagsStr)
+		// powershell -File seems to drop certain kinds of errors:
+		// https://stackoverflow.com/a/15779295
+		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
+		// script seems to work around this completely.
+		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
-	// Write the script contents to script.sh, then tell bash to execute it with -x
+	scriptPath := uuid.NewString() + ".sh"
+	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > script.sh && sudo "+envVarMapToBashPrefix(env)+"bash -x script.sh "+flagsStr)
+	// Use a UUID for the script name in case RunScriptRemotely is being called
+	// concurrently on the same VM.
+	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -933,7 +1006,7 @@ const (
 func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest")
+		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest --force")
 		return err
 	}, backoffPolicy)
 	if err != nil {
@@ -957,8 +1030,9 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImages = map[string]string{
-		"opensuse-leap-15-3": "opensuse-leap-15-3-v20220429-x86-64",
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20220624-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
+		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
+		"sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
 )
 
@@ -991,11 +1065,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
-			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
-		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
-		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because they are needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		}
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true install google-compute-engine-ssh"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
@@ -1010,7 +1084,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup
+		"env": "test",
+		"ttl": "180", // minutes
+	}
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -1020,10 +1098,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	if buildID := os.Getenv("KOKORO_BUILD_ID"); buildID != "" {
 		labelsCopy["kokoro_build_id"] = buildID
 	}
-
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
 
 	return labelsCopy, nil
 }
@@ -1035,8 +1109,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:  options.Project,
 		Platform: options.Platform,
+		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1045,8 +1125,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		vm.Zone = os.Getenv("ZONE")
+		// Chooses the next zone from ZONES.
+		vm.Zone = zonePicker.Next()
 	}
+
 	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
 	if vm.MachineType == "" {
@@ -1055,9 +1137,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 	}
-	// The VM name needs to adhere to these restrictions:
-	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
@@ -1168,7 +1247,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if strings.HasPrefix(vm.Platform, "sles-") {
+	if strings.HasPrefix(vm.Platform, "sles-") && os.Getenv("DISABLE_PREPARE_SLES") != "true" {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
@@ -1179,6 +1258,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// because some background process happened to be using zypper at the same time.
 		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
 			return nil, err
+		}
+	}
+
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.Platform) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
 		}
 	}
 
@@ -1195,6 +1282,16 @@ func IsCentOS(platform string) bool {
 
 func IsRHEL(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-")
+}
+
+func isRHEL7SAPHA(platform string) bool {
+	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
+}
+
+func IsARM(platform string) bool {
+	// At the time of writing, all ARM images and image families on GCE
+	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
+	return strings.Contains(platform, "arm64")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1409,13 +1506,21 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repo := "google-cloud-monitoring-sles12-x86_64-test-vendor"
+		repoArch := "x86_64"
+		if IsARM(vm.Platform) {
+			repoArch = "aarch64"
+		}
+		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
 		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-x86_64-test-vendor"
+			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
 
+		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
+		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
@@ -1570,6 +1675,8 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	attempt := 0
 	printFoo := func() error {
 		attempt++
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
@@ -1604,6 +1711,8 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
@@ -1694,7 +1803,7 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 		}
 	})
 	logger.ToMainLog().Printf("Starting test %s", name)
-	t.Logf("Test logs: %s", logLocation(logRootDir, name))
+	t.Logf("Test logs: %s ", logLocation(logRootDir, name))
 	return logger
 }
 
@@ -1703,6 +1812,8 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
@@ -1757,4 +1868,54 @@ func RunForEachPlatform(t *testing.T, f func(t *testing.T, platform string)) {
 // ArbitraryPlatform picks an arbitrary element from PLATFORMS and returns it.
 func ArbitraryPlatform() string {
 	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
+}
+
+func areTagsValid(tags []string) (bool, error) {
+	for _, tag := range tags {
+		if strings.Contains(tag, ",") {
+			return false, fmt.Errorf("Tag %v cannot contain comma.", tag)
+		}
+	}
+	return true, nil
+}
+
+func AddTagToVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to add tag to VM: %v", err)
+		return output, err
+	}
+	args := []string{
+		"compute", "instances", "add-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + strings.Join(tags, ","),
+	}
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable to add tag to VM: %v", err)
+		return output, err
+	}
+	return output, nil
+}
+
+func RemoveTagFromVm(ctx context.Context, logger *log.Logger, vm *VM, tags []string) (CommandOutput, error) {
+	var output CommandOutput
+	if valid, err := areTagsValid(tags); !valid {
+		logger.Printf("Unable to remove tag from VM: %v", err)
+		return output, err
+	}
+	args := []string{
+		"compute", "instances", "remove-tags", vm.Name,
+		"--zone=" + vm.Zone,
+		"--project=" + vm.Project,
+		"--tags=" + strings.Join(tags, ","),
+	}
+
+	output, err := RunGcloud(ctx, logger, "", args)
+	if err != nil {
+		logger.Printf("Unable remove tag from VM: %v", err)
+		return output, err
+	}
+	return output, nil
 }

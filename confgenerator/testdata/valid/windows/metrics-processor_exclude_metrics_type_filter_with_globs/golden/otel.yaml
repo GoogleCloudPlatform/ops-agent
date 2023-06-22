@@ -10,39 +10,29 @@ exporters:
       enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
-  agentmetrics/default__pipeline_hostmetrics_0:
+  agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  casttosum/default__pipeline_iis_1:
+  casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  filter/default__pipeline_hostmetrics_1:
-    metrics:
-      exclude:
-        match_type: strict
-        metric_names:
-        - system.cpu.time
-        - system.network.dropped
-        - system.filesystem.inodes.usage
-        - system.paging.faults
-        - system.disk.operation_time
-  filter/default__pipeline_hostmetrics_3:
+  filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
         match_type: regexp
         metric_names:
         - "^agent\\.googleapis\\.com/proce.*ses/.*$$"
         - "^agent\\.googleapis\\.com/c.*u/.*$$"
-  filter/default__pipeline_iis_3:
+  filter/default__pipeline_iis_0:
     metrics:
       exclude:
         match_type: regexp
         metric_names:
         - "^agent\\.googleapis\\.com/proce.*ses/.*$$"
         - "^agent\\.googleapis\\.com/c.*u/.*$$"
-  filter/default__pipeline_mssql_1:
+  filter/default__pipeline_mssql_0:
     metrics:
       exclude:
         match_type: regexp
@@ -57,6 +47,17 @@ processors:
         - fluentbit_uptime
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
+  filter/hostmetrics_1:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+        - system.cpu.time
+        - system.network.dropped
+        - system.filesystem.inodes.usage
+        - system.paging.faults
+        - system.disk.operation_time
   filter/otel_0:
     metrics:
       include:
@@ -66,7 +67,61 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/default__pipeline_hostmetrics_2:
+  metricstransform/fluentbit_1:
+    transforms:
+    - action: update
+      include: fluentbit_uptime
+      new_name: agent/uptime
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: version
+        new_value: google-cloud-ops-agent-logging/latest-build_distro
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - version
+    - action: update
+      include: fluentbit_stackdriver_requests_total
+      new_name: agent/request_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_proc_records_total
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/hostmetrics_2:
     transforms:
     - action: update
       include: system.cpu.time
@@ -321,7 +376,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.physical_usage
+      include: process.memory.usage
       new_name: processes/rss_usage
       operations:
       - action: toggle_scalar_data_type
@@ -329,7 +384,7 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.memory.virtual_usage
+      include: process.memory.virtual
       new_name: processes/vm_usage
       operations:
       - action: toggle_scalar_data_type
@@ -340,7 +395,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_iis_0:
+  metricstransform/iis_0:
     transforms:
     - action: update
       include: "\\Web Service(_Total)\\Current Connections"
@@ -368,7 +423,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/default__pipeline_mssql_0:
+  metricstransform/mssql_0:
     transforms:
     - action: update
       include: "\\SQLServer:General Statistics(_Total)\\User Connections"
@@ -379,48 +434,6 @@ processors:
     - action: update
       include: "\\SQLServer:Databases(_Total)\\Write Transactions/sec"
       new_name: mssql/write_transaction_rate
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/fluentbit_1:
-    transforms:
-    - action: update
-      include: fluentbit_uptime
-      new_name: agent/uptime
-      operations:
-      - action: toggle_scalar_data_type
-      - action: add_label
-        new_label: version
-        new_value: google-cloud-ops-agent-logging/latest-build_distro
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - version
-    - action: update
-      include: fluentbit_stackdriver_requests_total
-      new_name: agent/request_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: fluentbit_stackdriver_proc_records_total
-      new_name: agent/log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -471,12 +484,18 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/default__pipeline_iis_2: {}
+  modifyscope/iis_3:
+    override_scope_name: agent.googleapis.com/iis
+    override_scope_version: "1.0"
+  modifyscope/mssql_1:
+    override_scope_name: agent.googleapis.com/mssql
+    override_scope_version: "1.0"
+  normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
-    - gce
+    - gcp
 receivers:
-  hostmetrics/default__pipeline_hostmetrics:
+  hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
       cpu: {}
@@ -506,7 +525,7 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  windowsperfcounters/default__pipeline_iis:
+  windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
     - counters:
@@ -524,7 +543,7 @@ receivers:
       instances:
       - _Total
       object: Web Service
-  windowsperfcounters/default__pipeline_mssql:
+  windowsperfcounters/mssql:
     collection_interval: 60s
     perfcounters:
     - counters:
@@ -544,33 +563,35 @@ service:
       exporters:
       - googlecloud
       processors:
-      - agentmetrics/default__pipeline_hostmetrics_0
-      - filter/default__pipeline_hostmetrics_1
-      - metricstransform/default__pipeline_hostmetrics_2
-      - filter/default__pipeline_hostmetrics_3
+      - agentmetrics/hostmetrics_0
+      - filter/hostmetrics_1
+      - metricstransform/hostmetrics_2
+      - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
-      - hostmetrics/default__pipeline_hostmetrics
+      - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
       - googlecloud
       processors:
-      - metricstransform/default__pipeline_iis_0
-      - casttosum/default__pipeline_iis_1
-      - normalizesums/default__pipeline_iis_2
-      - filter/default__pipeline_iis_3
+      - metricstransform/iis_0
+      - casttosum/iis_1
+      - normalizesums/iis_2
+      - modifyscope/iis_3
+      - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
-      - windowsperfcounters/default__pipeline_iis
+      - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
       - googlecloud
       processors:
-      - metricstransform/default__pipeline_mssql_0
-      - filter/default__pipeline_mssql_1
+      - metricstransform/mssql_0
+      - modifyscope/mssql_1
+      - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
-      - windowsperfcounters/default__pipeline_mssql
+      - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
       - googlecloud

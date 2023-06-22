@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -41,7 +42,7 @@ func (r MetricsReceiverCouchbase) Type() string {
 }
 
 // Pipelines will construct the prometheus receiver configuration
-func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 	targets := []string{r.Endpoint}
 	if r.Endpoint == "" {
 		targets = []string{defaultCouchbaseEndpoint}
@@ -73,96 +74,95 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.Pipeline {
 			},
 		},
 	}
-	return []otel.Pipeline{
-		{
-			Receiver: otel.Component{
-				Type:   "prometheus",
-				Config: config,
-			},
-			Processors: []otel.Component{
-				otel.NormalizeSums(),
-				// remove prometheus scraping meta-metrics
-				otel.MetricsFilter("exclude", "strict",
-					"scrape_samples_post_metric_relabeling",
-					"scrape_series_added",
-					"scrape_duration_seconds",
-					"scrape_samples_scraped",
-					"up",
-				),
-				otel.MetricsTransform(
-					// renaming from prometheus style to otel style, order is important before workload prefix
-					otel.RenameMetric(
-						"kv_ops",
-						"couchbase.bucket.operation.count",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_vb_curr_items",
-						"couchbase.bucket.item.count",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_num_vbuckets",
-						"couchbase.bucket.vbucket.count",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_total_memory_used_bytes",
-						"couchbase.bucket.memory.usage",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_num_value_ejects",
-						"couchbase.bucket.item.ejection.count",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_mem_high_wat",
-						"couchbase.bucket.memory.high_water_mark.limit",
-						otel.RenameLabel("bucket", "bucket_name")),
-					otel.RenameMetric(
-						"kv_ep_mem_low_wat",
-						"couchbase.bucket.memory.low_water_mark.limit",
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_tmp_oom_errors",
-						"couchbase.bucket.error.oom.count.recoverable",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-					otel.RenameMetric(
-						"kv_ep_oom_errors",
-						"couchbase.bucket.error.oom.count.unrecoverable",
-						otel.ToggleScalarDataType,
-						otel.RenameLabel("bucket", "bucket_name"),
-					),
-
-					// combine OOM metrics
-					otel.CombineMetrics(
-						`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
-						"couchbase.bucket.error.oom.count",
-					),
-
-					// group by bucket and op
-					otel.UpdateMetric(
-						`couchbase.bucket.operation.count`,
-						map[string]interface{}{
-							"action":           "aggregate_labels",
-							"label_set":        []string{"bucket_name", "op"},
-							"aggregation_type": "sum",
-						},
-					),
-
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				// Using the transform processor for metrics
-				otel.TransformationMetrics(r.transformMetrics()...),
-			},
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "prometheus",
+			Config: config,
 		},
-	}
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			// remove prometheus scraping meta-metrics
+			otel.MetricsFilter("exclude", "strict",
+				"scrape_samples_post_metric_relabeling",
+				"scrape_series_added",
+				"scrape_duration_seconds",
+				"scrape_samples_scraped",
+				"up",
+			),
+			otel.MetricsTransform(
+				// renaming from prometheus style to otel style, order is important before workload prefix
+				otel.RenameMetric(
+					"kv_ops",
+					"couchbase.bucket.operation.count",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_vb_curr_items",
+					"couchbase.bucket.item.count",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_num_vbuckets",
+					"couchbase.bucket.vbucket.count",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_total_memory_used_bytes",
+					"couchbase.bucket.memory.usage",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_num_value_ejects",
+					"couchbase.bucket.item.ejection.count",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_mem_high_wat",
+					"couchbase.bucket.memory.high_water_mark.limit",
+					otel.RenameLabel("bucket", "bucket_name")),
+				otel.RenameMetric(
+					"kv_ep_mem_low_wat",
+					"couchbase.bucket.memory.low_water_mark.limit",
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_tmp_oom_errors",
+					"couchbase.bucket.error.oom.count.recoverable",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+				otel.RenameMetric(
+					"kv_ep_oom_errors",
+					"couchbase.bucket.error.oom.count.unrecoverable",
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("bucket", "bucket_name"),
+				),
+
+				// combine OOM metrics
+				otel.CombineMetrics(
+					`^couchbase\.bucket\.error\.oom\.count\.(?P<error_type>unrecoverable|recoverable)$$`,
+					"couchbase.bucket.error.oom.count",
+				),
+
+				// group by bucket and op
+				otel.UpdateMetric(
+					`couchbase.bucket.operation.count`,
+					map[string]interface{}{
+						"action":           "aggregate_labels",
+						"label_set":        []string{"bucket_name", "op"},
+						"aggregation_type": "sum",
+					},
+				),
+
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			// Using the transform processor for metrics
+			otel.TransformationMetrics(r.transformMetrics()...),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
+	}}
 }
 
 type couchbaseMetric struct {
@@ -245,7 +245,7 @@ func (lr LoggingReceiverCouchbase) Type() string {
 }
 
 // Components returns the logging components of the couchbase access logs
-func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
@@ -255,7 +255,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
 		}
 	}
-	components := lr.LoggingReceiverFilesMixin.Components(tag)
+	components := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
 	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -280,7 +280,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 				Regex:     `^(?!\[([^\s+:]*):).*$`,
 			},
 		},
-	}.Components(tag, lr.Type())...)
+	}.Components(ctx, tag, lr.Type())...)
 
 	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
@@ -297,7 +297,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, lr.Type())...)
+		}.Components(ctx, tag, lr.Type())...)
 	return components
 }
 
@@ -313,14 +313,14 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Type() string {
 }
 
 // Components returns the fluentbit components for the http access logs of couchbase
-func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit.Component {
+func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lp.IncludePaths) == 0 {
 		lp.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
 			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
 		}
 	}
-	c := lp.LoggingReceiverFilesMixin.Components(tag)
+	c := lp.LoggingReceiverFilesMixin.Components(ctx, tag)
 	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
 	// referer fields and there are additional fields after the user agent here but not in the other apps.
 	c = append(c,
@@ -334,7 +334,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 					"code": "integer",
 				},
 			},
-		}.Components(tag, lp.Type())...,
+		}.Components(ctx, tag, lp.Type())...,
 	)
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
@@ -361,7 +361,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
 		}
 	}
-	c = append(c, mf.Components(tag, lp.Type())...)
+	c = append(c, mf.Components(ctx, tag, lp.Type())...)
 	return c
 }
 
@@ -377,14 +377,14 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
 }
 
 // Components returns the fluentbit components for the couchbase goxdcr logs
-func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Component {
+func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lg.IncludePaths) == 0 {
 		lg.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
 		}
 	}
 
-	c := lg.LoggingReceiverFilesMixin.Components(tag)
+	c := lg.LoggingReceiverFilesMixin.Components(ctx, tag)
 	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -409,7 +409,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
 			},
 		},
-	}.Components(tag, lg.Type())...)
+	}.Components(ctx, tag, lg.Type())...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
@@ -425,7 +425,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(lg.Type()),
 			},
-		}.Components(tag, lg.Type())...,
+		}.Components(ctx, tag, lg.Type())...,
 	)
 	return c
 }

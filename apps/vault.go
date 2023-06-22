@@ -15,11 +15,13 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverVault struct {
@@ -27,10 +29,10 @@ type MetricsReceiverVault struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 
-	Token       string `yaml:"token"`
-	Endpoint    string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	MetricsPath string `yaml:"metrics_path" validate:"omitempty,startswith=/"`
-	Scheme      string `yaml:"scheme" validate:"omitempty"`
+	Token       secret.String `yaml:"token"`
+	Endpoint    string        `yaml:"endpoint" validate:"omitempty,hostname_port"`
+	MetricsPath string        `yaml:"metrics_path" validate:"omitempty,startswith=/"`
+	Scheme      string        `yaml:"scheme" validate:"omitempty"`
 }
 
 const (
@@ -73,7 +75,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -99,7 +101,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 
 	if r.Token != "" {
 		scrapeConfig["authorization"] = map[string]interface{}{
-			"credentials": r.Token,
+			"credentials": r.Token.SecretValue(),
 			"type":        "Bearer",
 		}
 	}
@@ -124,7 +126,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -135,7 +137,7 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.TransformationMetrics(queries...),
 			otel.MetricsFilter(
 				"include",
@@ -170,7 +172,8 @@ func (r MetricsReceiverVault) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 
@@ -312,7 +315,7 @@ func (LoggingProcessorVaultJson) Type() string {
 	return "vault_audit"
 }
 
-func (p LoggingProcessorVaultJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	// sample log line:
@@ -329,9 +332,9 @@ func (p LoggingProcessorVaultJson) Components(tag, uid string) []fluentbit.Compo
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
-	c = append(c, jsonParser.Components(tag, uid)...)
+	c = append(c, jsonParser.Components(ctx, tag, uid)...)
 	return c
 }
 
@@ -341,7 +344,7 @@ type LoggingReceiverVaultAuditJson struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
 }
 
-func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
 	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
 
 	r.MultilineRules = []confgenerator.MultilineRule{
@@ -357,8 +360,8 @@ func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Compon
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorVaultJson.Components(tag, r.LoggingProcessorVaultJson.Type())...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
 }
 
 func init() {

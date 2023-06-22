@@ -1,0 +1,92 @@
+# ======================================
+# Build Ops Agent for {tar_distro_name} 
+# ======================================
+
+FROM {from_image} AS {target_name}-build-base
+
+{install_packages}
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG BUILDARCH
+ADD https://golang.org/dl/go1.20.2.linux-${BUILDARCH}.tar.gz /tmp/go1.20.2.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go1.20.2.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM {target_name}-build-base AS {target_name}-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN ./otel.sh /work/cache/
+
+FROM {target_name}-build-base AS {target_name}-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM {target_name}-build-base AS {target_name}-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM {target_name}-build-base AS {target_name}-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM {target_name}-build-golang-base AS {target_name}-build-diagnostics
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
+COPY ./builds/ops_agent_diagnostics.sh .
+RUN ./ops_agent_diagnostics.sh /work/cache/
+
+
+FROM {target_name}-build-golang-base AS {target_name}-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM {target_name}-build-golang-base AS {target_name}-build
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY VERSION build.sh ./
+COPY debian debian
+COPY pkg pkg
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+{package_build} || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from={target_name}-build-otel /work/cache /work/cache
+COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
+COPY --from={target_name}-build-systemd /work/cache /work/cache
+COPY --from={target_name}-build-diagnostics /work/cache /work/cache
+COPY --from={target_name}-build-wrapper /work/cache /work/cache
+{package_build}
+
+FROM scratch AS {target_name}
+COPY --from={target_name}-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-{tar_distro_name}.tgz
+COPY --from={target_name}-build /google-cloud-ops-agent*.{package_extension} /

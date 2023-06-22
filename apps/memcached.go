@@ -33,12 +33,12 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMemcached) Pipelines() []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "memcached",
 			Config: map[string]interface{}{
@@ -46,7 +46,7 @@ func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors: []otel.Component{
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
@@ -56,7 +56,8 @@ func (r MetricsReceiverMemcached) Pipelines() []otel.Pipeline {
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-		},
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+		}},
 	}}
 }
 

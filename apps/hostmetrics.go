@@ -29,8 +29,8 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
-	return []otel.Pipeline{{
+func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "hostmetrics",
 			Config: map[string]interface{}{
@@ -50,7 +50,10 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: map[string][]otel.Component{"metrics": {
 			{
 				// perform custom transformations that aren't supported by the metricstransform processor
 				Type: "agentmetrics",
@@ -283,14 +286,14 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 					otel.AddLabel("process", "all"),
 				),
 				otel.RenameMetric(
-					"process.memory.physical_usage",
+					"process.memory.usage",
 					"processes/rss_usage",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
 					otel.AddLabel("process", "all"),
 				),
 				otel.RenameMetric(
-					"process.memory.virtual_usage",
+					"process.memory.virtual",
 					"processes/vm_usage",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
@@ -298,7 +301,7 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}}
 }
 

@@ -16,6 +16,7 @@
 package confgenerator
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -24,15 +25,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
-	"github.com/shirou/gopsutil/host"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string) otel.Component {
+const fluentBitSelfLogTag = "ops-agent-fluent-bit"
+const healthChecksTag = "ops-agent-health-checks"
+
+func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -52,8 +54,9 @@ func googleCloudExporter(userAgent string) otel.Component {
 				// descriptors to be created implicitly with new time series.
 				"skip_create_descriptor": true,
 				// Omit instrumentation labels, which break agent metrics.
-				"instrumentation_library_labels": false,
+				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
+				// TODO: Enable with instrumentationLabels when values are sane.
 				"service_resource_labels": false,
 				"resource_filters":        []map[string]interface{}{},
 			},
@@ -76,56 +79,54 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func gceResourceDetector() otel.Component {
-	return otel.Component{
-		Type: "resourcedetection",
-		Config: map[string]interface{}{
-			"detectors": []string{"gce"},
-		},
-	}
-}
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
+	p := platform.FromContext(ctx)
+	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
+	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
+	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
 
-func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, error) {
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Metrics", hostInfo)
-	metricVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-metrics")
-	loggingVersionLabel, _ := getVersionLabel("google-cloud-ops-agent-logging")
-
+	receiverPipelines := make(map[string]otel.ReceiverPipeline)
 	pipelines := make(map[string]otel.Pipeline)
-	var prometheusCustomMetricPipelines []string
 	var err error
 
 	if uc.Metrics != nil {
 		var err error
-		pipelines, err = uc.generateOtelPipelines()
-		if err != nil {
-			return "", err
-		}
-		prometheusCustomMetricPipelines, err = uc.getCustomPrometheusOTelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
 		if err != nil {
 			return "", err
 		}
 	}
 
-	pipelines["otel"] = AgentSelfMetrics{
+	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
 	}.MetricsSubmodulePipeline()
+	pipelines["otel"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "otel",
+	}
 
-	pipelines["fluentbit"] = AgentSelfMetrics{
+	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
 	}.LoggingSubmodulePipeline()
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "fluentbit",
+	}
 
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:                         uc.Metrics.Service.LogLevel,
-		Pipelines:                        pipelines,
-		GoogleManagedPrometheusPipelines: prometheusCustomMetricPipelines,
-		GlobalProcessors:                 []otel.Component{gceResourceDetector()},
-		GoogleCloudExporter:              googleCloudExporter(userAgent),
-		GoogleManagedPrometheusExporter:  googleManagedPrometheusExporter(userAgent),
+		LogLevel:          uc.Metrics.Service.LogLevel,
+		ReceiverPipelines: receiverPipelines,
+		Pipelines:         pipelines,
+		Exporters: map[otel.ExporterType]otel.Component{
+			otel.System: googleCloudExporter(userAgent, false),
+			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+		},
 	}.Generate()
 	if err != nil {
 		return "", err
@@ -133,85 +134,93 @@ func (uc *UnifiedConfig) GenerateOtelConfig(hostInfo *host.InfoStat) (string, er
 	return otelConfig, nil
 }
 
-// getCustomPrometheusOTelPipelines returns a list of OTel pipeline names that are used to scrape custom Prometheus metrics.
-func (uc *UnifiedConfig) getCustomPrometheusOTelPipelines() ([]string, error) {
-	out := []string{}
-	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, err
-	}
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
-			}
-
-			for i := range receiver.Pipelines() {
-				otelPipeline := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					otelPipeline = fmt.Sprintf("%s_%d", otelPipeline, i)
-				}
-
-				// Check the Ops Agent receiver type.
-				if receiver.Type() == "prometheus" {
-					out = append(out, otelPipeline)
-				}
-			}
-		}
-	}
-
-	return out, nil
-}
-
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
-func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.Pipeline, error) {
+func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
-	receivers, err := uc.MetricsReceivers()
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[string]otel.Pipeline)
-	for pID, p := range m.Service.Pipelines {
-		for _, rID := range p.ReceiverIDs {
-			receiver, ok := receivers[rID]
-			if !ok {
-				return nil, fmt.Errorf("receiver %q not found", rID)
+	outR := make(map[string]otel.ReceiverPipeline)
+	outP := make(map[string]otel.Pipeline)
+	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		for i, receiverPipeline := range receiver.Pipelines() {
+			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
+			if i > 0 {
+				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
 			}
 
-			for i, receiverPipeline := range receiver.Pipelines() {
-				prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), strings.ReplaceAll(rID, "_", "__"))
-				if i > 0 {
-					prefix = fmt.Sprintf("%s_%d", prefix, i)
-				}
+			prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(pID, "_", "__"), receiverPipelineName)
+			if pipelineType != "metrics" {
+				// Don't prepend for metrics pipelines to preserve old golden configs.
+				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
+			}
 
-				// Check the Ops Agent receiver type.
-				if receiver.Type() == "prometheus" {
-					// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-					if len(p.ProcessorIDs) > 0 {
-						return nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-					}
+			outR[receiverPipelineName] = receiverPipeline
+
+			pipeline := otel.Pipeline{
+				Type:                 pipelineType,
+				ReceiverPipelineName: receiverPipelineName,
+			}
+
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.ExporterTypes[pipelineType] == otel.GMP {
+				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 				}
-				for _, pID := range p.ProcessorIDs {
-					processor, ok := m.Processors[pID]
-					if !ok {
-						return nil, fmt.Errorf("processor %q not found", pID)
-					}
-					receiverPipeline.Processors = append(receiverPipeline.Processors, processor.Processors()...)
+			}
+			for _, pID := range processorIDs {
+				// TODO: Change when we support trace processors.
+				processor, ok := m.Processors[pID]
+				if !ok {
+					return fmt.Errorf("processor %q not found", pID)
 				}
-				out[prefix] = receiverPipeline
+				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+			}
+			outP[prefix] = pipeline
+		}
+		return nil
+	}
+	if m != nil && m.Service != nil {
+		receivers, err := uc.MetricsReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range m.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				if err := addReceiver("metrics", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
 			}
 		}
 	}
-	return out, nil
+	t := uc.Traces
+	if t != nil && t.Service != nil {
+		receivers, err := uc.TracesReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range t.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				if err := addReceiver("traces", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+	}
+	return outR, outP, nil
 }
 
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
 // It returns a map of filenames to file contents.
-func (uc *UnifiedConfig) GenerateFluentBitConfigs(logsDir string, stateDir string, hostInfo *host.InfoStat) (map[string]string, error) {
-	userAgent, _ := getUserAgent("Google-Cloud-Ops-Agent-Logging", hostInfo)
-	components, err := uc.Logging.generateFluentbitComponents(userAgent, hostInfo)
+func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
+	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
+	components, err := uc.Logging.generateFluentbitComponents(ctx, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +242,18 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func fluentbitSelfLogsPath(p platform.Platform) string {
+	loggingModule := "logging-module.log"
+	if p.Type == platform.Windows {
+		return path.Join("${logs_dir}", loggingModule)
+	}
+	return path.Join("${logs_dir}", "subagents", loggingModule)
+}
+
+func healthChecksLogsPath() string {
+	return path.Join("${logs_dir}", "health-checks.log")
 }
 
 func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
@@ -263,7 +284,7 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.InfoStat) ([]fluentbit.Component, error) {
+func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
 	var out []fluentbit.Component
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
@@ -315,7 +336,7 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 				}
 				var components []fluentbit.Component
-				receiverComponents := receiver.Components(tag)
+				receiverComponents := receiver.Components(ctx, tag)
 				components = append(components, receiverComponents...)
 
 				// To match on fluent_forward records, we need to account for the addition
@@ -338,13 +359,13 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 					if !ok {
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
-					processorComponents := processor.Components(tag, strconv.Itoa(i))
+					processorComponents := processor.Components(ctx, tag, strconv.Itoa(i))
 					if err := processUserDefinedMultilineParser(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
 						return nil, err
 					}
 					components = append(components, processorComponents...)
 				}
-				components = append(components, setLogNameComponents(tag, rID, receiver.Type(), hostInfo.Hostname)...)
+				components = append(components, setLogNameComponents(ctx, tag, rID, receiver.Type(), platform.FromContext(ctx).Hostname())...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
 				// on the record to the LogName. This is done with a Lua filter.
@@ -361,53 +382,80 @@ func (l *Logging) generateFluentbitComponents(userAgent string, hostInfo *host.I
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent))
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
 	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
+		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components("ops-agent-fluent-bit")...)
+	}.Components(ctx, fluentBitSelfLogTag)...)
 
-	out = append(out, stackdriverOutputComponent("ops-agent-fluent-bit", userAgent))
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths:   []string{healthChecksLogsPath()},
+		BufferInMemory: true,
+	}.Components(ctx, healthChecksTag)...)
+
+	out = append(out, generateSeveritySelfLogsParser(ctx)...)
+	out = append(out, generateHealthChecksLogsParser(ctx)...)
+
+	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthChecksTag}, "|"), userAgent, ""))
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
 }
 
-var versionLabelTemplate = template.Must(template.New("versionlabel").Parse(`{{.Prefix}}/{{.AgentVersion}}-{{.BuildDistro}}`))
-var userAgentTemplate = template.Must(template.New("useragent").Parse(`{{.Prefix}}/{{.AgentVersion}} (BuildDistro={{.BuildDistro}};Platform={{.Platform}};ShortName={{.ShortName}};ShortVersion={{.ShortVersion}})`))
-
-func expandTemplate(t *template.Template, prefix string, extraParams map[string]string) (string, error) {
-	params := map[string]string{
-		"Prefix":       prefix,
-		"AgentVersion": version.Version,
-		"BuildDistro":  version.BuildDistro,
-	}
-	for k, v := range extraParams {
-		params[k] = v
-	}
-	var b strings.Builder
-	if err := t.Execute(&b, params); err != nil {
-		fmt.Println(err.Error())
-		return "", err
-	}
-	return b.String(), nil
+func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+	out = append(out, LoggingProcessorParseJson{
+		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
+		},
+	}.Components(ctx, healthChecksTag, "health-checks-json")...)
+	out = append(out, []fluentbit.Component{
+		// This is used to exclude any previous content of the health-checks file that
+		// does not contain the ops-agent-version field.
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":  "grep",
+				"Match": healthChecksTag,
+				"Regex": "ops-agent-version ^.*",
+			},
+		},
+	}...)
+	return out
 }
 
-func getVersionLabel(prefix string) (string, error) {
-	return expandTemplate(versionLabelTemplate, prefix, nil)
-}
+func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
 
-func getUserAgent(prefix string, hostInfo *host.InfoStat) (string, error) {
-	extraParams := map[string]string{
-		"Platform":     hostInfo.OS,
-		"ShortName":    hostInfo.Platform,
-		"ShortVersion": hostInfo.PlatformVersion,
-	}
-	return expandTemplate(userAgentTemplate, prefix, extraParams)
+	parser := LoggingProcessorParseRegex{
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		PreserveKey: true,
+		ParserShared: ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
+			Types: map[string]string{
+				"severity": "string",
+			},
+		},
+	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")
+
+	out = append(out, parser...)
+
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+		[]struct{ SrcVal, DestVal string }{
+			{"debug", "DEBUG"},
+			{"error", "ERROR"},
+			{"info", "INFO"},
+			{"warn", "WARNING"},
+		})...,
+	)
+	return out
 }
 
 func getMD5Hash(text string) string {

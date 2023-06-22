@@ -28,11 +28,13 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
+	"go.uber.org/multierr"
 	"golang.org/x/exp/constraints"
 )
 
@@ -41,6 +43,9 @@ type UnifiedConfig struct {
 	Combined *Combined `yaml:"combined,omitempty"`
 	Logging  *Logging  `yaml:"logging"`
 	Metrics  *Metrics  `yaml:"metrics"`
+	// FIXME: OTel uses metrics/logs/traces but we appear to be using metrics/logging/traces
+	Traces *Traces `yaml:"traces,omitempty"`
+	Global *Global `yaml:"global,omitempty"`
 }
 
 func (uc *UnifiedConfig) HasLogging() bool {
@@ -51,17 +56,30 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
-func (uc *UnifiedConfig) DeepCopy(platform string) (UnifiedConfig, error) {
+func (uc *UnifiedConfig) HasCombined() bool {
+	return uc.Combined != nil
+}
+
+func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
+		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
 	}
-	fromYaml, err := UnmarshalYamlToUnifiedConfig(toYaml, platform)
+	fromYaml, err := UnmarshalYamlToUnifiedConfig(ctx, toYaml)
 	if err != nil {
-		return UnifiedConfig{}, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
+		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
 	}
 
 	return fromYaml, nil
+}
+
+func (uc *UnifiedConfig) String() string {
+	marshalledConfig, err := yaml.Marshal(uc)
+	if err != nil {
+		return fmt.Sprintf("failed to convert Unified config to yaml: %v", err)
+	}
+
+	return string(marshalledConfig)
 }
 
 type Combined struct {
@@ -133,6 +151,10 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
 	case "writablefield":
 		return fmt.Sprintf("%q is not a writable field", ve.Value().(string))
+	case "winlogchannels":
+		// Assume validation has already failed by this point, that is, receiver_version must already be > 1
+		channels := ve.Value().([]string)
+		return validateWinlogChannels(channels).Error()
 	}
 
 	return ve.FieldError.Error()
@@ -152,11 +174,6 @@ func (v *validatorContext) Struct(s interface{}) error {
 	return out
 }
 
-type platformKeyType struct{}
-
-// platformKey is a singleton that is used as a Context key for retrieving the current platform from the context.Context.
-var platformKey = platformKeyType{}
-
 func newValidator() *validator.Validate {
 	v := validator.New()
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -165,10 +182,6 @@ func newValidator() *validator.Validate {
 			return ""
 		}
 		return name
-	})
-	// platform validates that the current platform is equal to the parameter
-	v.RegisterValidationCtx("platform", func(ctx context.Context, fl validator.FieldLevel) bool {
-		return ctx.Value(platformKey) == fl.Param()
 	})
 	// duration validates that the value is a valid duration and >= the parameter
 	v.RegisterValidation("duration", func(fl validator.FieldLevel) bool {
@@ -259,33 +272,95 @@ func newValidator() *validator.Validate {
 		}
 		return t%tfactor == 0
 	})
+	// winlogchannels wraps validateWinlogChannels when receiver_version > 1 and validateWinlogV1Channels when receiver_version = 1
+	// TODO: relax the "receiver_version > 1" constraint and replace validateWinlogChannels with built-in validator primitives
+	v.RegisterValidationCtx("winlogchannels", func(ctx context.Context, fl validator.FieldLevel) bool {
+		receiver, ok := fl.Parent().Interface().(LoggingReceiverWindowsEventLog)
+		if !ok {
+			panic(fmt.Sprintf("winlogchannels: could not convert %s's parent to LoggingReceiverWindowsEventLog", fl.Field().String()))
+		}
+		if receiver.IsDefaultVersion() {
+			if err := validateWinlogV1Channels(ctx, receiver.Channels); err != nil {
+				// Only emit a soft failure (warning) here, because:
+				// 1) we want this to be backwards compatible, and
+				// 2) the implementation of the validation is not officially documented to be the "correct" way to do it
+				log.Print(err)
+			}
+			return true
+		}
+		return validateWinlogChannels(receiver.Channels) == nil
+	})
 	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
 	registerExperimentalValidations(v)
 	return v
 }
 
-func UnmarshalYamlToUnifiedConfig(input []byte, platform string) (UnifiedConfig, error) {
-	ctx := context.WithValue(context.TODO(), platformKey, platform)
+// validateWinlogChannels validates a handful of things at once:
+// - that at least one channel is defined
+// - that channels do not contain commas
+// - that channels are unique (case-insensitive)
+func validateWinlogChannels(channels []string) error {
+	if len(channels) == 0 {
+		return fmt.Errorf(`"channels" must contain at least one channel when "receiver_version" is 2 or higher`)
+	}
+	for i, channel := range channels {
+		if strings.ContainsRune(channel, ',') {
+			return fmt.Errorf(`"channels[%d]" (%s) contains an invalid character: ,`, i, channel)
+		}
+	}
+	duplicate := getFirstNonUniqueString(channels)
+	if duplicate != "" {
+		return fmt.Errorf(`"channels" contains the same value more than once: %s`, duplicate)
+	}
+	return nil
+}
+
+// validateWinlogV1Channels checks whether any channels defined by a v1 winlog receiver
+// actually exist as "old API" channels, because if they don't, then a v2 winlog receiver
+// would be needed instead.
+// Caveat: there is little official documentation to support that this is a guaranteed
+// method of determining whether a channel is accessible via the "old API".
+func validateWinlogV1Channels(ctx context.Context, channels []string) error {
+	oldChannels := platform.FromContext(ctx).WinlogV1Channels
+	var err error
+	for i, channel := range channels {
+		if !stringContainedInSliceCaseInsensitive(channel, oldChannels) {
+			err = multierr.Append(err, fmt.Errorf(
+				`"channels[%d]" contains a channel, "%s", which may not work properly on version 1 of windows_event_log. Please use "receiver_version: 2" or higher for this receiver`,
+				i, channel,
+			))
+		}
+	}
+	return err
+}
+
+// getFirstNonUniqueString returns the first non-unique (duplicate) string
+// from the given slice. Equality is determined by direct comparison after strings.ToLower().
+// If no non-unique strings are found, or if the given slice is empty, then
+// an empty string is returned.
+func getFirstNonUniqueString(slice []string) string {
+	seen := map[string]bool{}
+	for _, value := range slice {
+		lower := strings.ToLower(value)
+		if seen[lower] {
+			return value
+		}
+		seen[lower] = true
+	}
+	return ""
+}
+
+func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte) (*UnifiedConfig, error) {
 	config := UnifiedConfig{}
 	v := &validatorContext{
 		ctx: ctx,
 		v:   newValidator(),
 	}
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		return UnifiedConfig{}, err
+		return nil, err
 	}
-	return config, nil
-}
 
-func ParseUnifiedConfigAndValidate(input []byte, platform string) (UnifiedConfig, error) {
-	config, err := UnmarshalYamlToUnifiedConfig(input, platform)
-	if err != nil {
-		return UnifiedConfig{}, err
-	}
-	if err = config.Validate(platform); err != nil {
-		return config, err
-	}
-	return config, nil
+	return &config, nil
 }
 
 type Component interface {
@@ -307,18 +382,13 @@ type componentInterface interface {
 type componentFactory[CI componentInterface] struct {
 	// constructor creates a concrete instance for this component. For example, the "files" constructor would return a *LoggingReceiverFiles, which has an IncludePaths field.
 	constructor func() CI
-	// platforms is a list of platforms on which the component is valid, or any platform if the slice is empty.
-	platforms []string
+	// platforms is a bitmask of platforms on which the component is valid
+	platforms platform.Type
 }
 
 func (ct componentFactory[CI]) supportsPlatform(ctx context.Context) bool {
-	platform := ctx.Value(platformKey).(string)
-	for _, v := range ct.platforms {
-		if v == platform {
-			return true
-		}
-	}
-	return len(ct.platforms) == 0
+	platformType := platform.FromContext(ctx).Type
+	return ct.platforms&platformType == platformType
 }
 
 type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
@@ -330,7 +400,7 @@ type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 	TypeMap map[string]*componentFactory[CI]
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...string) {
+func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...platform.Type) {
 	name := constructor().Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
@@ -338,7 +408,14 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	if r.TypeMap == nil {
 		r.TypeMap = make(map[string]*componentFactory[CI])
 	}
-	r.TypeMap[name] = &componentFactory[CI]{constructor, platforms}
+	var platformsValue platform.Type
+	for _, p := range platforms {
+		platformsValue = platformsValue | p
+	}
+	if platformsValue == 0 {
+		platformsValue = platform.All
+	}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
 // unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
@@ -425,7 +502,7 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	Components(tag string) []fluentbit.Component
+	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
@@ -442,11 +519,22 @@ type LoggingNetworkReceiver interface {
 	GetListenPort() uint16
 }
 
+// GetListenPorts returns a map of receiver IDs to ports for all LoggingNetworkReceivers
+func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
+	receiverPortMap := map[string]uint16{}
+	for rID, receiver := range *m {
+		if nr, ok := receiver.(LoggingNetworkReceiver); ok {
+			receiverPortMap[rID] = nr.GetListenPort()
+		}
+	}
+	return receiverPortMap
+}
+
 type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
-	Components(tag string, uid string) []fluentbit.Component
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
@@ -480,9 +568,18 @@ type Metrics struct {
 	Service   *MetricsService        `yaml:"service"`
 }
 
-type MetricsReceiver interface {
+type OTelReceiver interface {
 	Component
-	Pipelines() []otel.Pipeline
+	Pipelines() []otel.ReceiverPipeline
+}
+
+type MetricsReceiver interface {
+	OTelReceiver
+}
+
+type TracesReceiver interface {
+	// TODO: Distinguish from metrics somehow?
+	OTelReceiver
 }
 
 type MetricsReceiverShared struct {
@@ -561,7 +658,7 @@ func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJar
 
 // ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
 // This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.Pipeline {
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.ReceiverPipeline {
 	jarPath, err := FindJarPath()
 	if err != nil {
 		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
@@ -586,12 +683,12 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = m.Password
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,
 		},
-		Processors: processors,
+		Processors: map[string][]otel.Component{"metrics": processors},
 	}}
 }
 
@@ -674,21 +771,39 @@ type MetricsService struct {
 	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
-func (uc *UnifiedConfig) Validate(platform string) error {
+type Traces struct {
+	Service *TracesService `yaml:"service"`
+}
+
+type TracesService struct {
+	Pipelines map[string]*Pipeline
+}
+
+func (uc *UnifiedConfig) Validate() error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(platform); err != nil {
+		if err := uc.Logging.Validate(); err != nil {
 			return err
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.ValidateMetrics(platform); err != nil {
+		if err := uc.ValidateMetrics(); err != nil {
+			return err
+		}
+	}
+	if uc.Traces != nil {
+		if err := uc.ValidateTraces(); err != nil {
+			return err
+		}
+	}
+	if uc.Combined != nil {
+		if err := uc.ValidateCombined(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (l *Logging) Validate(platform string) error {
+func (l *Logging) Validate() error {
 	subagent := "logging"
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
@@ -719,11 +834,38 @@ func (l *Logging) Validate(platform string) error {
 			return err
 		}
 		// portTaken will be modified/updated by the validation function
-		if _, err := validateReceiverPorts(portTaken, l.Receivers, p.ReceiverIDs); err != nil {
+		if _, err := validateReceiverPorts(portTaken, l.Receivers.GetListenPorts(), p.ReceiverIDs); err != nil {
+			return err
+		}
+		if err := validateWinlogRenderAsXML(l.Receivers, p.ReceiverIDs); err != nil {
 			return err
 		}
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "logging.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+		}
+	}
+	return nil
+}
+
+func (uc *UnifiedConfig) ValidateCombined() error {
+	m := uc.Metrics
+	t := uc.Traces
+	c := uc.Combined
+	if c == nil {
+		return nil
+	}
+	for k, _ := range c.Receivers {
+		for _, f := range []struct {
+			name    string
+			missing bool
+		}{
+			{"metrics", m == nil},
+			{"traces", t == nil},
+			// TODO: Add "logging" here?
+		} {
+			if f.missing {
+				return fmt.Errorf("combined receiver %q found with no %s section; separate metrics and traces pipelines are required for this receiver, or an empty %s configuration if the data is being intentionally dropped", k, f.name, f.name)
+			}
 		}
 	}
 	return nil
@@ -737,7 +879,7 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := uc.Metrics.Receivers[k]; ok {
-				return nil, fmt.Errorf("metrics receiver %q has the same name as generic receiver %q", k, k)
+				return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
 			}
 			if v, ok := v.(MetricsReceiver); ok {
 				validReceivers[k] = v
@@ -747,18 +889,30 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
+func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
+	validReceivers := map[string]TracesReceiver{}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := v.(TracesReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) ValidateMetrics() error {
 	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
 		log.Print(`The "metrics.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`)
 	}
-	if m.Service == nil {
-		return nil
-	}
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return err
+	}
+	if m.Service == nil {
+		return nil
 	}
 	for _, id := range sortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
@@ -791,6 +945,39 @@ func (uc *UnifiedConfig) ValidateMetrics(platform string) error {
 	return nil
 }
 
+func (uc *UnifiedConfig) ValidateTraces() error {
+	t := uc.Traces
+	subagent := "traces"
+	if t == nil || t.Service == nil {
+		return nil
+	}
+	receivers, err := uc.TracesReceivers()
+	if err != nil {
+		return err
+	}
+	for _, id := range sortedKeys(t.Service.Pipelines) {
+		p := t.Service.Pipelines[id]
+		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+			return err
+		}
+		if len(p.ProcessorIDs) > 0 {
+			return fmt.Errorf("traces pipeline %q uses processors but traces pipelines do not support processors", id)
+		}
+		if _, err := validateComponentTypeCounts(receivers, p.ReceiverIDs, subagent, "receiver"); err != nil {
+			return err
+		}
+
+		if len(p.ExporterIDs) > 0 {
+			log.Printf(`The "traces.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+		}
+	}
+	return nil
+}
+
+type VersionedReceivers struct {
+	ReceiverVersion string `yaml:"receiver_version,omitempty" tracking:""`
+}
+
 var (
 	defaultProcessors = []string{
 		"lib:apache", "lib:apache2", "lib:apache_error", "lib:mongodb",
@@ -801,10 +988,6 @@ var (
 		"hostmetrics":             1,
 		"iis":                     1,
 		"mssql":                   1,
-	}
-
-	receiverPortLimits = []string{
-		"syslog", "tcp", "fluent_forward",
 	}
 )
 
@@ -850,31 +1033,59 @@ func validateComponentTypeCounts[C Component](components map[string]C, refs []st
 }
 
 // Validate that no two receivers are using the same port; adding new port usage to the input map `taken`
-func validateReceiverPorts(taken map[uint16]string, components interface{}, pipelineRIDs []string) (map[uint16]string, error) {
-	cm := reflect.ValueOf(components)
+func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]uint16, pipelineRIDs []string) (map[uint16]string, error) {
 	for _, pipelineRID := range pipelineRIDs {
-		v := cm.MapIndex(reflect.ValueOf(pipelineRID)) // For receivers, ids always exist in the component/receiver lists
-		t := v.Interface().(Component).Type()
-		for _, limitType := range receiverPortLimits {
-			if t == limitType {
-				// Since the type of this receiver is in the receiverPortLimits, then this receiver must be a LoggingNetworkReceiver
-				port := v.Interface().(LoggingNetworkReceiver).GetListenPort()
-				if portRID, ok := taken[port]; ok {
-					if portRID == pipelineRID {
-						// One network receiver is used by two pipelines
-						return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
-					} else {
-						// Two network receivers are using the same port
-						return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
-					}
+		if port, ok := receiverPortMap[pipelineRID]; ok {
+			if portRID, ok := taken[port]; ok {
+				if portRID == pipelineRID {
+					// One network receiver is used by two pipelines
+					return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
 				} else {
-					// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
-					taken[port] = pipelineRID
+					// Two network receivers are using the same port
+					return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
 				}
+			} else {
+				// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
+				taken[port] = pipelineRID
 			}
 		}
 	}
 	return taken, nil
+}
+
+// validateWinlogRenderAsXML validates that the correct receiver version is used when
+// render_as_xml is true.
+func validateWinlogRenderAsXML(receivers loggingReceiverMap, receiverIDs []string) error {
+	var err error
+	for _, receiverID := range receiverIDs {
+		var ok bool
+		var receiver LoggingReceiver
+		var winlogReceiver *LoggingReceiverWindowsEventLog
+		if receiver, ok = receivers[receiverID]; !ok {
+			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
+		}
+		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok {
+			continue
+		}
+		if winlogReceiver.RenderAsXML && winlogReceiver.IsDefaultVersion() {
+			err = multierr.Append(err, fmt.Errorf(
+				`"logging.receivers.%s.render_as_xml" is not supported for the current receiver version. Please use "receiver_version: 2" or higher for this receiver`,
+				receiverID,
+			))
+		}
+	}
+	return err
+}
+
+// stringContainedInSliceCaseInsensitive returns whether or not the given string
+// is contained within the given slice when using a case-insensitive comparison.
+func stringContainedInSliceCaseInsensitive(str string, slice []string) bool {
+	for _, candidate := range slice {
+		if strings.EqualFold(str, candidate) {
+			return true
+		}
+	}
+	return false
 }
 
 func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {

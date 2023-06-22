@@ -1,1 +1,9 @@
-cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16
+[21:20] cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16
+  18 |       type: tcp
+  19 |       format: json
+  20 |       listen_host: "1.1.1.1"
+> 21 |       listen_port: abc
+                          ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       tcp_pipeline:

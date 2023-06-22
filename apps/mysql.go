@@ -15,9 +15,13 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+
+	"github.com/go-sql-driver/mysql"
 
 	"fmt"
 	"strings"
@@ -40,7 +44,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
+func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -53,37 +57,136 @@ func (r MetricsReceiverMySql) Pipelines() []otel.Pipeline {
 		r.Username = "root"
 	}
 
-	return []otel.Pipeline{{
-		Receiver: otel.Component{
-			Type: "mysql",
-			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
-				"endpoint":            r.Endpoint,
-				"username":            r.Username,
-				"password":            r.Password,
-				"transport":           transport,
+	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
+	sqlReceiverDriverConfig := mysql.Config{
+		User:   r.Username,
+		Passwd: r.Password,
+		Net:    transport,
+		Addr:   r.Endpoint,
+		// This defaults to true in the mysql receiver, but we need to set it explicitly here
+		AllowNativePasswords: true,
+	}
+
+	return []otel.ReceiverPipeline{
+		{
+			Receiver: otel.Component{
+				Type: "sqlquery",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"driver":              "mysql",
+					"datasource":          sqlReceiverDriverConfig.FormatDSN(),
+					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
+				},
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			}},
+		},
+		{
+			Receiver: otel.Component{
+				Type: "mysql",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"endpoint":            r.Endpoint,
+					"username":            r.Username,
+					"password":            r.Password,
+					"transport":           transport,
+					"metrics": map[string]interface{}{
+						"mysql.commands": map[string]interface{}{
+							"enabled": true,
+						},
+						"mysql.index.io.wait.count": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.index.io.wait.time": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.locked_connects": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.mysqlx_connections": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.opened_resources": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.tmp_resources": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.prepared_statements": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.table.io.wait.count": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.table.io.wait.time": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.replica.sql_delay": map[string]interface{}{
+							"enabled": false,
+						},
+						"mysql.replica.time_behind_source": map[string]interface{}{
+							"enabled": false,
+						},
+					},
+				},
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					// The following changes are here to ensure maximum backwards compatibility after the fixes
+					// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
+					otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+					otel.UpdateMetric("mysql.buffer_pool_pages",
+						otel.ToggleScalarDataType,
+					),
+					otel.UpdateMetric("mysql.threads",
+						otel.ToggleScalarDataType,
+					),
+					otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
+						otel.RenameLabel("status", "kind"),
+						otel.ToggleScalarDataType,
+					),
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			}},
+		},
+	}
+}
+
+var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
+	{
+		query: `SHOW SLAVE STATUS`,
+		metrics: []sqlReceiverMetric{
+			{
+				metric_name:       "mysql.replica.sql_delay",
+				value_column:      "SQL_Delay",
+				unit:              "s",
+				description:       "The number of seconds that the replica must lag the source.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
+			},
+			{
+				metric_name:       "mysql.replica.time_behind_source",
+				value_column:      "Seconds_Behind_Master",
+				unit:              "s",
+				description:       "This field is an indication of how “late” the replica is.",
+				data_type:         "sum",
+				monotonic:         "false",
+				value_type:        "int",
+				attribute_columns: []string{},
+				static_attributes: map[string]string{},
 			},
 		},
-		Processors: []otel.Component{
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				// The following changes are here to ensure maximum backwards compatibility after the fixes
-				// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
-				otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
-				otel.UpdateMetric("mysql.buffer_pool_pages",
-					otel.ToggleScalarDataType,
-				),
-				otel.UpdateMetric("mysql.threads",
-					otel.ToggleScalarDataType,
-				),
-				otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
-					otel.RenameLabel("status", "kind"),
-					otel.ToggleScalarDataType,
-				),
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-		},
-	}}
+	},
 }
 
 func init() {
@@ -98,7 +201,7 @@ func (LoggingProcessorMysqlError) Type() string {
 	return "mysql_error"
 }
 
-func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
@@ -137,7 +240,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
@@ -158,7 +261,7 @@ func (p LoggingProcessorMysqlError) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -172,7 +275,7 @@ func (LoggingProcessorMysqlGeneral) Type() string {
 	return "mysql_general"
 }
 
-func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -203,14 +306,14 @@ func (p LoggingProcessorMysqlGeneral) Components(tag string, uid string) []fluen
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -223,7 +326,7 @@ func (LoggingProcessorMysqlSlow) Type() string {
 	return "mysql_slow"
 }
 
-func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	// Fields are split into this array to improve readability of the regex
 	fields := strings.Join([]string{
 		// Always present slow query log fields
@@ -315,14 +418,14 @@ func (p LoggingProcessorMysqlSlow) Components(tag string, uid string) []fluentbi
 				Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -332,15 +435,15 @@ type LoggingReceiverMysqlGeneral struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlGeneral) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlGeneral.Components(tag, "mysql_general")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlGeneral.Components(ctx, tag, "mysql_general")...)
 	return c
 }
 
@@ -349,15 +452,15 @@ type LoggingReceiverMysqlSlow struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlSlow) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlSlow.Components(tag, "mysql_slow")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlSlow.Components(ctx, tag, "mysql_slow")...)
 	return c
 }
 
@@ -366,7 +469,7 @@ type LoggingReceiverMysqlError struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL
@@ -377,8 +480,8 @@ func (r LoggingReceiverMysqlError) Components(tag string) []fluentbit.Component 
 			"/var/log/mysql/error.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorMysqlError.Components(tag, "mysql_error")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMysqlError.Components(ctx, tag, "mysql_error")...)
 	return c
 }
 

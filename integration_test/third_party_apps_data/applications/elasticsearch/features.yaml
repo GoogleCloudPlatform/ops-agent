@@ -1,0 +1,13 @@
+features:
+- feature: receivers:elasticsearch
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:elasticsearch_gc
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:elasticsearch_json
+  module: logging
+  key: "[1].enabled"
+  value: true

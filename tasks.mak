@@ -45,15 +45,26 @@ addlicense:
 addlicense_check:
 	addlicense -check -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache . 
 
+# Originally I made the argument to this "PATH" but of course that messes with
+# the PATH environment variable. :D
+addlicense_to:
+	addlicense -c "Google LLC" -l apache $(P)
+
 yaml_format:
 	yamlfmt
 
 yaml_lint:
 	yamlfmt -lint
 
+compile_dockerfile:
+	go run ./dockerfiles
+
 ############
 # Unit Tests
 ############
+
+test:
+	go test ./...
 
 test_confgenerator_update:
 	go test ./confgenerator -update
@@ -69,15 +80,15 @@ test_metadata_update:
 # these targets. The Makefile will not ascribe defaults for these, since they 
 # are specific to different user environments.
 #
-# Defaults are provided for ZONE and PLATFORMS.
+# Defaults are provided for ZONES and PLATFORMS.
 #
 # If you would like to use a custom build you can provide a REPO_SUFFIX or
 # AGENT_PACKAGES_IN_GCS. These targets function fine without either specified.
-ZONE ?= us-central1-b
+ZONES ?= us-central1-b
 PLATFORMS ?= debian-11
 
 integration_tests:
-	ZONE="${ZONE}" \
+	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
 	go test -v ./integration_test/ops_agent_test.go \
 	-test.parallel=1000 \
@@ -85,7 +96,7 @@ integration_tests:
 	-timeout=4h
 
 third_party_apps_test:
-	ZONE="${ZONE}" \
+	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
 	go test -v ./integration_test/third_party_apps_test.go \
 	-test.parallel=1000 \
@@ -96,9 +107,9 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check yaml_lint test_confgenerator test_metadata test_metadata_validate
+precommit: addlicense_check test go_vet
 
-precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test_metadata_validate
+precommit_update: addlicense test_confgenerator_update test_metadata_update test go_vet
 
 ############
 # Convenience
@@ -116,3 +127,7 @@ sync_fork:
 
 update_go_modules:
 	go get -t -u ./...
+
+go_vet:
+	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
+	GOOS=windows go list ./... | grep -v "generated" | grep -v "/vendor/" | GOOS=windows xargs go vet

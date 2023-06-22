@@ -59,7 +59,7 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
+func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	// Get the resource metadata for the instance we're running on.
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
 		// Create a prometheus style mapping for the GCE metadata.
@@ -86,8 +86,20 @@ func (r PrometheusMetrics) Pipelines() []otel.Pipeline {
 		}
 	}
 
-	return []otel.Pipeline{{
+	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r.PromConfig),
+		Processors: map[string][]otel.Component{
+			// Expect metrics, without any additional processing.
+			"metrics": {
+				otel.GroupByGMPAttrs(),
+			},
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.GMP,
+		},
+		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
+			"metrics": otel.None,
+		},
 	}}
 }
 
@@ -151,7 +163,7 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = v
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
 	}
 
 	// Labels are not available using the GCE metadata API.

@@ -28,8 +28,8 @@ type AgentSelfMetrics struct {
 	Port    int
 }
 
-func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
+func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -45,7 +45,10 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -86,12 +89,12 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.Pipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 
-func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
-	return otel.Pipeline{
+func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -108,13 +111,17 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 				},
 			},
 		},
-		Processors: []otel.Component{
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
 				"fluentbit_uptime",
 				"fluentbit_stackdriver_requests_total",
 				"fluentbit_stackdriver_proc_records_total",
+				"fluentbit_stackdriver_retried_records_total",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
@@ -136,9 +143,15 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.Pipeline {
 					otel.RenameLabel("status", "response_code"),
 					otel.AggregateLabels("sum", "response_code"),
 				),
+				otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "agent/log_entry_retry_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.RenameLabel("status", "response_code"),
+					otel.AggregateLabels("sum", "response_code"),
+				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		},
+		}},
 	}
 }
 
