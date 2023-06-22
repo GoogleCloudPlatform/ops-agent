@@ -175,7 +175,7 @@ var (
 // All the commands run and their output are dumped to various files in the
 // directory managed by the given DirectoryLogger.
 func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	logger.ToMainLog().Print("Collecting dignostic files (logs etc) for the Ops Agent...")
+	logger.ToMainLog().Print("Collecting diagnostic files (logs etc) for the Ops Agent...")
 	if gce.IsWindows(vm.Platform) {
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
