@@ -4,7 +4,10 @@ sudo apt-get update
 # Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
 source /etc/os-release
 if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
-    sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless activemq
+    sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless 
+    # There's a strange dependency failure surrounding ca-certificates-java if apt-get update isn't rerun between Java and ActiveMQ installations
+    sudo apt-get update
+    sudo apt-get install -y activemq
 else
     sudo apt-get install -y default-jdk default-jdk-headless activemq
 fi
