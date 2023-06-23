@@ -34,13 +34,6 @@ bullseye_arm64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
-bionic = _distro {
-  release = [
-    'ubuntu-1804-lts',
-    'ubuntu-minimal-1804-lts',
-  ]
-  presubmit = ['ubuntu-1804-lts']
-}
 focal = _distro {
   release = [
     'ubuntu-2004-lts',

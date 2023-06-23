@@ -157,6 +157,14 @@ func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
 	}
 }
 
+func (wsl WindowsServiceLogger) Warnf(format string, v ...any) {
+	if len(v) > 0 {
+		wsl.srv.log.Warning(EngineEventID, fmt.Sprintf(format, v...))
+	} else {
+		wsl.srv.log.Warning(EngineEventID, format)
+	}
+}
+
 func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
 	if len(v) > 0 {
 		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
