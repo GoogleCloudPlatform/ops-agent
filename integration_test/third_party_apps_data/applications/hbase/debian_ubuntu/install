@@ -6,8 +6,9 @@ sudo apt-get update
 # All other tested distributions have default-jre point to openjdk-11-jre, but default-jre pulls in openjdk-17-jre
 # for Ubuntu 23.04, and HBase does not currently support Java 17 (see https://hbase.apache.org/book.html#java)
 source /etc/os-release
-if [[ "${VERSION_ID}" == 12 ]]; then
-    sudo apt-get install -y openjdk-17-jre wget
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    # Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+    sudo apt-get install -y openjdk-17-jdk wget
 else
     sudo apt-get install -y openjdk-11-jre wget
 fi

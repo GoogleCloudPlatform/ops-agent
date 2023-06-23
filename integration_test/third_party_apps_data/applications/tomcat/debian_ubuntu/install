@@ -1,12 +1,13 @@
 set -e
 sudo apt update
-sudo apt-get install -y curl default-jdk default-jdk-headless
-
-TOMCAT_VERSION=tomcat9
-
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
 source /etc/os-release
-if [[ "${VERSION_ID}" == 12 ]]; then
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
     TOMCAT_VERSION=tomcat10
+    sudo apt-get install -y curl openjdk-17-jdk openjdk-17-jdk-headless
+else
+    TOMCAT_VERSION=tomcat9
+    sudo apt-get install -y curl default-jdk default-jdk-headless
 fi
 
 sudo apt install ${TOMCAT_VERSION} -y

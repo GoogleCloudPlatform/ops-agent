@@ -1,6 +1,13 @@
 set -e
 
 sudo apt-get update
+
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y openjdk-17-jdk
+fi
+
 sudo apt install -y zookeeper-bin zookeeperd
 
 # TODO: Investigate why this happens and if this is the correct solution.
