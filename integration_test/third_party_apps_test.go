@@ -784,7 +784,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-12":    true,
+	"debian-11":    true,
 	"windows-2019": true,
 	"sles-15": true,
 }
