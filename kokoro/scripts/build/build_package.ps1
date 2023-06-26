@@ -67,6 +67,11 @@ if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
   Invoke-Program docker push $cache_location
 }
 
+Get-ChildItem -Path "$env:KOKORO_ARTIFACTS_DIR/out"
+Get-ChildItem -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Recurse -Depth 3
+
+Get-ChildItem -Path "$env:KOKORO_ARTIFACTS_DIR" -Recurse -Depth 3
+
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
