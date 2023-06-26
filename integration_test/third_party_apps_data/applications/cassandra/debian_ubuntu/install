@@ -2,39 +2,20 @@ set -e
 
 curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
 
-install_ubuntu_lunar() {
+source etc/os-release
+if [[ "${VERSION_ID}" ==  23* ]]; then
     # There is a python dependency that fails for any older versions of cassandra on Ubuntu 23.04, so explicitly install Cassandra 4.1x.
     echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
     sudo apt install -y openjdk-11-jdk cassandra
-}
-
-install_debian_bookworm() {
-    # There is a python dependency that fails for any older versions of cassandra on Debian 12, so explicitly install Cassandra 4.1x.
-    echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-
-    sudo apt update
-    sudo apt install -y openjdk-17-jdk cassandra
-}
-
-install_default() {
+else
     echo "deb https://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
     # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)
     echo "deb https://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
     sudo apt install -y openjdk-8-jdk cassandra
-}
-
-source /etc/os-release
-case "$VERSION_ID" in 
-    23*)
-        install_ubuntu_lunar;;
-    12)
-        install_debian_bookworm;;
-    *)
-        install_default;;
-esac
+fi
 
 sudo service cassandra start

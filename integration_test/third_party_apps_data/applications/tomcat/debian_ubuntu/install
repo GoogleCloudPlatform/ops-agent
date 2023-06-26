@@ -1,6 +1,7 @@
 set -e
 sudo apt update
 # Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+# Additonally, Debian 12 only has an apt installation candidate for tomcat10
 source /etc/os-release
 if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
     TOMCAT_VERSION=tomcat10
