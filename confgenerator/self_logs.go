@@ -62,7 +62,15 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 			Config: map[string]string{
 				"Name":  "grep",
 				"Match": healthLogsTag,
-				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", severityKey),
+				"Regex": "severity INFO|ERROR|WARNING|DEBUG|DEFAULT",
+			},
+		},
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":  "modify",
+				"Match": healthLogsTag,
+				"Rename": fmt.Sprintf("severity %s", severityKey),
 			},
 		},
 	}...)
@@ -87,7 +95,7 @@ func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component 
 
 	out = append(out, parser...)
 
-	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", severityKey, true,
 		[]struct{ SrcVal, DestVal string }{
 			{"debug", "DEBUG"},
 			{"error", "ERROR"},
@@ -105,9 +113,9 @@ func generateHealthLogsComponent(ctx context.Context) []fluentbit.Component {
 			OrderedConfig: [][2]string{
 				{"Name", "record_modifier"},
 				{"Match", healthLogsTag},
-				{"Record", "schema-version v1"},
-				{"Record", "agent-kind ops-agent"},
-				{"Record", fmt.Sprintf("agent-version %s", version.Version)},
+				{"Record", "schemaVersion v1"},
+				{"Record", "agentKind ops-agent"},
+				{"Record", fmt.Sprintf("agentVersion %s", version.Version)},
 			},
 		},
 		{
@@ -116,10 +124,11 @@ func generateHealthLogsComponent(ctx context.Context) []fluentbit.Component {
 				{"Name",  "nest"},
 				{"Match", healthLogsTag},
 				{"Operation", "nest"},
-				{"Wildcard", "schema-version"},
-				{"Wildcard", "agent-version"},
-				{"Wildcard", "agent-kind"},
-				{"Nest_under", "health-signal"},
+				{"Wildcard", "code"},
+				{"Wildcard", "schemaVersion"},
+				{"Wildcard", "agentVersion"},
+				{"Wildcard", "agentKind"},
+				{"Nest_under", "healthSignal"},
 			},
 		},
 	}
