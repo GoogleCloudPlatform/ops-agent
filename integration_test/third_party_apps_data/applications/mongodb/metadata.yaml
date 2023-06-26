@@ -29,9 +29,8 @@ supported_operating_systems: linux
 platforms_to_skip:
   # when we add support for mongo 6 in integration tests we can support RHEL 9
   - rocky-linux-9
-  # mongodb is not currently supported on Ubuntu 23.04, Debian 11, and Debian 12
+  # mongodb is not currently supported on Ubuntu 23.04, and Debian 12
   - ubuntu-2304-amd64
-  - debian-11 # TODO make sure this still not supported
   - debian-12
 supported_app_version: ["2.6", "3.0+", "4.0+", "5.0"]
 expected_metrics:
