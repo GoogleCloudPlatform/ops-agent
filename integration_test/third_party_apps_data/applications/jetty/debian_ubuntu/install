@@ -14,7 +14,12 @@ then
 fi
 
 sudo apt-get update
-sudo apt-get install -y wget default-jre
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y wget openjdk-17-jdk
+else
+    sudo apt-get install -y wget default-jre
+fi
 sudo wget -O jetty.tar.gz $jetty_download_url
 sudo mkdir -p /opt/jetty
 
