@@ -26,11 +26,13 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
-
 const (
 	fluentBitSelfLogTag = "ops-agent-fluent-bit"
-	healthLogsTag = "ops-agent-health"
-	severityKey       = "logging.googleapis.com/severity"
+	healthLogsTag       = "ops-agent-health"
+	severityKey         = "logging.googleapis.com/severity"
+	agentVersionKey     = "agent.googleapis.com/health/agent-version"
+	agentKindKey        = "agent.googleapis.com/health/agent-kind"
+	schemaVersionKey    = "agent.googleapis.com/health/schema-version"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
@@ -45,8 +47,12 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
-func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
+func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths:   []string{healthChecksLogsPath()},
+		BufferInMemory: true,
+	}.Components(ctx, healthLogsTag)...)
 	out = append(out, LoggingProcessorParseJson{
 		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
 		ParserShared: ParserShared{
@@ -68,8 +74,8 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
-				"Name":  "modify",
-				"Match": healthLogsTag,
+				"Name":   "modify",
+				"Match":  healthLogsTag,
 				"Rename": fmt.Sprintf("severity %s", severityKey),
 			},
 		},
@@ -78,10 +84,15 @@ func generateHealthChecksLogsParser(ctx context.Context) []fluentbit.Component {
 	return out
 }
 
-func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component {
+func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-
-	parser := LoggingProcessorParseRegex{
+	out = append(out, LoggingReceiverFilesMixin{
+		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
+		//Following: b/226668416 temporarily set storage.type to "memory"
+		//to prevent chunk corruption errors
+		BufferInMemory: true,
+	}.Components(ctx, fluentBitSelfLogTag)...)
+	out = append(out, LoggingProcessorParseRegex{
 		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
 		PreserveKey: true,
 		ParserShared: ParserShared{
@@ -91,10 +102,7 @@ func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component 
 				"severity": "string",
 			},
 		},
-	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")
-
-	out = append(out, parser...)
-
+	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")...)
 	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", severityKey, true,
 		[]struct{ SrcVal, DestVal string }{
 			{"debug", "DEBUG"},
@@ -106,53 +114,22 @@ func generateFluentBitSelfLogsParser(ctx context.Context) []fluentbit.Component 
 	return out
 }
 
-func generateHealthLogsComponent(ctx context.Context) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name", "record_modifier"},
-				{"Match", healthLogsTag},
-				{"Record", "schemaVersion v1"},
-				{"Record", "agentKind ops-agent"},
-				{"Record", fmt.Sprintf("agentVersion %s", version.Version)},
-			},
-		},
-		{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name",  "nest"},
-				{"Match", healthLogsTag},
-				{"Operation", "nest"},
-				{"Wildcard", "code"},
-				{"Wildcard", "schemaVersion"},
-				{"Wildcard", "agentVersion"},
-				{"Wildcard", "agentKind"},
-				{"Nest_under", "healthSignal"},
-			},
-		},
+func structuredHealthLogsLabels() string {
+	labels := []string{
+		fmt.Sprintf("%s=%s", agentKindKey, "ops-agent"),
+		fmt.Sprintf("%s=%s", agentVersionKey, version.Version),
+		fmt.Sprintf("%s=%s", schemaVersionKey, "v1"),
 	}
+	return strings.Join(labels, ",")
 }
 
 func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
-		//Following: b/226668416 temporarily set storage.type to "memory"
-		//to prevent chunk corruption errors
-		BufferInMemory: true,
-	}.Components(ctx, fluentBitSelfLogTag)...)
 
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths:   []string{healthChecksLogsPath()},
-		BufferInMemory: true,
-	}.Components(ctx, healthLogsTag)...)
+	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
+	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 
-	// Parsers
-	out = append(out, generateFluentBitSelfLogsParser(ctx)...)
-	out = append(out, generateHealthChecksLogsParser(ctx)...)
-
-	out = append(out, generateHealthLogsComponent(ctx)...) 
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|"), userAgent, ""))
+	labels := structuredHealthLogsLabels()
+	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|"), userAgent, "", labels))
 	return out
 }
