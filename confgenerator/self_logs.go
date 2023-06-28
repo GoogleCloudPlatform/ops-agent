@@ -129,7 +129,8 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 
+	outputLogNames := strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|")
 	labels := structuredHealthLogsLabels()
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|"), userAgent, "", labels))
+	out = append(out, stackdriverOutputComponent(outputLogNames, userAgent, "", labels))
 	return out
 }
