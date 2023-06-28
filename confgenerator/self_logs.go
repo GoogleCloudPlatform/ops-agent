@@ -63,7 +63,7 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
 	out = append(out, []fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
-		// does not contain the `severityKey` field.
+		// does not contain the `severity` field.
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
