@@ -794,6 +794,9 @@ func RecommendedMachineType(platform string) string {
 	if gce.IsWindows(platform) {
 		return "e2-standard-4"
 	}
+	if gce.IsARM(platform) {
+		return "t2a-standard-2"
+	}
 	return "e2-standard-2"
 }
 

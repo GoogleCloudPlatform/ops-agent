@@ -1070,6 +1070,9 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
+		if IsARM(vm.Platform) {
+			vm.MachineType = "t2a-standard-4"
+		}
 	}
 
 	imgProject := options.ImageProject
