@@ -26,8 +26,8 @@ import (
 
 const (
 	messageKey        = "message"
-	severityKey       = "logging.googleapis.com/severity"
-	sourceLocationKey = "logging.googleapis.com/sourceLocation"
+	severityKey       = "severity"
+	sourceLocationKey = "sourceLocation"
 	timeKey           = "time"
 )
 
@@ -140,9 +140,9 @@ func (f ZapStructuredLogger) Println(v ...any) {
 	f.logger.Infoln(v...)
 }
 
-func DiscardZapFields(v ...interface{}) ([]interface{}) {
+func DiscardZapFields(v ...interface{}) []interface{} {
 	var fields []interface{}
-	for _, f := range(v) {
+	for _, f := range v {
 		if _, ok := f.(zap.Field); !ok {
 			fields = append(fields, f)
 		}
@@ -155,27 +155,27 @@ type SimpleLogger struct {
 }
 
 func (sl SimpleLogger) Fatalf(format string, v ...any) {
-	sl.l.Fatalf(format, DiscardZapFields(v...))
+	sl.l.Fatalf(format, DiscardZapFields(v...)...)
 }
 
 func (sl SimpleLogger) Printf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...))
+	sl.l.Printf(format, DiscardZapFields(v...)...)
 }
 
 func (sl SimpleLogger) Infof(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...))
+	sl.l.Printf(format, DiscardZapFields(v...)...)
 }
 
 func (sl SimpleLogger) Warnf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...))
+	sl.l.Printf(format, DiscardZapFields(v...)...)
 }
 
 func (sl SimpleLogger) Errorf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...))
+	sl.l.Printf(format, DiscardZapFields(v...)...)
 }
 
 func (sl SimpleLogger) Println(v ...any) {
-	sl.l.Println(DiscardZapFields(v...))
+	sl.l.Println(DiscardZapFields(v...)...)
 }
 
 func NewSimpleLogger() SimpleLogger {
