@@ -1,7 +1,13 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y curl default-jre
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y curl openjdk-17-jdk
+else
+    sudo apt-get install -y curl default-jre
+fi
 sudo mkdir -p /opt/kafka/stage
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 sudo curl "https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/kafka/3.0.1/kafka_2.12-3.0.1.tgz" -o /opt/kafka/stage/kafka.tgz
