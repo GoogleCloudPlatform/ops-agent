@@ -1,9 +1,19 @@
 set -e
 sudo apt update
-sudo apt-get install -y curl default-jdk default-jdk-headless
-sudo apt install tomcat9 -y
-sudo mkdir -p /etc/systemd/system/tomcat9.service.d
-sudo cat >> /etc/systemd/system/tomcat9.service.d/local.conf << EOF
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+# Additonally, Debian 12 only has an apt installation candidate for tomcat10
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    TOMCAT_VERSION=tomcat10
+    sudo apt-get install -y curl openjdk-17-jdk openjdk-17-jdk-headless
+else
+    TOMCAT_VERSION=tomcat9
+    sudo apt-get install -y curl default-jdk default-jdk-headless
+fi
+
+sudo apt install ${TOMCAT_VERSION} -y
+sudo mkdir -p /etc/systemd/system/${TOMCAT_VERSION}.service.d
+sudo cat >> /etc/systemd/system/${TOMCAT_VERSION}.service.d/local.conf << EOF
 [Service]
 # Configuration
 Environment="CATALINA_OPTS=-Dcom.sun.management.jmxremote.port=8050 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
@@ -12,5 +22,5 @@ EOF
 
 sudo systemctl daemon-reload
 
-sudo systemctl restart tomcat9
+sudo systemctl restart ${TOMCAT_VERSION}
 sleep 60
