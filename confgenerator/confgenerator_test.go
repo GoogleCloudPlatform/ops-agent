@@ -118,7 +118,6 @@ func TestGoldens(t *testing.T) {
 			for _, pc := range testPlatforms {
 				pc := pc
 				t.Run(pc.name, func(t *testing.T) {
-					t.Parallel()
 					testDir := filepath.Join(goldensDir, testName)
 					got, err := generateConfigs(pc, testDir)
 					if strings.HasPrefix(testName, "invalid-") {
