@@ -35,6 +35,9 @@ type StructuredLogger interface {
 	Infof(format string, v ...any)
 	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
+	Infow(format string, v ...any)
+	Warnw(format string, v ...any)
+	Errorw(format string, v ...any)
 	Println(v ...any)
 }
 
@@ -136,18 +139,20 @@ func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
 }
 
-func (f ZapStructuredLogger) Println(v ...any) {
-	f.logger.Infoln(v...)
+func (f ZapStructuredLogger) Infow(format string, v ...any) {
+	f.logger.Infow(format, v...)
 }
 
-func DiscardZapFields(v ...interface{}) []interface{} {
-	var fields []interface{}
-	for _, f := range v {
-		if _, ok := f.(zap.Field); !ok {
-			fields = append(fields, f)
-		}
-	}
-	return fields
+func (f ZapStructuredLogger) Warnw(format string, v ...any) {
+	f.logger.Warnw(format, v...)
+}
+
+func (f ZapStructuredLogger) Errorw(format string, v ...any) {
+	f.logger.Errorw(format, v...)
+}
+
+func (f ZapStructuredLogger) Println(v ...any) {
+	f.logger.Infoln(v...)
 }
 
 type SimpleLogger struct {
@@ -155,27 +160,39 @@ type SimpleLogger struct {
 }
 
 func (sl SimpleLogger) Fatalf(format string, v ...any) {
-	sl.l.Fatalf(format, DiscardZapFields(v...)...)
+	sl.l.Fatalf(format, v...)
 }
 
 func (sl SimpleLogger) Printf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...)...)
+	sl.l.Printf(format, v...)
 }
 
 func (sl SimpleLogger) Infof(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...)...)
+	sl.l.Printf(format, v...)
 }
 
 func (sl SimpleLogger) Warnf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...)...)
+	sl.l.Printf(format, v...)
 }
 
 func (sl SimpleLogger) Errorf(format string, v ...any) {
-	sl.l.Printf(format, DiscardZapFields(v...)...)
+	sl.l.Printf(format, v...)
+}
+
+func (sl SimpleLogger) Infow(format string, v ...any) {
+	sl.l.Println(format)
+}
+
+func (sl SimpleLogger) Warnw(format string, v ...any) {
+	sl.l.Println(format)
+}
+
+func (sl SimpleLogger) Errorw(format string, v ...any) {
+	sl.l.Println(format)
 }
 
 func (sl SimpleLogger) Println(v ...any) {
-	sl.l.Println(DiscardZapFields(v...)...)
+	sl.l.Println(v...)
 }
 
 func NewSimpleLogger() SimpleLogger {

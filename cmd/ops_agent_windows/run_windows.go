@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -151,28 +150,27 @@ type WindowsServiceLogger struct {
 }
 
 func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
-	if len(v) > 0 {
-		wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, logs.DiscardZapFields(v ...)...))
-	} else {
-		wsl.srv.log.Info(EngineEventID, format)
-	}
+	wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, v...))
 }
 
 func (wsl WindowsServiceLogger) Warnf(format string, v ...any) {
-	if len(v) > 0 {
-		wsl.srv.log.Warning(EngineEventID, fmt.Sprintf(format, logs.DiscardZapFields(v ...)...))
-	} else {
-		wsl.srv.log.Warning(EngineEventID, format)
-	}
+	wsl.srv.log.Warning(EngineEventID, fmt.Sprintf(format, v...))
 }
 
 func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
-	if len(v) > 0 {
-		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, logs.DiscardZapFields(v ...)...))
-	} else {
-		wsl.srv.log.Error(EngineEventID, format)
-	}
+	wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
+}
 
+func (wsl WindowsServiceLogger) Infow(format string, v ...any) {
+	wsl.Infof(format)
+}
+
+func (wsl WindowsServiceLogger) Warnw(format string, v ...any) {
+	wsl.Warnf(format)
+}
+
+func (wsl WindowsServiceLogger) Errorw(format string, v ...any) {
+	wsl.Errorf(format)
 }
 
 func (wsl WindowsServiceLogger) Println(v ...any) {}
