@@ -1,0 +1,9 @@
+[23:20] "processors[lib:processor_1]" must not start with "lib:"
+  20 |       - /var/log/messages
+  21 |       - /var/log/syslog
+  22 |   processors:
+> 23 |     lib:processor_1:
+                          ^
+  24 |       type: parse_json
+  25 |       field: key_1
+  26 |   service:

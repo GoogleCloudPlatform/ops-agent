@@ -1,0 +1,9 @@
+[19:20] "listen_host" must be an IP address
+  16 |   receivers:
+  17 |     receiver_1:
+  18 |       type: syslog
+> 19 |       listen_host: abc
+                          ^
+  20 |       listen_port: 1111
+  21 |       transport_protocol: tcp
+  22 |   service:
