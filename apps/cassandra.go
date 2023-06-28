@@ -180,7 +180,7 @@ func (p LoggingProcessorCassandraGC) Components(ctx context.Context, tag string,
 					// Sample line: [2023-05-16T14:51:23.332+0000][4.595s][5195][5216][info ] GC(1) Concurrent Abortable Preclean 540.253ms
 					// Sample line: [2023-05-16T14:51:23.332+0000][4.595s][5195][5217][info ] Application time: 0.0001203 seconds
 					// Lines may also contain more detailed GC Heap information in the following lines
-					Regex: `^(?<time>\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2}))\]\s?\[(?<uptime>\d+\.\d{3,6})s?\]\s?\[(?<pid>\d+)\]\s?\[(?<tid>\d+)\]\s?\[(?<level>\w+)\s?\]\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\d+\.\d+) seconds, Stopping threads took: (?<timeStopping>\d+\.\d+)[\s\S]*|[\s\S]+))`,
+					Regex: `^\[(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}(?:Z|[+-]\d{2}:?\d{2}))\]\s?\[(?<uptime>\d+\.\d{3,6})s?\]\s?\[(?<pid>\d+)\]\s?\[(?<tid>\d+)\]\s?\[(?<level>\w+)\s?\]\s?(?<message>(?:Total time for which application threads were stopped: (?<timeStopped>\d+\.\d+) seconds, Stopping threads took: (?<timeStopping>\d+\.\d+)[\s\S]*|[\s\S]+))`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
