@@ -36,12 +36,11 @@ jobs:
         go install golang.org/x/tools/cmd/goimports@latest
         go install github.com/mattn/goveralls@latest
     - if: ${{ runner.os == 'Linux' }}
-      env:
+      run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
+    - run: go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
+    - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
-      run: |
-        if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
-        go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
-        goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
+      run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
     - id: 'set-coverage-vars'
       if: ${{ runner.os == 'Linux' }}
       name: 'Set Coverage Env Vars'
@@ -51,7 +50,7 @@ jobs:
       name: 'Prepare Coverage Data'
       run: |
         mkdir -p "${{ env.ABS_DIR }}"
-        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"https://github.com/GoogleCloudPlatform/ops-agent","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
+        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"${{ github.server_url }}/${{ github.repository }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
         cp covprofile ${{ env.ABS_DIR }}/coverage.out
     - id: 'auth'
       if: ${{ runner.os == 'Linux' }}
