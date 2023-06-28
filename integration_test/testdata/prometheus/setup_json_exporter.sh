@@ -1,8 +1,17 @@
 set -e
 
 # Download JSON exporter and extract to /opt/
+unset ARCH
+case "$(uname -m)" in
+  "x86_64")
+    ARCH="amd64"
+    ;;
+  "aarch64")
+    ARCH="arm64"
+    ;;
+esac
 curl -L -o json_exporter.tar.gz \
-    https://github.com/prometheus-community/json_exporter/releases/download/v0.5.0/json_exporter-0.5.0.linux-amd64.tar.gz 
+    "https://github.com/prometheus-community/json_exporter/releases/download/v0.5.0/json_exporter-0.5.0.linux-$ARCH.tar.gz"
 sudo mkdir -p /opt/json_exporter
 sudo tar -xzf json_exporter.tar.gz -C /opt/json_exporter --strip-components 1
 sudo systemctl daemon-reload
