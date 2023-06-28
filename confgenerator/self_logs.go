@@ -30,6 +30,7 @@ const (
 	fluentBitSelfLogTag = "ops-agent-fluent-bit"
 	healthLogsTag       = "ops-agent-health"
 	severityKey         = "logging.googleapis.com/severity"
+	sourceLocationKey   = "logging.googleapis.com/sourceLocation"
 	agentVersionKey     = "agent.googleapis.com/health/agent-version"
 	agentKindKey        = "agent.googleapis.com/health/agent-kind"
 	schemaVersionKey    = "agent.googleapis.com/health/schema-version"
@@ -73,10 +74,11 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 		},
 		{
 			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":   "modify",
-				"Match":  healthLogsTag,
-				"Rename": fmt.Sprintf("severity %s", severityKey),
+			OrderedConfig: [][2]string{
+				{"Name", "modify"},
+				{"Match", healthLogsTag},
+				{"Rename", fmt.Sprintf("severity %s", severityKey)},
+				{"Rename", fmt.Sprintf("sourceLocation %s", sourceLocationKey)},
 			},
 		},
 	}...)
@@ -129,8 +131,8 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 
-	outputLogNames := strings.Join([]string{fluentBitSelfLogTag, healthLogsTag}, "|")
-	labels := structuredHealthLogsLabels()
-	out = append(out, stackdriverOutputComponent(outputLogNames, userAgent, "", labels))
+	healthLabels := structuredHealthLogsLabels()
+	out = append(out, stackdriverOutputComponent(healthLogsTag, userAgent, "", healthLabels))
+	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, "", ""))
 	return out
 }
