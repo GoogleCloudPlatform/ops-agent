@@ -477,9 +477,9 @@ receivers:
         metrics_path: /metrics
         scheme: http
         tls_config:
-          ca_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/ca
-          cert_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/cert
-          key_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/key
+          ca_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/ca
+          cert_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/cert
+          key_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/key
           insecure_skip_verify: true
         follow_redirects: true
         enable_http2: true

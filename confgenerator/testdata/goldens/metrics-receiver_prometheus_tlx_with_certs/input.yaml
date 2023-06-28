@@ -23,9 +23,9 @@ metrics:
               static_configs:
                 - targets: ['localhost:1234']
               tls_config:
-                cert_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/cert
-                key_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/key
-                ca_file: testdata/valid/linux/metrics-receiver_prometheus_tlx_with_certs/ca
+                cert_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/cert
+                key_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/key
+                ca_file: testdata/goldens/metrics-receiver_prometheus_tlx_with_certs/ca
                 insecure_skip_verify: true
   service:
     pipelines:

@@ -701,7 +701,7 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
-    metrics/mysqlpipeline_mysql:
+    metrics/mysql_mysql:
       exporters:
       - googlecloud/otel
       processors:
@@ -711,7 +711,7 @@ service:
       - resourcedetection/_global_0
       receivers:
       - sqlquery/mysql
-    metrics/mysqlpipeline_mysql_1:
+    metrics/mysql_mysql_1:
       exporters:
       - googlecloud/otel
       processors:

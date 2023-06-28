@@ -23,6 +23,38 @@
   key: "[1].include_paths.__length"
   value: "2"
 - module: logging
+  feature: receivers:files
+  key: "[2].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[2].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:files
+  key: "[2].exclude_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:files
+  key: "[3].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[3].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:files
+  key: "[3].exclude_paths.__length"
+  value: "2"
+- module: logging
+  feature: receivers:files
+  key: "[4].enabled"
+  value: "true"
+- module: logging
+  feature: receivers:files
+  key: "[4].include_paths.__length"
+  value: "1"
+- module: logging
   feature: processors:parse_regex
   key: "[0].enabled"
   value: "true"

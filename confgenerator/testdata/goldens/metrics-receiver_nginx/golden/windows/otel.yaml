@@ -523,7 +523,7 @@ receivers:
         mute_process_name_error: true
       processes: {}
   nginx/nginx:
-    collection_interval: 30s
+    collection_interval: 60s
     endpoint: http://127.0.0.1/status
   prometheus/fluentbit:
     config:
