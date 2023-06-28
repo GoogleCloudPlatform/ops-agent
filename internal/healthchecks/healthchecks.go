@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"go.uber.org/zap"
 )
 
 var healthChecksLogFile = "health-checks.log"
@@ -59,9 +58,9 @@ func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
 		} else {
 			if healthError, ok := e.(HealthCheckError); ok {
 				if healthError.IsFatal {
-					logger.Errorf(singleErrorResultMessage(e, r.Name), zap.String("code", healthError.Code))
+					logger.Errorw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
 				} else {
-					logger.Warnf(singleErrorResultMessage(e, r.Name), zap.String("code", healthError.Code))
+					logger.Warnw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
 				}
 			} else {
 				logger.Errorf(singleErrorResultMessage(e, r.Name))
