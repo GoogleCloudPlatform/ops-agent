@@ -13,6 +13,14 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
+bookworm = _distro {
+  release = [
+      'debian-12',
+  ]
+  presubmit = [
+      'debian-12',
+  ]
+}
 lunar = _distro {
   release = [
       'ubuntu-2304-amd64',
