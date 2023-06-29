@@ -161,16 +161,16 @@ func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
 	wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
 }
 
-func (wsl WindowsServiceLogger) Infow(format string, v ...any) {
-	wsl.Infof(format)
+func (wsl WindowsServiceLogger) Infow(msg string, keysAndValues ...any) {
+	wsl.srv.log.Info(EngineEventID, msg)
 }
 
-func (wsl WindowsServiceLogger) Warnw(format string, v ...any) {
-	wsl.Warnf(format)
+func (wsl WindowsServiceLogger) Warnw(msg string, keysAndValues ...any) {
+	wsl.srv.log.Warning(EngineEventID, msg)
 }
 
-func (wsl WindowsServiceLogger) Errorw(format string, v ...any) {
-	wsl.Errorf(format)
+func (wsl WindowsServiceLogger) Errorw(msg string, keysAndValues ...any) {
+	wsl.srv.log.Warning(EngineEventID, msg)
 }
 
 func (wsl WindowsServiceLogger) Println(v ...any) {}

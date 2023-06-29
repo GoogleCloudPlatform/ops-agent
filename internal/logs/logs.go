@@ -35,9 +35,9 @@ type StructuredLogger interface {
 	Infof(format string, v ...any)
 	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
-	Infow(format string, v ...any)
-	Warnw(format string, v ...any)
-	Errorw(format string, v ...any)
+	Infow(msg string, keysAndValues ...any)
+	Warnw(msg string, keysAndValues ...any)
+	Errorw(msg string, keysAndValues ...any)
 	Println(v ...any)
 }
 
@@ -140,16 +140,16 @@ func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
 }
 
-func (f ZapStructuredLogger) Infow(format string, v ...any) {
-	f.logger.Infow(format, v...)
+func (f ZapStructuredLogger) Infow(msg string, keysAndValues ...any) {
+	f.logger.Infow(msg, keysAndValues...)
 }
 
-func (f ZapStructuredLogger) Warnw(format string, v ...any) {
-	f.logger.Warnw(format, v...)
+func (f ZapStructuredLogger) Warnw(msg string, keysAndValues ...any) {
+	f.logger.Warnw(msg, keysAndValues...)
 }
 
-func (f ZapStructuredLogger) Errorw(format string, v ...any) {
-	f.logger.Errorw(format, v...)
+func (f ZapStructuredLogger) Errorw(msg string, keysAndValues ...any) {
+	f.logger.Errorw(msg, keysAndValues...)
 }
 
 func (f ZapStructuredLogger) Println(v ...any) {
@@ -180,16 +180,16 @@ func (sl SimpleLogger) Errorf(format string, v ...any) {
 	sl.l.Printf(format, v...)
 }
 
-func (sl SimpleLogger) Infow(format string, v ...any) {
-	sl.l.Println(format)
+func (sl SimpleLogger) Infow(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
 }
 
-func (sl SimpleLogger) Warnw(format string, v ...any) {
-	sl.l.Println(format)
+func (sl SimpleLogger) Warnw(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
 }
 
-func (sl SimpleLogger) Errorw(format string, v ...any) {
-	sl.l.Println(format)
+func (sl SimpleLogger) Errorw(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
 }
 
 func (sl SimpleLogger) Println(v ...any) {
