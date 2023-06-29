@@ -3002,7 +3002,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `severity="INFO"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `severity="INFO" AND labels"agent.googleapis.com/health/agentKind"="ops-agent" AND labels"agent.googleapis.com/health/schemaVersion"="v1"`); err != nil {
 			t.Error(err)
 		}
 	})
