@@ -87,6 +87,7 @@ func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArra
 
 func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
+	cfg.DisableStacktrace = true
 	cfg.EncoderConfig.CallerKey = sourceLocationKey
 	cfg.EncoderConfig.MessageKey = messageKey
 	cfg.EncoderConfig.LevelKey = severityKey
