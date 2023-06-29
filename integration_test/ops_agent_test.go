@@ -3001,8 +3001,14 @@ func TestLoggingSelfLogs(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
+		
+		pkgVersion, err := agents.FetchPackageVersions(ctx, logger.ToMainLog(), vm, []agents.AgentPackage{agents.OpsPackage});
+		if err != nil {
+			t.Error(err)
+		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `severity="INFO" AND labels"agent.googleapis.com/health/agentKind"="ops-agent" AND labels"agent.googleapis.com/health/schemaVersion"="v1"`); err != nil {
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"="%s" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`, pkgVersion[agents.OpsPackage])
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
