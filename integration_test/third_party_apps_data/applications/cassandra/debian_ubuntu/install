@@ -3,12 +3,17 @@ set -e
 curl https://downloads.apache.org/cassandra/KEYS | sudo apt-key add -
 
 source /etc/os-release
-if [[ "${VERSION_ID}" == 23* ]]; then
+if [[ "${VERSION_ID}" == 23* || "$(uname -m)" == aarch64 ]]; then
     # There is a python dependency that fails for any older versions of cassandra on Ubuntu 23.04, so explicitly install Cassandra 4.1x.
+    # Additionally, cassandra doesn't have arm64 binaries for 2.2x, but does for 4.1x.
     echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
-    sudo apt install -y openjdk-11-jdk cassandra
+
+    # cassandra doesn't run on Java 17, but on some platforms (debian-11-arm64) it has a transitive dependency on Java 17 (???).
+    # Installing openjdk-11-jdk first ensures that it takes precedence over Java 17 on PATH.
+    sudo apt install -y openjdk-11-jdk
+    sudo apt install -y cassandra
 else
     echo "deb https://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
     # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)
