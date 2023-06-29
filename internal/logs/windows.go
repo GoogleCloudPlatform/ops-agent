@@ -49,7 +49,7 @@ func (wsl WindowsServiceLogger) Warnw(msg string, keysAndValues ...any) {
 }
 
 func (wsl WindowsServiceLogger) Errorw(msg string, keysAndValues ...any) {
-	wsl.Logger.Warning(wsl.EventID, msg)
+	wsl.Logger.Error(wsl.EventID, msg)
 }
 
 func (wsl WindowsServiceLogger) Println(v ...any) {}
