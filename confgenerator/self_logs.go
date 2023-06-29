@@ -31,9 +31,9 @@ const (
 	healthLogsTag       = "ops-agent-health"
 	severityKey         = "logging.googleapis.com/severity"
 	sourceLocationKey   = "logging.googleapis.com/sourceLocation"
-	agentVersionKey     = "agent.googleapis.com/health/agent-version"
-	agentKindKey        = "agent.googleapis.com/health/agent-kind"
-	schemaVersionKey    = "agent.googleapis.com/health/schema-version"
+	agentVersionKey     = "agent.googleapis.com/health/agentVersion"
+	agentKindKey        = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey    = "agent.googleapis.com/health/schemaVersion"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
