@@ -902,6 +902,11 @@ func TestThirdPartyApps(t *testing.T) {
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
+					if gce.IsARM(tc.platform) {
+						// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
+						// as well as e2-highmem-8.
+						options.MachineType = "t2a-standard-16"
+					}
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
