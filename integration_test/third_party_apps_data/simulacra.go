@@ -44,12 +44,12 @@ func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLog
 		return err
 	}
 
-	uc, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
+	config, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
 	if err != nil {
 		return err
 	}
 
-	if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, uc.String()); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config.String()); err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 }
 
 // installApps reads an Ops Agent config file and then identifies all the third party apps that need to be installed.
-// The function identifies by third party apps by checking if any of the receiver types have a
+// The function identifies third party apps to install by checking if any of the receiver types have a
 // corresponding install script in the third_party_apps_data directory.
 // If there is a corresponding install script, then that install script is run on the vm.
 func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string) error {
