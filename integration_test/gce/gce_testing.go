@@ -776,6 +776,7 @@ func wrapPowershellCommand(command string) (string, error) {
 // a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
+// For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
@@ -878,6 +879,13 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
 // env is a map containing environment variables to provide to the script as it runs.
 // The environment variables and the flags will be wrapped in quotes.
+// This function is necessary to handle long commands, particularly on Windows,
+// since there is a length limit on the commands you can pass to RunRemotely:
+// powershell will complain if its -EncodedCommand parameter is too long.
+// It is highly recommended that any powershell script passed in here start with:
+// $ErrorActionPreference = 'Stop'
+// This will cause a broader class of errors to be reported as an error (nonzero exit code)
+// by powershell.
 func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
@@ -892,6 +900,10 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
+		// powershell -File seems to drop certain kinds of errors:
+		// https://stackoverflow.com/a/15779295
+		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
+		// script seems to work around this completely.
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
@@ -953,6 +965,8 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImages = map[string]string{
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
+		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
+		"sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
 )
 
@@ -1056,6 +1070,9 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
+		if IsARM(vm.Platform) {
+			vm.MachineType = "t2a-standard-4"
+		}
 	}
 
 	imgProject := options.ImageProject

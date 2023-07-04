@@ -1,3 +1,6 @@
+# Temporarily disabled while we work out some issues with running the install script
+# with this option.
+#$ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 # These are the steps from our public documentation:
