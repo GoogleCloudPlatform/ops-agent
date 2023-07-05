@@ -13,9 +13,9 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/google/uuid"
-
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
+	"github.com/binxio/gcloudconfig"
+	"github.com/google/uuid"
 )
 
 func distroFolder(platform string) (string, error) {
@@ -144,6 +144,24 @@ func installApps(ctx context.Context, vm *gce.VM, logger *log.Logger, configFile
 	return nil
 }
 
+func configureFromGCloud(project *string, zone *string) error {
+	config, err := gcloudconfig.GetConfig("")
+	if err != nil && (*project == "" || *zone == "") {
+		return err
+	}
+
+	if *project == "" {
+		*project = *config.Configuration.Properties.Core.Project
+	}
+
+	if *zone == "" {
+		*zone = *config.Configuration.Properties.Compute.Zone
+	}
+
+	return nil
+
+}
+
 func main() {
 	logger := log.Default()
 	ctx := context.Background()
@@ -154,6 +172,11 @@ func main() {
 	name := flag.String("name", fmt.Sprintf("simulacra-vm-instance-%s", uuid.NewString()), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
 	thirdPartyAppsPath := flag.String("install_path", "./integration_test/third_party_apps_data", "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
 	flag.Parse()
+
+	if err := configureFromGCloud(project, zone); err != nil {
+		log.Fatalf("project and zone must either be non empty or set in GCloud %v", err)
+	}
+
 	options := gce.VMOptions{
 		Platform:    *platform,
 		MachineType: agents.RecommendedMachineType(*platform),
@@ -161,13 +184,11 @@ func main() {
 		Project:     *project,
 		Zone:        *zone,
 	}
-
 	// Create VM Instance.
 	vm, err := gce.CreateInstance(ctx, logger, options)
 	if err != nil {
 		logger.Fatalf("Failed to create GCE instance %v", err)
 	}
-
 	// Install Ops Agent on VM.
 	if err := setupOpsAgent(ctx, vm, logger, *configFile); err != nil {
 		logger.Fatalf("Failed to install Ops Agent %v", err)
