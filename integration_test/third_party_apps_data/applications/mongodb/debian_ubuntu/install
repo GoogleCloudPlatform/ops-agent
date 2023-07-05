@@ -7,6 +7,16 @@ wget --no-verbose --output-document=- https://www.mongodb.org/static/pgp/server-
 oscode="$(lsb_release -sc)"
 osname="$(lsb_release -si)"
 
+# TODO: Use Focal packages on Debian 11 ARM for now.
+# Focal is the newest platform that's older than Debian 11,
+# meaning it shouldn't run into issues with requiring newer
+# dependencies than what Debian 11 offers.
+# Remove once we add support for an Ubuntu ARM platform.
+if [[ "${osname}" == Debian && "${oscode}" == bullseye && "$(uname -m)" == aarch64 ]]; then
+  oscode="focal"
+  osname="Ubuntu"
+fi
+
 case $osname in 
   Ubuntu)
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
