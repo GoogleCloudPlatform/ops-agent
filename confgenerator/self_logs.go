@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	fluentBitSelfLogTag = "ops-agent-fluent-bit"
+	fluentBitSelfLogsTag = "ops-agent-fluent-bit"
 	healthLogsTag       = "ops-agent-health"
 	severityKey         = "logging.googleapis.com/severity"
 	sourceLocationKey   = "logging.googleapis.com/sourceLocation"
@@ -93,7 +93,7 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 		//Following: b/226668416 temporarily set storage.type to "memory"
 		//to prevent chunk corruption errors
 		BufferInMemory: true,
-	}.Components(ctx, fluentBitSelfLogTag)...)
+	}.Components(ctx, fluentBitSelfLogsTag)...)
 	out = append(out, LoggingProcessorParseRegex{
 		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
 		PreserveKey: true,
@@ -104,8 +104,8 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 				"severity": "string",
 			},
 		},
-	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")...)
-	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", severityKey, true,
+	}.Components(ctx, fluentBitSelfLogsTag, "self-logs-severity")...)
+	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogsTag, "severity", severityKey, true,
 		[]struct{ SrcVal, DestVal string }{
 			{"debug", "DEBUG"},
 			{"error", "ERROR"},
@@ -131,8 +131,7 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 
-	healthLabels := structuredHealthLogsLabels()
-	out = append(out, stackdriverOutputComponent(healthLogsTag, userAgent, "", healthLabels))
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, "", ""))
+	outputTags := strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|")
+	out = append(out, stackdriverOutputComponent(outputTags, userAgent, "", structuredHealthLogsLabels()))
 	return out
 }
