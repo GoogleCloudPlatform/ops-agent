@@ -2,17 +2,17 @@ set -e
 
 sudo apt-get update
 sudo apt-get install -y gnupg wget
-wget --no-verbose --output-document=- https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+wget --no-verbose --output-document=- https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
 
 oscode="$(lsb_release -sc)"
 osname="$(lsb_release -si)"
 
 case $osname in 
   Ubuntu)
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
     ;;
   Debian)
-    echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/5.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+    echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/6.0 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
     ;;
   *)
     echo -n "unknown os release"
@@ -22,12 +22,12 @@ esac
 
 sudo apt-get update
 sudo apt-get install -y \
-    mongodb-org=5.0.14 \
-    mongodb-org-database=5.0.14 \
-    mongodb-org-server=5.0.14 \
-    mongodb-org-shell=5.0.14 \
-    mongodb-org-mongos=5.0.14 \
-    mongodb-org-tools=5.0.14
+    mongodb-org=6.0.7 \
+    mongodb-org-database=6.0.7 \
+    mongodb-org-server=6.0.7 \
+    mongodb-org-shell=6.0.7 \
+    mongodb-org-mongos=6.0.7 \
+    mongodb-org-tools=6.0.7
 
 systemctl enable mongod
 
