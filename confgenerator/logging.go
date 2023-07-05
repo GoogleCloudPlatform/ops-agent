@@ -75,10 +75,10 @@ func stackdriverOutputComponent(match, userAgent string, storageLimitSize string
 		config["storage.total_limit_size"] = storageLimitSize
 	}
 
-	if labels != "" {
+	// if labels != "" {
 		// Labels set in the format "key1=value1,key2=value2,..."
-		config["labels"] = labels
-	}
+		// config["labels"] = labels
+	// }
 
 	return fluentbit.Component{
 		Kind:   "OUTPUT",
