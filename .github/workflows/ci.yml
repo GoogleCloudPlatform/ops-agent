@@ -47,7 +47,7 @@ jobs:
       env: 
         ABS_DIR: 'ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}'
       run: |
-        mkdir -p "$ABS_DIR"
+        mkdir -p $ABS_DIR
         echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"${{ github.server_url }}/${{ github.repository }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > $ABS_DIR/metadata.json
         cp covprofile $ABS_DIR/coverage.out
     - id: 'auth'
