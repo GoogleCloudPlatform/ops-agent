@@ -174,7 +174,7 @@ func main() {
 	flag.Parse()
 
 	if err := configureFromGCloud(project, zone); err != nil {
-		log.Fatalf("project and zone must either be non empty or set in GCloud %v", err)
+		logger.Fatalf("project and zone must either be non empty or set in GCloud %v", err)
 	}
 
 	options := gce.VMOptions{
