@@ -367,7 +367,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G", ""))
+			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G", map[string]string{}))
 		}
 	}
 	out = append(out, generateSelfLogsComponents(ctx, userAgent)...)

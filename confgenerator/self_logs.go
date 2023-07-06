@@ -116,13 +116,12 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
-func structuredHealthLogsLabels() string {
-	labels := []string{
-		fmt.Sprintf("%s=%s", agentKindKey, "ops-agent"),
-		fmt.Sprintf("%s=%s", agentVersionKey, version.Version),
-		fmt.Sprintf("%s=%s", schemaVersionKey, "v1"),
+func structuredHealthLogsLabels() map[string]string {
+	return map[string]string{
+		agentKindKey: "ops-agent",
+		agentVersionKey: version.Version,
+		schemaVersionKey: "v1",
 	}
-	return strings.Join(labels, ",")
 }
 
 func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
