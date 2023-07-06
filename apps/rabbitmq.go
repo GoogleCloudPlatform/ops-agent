@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type LoggingProcessorRabbitmq struct {
@@ -122,9 +123,9 @@ type MetricsReceiverRabbitmq struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 
-	Password string `yaml:"password" validate:"required"`
-	Username string `yaml:"username" validate:"required"`
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Password secret.String `yaml:"password" validate:"required"`
+	Username string        `yaml:"username" validate:"required"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,url"`
 }
 
 const defaultRabbitmqTCPEndpoint = "http://localhost:15672"
@@ -142,7 +143,7 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"username":            r.Username,
-		"password":            r.Password,
+		"password":            r.Password.SecretValue(),
 		"tls":                 r.TLSConfig(true),
 	}
 

@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverCouchdb struct {
@@ -28,9 +29,9 @@ type MetricsReceiverCouchdb struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
+	Username string        `yaml:"username" validate:"required_with=Password"`
+	Password secret.String `yaml:"password" validate:"required_with=Username"`
 }
 
 const defaultCouchdbEndpoint = "http://localhost:5984"
@@ -50,7 +51,7 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
 				"username":            r.Username,
-				"password":            r.Password,
+				"password":            r.Password.SecretValue(),
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {

@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 
 	"github.com/go-sql-driver/mysql"
 
@@ -34,8 +35,8 @@ type MetricsReceiverMySql struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
-	Password string `yaml:"password" validate:"omitempty"`
-	Username string `yaml:"username" validate:"omitempty"`
+	Password secret.String `yaml:"password" validate:"omitempty"`
+	Username string        `yaml:"username" validate:"omitempty"`
 }
 
 const defaultMySqlUnixEndpoint = "/var/run/mysqld/mysqld.sock"
@@ -60,7 +61,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
 	sqlReceiverDriverConfig := mysql.Config{
 		User:   r.Username,
-		Passwd: r.Password,
+		Passwd: r.Password.SecretValue(),
 		Net:    transport,
 		Addr:   r.Endpoint,
 		// This defaults to true in the mysql receiver, but we need to set it explicitly here
@@ -93,7 +94,7 @@ func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
 					"collection_interval": r.CollectionIntervalString(),
 					"endpoint":            r.Endpoint,
 					"username":            r.Username,
-					"password":            r.Password,
+					"password":            r.Password.SecretValue(),
 					"transport":           transport,
 					"metrics": map[string]interface{}{
 						"mysql.commands": map[string]interface{}{

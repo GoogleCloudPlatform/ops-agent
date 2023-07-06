@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
@@ -630,10 +631,10 @@ func (m MetricsReceiverSharedTLS) TLSConfig(defaultInsecure bool) map[string]int
 type MetricsReceiverSharedJVM struct {
 	MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint       string   `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username       string   `yaml:"username" validate:"required_with=Password"`
-	Password       string   `yaml:"password" validate:"required_with=Username"`
-	AdditionalJars []string `yaml:"additional_jars" validate:"omitempty,dive,file"`
+	Endpoint       string        `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
+	Username       string        `yaml:"username" validate:"required_with=Password"`
+	Password       secret.String `yaml:"password" validate:"required_with=Username"`
+	AdditionalJars []string      `yaml:"additional_jars" validate:"omitempty,dive,file"`
 }
 
 // WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
@@ -679,8 +680,9 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if m.Username != "" {
 		config["username"] = m.Username
 	}
-	if m.Password != "" {
-		config["password"] = m.Password
+	secretPassword := m.Password.SecretValue()
+	if secretPassword != "" {
+		config["password"] = secretPassword
 	}
 
 	return []otel.ReceiverPipeline{{

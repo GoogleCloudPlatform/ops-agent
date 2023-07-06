@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 // MetricsReceiverCouchbase is the struct for ops agent monitoring metrics for couchbase
@@ -29,9 +30,9 @@ type MetricsReceiverCouchbase struct {
 	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	Username string `yaml:"username" validate:"required"`
-	Password string `yaml:"password" validate:"required"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,hostname_port"`
+	Username string        `yaml:"username" validate:"required"`
+	Password secret.String `yaml:"password" validate:"required"`
 }
 
 const defaultCouchbaseEndpoint = "localhost:8091"
@@ -56,7 +57,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 					"scrape_interval": r.CollectionIntervalString(),
 					"basic_auth": map[string]interface{}{
 						"username": r.Username,
-						"password": r.Password,
+						"password": r.Password.SecretValue(),
 					},
 					"metric_relabel_configs": []map[string]interface{}{
 						{
