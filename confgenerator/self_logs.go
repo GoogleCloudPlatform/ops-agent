@@ -48,6 +48,8 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
+// This method creates a file input for the `health-checks.log` file, a json parser for the
+// structured logs and a grep filter to avoid ingesting previous content of the file.
 func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingReceiverFilesMixin{
@@ -86,6 +88,8 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 	return out
 }
 
+// This method creates a file input for the `logging-module.log` file, a regex parser for the
+// fluent-bit self logs and a translator of severity to the logging api format.
 func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingReceiverFilesMixin{
