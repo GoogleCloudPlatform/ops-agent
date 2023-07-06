@@ -32,6 +32,7 @@ const (
 )
 
 type StructuredLogger interface {
+	// Infof, Warnf, Errorf use fmt.Sprintf to log a templated message.
 	Infof(format string, v ...any)
 	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
