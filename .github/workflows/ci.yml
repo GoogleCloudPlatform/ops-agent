@@ -65,7 +65,7 @@ jobs:
       with:
         path: 'ng3-customer-telemetry-coverage'
         glob: '**'
-        destination: 'sarsfield-ng3-test'
+        destination: 'ng3-metrics'
         process_gcloudignore: false
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go
