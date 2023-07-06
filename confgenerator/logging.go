@@ -17,6 +17,7 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -83,6 +84,8 @@ func stackdriverOutputComponent(match, userAgent string, storageLimitSize string
 		for k, v := range labels {
 			labelsSlice = append(labelsSlice,fmt.Sprintf("%s=%s", k, v))
 		}
+		// Sort labels since map is unordered.
+		sort.Strings(labelsSlice)
 
 		// labels should be set in the format "key1=value1,key2=value2,..."
 		// Link: https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver#configuration-parameters
