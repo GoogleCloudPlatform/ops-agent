@@ -386,3 +386,23 @@ func GCPResourceDetector(override bool) Component {
 		Config: config,
 	}
 }
+
+// ResourceAttribute returns a Component that applies changes on resource attributes.
+func ResourceAttribute(metrics ...map[string]interface{}) Component {
+	return Component{
+		Type: "resource",
+		Config: map[string]interface{}{
+			"attributes": metrics,
+		},
+	}
+}
+
+// UpsertValue returns a config snippet that performs upsert action.
+func UpsertValue(key, value string) map[string]interface{} {
+	out := map[string]interface{}{
+		"key":    key,
+		"value":  value,
+		"action": "upsert",
+	}
+	return out
+}

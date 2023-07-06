@@ -31,6 +31,7 @@ const (
 	label
 	interfaceIPv4
 	defaultScopes
+	location
 )
 
 func GetGCEResource() (Resource, error) {

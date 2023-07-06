@@ -32,6 +32,8 @@ func GetResource() (Resource, error) {
 	switch {
 	case gcp_metadata.OnGCE():
 		return GetGCEResource()
+	case testOnBMS():
+		return GetBMSResource()
 	default:
 		return GetUnrecognizedPlatformResource()
 	}

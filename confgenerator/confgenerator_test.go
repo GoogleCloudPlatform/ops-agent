@@ -42,6 +42,29 @@ const (
 	builtinConfigFileName  = "builtin_conf.yaml"
 )
 
+var (
+	GCEResource = resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	}
+	BMSResource = resourcedetector.BMSResource{
+		Project:    "test-bms-project",
+		Location:   "test-bms-location",
+		InstanceID: "test-bms-instance-id",
+	}
+)
+
 type platformConfig struct {
 	name            string
 	defaultLogsDir  string
@@ -121,8 +144,61 @@ var (
 func TestGoldens(t *testing.T) {
 	t.Parallel()
 
-	goldensDir := "goldens"
-	testNames := getTestsInDir(t, goldensDir)
+	// Iterate platforms inside test directories so the test name hierarchy matches the testdata hierarchy.
+	for _, test := range []struct {
+		dirName      string
+		errAssertion func(t *testing.T, err error, got map[string]string)
+	}{
+		{
+			validTestdataDirName,
+			func(t *testing.T, err error, got map[string]string) {
+				assert.NilError(t, err)
+				delete(got, builtinConfigFileName)
+			},
+		},
+		{
+			invalidTestdataDirName,
+			func(t *testing.T, err error, got map[string]string) {
+				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
+				// Error is checked by runTestsInDir
+				delete(got, builtinConfigFileName)
+			},
+		},
+		{
+			builtinTestdataDirName,
+			nil,
+		},
+	} {
+		test := test
+		t.Run(test.dirName, func(t *testing.T) {
+			if confgenerator.MetadataResource.GetType() == "bms" {
+				test.dirName = filepath.Join("bms", test.dirName)
+			}
+			t.Parallel()
+			for _, pc := range testPlatforms {
+				pc := pc
+				t.Run(pc.name, func(t *testing.T) {
+					t.Parallel()
+					runTestsInDir(
+						t,
+						pc,
+						test.dirName,
+						test.errAssertion,
+					)
+				})
+			}
+		})
+	}
+}
+
+func runTestsInDir(
+	t *testing.T,
+	pc platformConfig,
+	testTypeDir string,
+	errAssertion func(*testing.T, error, map[string]string),
+) {
+	platformTestDir := filepath.Join(testTypeDir, pc.name)
+	testNames := getTestsInDir(t, platformTestDir)
 
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
@@ -209,7 +285,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx)
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx, confgenerator.MetadataResource)
 	if err != nil {
 		return
 	}
@@ -302,33 +378,36 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 }
 
 func TestMain(m *testing.M) {
+	var r int
+
+	// Enable experimental features.
+	os.Setenv("EXPERIMENTAL_FEATURES", "otlp_receiver")
+
+	testResources := []struct {
+		name         string
+		testResource resourcedetector.Resource
+	}{
+		{
+			name:         "GCE Resource",
+			testResource: GCEResource,
+		},
+		{
+			name:         "BMS Resource",
+			testResource: BMSResource,
+		},
+	}
 	// Hardcode the path to the JMX JAR to make tests repeatable.
 	confgenerator.FindJarPath = func() (string, error) {
 		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
-	os.Exit(m.Run())
-}
-
-func init() {
-	testResource := resourcedetector.GCEResource{
-		Project:       "test-project",
-		Zone:          "test-zone",
-		Network:       "test-network",
-		Subnetwork:    "test-subnetwork",
-		PublicIP:      "test-public-ip",
-		PrivateIP:     "test-private-ip",
-		InstanceID:    "test-instance-id",
-		InstanceName:  "test-instance-name",
-		Tags:          "test-tag",
-		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
-		Label:         map[string]string{"test-label-key": "test-label-value"},
-		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	for _, t := range testResources {
+		fmt.Printf("============= Running all tests for %v =============\n", t.name)
+		// Set up the test environment with mocked data.
+		confgenerator.MetadataResource = t.testResource
+		// Run test suite.
+		if thisr := m.Run(); r == 0 {
+			r = thisr // We'll always remember the first time r is non-zero
+		}
 	}
-
-	// Set up the test environment with mocked data.
-	confgenerator.MetadataResource = testResource
-
-	// Enable experimental features here by calling:
-	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
+	os.Exit(r)
 }

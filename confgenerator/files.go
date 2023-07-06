@@ -68,8 +68,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 		if err != nil {
 			return fmt.Errorf("can't get resource metadata: %w", err)
 		}
-
-		otelConfig, err := uc.GenerateOtelConfig(ctx)
+		otelConfig, err := uc.GenerateOtelConfig(ctx, MetadataResource)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}

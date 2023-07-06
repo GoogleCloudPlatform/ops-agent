@@ -116,7 +116,7 @@ type ModularConfig struct {
 //	receivers: [hostmetrics/mypipe]
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate() (string, error) {
+func (c ModularConfig) Generate(skipResourceDetection bool) (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
@@ -141,15 +141,6 @@ func (c ModularConfig) Generate() (string, error) {
 		"processors": processors,
 		"exporters":  exporters,
 		"service":    service,
-	}
-
-	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
-		Override: GCPResourceDetector(true),
-		Upsert:   GCPResourceDetector(false),
-	}
-	resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
-		Override: resourceDetectionProcessors[Override].name("_global_0"),
-		Upsert:   resourceDetectionProcessors[Upsert].name("_global_1"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {
@@ -178,11 +169,20 @@ func (c ModularConfig) Generate() (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
-
-		rdm := receiverPipeline.ResourceDetectionModes[pipeline.Type]
-		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
-			processorNames = append(processorNames, name)
-			processors[name] = resourceDetectionProcessors[rdm].Config
+		if !skipResourceDetection {
+			resourceDetectionProcessors := map[ResourceDetectionMode]Component{
+				Override: GCPResourceDetector(true),
+				Upsert:   GCPResourceDetector(false),
+			}
+			resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
+				Override: resourceDetectionProcessors[Override].name("_global_0"),
+				Upsert:   resourceDetectionProcessors[Upsert].name("_global_1"),
+			}
+			rdm := receiverPipeline.ResourceDetectionModes[pipeline.Type]
+			if name, ok := resourceDetectionProcessorNames[rdm]; ok {
+				processorNames = append(processorNames, name)
+				processors[name] = resourceDetectionProcessors[rdm].Config
+			}
 		}
 
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
