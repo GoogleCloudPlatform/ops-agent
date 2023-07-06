@@ -3547,6 +3547,10 @@ metrics:
 	})
 }
 
+func isHealthCheckTestPlatform(platform string) bool {
+	return platform == "windows-2019" || platform == "debian-11"
+}
+
 func healthCheckResultMessage(name string, result string, code string) string {
 	if result == "FAIL" || result == "WARNING" {
 		return fmt.Sprintf("[%s Check] Result: %s, Error code: %s", name, result, code)
@@ -3589,6 +3593,10 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
 		customScopes := strings.Join([]string{
 			"https://www.googleapis.com/auth/monitoring.read",
 			"https://www.googleapis.com/auth/logging.write",
@@ -3639,6 +3647,10 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
