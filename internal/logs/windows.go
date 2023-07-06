@@ -40,6 +40,8 @@ func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
 	wsl.Logger.Error(wsl.EventID, fmt.Sprintf(format, v...))
 }
 
+// A WindowsServiceLogger doesn't have the capability of adding metadata
+// to the resulting windows event log.
 func (wsl WindowsServiceLogger) Infow(msg string, keysAndValues ...any) {
 	wsl.Logger.Info(wsl.EventID, msg)
 }

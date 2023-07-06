@@ -35,6 +35,9 @@ type StructuredLogger interface {
 	Infof(format string, v ...any)
 	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
+	// Infow, Warnw, Errorw log a string message and optionally
+	// can add key, value pairs of metadata to the log depending
+	// on the underlying implementation of the interface.
 	Infow(msg string, keysAndValues ...any)
 	Warnw(msg string, keysAndValues ...any)
 	Errorw(msg string, keysAndValues ...any)
@@ -140,6 +143,9 @@ func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
 }
 
+// A zap logger has an implementation of Infow, Warnw, Errorw that will
+// add a key, value pairs to the output json structured log.
+// Link: https://pkg.go.dev/go.uber.org/zap#SugaredLogger.Infow
 func (f ZapStructuredLogger) Infow(msg string, keysAndValues ...any) {
 	f.logger.Infow(msg, keysAndValues...)
 }
@@ -180,6 +186,8 @@ func (sl SimpleLogger) Errorf(format string, v ...any) {
 	sl.l.Printf(format, v...)
 }
 
+// A SimpleLogger doesn't have the capability of adding metadata
+// to the resulting log.
 func (sl SimpleLogger) Infow(msg string, keysAndValues ...any) {
 	sl.l.Println(msg)
 }
