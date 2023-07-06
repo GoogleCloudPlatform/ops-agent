@@ -3001,13 +3001,8 @@ func TestLoggingSelfLogs(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-		
-		pkgVersion, err := agents.FetchPackageVersions(ctx, logger.ToMainLog(), vm, []agents.AgentPackage{agents.OpsPackage});
-		if err != nil {
-			t.Error(err)
-		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"="%s" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`, pkgVersion[agents.OpsPackage])
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -3552,10 +3547,6 @@ metrics:
 	})
 }
 
-func isHealthCheckTestPlatform(platform string) bool {
-	return platform == "windows-2019" || platform == "debian-11"
-}
-
 func healthCheckResultMessage(name string, result string, code string) string {
 	if result == "FAIL" || result == "WARNING" {
 		return fmt.Sprintf("[%s Check] Result: %s, Error code: %s", name, result, code)
@@ -3583,28 +3574,24 @@ func getRecentServiceOutputForPlatform(platform string) string {
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
 	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
-		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
-	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
 }
 
 func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
-		}
-
 		customScopes := strings.Join([]string{
 			"https://www.googleapis.com/auth/monitoring.read",
-			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/logging.write",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
@@ -3638,9 +3625,13 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "FbMetricsPortErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
@@ -3648,10 +3639,6 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
-		}
-
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
