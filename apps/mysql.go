@@ -293,18 +293,31 @@ func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string
 						},
 					},
 				},
+				{
+					// MariaDB uses the same timestamp format here as it does for the error log:
+					// https://mariadb.com/kb/en/error-log/#format
+					// Sample line: 230707 16:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
+					Regex: `^(?<time>\d{6} \d{2}:\d{2}:\d{2})\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: "%y%m%d %H:%M:%S",
+						Types: map[string]string{
+							"tid": "integer",
+						},
+					},
+				},
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+				Regex:     `^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2})`,
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
+				Regex:     `^(?!(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2}))`,
 			},
 		},
 	}.Components(ctx, tag, uid)
