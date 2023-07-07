@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 
 	"strings"
 )
@@ -32,9 +33,9 @@ type MetricsReceiverPostgresql struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
-	Password  string   `yaml:"password" validate:"omitempty"`
-	Username  string   `yaml:"username" validate:"omitempty"`
-	Databases []string `yaml:"databases" validate:"omitempty"`
+	Password  secret.String `yaml:"password" validate:"omitempty"`
+	Username  string        `yaml:"username" validate:"omitempty"`
+	Databases []string      `yaml:"databases" validate:"omitempty"`
 }
 
 // Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq go module used by
@@ -60,7 +61,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"username":            r.Username,
-		"password":            r.Password,
+		"password":            r.Password.SecretValue(),
 		"transport":           transport,
 	}
 
