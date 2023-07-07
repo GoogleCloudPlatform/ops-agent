@@ -25,10 +25,10 @@ import (
 )
 
 const (
-	messageKey        = "message"
-	severityKey       = "severity"
-	sourceLocationKey = "sourceLocation"
-	timeKey           = "time"
+	MessageZapKey        = "message"
+	SeverityZapKey       = "severity"
+	SourceLocationZapKey = "sourceLocation"
+	TimeZapKey           = "time"
 )
 
 type StructuredLogger interface {
@@ -92,10 +92,10 @@ func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArra
 func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
 	cfg.DisableStacktrace = true
-	cfg.EncoderConfig.CallerKey = sourceLocationKey
-	cfg.EncoderConfig.MessageKey = messageKey
-	cfg.EncoderConfig.LevelKey = severityKey
-	cfg.EncoderConfig.TimeKey = timeKey
+	cfg.EncoderConfig.CallerKey = SourceLocationZapKey
+	cfg.EncoderConfig.MessageKey = MessageZapKey
+	cfg.EncoderConfig.LevelKey = SeverityZapKey
+	cfg.EncoderConfig.TimeKey = TimeZapKey
 	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	cfg.EncoderConfig.EncodeLevel = severityEncoder
 	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder

@@ -22,8 +22,14 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
+)
+
+var (
+	agentKind            string = "ops-agent"
+	schemaVersion        string = "v1"
 )
 
 const (
@@ -34,11 +40,6 @@ const (
 	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
 	agentKindKey         string = "agent.googleapis.com/health/agentKind"
 	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
-)
-
-var (
-	agentKind            string = "ops-agent"
-	schemaVersion        string = "v1"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
@@ -64,32 +65,20 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorParseJson{
 		// TODO(b/282754149): Remove TimeKey and TimeFormat when feature gets implemented.
 		ParserShared: ParserShared{
-			TimeKey:    "time",
+			TimeKey:    logs.TimeZapKey,
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
 		},
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
-	out = append(out, []fluentbit.Component{
+	out = append(out, fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the `severity` field.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "grep",
-				"Match": healthLogsTag,
-				"Regex": "severity INFO|ERROR|WARNING|DEBUG|DEFAULT",
-			},
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":  "grep",
+			"Match": healthLogsTag,
+			"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", logs.SeverityZapKey),
 		},
-		{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name", "modify"},
-				{"Match", healthLogsTag},
-				{"Rename", fmt.Sprintf("severity %s", severityKey)},
-				{"Rename", fmt.Sprintf("sourceLocation %s", sourceLocationKey)},
-			},
-		},
-	}...)
-
+	})
 	return out
 }
 
@@ -128,6 +117,12 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
+			severityKey: {
+				MoveFrom: logs.SeverityZapKey,
+			},
+			sourceLocationKey: {
+				MoveFrom: logs.SourceLocationZapKey,
+			},
 			fmt.Sprintf(`labels."%s"`, agentKindKey): {
 				StaticValue: &agentKind,
 			},
@@ -138,7 +133,7 @@ func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Com
 				StaticValue: &schemaVersion,
 			},
 		},
-	}.Components(ctx, healthLogsTag, "sethealthlabels")
+	}.Components(ctx, healthLogsTag, "setstructuredhealthlogs")
 }
 
 func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
