@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverElasticsearch struct {
@@ -32,8 +33,8 @@ type MetricsReceiverElasticsearch struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:|startswith=https:"`
 
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Username string        `yaml:"username" validate:"required_with=Password"`
+	Password secret.String `yaml:"password" validate:"required_with=Username"`
 }
 
 const (
@@ -65,7 +66,7 @@ func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval":  r.CollectionIntervalString(),
 		"endpoint":             r.Endpoint,
 		"username":             r.Username,
-		"password":             r.Password,
+		"password":             r.Password.SecretValue(),
 		"nodes":                []string{"_local"},
 		"tls":                  r.TLSConfig(true),
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
