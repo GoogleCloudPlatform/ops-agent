@@ -31,14 +31,20 @@ configure_integration: |-
 
   The `mysql` receiver connects by default to a local MySQL/MariaDB
   server using a Unix socket and Unix authentication as the `root` user.
-minimum_supported_agent_version:
-  metrics: 2.32.0
-  logging: 2.5.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # MySQL is not currently supported on Debian 11 ARM64 or Debian 12
-  - debian-11-arm64
+  # Skip everything except Debian 11 ARM64
+  - centos-7
+  - debian-10
+  - debian-11
   - debian-12
+  - ubuntu-2004-lts
+  - ubuntu-2204-lts
+  - ubuntu-2304-amd64
+  - rocky-linux-8
+  - rocky-linux-9
+  - sles-12
+  - sles-15
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages

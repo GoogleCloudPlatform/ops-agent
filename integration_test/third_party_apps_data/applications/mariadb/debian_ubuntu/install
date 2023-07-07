@@ -1,30 +1,22 @@
 set -e
 
 sudo apt update
-sudo apt install -y wget
-
-wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
-sudo dpkg -i mysql-apt-config_0.8.22-1_all.deb
-sudo apt update
-sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
-
-source /etc/os-release
-
-sudo apt install -y mysql-server
-
-if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
-  sudo apt install -y libmariadbclient18
-elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
-  sudo apt install -y libmysqlclient20
-elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
-  sudo apt install -y libmysqlclient21
-fi
+sudo apt install -y \
+  mariadb-server=1:10.5.19-0+deb11u2 \
+  mariadb-client=1:10.5.19-0+deb11u2
 
 sudo service mysql start
 
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
-sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf >/dev/null <<EOF
+sudo tee /etc/my.cnf >/dev/null <<EOF
+[mysqld]
+pid-file = /var/run/mysqld/mysqld.pid
+socket = /var/run/mysqld/mysqld.sock
+port = 3306
+user = mysql
+datadir = /var/lib/mysql
+log-error = /var/log/mysql/error.log
 server-id = 1
 log-bin = /var/log/mysql/mysql-bin.log
 
@@ -39,16 +31,16 @@ server-id = 2
 log-bin = /var/log/mysql/mysql2-bin.log
 EOF
 
-# Disable apparmor for mysql
-if [[ "${ID}" == ubuntu ]]; then
-  sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
-  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
-fi
+# prevent bundled configs from overwriting settings in my.cnf
+sudo rm /etc/mysql/mariadb.cnf
+sudo rm -rf /etc/mysql/mariadb.conf.d/
 
-sudo cp /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/conf.d/
-
-sudo chmod uga+r /etc/mysql/conf.d/*
-sudo chown mysql:mysql /etc/mysql/conf.d/*
+# prepare config and data permissions
+sudo mkdir /var/lib/mysql2
+sudo chmod uga+r /etc/my.cnf
+sudo chown mysql:mysql /etc/my.cnf
 sudo chown mysql:mysql /var/log/mysql/
+sudo chown mysql:mysql /var/lib/mysql/
+sudo chown mysql:mysql /var/lib/mysql2/
 
 sudo service mysql restart
