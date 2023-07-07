@@ -25,10 +25,10 @@ import (
 )
 
 const (
-	MessageZapKey        = "message"
-	SeverityZapKey       = "severity"
-	SourceLocationZapKey = "sourceLocation"
-	TimeZapKey           = "time"
+	MessageZapKey        string = "message"
+	SeverityZapKey       string = "severity"
+	SourceLocationZapKey string = "sourceLocation"
+	TimeZapKey           string = "time"
 )
 
 type StructuredLogger interface {

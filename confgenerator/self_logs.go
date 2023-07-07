@@ -118,10 +118,10 @@ func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Com
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			severityKey: {
-				MoveFrom: logs.SeverityZapKey,
+				MoveFrom: fmt.Sprintf(`jsonPayload."%s"`, logs.SeverityZapKey),
 			},
 			sourceLocationKey: {
-				MoveFrom: logs.SourceLocationZapKey,
+				MoveFrom: fmt.Sprintf(`jsonPayload."%s"`, logs.SourceLocationZapKey),
 			},
 			fmt.Sprintf(`labels."%s"`, agentKindKey): {
 				StaticValue: &agentKind,
