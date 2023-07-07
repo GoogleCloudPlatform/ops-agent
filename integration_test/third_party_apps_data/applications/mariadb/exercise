@@ -1,0 +1,49 @@
+set -e
+
+cat <<EOF > config-user
+[client]
+user=root
+password='Ss123%321'
+EOF
+
+# initialize and start replation source
+sudo mysqld --defaults-group-suffix=2 --initialize
+nohup sudo mysqld --defaults-group-suffix=2 2>/dev/null >/dev/null </dev/null &
+# give it time to start, since we put it in the background
+sleep 10
+
+# grab root password for replication source
+password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/error2.log)
+cat <<EOF > config-user-2
+[client]
+user=root
+password='$password'
+EOF
+
+sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+
+# Create replication user
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
+
+# Dump data from replica source
+sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
+
+# Capture status to seed replica
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;")
+read -r logfile logpos <<< $raw_status
+
+# Dump data from source into replica
+sudo mysql --defaults-extra-file=config-user < /tmp/dbdump.sql
+
+# Configure replication
+sudo mysql --defaults-extra-file=config-user -Bse "STOP REPLICA;"
+sudo mysql --defaults-extra-file=config-user -Bse "CHANGE REPLICATION SOURCE TO SOURCE_HOST='localhost', SOURCE_USER='repl', SOURCE_PORT=3307, SOURCE_PASSWORD='password', SOURCE_LOG_FILE='$logfile', SOURCE_LOG_POS=$logpos;"
+sudo mysql --defaults-extra-file=config-user -Bse "START REPLICA;"
+
+sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL log_slow_extra = 'ON'"
+sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
+sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
+sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
+
+sudo mysql --defaults-extra-file=config-user -Bse "select table_catalog, table_schema, table_name from information_schema.tables"

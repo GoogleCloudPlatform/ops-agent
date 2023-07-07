@@ -1,0 +1,75 @@
+set -e
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
+  if [[ "${VERSION_ID}" == 15.0 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-Cloud-Tools
+  elif [[ "${VERSION_ID}" == 15.1 ]]; then
+    sudo zypper modifyrepo --disable openSUSE-Leap-devel-languages-python-aws
+  fi
+  sudo zypper -n refresh
+
+  sudo zypper -n install mariadb
+else
+  mysql_repo_pkg_name=''
+  if [[ "${SUSE_VERSION}" == 12 ]]; then
+    mysql_repo_pkg_name=mysql80-community-release-sles12-1.noarch.rpm
+  elif [[ "${SUSE_VERSION}" == 15 ]]; then
+    mysql_repo_pkg_name=mysql80-community-release-sl15-1.noarch.rpm
+  fi
+
+  # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
+  sudo zypper -n --no-gpg-checks install https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+  sudo zypper -n install mysql-community-server
+fi
+
+if [[ "${SUSE_VERSION}" == 12 ]]; then
+  sudo zypper -n install libmysqlclient18
+elif [[ "${SUSE_VERSION}" == 15 ]]; then
+  sudo zypper -n install libmariadb3
+fi
+
+sudo service mysql start
+
+if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
+  # mariadb default root password is empty.
+  mysql -u root --skip-password -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;"
+else
+  password="$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/mysqld.log)"
+
+  cat <<EOF >config-user
+  [client]
+  user=root
+  password='$password'
+EOF
+
+  mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+fi
+
+# default socket path is different from originally set default (from debian/ubuntu), so we need to create a symlink
+sudo mkdir /var/run/mysqld/
+sudo chown mysql:mysql /var/run/mysqld/
+sudo ln -s /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock
+sudo chown mysql:mysql /var/run/mysqld/mysqld.sock
+
+# set up replication source to validate replica metrics
+# set main target (replica) to use binary logging for replication to work
+sudo tee -a /etc/my.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
+EOF
+
+sudo service mysql restart
