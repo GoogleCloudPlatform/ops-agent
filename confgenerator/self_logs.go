@@ -69,16 +69,27 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
 		},
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
-	out = append(out, fluentbit.Component{
+	out = append(out, []fluentbit.Component{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the `severity` field.
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":  "grep",
-			"Match": healthLogsTag,
-			"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", logs.SeverityZapKey),
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":  "grep",
+				"Match": healthLogsTag,
+				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", logs.SeverityZapKey),
+			},
 		},
-	})
+		{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name", "modify"},
+				{"Match", healthLogsTag},
+				{"Rename", fmt.Sprintf("%s %s", logs.SeverityZapKey, severityKey)},
+				{"Rename", fmt.Sprintf("%s %s", logs.SourceLocationZapKey, sourceLocationKey)},
+			},
+		},
+	}...)
 	return out
 }
 
@@ -117,19 +128,13 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
-			severityKey: {
-				MoveFrom: fmt.Sprintf(`jsonPayload."%s"`, logs.SeverityZapKey),
-			},
-			sourceLocationKey: {
-				MoveFrom: fmt.Sprintf(`jsonPayload."%s"`, logs.SourceLocationZapKey),
-			},
 			fmt.Sprintf(`labels."%s"`, agentKindKey): {
 				StaticValue: &agentKind,
 			},
 			fmt.Sprintf(`labels."%s"`, agentVersionKey): {
 				StaticValue: &version.Version,
 			},
-			fmt.Sprintf(`labels."%s"`, schemaVersion): {
+			fmt.Sprintf(`labels."%s"`, schemaVersionKey): {
 				StaticValue: &schemaVersion,
 			},
 		},
