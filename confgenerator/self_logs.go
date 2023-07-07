@@ -27,13 +27,18 @@ import (
 )
 
 const (
-	fluentBitSelfLogsTag = "ops-agent-fluent-bit"
-	healthLogsTag       = "ops-agent-health"
-	severityKey         = "logging.googleapis.com/severity"
-	sourceLocationKey   = "logging.googleapis.com/sourceLocation"
-	agentVersionKey     = "agent.googleapis.com/health/agentVersion"
-	agentKindKey        = "agent.googleapis.com/health/agentKind"
-	schemaVersionKey    = "agent.googleapis.com/health/schemaVersion"
+	fluentBitSelfLogsTag string = "ops-agent-fluent-bit"
+	healthLogsTag        string = "ops-agent-health"
+	severityKey          string = "logging.googleapis.com/severity"
+	sourceLocationKey    string = "logging.googleapis.com/sourceLocation"
+	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey         string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
+)
+
+var (
+	agentKind            string = "ops-agent"
+	schemaVersion        string = "v1"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
@@ -120,21 +125,27 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
-func structuredHealthLogsLabels() map[string]string {
-	return map[string]string{
-		agentKindKey: "ops-agent",
-		agentVersionKey: version.Version,
-		schemaVersionKey: "v1",
-	}
+func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			fmt.Sprintf(`labels."%s"`, agentKindKey): {
+				StaticValue: &agentKind,
+			},
+			fmt.Sprintf(`labels."%s"`, agentVersionKey): {
+				StaticValue: &version.Version,
+			},
+			fmt.Sprintf(`labels."%s"`, schemaVersion): {
+				StaticValue: &schemaVersion,
+			},
+		},
+	}.Components(ctx, healthLogsTag, "sethealthlabels")
 }
 
 func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
-
-	outputTags := strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|")
-	out = append(out, stackdriverOutputComponent(outputTags, userAgent, "", structuredHealthLogsLabels()))
+	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
+	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
 }

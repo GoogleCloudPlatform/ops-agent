@@ -17,8 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
@@ -47,7 +45,7 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(match, userAgent string, storageLimitSize string, labels map[string]string) fluentbit.Component {
+func stackdriverOutputComponent(match, userAgent string, storageLimitSize string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
@@ -77,19 +75,6 @@ func stackdriverOutputComponent(match, userAgent string, storageLimitSize string
 		// Limit the maximum number of fluent-bit chunks in the filesystem for the current
 		// output logical destination.
 		config["storage.total_limit_size"] = storageLimitSize
-	}
-
-	if len(labels) > 0 {
-		labelsSlice := []string{}
-		for k, v := range labels {
-			labelsSlice = append(labelsSlice,fmt.Sprintf("%s=%s", k, v))
-		}
-		// Sort labels since map is unordered.
-		sort.Strings(labelsSlice)
-
-		// labels should be set in the format "key1=value1,key2=value2,..."
-		// Link: https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver#configuration-parameters
-		config["labels"] = strings.Join(labelsSlice, ",")
 	}
 
 	return fluentbit.Component{
