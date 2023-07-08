@@ -2,45 +2,36 @@ set -e
 
 sudo apt update
 sudo apt install -y \
-  mariadb-server=1:10.5.19-0+deb11u2 \
-  mariadb-client=1:10.5.19-0+deb11u2
+  mariadb-server
 
-sudo service mysql start
+# See the comment block in /lib/systemd/system/mariadb@.service for
+# information on how to configure multiple mysql instances on the same
+# machine.
 
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
-sudo tee /etc/my.cnf >/dev/null <<EOF
+sudo tee /etc/mysql/mariadb.conf.d/99-replicas.cnf >/dev/null <<EOF
 [mysqld]
-pid-file = /var/run/mysqld/mysqld.pid
-socket = /var/run/mysqld/mysqld.sock
-port = 3306
-user = mysql
-datadir = /var/lib/mysql
-log-error = /var/log/mysql/error.log
-server-id = 1
-log-bin = /var/log/mysql/mysql-bin.log
+general-log
+slow-query-log
+long-query-time = 0
 
-[mysqld2]
-pid-file = /var/run/mysqld/mysql2.pid
-socket = /var/run/mysqld/mysql2.sock
+server-id = 1
+log-bin
+
+[mysqld.replica]
+pid-file = /run/mysqld/mysqld2.pid
+socket = /run/mysqld/mysql2.sock
 port = 3307
 user = mysql
 datadir = /var/lib/mysql2/
-log-error = /var/log/mysql/error2.log
 server-id = 2
-log-bin = /var/log/mysql/mysql2-bin.log
+log-bin
 EOF
-
-# prevent bundled configs from overwriting settings in my.cnf
-sudo rm /etc/mysql/mariadb.cnf
-sudo rm -rf /etc/mysql/mariadb.conf.d/
 
 # prepare config and data permissions
 sudo mkdir /var/lib/mysql2
-sudo chmod uga+r /etc/my.cnf
-sudo chown mysql:mysql /etc/my.cnf
-sudo chown mysql:mysql /var/log/mysql/
-sudo chown mysql:mysql /var/lib/mysql/
 sudo chown mysql:mysql /var/lib/mysql2/
 
-sudo service mysql restart
+# start primary instance; replica will be started by the exercise script.
+sudo systemctl restart mariadb
