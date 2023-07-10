@@ -3015,7 +3015,8 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, `severity="INFO"`); err != nil {
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -3590,15 +3591,15 @@ func getRecentServiceOutputForPlatform(platform string) string {
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
 	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
-		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
-	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
 }
 
 func TestPortsAndAPIHealthChecks(t *testing.T) {
@@ -3611,7 +3612,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 		customScopes := strings.Join([]string{
 			"https://www.googleapis.com/auth/monitoring.read",
-			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/logging.write",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
@@ -3645,9 +3646,13 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "FbMetricsPortErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
