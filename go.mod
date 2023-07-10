@@ -9,6 +9,7 @@ require (
 	cloud.google.com/go/storage v1.28.0
 	cloud.google.com/go/trace v1.4.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.2-0.20221117021920-585d7618b93c
+	github.com/binxio/gcloudconfig v0.1.5
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/go-playground/validator/v10 v10.11.1
