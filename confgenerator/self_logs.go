@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package confgenerator represents the Ops Agent configuration and provides functions to generate subagents configuration from unified agent.
 package confgenerator
 
 import (
@@ -125,6 +124,7 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
+// This method creates a component adds metadata labels to all ops agent health logs.
 func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
