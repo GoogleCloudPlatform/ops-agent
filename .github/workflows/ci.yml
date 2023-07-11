@@ -50,7 +50,7 @@ jobs:
       name: 'Prepare Coverage Data'
       run: |
         mkdir -p "${{ env.ABS_DIR }}"
-        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"LCOV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"${{ github.server_url }}/${{ github.repository }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
+        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"GO_COV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"${{ github.server_url }}/${{ github.repository }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
         cp covprofile ${{ env.ABS_DIR }}/coverage.out
     - id: 'auth'
       if: ${{ runner.os == 'Linux' && github.event_name == 'push' && github.repository == 'GoogleCloudPlatform/ops-agent' && github.ref == 'refs/heads/master' }}
