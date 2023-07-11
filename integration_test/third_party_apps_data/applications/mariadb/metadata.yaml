@@ -33,7 +33,8 @@ configure_integration: |-
   server using a Unix socket and Unix authentication as the `root` user.
 supported_operating_systems: linux
 platforms_to_skip:
-  # Skip everything except Debian 11 ARM64
+  # TODO: Enable MariaDB testing on all supported platforms.
+  # Skip everything except Debian 11 ARM64 for now.
   - centos-7
   - debian-10
   - debian-11
