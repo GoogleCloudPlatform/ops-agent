@@ -4,7 +4,7 @@ local match = (((function(v) if v == nil then return false end return (string.lo
 return record["message"]
 end)()) or (function(v) if v == nil then return false end return (string.lower(tostring(v)) ~= string.lower("bar")) end)((function()
 return record["message"]
-end)()) or (function(v) if v == nil then return false end return (string.find(string.lower(tostring(v)), string.lower("baz"), 1, false) != nil) end)((function()
+end)()) or (function(v) if v == nil then return false end return (string.find(string.lower(tostring(v)), string.lower("baz"), 1, false) ~= nil) end)((function()
 return record["message"]
 end)()) or (record["__match_0_0_3"] ~= nil) or (record["__match_0_0_4"] ~= nil)));
 

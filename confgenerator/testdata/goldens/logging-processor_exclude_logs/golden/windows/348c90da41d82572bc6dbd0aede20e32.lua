@@ -2,7 +2,7 @@
 function process(tag, timestamp, record)
 local match = (((((function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("foo")) end)((function()
 return record["message"]
-end)()) and (record["__match_0_0_0_0_1"] ~= nil)) or (not (record["__match_0_0_0_1"] ~= nil))) and (function(v) if v == nil then return false end return (string.find(string.lower(tostring(v)), string.lower("frob"), 1, false) != nil) end)((function()
+end)()) and (record["__match_0_0_0_0_1"] ~= nil)) or (not (record["__match_0_0_0_1"] ~= nil))) and (function(v) if v == nil then return false end return (string.find(string.lower(tostring(v)), string.lower("frob"), 1, false) ~= nil) end)((function()
 return record["message"]
 end)())));
 
