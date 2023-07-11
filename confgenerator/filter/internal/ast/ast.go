@@ -357,7 +357,7 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
 	case ":":
 		// substring match, case insensitive
-		expr = fmt.Sprintf(`(string.find(string.lower(tostring(v)), string.lower(%s), 1, false) != nil)`, rhsQuoted)
+		expr = fmt.Sprintf(`(string.find(string.lower(tostring(v)), string.lower(%s), 1, false) ~= nil)`, rhsQuoted)
 	case "=~", "!~":
 		// regex match, case sensitive
 
