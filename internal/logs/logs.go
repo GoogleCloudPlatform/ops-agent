@@ -19,23 +19,29 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
 
 const (
-	messageKey        = "message"
-	severityKey       = "logging.googleapis.com/severity"
-	sourceLocationKey = "logging.googleapis.com/sourceLocation"
-	timeKey           = "time"
+	MessageZapKey        string = "message"
+	SeverityZapKey       string = "severity"
+	SourceLocationZapKey string = "sourceLocation"
+	TimeZapKey           string = "time"
 )
 
 type StructuredLogger interface {
+	// Infof, Warnf, Errorf use fmt.Sprintf to log a templated message.
 	Infof(format string, v ...any)
 	Warnf(format string, v ...any)
 	Errorf(format string, v ...any)
+	// Infow, Warnw, Errorw log a string message and optionally
+	// can add key, value pairs of metadata to the log depending
+	// on the underlying implementation of the interface.
+	Infow(msg string, keysAndValues ...any)
+	Warnw(msg string, keysAndValues ...any)
+	Errorw(msg string, keysAndValues ...any)
 	Println(v ...any)
 }
 
@@ -85,10 +91,11 @@ func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArra
 
 func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
-	cfg.EncoderConfig.CallerKey = sourceLocationKey
-	cfg.EncoderConfig.MessageKey = messageKey
-	cfg.EncoderConfig.LevelKey = severityKey
-	cfg.EncoderConfig.TimeKey = timeKey
+	cfg.DisableStacktrace = true
+	cfg.EncoderConfig.CallerKey = SourceLocationZapKey
+	cfg.EncoderConfig.MessageKey = MessageZapKey
+	cfg.EncoderConfig.LevelKey = SeverityZapKey
+	cfg.EncoderConfig.TimeKey = TimeZapKey
 	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	cfg.EncoderConfig.EncodeLevel = severityEncoder
 	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder
@@ -100,11 +107,8 @@ func New(file string) *ZapStructuredLogger {
 	if err != nil {
 		return Default()
 	}
-
-	sugar := logger.Sugar().With(
-		zap.String("ops-agent-version", version.Version))
 	return &ZapStructuredLogger{
-		logger: sugar,
+		logger: logger.Sugar(),
 	}
 }
 
@@ -123,10 +127,8 @@ func Default() *ZapStructuredLogger {
 		logger, _ := DiscardLogger()
 		return logger
 	}
-	sugar := logger.Sugar().With(
-		zap.String("version", version.Version))
 	return &ZapStructuredLogger{
-		logger: sugar,
+		logger: logger.Sugar(),
 	}
 }
 
@@ -140,6 +142,21 @@ func (f ZapStructuredLogger) Warnf(format string, v ...any) {
 
 func (f ZapStructuredLogger) Errorf(format string, v ...any) {
 	f.logger.Errorf(format, v...)
+}
+
+// A zap logger has an implementation of Infow, Warnw, Errorw that will
+// add a key, value pairs to the output json structured log.
+// Link: https://pkg.go.dev/go.uber.org/zap#SugaredLogger.Infow
+func (f ZapStructuredLogger) Infow(msg string, keysAndValues ...any) {
+	f.logger.Infow(msg, keysAndValues...)
+}
+
+func (f ZapStructuredLogger) Warnw(msg string, keysAndValues ...any) {
+	f.logger.Warnw(msg, keysAndValues...)
+}
+
+func (f ZapStructuredLogger) Errorw(msg string, keysAndValues ...any) {
+	f.logger.Errorw(msg, keysAndValues...)
 }
 
 func (f ZapStructuredLogger) Println(v ...any) {
@@ -168,6 +185,20 @@ func (sl SimpleLogger) Warnf(format string, v ...any) {
 
 func (sl SimpleLogger) Errorf(format string, v ...any) {
 	sl.l.Printf(format, v...)
+}
+
+// A SimpleLogger doesn't have the capability of adding metadata
+// to the resulting log.
+func (sl SimpleLogger) Infow(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
+}
+
+func (sl SimpleLogger) Warnw(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
+}
+
+func (sl SimpleLogger) Errorw(msg string, keysAndValues ...any) {
+	sl.l.Println(msg)
 }
 
 func (sl SimpleLogger) Println(v ...any) {
