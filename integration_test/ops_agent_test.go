@@ -1119,6 +1119,65 @@ func TestSyslogUDP(t *testing.T) {
 	})
 }
 
+func TestExcludeLogsHasOperator(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    exclude:
+      type: exclude_logs
+      match_any:
+      - "jsonPayload.field:pattern"
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json, exclude]
+        exporters: [google]
+`, file1)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"field":"string containing pattern"}` + "\n"
+		excludedLine := `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(excludedLine), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log that doesn't have pattern in it.
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
+			t.Error(err)
+		}
+		// Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
