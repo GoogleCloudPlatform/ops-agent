@@ -1,0 +1,9 @@
+[20:20] cannot unmarshal string into Go struct field UnifiedConfig.Logging of type uint16
+  17 |     receiver_1:
+  18 |       type: syslog
+  19 |       listen_host: "1.1.1.1"
+> 20 |       listen_port: abc
+                          ^
+  21 |       transport_protocol: tcp
+  22 |   service:
+  23 |     pipelines:

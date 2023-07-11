@@ -1,2 +1,0 @@
-This tests the case when the user config file is deleted, which is why this folder
-does not have a input.yaml file. It's intentional.

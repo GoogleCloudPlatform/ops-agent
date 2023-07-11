@@ -1,0 +1,9 @@
+[19:17] "endpoint" must start with "http:"
+  16 |   receivers:
+  17 |     couchdb:
+  18 |       type: couchdb
+> 19 |       endpoint: localhost:5984
+                       ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       couchdb:
