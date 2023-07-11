@@ -56,8 +56,12 @@ func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
 		if e == nil {
 			logger.Infof(singleErrorResultMessage(e, r.Name))
 		} else {
-			if healthError, ok := e.(HealthCheckError); ok && !healthError.IsFatal {
-				logger.Warnf(singleErrorResultMessage(e, r.Name))
+			if healthError, ok := e.(HealthCheckError); ok {
+				if healthError.IsFatal {
+					logger.Errorw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
+				} else {
+					logger.Warnw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
+				}
 			} else {
 				logger.Errorf(singleErrorResultMessage(e, r.Name))
 			}

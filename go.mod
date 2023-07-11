@@ -3,12 +3,13 @@ module github.com/GoogleCloudPlatform/ops-agent
 go 1.20
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.1
-	cloud.google.com/go/logging v1.5.0
+	cloud.google.com/go/compute/metadata v0.2.3
+	cloud.google.com/go/logging v1.6.1
 	cloud.google.com/go/monitoring v1.9.0
 	cloud.google.com/go/storage v1.28.0
 	cloud.google.com/go/trace v1.4.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.34.2-0.20221117021920-585d7618b93c
+	github.com/binxio/gcloudconfig v0.1.5
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/go-playground/validator/v10 v10.11.1
@@ -35,8 +36,8 @@ require (
 	golang.org/x/sys v0.8.0
 	golang.org/x/text v0.9.0
 	google.golang.org/api v0.103.0
-	google.golang.org/genproto v0.0.0-20221117204609-8f9c96812029
-	google.golang.org/grpc v1.50.1
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
+	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -45,8 +46,8 @@ require (
 
 require (
 	cloud.google.com/go v0.107.0 // indirect
-	cloud.google.com/go/compute v1.12.1 // indirect
-	cloud.google.com/go/iam v0.7.0 // indirect
+	cloud.google.com/go/compute v1.15.1 // indirect
+	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -65,8 +66,8 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.140 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cncf/xds/go v0.0.0-20220520190051-1e77728a1eaa // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/digitalocean/godo v1.90.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
@@ -75,7 +76,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.0 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.3 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.9.0 // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.9.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -152,7 +153,7 @@ require (
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.2.0 // indirect
+	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/time v0.2.0 // indirect

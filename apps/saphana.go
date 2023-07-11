@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type LoggingProcessorSapHanaTrace struct {
@@ -143,8 +144,8 @@ type MetricsReceiverSapHana struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
-	Password string `yaml:"password" validate:"omitempty"`
-	Username string `yaml:"username" validate:"omitempty"`
+	Password secret.String `yaml:"password" validate:"omitempty"`
+	Username string        `yaml:"username" validate:"omitempty"`
 }
 
 const defaultSapHanaEndpoint = "localhost:30015"
@@ -164,7 +165,7 @@ func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
 			Config: map[string]interface{}{
 				"collection_interval": s.CollectionIntervalString(),
 				"endpoint":            s.Endpoint,
-				"password":            s.Password,
+				"password":            s.Password.SecretValue(),
 				"username":            s.Username,
 				"tls":                 s.TLSConfig(true),
 			},

@@ -72,6 +72,8 @@ func stackdriverOutputComponent(match, userAgent string, storageLimitSize string
 	}
 
 	if storageLimitSize != "" {
+		// Limit the maximum number of fluent-bit chunks in the filesystem for the current
+		// output logical destination.
 		config["storage.total_limit_size"] = storageLimitSize
 	}
 

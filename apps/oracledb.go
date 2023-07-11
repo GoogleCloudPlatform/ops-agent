@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverOracleDB struct {
@@ -33,9 +34,9 @@ type MetricsReceiverOracleDB struct {
 	Insecure           *bool `yaml:"insecure" validate:"omitempty"`
 	InsecureSkipVerify *bool `yaml:"insecure_skip_verify" validate:"omitempty"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
+	Username string        `yaml:"username"`
+	Password secret.String `yaml:"password"`
 
 	SID         string `yaml:"sid" validate:"omitempty"`
 	ServiceName string `yaml:"service_name" validate:"omitempty"`
@@ -75,8 +76,9 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	auth := url.QueryEscape(r.Username)
-	if len(r.Password) > 0 {
-		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(r.Password))
+	secretPassword := r.Password.SecretValue()
+	if len(secretPassword) > 0 {
+		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
 
 	// create a datasource in the form oracle://username:password@host:port/ServiceName?SID=sid&ssl=enable&...

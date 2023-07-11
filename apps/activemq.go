@@ -22,11 +22,7 @@ import (
 type MetricsReceiverActivemq struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	Endpoint                               string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username                               string `yaml:"username" validate:"required_with=Password"`
-	Password                               string `yaml:"password" validate:"required_with=Username"`
-	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
-
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
