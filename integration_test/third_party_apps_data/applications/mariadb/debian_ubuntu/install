@@ -10,11 +10,17 @@ sudo apt install -y \
 
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
+
+# TODO: MariaDB is configured to use journald by default on at least Debian 11;
+# log_error forces the log to be written to a file instead, but this means the
+# mysql_error receiver doesn't work with the default MariaDB configuration on
+# Debian 11.
 sudo tee /etc/mysql/mariadb.conf.d/99-replicas.cnf >/dev/null <<EOF
 [mysqld]
 general-log
 slow-query-log
 long-query-time = 0
+log_error
 
 server-id = 1
 log-bin

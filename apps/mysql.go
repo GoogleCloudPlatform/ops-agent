@@ -493,8 +493,10 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			"/var/log/mysqld.log",
 			// Default log path for SLES
 			"/var/log/mysql/mysqld.log",
-			// Default log path for Debian / Ubuntu
+			// Default log path for Oracle MySQL on Debian / Ubuntu
 			"/var/log/mysql/error.log",
+			// Default log path for MariaDB on Debian
+			"/var/lib/mysql/${HOSTNAME}.err",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
