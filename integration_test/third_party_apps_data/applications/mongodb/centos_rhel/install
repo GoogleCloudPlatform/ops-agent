@@ -13,11 +13,12 @@ sudo mv mongodb-org-6.0.repo /etc/yum.repos.d/mongodb-org-6.0.repo
 sudo chown root:root /etc/yum.repos.d/mongodb-org-6.0.repo
 sudo chmod 0644 /etc/yum.repos.d/mongodb-org-6.0.repo
 
+# N.B. mongodb-org-shell has been replaced by mongodb-mongosh, with a different version numbering scheme.
 sudo yum install -y \
     mongodb-org-6.0.7 \
     mongodb-org-database-6.0.7 \
     mongodb-org-server-6.0.7 \
-    mongodb-org-shell-6.0.7 \
+    mongodb-mongosh \
     mongodb-org-mongos-6.0.7 \
     mongodb-org-tools-6.0.7
 
