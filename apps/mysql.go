@@ -375,64 +375,89 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		`(?:\s+End:\s(?<endTime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z))?`,
 	}, "")
 
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Fields documented: https://dev.mysql.com/doc/refman/8.0/en/slow-query-log.html
-					// Sample line: # Time: 2021-10-12T01:13:38.132884Z
-					//              # User@Host: root[root] @ localhost []  Id:    15
-					//              # Query_time: 0.001855  Lock_time: 0.000000 Rows_sent: 0  Rows_examined: 0
-					//              SET timestamp=1634001218;
-					//              SET GLOBAL slow_query_log = 1;
-					// Extra fields w/ low_slow_extra = 'ON'
-					// Sample line: # Time: 2021-10-12T01:34:15.231930Z
-					//              # User@Host: root[root] @ localhost []  Id:    21
-					//              # Query_time: 0.012740  Lock_time: 0.000810 Rows_sent: 327  Rows_examined: 586 Thread_id: 21 Errno: 0 Killed: 0 Bytes_received: 0 Bytes_sent: 41603 Read_first: 2 Read_last: 0 Read_key: 361 Read_next: 361 Read_prev: 0 Read_rnd: 0 Read_rnd_next: 5 Sort_merge_passes: 0 Sort_range_count: 0 Sort_rows: 0 Sort_scan_count: 0 Created_tmp_disk_tables: 0 Created_tmp_tables: 0 Start: 2021-10-12T01:34:15.219190Z End: 2021-10-12T01:34:15.231930Z
-					//              SET timestamp=1634002455;
-					//              select * from information_schema.tables;
-					Regex: fmt.Sprintf(`^# Time: (?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)\s# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]\s+Id:\s+(?<tid>\d+)\s+#%s\s+(?<message>[\s\S]+)`, fields),
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-						Types: map[string]string{
-							"tid":                  "integer",
-							"queryTime":            "float",
-							"lockTime":             "float",
-							"rowsSent":             "integer",
-							"rowsExamined":         "integer",
-							"errorNumber":          "integer",
-							"killed":               "integer",
-							"bytesReceived":        "integer",
-							"bytesSent":            "integer",
-							"readFirst":            "integer",
-							"readLast":             "integer",
-							"readKey":              "integer",
-							"readNext":             "integer",
-							"readPrev":             "integer",
-							"readRnd":              "integer",
-							"readRndNext":          "integer",
-							"sortMergePasses":      "integer",
-							"sortRangeCount":       "integer",
-							"sortRows":             "integer",
-							"sortScanCount":        "integer",
-							"createdTmpDiskTables": "integer",
-							"createdTmpTables":     "integer",
-						},
+	var parsers []confgenerator.RegexParser
+
+	for _, t := range []struct {
+		Regex, TimeFormat string
+	}{
+		{
+			`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+			"%Y-%m-%dT%H:%M:%S.%L%z",
+		},
+		{
+			`\d{6} \d{2}:\d{2}:\d{2}`,
+			"%y%m%d %H:%M:%S",
+		},
+	} {
+		parsers = append(
+			parsers,
+			confgenerator.RegexParser{
+				// Fields documented: https://dev.mysql.com/doc/refman/8.0/en/slow-query-log.html
+				// Sample line: # Time: 2021-10-12T01:13:38.132884Z
+				//              # User@Host: root[root] @ localhost []  Id:    15
+				//              # Query_time: 0.001855  Lock_time: 0.000000 Rows_sent: 0  Rows_examined: 0
+				//              SET timestamp=1634001218;
+				//              SET GLOBAL slow_query_log = 1;
+				// Extra fields w/ low_slow_extra = 'ON'
+				// Sample line: # Time: 2021-10-12T01:34:15.231930Z
+				//              # User@Host: root[root] @ localhost []  Id:    21
+				//              # Query_time: 0.012740  Lock_time: 0.000810 Rows_sent: 327  Rows_examined: 586 Thread_id: 21 Errno: 0 Killed: 0 Bytes_received: 0 Bytes_sent: 41603 Read_first: 2 Read_last: 0 Read_key: 361 Read_next: 361 Read_prev: 0 Read_rnd: 0 Read_rnd_next: 5 Sort_merge_passes: 0 Sort_range_count: 0 Sort_rows: 0 Sort_scan_count: 0 Created_tmp_disk_tables: 0 Created_tmp_tables: 0 Start: 2021-10-12T01:34:15.219190Z End: 2021-10-12T01:34:15.231930Z
+				//              SET timestamp=1634002455;
+				//              select * from information_schema.tables;
+				Regex: fmt.Sprintf(`^(?:# Time: (?<time>%s)\s)?# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]\s+Id:\s+(?<tid>\d+)\s+#%s\s+(?<message>[\s\S]+)`, t.Regex, fields),
+				Parser: confgenerator.ParserShared{
+					TimeKey:    "time",
+					TimeFormat: t.TimeFormat,
+					Types: map[string]string{
+						"tid":                  "integer",
+						"queryTime":            "float",
+						"lockTime":             "float",
+						"rowsSent":             "integer",
+						"rowsExamined":         "integer",
+						"errorNumber":          "integer",
+						"killed":               "integer",
+						"bytesReceived":        "integer",
+						"bytesSent":            "integer",
+						"readFirst":            "integer",
+						"readLast":             "integer",
+						"readKey":              "integer",
+						"readNext":             "integer",
+						"readPrev":             "integer",
+						"readRnd":              "integer",
+						"readRndNext":          "integer",
+						"sortMergePasses":      "integer",
+						"sortRangeCount":       "integer",
+						"sortRows":             "integer",
+						"sortScanCount":        "integer",
+						"createdTmpDiskTables": "integer",
+						"createdTmpTables":     "integer",
 					},
 				},
 			},
+		)
+	}
+	c := confgenerator.LoggingProcessorParseMultilineRegex{
+		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: parsers,
 		},
 		Rules: []confgenerator.MultilineRule{
+			// Logs start with Time: or User@Host: (omitting time if it's the same as the previous entry).
 			{
 				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
+				NextState: "comment",
+				Regex:     `^# (User@Host: |Time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2}))`,
 			},
+			// Explicitly consume the next line, which might be User@Host.
+			{
+				StateName: "comment",
+				NextState: "cont",
+				Regex:     `^# `,
+			},
+			// Then consume everything until the next Time or User@Host.
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!# Time: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)`,
+				Regex:     `^(?!# (User@Host: |Time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2})))`,
 			},
 		},
 	}.Components(ctx, tag, uid)
