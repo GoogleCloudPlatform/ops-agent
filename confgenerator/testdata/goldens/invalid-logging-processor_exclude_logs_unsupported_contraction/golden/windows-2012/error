@@ -1,0 +1,9 @@
+[19:18] "match_any[0]": 1:23: error: expected one of andOp, orOp, not, text, or string; got: "("
+  16 |   processors:
+  17 |     processor_1:
+  18 |       type: exclude_logs
+> 19 |       match_any: ['jsonPayload.message = ("first" OR "second")']
+                        ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       default_pipeline:

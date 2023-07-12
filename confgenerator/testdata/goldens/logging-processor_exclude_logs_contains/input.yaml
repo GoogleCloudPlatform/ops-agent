@@ -1,0 +1,33 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+logging:
+  receivers:
+    logs:
+      type: files
+      include_paths: [/tmp/*.log]
+  processors:
+    parse-regex:
+      type: parse_regex
+      regex: "^(?<LogTimeStamp>\d+:\d+:\d+) \((?<Vendor>.*)\) (?<Status>IN|OUT|DENIED): \"(?<License>.*)\" (?<User>.*)\@(?<HostName>[\w\d\-\_]+)[^ ]* (?<Details>.*)$"
+      time_key: LogTimeStamp
+      time_format: %H:%M:%S
+    status-exclude:
+      type: exclude_logs
+      match_any:
+        - "jsonPayload.Status:IN"
+  service:
+    pipelines:
+      test-pipeline:
+        receivers: [logs]
+        processors: [parse-regex, status-exclude]

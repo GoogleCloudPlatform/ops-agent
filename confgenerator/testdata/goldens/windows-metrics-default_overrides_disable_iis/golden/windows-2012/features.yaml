@@ -1,0 +1,16 @@
+- module: logging
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: processors:exclude_metrics
+  key: "[0].enabled"
+  value: "true"
+- module: metrics
+  feature: processors:exclude_metrics
+  key: "[0].metrics_pattern.__length"
+  value: "1"

@@ -1,0 +1,9 @@
+[22:22] "copy_from" cannot be set if one of [MoveFrom StaticValue] is set,"move_from" cannot be set if one of [CopyFrom StaticValue] is set
+  19 |       fields:
+  20 |         jsonPayload.foo:
+  21 |           copy_from: jsonPayload.bar
+> 22 |           move_from: jsonPayload.baz
+                            ^
+  23 |   service:
+  24 |     pipelines:
+  25 |       default_pipeline:
