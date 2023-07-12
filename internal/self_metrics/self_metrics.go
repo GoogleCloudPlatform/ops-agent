@@ -159,15 +159,8 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "*",
-				},
-				metricsdk.Stream{
-					Name:        "*",
-					Aggregation: aggregation.Drop{},
-				}),
-			metricsdk.NewView(
-				metricsdk.Instrument{
 					Name: "agent/internal/ops/feature_tracking",
+					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
 					Name:        "agent/internal/ops/feature_tracking",
@@ -189,15 +182,8 @@ func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resou
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "*",
-				},
-				metricsdk.Stream{
-					Name:        "*",
-					Aggregation: aggregation.Drop{},
-				}),
-			metricsdk.NewView(
-				metricsdk.Instrument{
 					Name: "agent/ops_agent/enabled_receivers",
+					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
 					Name:        "agent/ops_agent/enabled_receivers",
