@@ -17,6 +17,7 @@ package self_metrics
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -29,6 +30,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
@@ -145,7 +148,7 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 	return nil
 }
 
-func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) metricapi.MeterProvider {
+func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) *metricsdk.MeterProvider {
 	provider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(
 			metricsdk.NewPeriodicReader(
@@ -153,7 +156,6 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 				metricsdk.WithInterval(2*time.Hour),
 			),
 		),
-		// View to customize histogram buckets and rename a single histogram instrument.
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
@@ -177,14 +179,13 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 	return provider
 }
 
-func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) metricapi.MeterProvider {
+func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resource.Resource) *metricsdk.MeterProvider {
 	provider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(
 			metricsdk.NewPeriodicReader(
 				exporter,
 			),
 		),
-		// View to customize histogram buckets and rename a single histogram instrument.
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
@@ -240,5 +241,40 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 		return fmt.Errorf("failed to instrument enabled receivers: %w", err)
 	}
 
-	return nil
+	defer func() {
+		if serr := featureTrackingProvider.Shutdown(ctx); serr != nil {
+			myStatus, ok := status.FromError(serr)
+			if !ok && myStatus.Code() == codes.Unknown {
+				log.Print(serr)
+			} else if err == nil {
+				err = fmt.Errorf("failed to shutdown meter provider: %w", serr)
+			}
+		}
+		if serr := enabledReceiversProvider.Shutdown(ctx); serr != nil {
+			myStatus, ok := status.FromError(serr)
+			if !ok && myStatus.Code() == codes.Unknown {
+				log.Print(serr)
+			} else if err == nil {
+				err = fmt.Errorf("failed to shutdown meter provider: %w", serr)
+			}
+		}
+	}()
+
+	timer := time.NewTimer(10 * time.Second)
+
+	for {
+		select {
+		case <-timer.C:
+			err := featureTrackingProvider.ForceFlush(ctx)
+			if err != nil {
+				log.Print(err)
+			}
+			err = enabledReceiversProvider.ForceFlush(ctx)
+			if err != nil {
+				log.Print(err)
+			}
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
