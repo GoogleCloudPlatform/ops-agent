@@ -1696,7 +1696,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// For winlog2_space, we simply check that the logs were ingested.
 		for _, payload := range payloads["winlog2_space"] {
-			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_space", 2*time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "winlog2_space", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -1846,7 +1846,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 			},
 		}
 
-		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
