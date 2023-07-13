@@ -113,6 +113,26 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 			},
 		},
 	}.Components(ctx, fluentBitSelfLogsTag, "self-logs-severity")...)
+	out = append(out, []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":  "rewrite_tag",
+				"Match": fluentBitSelfLogsTag,
+				"Rule": fmt.Sprintf(`message "format check failed" %s true`, healthLogsTag),
+			},
+		},
+		{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name", "modify"},
+				{"Match", healthLogsTag},
+				{"Condition", `Key_value_matches message "format check failed"`},
+				{"Set", `message "Code : LogBufferCorruptErr Message : Monitoring API quota reached..."`},
+				{"Set", `code "LogBufferCorruptErqr"`},
+			},
+		},
+	}...)
 	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogsTag, "severity", severityKey, true,
 		[]struct{ SrcVal, DestVal string }{
 			{"debug", "DEBUG"},
@@ -124,28 +144,9 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
-func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "rewrite_tag",
-				"Match": fluentBitSelfLogsTag,
-				"Rule": fmt.Sprintf(`message "format check failed" %s true`, healthLogsTag),
-			},
-		},
-		// {
-		// 	Kind: "FILTER",
-		// 	OrderedConfig: [][2]string{
-		// 		{"Name", "modify"},
-		// 		{"Match", healthLogsTag},
-		// 		{"Condition", `Key_value_matches message "format check failed"`},
-		// 		{"Set", `message "Code : LogBufferCorruptErr Message : Monitoring API quota reached..."`},
-		// 		{"Set", `code "LogBufferCorruptErqr"`},
-		// 	},
-		// },
-	}
-}
+// func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
+// 	return 
+// }
 
 // This method creates a component adds metadata labels to all ops agent health logs.
 func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
@@ -168,7 +169,7 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out := make([]fluentbit.Component, 0)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
-	out = append(out, generateSampleSelfLogsComponents(ctx)...)
+	// out = append(out, generateSampleSelfLogsComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
