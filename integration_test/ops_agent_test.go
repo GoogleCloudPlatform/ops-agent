@@ -1608,7 +1608,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 		// Quote-and-escape the query string so that Cloud Logging accepts it
 		expectedWarning := fmt.Sprintf(`"\"channels[1]\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, channel)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, 2*time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
 			t.Fatal(err)
 		}
 	})
