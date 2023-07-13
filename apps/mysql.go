@@ -194,6 +194,18 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMySql{} })
 }
 
+const (
+	// MySQL <5.7, MariaDB <10.1.4
+	timeRegexOld  = `\d{6}\s+\d{1,2}:\d{2}:\d{2}`
+	timeFormatOld = "%y%m%d %H:%M:%S"
+	// MySQL >=5.7
+	timeRegexMySQLNew  = `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:?\d{2})?`
+	timeFormatMySQLNew = "%Y-%m-%dT%H:%M:%S.%L%z"
+	// MariaDB >=10.1.5 error log
+	timeRegexMariaDBNew  = `\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}:\d{2}`
+	timeFormatMariaDBNew = "%Y-%m-%d %H:%M:%S"
+)
+
 type LoggingProcessorMysqlError struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
@@ -209,10 +221,13 @@ func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, 
 				// MySql >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
 				// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
 				// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
-				Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+(?:Z|[+-]\d{2}:?\d{2})?)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
+				Regex: fmt.Sprintf(
+					`^(?<time>%s)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
+					timeRegexMySQLNew,
+				),
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
-					TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+					TimeFormat: timeFormatMySQLNew,
 					Types: map[string]string{
 						"tid": "integer",
 					},
@@ -222,19 +237,25 @@ func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, 
 				// Mysql <5.7, MariaDB <10.1.4, documented: https://mariadb.com/kb/en/error-log/#format
 				// Sample Line: 160615 16:53:08 [Note] InnoDB: The InnoDB memory heap is disabled
 				// TODO - time is in system time, not UTC, is there a way to resolve this in fluent bit?
-				Regex: `^(?<time>\d{6} \d{2}:\d{2}:\d{2})\s+\[(?<level>[^\]]+)]\s+(?<message>.*)$`,
+				Regex: fmt.Sprintf(
+					`^(?<time>%s)\s+\[(?<level>[^\]]+)]\s+(?<message>.*)$`,
+					timeRegexOld,
+				),
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
-					TimeFormat: "%y%m%d %H:%M:%S",
+					TimeFormat: timeFormatOld,
 				},
 			},
 			{
 				// MariaDB >=10.1.5, documented: https://mariadb.com/kb/en/error-log/#format
-				// Sample Line: 2016-06-15 16:53:33 139651251140544 [Note] InnoDB: The InnoDB memory heap is disabled
-				Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?\s+(?<message>.*)$`,
+				// Sample Line: 2016-06-15  1:53:33 139651251140544 [Note] InnoDB: The InnoDB memory heap is disabled
+				Regex: fmt.Sprintf(
+					`^(?<time>%s)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?\s+(?<message>.*)$`,
+					timeRegexMariaDBNew,
+				),
 				Parser: confgenerator.ParserShared{
 					TimeKey:    "time",
-					TimeFormat: "%Y-%m-%d %H:%M:%S",
+					TimeFormat: timeFormatMariaDBNew,
 					Types: map[string]string{
 						"tid": "integer",
 					},
@@ -284,26 +305,32 @@ func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string
 					// Limited documentation: https://dev.mysql.com/doc/refman/8.0/en/query-log.html
 					// Sample line: 2021-10-12T01:12:37.732966Z        14 Connect   root@localhost on  using Socket
 					// Sample line: 2021-10-12T01:12:37.733135Z        14 Query     select @@version_comment limit 1
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+					Regex: fmt.Sprintf(
+						`^(?<time>%s)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+						timeRegexMySQLNew,
+					),
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+						TimeFormat: timeFormatMySQLNew,
 						Types: map[string]string{
 							"tid": "integer",
 						},
 					},
 				},
 				{
-					// MariaDB uses the same timestamp format here as it does for the error log:
+					// MariaDB uses the same timestamp format here as old versions do for the error log:
 					// https://mariadb.com/kb/en/error-log/#format
-					// Sample line: 230707 16:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
+					// Sample line: 230707  1:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
 					// Sample line:                      5 Connect  root@localhost on  using Socket
 					// (When a timestamp is present, it is followed by a single tab character.
 					// When it is not, it means the timestamp is the same as a previous line, and it is replaced by another tab character.
-					Regex: `^((?<time>\d{6} \d{2}:\d{2}:\d{2})|\t)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+					Regex: fmt.Sprintf(
+						`^((?<time>%s)|\t)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+						timeRegexOld,
+					),
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
-						TimeFormat: "%y%m%d %H:%M:%S",
+						TimeFormat: timeFormatOld,
 						Types: map[string]string{
 							"tid": "integer",
 						},
@@ -315,12 +342,20 @@ func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2}|\t\t)`,
+				Regex: fmt.Sprintf(
+					`^(%s|%s|\t\t)`,
+					timeRegexMySQLNew,
+					timeRegexOld,
+				),
 			},
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2}|\t\t))`,
+				Regex: fmt.Sprintf(
+					`^(?!(%s|%s|\t\t))`,
+					timeRegexMySQLNew,
+					timeRegexOld,
+				),
 			},
 		},
 	}.Components(ctx, tag, uid)
@@ -381,12 +416,12 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		Regex, TimeFormat string
 	}{
 		{
-			`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z`,
-			"%Y-%m-%dT%H:%M:%S.%L%z",
+			timeRegexMySQLNew,
+			timeFormatMySQLNew,
 		},
 		{
-			`\d{6} \d{2}:\d{2}:\d{2}`,
-			"%y%m%d %H:%M:%S",
+			timeRegexOld,
+			timeFormatOld,
 		},
 	} {
 		parsers = append(
@@ -445,7 +480,11 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 			{
 				StateName: "start_state",
 				NextState: "comment",
-				Regex:     `^# (User@Host: |Time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2}))`,
+				Regex: fmt.Sprintf(
+					`^# (User@Host: |Time: (%s|%s))`,
+					timeRegexMySQLNew,
+					timeRegexOld,
+				),
 			},
 			// Explicitly consume the next line, which might be User@Host.
 			{
@@ -457,7 +496,11 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 			{
 				StateName: "cont",
 				NextState: "cont",
-				Regex:     `^(?!# (User@Host: |Time: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z|\d{6} \d{2}:\d{2}:\d{2})))`,
+				Regex: fmt.Sprintf(
+					`^(?!# (User@Host: |Time: (%s|%s)))`,
+					timeRegexMySQLNew,
+					timeRegexOld,
+				),
 			},
 		},
 	}.Components(ctx, tag, uid)
