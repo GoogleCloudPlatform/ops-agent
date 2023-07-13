@@ -1846,7 +1846,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 			},
 		}
 
-		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
+		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
